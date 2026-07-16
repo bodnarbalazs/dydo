@@ -21,7 +21,6 @@ public static class TemplateCommand
         "reference/dydo-commands.md",
         "reference/writing-docs.md",
         "guides/how-to-use-docs.md",
-        "guides/how-to-merge-worktrees.md",
         "guides/how-to-review-worktree-merges.md"
     ];
 
@@ -81,7 +80,6 @@ public static class TemplateCommand
 
         tally.Updated += CleanStaleTemplates(dydoRoot, diff);
         PruneStaleHashes(config, diff);
-        RegenerateAgentWorkspaces(dydoRoot, config, diff);
 
         tally.Updated += ApplyConfigDefaults(config, diff);
         tally.Updated += EnsureTypesJson(dydoRoot, diff);
@@ -311,24 +309,6 @@ public static class TemplateCommand
         return sb.ToString();
     }
 
-    private static void RegenerateAgentWorkspaces(string dydoRoot, DydoConfig config, bool diff)
-    {
-        var agentsPath = Path.Combine(dydoRoot, "agents");
-        if (!Directory.Exists(agentsPath))
-            return;
-
-        var scaffolder = new FolderScaffolder();
-        var sourcePaths = config.Paths.Source;
-        var testPaths = config.Paths.Tests;
-        foreach (var agentDir in Directory.GetDirectories(agentsPath))
-        {
-            var agentName = Path.GetFileName(agentDir);
-            if (!diff)
-                scaffolder.RegenerateAgentFiles(agentsPath, agentName, sourcePaths, testPaths);
-            Console.WriteLine($"  Regenerated: agents/{agentName}");
-        }
-    }
-
     private static UpdateResult UpdateTemplateFile(
         string relativePath, string dydoRoot, DydoConfig config, bool diff, bool force)
     {
@@ -541,7 +521,6 @@ public static class TemplateCommand
         "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
         "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
         "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
-        "guides/how-to-merge-worktrees.md" => TemplateGenerator.GenerateHowToMergeWorktreesMd(),
         "guides/how-to-review-worktree-merges.md" => TemplateGenerator.GenerateHowToReviewWorktreeMergesMd(),
         _ => null
     };

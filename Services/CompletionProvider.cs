@@ -55,7 +55,6 @@ public static class CompletionProvider
         ["--area"] = () => Frontmatter.ValidAreas,
         ["--status"] = () => ReviewStatuses,
         ["--action"] = () => GuardActions,
-        ["--to"] = GetAgentNames,
     };
 
     public static IEnumerable<string> GetCompletions(int position, string[] words)
@@ -118,17 +117,4 @@ public static class CompletionProvider
         }
     }
 
-    public static IEnumerable<string> GetAgentNames()
-    {
-        try
-        {
-            var configService = new ConfigService();
-            var config = configService.LoadConfig();
-            return config?.Agents.Pool ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
 }

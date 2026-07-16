@@ -19,7 +19,7 @@ public class ModelCapServiceTests : IDisposable
         // Stub the re-sync so cap/uncap surgery doesn't emit native agent files during tests, and
         // capture the project root it was handed so we can assert the re-sync targets the right tree.
         ModelCapService.ResyncOverride = pr => { _resyncCalls++; _lastResyncRoot = pr; return 0; };
-        SaveConfig(ConfigFactory.CreateDefault("balazs"));
+        SaveConfig(ConfigFactory.CreateDefault());
     }
 
     public void Dispose()
@@ -96,7 +96,7 @@ public class ModelCapServiceTests : IDisposable
     [Fact]
     public void Cap_NoFallbackDeclaredOrGiven_IsRejected()
     {
-        var config = ConfigFactory.CreateDefault("balazs");
+        var config = ConfigFactory.CreateDefault();
         config.Models!.Fallback = null;
         SaveConfig(config);
 
@@ -109,7 +109,7 @@ public class ModelCapServiceTests : IDisposable
     [Fact]
     public void Cap_NoModelsSection_IsRejected()
     {
-        var config = ConfigFactory.CreateDefault("balazs");
+        var config = ConfigFactory.CreateDefault();
         config.Models = null;
         SaveConfig(config);
 

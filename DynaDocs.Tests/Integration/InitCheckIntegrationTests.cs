@@ -11,7 +11,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task FreshInit_PassesCheck_WithOneWarning()
     {
         // Arrange - Initialize dydo in test directory
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Act - Run check
@@ -28,7 +28,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task FreshInit_CreatesExpectedStructure()
     {
         // Arrange & Act
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Assert - Core documentation structure exists
@@ -65,7 +65,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task FreshInit_CreatesMainFolderMetaFiles()
     {
         // Arrange & Act
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Assert - Main folder meta files exist
@@ -82,27 +82,23 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task FreshInit_CreatesAgentWorkspaces()
+    public async Task FreshInit_CreatesEmptyAgentsWorkspaceRoot()
     {
         // Arrange & Act
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
-        // Assert - Default agent workspaces exist (Adele, Brian, Charlie from PresetAgentNames)
-        var expectedAgents = new[] { "Adele", "Brian", "Charlie" };
-        foreach (var agent in expectedAgents)
-        {
-            AssertDirectoryExists($"dydo/agents/{agent}");
-            AssertDirectoryExists($"dydo/agents/{agent}/inbox");
-            AssertFileExists($"dydo/agents/{agent}/workflow.md");
-        }
+        // The 26-agent roster was removed (DR-041): init creates the empty, gitignored workspace
+        // root but no per-agent workspaces.
+        AssertDirectoryExists("dydo/agents");
+        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele")));
     }
 
     [Fact]
     public async Task FreshInit_TemplatesAreExcludedFromCheck()
     {
         // Arrange - Initialize
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Assert - Templates folder exists
@@ -119,7 +115,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task FreshInit_WelcomeMdLinksToGlossary()
     {
         // Arrange & Act
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Assert - welcome.md links to glossary.md and both exist
@@ -138,7 +134,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task FreshInit_OffLimitsFileDoesNotCreateFalsePatterns()
     {
         // Arrange & Act
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Assert - off-limits file exists and check passes
@@ -154,7 +150,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task Check_ReportsMissingMetaFile()
     {
         // Arrange
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Create subfolder without meta file
@@ -173,7 +169,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task Check_AcceptsFolderWithMetaFile()
     {
         // Arrange
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Create subfolder with meta file
@@ -194,7 +190,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task Check_ExcludesAgentWorkspaceFiles()
     {
         // Arrange
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Write a malformed .md into an agent workspace
@@ -213,7 +209,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     public async Task FreshInit_DoesNotCreateModeFiles()
     {
         // Arrange & Act
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Assert - No modes/ directory for any agent

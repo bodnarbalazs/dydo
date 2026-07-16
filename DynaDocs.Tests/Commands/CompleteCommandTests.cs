@@ -112,16 +112,6 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
-    public void ToOption_ReturnsAgentNames()
-    {
-        SetupProject(["Adele"]);
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "dispatch", "--to"]).ToList();
-
-        Assert.Contains("Adele", completions);
-    }
-
-    [Fact]
     public void ReviewComplete_ReturnsTaskNames()
     {
         SetupProjectWithTasks("fix-bug");

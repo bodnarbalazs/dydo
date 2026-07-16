@@ -39,7 +39,6 @@ public class FolderScaffolder : IFolderScaffolder
         ("understand/architecture.md", TemplateGenerator.GenerateArchitectureMd),
         ("guides/coding-standards.md", TemplateGenerator.GenerateCodingStandardsMd),
         ("guides/how-to-use-docs.md", TemplateGenerator.GenerateHowToUseDocsMd),
-        ("guides/how-to-merge-worktrees.md", TemplateGenerator.GenerateHowToMergeWorktreesMd),
         ("guides/how-to-review-worktree-merges.md", TemplateGenerator.GenerateHowToReviewWorktreeMergesMd),
         ("reference/dydo-commands.md", TemplateGenerator.GenerateDydoCommandsMd),
         ("reference/writing-docs.md", TemplateGenerator.GenerateWritingDocsMd),
@@ -58,14 +57,14 @@ public class FolderScaffolder : IFolderScaffolder
         ("project/future-features/_future-features.md", TemplateGenerator.GenerateFutureFeaturesMetaMd),
     ];
 
-    public void Scaffold(string basePath) =>
-        Scaffold(basePath, PresetAgentNames.Set1.ToList());
-
-    public void Scaffold(string basePath, List<string> agentNames)
+    public void Scaffold(string basePath)
     {
         foreach (var folder in Folders)
             Directory.CreateDirectory(Path.Combine(basePath, folder.Path));
 
+        // Empty, gitignored workspace root. The 26-agent roster was removed (DR-041); the guard
+        // creates this on demand for its global warn-nudge markers, but scaffolding it keeps the
+        // directory the .gitignore entry references present.
         Directory.CreateDirectory(Path.Combine(basePath, "agents"));
 
         CopyBuiltInTemplates(basePath);
@@ -76,52 +75,10 @@ public class FolderScaffolder : IFolderScaffolder
 
         WriteIfNotExists(
             Path.Combine(basePath, "index.md"),
-            TemplateGenerator.GenerateIndexMd(agentNames));
+            TemplateGenerator.GenerateIndexMd());
 
-        ScaffoldAgentWorkspaces(basePath, agentNames);
         ScaffoldDocFiles(basePath);
         GenerateHubFiles(basePath);
-    }
-
-    private void ScaffoldAgentWorkspaces(string basePath, List<string> agentNames)
-    {
-        var agentsPath = Path.Combine(basePath, "agents");
-        Directory.CreateDirectory(agentsPath);
-
-        foreach (var agentName in agentNames)
-            ScaffoldAgentWorkspace(agentsPath, agentName);
-    }
-
-    public void ScaffoldAgentWorkspace(string agentsPath, string agentName)
-    {
-        var basePath = Path.GetDirectoryName(agentsPath);
-
-        var agentPath = Path.Combine(agentsPath, agentName);
-        Directory.CreateDirectory(agentPath);
-        Directory.CreateDirectory(Path.Combine(agentPath, "inbox"));
-
-        WriteIfNotExists(
-            Path.Combine(agentPath, "workflow.md"),
-            TemplateGenerator.GenerateWorkflowFile(agentName, basePath));
-    }
-
-    public void RegenerateAgentFiles(string agentsPath, string agentName,
-        List<string>? sourcePaths = null, List<string>? testPaths = null)
-    {
-        var basePath = Path.GetDirectoryName(agentsPath);
-
-        var agentPath = Path.Combine(agentsPath, agentName);
-        var modesPath = Path.Combine(agentPath, "modes");
-
-        File.WriteAllText(
-            Path.Combine(agentPath, "workflow.md"),
-            TemplateGenerator.GenerateWorkflowFile(agentName, basePath, sourcePaths, testPaths));
-
-        Directory.CreateDirectory(modesPath);
-        foreach (var modeName in TemplateGenerator.GetModeNames())
-            File.WriteAllText(
-                Path.Combine(modesPath, $"{modeName}.md"),
-                TemplateGenerator.GenerateModeFile(agentName, modeName, basePath, sourcePaths, testPaths));
     }
 
     private void ScaffoldDocFiles(string basePath)

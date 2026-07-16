@@ -200,49 +200,4 @@ public class ConfigurablePathsTests : IDisposable
         Assert.Equal(["tests/**"], config.Tests);
     }
 
-    [Fact]
-    public void FormatPathsList_SinglePath()
-    {
-        var result = TemplateGenerator.FormatPathsList(["src/**"]);
-        Assert.Equal("`src/**`", result);
-    }
-
-    [Fact]
-    public void FormatPathsList_MultiplePaths()
-    {
-        var result = TemplateGenerator.FormatPathsList(["Commands/**", "Services/**", "Models/**"]);
-        Assert.Equal("`Commands/**`, `Services/**`, `Models/**`", result);
-    }
-
-    [Fact]
-    public void GenerateModeFile_UsesConfiguredPaths()
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", "code-writer",
-            sourcePaths: ["Commands/**", "Services/**"],
-            testPaths: ["MyTests/**"]);
-
-        Assert.Contains("`Commands/**`", content);
-        Assert.Contains("`Services/**`", content);
-        Assert.Contains("`MyTests/**`", content);
-        Assert.DoesNotContain("src/**", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_TestWriterUsesConfiguredPaths()
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", "test-writer",
-            sourcePaths: ["Commands/**"],
-            testPaths: ["MyTests/**"]);
-
-        Assert.Contains("`MyTests/**`", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_DefaultPaths_WhenNotProvided()
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", "code-writer");
-
-        Assert.Contains("`src/**`", content);
-        Assert.Contains("`tests/**`", content);
-    }
 }

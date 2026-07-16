@@ -354,17 +354,6 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_RegeneratesAgentWorkspaces()
-    {
-        await InitProjectAsync();
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Regenerated: agents/");
-    }
-
-    [Fact]
     public async Task TemplateUpdate_Diff_DoesNotRecreateFiles()
     {
         await InitProjectAsync();

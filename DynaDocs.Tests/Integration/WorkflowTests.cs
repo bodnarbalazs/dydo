@@ -18,7 +18,7 @@ public class WorkflowTests : IntegrationTestBase
     [Fact]
     public async Task Review_Complete_Pass()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a task in in-review state
         await TaskCreateAsync("review-test");
@@ -34,7 +34,7 @@ public class WorkflowTests : IntegrationTestBase
     [Fact]
     public async Task Review_Complete_Pass_WithNotes()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         await TaskCreateAsync("lgtm-task");
         await TaskReadyForReviewAsync("lgtm-task", "Done");
@@ -48,7 +48,7 @@ public class WorkflowTests : IntegrationTestBase
     [Fact]
     public async Task Review_Complete_Fail()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         await TaskCreateAsync("fail-task");
         await TaskReadyForReviewAsync("fail-task", "Ready");
@@ -64,7 +64,7 @@ public class WorkflowTests : IntegrationTestBase
     [Fact]
     public async Task Review_Complete_TaskNotFound_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await ReviewCompleteAsync("nonexistent", "pass");
 
@@ -75,7 +75,7 @@ public class WorkflowTests : IntegrationTestBase
     [Fact]
     public async Task Review_Complete_WrongStatus_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a task but don't mark it ready for review
         await TaskCreateAsync("not-ready");

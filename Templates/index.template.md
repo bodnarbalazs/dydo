@@ -7,28 +7,19 @@ type: hub
 
 Documentation-driven context and agent orchestration for AI coding assistants.
 
-You need an assigned identity to work here.
-
 ---
 
-## Your Identity
+## Getting Oriented
 
-Check your prompt for an agent name (e.g., `Adele`, `Brian`).
+Start with the must-read docs — [understand/about.md](understand/about.md), [understand/architecture.md](understand/architecture.md), and [guides/coding-standards.md](guides/coding-standards.md) — then work your task.
 
-**Found one?** → Open `agents/<your-name>/workflow.md`
-
-**None?** → Identity is assigned when your session starts (not claimed) — open `agents/<your-name>/workflow.md` once you have a name.
-
-Your prompt may include a --flag. Your workflow file explains everything.
+Your prompt may include a role and a --flag describing what to do.
 
 ---
 
 ## Disoriented?
 
 Lost context? Run `dydo whoami`. It shows your identity, role, and task.
-
-If claimed: check your workspace for notes, return to your mode file.
-If not claimed: follow the flow above.
 
 ## Warning
 

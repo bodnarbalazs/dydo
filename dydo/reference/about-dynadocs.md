@@ -53,7 +53,7 @@ dydo gives you explicit, structured control over project context. Your documenta
 - **Model tiers** — Roles declare an abstract tier (`strong` / `standard` / `light`) and effort; the compiler binds the concrete model. Swap models without touching a workflow.
 - **Native isolation** — Parallel agents are isolated by the coding runtime (git worktrees, sandboxes); dydo no longer manages worktrees itself.
 - **Notion as a view (optional)** — Two-way sync to a team PM board. Repo files stay canonical; the token is stored locally (or in an opt-in encrypted vault) and never committed by default.
-- **Team support** — Each team member gets their own pool of agents.
+- **Team support** — Share one repo; each member wires up their own local hooks.
 - **Your process, your rules** — Templates, roles, and nudges are all yours to modify.
 
 ---
@@ -263,7 +263,7 @@ project/
 
 ## For Teams
 
-Each team member gets their own pool of agents — no conflicts. Join an existing project with:
+Share one repo. Each member wires up their machine's local integration for an already-initialized project with:
 
 ```bash
 dydo init codex --join

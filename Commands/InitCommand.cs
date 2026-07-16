@@ -36,16 +36,10 @@ public static class InitCommand
             Description = "Human name (skips prompt)"
         };
 
-        var agentCountOption = new Option<int?>("--agents")
-        {
-            Description = "Number of agents to create/assign (skips prompt)"
-        };
-
         var command = new Command("init", "Initialize DynaDocs with specified integration");
         command.Arguments.Add(integrationArgument);
         command.Options.Add(joinOption);
         command.Options.Add(nameOption);
-        command.Options.Add(agentCountOption);
 
         command.SetAction(parseResult =>
         {
@@ -58,17 +52,16 @@ public static class InitCommand
             var integration = parseResult.GetValue(integrationArgument)!;
             var join = parseResult.GetValue(joinOption);
             var name = parseResult.GetValue(nameOption);
-            var agentCount = parseResult.GetValue(agentCountOption);
 
             return join
-                ? ExecuteJoin(integration, name, agentCount)
-                : ExecuteInit(integration, name, agentCount);
+                ? ExecuteJoin(integration, name)
+                : ExecuteInit(integration, name);
         });
 
         return command;
     }
 
-    private static int ExecuteInit(string integration, string? providedName, int? providedAgentCount)
+    private static int ExecuteInit(string integration, string? providedName)
     {
         if (!IsValidIntegration(integration))
             return IntegrationError(integration);
@@ -91,16 +84,13 @@ public static class InitCommand
         var humanName = ResolveHumanName(providedName);
         if (humanName == null) return ExitCodes.ToolError;
 
-        var agentCount = ResolveAgentCount(providedAgentCount, 26);
-        if (agentCount < 0) return ExitCodes.ToolError;
-
         Console.WriteLine();
         Console.WriteLine("Creating...");
 
         try
         {
             var projectRoot = Environment.CurrentDirectory;
-            var config = ConfigFactory.CreateDefault(humanName, agentCount);
+            var config = ConfigFactory.CreateDefault();
             config.Integrations[integration] = true;
 
             var configPath = Path.Combine(projectRoot, ConfigService.ConfigFileName);
@@ -108,7 +98,7 @@ public static class InitCommand
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
             ScaffoldProject(configService, config, configPath, projectRoot, integration);
-            PrintInitSummary(config, humanName, integration);
+            PrintInitSummary(humanName, integration);
 
             return ExitCodes.Success;
         }
@@ -141,7 +131,7 @@ public static class InitCommand
         Directory.CreateDirectory(dydoRoot);
 
         var scaffolder = new FolderScaffolder();
-        scaffolder.Scaffold(dydoRoot, config.Agents.Pool);
+        scaffolder.Scaffold(dydoRoot);
         FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
         configService.SaveConfig(config, configPath);
         Console.WriteLine($"  ✓ {config.Structure.Root}/ structure with workflows");
@@ -170,14 +160,8 @@ public static class InitCommand
         GenerateRoleFilesIfMissing(projectRoot);
     }
 
-    private static void PrintInitSummary(DydoConfig config, string humanName, string integration)
+    private static void PrintInitSummary(string humanName, string integration)
     {
-        Console.WriteLine();
-        var agentNamesList = string.Join(", ", config.Agents.Pool.Take(5));
-        if (config.Agents.Pool.Count > 5)
-            agentNamesList += $" ... ({config.Agents.Pool.Count} total)";
-
-        Console.WriteLine($"Agents assigned to {humanName}: {agentNamesList}");
         Console.WriteLine();
         Console.WriteLine("Documentation funnel created:");
         if (integration == "codex")
@@ -205,7 +189,11 @@ public static class InitCommand
             Console.WriteLine($"  {completionResult}");
     }
 
-    private static int ExecuteJoin(string integration, string? providedName, int? providedAgentCount)
+    // With the 26-agent roster gone (DR-041), "join" no longer assigns a pool of agents to a new
+    // human — there is no roster to draw from. It reduces to "wire up this machine's local
+    // integration for an already-initialized project" (a fresh clone, or adding a second
+    // integration): configure hooks + role files without re-scaffolding or overwriting the tree.
+    private static int ExecuteJoin(string integration, string? providedName)
     {
         if (!IsValidIntegration(integration))
             return IntegrationError(integration);
@@ -219,13 +207,6 @@ public static class InitCommand
             return ExitCodes.ToolError;
         }
 
-        var config = configService.LoadConfig();
-        if (config == null)
-        {
-            ConsoleOutput.WriteError($"Failed to load config from {configPath}");
-            return ExitCodes.ToolError;
-        }
-
         Console.WriteLine();
         Console.WriteLine("Joining DynaDocs project...");
         Console.WriteLine();
@@ -233,20 +214,36 @@ public static class InitCommand
         var humanName = ResolveHumanName(providedName);
         if (humanName == null) return ExitCodes.ToolError;
 
-        if (config.Agents.Assignments.ContainsKey(humanName))
-        {
-            var existingAgents = config.Agents.GetAgentsForHuman(humanName);
-            Console.WriteLine($"Human '{humanName}' is already a member with agents: {string.Join(", ", existingAgents)}");
-            return ExitCodes.Success;
-        }
-
-        var defaultCount = Math.Min(5, PresetAgentNames.MaxAgentCount - config.Agents.Pool.Count);
-        var agentCount = ResolveAgentCount(providedAgentCount, defaultCount);
-        if (agentCount < 0) return ExitCodes.ToolError;
-
         try
         {
-            PerformJoin(configService, config, configPath, integration, humanName, agentCount);
+            var projectRoot = Path.GetDirectoryName(configPath)!;
+
+            if (integration == "claude")
+            {
+                ConfigureClaudeHooks(projectRoot);
+                Console.WriteLine("  ✓ Claude Code hooks configured");
+            }
+
+            GenerateRoleFilesIfMissing(projectRoot);
+
+            if (integration == "codex")
+            {
+                WriteIfNotExists(
+                    Path.Combine(projectRoot, "AGENTS.md"),
+                    () => GenerateAgentsMd(Path.GetFileName(projectRoot)),
+                    "AGENTS.md (Codex entry point)");
+                ConfigureCodexHooks(projectRoot);
+                Console.WriteLine("  - Codex hooks configured");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Next steps:");
+            Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN=\"{humanName}\"");
+
+            var completionResult = ShellCompletionInstaller.Install();
+            if (completionResult != null)
+                Console.WriteLine($"  {completionResult}");
+
             return ExitCodes.Success;
         }
         catch (Exception ex)
@@ -254,57 +251,6 @@ public static class InitCommand
             ConsoleOutput.WriteError($"Error: {ex.Message}");
             return ExitCodes.ToolError;
         }
-    }
-
-    private static void PerformJoin(ConfigService configService, DydoConfig config,
-        string configPath, string integration, string humanName, int agentCount)
-    {
-        ConfigFactory.AddHuman(config, humanName, agentCount);
-
-        if (!config.Integrations.ContainsKey(integration) || !config.Integrations[integration])
-            config.Integrations[integration] = true;
-
-        configService.SaveConfig(config, configPath);
-
-        var projectRoot = Path.GetDirectoryName(configPath)!;
-        var assignedAgents = config.Agents.GetAgentsForHuman(humanName);
-
-        Console.WriteLine($"  ✓ Assigned {assignedAgents.Count} agents to {humanName}");
-        Console.WriteLine($"  ✓ Updated {ConfigService.ConfigFileName}");
-
-        var agentsPath = configService.GetAgentsPath();
-        foreach (var agent in assignedAgents)
-            Directory.CreateDirectory(Path.Combine(agentsPath, agent));
-        Console.WriteLine("  ✓ Created local workspaces");
-
-        if (integration == "claude")
-        {
-            ConfigureClaudeHooks(projectRoot);
-            Console.WriteLine("  ✓ Claude Code hooks configured");
-        }
-
-        GenerateRoleFilesIfMissing(projectRoot);
-
-        if (integration == "codex")
-        {
-            WriteIfNotExists(
-                Path.Combine(projectRoot, "AGENTS.md"),
-                () => GenerateAgentsMd(Path.GetFileName(projectRoot)),
-                "AGENTS.md (Codex entry point)");
-            ConfigureCodexHooks(projectRoot);
-            Console.WriteLine("  - Codex hooks configured");
-        }
-
-        Console.WriteLine();
-        Console.WriteLine($"Agents assigned to {humanName}: {string.Join(", ", assignedAgents)}");
-        Console.WriteLine();
-        Console.WriteLine("Next steps:");
-        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN=\"{humanName}\"");
-        Console.WriteLine("  2. Claim an agent: dydo agent claim auto");
-
-        var completionResult = ShellCompletionInstaller.Install();
-        if (completionResult != null)
-            Console.WriteLine($"  {completionResult}");
     }
 
     private static string? ResolveHumanName(string? providedName)
@@ -316,17 +262,6 @@ public static class InitCommand
             return null;
         }
         return name.Trim().ToLowerInvariant();
-    }
-
-    private static int ResolveAgentCount(int? providedCount, int defaultValue)
-    {
-        var agentCount = providedCount ?? PromptForInt($"Number of agents [{defaultValue}]: ", defaultValue);
-        if (agentCount < 1 || agentCount > PresetAgentNames.MaxAgentCount)
-        {
-            ConsoleOutput.WriteError($"Agent count must be between 1 and {PresetAgentNames.MaxAgentCount}.");
-            return -1;
-        }
-        return agentCount;
     }
 
     private static int IntegrationError(string integration)
@@ -588,19 +523,5 @@ public static class InitCommand
     {
         Console.Write(prompt);
         return Console.ReadLine() ?? string.Empty;
-    }
-
-    private static int PromptForInt(string prompt, int defaultValue)
-    {
-        Console.Write(prompt);
-        var input = Console.ReadLine();
-
-        if (string.IsNullOrWhiteSpace(input))
-            return defaultValue;
-
-        if (int.TryParse(input, out var value))
-            return value;
-
-        return defaultValue;
     }
 }

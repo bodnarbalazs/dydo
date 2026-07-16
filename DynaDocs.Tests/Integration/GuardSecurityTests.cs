@@ -13,7 +13,7 @@ public class GuardSecurityTests : IntegrationTestBase
 {
     private async Task SetupClaimedAgent(string agentName = "Adele", string role = "code-writer", string task = "test-task")
     {
-        await InitProjectAsync("none", "testuser", 3);
+        await InitProjectAsync("none", "testuser");
         await ReadMustReadsAsync();
     }
 
@@ -525,7 +525,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public async Task Issue64_IndirectDydo_BlockedEvenWithEmptyNudgeConfig()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Clear all nudges from config
         var configPath = Path.Combine(TestDir, "dydo", "dydo.json");

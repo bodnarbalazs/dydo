@@ -178,10 +178,8 @@ public static class ConfigFactory
         return true;
     }
 
-    public static DydoConfig CreateDefault(string humanName, int agentCount = 26)
+    public static DydoConfig CreateDefault()
     {
-        var agentNames = PresetAgentNames.GetNames(agentCount);
-
         return new DydoConfig
         {
             Version = 1,
@@ -189,14 +187,6 @@ public static class ConfigFactory
             {
                 Root = ConfigService.DefaultRoot,
                 Tasks = "project/tasks"
-            },
-            Agents = new AgentsConfig
-            {
-                Pool = agentNames,
-                Assignments = new Dictionary<string, List<string>>
-                {
-                    [humanName] = agentNames
-                }
             },
             Integrations = new Dictionary<string, bool>(),
             Nudges = DefaultNudges.Select(n => new NudgeConfig
@@ -285,30 +275,5 @@ public static class ConfigFactory
     {
         var existing = new HashSet<string>(config.ScanExclude, StringComparer.OrdinalIgnoreCase);
         return DydoInternalScanExclude.Where(e => !existing.Contains(e)).ToList();
-    }
-
-    public static void AddHuman(DydoConfig config, string humanName, int agentCount)
-    {
-        var assignedAgents = config.Agents.Assignments.Values
-            .SelectMany(a => a)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var availableAgents = config.Agents.Pool
-            .Where(a => !assignedAgents.Contains(a))
-            .ToList();
-
-        if (availableAgents.Count < agentCount)
-        {
-            var currentCount = config.Agents.Pool.Count;
-            var newAgents = PresetAgentNames.GetNames(currentCount + agentCount)
-                .Skip(currentCount)
-                .ToList();
-
-            config.Agents.Pool.AddRange(newAgents);
-            availableAgents.AddRange(newAgents);
-        }
-
-        var toAssign = availableAgents.Take(agentCount).ToList();
-        config.Agents.Assignments[humanName] = toAssign;
     }
 }

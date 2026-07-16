@@ -16,7 +16,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
     [Fact]
     public async Task Sync_Tier1Modes_EmitSkillOnly_NoCodexAgentRoleFiles()
     {
-        await InitProjectAsync("none", "testuser", 3);
+        await InitProjectAsync("none", "testuser");
 
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
@@ -48,7 +48,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
     [Fact]
     public async Task Sync_CodexWorkerAgents_OmitToolsField_KeepAcceptedFields()
     {
-        await InitProjectAsync("none", "testuser", 3);
+        await InitProjectAsync("none", "testuser");
 
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();

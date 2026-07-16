@@ -128,7 +128,6 @@ public class ConfigServiceTests : IDisposable
         {
             Version = 2,
             Structure = new StructureConfig { Root = "dydo" },
-            Agents = new AgentsConfig(),
             Integrations = new Dictionary<string, bool>()
         };
 

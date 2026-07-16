@@ -102,12 +102,11 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> InitProjectAsync(
         string integration = "none",
-        string humanName = "testuser",
-        int agentCount = 3)
+        string humanName = "testuser")
     {
         SetHuman(humanName);
         var command = InitCommand.Create();
-        return await RunAsync(command, integration, "--name", humanName, "--agents", agentCount.ToString());
+        return await RunAsync(command, integration, "--name", humanName);
     }
 
     /// <summary>
@@ -115,11 +114,10 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> JoinProjectAsync(
         string integration = "none",
-        string humanName = "alice",
-        int agentCount = 2)
+        string humanName = "alice")
     {
         var command = InitCommand.Create();
-        return await RunAsync(command, integration, "--join", "--name", humanName, "--agents", agentCount.ToString());
+        return await RunAsync(command, integration, "--join", "--name", humanName);
     }
 
     // Test session ID for integration tests

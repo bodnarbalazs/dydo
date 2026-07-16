@@ -24,9 +24,6 @@ public class DydoConfig
     [JsonPropertyName("paths")]
     public PathsConfig Paths { get; set; } = new();
 
-    [JsonPropertyName("agents")]
-    public AgentsConfig Agents { get; set; } = new();
-
     [JsonPropertyName("integrations")]
     public Dictionary<string, bool> Integrations { get; set; } = new();
 

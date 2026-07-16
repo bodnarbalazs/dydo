@@ -8,24 +8,15 @@ public class ConfigFactoryTests
     [Fact]
     public void CreateDefault_SetsVersion1()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
 
         Assert.Equal(1, config.Version);
     }
 
     [Fact]
-    public void CreateDefault_AssignsAllAgentsToHuman()
-    {
-        var config = ConfigFactory.CreateDefault("alice", 5);
-
-        Assert.Equal(5, config.Agents.Pool.Count);
-        Assert.Equal(5, config.Agents.Assignments["alice"].Count);
-    }
-
-    [Fact]
     public void CreateDefault_UsesDefaultRoot()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
 
         Assert.Equal("dydo", config.Structure.Root);
     }
@@ -43,7 +34,7 @@ public class ConfigFactoryTests
     [Fact]
     public void UpgradeLegacyOpenAiTierDefaults_PreservesCustomizedTiers()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
         config.Models!.Tiers["openai"]["strong"] = "custom-strong";
 
         var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
@@ -55,7 +46,7 @@ public class ConfigFactoryTests
     [Fact]
     public void UpgradeLegacyOpenAiTierDefaults_EmptyDisplayNames_RemainsEmptyAndUsesShippedDefaults()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
         config.Models!.Tiers["openai"] = new Dictionary<string, string>
         {
             ["strong"] = "gpt-5.5",
@@ -73,7 +64,7 @@ public class ConfigFactoryTests
     [Fact]
     public void UpgradeLegacyOpenAiTierDefaults_NonEmptyDisplayNames_AddsOpenAiNamesAndPreservesCustomEntries()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
         config.Models!.Tiers["openai"] = new Dictionary<string, string>
         {
             ["strong"] = "gpt-5.5",
@@ -92,52 +83,9 @@ public class ConfigFactoryTests
     }
 
     [Fact]
-    public void AddHuman_AssignsAvailableAgents()
-    {
-        var config = ConfigFactory.CreateDefault("alice", 5);
-        ConfigFactory.AddHuman(config, "bob", 3);
-
-        Assert.True(config.Agents.Assignments.ContainsKey("bob"));
-    }
-
-    [Fact]
-    public void AddHuman_ExpandsPool_WhenNotEnoughAvailable()
-    {
-        var config = ConfigFactory.CreateDefault("alice", 3);
-        var originalPoolSize = config.Agents.Pool.Count;
-
-        ConfigFactory.AddHuman(config, "bob", 5);
-
-        Assert.True(config.Agents.Pool.Count > originalPoolSize);
-        Assert.Equal(5, config.Agents.Assignments["bob"].Count);
-    }
-
-    [Fact]
-    public void AddHuman_UsesUnassignedAgentsFirst()
-    {
-        var config = new DydoConfig
-        {
-            Agents = new AgentsConfig
-            {
-                Pool = ["Adele", "Brian", "Charlie", "Dexter"],
-                Assignments = new Dictionary<string, List<string>>
-                {
-                    ["alice"] = ["Adele", "Brian"]
-                }
-            }
-        };
-
-        ConfigFactory.AddHuman(config, "bob", 2);
-
-        var bobAgents = config.Agents.Assignments["bob"];
-        Assert.Contains("Charlie", bobAgents);
-        Assert.Contains("Dexter", bobAgents);
-    }
-
-    [Fact]
     public void CreateDefault_IncludesDefaultNudges()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
 
         Assert.NotEmpty(config.Nudges);
         Assert.Equal(ConfigFactory.DefaultNudges.Count, config.Nudges.Count);
@@ -147,7 +95,7 @@ public class ConfigFactoryTests
     [Fact]
     public void CreateDefault_NudgesAreDeepCopied()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
         var originalMessage = ConfigFactory.DefaultNudges[0].Message;
 
         config.Nudges[0].Message = "mutated";
@@ -169,7 +117,7 @@ public class ConfigFactoryTests
     [Fact]
     public void EnsureDefaultNudges_SkipsAlreadyPresent()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
         var originalCount = config.Nudges.Count;
 
         var added = ConfigFactory.EnsureDefaultNudges(config);
@@ -196,7 +144,7 @@ public class ConfigFactoryTests
     [Fact]
     public void CreateDefault_IncludesDefaultQueues()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
 
         Assert.Contains("merge", config.Queues);
     }
@@ -215,7 +163,7 @@ public class ConfigFactoryTests
     [Fact]
     public void EnsureDefaultQueues_SkipsAlreadyPresent()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
 
         var added = ConfigFactory.EnsureDefaultQueues(config);
 
@@ -284,7 +232,7 @@ public class ConfigFactoryTests
     [Fact]
     public void DefaultNudges_UntilLoopNudge_IsIdempotent_InEnsureDefaultNudges()
     {
-        var config = ConfigFactory.CreateDefault("alice");
+        var config = ConfigFactory.CreateDefault();
         var firstCount = config.Nudges.Count(n => n.Pattern == @"\buntil\s+\[");
 
         var added = ConfigFactory.EnsureDefaultNudges(config);

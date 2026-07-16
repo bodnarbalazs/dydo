@@ -16,7 +16,6 @@ Index of guides documentation.
 - [Coding Standards](./coding-standards.md) - Rules and conventions for writing code in this project.
 - [Customizing Roles](./customizing-roles.md) - How to create custom roles, modify permission sets, and extend the role system.
 - [Getting Started](./getting-started.md) - First-time setup walkthrough: install dydo, initialize a project, and run your first agent session.
-- [How to Merge Worktrees](./how-to-merge-worktrees.md) - You have a `.
 - [How to Review Worktree Merges](./how-to-review-worktree-merges.md) - You are reviewing a merge task.
 - [How to Use These Docs](./how-to-use-docs.md) - This documentation is designed to be navigated by AI agents.
 - [Orchestration Pitfalls](./orchestration-pitfalls.md) - Field-tested failure modes of multi-agent work on this repo — worktree isolation, workflow invocation, and the shared working tree.

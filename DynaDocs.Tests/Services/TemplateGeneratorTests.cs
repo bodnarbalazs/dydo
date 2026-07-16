@@ -1,6 +1,5 @@
 namespace DynaDocs.Tests.Services;
 
-using System.Reflection;
 using DynaDocs.Services;
 
 public class TemplateGeneratorTests
@@ -11,7 +10,7 @@ public class TemplateGeneratorTests
     public void ReadBuiltInTemplate_ReadsFromEmbeddedResources()
     {
         // This should work even without a Templates folder on disk
-        var content = TemplateGenerator.ReadBuiltInTemplate("agent-workflow.template.md");
+        var content = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
 
         Assert.NotEmpty(content);
         Assert.Contains("{{AGENT_NAME}}", content);
@@ -27,7 +26,6 @@ public class TemplateGeneratorTests
     }
 
     [Theory]
-    [InlineData("agent-workflow.template.md")]
     [InlineData("mode-code-writer.template.md")]
     [InlineData("mode-reviewer.template.md")]
     [InlineData("mode-co-thinker.template.md")]
@@ -51,9 +49,9 @@ public class TemplateGeneratorTests
         var assembly = typeof(TemplateGenerator).Assembly;
         var resourceNames = assembly.GetManifestResourceNames();
 
-        // Verify templates are embedded
-        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("agent-workflow"));
+        // Verify templates are embedded. The mode templates are the source `dydo sync` compiles.
         Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-code-writer"));
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("index.template"));
     }
 
     [Fact]
@@ -72,105 +70,12 @@ public class TemplateGeneratorTests
     public void EmbeddedTemplates_HaveExpectedContent()
     {
         // Verify specific content to ensure templates aren't empty or corrupted
-        var workflowTemplate = TemplateGenerator.ReadBuiltInTemplate("agent-workflow.template.md");
-        Assert.Contains("{{AGENT_NAME}}", workflowTemplate);
-        Assert.Contains("dydo agent claim", workflowTemplate);
-        Assert.Contains("Bash tool", workflowTemplate);
-        Assert.Contains("dydo wait", workflowTemplate);
-        Assert.Contains("must-reads", workflowTemplate);
-        // Verify the workflow STEPS appear in order: claim (Bash tool) -> set role -> wait -> must-reads.
-        // "dydo wait" may also appear in the preamble guidance, so anchor its search to the step context
-        // (after "Set your role") rather than the first occurrence in the document.
-        var bashIdx = workflowTemplate.IndexOf("Bash tool", StringComparison.Ordinal);
-        var roleIdx = workflowTemplate.IndexOf("Set your role", StringComparison.Ordinal);
-        var waitIdx = workflowTemplate.IndexOf("dydo wait", roleIdx, StringComparison.Ordinal);
-        var mustReadsIdx = workflowTemplate.IndexOf("must-reads", StringComparison.Ordinal);
-        Assert.True(bashIdx < roleIdx && roleIdx < waitIdx && waitIdx < mustReadsIdx);
-
         var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
         Assert.Contains("{{AGENT_NAME}}", codeWriterTemplate);
         Assert.Contains("code-writer", codeWriterTemplate);
     }
 
     #endregion
-
-    [Fact]
-    public void GetModeNames_ReturnsAllBaseModes()
-    {
-        var modes = TemplateGenerator.GetModeNames();
-
-        Assert.Equal(7, modes.Count);
-        Assert.Contains("code-writer", modes);
-        Assert.Contains("reviewer", modes);
-        Assert.Contains("co-thinker", modes);
-        Assert.Contains("chief-of-staff", modes);
-        Assert.Contains("docs-writer", modes);
-        Assert.Contains("test-writer", modes);
-        Assert.Contains("orchestrator", modes);
-        // planner is skill-only and sprint-auditor is workflow-only: no per-agent mode files.
-        Assert.DoesNotContain("planner", modes);
-        Assert.DoesNotContain("sprint-auditor", modes);
-        Assert.DoesNotContain("inquisitor", modes);
-        Assert.DoesNotContain("judge", modes);
-    }
-
-    [Fact]
-    public void GenerateModeFile_ReplacesAgentNamePlaceholder()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "code-writer");
-
-        Assert.Contains("Adele", content);
-        Assert.DoesNotContain("{{AGENT_NAME}}", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_CodeWriter_ContainsMustReads()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "code-writer");
-
-        Assert.Contains("about.md", content);
-        Assert.Contains("architecture.md", content);
-        Assert.Contains("coding-standards.md", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_Reviewer_HasWorkspaceOnlyGuidance()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "reviewer");
-
-        Assert.Contains("Adele", content);
-        Assert.Contains("workspace only", content.ToLowerInvariant());
-        Assert.Contains("cannot edit source code", content.ToLowerInvariant());
-    }
-
-    [Fact]
-    public void GenerateModeFile_TestWriter_IncludesCodingStandards()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "test-writer");
-
-        Assert.Contains("about.md", content);
-        Assert.Contains("architecture.md", content);
-        Assert.Contains("coding-standards.md", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_DocsWriter_ContainsDocsGuidance()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "docs-writer");
-
-        Assert.Contains("about.md", content);
-        Assert.Contains("how-to-use-docs.md", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_UnknownMode_ReturnsFallback()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "unknown-mode");
-
-        // Should still generate something
-        Assert.Contains("Adele", content);
-        Assert.Contains("unknown-mode", content);
-    }
 
     [Fact]
     public void GenerateAboutMd_ContainsPlaceholders()
@@ -193,52 +98,12 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateWorkflowFile_ContainsAgentName()
+    public void GenerateIndexMd_ReturnsIndexTemplateContent()
     {
-        var content = TemplateGenerator.GenerateWorkflowFile("Adele");
+        var content = TemplateGenerator.GenerateIndexMd();
 
-        Assert.Contains("Adele", content);
-        Assert.DoesNotContain("{{AGENT_NAME}}", content);
-    }
-
-    [Fact]
-    public void GenerateWorkflowFile_LinksToModeFiles()
-    {
-        var content = TemplateGenerator.GenerateWorkflowFile("Adele");
-
-        Assert.Contains("modes/code-writer.md", content);
-        Assert.Contains("modes/co-thinker.md", content);
-        Assert.Contains("modes/reviewer.md", content);
-        Assert.Contains("modes/docs-writer.md", content);
-        Assert.Contains("modes/test-writer.md", content);
-        // planner is skill-only: it is not listed as a claimable mode.
-        Assert.DoesNotContain("modes/planner.md", content);
-    }
-
-    [Fact]
-    public void GenerateWorkflowFile_HasWorkflowFlags()
-    {
-        var content = TemplateGenerator.GenerateWorkflowFile("Adele");
-
-        Assert.Contains("--inbox", content);
-    }
-
-    [Fact]
-    public void GenerateWorkflowFile_HasClaimCommand()
-    {
-        var content = TemplateGenerator.GenerateWorkflowFile("Adele");
-
-        Assert.Contains("dydo agent claim Adele", content);
-    }
-
-    [Fact]
-    public void GenerateIndexMd_ContainsAgentPath()
-    {
-        var agentNames = new List<string> { "Adele", "Brian" };
-        var content = TemplateGenerator.GenerateIndexMd(agentNames);
-
-        Assert.Contains("agents/", content);
-        Assert.Contains("workflow.md", content);
+        Assert.StartsWith("---", content);
+        Assert.Contains("DynaDocs", content);
     }
 
     [Fact]
@@ -289,117 +154,6 @@ public class TemplateGeneratorTests
         Assert.Contains("Writing Documentation", content);
         Assert.Contains("Frontmatter", content);
         Assert.Contains("Naming Conventions", content);
-    }
-
-    [Theory]
-    [InlineData("code-writer")]
-    [InlineData("reviewer")]
-    [InlineData("co-thinker")]
-    [InlineData("docs-writer")]
-    [InlineData("test-writer")]
-    [InlineData("orchestrator")]
-    public void GenerateModeFile_AllModes_HaveValidFrontmatter(string mode)
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
-
-        Assert.StartsWith("---", content);
-        Assert.Contains("agent: TestAgent", content);
-        Assert.Contains($"mode: {mode}", content);
-    }
-
-    [Theory]
-    [InlineData("code-writer", "Set Role")]
-    [InlineData("reviewer", "Set Role")]
-    [InlineData("co-thinker", "Set Role")]
-    [InlineData("docs-writer", "Set Role")]
-    [InlineData("test-writer", "Set Role")]
-    [InlineData("orchestrator", "Set Role")]
-    public void GenerateModeFile_AllModes_HaveSetRoleSection(string mode, string expectedSection)
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
-
-        Assert.Contains(expectedSection, content);
-        Assert.Contains($"dydo agent role {mode}", content);
-    }
-
-    [Theory]
-    [InlineData("code-writer")]
-    [InlineData("reviewer")]
-    [InlineData("co-thinker")]
-    [InlineData("docs-writer")]
-    [InlineData("test-writer")]
-    [InlineData("orchestrator")]
-    public void GenerateModeFile_AllModes_RegisterGeneralWaitStep(string mode)
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
-
-        Assert.Contains("Register General Wait", content);
-        Assert.Contains("dydo wait", content);
-    }
-
-    [Theory]
-    [InlineData("code-writer")]
-    [InlineData("reviewer")]
-    [InlineData("co-thinker")]
-    [InlineData("docs-writer")]
-    [InlineData("test-writer")]
-    [InlineData("orchestrator")]
-    public void GenerateModeFile_AllModes_GeneralWaitStepFollowsRoleStep(string mode)
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
-
-        var roleIdx = content.IndexOf($"dydo agent role {mode}", StringComparison.Ordinal);
-        var generalWaitIdx = content.IndexOf("Register General Wait", StringComparison.Ordinal);
-        var verifyIdx = content.IndexOf("## Verify", StringComparison.Ordinal);
-
-        Assert.True(roleIdx >= 0, "role command must be present");
-        Assert.True(generalWaitIdx > roleIdx, "Register General Wait must follow the role step");
-        Assert.True(verifyIdx > generalWaitIdx, "Verify section must follow Register General Wait");
-    }
-
-    [Fact]
-    public void GenerateModeFile_Orchestrator_DropsPerTaskWaitFromDispatch()
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", "orchestrator");
-
-        Assert.DoesNotContain("dydo wait --task <sub-task>", content);
-        Assert.DoesNotContain("Each dispatched task gets its own background wait", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_Orchestrator_DropsKeepGeneralWaitOpenSubsection()
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", "orchestrator");
-
-        Assert.DoesNotContain("Keep a general wait open", content);
-    }
-
-    [Fact]
-    public void GenerateModeFile_Orchestrator_DoesNotReferenceRemovedDispatchFlags()
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", "orchestrator");
-
-        // The slimmed dispatch has no --wait/--no-wait/--worktree/--queue flags.
-        Assert.DoesNotContain("--wait", content);
-        Assert.DoesNotContain("--no-wait", content);
-        Assert.DoesNotContain("--worktree", content);
-        Assert.DoesNotContain("--queue", content);
-        // It still teaches the slimmed dispatch.
-        Assert.Contains("dydo dispatch", content);
-    }
-
-    [Theory]
-    [InlineData("code-writer")]
-    [InlineData("reviewer")]
-    [InlineData("docs-writer")]
-    public void GenerateModeFile_DispatchedRoles_DoNotPinRemovedWaitReleaseNote(string mode)
-    {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
-
-        // The dispatch-wait release-block was removed; guidance must not reference --wait.
-        Assert.DoesNotContain("if your dispatcher used `--wait`", content);
-        Assert.DoesNotContain("--wait", content);
-        Assert.DoesNotContain("--no-wait", content);
     }
 
     #region Asset Tests
@@ -576,7 +330,7 @@ public class TemplateGeneratorTests
     {
         // These meta files should NOT reference templates in _system/templates/
         // because changelog/decision/pitfall templates are not copied there
-        // (only agent-workflow and mode-* templates are copied)
+        // (only mode-* templates are copied)
 
         var changelog = TemplateGenerator.GenerateChangelogMetaMd();
         Assert.DoesNotContain("_system/templates/", changelog);
@@ -669,138 +423,7 @@ public class TemplateGeneratorTests
 
     #endregion
 
-    #region Role Table Tests
-
-    [Fact]
-    public void GenerateRoleTable_WithNullBasePath_FallsBackToBaseDefinitions()
-    {
-        var table = TemplateGenerator.GenerateRoleTable(null);
-
-        Assert.Contains("| Role | Purpose | Mode File |", table);
-        Assert.Contains("|------|---------|-----------|", table);
-        Assert.Contains("code-writer", table);
-        Assert.Contains("reviewer", table);
-        Assert.Contains("co-thinker", table);
-        Assert.Contains("docs-writer", table);
-        Assert.Contains("test-writer", table);
-        Assert.Contains("orchestrator", table);
-        // planner is skill-only: it is not a claimable role in the role table.
-        Assert.DoesNotContain("planner", table);
-        Assert.DoesNotContain("inquisitor", table);
-        Assert.DoesNotContain("judge", table);
-    }
-
-    [Fact]
-    public void GenerateRoleTable_FallbackTable_HasModeFileLinks()
-    {
-        var table = TemplateGenerator.GenerateRoleTable(null);
-
-        Assert.Contains("[modes/code-writer.md](modes/code-writer.md)", table);
-        Assert.Contains("[modes/reviewer.md](modes/reviewer.md)", table);
-        Assert.DoesNotContain("[modes/planner.md](modes/planner.md)", table);
-    }
-
-    [Fact]
-    public void GenerateRoleTable_FallbackTable_IncludesDescriptions()
-    {
-        var table = TemplateGenerator.GenerateRoleTable(null);
-
-        Assert.Contains("Implements features and fixes bugs", table);
-        Assert.Contains("Reviews code changes", table);
-    }
-
-    [Fact]
-    public void GenerateRoleTable_FallbackTable_IsSortedAlphabetically()
-    {
-        var table = TemplateGenerator.GenerateRoleTable(null);
-        var lines = table.Split('\n').Skip(2).ToList(); // Skip header rows
-
-        var roleNames = lines.Select(l => l.Split('|')[1].Trim()).ToList();
-        var sorted = roleNames.OrderBy(n => n, StringComparer.Ordinal).ToList();
-
-        Assert.Equal(sorted, roleNames);
-    }
-
-    [Fact]
-    public void GenerateRoleTable_WithRoleFiles_LoadsFromDisk()
-    {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
-        var rolesDir = Path.Combine(tempDir, "_system", "roles");
-        Directory.CreateDirectory(rolesDir);
-
-        try
-        {
-            var roleJson = """
-                {
-                    "name": "custom-role",
-                    "description": "A custom test role.",
-                    "base": false,
-                    "writablePaths": ["src/**"],
-                    "readOnlyPaths": [],
-                    "templateFile": "mode-custom-role.template.md",
-                    "constraints": []
-                }
-                """;
-            File.WriteAllText(Path.Combine(rolesDir, "custom-role.role.json"), roleJson);
-
-            var table = TemplateGenerator.GenerateRoleTable(tempDir);
-
-            Assert.Contains("custom-role", table);
-            Assert.Contains("A custom test role.", table);
-            Assert.Contains("[modes/custom-role.md](modes/custom-role.md)", table);
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Fact]
-    public void GenerateRoleTable_WithEmptyRolesDir_FallsBackToBaseDefinitions()
-    {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
-        var rolesDir = Path.Combine(tempDir, "_system", "roles");
-        Directory.CreateDirectory(rolesDir);
-
-        try
-        {
-            var table = TemplateGenerator.GenerateRoleTable(tempDir);
-
-            // Falls back to base definitions
-            Assert.Contains("code-writer", table);
-            Assert.Contains("reviewer", table);
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Fact]
-    public void GenerateWorkflowFile_ContainsRoleTableNotPlaceholder()
-    {
-        var content = TemplateGenerator.GenerateWorkflowFile("Adele");
-
-        Assert.DoesNotContain("{{ROLE_TABLE}}", content);
-        Assert.Contains("| Role | Purpose | Mode File |", content);
-        Assert.Contains("code-writer", content);
-    }
-
-    #endregion
-
-    #region Fallback and Uncovered Method Tests
-
-    [Fact]
-    public void GenerateAgentStatesMd_ReturnsValidContent()
-    {
-        var agents = new List<string> { "Alpha", "Beta", "Gamma" };
-        var content = TemplateGenerator.GenerateAgentStatesMd(agents);
-
-        Assert.NotEmpty(content);
-        Assert.Contains("Alpha", content);
-        Assert.Contains("Beta", content);
-        Assert.Contains("Gamma", content);
-    }
+    #region Hub and Fallback Tests
 
     [Fact]
     public void GenerateHubIndex_ReturnsValidContent()
@@ -838,80 +461,6 @@ public class TemplateGeneratorTests
         var content = TemplateGenerator.GenerateProjectSubfolderHub("changelog", "Change history");
 
         Assert.Contains("# Changelog", content);
-    }
-
-    [Fact]
-    public void GenerateJitiIndexMd_ReturnsValidContent()
-    {
-        var agents = new List<string> { "Alpha", "Beta" };
-        var workflowLinks = "- [Alpha](agents/Alpha/workflow.md)\n- [Beta](agents/Beta/workflow.md)";
-        var content = TemplateGenerator.GenerateJitiIndexMd(agents, workflowLinks);
-
-        Assert.Contains("# DynaDocs", content);
-        Assert.Contains("Alpha", content);
-        Assert.Contains("Beta", content);
-        Assert.Contains("agents/Alpha/workflow.md", content);
-        Assert.Contains("area: general", content);
-        Assert.Contains("type: hub", content);
-        Assert.Contains("dydo agent claim", content);
-        Assert.Contains("dydo check", content);
-    }
-
-    [Fact]
-    public void GenerateJitiIndexMd_HasDocumentationStructure()
-    {
-        var agents = new List<string> { "TestAgent" };
-        var links = "- [TestAgent](agents/TestAgent/workflow.md)";
-        var content = TemplateGenerator.GenerateJitiIndexMd(agents, links);
-
-        Assert.Contains("## Documentation Structure", content);
-        Assert.Contains("understand/", content);
-        Assert.Contains("guides/", content);
-        Assert.Contains("reference/", content);
-        Assert.Contains("project/", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackWorkflowFile_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackWorkflowFile(
-            "TestAgent", ["src/**"], ["tests/**"]);
-
-        Assert.Contains("# Workflow — TestAgent", content);
-        Assert.Contains("agent: TestAgent", content);
-        Assert.Contains("dydo agent claim TestAgent", content);
-        Assert.Contains("`src/**`", content);
-        Assert.Contains("`tests/**`", content);
-        Assert.Contains("## Must-Read Documents", content);
-        Assert.Contains("## Setting Your Role", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackWorkflowFile_IncludesAllRoles()
-    {
-        var content = TemplateGenerator.GenerateFallbackWorkflowFile(
-            "Alpha", ["Commands/**"], ["DynaDocs.Tests/**"]);
-
-        Assert.Contains("code-writer", content);
-        Assert.Contains("reviewer", content);
-        Assert.Contains("co-thinker", content);
-        Assert.Contains("docs-writer", content);
-        Assert.Contains("test-writer", content);
-        // planner is skill-only: it is not listed as a claimable role.
-        Assert.DoesNotContain("planner", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackWorkflowFile_HasQuickReference()
-    {
-        var content = TemplateGenerator.GenerateFallbackWorkflowFile(
-            "Bravo", ["src/**"], ["tests/**"]);
-
-        Assert.Contains("## Quick Reference", content);
-        Assert.Contains("dydo whoami", content);
-        Assert.Contains("dydo agent release", content);
-        Assert.Contains("dydo inbox show", content);
-        Assert.Contains("dydo dispatch", content);
     }
 
     [Fact]
@@ -973,61 +522,6 @@ public class TemplateGeneratorTests
         Assert.Contains("## Key Reference Documents", content);
     }
 
-    [Theory]
-    [InlineData("code-writer", "implement code")]
-    [InlineData("reviewer", "review code and provide feedback")]
-    [InlineData("co-thinker", "think through problems collaboratively")]
-    [InlineData("docs-writer", "write documentation")]
-    [InlineData("test-writer", "write tests and report issues")]
-    public void GenerateFallbackModeFile_KnownModes_HaveCorrectDescription(string modeName, string expectedDesc)
-    {
-        var content = TemplateGenerator.GenerateFallbackModeFile(
-            "TestAgent", modeName, ["src/**"], ["tests/**"]);
-
-        Assert.Contains(expectedDesc, content);
-        Assert.Contains($"agent: TestAgent", content);
-        Assert.Contains($"mode: {modeName}", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackModeFile_UnknownMode_UsesGenericDescription()
-    {
-        var content = TemplateGenerator.GenerateFallbackModeFile(
-            "Alpha", "unknown-mode", ["src/**"], ["tests/**"]);
-
-        Assert.Contains("complete your assigned work", content);
-        Assert.Contains("(check with dydo agent status)", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackModeFile_HasMustReadsAndSetRole()
-    {
-        var content = TemplateGenerator.GenerateFallbackModeFile(
-            "Alpha", "code-writer", ["Commands/**"], ["Tests/**"]);
-
-        Assert.Contains("## Must-Reads", content);
-        Assert.Contains("about.md", content);
-        Assert.Contains("architecture.md", content);
-        Assert.Contains("## Set Role", content);
-        Assert.Contains("dydo agent role code-writer", content);
-        Assert.Contains("## Verify", content);
-        Assert.Contains("dydo agent status", content);
-    }
-
-    [Theory]
-    [InlineData("code-writer")]
-    [InlineData("reviewer")]
-    [InlineData("co-thinker")]
-    [InlineData("docs-writer")]
-    [InlineData("test-writer")]
-    public void GenerateFallbackModeFile_AllKnownModes_HaveEditPermissions(string modeName)
-    {
-        var content = TemplateGenerator.GenerateFallbackModeFile(
-            "TestAgent", modeName, ["src/**"], ["tests/**"]);
-
-        Assert.Contains("You can edit:", content);
-    }
-
     [Fact]
     public void GenerateFallbackFilesOffLimitsMd_ReturnsValidContent()
     {
@@ -1084,15 +578,12 @@ public class TemplateGeneratorTests
         Assert.Contains("type: reference", content);
         Assert.Contains("## Setup Commands", content);
         Assert.Contains("## Documentation Commands", content);
-        Assert.Contains("## Agent Commands", content);
         Assert.Contains("## Task Commands", content);
         Assert.Contains("## Workflow Commands", content);
         Assert.Contains("dydo init", content);
         Assert.Contains("dydo check", content);
-        Assert.Contains("dydo agent claim", content);
         Assert.Contains("dydo task create", content);
         Assert.Contains("dydo task done", content);
-        Assert.Contains("dydo dispatch", content);
         Assert.DoesNotContain("dydo task approve", content);
         Assert.DoesNotContain("dydo task reject", content);
         Assert.DoesNotContain("dydo audit", content);
@@ -1140,19 +631,6 @@ public class TemplateGeneratorTests
         Assert.Contains("code-writer", content);
         Assert.Contains("reviewer", content);
         Assert.Contains("github.com/bodnarbalazs/dydo", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackAgentStatesMd_ReturnsValidContent()
-    {
-        var rows = "| Alpha | free | - | - | - |\n| Beta | free | - | - | - |";
-        var content = TemplateGenerator.GenerateFallbackAgentStatesMd(rows);
-
-        Assert.Contains("# Agent States", content);
-        Assert.Contains("Alpha", content);
-        Assert.Contains("Beta", content);
-        Assert.Contains("## Pending Inbox", content);
-        Assert.Contains("last-updated:", content);
     }
 
     #endregion

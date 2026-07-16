@@ -17,7 +17,6 @@ public class TemplateOverrideTests : IntegrationTestBase
         await InitProjectAsync();
 
         AssertDirectoryExists("dydo/_system/templates");
-        AssertFileExists("dydo/_system/templates/agent-workflow.template.md");
         AssertFileExists("dydo/_system/templates/mode-code-writer.template.md");
         AssertFileExists("dydo/_system/templates/mode-reviewer.template.md");
         AssertFileExists("dydo/_system/templates/mode-co-thinker.template.md");
@@ -32,8 +31,8 @@ public class TemplateOverrideTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var copiedContent = ReadFile("dydo/_system/templates/agent-workflow.template.md");
-        var builtInContent = TemplateGenerator.ReadBuiltInTemplate("agent-workflow.template.md");
+        var copiedContent = ReadFile("dydo/_system/templates/mode-code-writer.template.md");
+        var builtInContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
 
         Assert.Equal(builtInContent, copiedContent);
     }
@@ -41,15 +40,15 @@ public class TemplateOverrideTests : IntegrationTestBase
     [Fact]
     public async Task Join_DoesNotOverwriteExistingTemplates()
     {
-        await InitProjectAsync("none", "testuser", 3);
+        await InitProjectAsync("none", "testuser");
 
         // Modify a template
-        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/agent-workflow.template.md");
+        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/mode-code-writer.template.md");
         var customContent = "<!-- CUSTOM_CONTENT_PRESERVED -->\nCustom template";
         File.WriteAllText(templatePath, customContent);
 
         // Join as another user
-        await JoinProjectAsync("none", "alice", 0);
+        await JoinProjectAsync("none", "alice");
 
         // Verify custom template was NOT overwritten
         var contentAfterJoin = File.ReadAllText(templatePath);
@@ -61,7 +60,6 @@ public class TemplateOverrideTests : IntegrationTestBase
     {
         var templateNames = TemplateGenerator.GetAllTemplateNames();
 
-        Assert.Contains("agent-workflow.template.md", templateNames);
         Assert.Contains("mode-code-writer.template.md", templateNames);
         Assert.Contains("mode-reviewer.template.md", templateNames);
         Assert.Contains("mode-planner.template.md", templateNames);
@@ -70,15 +68,16 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.DoesNotContain("mode-inquisitor.template.md", templateNames);
         Assert.DoesNotContain("mode-judge.template.md", templateNames);
 
-        // 10 total: 1 workflow + 9 modes (planner and sprint-auditor kept as skill/agent
-        // sources; chief-of-staff added per Decision 026 §3; inquisitor/judge dropped)
-        Assert.Equal(10, templateNames.Count);
+        // 9 mode templates — the compiler's role sources (planner and sprint-auditor kept as
+        // skill/agent sources; chief-of-staff added per Decision 026 §3; inquisitor/judge
+        // dropped). The per-agent agent-workflow.template.md was removed with the roster (DR-041).
+        Assert.Equal(9, templateNames.Count);
     }
 
     [Fact]
     public void ReadBuiltInTemplate_ReturnsTemplateContent()
     {
-        var content = TemplateGenerator.ReadBuiltInTemplate("agent-workflow.template.md");
+        var content = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
 
         Assert.NotEmpty(content);
         Assert.Contains("{{AGENT_NAME}}", content);
@@ -165,14 +164,14 @@ public class TemplateOverrideTests : IntegrationTestBase
     [Fact]
     public async Task Join_DoesNotOverwriteExistingAdditions()
     {
-        await InitProjectAsync("none", "testuser", 3);
+        await InitProjectAsync("none", "testuser");
 
         // Create a custom addition
         var additionsPath = Path.Combine(TestDir, "dydo/_system/template-additions");
         File.WriteAllText(Path.Combine(additionsPath, "custom-step.md"), "Custom content");
 
         // Join as another user
-        await JoinProjectAsync("none", "alice", 0);
+        await JoinProjectAsync("none", "alice");
 
         // Verify custom addition was NOT deleted
         Assert.True(File.Exists(Path.Combine(additionsPath, "custom-step.md")));

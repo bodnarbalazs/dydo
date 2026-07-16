@@ -53,7 +53,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Check_ReportsIssues_WhenPresent()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a doc with a broken link to trigger an error
         WriteFile("dydo/guides/test-broken.md", """
@@ -78,7 +78,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Check_InvalidFrontmatter_ReportsErrors()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a doc without frontmatter
         WriteFile("dydo/guides/bad-doc.md", "# Bad Doc\n\nNo frontmatter here.");
@@ -122,7 +122,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Check_BrokenLinks_ReportsErrors()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a doc with a broken link
         WriteFile("dydo/guides/broken-links.md", """
@@ -160,7 +160,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_RenamesNonKebabCase()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a doc with non-kebab-case name
         WriteFile("dydo/guides/BadName.md", """
@@ -184,7 +184,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_CreatesMissingHubFiles()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a subfolder without _index.md
         WriteFile("dydo/guides/tutorials/first.md", """
@@ -207,7 +207,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_ReportsManualFixNeeded()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a doc without frontmatter (can't be auto-fixed)
         WriteFile("dydo/guides/needs-manual.md", "# Needs Manual Fix\n\nNo frontmatter.");
@@ -222,7 +222,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_HubFiles_ContainActualLinks()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a subfolder with docs but no hub
         WriteFile("dydo/guides/tutorials/getting-started.md", """
@@ -250,7 +250,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_HubFiles_SortsLinksAlphabetically()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create multiple docs - they should be sorted alphabetically by title
         WriteFile("dydo/guides/tutorials/zebra.md", """
@@ -289,7 +289,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_HubFiles_FallsBackToFilenameWhenNoTitle()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a doc without a # title heading
         WriteFile("dydo/guides/tutorials/user-authentication.md", """
@@ -313,7 +313,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_HubFiles_ShowsLinkCountInOutput()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         WriteFile("dydo/guides/tutorials/doc1.md", """
             ---
@@ -346,7 +346,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_HubFiles_ExcludesIndexFiles()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Create a folder that already has index.md (not _index.md)
         WriteFile("dydo/guides/tutorials/index.md", """
@@ -386,40 +386,24 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_DoesNotRenameTemplateFiles()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Template files have .template.md suffix which isn't kebab-case
         // Verify they exist and aren't renamed
-        AssertFileExists("dydo/_system/templates/agent-workflow.template.md");
+        AssertFileExists("dydo/_system/templates/mode-code-writer.template.md");
 
         var result = await FixAsync();
 
         result.AssertSuccess();
         // Template file should still exist with original name
-        AssertFileExists("dydo/_system/templates/agent-workflow.template.md");
-        Assert.DoesNotContain("agent-workflow.template.md", result.Stdout);
-    }
-
-    [Fact]
-    public async Task Fix_DoesNotRenameAgentWorkspaceFiles()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        // Agent folders use PascalCase names (Adele, Brian, etc.)
-        AssertDirectoryExists("dydo/agents/Adele");
-
-        var result = await FixAsync();
-
-        result.AssertSuccess();
-        // Agent workspace should still exist with original name
-        AssertDirectoryExists("dydo/agents/Adele");
-        AssertFileExists("dydo/agents/Adele/workflow.md");
+        AssertFileExists("dydo/_system/templates/mode-code-writer.template.md");
+        Assert.DoesNotContain("mode-code-writer.template.md", result.Stdout);
     }
 
     [Fact]
     public async Task Fix_DoesNotCreateHubFilesInAgentFolders()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // A modes folder with files but no _index.md (by design)
         var modesDir = Path.Combine(TestDir, "dydo/agents/Adele/modes");
@@ -439,7 +423,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_DoesNotCreateHubFilesInSystemFolders()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // _system/templates has files but no _index.md (by design)
         AssertDirectoryExists("dydo/_system/templates");
@@ -455,7 +439,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_DoesNotReportManualFixesForTemplates()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await FixAsync();
 
@@ -467,7 +451,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_DoesNotReportManualFixesForAgentFiles()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await FixAsync();
 
@@ -485,7 +469,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Index_RegeneratesIndex()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Modify index.md
         WriteFile("dydo/index.md", "# Old Index\n\nOld content.");
@@ -504,7 +488,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Index_ListsHubFolders()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IndexAsync();
 
@@ -532,7 +516,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_ShowsOutgoingLinks()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await GraphAsync("dydo/index.md");
 
@@ -543,7 +527,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_ShowsIncomingLinks()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Check incoming links to a file that is linked from index.md
         var result = await GraphAsync("dydo/welcome.md", incoming: true);
@@ -555,7 +539,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_FileNotFound_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await GraphAsync("nonexistent.md");
 
@@ -566,7 +550,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_WithDegree_ShowsMultipleHops()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await GraphAsync("dydo/index.md", degree: 2);
 
@@ -577,7 +561,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_WithZeroDegree_ReturnsQuickly()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await GraphAsync("dydo/index.md", degree: 0);
 
@@ -588,7 +572,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_WithNegativeDegree_TreatedAsZero()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await GraphAsync("dydo/index.md", degree: -1);
 
@@ -599,7 +583,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_WithLargeDegree_HandlesGracefully()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         // Very large degree shouldn't cause infinite loops
         var result = await GraphAsync("dydo/index.md", degree: 100);
@@ -682,7 +666,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_Stats_RespectsTopOption()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await GraphStatsAsync(top: 3);
 

@@ -13,7 +13,7 @@ public class ChangelogStructureTests : IntegrationTestBase
     public async Task Check_AcceptsFlatChangelogStructure()
     {
         // Arrange - Initialize and create changelog files directly in changelog folder (no subfolders)
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Create a flat changelog entry (no year/date subfolders)
@@ -55,7 +55,7 @@ public class ChangelogStructureTests : IntegrationTestBase
     public async Task Check_AcceptsAlternativeChangelogStructure()
     {
         // Arrange - Initialize and create changelog with feature-based organization
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Create a feature-based subfolder structure (not year/date)
@@ -123,7 +123,7 @@ public class ChangelogStructureTests : IntegrationTestBase
     public async Task Fix_DoesNotEnforceChangelogFolderStructure()
     {
         // Arrange - Initialize and create flat changelog structure
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Create flat changelog file
@@ -168,7 +168,7 @@ public class ChangelogStructureTests : IntegrationTestBase
     public async Task Check_AcceptsMixedChangelogStructure()
     {
         // Arrange - Initialize with both flat files and nested folders
-        var initResult = await InitProjectAsync("none", "testuser", 3);
+        var initResult = await InitProjectAsync("none", "testuser");
         initResult.AssertSuccess();
 
         // Flat file - link it from the changelog hub

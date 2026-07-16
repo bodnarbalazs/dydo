@@ -17,18 +17,17 @@ Initialize DynaDocs in a project.
 
 ```bash
 dydo init <integration>              # Initialize with integration (claude, codex, none)
-dydo init <integration> --join       # Join existing project as new team member
-dydo init claude --name "Your Name" --agents 3  # Non-interactive setup
-dydo init codex --name "Your Name" --agents 3   # Non-interactive Codex setup
+dydo init <integration> --join       # Wire up this machine's integration for an existing project
+dydo init claude --name "Your Name"  # Non-interactive setup
+dydo init codex --name "Your Name"   # Non-interactive Codex setup
 ```
 
 **Arguments:**
 - `integration` - Integration type: `claude` or `codex` (with hooks wired up), or `none` (for other systems, more setup needed)
 
 **Options:**
-- `--join` - Join existing project instead of creating new
+- `--join` - Wire up hooks and role files for an already-initialized project instead of creating a new one
 - `--name <name>` - Human name (skips prompt)
-- `--agents <count>` - Number of agents to create/assign
 
 ### dydo sync
 

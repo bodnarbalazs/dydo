@@ -88,7 +88,6 @@ Guard gotchas while doing this in Bash: the guard blocks write-commands (redirec
 
 - [Coding Standards](./coding-standards.md) — Workflow discipline for Tier-2 workers
 - [Writing Good Briefs](./writing-good-briefs.md) — Briefing dispatched agents
-- [How to Merge Worktrees](./how-to-merge-worktrees.md) — Merge-back procedure
 - [Testing Strategy](./testing-strategy.md) — The gates agents collide through
 - [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) — dydo 2.0 native pivot
 - [Decision 026](../project/decisions/026-tier1-managers-doctrine.md) — Tier-1 managers doctrine

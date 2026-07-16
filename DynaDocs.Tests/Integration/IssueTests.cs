@@ -10,7 +10,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_CreatesFile()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Hook bypass via Agent tool", area: "general", severity: "high");
 
@@ -26,7 +26,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_AutoIncrementsId()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         await IssueCreateAsync("First issue", area: "general", severity: "low");
         var result = await IssueCreateAsync("Second issue", area: "general", severity: "medium");
@@ -39,7 +39,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_InvalidArea_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Bad area issue", area: "nonexistent", severity: "low");
 
@@ -50,7 +50,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_InvalidSeverity_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Bad sev issue", area: "general", severity: "extreme");
 
@@ -61,7 +61,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_DefaultFoundBy_IsManual()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         await IssueCreateAsync("Manual issue", area: "general", severity: "low");
 
@@ -73,7 +73,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WritesTitleFrontmatter_SoTheNotionTitleSyncs()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         await IssueCreateAsync("Sync me", area: "general", severity: "low");
 
@@ -85,7 +85,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WithFoundBy_SetsCorrectly()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Inquisition issue", area: "general", severity: "high", foundBy: "inquisition");
 
@@ -97,7 +97,7 @@ public class IssueTests : IntegrationTestBase
     public async Task Issue_Create_NoAgentProvenance()
     {
         // No runtime agent identity (DR-041): issues carry found-by but no found-by-agent provenance.
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Runtime issue", area: "general", severity: "low");
 
@@ -112,7 +112,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_NoBody_PreservesPlaceholder()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Plain issue", area: "general", severity: "low");
 
@@ -128,7 +128,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WithBody_ReplacesDescriptionPlaceholder()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Body issue", area: "general", severity: "low",
             body: "The thing breaks when you click the button twice.");
@@ -144,7 +144,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WithBodyFile_ReadsContent()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         var bodyFile = Path.Combine(TestDir, "body.md");
         await File.WriteAllTextAsync(bodyFile, "Body sourced from a file.");
 
@@ -159,7 +159,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WithBoth_BodyAndBodyFile_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         var bodyFile = Path.Combine(TestDir, "body.md");
         await File.WriteAllTextAsync(bodyFile, "ignored");
 
@@ -173,7 +173,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WithMissingBodyFile_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Bad issue", area: "general", severity: "low",
             bodyFile: Path.Combine(TestDir, "nope.md"));
@@ -185,7 +185,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WithSummary_RendersBetweenTitleAndDescription()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("With summary", area: "general", severity: "low",
             summary: "The thing breaks under contention.");
@@ -199,7 +199,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_NoSummary_InsertsPlaceholder()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueCreateAsync("Plain summary", area: "general", severity: "low");
 
@@ -211,7 +211,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_WithSummary_PassesSummaryRule()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Real summary", area: "general", severity: "low",
             summary: "A concrete one-line summary.");
 
@@ -235,7 +235,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_NoSummary_PlaceholderTriggersSummaryRuleWarning()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Placeholder check", area: "general", severity: "low");
 
         var content = ReadFile("dydo/project/issues/0001-placeholder-check.md");
@@ -260,7 +260,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_BodyWithReproductionSection_OmitsDefaultPlaceholders()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         var bodyText = """
             Initial summary.
 
@@ -289,7 +289,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_List_ShowsOpenIssues()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Open bug", area: "general", severity: "high");
 
         var result = await IssueListAsync();
@@ -301,7 +301,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_List_Empty_ShowsMessage()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueListAsync();
 
@@ -312,7 +312,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_List_FilterByArea()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Backend issue", area: "backend", severity: "low");
         await IssueCreateAsync("Frontend issue", area: "frontend", severity: "low");
 
@@ -326,7 +326,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_List_FilterByStatus()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Open issue", area: "general", severity: "low");
         await IssueCreateAsync("Resolved issue", area: "general", severity: "low");
         await IssueResolveAsync(2, "Fixed it");
@@ -341,7 +341,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_List_All_IncludesResolved()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Open issue", area: "general", severity: "low");
         await IssueCreateAsync("Will resolve", area: "general", severity: "low");
         await IssueResolveAsync(2, "Done");
@@ -360,7 +360,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Resolve_MovesToResolved()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("To resolve", area: "general", severity: "medium");
 
         var result = await IssueResolveAsync(1, "Fixed the problem");
@@ -374,7 +374,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Resolve_RequiresSummary()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("No summary issue", area: "general", severity: "low");
 
         // --summary is required by System.CommandLine, so omitting it should fail
@@ -387,7 +387,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Resolve_NotFound_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         var result = await IssueResolveAsync(999, "Doesn't exist");
 
@@ -398,7 +398,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Resolve_AlreadyResolved_Fails()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Already done", area: "general", severity: "low");
         await IssueResolveAsync(1, "First resolution");
 
@@ -411,7 +411,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Resolve_UpdatesFrontmatter()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Frontmatter check", area: "general", severity: "high");
 
         await IssueResolveAsync(1, "Updated correctly");
@@ -424,7 +424,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Resolve_WritesSummary()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Summary check", area: "general", severity: "low");
 
         await IssueResolveAsync(1, "The root cause was X, fixed by Y");
@@ -437,7 +437,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_AcrossResolvedGap_IncrementsCorrectly()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("First issue", area: "general", severity: "low");
         await IssueResolveAsync(1, "Done");
 
@@ -454,7 +454,7 @@ public class IssueTests : IntegrationTestBase
         // Defensive against stale state: if an open file and a resolved file share an
         // ID (historical create-side bug, manual edit), `resolve <id>` must operate on
         // the open file and surface a warning — not refuse with "already resolved".
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         await IssueCreateAsync("Original", area: "general", severity: "low");
         await IssueResolveAsync(1, "Done");
 
@@ -496,7 +496,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_CleansUpLockFile()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
 
         await IssueCreateAsync("Lock test issue", area: "general", severity: "low");
 
@@ -511,7 +511,7 @@ public class IssueTests : IntegrationTestBase
     [Fact]
     public async Task Issue_Create_UnderContention_RetriesAndSucceeds()
     {
-        await InitProjectAsync("none", "balazs", 3);
+        await InitProjectAsync("none", "balazs");
         var issuesDir = Path.Combine(TestDir, "dydo", "project", "issues");
         Directory.CreateDirectory(issuesDir);
         var lockPath = Path.Combine(issuesDir, ".lock");

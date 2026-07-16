@@ -46,6 +46,43 @@ Rail A executed 2026-07-15 by Fable in-conversation, per [DR-041](../decisions/0
 - Model-cap doc prose says "the watchdog restores the original bindings".
 - `dydo/reference/guardrails.md` was updated mechanically; worth a read-through for tone.
 
+## Inquisition results (2026-07-16, 43-agent sweep+verify, gate PASS)
+
+37 confirmed findings, deduplicating to these clusters (full report: the inquisition
+workflow output; locations verified adversarially):
+
+**Behavioral — decide/fix before re-arm:**
+- **Git-merge fence weakened beyond item 2 above** (worse than described): the CWD-based
+  rule no longer blocks the main-tree merge-back scenario it was built for, and
+  `dydo/guides/how-to-merge-worktrees.md` still claims raw `git merge` is blocked.
+- **Worktree lifecycle is producer-less**: nothing creates dydo worktrees or writes the
+  `.merge-source`/`.worktree-base` markers `worktree merge` requires (dispatch did) —
+  the KEEP worktree surface needs a new producer or a rethink. FindMergeWorkspace
+  multi-marker ambiguity is untested.
+- **Nudge bypass (pre-existing, now core)**: any bash containing a dydo invocation skips
+  ALL nudges incl. block-severity system nudges (HandleDydoBashCommand skips CheckNudges).
+- **Guard hot path runs dead provenance inference**: InferHost/InferModel + up-to-512KB
+  transcript tail read per hook call, result never consumed. Delete.
+- **Shipped nudge messages recommend deleted `dydo wait`** (ConfigFactory:104/110/116),
+  already materialized into this repo's dydo.json; EnsureDefaultNudges dedupes by
+  pattern so fixing the default text alone won't heal existing configs.
+
+**Dead code left behind (mechanical deletes):** WatchdogLogger.LogResumeOutcome (+false
+"surviving caller" comment), RoleConstraint/ConditionalMustRead authoring+validation with
+no evaluator (H10 no-self-review silently unenforced — role .json messages also recommend
+deleted commands), ProcessUtils.Ancestry.cs (351 lines, zero callers), AgentRegistry's
+14-field state parser (consumers use only .Name), Models/InboxItem.cs, ModelDisplay.cs,
+DispatchConfig/CodexDispatchConfig cluster, runInBackground dead parameter chain in guard.
+
+**Doc drift needing CODE changes (not Rail B):** HubGenerator.ProjectTasksProse re-stamps
+`dydo whoami`/`agent status` into the project hub on every `dydo fix`;
+dydo-commands.md(+template):~266 still documents `dydo dispatch` as the review workflow;
+guardrails.md documents removed rules as live; guard stderr strings still speak
+identity-era vocabulary (worker lane, plan-mode, --stop help).
+
+**Rail B additions:** dydo/index.md ("Run `dydo agent claim auto`" at the front door),
+architecture.md dispatch/watchdog/roster sections, merge guide.
+
 ## Still to do before shipping 2.1.0
 
 - [ ] init/roster removal slice (item 4).

@@ -83,6 +83,29 @@ identity-era vocabulary (worker lane, plan-mode, --stop help).
 **Rail B additions:** dydo/index.md ("Run `dydo agent claim auto`" at the front door),
 architecture.md dispatch/watchdog/roster sections, merge guide.
 
+## Post-inquisition resolution wave (2026-07-16, balazs's three calls executed)
+
+balazs resolved: worktree management YANKED wholesale (native isolation replaces it),
+git stash/merge fleet rules yanked with it, nudges strengthened to fire on EVERY shell
+command incl. dydo invocations, roster/init scaffolding removed, model-cap restore moved
+to the guard trigger (throttled). Landed as:
+
+- `2c35d299` — worktree + git-rules yank, universal nudges (+ stale `dydo wait` texts
+  healed incl. this repo's dydo.json; MergeSystemNudges now heals stale system-nudge
+  messages), inquisition dead-code sweep, model-cap-on-guard-trigger. Gates: 2661/0,
+  gap_check 129/129.
+- `53340a31` — roster/init removal: `dydo init` is agent-free (no --agents/pool/
+  workspaces/workflow.md), --join = wire-this-machine, old configs tolerated;
+  ProcessUtils.Ancestry + AgentSession deleted; merge guide + agent templates deleted
+  (mode templates RETAINED — they are `dydo sync`'s role sources). Gates: 2464/0,
+  gap_check 125/125.
+
+New flags from the wave: old dydo.json agents sections are silently dropped on next
+SaveConfig (say if you want them preserved verbatim); ProcessUtils.CommandLine.cs is
+now production-orphaned (follow-up cut); init summary prose mentions `dydo/workflows/*`
+(pre-existing); guardrails.md H10-H16 residual rows + mode-template claim-era prose
+remain for Rail B.
+
 ## Still to do before shipping 2.1.0
 
 - [ ] init/roster removal slice (item 4).

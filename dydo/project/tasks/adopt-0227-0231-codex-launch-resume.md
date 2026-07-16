@@ -2,7 +2,7 @@
 title: Adopt 0227 0231 Codex Launch Resume
 area: backend
 name: adopt-0227-0231-codex-launch-resume
-status: in-review
+status: stale
 created: 2026-07-08T10:34:44.7865727Z
 assigned: Grace
 assigned-vendor: claude
@@ -25,3 +25,5 @@ Adopt orphaned slice: Codex executable resolution (0227) + host-aware watchdog r
 ## Review Summary
 
 Adopted, reviewed (incl. codex resume subcommand fix verified against the official CLI reference), sprint-audited, landed as de0d63f: per-platform executable resolution with WindowsApps alias rejection, host-aware watchdog resume, dispatch pre-flight, hijack + resolution regression tests; gap_check 168/168. Issues 0227/0231 resolved (0231 caveat rides on 0233 smoke test).
+
+> Mass-closed 2026-07-16 (DR-041 campaign wrap-up): pre-campaign roster-era task; the work either landed before the pivot or was abandoned with the roster. See git history.

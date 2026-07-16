@@ -2,7 +2,7 @@
 title: Chief Of Staff Takeover
 area: general
 name: chief-of-staff-takeover
-status: in-progress
+status: done
 created: 2026-07-08T09:58:21.5781789Z
 assigned: Adele
 ---

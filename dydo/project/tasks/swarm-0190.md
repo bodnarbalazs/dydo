@@ -2,7 +2,7 @@
 title: Swarm 0190
 area: general
 name: swarm-0190
-status: in-progress
+status: stale
 created: 2026-07-12T18:49:25.3908968Z
 assigned: Brian
 needs-human: false
@@ -41,3 +41,5 @@ CONSTRAINTS: touch ONLY `DynaDocs.Tests/Services/WhoamiConcurrencyTests.cs` and 
 ## Review Summary
 
 (Pending)
+
+> Mass-closed 2026-07-16 (DR-041 campaign wrap-up): pre-campaign roster-era task; the work either landed before the pivot or was abandoned with the roster. See git history.

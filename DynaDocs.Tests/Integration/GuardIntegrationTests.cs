@@ -38,17 +38,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertStderrContains("BLOCKED");
     }
 
-    [Fact]
-    public async Task Guard_AgentStateMd_Blocks()
-    {
-        await InitProjectAsync("none", "balazs");
-
-        // Agent state files are off-limits
-        var result = await GuardAsync("edit", "dydo/agents/Adele/state.md");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
 
     [Fact]
     public async Task Guard_AllowedPath_Passes()
@@ -75,17 +64,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertSuccess();
     }
 
-    [Fact]
-    public async Task Guard_OffLimitsModeFile_Read_Blocks()
-    {
-        await InitProjectAsync("none", "balazs");
-
-        // Mode files are off-limits (dydo/agents/*/modes/**)
-        var result = await GuardAsync("read", "dydo/agents/Brian/modes/code-writer.md");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
 
     [Fact]
     public async Task Guard_ReadSourceFile_Allows()
@@ -97,17 +75,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertSuccess();
     }
 
-    [Fact]
-    public async Task Guard_ReadOtherAgentWorkflow_Blocks()
-    {
-        await InitProjectAsync("none", "balazs");
-
-        // Agent workflow files are off-limits (dydo/agents/*/workflow.md)
-        var result = await GuardAsync("read", "dydo/agents/Brian/workflow.md");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
 
     [Fact]
     public async Task Guard_ReadNonAgentWorkflow_Allows()

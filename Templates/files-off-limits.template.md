@@ -21,19 +21,6 @@ These patterns are checked BEFORE role-based permissions and block ALL operation
 # DynaDocs System Files
 # ============================================================
 # These files are managed by dydo commands. Do not edit directly.
-# Use the appropriate dydo command instead (listed below).
-
-# Agent workspace system files
-# Edit via: dydo init, dydo agent rename
-dydo/agents/*/workflow.md
-dydo/agents/*/modes/**
-
-# Agent session state
-# Edit via: dydo agent claim, dydo agent release, dydo agent role
-dydo/agents/*/state.md
-dydo/agents/*/.session
-dydo/agents/*/.pending-session
-dydo/agents/.session-context
 
 # DynaDocs entry point
 # Edit via: dydo init

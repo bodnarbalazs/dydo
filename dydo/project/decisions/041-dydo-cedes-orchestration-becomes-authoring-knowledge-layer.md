@@ -1,14 +1,15 @@
 ---
 area: project
 type: decision
-status: proposed
+status: accepted
 date: 2026-07-14
+accepted: 2026-07-16
 participants: [balazs, Adele]
 ---
 
 # 041 — dydo Cedes Orchestration: The Vendor-Agnostic Authoring + Knowledge + PM Layer
 
-**Status: PROPOSED — written to be attacked, not obeyed.** This record captures a strategic pivot decided 2026-07-13/14. It is the successor to [DR-024](./024-dydo-2-native-pivot.md) (the "go native" pivot that outsourced orchestration but *kept top-level dispatch*) and it finishes that pivot by removing the piece DR-024 left in.
+**Status: ACCEPTED — executed 2026-07-15/16** (the simplification campaign, commits `c6a46f23`..`53340a31`; see [handback](../backlog/simplification-campaign-handback.md)). This record captures a strategic pivot decided 2026-07-13/14. It is the successor to [DR-024](./024-dydo-2-native-pivot.md) (the "go native" pivot that outsourced orchestration but *kept top-level dispatch*) and it finishes that pivot by removing the piece DR-024 left in.
 
 ## The decision, in one line
 

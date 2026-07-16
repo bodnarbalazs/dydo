@@ -216,7 +216,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(
-            BashJson("dydo whoami && cat dydo/agents/Adele/state.md"));
+            BashJson("dydo whoami && cat config/secrets.json"));
 
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
@@ -228,7 +228,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(
-            BashJson("dydo whoami && tee dydo/agents/Adele/state.md"));
+            BashJson("dydo whoami && tee config/secrets.json"));
 
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
@@ -321,7 +321,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(
-            CodexShellJson(toolName, "cat dydo/agents/Adele/state.md"));
+            CodexShellJson(toolName, "cat config/secrets.json"));
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
     }
@@ -333,7 +333,7 @@ public class GuardSecurityTests : IntegrationTestBase
         // the codex shell lane must still bind off-limits — a write to a system path is blocked.
         await SetupClaimedAgent();
 
-        var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "tee dydo/agents/Adele/state.md"));
+        var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "tee config/secrets.json"));
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
     }
@@ -461,7 +461,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         // Real quotes around -c argument — BashJson handles JSON escaping
         var result = await GuardWithStdinAsync(
-            BashJson("bash -c \"tee dydo/agents/Adele/state.md\""));
+            BashJson("bash -c \"tee config/secrets.json\""));
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
     }
@@ -679,7 +679,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(
-            BashJson("rm dydo/agents/Adele/state.md"));
+            BashJson("rm config/secrets.json"));
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
     }
@@ -691,7 +691,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         // Off-limits file that's NOT a mode or bootstrap file should still be blocked
         var result = await GuardWithStdinAsync(
-            BashJson("cat dydo/agents/Adele/state.md"));
+            BashJson("cat config/secrets.json"));
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
     }

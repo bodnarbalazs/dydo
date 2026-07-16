@@ -2,7 +2,7 @@
 title: Swarm 0110
 area: general
 name: swarm-0110
-status: in-progress
+status: stale
 created: 2026-07-12T15:41:37.4369021Z
 assigned: Emma
 needs-human: false
@@ -42,3 +42,5 @@ CONSTRAINTS: touch ONLY `Services/AgentRegistry.cs` (message split + wire constr
 ## Review Summary
 
 (Pending)
+
+> Mass-closed 2026-07-16 (DR-041 campaign wrap-up): pre-campaign roster-era task; the work either landed before the pivot or was abandoned with the roster. See git history.

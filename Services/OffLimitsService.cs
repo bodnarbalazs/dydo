@@ -68,7 +68,7 @@ public class OffLimitsService : IOffLimitsService
     {
         // Claude Code delivers absolute tool paths; off-limits patterns are repo-relative.
         // Relativize to the project root first, or none of the path-anchored patterns
-        // (dydo/_system/**, dydo/agents/*/state.md, …) would ever match in production.
+        // (dydo/_system/**, dydo/index.md, …) would ever match in production.
         var normalizedPath = PathUtils.NormalizeForPattern(RelativizeToProjectRoot(path));
 
         // Hardcoded system patterns — always enforced, not whitelistable

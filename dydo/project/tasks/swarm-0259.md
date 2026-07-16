@@ -2,7 +2,7 @@
 title: Swarm 0259
 area: general
 name: swarm-0259
-status: in-progress
+status: stale
 created: 2026-07-12T18:49:06.0011538Z
 assigned: Emma
 needs-human: false
@@ -45,3 +45,5 @@ CONSTRAINTS: touch `Sync/Notion/DocsPageAdapter.cs`, `Sync/SyncRunner.cs`, `Sync
 ## Review Summary
 
 (Pending)
+
+> Mass-closed 2026-07-16 (DR-041 campaign wrap-up): pre-campaign roster-era task; the work either landed before the pivot or was abandoned with the roster. See git history.

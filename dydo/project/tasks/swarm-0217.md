@@ -2,7 +2,7 @@
 title: Swarm 0217
 area: general
 name: swarm-0217
-status: in-progress
+status: stale
 created: 2026-07-12T15:05:56.2927352Z
 assigned: Brian
 needs-human: false
@@ -39,3 +39,5 @@ CONSTRAINTS: The ONLY file you may touch is `DynaDocs.Tests/coverage/gap_check.p
 ## Review Summary
 
 (Pending)
+
+> Mass-closed 2026-07-16 (DR-041 campaign wrap-up): pre-campaign roster-era task; the work either landed before the pivot or was abandoned with the roster. See git history.

@@ -23,7 +23,7 @@ internal static class TaskListHandler
 
             var (name, status, assigned, created) = parsed.Value;
 
-            if (!all && status == "done") continue;
+            if (!all && status is "done" or "stale") continue;
             if (needsReview && status != "in-review") continue;
 
             tasks.Add((name, status, assigned, created));

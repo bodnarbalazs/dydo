@@ -2,7 +2,7 @@
 title: Adopt 0232 Codex Docs
 area: reference
 name: adopt-0232-codex-docs
-status: in-review
+status: stale
 created: 2026-07-08T10:34:51.6067533Z
 assigned: Grace
 assigned-vendor: claude
@@ -25,3 +25,5 @@ Adopt orphaned slice: Codex doc surfaces (0232) across 8 files + README clone-sy
 ## Review Summary
 
 Adopted, reviewed, sprint-audited (README clone-drift finding fixed + re-reviewed), landed as dc1333b: Codex-aware setup/hooks/artifact docs across 8 surfaces, pairs and README clone triple verified consistent. Issue 0232 resolved.
+
+> Mass-closed 2026-07-16 (DR-041 campaign wrap-up): pre-campaign roster-era task; the work either landed before the pivot or was abandoned with the roster. See git history.

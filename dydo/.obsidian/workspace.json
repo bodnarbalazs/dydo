@@ -185,6 +185,8 @@
   },
   "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
+    "project/tasks/notion-sync-daemon.md",
+    "project/tasks/notion-sync-daemon.md.tmp.78972.0beaa81f718c",
     "reference/about-dynadocs.md.tmp.78972.1064776cace4",
     "reference/about-dynadocs.md.tmp.78972.e66ab45006dd",
     "reference/guardrails.md.tmp.78972.17402f72c2a9",
@@ -219,8 +221,6 @@
     "agents/Brian/modes/docs-writer.md",
     "agents/Brian/modes/code-writer.md",
     "agents/Brian/modes/chief-of-staff.md",
-    "agents/Brian/modes",
-    "agents/Charlie/modes",
     "_assets/dydo_diagram_complex_workflow.svg",
     "_assets/dydo_diagram_simple_workflow.svg"
   ]

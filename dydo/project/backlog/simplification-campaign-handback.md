@@ -106,6 +106,23 @@ now production-orphaned (follow-up cut); init summary prose mentions `dydo/workf
 (pre-existing); guardrails.md H10-H16 residual rows + mode-template claim-era prose
 remain for Rail B.
 
+## Hardening pass (2026-07-17, post-reboot) — CLOSED
+
+The relaunched hardening inquisition (44 agents over dd2e4a8e..748daf28) returned gate
+PASS with 36 confirmed findings → all fixed in `801ad91a`. Highlights: two git-worktree
+hard fences had survived the yank pointing at deleted commands (gone); MergeSystemNudges
+now self-heals known-stale shipped texts at any severity while NEVER clobbering
+user-customized messages (docs updated to match); dead producers cut (display-names,
+codex launch constants, worktree path machinery, merge-review scaffolding, 1.0 fallback
+command table); doc drift swept (index.md front door, configuration.md schema,
+guard-system.md, troubleshooting recipes). Model-cap SaveConfig race assessed convergent
+— documented, not locked. Gates: build 0/0, suite 2381/0, gap_check 124/124.
+
+**Remaining micro-cuts (your call, either wave or leave):** the `queues` config mechanism
+is vestigial (zero readers after the merge-queue removal); the `constraints` arrays in all
+seven `dydo/_system/roles/*.role.json` are dead schema (evaluator deleted; regenerated
+clean on next `roles reset`).
+
 ## Restart handoff (2026-07-16, machine reboot)
 
 Everything is COMMITTED and green at `748daf28` (build 0/0, suite 2429/0, gap_check

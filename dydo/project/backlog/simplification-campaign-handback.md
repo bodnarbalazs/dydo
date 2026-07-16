@@ -106,6 +106,21 @@ now production-orphaned (follow-up cut); init summary prose mentions `dydo/workf
 (pre-existing); guardrails.md H10-H16 residual rows + mode-template claim-era prose
 remain for Rail B.
 
+## Restart handoff (2026-07-16, machine reboot)
+
+Everything is COMMITTED and green at `748daf28` (build 0/0, suite 2429/0, gap_check
+124/124). The only in-flight work at shutdown was the **hardening inquisition** over
+`dd2e4a8e..748daf28` (the 4 post-review commits) — stopped cleanly before reboot.
+
+**To resume after restart:** relaunch the inquisition workflow with this scope —
+focus areas: (1) universal-nudge rewiring in GuardCommand (misfires/double-fires/
+marker races vs the old two-path handling), (2) worktree/git-rule yank leftovers,
+(3) agent-free init completeness (hooks incl. 0295 codex matcher + Stop hook, --join,
+old-config tolerance), (4) off-limits prune soundness + retargeted test coverage,
+(5) model-cap guard-trigger throttle. Exclude known/accepted items in this file
+unless worse. (Prior attempt: run wf_0990f460-89c; script under the session's
+workflows dir; a fresh relaunch is equally fine.)
+
 ## Still to do before shipping 2.1.0
 
 - [ ] init/roster removal slice (item 4).

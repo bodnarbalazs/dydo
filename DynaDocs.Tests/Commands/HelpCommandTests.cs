@@ -30,7 +30,6 @@ public class HelpCommandTests
         Assert.Contains("review", output);
         Assert.Contains("completions", output);
         Assert.Contains("template", output);
-        Assert.Contains("roles", output);
         Assert.Contains("validate", output);
         Assert.Contains("issue", output);
         Assert.Contains("version", output);

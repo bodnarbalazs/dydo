@@ -1,149 +1,73 @@
 namespace DynaDocs.Services;
 
-using System.Text.Json;
 using DynaDocs.Models;
-using DynaDocs.Serialization;
+using DynaDocs.Utils;
 
+/// <summary>
+/// Discovers roles from mode templates (the template IS the role — its frontmatter carries
+/// the metadata) and resolves the {source}/{tests} path sets used by tool-scoped nudges.
+/// </summary>
 public class RoleDefinitionService : IRoleDefinitionService
 {
     /// <summary>
-    /// Roles that <c>dydo sync</c> compiles into a skill but that are NOT claimable Tier-1
-    /// identities (Decision 024): they appear in <see cref="GetBaseRoleDefinitions"/> only to
-    /// drive skill generation, and are excluded from the on-disk role roster written by
-    /// <see cref="WriteBaseRoleDefinitions"/> (which feeds the guard's claimable-role set).
+    /// Transitional metadata for the shipped base roles, used only while their mode
+    /// templates do not yet carry <c>description</c>/<c>emit</c>/<c>read-only</c>
+    /// frontmatter (those blocks land with the prompt-template pass). Frontmatter always
+    /// wins; delete this table once every shipped template carries the keys.
     /// </summary>
-    public static readonly HashSet<string> SkillOnlyRoles = new(StringComparer.OrdinalIgnoreCase) { "planner" };
+    private static readonly Dictionary<string, (string Description, bool EmitAgent, bool ReadOnly)> BaseRoleSeed =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["code-writer"] = ("Implements features and fixes bugs in source code.", true, false),
+            ["reviewer"] = ("Reviews code changes for quality and correctness.", true, true),
+            ["test-writer"] = ("Writes and maintains test suites.", true, false),
+            ["docs-writer"] = ("Creates and maintains documentation.", true, false),
+            ["planner"] = ("Creates implementation plans and task breakdowns.", false, false),
+            ["orchestrator"] = ("Coordinates multi-agent workflows and task dispatch.", false, false),
+            ["co-thinker"] = ("Collaborates on design decisions and architecture.", false, false),
+            ["chief-of-staff"] = ("The human's right hand — triages the backlog and idea funnel, routes work to domain orchestrators, reports status, and mediates between agents.", false, false),
+        };
 
     /// <summary>
-    /// The set every claimable-surface filter uses (roster, registry fallback, role table,
-    /// mode names) — a single source so those filters can never drift apart. Currently the
-    /// skill-only roles; kept as a distinct name for the claimable-vs-compiled distinction.
+    /// Enumerates every role: the shipped mode templates plus any project-local
+    /// <c>dydo/_system/templates/mode-*.template.md</c> — which is how a custom role
+    /// compiles: drop a mode template in, run <c>dydo sync</c>. Metadata comes from the
+    /// template frontmatter (<c>description</c>, <c>emit</c>, <c>read-only</c>), falling
+    /// back to <see cref="BaseRoleSeed"/> for shipped roles whose templates predate the keys.
     /// </summary>
-    public static readonly HashSet<string> NonClaimableRoles =
-        new(SkillOnlyRoles, StringComparer.OrdinalIgnoreCase);
-
-    public static List<RoleDefinition> GetBaseRoleDefinitions()
+    public static List<RoleDefinition> DiscoverRoles(string? projectRoot = null)
     {
-        return
-        [
-            new RoleDefinition
-            {
-                Name = "code-writer",
-                Description = "Implements features and fixes bugs in source code.",
-                Base = true,
-                WritablePaths = ["{source}", "{tests}", "dydo/project/backlog/**"],
-                ReadOnlyPaths = ["dydo/**", "project/**"],
-                TemplateFile = "mode-code-writer.template.md",
-                DenialHint = "Code-writer role can only edit configured source/test paths."
-            },
-            new RoleDefinition
-            {
-                Name = "reviewer",
-                Description = "Reviews code changes for quality and correctness.",
-                Base = true,
-                WritablePaths = [],
-                ReadOnlyPaths = ["**"],
-                TemplateFile = "mode-reviewer.template.md",
-                DenialHint = "Reviewer role writes nothing — it assesses and reports."
-            },
-            new RoleDefinition
-            {
-                Name = "co-thinker",
-                Description = "Collaborates on design decisions and architecture.",
-                Base = true,
-                WritablePaths = ["dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
-                ReadOnlyPaths = ["{source}", "{tests}"],
-                TemplateFile = "mode-co-thinker.template.md",
-                DenialHint = "Co-thinker role can edit decisions, issues, and backlog."
-            },
-            new RoleDefinition
-            {
-                Name = "chief-of-staff",
-                Description = "The human's right hand — triages the backlog and idea funnel, routes work to domain orchestrators, reports status, and mediates between agents.",
-                Base = true,
-                WritablePaths = ["dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
-                ReadOnlyPaths = ["**"],
-                TemplateFile = "mode-chief-of-staff.template.md",
-                DenialHint = "Chief-of-staff writes PM objects and docs, never code."
-            },
-            new RoleDefinition
-            {
-                Name = "docs-writer",
-                Description = "Creates and maintains documentation.",
-                Base = true,
-                WritablePaths = ["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md"],
-                ReadOnlyPaths = ["{source}", "{tests}"],
-                TemplateFile = "mode-docs-writer.template.md",
-                DenialHint = "Docs-writer role can only edit dydo/**."
-            },
-            new RoleDefinition
-            {
-                Name = "planner",
-                Description = "Creates implementation plans and task breakdowns.",
-                Base = true,
-                WritablePaths = ["dydo/project/tasks/**"],
-                ReadOnlyPaths = ["{source}"],
-                TemplateFile = "mode-planner.template.md",
-                DenialHint = "Planner role can only edit tasks."
-            },
-            new RoleDefinition
-            {
-                Name = "test-writer",
-                Description = "Writes and maintains test suites.",
-                Base = true,
-                WritablePaths = ["{tests}", "dydo/project/pitfalls/**"],
-                ReadOnlyPaths = ["{source}"],
-                TemplateFile = "mode-test-writer.template.md",
-                DenialHint = "Test-writer role can edit tests and pitfalls."
-            },
-            new RoleDefinition
-            {
-                Name = "orchestrator",
-                Description = "Coordinates multi-agent workflows and task dispatch.",
-                Base = true,
-                WritablePaths = ["dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
-                ReadOnlyPaths = ["**"],
-                TemplateFile = "mode-orchestrator.template.md",
-                CanOrchestrate = true
-            }
-        ];
-    }
-
-    public List<RoleDefinition> LoadRoleDefinitions(string basePath)
-    {
-        var rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");
-        if (!Directory.Exists(rolesDir))
-            return [];
-
-        var files = Directory.GetFiles(rolesDir, "*.role.json");
-        if (files.Length == 0)
-            return [];
+        var templateNames = new SortedSet<string>(
+            TemplateGenerator.GetBuiltInModeTemplateNames(), StringComparer.OrdinalIgnoreCase);
+        templateNames.UnionWith(TemplateGenerator.GetProjectModeTemplateNames(projectRoot));
 
         var roles = new List<RoleDefinition>();
-        foreach (var file in files)
+        foreach (var templateFile in templateNames)
         {
-            var json = File.ReadAllText(file);
-            var role = JsonSerializer.Deserialize(json, DydoConfigJsonContext.Default.RoleDefinition);
-            if (role != null)
-                roles.Add(role);
+            var name = templateFile["mode-".Length..^".template.md".Length];
+            var fields = FrontmatterParser.ParseFields(
+                TemplateGenerator.ReadTemplate(templateFile, projectRoot)) ?? [];
+            var seed = BaseRoleSeed.TryGetValue(name, out var s)
+                ? s
+                : (Description: "", EmitAgent: true, ReadOnly: false);
+
+            roles.Add(new RoleDefinition
+            {
+                Name = name,
+                TemplateFile = templateFile,
+                Description = fields.TryGetValue("description", out var d) && d.Length > 0
+                    ? d
+                    : seed.Description,
+                EmitAgent = fields.TryGetValue("emit", out var e) && e.Length > 0
+                    ? e.Equals("agent", StringComparison.OrdinalIgnoreCase)
+                    : seed.EmitAgent,
+                ReadOnly = fields.TryGetValue("read-only", out var r)
+                    ? r.Equals("true", StringComparison.OrdinalIgnoreCase)
+                    : seed.ReadOnly,
+            });
         }
 
         return roles;
-    }
-
-    public Dictionary<string, (List<string> Writable, List<string> ReadOnly)> BuildPermissionMap(
-        List<RoleDefinition> roles, Dictionary<string, List<string>> pathSets)
-    {
-        var result = new Dictionary<string, (List<string> Writable, List<string> ReadOnly)>();
-
-        foreach (var role in roles)
-        {
-            var writable = ExpandPathSets(role.WritablePaths, pathSets);
-            var readOnly = ExpandPathSets(role.ReadOnlyPaths, pathSets);
-            result[role.Name] = (writable, readOnly);
-        }
-
-        return result;
     }
 
     public Dictionary<string, List<string>> ResolvePathSets(DydoConfig? config)
@@ -156,57 +80,5 @@ public class RoleDefinitionService : IRoleDefinitionService
             ["source"] = config?.Paths.Source ?? ["src/**"],
             ["tests"] = config?.Paths.Tests ?? ["tests/**"]
         };
-    }
-
-    public bool ValidateRoleDefinition(RoleDefinition role, out List<string> errors)
-    {
-        errors = [];
-
-        if (string.IsNullOrWhiteSpace(role.Name))
-            errors.Add("Role name is required.");
-        if (string.IsNullOrWhiteSpace(role.Description))
-            errors.Add("Role description is required.");
-        // No writable paths is valid: it denotes a read-only role (e.g. reviewer), whose
-        // empty writable surface is what `dydo sync` compiles into a no-Edit/Write tool profile.
-        if (string.IsNullOrWhiteSpace(role.TemplateFile))
-            errors.Add("Template file is required.");
-
-        return errors.Count == 0;
-    }
-
-    public void WriteBaseRoleDefinitions(string basePath)
-    {
-        var rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");
-        Directory.CreateDirectory(rolesDir);
-
-        foreach (var role in GetBaseRoleDefinitions().Where(r => !NonClaimableRoles.Contains(r.Name)))
-        {
-            var filePath = Path.Combine(rolesDir, $"{role.Name}.role.json");
-            var json = JsonSerializer.Serialize(role, DydoConfigJsonContext.Default.RoleDefinition);
-            File.WriteAllText(filePath, json);
-        }
-    }
-
-    private static List<string> ExpandPathSets(List<string> paths, Dictionary<string, List<string>> pathSets)
-    {
-        var result = new List<string>();
-
-        foreach (var path in paths)
-        {
-            if (path.StartsWith('{') && path.EndsWith('}'))
-            {
-                var setName = path[1..^1];
-                if (pathSets.TryGetValue(setName, out var setPaths))
-                    result.AddRange(setPaths);
-                else
-                    result.Add(path); // unresolved — leave as-is
-            }
-            else
-            {
-                result.Add(path);
-            }
-        }
-
-        return result;
     }
 }

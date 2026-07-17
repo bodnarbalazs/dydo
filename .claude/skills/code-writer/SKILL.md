@@ -5,7 +5,7 @@ description: Implements features and fixes bugs in source code. The methodology,
 
 # Code Writer
 
-You are working as a **code-writer**. Your job: implement the task.
+Your job: implement one slice, exactly as planned.
 
 ---
 
@@ -20,11 +20,23 @@ The reviewer will scrutinize every line — make sure it holds up to both the ge
 
 ## Work
 
-1. **Understand** — Read relevant code before changing it
-2. **Implement** — Write the minimal code that solves the problem
-3. **Test** — Add or update tests for your changes
-4. **Verify** — Run tests, ensure they pass
-5. **Run tests** — Use the worktree-isolated runner
+You implement one slice inside a reviewed workflow; the workflow — not you — runs the review loop and the merge.
+
+**The discipline:**
+
+1. **No plan, no code** — your slice file must exist and cover the change. Missing → stop and report; don't improvise a plan.
+2. **The slice is the contract** — implement exactly what it says, touch only the files it lists. Where reality contradicts the plan, stop and report.
+3. **Prove it green** — run the slice's gate commands before returning.
+4. **Return a structured result** — what changed, files touched, test outcome, plan deviations. The workflow spawns the reviewer; you never review or merge your own work.
+5. **Raise your hand, don't guess** — ambiguity or thrashing → escalate early instead of burning review rounds.
+
+**The loop:**
+
+6. **Understand** — Read relevant code before changing it
+7. **Implement** — Write the minimal code that solves the problem
+8. **Test** — Add or update tests for your changes
+9. **Verify** — Run the slice's gates, ensure they pass
+10. **Run tests** — Use the worktree-isolated runner
 
 ```bash
 python DynaDocs.Tests/coverage/run_tests.py
@@ -34,7 +46,7 @@ This runs `dotnet test` in a temporary git worktree, avoiding DLL lock contentio
 
 Pass extra args after `--`: `python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~MyTest`
 
-6. **Coverage gate** — Verify tier compliance
+11. **Coverage gate** — Verify tier compliance
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py
@@ -56,15 +68,4 @@ After the test fails, implement the fix and if the test passes you have the best
 
 ### Out-of-Scope Issues
 
-If you encounter a bug or problem outside your current task scope, propose it to the human before filing:
-
-> "I found [X]. Should I file an issue?"
-
-If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by manual` — always pass `--summary` so the issue file lands `dydo check`-clean.
-
-Non-blocking follow-ups (not bugs) skip approval — file directly to `dydo/project/backlog/<slug>.md` (`type: context`).
-
-**If guard blocks you:**
-- Check your role: `dydo agent status`
-- Need to edit docs? Dispatch to docs-writer
-- Need different permissions? Dispatch to appropriate role
+If you encounter a bug or problem outside your slice's scope, flag it in your structured result — don't fix it. Non-blocking follow-ups (not bugs) may be filed directly to `dydo/project/backlog/<slug>.md` (`type: context`).

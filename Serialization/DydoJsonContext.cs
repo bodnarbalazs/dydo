@@ -19,7 +19,6 @@ using DynaDocs.Sync;
 [JsonSerializable(typeof(ModelsConfig))]
 [JsonSerializable(typeof(Dictionary<string, Dictionary<string, string>>))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
-[JsonSerializable(typeof(RoleDefinition))]
 [JsonSerializable(typeof(Dictionary<string, bool>))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
 [JsonSerializable(typeof(NudgeConfig))]

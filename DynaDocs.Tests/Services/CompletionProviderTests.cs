@@ -19,7 +19,6 @@ public class CompletionProviderTests
     [InlineData("issue")]
     [InlineData("complete")]
     [InlineData("template")]
-    [InlineData("roles")]
     [InlineData("validate")]
     [InlineData("watchdog")]
     public void TopLevelCommands_ContainsCommand(string command)
@@ -28,25 +27,11 @@ public class CompletionProviderTests
         Assert.Contains(command, completions);
     }
 
-    [Theory]
-    [InlineData("code-writer")]
-    [InlineData("reviewer")]
-    [InlineData("co-thinker")]
-    [InlineData("chief-of-staff")]
-    [InlineData("docs-writer")]
-    [InlineData("test-writer")]
-    [InlineData("orchestrator")]
-    public void Roles_ContainsRole(string role)
-    {
-        var completions = CompletionProvider.GetOptionValueCompletions("--role")!.ToList();
-        Assert.Contains(role, completions);
-    }
 
 
     [Theory]
     [InlineData("task", new[] { "create", "done", "list", "ready-for-review" })]
     [InlineData("issue", new[] { "create", "list", "resolve" })]
-    [InlineData("roles", new[] { "list", "create", "reset" })]
     [InlineData("template", new[] { "update" })]
     [InlineData("watchdog", new[] { "start", "stop", "run" })]
     public void Subcommands_ContainsExpectedEntries(string command, string[] expectedSubcommands)

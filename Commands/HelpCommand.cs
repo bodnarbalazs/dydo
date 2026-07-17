@@ -34,14 +34,10 @@ public static class HelpCommand
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
         Console.WriteLine();
         Console.WriteLine("Role Commands:");
-        Console.WriteLine("  roles list             List loaded role definitions");
-        Console.WriteLine("  roles create <name>    Scaffold a new custom role definition");
-        Console.WriteLine("  roles reset            Regenerate base role files (human only)");
-        Console.WriteLine("  roles reset --all      Remove all roles and regenerate base (human only)");
-        Console.WriteLine("  sync                   Compile roles into native Claude + Codex agents/skills");
+        Console.WriteLine("  sync                   Compile mode templates into native Claude + Codex agents/skills");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
-        Console.WriteLine("  validate               Validate config, roles, templates, agent state");
+        Console.WriteLine("  validate               Validate config and templates");
         Console.WriteLine();
         Console.WriteLine("Template Commands:");
         Console.WriteLine("  template update        Update framework templates and docs");

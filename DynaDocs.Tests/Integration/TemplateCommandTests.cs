@@ -206,18 +206,39 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_StaleTemplate_Removed()
+    public async Task TemplateUpdate_StaleTrackedTemplate_Removed()
     {
         await InitProjectAsync();
 
+        // A hash-tracked template that is no longer shipped = a stale framework copy.
         var staleFile = Path.Combine(TestDir, "dydo/_system/templates/mode-old-removed.template.md");
         File.WriteAllText(staleFile, "stale template");
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes["_system/templates/mode-old-removed.template.md"] =
+            TemplateCommand.ComputeHash("stale template");
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
 
         var result = await RunTemplateUpdateAsync();
 
         result.AssertSuccess();
         result.AssertStdoutContains("Removed stale:");
         Assert.False(File.Exists(staleFile));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_UntrackedCustomModeTemplate_Kept()
+    {
+        await InitProjectAsync();
+
+        // An untracked mode template is a user's custom role (compiled by dydo sync) —
+        // template update must never delete it.
+        var customFile = Path.Combine(TestDir, "dydo/_system/templates/mode-my-custom.template.md");
+        File.WriteAllText(customFile, "---\nmode: my-custom\n---\n# My Custom\n");
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.True(File.Exists(customFile), "custom mode template must survive template update");
     }
 
     [Fact]

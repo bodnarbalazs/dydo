@@ -30,32 +30,6 @@ public class ValidationServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);
     }
 
-    private string CreateRolesDir()
-    {
-        var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
-        Directory.CreateDirectory(rolesDir);
-        return rolesDir;
-    }
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    private void WriteRoleFile(string rolesDir, RoleDefinition role)
-    {
-        var json = JsonSerializer.Serialize(role, JsonOptions);
-        File.WriteAllText(Path.Combine(rolesDir, $"{role.Name}.role.json"), json);
-    }
-
-    private void CreateTemplateFile(string name)
-    {
-        var dir = Path.Combine(_testDir, "Templates");
-        Directory.CreateDirectory(dir);
-        File.WriteAllText(Path.Combine(dir, name), "# Template\n");
-    }
-
     #region ValidateSystem — dydo.json
 
     [Fact]
@@ -88,97 +62,6 @@ public class ValidationServiceTests : IDisposable
 
     #endregion
 
-    #region ValidateSystem — Role files
-
-    [Fact]
-    public void ValidateSystem_InvalidJsonInRoleFile_ReportsError()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        File.WriteAllText(Path.Combine(rolesDir, "broken.role.json"), "not json");
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("Invalid JSON"));
-    }
-
-    [Fact]
-    public void ValidateSystem_UnresolvablePathSetReference_ReportsWarning()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var role = new RoleDefinition
-        {
-            Name = "test-role", Description = "Test", Base = false,
-            WritablePaths = ["{nonexistent}"], ReadOnlyPaths = [],
-            TemplateFile = "mode-test-role.template.md"
-        };
-        WriteRoleFile(rolesDir, role);
-        CreateTemplateFile("mode-test-role.template.md");
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.Severity == "warning" && i.Message.Contains("nonexistent"));
-    }
-
-    [Fact]
-    public void ValidateSystem_MissingTemplateFile_ReportsWarning()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var role = new RoleDefinition
-        {
-            Name = "test-role", Description = "Test", Base = false,
-            WritablePaths = ["src/**"], ReadOnlyPaths = [],
-            TemplateFile = "mode-does-not-exist.template.md"
-        };
-        WriteRoleFile(rolesDir, role);
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.Severity == "warning" && i.Message.Contains("does-not-exist"));
-    }
-
-    [Fact]
-    public void ValidateSystem_ValidRoleFile_NoErrors()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var role = new RoleDefinition
-        {
-            Name = "deploy-manager", Description = "Manages deployments", Base = false,
-            WritablePaths = ["src/**"], ReadOnlyPaths = [],
-            TemplateFile = "mode-deploy-manager.template.md",
-            DenialHint = "Deploy-manager can only edit source."
-        };
-        WriteRoleFile(rolesDir, role);
-        CreateTemplateFile("mode-deploy-manager.template.md");
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        var errors = issues.Where(i => i.Severity == "error").ToList();
-        Assert.Empty(errors);
-    }
-
-    #endregion
-
-    #region ValidateRoleFile
-
-    [Fact]
-    public void ValidateRoleFile_ReturnsIssuesForSingleFile()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var filePath = Path.Combine(rolesDir, "bad.role.json");
-        File.WriteAllText(filePath, "invalid json");
-
-        var issues = _service.ValidateRoleFile(_testDir, filePath);
-
-        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("Invalid JSON"));
-    }
-
-    #endregion
-
     #region ValidateSystem — Exit code semantics
 
     [Fact]
@@ -204,65 +87,6 @@ public class ValidationServiceTests : IDisposable
         var issues = _service.ValidateSystem(_testDir);
 
         Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("deserialize"));
-    }
-
-    #endregion
-
-    #region ValidateSystem — Unreadable role file
-
-    [Fact]
-    public void ValidateRoleFile_UnreadableFile_ReportsError()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        // Point at a directory instead of a file to trigger a read exception
-        var dirAsFile = Path.Combine(rolesDir, "fake.role.json");
-        Directory.CreateDirectory(dirAsFile);
-
-        var issues = _service.ValidateRoleFile(_testDir, dirAsFile);
-
-        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("Cannot read file"));
-    }
-
-    #endregion
-
-    #region ValidateSystem — Null role deserialization
-
-    [Fact]
-    public void ValidateRoleFile_NullDeserialization_ReportsError()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var filePath = Path.Combine(rolesDir, "nullrole.role.json");
-        File.WriteAllText(filePath, "null");
-
-        var issues = _service.ValidateRoleFile(_testDir, filePath);
-
-        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("null"));
-    }
-
-    #endregion
-
-    #region Custom role DenialHint warning
-
-    [Fact]
-    public void ValidateSystem_CustomRoleNoDenialHint_ReportsWarning()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var role = new RoleDefinition
-        {
-            Name = "no-hint-role", Description = "Test", Base = false,
-            WritablePaths = ["src/**"], ReadOnlyPaths = [],
-            TemplateFile = "mode-no-hint-role.template.md",
-            DenialHint = null
-        };
-        WriteRoleFile(rolesDir, role);
-        CreateTemplateFile("mode-no-hint-role.template.md");
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.Severity == "warning" && i.Message.Contains("denialHint"));
     }
 
     #endregion

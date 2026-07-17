@@ -99,9 +99,10 @@ public static class TemplateGenerator
 
     /// <summary>
     /// Reads a template file and returns its content.
-    /// Checks project-local templates first, then falls back to embedded resources.
+    /// Checks project-local templates first, then falls back to the built-in template
+    /// (source Templates/ in dev-mode, embedded resources otherwise).
     /// </summary>
-    private static string ReadTemplate(string templateName, string? basePath = null)
+    internal static string ReadTemplate(string templateName, string? basePath = null)
     {
         // Check project-local templates first
         var projectPath = GetProjectTemplatesPath(basePath);
@@ -112,12 +113,7 @@ public static class TemplateGenerator
                 return File.ReadAllText(localFile);
         }
 
-        // Fall back to embedded resources
-        var content = ReadEmbeddedTemplate(templateName);
-        if (content != null)
-            return content;
-
-        throw new FileNotFoundException($"Template not found: {templateName}");
+        return ReadBuiltInTemplate(templateName);
     }
 
     /// <summary>
@@ -140,21 +136,62 @@ public static class TemplateGenerator
     }
 
     /// <summary>
+    /// The shipped mode templates (mode-*.template.md) — the roles `dydo sync` compiles.
+    /// Enumerated from embedded resources, plus source Templates/ in dev-mode so a
+    /// not-yet-rebuilt template still counts.
+    /// </summary>
+    public static IReadOnlyList<string> GetBuiltInModeTemplateNames()
+    {
+        const string prefix = "DynaDocs.Templates.mode-";
+        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var resource in _assembly.GetManifestResourceNames()
+                     .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md")))
+            names.Add(resource["DynaDocs.Templates.".Length..]);
+
+        // Dev-mode parity with ReadBuiltInTemplate: prefer the source tree's Templates/.
+        if (File.Exists("DynaDocs.csproj") && Directory.Exists("Templates"))
+        {
+            names.RemoveWhere(n => !File.Exists(Path.Combine("Templates", n)));
+            foreach (var file in Directory.GetFiles("Templates", "mode-*.template.md"))
+                names.Add(Path.GetFileName(file));
+        }
+
+        return names.ToList();
+    }
+
+    /// <summary>
+    /// Project-local mode templates in dydo/_system/templates/ — overrides of shipped
+    /// roles and, when the name is new, custom roles.
+    /// </summary>
+    public static IReadOnlyList<string> GetProjectModeTemplateNames(string? basePath = null)
+    {
+        var projectPath = GetProjectTemplatesPath(basePath);
+        if (projectPath == null)
+            return [];
+
+        return Directory.GetFiles(projectPath, "mode-*.template.md")
+            .Select(Path.GetFileName)
+            .Where(n => n != null)
+            .Select(n => n!)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
     /// Get all template file names that can be copied to _system/templates/.
     /// </summary>
     public static IReadOnlyList<string> GetAllTemplateNames()
     {
         // The role mode templates (mode-*.template.md) — the source `dydo sync` compiles into
-        // native agents. The per-agent-workspace agent-workflow.template.md was removed with the
-        // 26-agent roster (DR-041).
+        // native agents — plus each role's skill resource templates
+        // (<role>-resource-<name>.template.md), which ride the same override/hash machinery.
         var names = new List<string>();
-        foreach (var role in RoleDefinitionService.GetBaseRoleDefinitions())
+        foreach (var templateFile in GetBuiltInModeTemplateNames())
         {
-            if (!string.IsNullOrEmpty(role.TemplateFile))
-                names.Add(role.TemplateFile);
-            // Skill resource templates (<role>-resource-<name>.template.md) ride the same
-            // override/hash machinery as the mode templates.
-            names.AddRange(GetSkillResourceTemplateNames(role.Name));
+            names.Add(templateFile);
+            var roleName = templateFile["mode-".Length..^".template.md".Length];
+            names.AddRange(GetSkillResourceTemplateNames(roleName));
         }
         return names;
     }

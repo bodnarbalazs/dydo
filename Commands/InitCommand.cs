@@ -138,8 +138,6 @@ public static class InitCommand
             ConfigureCodexHooks(projectRoot);
             Console.WriteLine("  - Codex hooks configured");
         }
-
-        GenerateRoleFilesIfMissing(projectRoot);
     }
 
     private static void PrintInitSummary(string integration)
@@ -173,7 +171,7 @@ public static class InitCommand
     // With the 26-agent roster gone (DR-041), "join" no longer assigns a pool of agents to a new
     // human — there is no roster to draw from. It reduces to "wire up this machine's local
     // integration for an already-initialized project" (a fresh clone, or adding a second
-    // integration): configure hooks + role files without re-scaffolding or overwriting the tree.
+    // integration): configure hooks without re-scaffolding or overwriting the tree.
     private static int ExecuteJoin(string integration)
     {
         if (!IsValidIntegration(integration))
@@ -201,8 +199,6 @@ public static class InitCommand
                 ConfigureClaudeHooks(projectRoot);
                 Console.WriteLine("  ✓ Claude Code hooks configured");
             }
-
-            GenerateRoleFilesIfMissing(projectRoot);
 
             if (integration == "codex")
             {
@@ -417,16 +413,6 @@ public static class InitCommand
 
             if (entryHooks.Count == 0)
                 entries.RemoveAt(i);
-        }
-    }
-
-    private static void GenerateRoleFilesIfMissing(string projectRoot)
-    {
-        var rolesDir = Path.Combine(projectRoot, "dydo", "_system", "roles");
-        if (!Directory.Exists(rolesDir) || Directory.GetFiles(rolesDir, "*.role.json").Length == 0)
-        {
-            new RoleDefinitionService().WriteBaseRoleDefinitions(projectRoot);
-            Console.WriteLine("  ✓ Base role definitions generated");
         }
     }
 

@@ -15,7 +15,7 @@ public class SyncCommandTests : IDisposable
     {
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-sync-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
-        _reviewer = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "reviewer");
+        _reviewer = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "reviewer");
     }
 
     public void Dispose()
@@ -107,7 +107,7 @@ public class SyncCommandTests : IDisposable
     [InlineData("docs-writer", "gpt-5.6-terra")]
     public void SyncCodexRole_DefaultModels_EmitsTierCorrectModel(string roleName, string expectedModel)
     {
-        var role = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == roleName);
+        var role = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == roleName);
         SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
@@ -138,7 +138,7 @@ public class SyncCommandTests : IDisposable
     [InlineData("code-writer")]
     public void SyncCodexRole_OmitsToolsField(string roleName)
     {
-        var role = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == roleName);
+        var role = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == roleName);
 
         SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
 
@@ -202,7 +202,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncRole_WriterRole_GetsWriterToolsAndStance()
     {
-        var codeWriter = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "code-writer");
+        var codeWriter = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "code-writer");
         SyncCommand.SyncRole(codeWriter, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
@@ -221,7 +221,7 @@ public class SyncCommandTests : IDisposable
     public void ExtractMustReads_IsRoleSpecific()
     {
         // docs-writer's must-reads come from ITS template (writing-docs, not coding-standards)
-        var docsWriter = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "docs-writer");
+        var docsWriter = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "docs-writer");
         var mustReads = SyncCommand.ExtractMustReads(docsWriter, _testDir);
 
         Assert.Contains("dydo/reference/writing-docs.md", mustReads);
@@ -448,7 +448,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncSkillOnlyRole_WritesSkillButNoAgent()
     {
-        var planner = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "planner");
+        var planner = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "planner");
         SyncCommand.SyncSkillOnlyRole(planner, _testDir);
 
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "planner", "SKILL.md")));
@@ -610,7 +610,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncRole_WithEffort_EmitsEffortLine()
     {
-        var codeWriter = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "code-writer");
+        var codeWriter = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "code-writer");
         SyncCommand.SyncRole(codeWriter, _testDir, TestModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
@@ -620,7 +620,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncRole_UnmappedRole_FallsBackToInherit()
     {
-        var testWriter = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "test-writer");
+        var testWriter = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "test-writer");
         SyncCommand.SyncRole(testWriter, _testDir, TestModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "test-writer.md"));
@@ -717,7 +717,7 @@ public class SyncCommandTests : IDisposable
     {
         // Decision 026 §1–2: every Tier-1 mode skill states the doctrine — managers
         // write no code, implementation goes through workflows, trivial-edit exception.
-        var role = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == roleName);
+        var role = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == roleName);
         SyncCommand.SyncSkillOnlyRole(role, _testDir);
 
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md"));
@@ -729,7 +729,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void ChiefOfStaff_Skill_CarriesCharacterAndInvariants()
     {
-        var chief = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "chief-of-staff");
+        var chief = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "chief-of-staff");
         SyncCommand.SyncSkillOnlyRole(chief, _testDir);
 
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md"));
@@ -751,7 +751,7 @@ public class SyncCommandTests : IDisposable
         // Decision 026 sweep: worker-tier dispatch, .needs-merge markers, and
         // `dydo worktree merge` flows are 1.0 machinery that no longer exists.
         var methodology = SyncCommand.ExtractMethodology(
-            RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "orchestrator"), _testDir);
+            RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "orchestrator"), _testDir);
 
         Assert.DoesNotContain(".needs-merge", methodology);
         Assert.DoesNotContain("dydo worktree merge", methodology);

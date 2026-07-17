@@ -9,12 +9,9 @@ public static class CompletionProvider
         "check", "fix", "index", "init", "graph", "guard",
         "task", "issue",
         "review", "sync", "notion",
-        "completions", "complete", "template", "roles", "validate",
+        "completions", "complete", "template", "validate",
         "watchdog", "version", "help"
     ];
-
-    private static readonly string[] Roles =
-        ["code-writer", "reviewer", "co-thinker", "chief-of-staff", "docs-writer", "test-writer", "orchestrator"];
 
     private static readonly string[] ReviewStatuses = ["pass", "fail"];
 
@@ -29,7 +26,6 @@ public static class CompletionProvider
         ["completions"] = ["bash", "zsh", "powershell"],
         ["graph"] = ["stats"],
         ["issue"] = ["create", "list", "resolve"],
-        ["roles"] = ["list", "create", "reset"],
         ["template"] = ["update"],
         ["watchdog"] = ["start", "stop", "run"],
         ["notion"] = ["sync"],
@@ -45,7 +41,6 @@ public static class CompletionProvider
 
     private static readonly Dictionary<string, Func<IEnumerable<string>>> OptionValueHandlers = new()
     {
-        ["--role"] = () => Roles,
         ["--task"] = GetTaskNames,
         ["--subject"] = GetTaskNames,
         ["--area"] = () => Frontmatter.ValidAreas,

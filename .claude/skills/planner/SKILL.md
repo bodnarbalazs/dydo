@@ -5,7 +5,7 @@ description: Creates implementation plans and task breakdowns. The methodology, 
 
 # Planner
 
-You are working as a **planner**. Your job: design the implementation approach.
+Turn a ripe design into a plan so unambiguous that implementation becomes mechanical.
 
 ---
 
@@ -13,73 +13,91 @@ You are working as a **planner**. Your job: design the implementation approach.
 
 > A good plan answers "what" and "how" so clearly that implementation becomes mechanical.
 
-The code-writer shouldn't need to make architectural decisions — those are yours. Be specific. List files. Define steps. Anticipate problems.
+The implementer makes no architectural decisions — those are yours. Be specific. List files. Define steps. Anticipate problems. **A plan enters review with zero open questions** — an unanswerable question is a spec gap: back to design, not into code.
 
 ---
 
 ## Work
 
-Your goal: produce a clear implementation plan that a code-writer can execute.
+### Explore first
 
-### Check for Existing Context
+1. Find where the change fits. Note the files.
+2. Find how similar things are done here. Note the paths — the plan cites them.
+3. Search prior art (existing library, existing code, past decisions). Record the evidence even when you reject it.
+4. Spot the hazards: data-shape changes, shared hot files, rollback.
 
-A brief or decision doc may already exist from a co-thinker session:
-- Look in inbox: `dydo inbox show`
-- Check workspace: `dydo/agents/*/brief-<task-name>.md`
+### Write the root file
 
-### Explore the Codebase
+`dydo/project/sprints/<name>.md`:
 
-Before planning, understand what exists:
-
-1. **Find relevant code** — Where does this change fit?
-2. **Identify patterns** — How are similar things done?
-3. **Note dependencies** — What will this touch?
-4. **Spot risks** — What could go wrong?
-
-### Write the Plan
-
-Create an implementation plan:
-
-```bash
-dydo task create <task-name> --area <area> --description "Brief description"
-```
-
-Then write the plan in your workspace:
-
-```
-dydo/agents/you/plan-<task-name>.md
-```
-
-Structure:
 ```markdown
-# Plan: <Task Name>
+---
+title: <Name>
+seq: <n>
+status: planning        # planning → plan-review → active → audit → done
+gate-result:
+---
 
-## Approach
-[High-level approach in 2-3 sentences]
+# <Name>
 
-## Files to Modify
-- `path/to/file1` — [what changes]
-- `path/to/file2` — [what changes]
+## 1. Specification
+**Intent** — what this delivers and why, 2–4 sentences.
+**In scope** / **Out of scope** — explicit lists. Out-of-scope is binding.
+**Acceptance criteria** — observable, testable; the audit checks exactly these.
+**Questions & answers** — every question raised during design, with its answer. None open.
 
-## Files to Create
-- `path/to/new-file` — [purpose]
+## 2. Prior art
+What was searched, what was found, why rejected/adopted. Evidence, not claims.
 
-## Implementation Steps
-1. [Step 1] — [verification]
-2. [Step 2] — [verification]
-3. [Step 3] — [verification]
-...
+## 3. Design
+Touchpoints, the existing patterns to follow (with paths), hazards, rollback.
 
-## Tests to Add
-- [ ] Test case 1
-- [ ] Test case 2
+## 4. Slice map
+| # | slice file                  | files touched (disjoint) | deps | gate |
+|---|-----------------------------|--------------------------|------|------|
+| 1 | <sprint>-1-<slug>           | path/A.cs                | —    | <exact command> |
+| 2 | <sprint>-2-<slug>           | path/B.cs                | 1    | <exact command> |
 
-## Risks & Mitigations
-- **Risk:** [What could go wrong]
-  **Mitigation:** [How to handle it]
+## 5. Ordering & isolation
+Which lanes run in parallel worktrees vs serial in-tree; shared hot files; why the
+slices cannot collide. The orchestrator assigns worktrees and merges passed slices
+back serially — this section is its instructions.
 
-## Out of Scope
-- [Things explicitly not included]
+## 6. Watch-outs
+The traps a reviewer or implementer must not walk into.
 ```
 
-Only create formal decision docs (`dydo/project/decisions/`) for non-obvious choices that required significant research. Obvious choices go in the plan.
+### Write one slice file per row
+
+`dydo/project/slices/<sprint>-<n>-<slug>.md`:
+
+```markdown
+---
+title: <Slice name>
+sprint: <sprint-name>
+seq: <n>
+status: ready           # ready → in-progress → done
+---
+
+# Slice <n> — <Name>
+
+## Spec fragment
+What this slice delivers; its acceptance criteria (subset of the root's).
+
+## Implementation detail
+Files to touch, files to create, exact steps, concrete code examples,
+the existing pattern to copy and where it lives. Mechanical — no decisions left.
+
+## Out of scope for this slice
+
+## Gate
+The exact build/test/check commands that must be green before done.
+```
+
+Slices are **disjoint by file** and **atomic** — each reviewable in one round. A slice file must stand alone: a fresh implementer with only that file and the coding standards can execute it. No model names in plan text. Use the [dydo glossary](../../../reference/dydo-glossary.md)'s terms in every record — sprint, slice, lane, gate mean exactly one thing each.
+
+### Hand off to the gate
+
+Flip the root to `status: plan-review`. A **separate** reviewer subagent (reviewer skill, plan target) reviews it — fresh eyes: it gets the artifacts, never this conversation. Pass verdict in the root → flip `active`; slices are live. Fail → findings come back to you.
+
+You planned it, so you can orchestrate it — but weigh your context: noisy from exploration → hand the green-lit sprint to a fresh orchestrator; high-signal → run it yourself.

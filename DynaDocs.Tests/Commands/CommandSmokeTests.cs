@@ -26,7 +26,6 @@ public class CommandSmokeTests
             IssueCommand.Create,
             InitCommand.Create,
             ReviewCommand.Create,
-            RolesCommand.Create,
             TaskCommand.Create,
             TemplateCommand.Create,
             ValidateCommand.Create,
@@ -62,7 +61,6 @@ public class CommandSmokeTests
                 IssueCommand.Create(),
                 InitCommand.Create(),
                 ReviewCommand.Create(),
-                RolesCommand.Create(),
                 TaskCommand.Create(),
                 TemplateCommand.Create(),
                 ValidateCommand.Create(),
@@ -75,7 +73,7 @@ public class CommandSmokeTests
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
             // Must match Program.cs: 18 Create() commands + 1 inline (version) = 19
-            Assert.Equal(19, rootCommand.Subcommands.Count);
+            Assert.Equal(18, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

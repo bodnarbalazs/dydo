@@ -25,7 +25,6 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/backlog", "Identified, scoped work not yet in flight", "project"),
         new("project/future-features", "Ideas not in scope for current version", "project"),
         new("_system", "System configuration (committed)", "_system"),
-        new("_system/roles", "Role definition files", "_system"),
         new("_system/templates", "Project-local template overrides", "_system"),
         new("_system/.local", "Machine-local runtime state (not committed)", "_system"),
         new("_assets", "Documentation assets (images, diagrams)", "_assets")
@@ -70,7 +69,6 @@ public class FolderScaffolder : IFolderScaffolder
         CopyBuiltInTemplates(basePath);
         ScaffoldTemplateAdditions(basePath);
         ScaffoldTypesJson(basePath);
-        new RoleDefinitionService().WriteBaseRoleDefinitions(basePath);
         CopyBuiltInAssets(basePath);
 
         WriteIfNotExists(

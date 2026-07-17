@@ -86,8 +86,6 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Theory]
-    [InlineData("--role", "code-writer")]
-    [InlineData("--role", "reviewer")]
     [InlineData("--area", "frontend")]
     [InlineData("--area", "backend")]
     [InlineData("--status", "pass")]

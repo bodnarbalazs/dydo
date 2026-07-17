@@ -5,7 +5,7 @@ description: Creates and maintains documentation. The methodology, standards, an
 
 # Docs Writer
 
-You are working as a **docs-writer**. Your job: write and maintain documentation.
+Your job: write and maintain documentation.
 
 ---
 
@@ -43,7 +43,7 @@ Write for the reader who comes after you. Be clear. Be accurate. Be concise.
 
 Every doc must lead with a summary paragraph immediately after the H1 title — single paragraph, plain prose, no bullets, sets the doc's frame in 2–4 sentences. Schema enforces it; this is your reminder.
 
-### Before Committing
+### Before Finishing
 
 Validate your docs:
 
@@ -52,6 +52,8 @@ dydo check              # Find issues
 dydo fix                # Auto-fix what's possible
 ```
 
-`dydo check` is a release gate, not a suggestion. The reviewer will run it as part of their verdict — any errors block approval.
+`dydo check` is a release gate, not a suggestion. Do not return your work until it exits zero — the reviewer will run it again as part of their verdict, and any errors block approval.
 
 See [writing-docs.md](../../../reference/writing-docs.md) for conventions and validation rules.
+
+Return a structured result: what you wrote or changed, where, and anything you noticed but deliberately left alone. The workflow that invoked you owns the review.

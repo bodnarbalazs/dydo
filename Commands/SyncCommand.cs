@@ -8,22 +8,25 @@ using DynaDocs.Services;
 using DynaDocs.Utils;
 
 /// <summary>
-/// Compiles dydo role definitions into native agent artifacts (Decision 024):
+/// Compiles dydo roles into native agent artifacts (Decision 024):
 /// Claude Code <c>.claude/agents/&lt;role&gt;.md</c> / <c>.claude/skills/&lt;role&gt;/SKILL.md</c>
 /// and Codex <c>.codex/agents/&lt;role&gt;.toml</c> / <c>.agents/skills/&lt;role&gt;/SKILL.md</c>.
 ///
-/// The role JSON supplies the metadata (name, description, permission shape → tool
-/// profile). The mode template supplies the methodology prose, minus the old-runtime
-/// orchestration sections (claim / wait / dispatch / release) which the native model
-/// replaces.
+/// The mode template IS the role: its frontmatter supplies the metadata (description,
+/// emit shape, read-only → tool profile) and its body supplies the methodology prose,
+/// minus the old-runtime orchestration sections (claim / wait / dispatch / release)
+/// which the native model replaces. Roles are discovered by enumerating
+/// mode-*.template.md — shipped templates plus project-local
+/// dydo/_system/templates/ ones, which is how custom roles compile.
 ///
 /// Two emission shapes (Decision 024 native pivot):
-/// - Worker roles (code-writer, reviewer, test-writer, docs-writer) emit
-///   BOTH an agent definition and a skill — they are spawned as typed sub-agents.
-/// - Skill-only roles (planner) emit a skill but NO agent: planner is a methodology the
-///   orchestrator/co-thinker applies in their own thread, not a claimable identity.
-/// - Tier-1 manager modes (orchestrator, co-thinker, chief-of-staff — Decision 026) also
-///   emit skill-only: they are named terminal identities, never spawnable sub-agents.
+/// - <c>emit: agent</c> roles (the workers: code-writer, reviewer, test-writer,
+///   docs-writer) emit BOTH an agent definition and a skill — they are spawned as
+///   typed sub-agents.
+/// - <c>emit: skill</c> roles emit a skill but NO agent: planner is a methodology the
+///   orchestrator/co-thinker applies in their own thread, and the Tier-1 manager modes
+///   (orchestrator, co-thinker, chief-of-staff — Decision 026) are named terminal
+///   identities, never spawnable sub-agents.
 /// </summary>
 public static partial class SyncCommand
 {
@@ -33,23 +36,6 @@ public static partial class SyncCommand
         "Must-Reads", "Set Role", "Register General Wait", "Verify", "Complete",
         "Read the Plan or Brief First",
     };
-
-    // Tier-2 worker roles (Decision 024): spawned by orchestrators/workflows to do scoped
-    // task work — they emit BOTH a native sub-agent and a skill. Tier-1 roles (orchestrator,
-    // co-thinker) are named terminal agents, not sub-agents, so they are not synced here.
-    private static readonly string[] WorkerRoles = ["code-writer", "reviewer", "test-writer", "docs-writer"];
-
-    // Skill-only roles (Decision 024): a methodology the Tier-1 agent applies in its own
-    // thread (planner = the orchestrator's planning discipline). They emit a skill but NO
-    // agent — there is no sub-agent to spawn and no claimable identity. Sourced from the
-    // single SkillOnlyRoles set on RoleDefinitionService so the sync emitter and the
-    // claimable-surface filters can never drift apart.
-    private static readonly HashSet<string> SkillOnlyRoles = RoleDefinitionService.SkillOnlyRoles;
-
-    // Tier-1 manager modes (Decision 026 §3): orchestrator / co-thinker / chief-of-staff
-    // are named terminal identities, never sub-agents — so like skill-only roles they emit
-    // a skill (the mode methodology, doctrine included) but NO agent definition.
-    private static readonly string[] Tier1ManagerRoles = ["orchestrator", "co-thinker", "chief-of-staff"];
 
     // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
     // Codex target reads a different vendor key from the same tiers map; the role → tier
@@ -67,19 +53,17 @@ public static partial class SyncCommand
     internal static int Execute(string? projectRoot = null)
     {
         projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
-        var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var roles = RoleDefinitionService.DiscoverRoles(projectRoot);
         var models = new ConfigService().LoadConfig(projectRoot)?.Models;
 
-        var workerRoles = baseRoles.Where(r => WorkerRoles.Contains(r.Name)).ToList();
+        var workerRoles = roles.Where(r => r.EmitAgent).ToList();
         foreach (var role in workerRoles)
         {
             SyncRole(role, projectRoot, models);
             SyncCodexRole(role, projectRoot, models);
         }
 
-        var skillOnlyRoles = baseRoles
-            .Where(r => SkillOnlyRoles.Contains(r.Name) || Tier1ManagerRoles.Contains(r.Name))
-            .ToList();
+        var skillOnlyRoles = roles.Where(r => !r.EmitAgent).ToList();
         foreach (var role in skillOnlyRoles)
         {
             SyncSkillOnlyRole(role, projectRoot);
@@ -294,7 +278,7 @@ public static partial class SyncCommand
     /// </summary>
     internal static string ExtractMethodology(RoleDefinition role, string projectRoot)
     {
-        var raw = TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile);
+        var raw = TemplateGenerator.ReadTemplate(role.TemplateFile, projectRoot);
         // Resolve includes against the project root so project-local template-additions
         // overrides are honored regardless of the CWD dydo was invoked from.
         var resolved = TemplateGenerator.ResolveIncludes(raw, projectRoot);
@@ -309,10 +293,10 @@ public static partial class SyncCommand
         return body.Trim() + "\n";
     }
 
-    /// <summary>Read-only iff the role has no writable paths — it touches no source/tests/docs,
-    /// so it needs no Edit/Write tools. Reviewer is the sole base role of this shape.</summary>
+    /// <summary>A read-only role touches no source/tests/docs, so it needs no Edit/Write
+    /// tools (frontmatter <c>read-only: true</c>). Reviewer is the sole base role of this shape.</summary>
     private static bool IsReadOnlyRole(RoleDefinition role) =>
-        role.WritablePaths.Count == 0;
+        role.ReadOnly;
 
     /// <summary>
     /// Renumbers each run of consecutive ordered-list items (1., 2., …) so that concatenating
@@ -351,7 +335,7 @@ public static partial class SyncCommand
     internal static List<string> ExtractMustReads(RoleDefinition role, string projectRoot)
     {
         var template = TemplateGenerator.ResolveIncludes(
-            TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile), projectRoot);
+            TemplateGenerator.ReadTemplate(role.TemplateFile, projectRoot), projectRoot);
 
         var section = MustReadsSectionRegex().Match(template);
         if (!section.Success)

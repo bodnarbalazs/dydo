@@ -72,7 +72,7 @@
       "severity": "block"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|task|review|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\\b.*)",
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|task|review|template|init|check|fix|index|graph|completions|complete|version|help|validate|issue|inquisition|watchdog)\\b.*)",
       "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
       "severity": "block"
     },
@@ -108,19 +108,10 @@
     }
   ],
   "frameworkHashes": {
-    "_system/templates/mode-code-writer.template.md": "05035118345b4c33514cb6b5dc03f10d4d5c4d6ab1a37ceb1ac4480d7910156f",
-    "_system/templates/mode-reviewer.template.md": "cb093797a7704e6ab569dfc52522b5053d4a34ef0476b089e3e6102f28cb4a52",
-    "_system/templates/mode-co-thinker.template.md": "158fd59a08f639d01c2f7e56dff7c54113e3c47aa0590c0bc29da66973d902a0",
-    "_system/templates/mode-chief-of-staff.template.md": "cd0e720e94629a1235ccaf10da19210c98c5c999e553152f89e725da07f3bcac",
-    "_system/templates/mode-planner.template.md": "79968ef82e9e6180a9a4f68780c7fbf82bf475dadb3cf3ea8ebfb80345f25102",
-    "_system/templates/mode-docs-writer.template.md": "31ab5323ffbab7eb4097744c29d417803513e7f6f45d7d397d6dc417612c9775",
     "reference/about-dynadocs.md": "20b793ac842060987f33f3fbf02d67b698dd5e3352a27e60e872af35d3c7b0d9",
     "reference/dydo-commands.md": "cb862bd8b07ff2686d205887b74236570c1a1bcb6015bb42d8d3557f779da039",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
-    "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9",
-    "_system/templates/mode-test-writer.template.md": "32582aa1df41766ec9a235b21fa880a4dd65338032596b2f73eee20dacb18075",
-    "_system/templates/mode-orchestrator.template.md": "554ea51e228b5efeb1220a32f99bca83ef99c3b02eaae713808157802cc5c3a5",
-    "_system/templates/mode-sprint-auditor.template.md": "4903ed2f990da08226a80729d74046baa7cffc1b94d40832adb1c07cccad2272"
+    "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9"
   }
 }

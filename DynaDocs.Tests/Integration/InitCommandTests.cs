@@ -660,34 +660,25 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("permissions", content);
     }
 
+    // The role.json layer is gone (DR-041 residue hunt): the mode template IS the role,
+    // so init scaffolds mode templates — not role definition files — and sync discovers
+    // roles by enumerating them.
     [Fact]
-    public async Task Init_Claude_GeneratesRoleFiles()
-    {
-        var result = await InitProjectAsync("claude");
-
-        result.AssertSuccess();
-        AssertDirectoryExists("dydo/_system/roles");
-
-        var rolesDir = Path.Combine(TestDir, "dydo/_system/roles");
-        var files = Directory.GetFiles(rolesDir, "*.role.json");
-        Assert.Equal(7, files.Length);
-        Assert.Contains(files, f => Path.GetFileName(f) == "code-writer.role.json");
-        Assert.Contains(files, f => Path.GetFileName(f) == "orchestrator.role.json");
-        Assert.Contains(files, f => Path.GetFileName(f) == "chief-of-staff.role.json");
-        Assert.DoesNotContain(files, f => Path.GetFileName(f) == "planner.role.json");
-        Assert.DoesNotContain(files, f => Path.GetFileName(f) == "judge.role.json");
-    }
-
-    [Fact]
-    public async Task Init_None_GeneratesRoleFiles()
+    public async Task Init_GeneratesModeTemplates_NotRoleFiles()
     {
         var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
+        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/_system/roles")),
+            "init must not scaffold the removed dydo/_system/roles layer");
 
-        var rolesDir = Path.Combine(TestDir, "dydo/_system/roles");
-        var files = Directory.GetFiles(rolesDir, "*.role.json");
-        Assert.Equal(7, files.Length);
+        var templatesDir = Path.Combine(TestDir, "dydo/_system/templates");
+        var modeTemplates = Directory.GetFiles(templatesDir, "mode-*.template.md")
+            .Select(Path.GetFileName).ToList();
+        Assert.Contains("mode-code-writer.template.md", modeTemplates);
+        Assert.Contains("mode-reviewer.template.md", modeTemplates);
+        Assert.Contains("mode-chief-of-staff.template.md", modeTemplates);
+        Assert.DoesNotContain("mode-sprint-auditor.template.md", modeTemplates);
     }
 
     [Fact]

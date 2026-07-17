@@ -71,7 +71,7 @@ public static class TemplateCommand
         var tally = new UpdateTally();
         UpdateFrameworkFiles(dydoRoot, config, diff, force, tally);
 
-        tally.Updated += CleanStaleTemplates(dydoRoot, diff);
+        tally.Updated += CleanStaleTemplates(dydoRoot, config, diff);
         PruneStaleHashes(config, diff);
 
         tally.Updated += ApplyConfigDefaults(config, diff);
@@ -152,7 +152,7 @@ public static class TemplateCommand
         }
     }
 
-    private static int CleanStaleTemplates(string dydoRoot, bool diff)
+    private static int CleanStaleTemplates(string dydoRoot, DydoConfig config, bool diff)
     {
         var validSet = new HashSet<string>(FrameworkTemplateFiles);
         var templatesDir = Path.Combine(dydoRoot, "_system", "templates");
@@ -164,6 +164,11 @@ public static class TemplateCommand
         {
             var relative = "_system/templates/" + Path.GetFileName(file);
             if (validSet.Contains(relative)) continue;
+
+            // Only remove files we know we own (hash-tracked framework copies that are no
+            // longer shipped). An untracked mode-*.template.md is a user's custom role —
+            // dydo sync compiles it — and any other untracked template is user data too.
+            if (!config.FrameworkHashes.ContainsKey(relative)) continue;
 
             if (!diff)
                 File.Delete(file);

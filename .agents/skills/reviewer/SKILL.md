@@ -5,7 +5,7 @@ description: Reviews code changes for quality and correctness. The methodology, 
 
 # Reviewer
 
-You are working as a **reviewer**. Your job: review code, not write it.
+Your job: review, not write.
 
 ---
 
@@ -27,13 +27,26 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 
 ---
 
+## Review Targets
+
+One reviewer, different targets. The invoking context names yours; each target's rubric lives in this skill's `resources/` folder:
+
+- **Code** — [resources/code.md](resources/code.md)
+- **Plan** — [resources/plan.md](resources/plan.md)
+- **Merged sprint** (audit) — [resources/merge-sprint.md](resources/merge-sprint.md)
+- **Docs** — [resources/docs.md](resources/docs.md)
+- **Tests** — [resources/tests.md](resources/tests.md)
+
+**Reading your target's resource is mandatory — it is step zero of every review.** Its checklist exists so nothing domain-specific gets missed; work it item by item. You only need the one target you were invoked for.
+
+---
+
 ## Work
 
-1. **Read the brief** — Understand what was implemented and why, or what you've been asked to audit
-2. **Review the changes** — Check against coding standards, including stack specific standards if there are any
-3. **Run tests** — Verify they pass
-4. **Run `dydo check`** — All errors must be clean before approval. Warnings should be addressed if introduced by this commit, or noted as pre-existing in the review verdict.
-5. **Run tests** — Use the worktree-isolated runner
+1. **Read the brief** — what you're reviewing and against what contract (slice file, sprint root, doc conventions).
+2. **Read your target's resource** — then work through its checklist item by item; every item ends verified or a finding. A review that skipped its checklist is not a review.
+3. **Verify, don't trust** — run the gates and checks yourself; every finding cites file:line evidence.
+4. **Run tests** — Use the worktree-isolated runner
 
 ```bash
 python DynaDocs.Tests/coverage/run_tests.py
@@ -41,7 +54,7 @@ python DynaDocs.Tests/coverage/run_tests.py
 
 Do **not** run `dotnet test` directly — use the worktree runner to avoid DLL lock contention.
 
-6. **Coverage gate** — Verify tier compliance
+5. **Coverage gate** — Verify tier compliance
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py
@@ -54,25 +67,26 @@ This runs tests with coverage collection and checks results. gap_check automatic
 If a failure appears genuinely unrelated to the task, do **not** pass the review or release. Report the failure to the user or orchestrator and wait for guidance. Another agent working on a different part of the codebase may have already fixed it, or someone will be dispatched to address it.
 
 Include the gap_check output in your review feedback so the code-writer knows exactly what to fix.
-
-**Document findings** — Note issues clearly
-
-**Review checklist:**
-
-- [ ] Code follows coding standards
-- [ ] Logic is correct and handles edge cases
-- [ ] Tests exist and are meaningful
-- [ ] No security vulnerabilities introduced
-- [ ] No unnecessary complexity
-- [ ] Changes match the task requirements
-- [ ] If reviewing documentation, verify against [writing-docs.md](../../../reference/writing-docs.md)
 - [ ] `gap_check.py` exits 0 — coverage regressions mean FAIL, no exceptions
 - [ ] New code above T1 has tier annotation (`// @test-tier: N`)
 
 ### Out-of-Scope Issues
 
-If you discover a bug or problem outside the current task scope during review, report it to whoever dispatched you. If you were dispatched directly by the user, propose before filing:
+If you discover a bug or problem outside the current task scope during review, report it to whoever invoked you. If you were invoked directly by the user, propose before filing:
 
 > "I found [X]. Should I file an issue?"
 
 If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by review` — always pass `--summary` so the issue file lands `dydo check`-clean.
+
+---
+
+## Verdict
+
+**Pass** (code target): `dydo review complete <task-name> --status pass --notes "..."`. Plan target: write the verdict block into the sprint root. Audit target: verdict into the sprint's `gate-result`.
+
+**Fail**: report the verdict and specific findings to whoever invoked you — the workflow or agent that spawned you decides what happens next. You assess and report; you don't dispatch fixes.
+
+**Be specific.** Don't just say "fix the bugs." Say exactly what's wrong:
+- "Line 45: Null check missing, will throw if user is null"
+- "Missing test for empty input case"
+- "Method name doesn't follow convention (should be PascalCase)"

@@ -4,7 +4,7 @@ using System.Reflection;
 
 /// <summary>
 /// Pins the assembly-wide DisableTestParallelization invariant established by #0167.
-/// Cross-test races on Console.Out/Error and ProcessUtils.*Override statics are
+/// Cross-test races on Console.Out/Error and other process-global statics are
 /// structurally impossible only while this attribute is set; flipping it back to
 /// parallel execution must be a deliberate, reviewed change.
 /// </summary>

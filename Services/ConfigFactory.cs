@@ -109,7 +109,6 @@ public static class ConfigFactory
             ["docs-writer"] = "standard",
             ["reviewer"] = "strong",
             ["inquisitor"] = "strong",
-            ["judge"] = "strong",
             ["planner"] = "strong"
         },
         // The declared second-line model `dydo model cap` rebinds to when the strong

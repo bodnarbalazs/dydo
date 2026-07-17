@@ -2,7 +2,7 @@ namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Utils;
 
-[Collection("ProcessUtils")]
+[Collection("Integration")]
 public class PathUtilsWorktreeIsolationTests : IDisposable
 {
     private readonly string _testDir;

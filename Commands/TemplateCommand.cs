@@ -19,6 +19,7 @@ public static class TemplateCommand
     [
         "reference/about-dynadocs.md",
         "reference/dydo-commands.md",
+        "reference/dydo-glossary.md",
         "reference/writing-docs.md",
         "guides/how-to-use-docs.md"
     ];
@@ -511,6 +512,7 @@ public static class TemplateCommand
     {
         "reference/about-dynadocs.md" => TemplateGenerator.GenerateAboutDynadocsMd(),
         "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
+        "reference/dydo-glossary.md" => TemplateGenerator.GenerateDydoGlossaryMd(),
         "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
         "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
         _ => null

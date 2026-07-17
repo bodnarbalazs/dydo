@@ -48,9 +48,7 @@
       "test-writer": "standard",
       "docs-writer": "standard",
       "reviewer": "strong",
-      "sprint-auditor": "strong",
       "inquisitor": "strong",
-      "judge": "strong",
       "planner": "strong"
     },
     "efforts": {},
@@ -111,6 +109,7 @@
   "frameworkHashes": {
     "reference/about-dynadocs.md": "20b793ac842060987f33f3fbf02d67b698dd5e3352a27e60e872af35d3c7b0d9",
     "reference/dydo-commands.md": "cb862bd8b07ff2686d205887b74236570c1a1bcb6015bb42d8d3557f779da039",
+    "reference/dydo-glossary.md": "b61984d0dca6710b204265d95da03cad1890b5aace1d1a7c989bde4e2e6eff9b",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9"

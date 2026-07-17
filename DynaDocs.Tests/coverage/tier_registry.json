@@ -19,14 +19,6 @@
     "test_file": "DynaDocs.Tests/Sync/ThreeWayTextMergeTests.cs",
     "tier": 2
   },
-  "Utils/FileLock.cs": {
-    "test_file": "DynaDocs.Tests/Utils/FileLockTests.cs",
-    "tier": 2
-  },
-  "Utils/FileReadRetry.cs": {
-    "test_file": "DynaDocs.Tests/Utils/FileReadRetryTests.cs",
-    "tier": 2
-  },
   "Utils/FrontmatterParser.cs": {
     "test_file": "DynaDocs.Tests/Utils/FrontmatterParserTests.cs",
     "tier": 2

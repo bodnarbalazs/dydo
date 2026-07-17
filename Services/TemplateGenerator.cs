@@ -36,6 +36,31 @@ public static class TemplateGenerator
     }
 
     /// <summary>
+    /// Lists the skill reference files shipped for a role (Templates/skill-references/&lt;role&gt;/*)
+    /// as (fileName, content) pairs — per-target rubrics `dydo sync` copies into the compiled
+    /// skill folder (DR-039 subskills, DR-042). MSBuild mangles hyphenated DIRECTORY names in
+    /// resource ids ('skill-references' → 'skill_references'); file names survive verbatim, so
+    /// both spellings are probed.
+    /// </summary>
+    public static IEnumerable<(string FileName, string Content)> GetSkillReferences(string roleName)
+    {
+        string[] prefixes =
+        [
+            $"DynaDocs.Templates.skill_references.{roleName}.",
+            $"DynaDocs.Templates.skill-references.{roleName}.",
+        ];
+        foreach (var resource in _assembly.GetManifestResourceNames())
+        {
+            var prefix = prefixes.FirstOrDefault(resource.StartsWith);
+            if (prefix == null) continue;
+            using var stream = _assembly.GetManifestResourceStream(resource);
+            if (stream == null) continue;
+            using var reader = new StreamReader(stream);
+            yield return (resource[prefix.Length..], reader.ReadToEnd());
+        }
+    }
+
+    /// <summary>
     /// Reads a template from embedded resources.
     /// </summary>
     private static string? ReadEmbeddedTemplate(string templateName)

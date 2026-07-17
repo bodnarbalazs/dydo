@@ -133,35 +133,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-## 5. Workflow Discipline
-
-**You are not done when the code works.**
-
-The full workflow:
-
-1. **Claim identity** — `dydo agent claim <name>` before starting
-2. **Set role** — `dydo agent role code-writer --task <name>`
-3. **Do the work** — The guard enforces your role's permissions
-4. **Request review** — `dydo dispatch --auto-close --role reviewer --task <name> --brief "..."`
-5. **Address feedback** — Same agent fixes issues (context continuity)
-6. **Human approval** — Task needs human review before closing
-7. **Release** — `dydo agent release` when done
-
-**Do not:**
-- Skip the review step (different agent reviews your code)
-- Write docs for code you wrote (dispatch to docs-writer if human says so)
-- Mark tasks complete without human approval
-- Edit files outside your role's permissions
-
-**Verify before finishing:**
-```bash
-dydo whoami          # Confirm you're still claimed
-dydo agent status    # Confirm role and permissions
-```
-
----
-
-## 6. Security
+## 5. Security
 
 Security is not an afterthought. These practices are non-negotiable.
 
@@ -254,10 +226,6 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 ```
 
 ---
-
-### Use of sub agents
-
-Only use any sub-agent tool you have for discoveries, never let them write code. If you want to delegate code-writing always use `dydo dispatch`, never sub-agents.
 
 ## Related
 

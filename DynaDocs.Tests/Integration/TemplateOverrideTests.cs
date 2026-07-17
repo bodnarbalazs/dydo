@@ -80,7 +80,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         var content = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("{{AGENT_NAME}}", content);
+        Assert.Contains("Code Writer", content);
     }
 
     [Fact]

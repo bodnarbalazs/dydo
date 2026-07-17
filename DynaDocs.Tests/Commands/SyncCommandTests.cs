@@ -41,6 +41,33 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
     }
 
+    // DR-039 review-target subskills / DR-042: Templates/skill-references/<role>/* land in the
+    // compiled skill's references/ folder, on both the Claude and Codex emit paths.
+    [Fact]
+    public void SyncRole_EmitsSkillReferences_PlanRubric()
+    {
+        SyncCommand.SyncRole(_reviewer, _testDir);
+
+        var plan = Path.Combine(_testDir, ".claude", "skills", "reviewer", "references", "plan.md");
+        Assert.True(File.Exists(plan), "reviewer skill must ship references/plan.md");
+        Assert.Contains("Reviewing a Plan", File.ReadAllText(plan));
+    }
+
+    [Fact]
+    public void SyncCodexSkill_EmitsSkillReferences_PlanRubric()
+    {
+        SyncCommand.SyncCodexSkill(_reviewer, _testDir);
+
+        Assert.True(File.Exists(
+            Path.Combine(_testDir, ".agents", "skills", "reviewer", "references", "plan.md")));
+    }
+
+    [Fact]
+    public void GetSkillReferences_RoleWithoutReferences_IsEmpty()
+    {
+        Assert.Empty(TemplateGenerator.GetSkillReferences("code-writer"));
+    }
+
     [Fact]
     public void SyncCodexRole_EmitsStrongOpenAiModelBinding()
     {

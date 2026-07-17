@@ -13,7 +13,7 @@ public class TemplateGeneratorTests
         var content = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("{{AGENT_NAME}}", content);
+        Assert.Contains("Code Writer", content);
     }
 
     [Fact]
@@ -71,8 +71,8 @@ public class TemplateGeneratorTests
     {
         // Verify specific content to ensure templates aren't empty or corrupted
         var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
-        Assert.Contains("{{AGENT_NAME}}", codeWriterTemplate);
-        Assert.Contains("code-writer", codeWriterTemplate);
+        Assert.Contains("mode: code-writer", codeWriterTemplate);
+        Assert.Contains("slice", codeWriterTemplate);
     }
 
     #endregion

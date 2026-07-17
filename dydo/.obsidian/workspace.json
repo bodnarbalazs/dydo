@@ -185,6 +185,8 @@
   },
   "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
+    "project/decisions/042-plan-first-implementation.md",
+    "project/decisions/042-plan-first-implementation.md.tmp.41024.8fe9b8a5cf60",
     "project/tasks/notion-sync-daemon.md",
     "project/tasks/notion-sync-daemon.md.tmp.78972.0beaa81f718c",
     "reference/about-dynadocs.md.tmp.78972.1064776cace4",
@@ -210,7 +212,6 @@
     "agents/Dexter/modes/chief-of-staff.md",
     "agents/Dexter/modes",
     "project/tasks/probe-scratch.md",
-    "agents/Brian/archive/20260714-005739",
     "project/issues/0295-guard-never-sees-codex-shell-commands-pretooluse-matcher-lists-claude-tool-names.md",
     "agents/Adele/archive/inbox/316c9bfe-msg-reform-r1-fix.md",
     "project/tasks/SpikeReady.md",
@@ -220,7 +221,6 @@
     "agents/Brian/modes/orchestrator.md",
     "agents/Brian/modes/docs-writer.md",
     "agents/Brian/modes/code-writer.md",
-    "agents/Brian/modes/chief-of-staff.md",
     "_assets/dydo_diagram_complex_workflow.svg",
     "_assets/dydo_diagram_simple_workflow.svg"
   ]

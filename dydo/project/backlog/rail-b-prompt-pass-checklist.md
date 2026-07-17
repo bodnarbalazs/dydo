@@ -36,13 +36,25 @@ contain claim-era wording (claim/whoami/dispatch/inbox/wait/workflow.md/roster).
       skills, `settings.json`/hooks, launch.json. Only the 10 role skills + 6 role
       agents are sync-owned.
 
+> **2026-07-17 progress (DR-042 wave, with Fable):** plan-first doctrine landed —
+> [DR-042](../decisions/042-plan-first-implementation.md) (spec+plan format, prohibition);
+> coding-standards §5 rebuilt in both template and live guide; `mode-planner` rewritten to the
+> root+slices format; `mode-reviewer` de-ceremonied + Review Targets section; the plan rubric
+> ships as `Templates/skill-references/reviewer/plan.md` and `dydo sync` now emits skill
+> `references/` folders (both Claude and Codex paths). Remaining mode templates still need
+> your pass.
+
 ## 3. Compiler sources — the actual prompt engineering
 
-- [ ] `Templates/mode-*.template.md` ×9 (chief-of-staff, co-thinker, code-writer,
-      docs-writer, orchestrator, planner, reviewer, sprint-auditor, test-writer) — the
-      methodology bodies `dydo sync` compiles into skills/agents. All carry claim-era
-      prose and `{{AGENT_NAME}}` placeholders (the roster is gone — decide the
-      placeholder's fate in the sync pipeline or drop it from templates).
+- [ ] `Templates/mode-*.template.md` — code-writer/planner/reviewer are DONE (2026-07-17:
+      de-ceremonied, no placeholders, role-specific workflow in the role file). The other
+      six (chief-of-staff, co-thinker, docs-writer, orchestrator, sprint-auditor,
+      test-writer) still carry claim-era prose + `{{AGENT_NAME}}`.
+      **Parked for the manager templates** (orchestrator/chief-of-staff): the trivial-edit
+      exception ("if it needs a reviewer, it needs a plan" — the spawn-time does-this-need-
+      a-plan call) and the delegation rule (discovery subagents freely; implementation only
+      through worker skills in a reviewed workflow) — both cut from coding-standards as
+      role-file content.
 - [ ] `dydo/_system/roles/*.role.json` — prose fields only: `description`,
       `mustReads` lists (several point at docs you may delete below), `denialHint`
       remnants. Tier/tools/paths config is fine. (Constraints arrays already removed.)

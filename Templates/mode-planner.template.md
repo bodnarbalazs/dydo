@@ -1,54 +1,10 @@
 ---
-agent: {{AGENT_NAME}}
 mode: planner
 ---
 
-# {{AGENT_NAME}} — Planner
+# Planner
 
-You are **{{AGENT_NAME}}**, working as a **planner**. Your job: design the implementation approach.
-
----
-
-## Must-Reads
-
-Read these before performing any other operations.
-
-1. [about.md](../../../understand/about.md) — What this project is
-2. [architecture.md](../../../understand/architecture.md) — Codebase structure
-
-*Read coding-standards when you need to make implementation decisions.*
-
-{{include:extra-must-reads}}
-
----
-
-## Set Role
-
-```bash
-dydo agent role planner --task <task-name>
-```
-
-Don't skip! The hook guard will block you from reading/editing any other files.
-
----
-
-## Register General Wait
-
-Right after setting your role, start a general wait so messages reach you in real time. Run `dydo wait` in the background. This is mandatory — the guard blocks tool calls if no general wait is active.
-
-```bash
-dydo wait    # run in background
-```
-
----
-
-## Verify
-
-```bash
-dydo agent status
-```
-
-You can edit: `dydo/agents/{{AGENT_NAME}}/**`, `dydo/project/tasks/**`
+Turn a ripe design into a plan so unambiguous that implementation becomes mechanical.
 
 ---
 
@@ -56,99 +12,89 @@ You can edit: `dydo/agents/{{AGENT_NAME}}/**`, `dydo/project/tasks/**`
 
 > A good plan answers "what" and "how" so clearly that implementation becomes mechanical.
 
-The code-writer shouldn't need to make architectural decisions — those are yours. Be specific. List files. Define steps. Anticipate problems.
+The implementer makes no architectural decisions — those are yours. Be specific. List files. Define steps. Anticipate problems. **A plan enters review with zero open questions** — an unanswerable question is a spec gap: back to design, not into code.
 
 ---
 
 ## Work
 
-Your goal: produce a clear implementation plan that a code-writer can execute.
+### Explore first
 
-### Check for Existing Context
+1. Find where the change fits. Note the files.
+2. Find how similar things are done here. Note the paths — the plan cites them.
+3. Search prior art (existing library, existing code, past decisions). Record the evidence even when you reject it.
+4. Spot the hazards: data-shape changes, shared hot files, rollback.
 
-A brief or decision doc may already exist from a co-thinker session:
-- Look in inbox: `dydo inbox show`
-- Check workspace: `dydo/agents/*/brief-<task-name>.md`
+### Write the root file
 
-### Explore the Codebase
+`dydo/project/sprints/<name>.md`:
 
-Before planning, understand what exists:
-
-1. **Find relevant code** — Where does this change fit?
-2. **Identify patterns** — How are similar things done?
-3. **Note dependencies** — What will this touch?
-4. **Spot risks** — What could go wrong?
-
-### Write the Plan
-
-Create an implementation plan:
-
-```bash
-dydo task create <task-name> --area <area> --description "Brief description"
-```
-
-Then write the plan in your workspace:
-
-```
-dydo/agents/{{AGENT_NAME}}/plan-<task-name>.md
-```
-
-Structure:
 ```markdown
-# Plan: <Task Name>
-
-## Approach
-[High-level approach in 2-3 sentences]
-
-## Files to Modify
-- `path/to/file1` — [what changes]
-- `path/to/file2` — [what changes]
-
-## Files to Create
-- `path/to/new-file` — [purpose]
-
-## Implementation Steps
-1. [Step 1] — [verification]
-2. [Step 2] — [verification]
-3. [Step 3] — [verification]
-...
-
-## Tests to Add
-- [ ] Test case 1
-- [ ] Test case 2
-
-## Risks & Mitigations
-- **Risk:** [What could go wrong]
-  **Mitigation:** [How to handle it]
-
-## Out of Scope
-- [Things explicitly not included]
-```
-
-Only create formal decision docs (`dydo/project/decisions/`) for non-obvious choices that required significant research. Obvious choices go in the plan.
-
+---
+title: <Name>
+seq: <n>
+status: planning        # planning → plan-review → active → audit → done
+gate-result:
 ---
 
-## Complete
+# <Name>
 
-When the plan is ready:
+## 1. Specification
+**Intent** — what this delivers and why, 2–4 sentences.
+**In scope** / **Out of scope** — explicit lists. Out-of-scope is binding.
+**Acceptance criteria** — observable, testable; the audit checks exactly these.
+**Questions & answers** — every question raised during design, with its answer. None open.
 
-### Option A: Dispatch to Code-Writer
+## 2. Prior art
+What was searched, what was found, why rejected/adopted. Evidence, not claims.
 
-```bash
-dydo dispatch --auto-close --role code-writer --task <task-name> --brief "Plan ready. See agents/{{AGENT_NAME}}/plan-<task-name>.md"
+## 3. Design
+Touchpoints, the existing patterns to follow (with paths), hazards, rollback.
+
+## 4. Slice map
+| # | slice file                  | files touched (disjoint) | deps | gate |
+|---|-----------------------------|--------------------------|------|------|
+| 1 | <sprint>-1-<slug>           | path/A.cs                | —    | <exact command> |
+| 2 | <sprint>-2-<slug>           | path/B.cs                | 1    | <exact command> |
+
+## 5. Ordering & isolation
+Serial vs parallel lanes; shared hot files; why the slices cannot collide.
+
+## 6. Watch-outs
+The traps a reviewer or implementer must not walk into.
 ```
 
-After dispatching the code-writer, your work is handed off — the plan is in their hands.
+### Write one slice file per row
 
-### Option B: Transition Yourself to Code-Writer
+`dydo/project/sprint-tasks/<sprint>-<n>-<slug>.md`:
 
-If you're continuing:
+```markdown
+---
+title: <Slice name>
+sprint: <sprint-name>
+seq: <n>
+status: ready           # ready → in-progress → done
+---
 
-```bash
-dydo agent role code-writer --task <task-name>
+# Slice <n> — <Name>
+
+## Spec fragment
+What this slice delivers; its acceptance criteria (subset of the root's).
+
+## Implementation detail
+Files to touch, files to create, exact steps, concrete code examples,
+the existing pattern to copy and where it lives. Mechanical — no decisions left.
+
+## Out of scope for this slice
+
+## Gate
+The exact build/test/check commands that must be green before done.
 ```
 
-Then read [modes/code-writer.md](./code-writer.md) and implement.
+Slices are **disjoint by file** and **atomic** — each reviewable in one round. A slice file must stand alone: a fresh implementer with only that file and the coding standards can execute it. No model names in plan text.
 
-Decision principle for choosing: Did I explore many irrelevant files/avenues? What is my context's signal to noise ratio like? If it's better to start fresh go with option A, if the context is high quality go with option B.
+### Hand off to the gate
+
+Flip the root to `status: plan-review`. A **separate** reviewer subagent (reviewer skill, plan target) reviews it — fresh eyes: it gets the artifacts, never this conversation. Pass verdict in the root → flip `active`; slices are live. Fail → findings come back to you.
+
+You planned it, so you can orchestrate it — but weigh your context: noisy from exploration → hand the green-lit sprint to a fresh orchestrator; high-signal → run it yourself.

@@ -1,11 +1,10 @@
 ---
-agent: {{AGENT_NAME}}
 mode: reviewer
 ---
 
-# {{AGENT_NAME}} — Reviewer
+# Reviewer
 
-You are **{{AGENT_NAME}}**, working as a **reviewer**. Your job: review code, not write it.
+Your job: review, not write.
 
 ---
 
@@ -18,37 +17,6 @@ Read these before performing any other operations.
 3. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
 
 {{include:extra-must-reads}}
-
----
-
-## Set Role
-
-```bash
-dydo agent role reviewer --task <task-name>
-```
-Don't skip! The hook guard will block you from reading/editing any other files.
-
----
-
-## Register General Wait
-
-Right after setting your role, start a general wait so messages reach you in real time. Run `dydo wait` in the background. This is mandatory — the guard blocks tool calls if no general wait is active.
-
-```bash
-dydo wait    # run in background
-```
-
----
-
-## Verify
-
-```bash
-dydo agent status
-```
-
-You can edit: `dydo/agents/{{AGENT_NAME}}/**` (your workspace only)
-
-You cannot edit source code. If you need to edit code, you're in the wrong role.
 
 ---
 
@@ -70,6 +38,16 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 
 ---
 
+## Review Targets
+
+One reviewer, different targets. The invoking context names yours; each target's rubric lives in this skill's `references/` folder:
+
+- **Code** (default) — the checklist below.
+- **Plan** — read [references/plan.md](references/plan.md). You receive only the plan artifacts, never the planning conversation; your verdict block goes into the sprint root.
+- **Merged sprint** — the audit stage: review the merged seam as one unit against the sprint's acceptance criteria.
+
+---
+
 ## Work
 
 1. **Read the brief** — Understand what was implemented and why, or what you've been asked to audit
@@ -87,13 +65,13 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 - [ ] Tests exist and are meaningful
 - [ ] No security vulnerabilities introduced
 - [ ] No unnecessary complexity
-- [ ] Changes match the task requirements
+- [ ] Changes match the covering slice — deviations are findings
 - [ ] If reviewing documentation, verify against [writing-docs.md](../../../reference/writing-docs.md)
 {{include:extra-review-checklist}}
 
 ### Out-of-Scope Issues
 
-If you discover a bug or problem outside the current task scope during review, report it to whoever dispatched you. If you were dispatched directly by the user, propose before filing:
+If you discover a bug or problem outside the current task scope during review, report it to whoever invoked you. If you were invoked directly by the user, propose before filing:
 
 > "I found [X]. Should I file an issue?"
 
@@ -101,33 +79,11 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --summar
 
 ---
 
-## Complete
+## Verdict
 
-### If Review Passes
-{{include:extra-complete-gate}}
+**Pass** (code target): `dydo review complete <task-name> --status pass --notes "..."`. Plan target: write the verdict block into the sprint root. Audit target: verdict into the sprint's `gate-result`.
 
-```bash
-dydo review complete <task-name> --status pass --notes "LGTM. Code is clean, tests pass."
-```
-
-#### Report and release
-
-If you were dispatched as part of a chain (check inbox `From`/`Origin`), message back to the origin so they know the task is done:
-
-```bash
-dydo msg --to <origin> --subject <task-name> --body "Review passed. Task complete. [key details]"
-```
-
-Then release:
-
-```bash
-dydo inbox clear --all
-dydo agent release
-```
-
-### If Review Fails
-
-On a FAIL, report your verdict and specific findings back to whoever invoked you — the `run-sprint` workflow, or the agent that spawned you. It decides what happens next. As a reviewer you assess and report; you don't dispatch fixes yourself.
+**Fail**: report the verdict and specific findings to whoever invoked you — the workflow or agent that spawned you decides what happens next. You assess and report; you don't dispatch fixes.
 
 **Be specific.** Don't just say "fix the bugs." Say exactly what's wrong:
 - "Line 45: Null check missing, will throw if user is null"

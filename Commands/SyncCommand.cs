@@ -127,6 +127,7 @@ public static partial class SyncCommand
         var skillDir = Path.Combine(projectRoot, ".agents", "skills", role.Name);
         Directory.CreateDirectory(skillDir);
         WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
+        WriteSkillReferences(role, skillDir);
     }
 
     internal static void WriteCodexHooks(string projectRoot)
@@ -137,6 +138,21 @@ public static partial class SyncCommand
         var skillDir = Path.Combine(projectRoot, ".claude", "skills", role.Name);
         Directory.CreateDirectory(skillDir);
         WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
+        WriteSkillReferences(role, skillDir);
+    }
+
+    /// <summary>
+    /// Per-target rubric files (Templates/skill-references/&lt;role&gt;/*) → the compiled skill's
+    /// references/ folder (DR-039 review-target subskills; DR-042 lands the plan target).
+    /// </summary>
+    private static void WriteSkillReferences(RoleDefinition role, string skillDir)
+    {
+        foreach (var (fileName, content) in TemplateGenerator.GetSkillReferences(role.Name))
+        {
+            var refDir = Path.Combine(skillDir, "references");
+            Directory.CreateDirectory(refDir);
+            WriteLf(Path.Combine(refDir, fileName), content);
+        }
     }
 
     /// <summary>

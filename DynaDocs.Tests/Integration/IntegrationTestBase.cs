@@ -133,11 +133,6 @@ public abstract class IntegrationTestBase : IDisposable
         return new CommandResult(exitCode, stdout, stderr);
     }
 
-    /// <summary>
-    /// No-op retained for call-site compatibility. Must-read gating was removed with the claim
-    /// ceremony (DR-041) — writes are no longer gated on an agent reading its must-reads.
-    /// </summary>
-    protected static Task ReadMustReadsAsync() => Task.CompletedTask;
 
 
     /// <summary>

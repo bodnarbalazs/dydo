@@ -247,13 +247,16 @@ public class MarkdownParserTests
     }
 
     [Fact]
-    public void ExtractFrontmatter_ParsesMustReadTrue()
+    public void ExtractFrontmatter_IgnoresUnknownKeys()
     {
+        // Retired keys (e.g. the old must-read flag) and arbitrary user keys parse
+        // cleanly without affecting the known fields.
         var content = """
             ---
             area: understand
             type: context
             must-read: true
+            custom-key: anything
             ---
             # Title
             """;
@@ -261,42 +264,8 @@ public class MarkdownParserTests
         var frontmatter = _parser.ExtractFrontmatter(content);
 
         Assert.NotNull(frontmatter);
-        Assert.True(frontmatter.MustRead);
-    }
-
-    [Fact]
-    public void ExtractFrontmatter_MustReadDefaultsFalse()
-    {
-        var content = """
-            ---
-            area: understand
-            type: context
-            ---
-            # Title
-            """;
-
-        var frontmatter = _parser.ExtractFrontmatter(content);
-
-        Assert.NotNull(frontmatter);
-        Assert.False(frontmatter.MustRead);
-    }
-
-    [Fact]
-    public void ExtractFrontmatter_ParsesMustReadFalse()
-    {
-        var content = """
-            ---
-            area: understand
-            type: context
-            must-read: false
-            ---
-            # Title
-            """;
-
-        var frontmatter = _parser.ExtractFrontmatter(content);
-
-        Assert.NotNull(frontmatter);
-        Assert.False(frontmatter.MustRead);
+        Assert.Equal("understand", frontmatter.Area);
+        Assert.Equal("context", frontmatter.Type);
     }
 
     [Fact]

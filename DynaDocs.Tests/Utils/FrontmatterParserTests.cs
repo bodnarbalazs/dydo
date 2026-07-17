@@ -32,12 +32,12 @@ public class FrontmatterParserTests
     [Fact]
     public void ParseFields_HyphenatedKeys_ParsedCorrectly()
     {
-        const string content = "---\nmust-read: true\nauto-close: false\ndispatched-by: Alice\n---\n";
+        const string content = "---\nread-only: true\nauto-close: false\ndispatched-by: Alice\n---\n";
 
         var fields = FrontmatterParser.ParseFields(content);
 
         Assert.NotNull(fields);
-        Assert.Equal("true", fields!["must-read"]);
+        Assert.Equal("true", fields!["read-only"]);
         Assert.Equal("false", fields["auto-close"]);
         Assert.Equal("Alice", fields["dispatched-by"]);
     }

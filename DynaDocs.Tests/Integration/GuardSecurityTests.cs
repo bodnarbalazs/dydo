@@ -14,7 +14,6 @@ public class GuardSecurityTests : IntegrationTestBase
     private async Task SetupClaimedAgent()
     {
         await InitProjectAsync("none");
-        await ReadMustReadsAsync();
     }
 
     private string BashJson(string command) =>

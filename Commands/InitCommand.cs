@@ -118,8 +118,6 @@ public static class InitCommand
         configService.SaveConfig(config, configPath);
         Console.WriteLine($"  ✓ {config.Structure.Root}/ structure with workflows");
 
-        Directory.CreateDirectory(Path.Combine(dydoRoot, "agents"));
-
         WriteIfNotExists(
             Path.Combine(dydoRoot, "files-off-limits.md"),
             TemplateGenerator.GenerateFilesOffLimitsMd,

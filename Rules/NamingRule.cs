@@ -16,10 +16,6 @@ public class NamingRule : RuleBase
         if (RuleSkipPaths.IsTemplateOrAddition(normalized))
             yield break;
 
-        // Skip agent workspace files - agent names are PascalCase identities by design
-        if (normalized.StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
-            yield break;
-
         if (!PathUtils.IsKebabCase(doc.FileName))
         {
             var suggested = PathUtils.ToKebabCase(Path.GetFileNameWithoutExtension(doc.FileName)) + ".md";

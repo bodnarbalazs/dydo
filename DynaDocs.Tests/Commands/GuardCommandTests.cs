@@ -508,14 +508,14 @@ public class GuardCommandTests : IDisposable
 
     #region Tool-Scoped File Nudges (Decision 026 §4)
 
-    private static (int? Result, string Stderr) RunFileNudge(string toolName, string filePath, AgentRegistry registry)
+    private static (int? Result, string Stderr) RunFileNudge(string toolName, string filePath, GuardCommand.GuardEnv env)
     {
         var original = Console.Error;
         var capture = new StringWriter();
         Console.SetError(capture);
         try
         {
-            return (GuardCommand.CheckFileNudges(toolName, filePath, registry), capture.ToString());
+            return (GuardCommand.CheckFileNudges(toolName, filePath, env.Config), capture.ToString());
         }
         finally
         {
@@ -527,9 +527,9 @@ public class GuardCommandTests : IDisposable
     public void CheckFileNudges_SourcePath_EmitsNoticeAndAllows()
     {
         WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", registry);
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
 
         Assert.Null(result);
         Assert.Contains("NOTICE: delegate to a workflow", stderr);
@@ -540,10 +540,10 @@ public class GuardCommandTests : IDisposable
     {
         // Claude Code delivers absolute paths — they must relativize to the project root
         WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
         var absolute = Path.Combine(_testDir, "tests", "FooTests.cs");
 
-        var (result, stderr) = RunFileNudge("write", absolute, registry);
+        var (result, stderr) = RunFileNudge("write", absolute, env);
 
         Assert.Null(result);
         Assert.Contains("NOTICE: delegate to a workflow", stderr);
@@ -553,9 +553,9 @@ public class GuardCommandTests : IDisposable
     public void CheckFileNudges_NonSourcePath_Silent()
     {
         WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunFileNudge("edit", "dydo/project/decisions/099-x.md", registry);
+        var (result, stderr) = RunFileNudge("edit", "dydo/project/decisions/099-x.md", env);
 
         Assert.Null(result);
         Assert.Empty(stderr);
@@ -565,9 +565,9 @@ public class GuardCommandTests : IDisposable
     public void CheckFileNudges_ToolNotInList_Silent()
     {
         WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunFileNudge("read", "src/Foo.cs", registry);
+        var (result, stderr) = RunFileNudge("read", "src/Foo.cs", env);
 
         Assert.Null(result);
         Assert.Empty(stderr);
@@ -577,9 +577,9 @@ public class GuardCommandTests : IDisposable
     public void CheckFileNudges_BlockSeverity_Blocks()
     {
         WriteConfigWithFileNudge("{source}|{tests}", "hands off", "block");
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", registry);
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.Contains("BLOCKED: hands off", stderr);
@@ -591,9 +591,9 @@ public class GuardCommandTests : IDisposable
         // A tool-scoped nudge's pattern is a glob, not a regex — bash evaluation must skip
         // it even when the pattern text would match the command.
         WriteConfigWithFileNudge("dangerous-command", "file nudge", "block");
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
+        var result = GuardCommand.CheckNudges("dangerous-command", env);
 
         Assert.Null(result);
     }
@@ -618,17 +618,17 @@ public class GuardCommandTests : IDisposable
     [Fact]
     public void CheckNudges_WarnSeverity_BlocksFirstEncounter_CreatesMarker()
     {
-        var registry = new AgentRegistry(_testDir);
-        var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
         var pattern = @"dangerous-command";
         var hash = GuardCommand.ComputeNudgeHash(pattern);
         var markerPath = Path.Combine(workspace, $".nudge-{hash}");
 
         // Inject a custom warn nudge via dydo.json
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
-        registry = new AgentRegistry(_testDir);
+        env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
+        var result = GuardCommand.CheckNudges("dangerous-command", env);
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.True(File.Exists(markerPath), "Marker file should be created on first encounter");
@@ -637,20 +637,20 @@ public class GuardCommandTests : IDisposable
     [Fact]
     public void CheckNudges_WarnSeverity_AllowsSecondEncounter_DeletesMarker()
     {
-        var registry = new AgentRegistry(_testDir);
-        var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
         var pattern = @"dangerous-command";
         var hash = GuardCommand.ComputeNudgeHash(pattern);
         var markerPath = Path.Combine(workspace, $".nudge-{hash}");
 
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
-        registry = new AgentRegistry(_testDir);
+        env = GuardCommand.GuardEnv.Load(_testDir);
 
         // First call: blocks
-        GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
+        GuardCommand.CheckNudges("dangerous-command", env);
 
         // Second call: allows
-        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
+        var result = GuardCommand.CheckNudges("dangerous-command", env);
 
         Assert.Null(result);
         Assert.False(File.Exists(markerPath), "Marker file should be deleted on second encounter");
@@ -665,20 +665,20 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudges(
             (patternA, "Warning A", "warn"),
             (patternB, "Warning B", "warn"));
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
+        var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
         var markerA = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternA)}");
         var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
 
         // Trigger pattern A only
-        GuardCommand.CheckNudges("risky-alpha", "sess-1", registry);
+        GuardCommand.CheckNudges("risky-alpha", env);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should exist");
         Assert.False(File.Exists(markerB), "Marker for pattern B should not exist");
 
         // Trigger pattern B
-        GuardCommand.CheckNudges("risky-beta", "sess-1", registry);
+        GuardCommand.CheckNudges("risky-beta", env);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should still exist");
         Assert.True(File.Exists(markerB), "Marker for pattern B should now exist");
@@ -692,9 +692,9 @@ public class GuardCommandTests : IDisposable
     public void CheckNudges_OpenEndedPollLoop_BlocksFirstEncounter(string command)
     {
         WriteConfigWithOpenEndedPollNudges();
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunNudge(command, registry);
+        var (result, stderr) = RunNudge(command, env);
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.Contains("Open-ended Bash poll-loop detected", stderr);
@@ -706,22 +706,22 @@ public class GuardCommandTests : IDisposable
     public void CheckNudges_SafeCommand_DoesNotBlock(string command)
     {
         WriteConfigWithOpenEndedPollNudges();
-        var registry = new AgentRegistry(_testDir);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunNudge(command, registry);
+        var (result, stderr) = RunNudge(command, env);
 
         Assert.Null(result);
         Assert.Empty(stderr);
     }
 
-    private static (int? Result, string Stderr) RunNudge(string command, AgentRegistry registry)
+    private static (int? Result, string Stderr) RunNudge(string command, GuardCommand.GuardEnv env)
     {
         var original = Console.Error;
         var capture = new StringWriter();
         Console.SetError(capture);
         try
         {
-            return (GuardCommand.CheckNudges(command, "sess-1", registry), capture.ToString());
+            return (GuardCommand.CheckNudges(command, env), capture.ToString());
         }
         finally
         {

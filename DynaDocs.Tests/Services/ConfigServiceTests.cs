@@ -192,15 +192,6 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetAgentsPath_ReturnsAgentsSubfolder()
-    {
-        var service = new ConfigService();
-        var result = service.GetAgentsPath(_testDir);
-
-        Assert.EndsWith("agents", result);
-    }
-
-    [Fact]
     public void GetDocsPath_ReturnsDydoRoot()
     {
         var service = new ConfigService();

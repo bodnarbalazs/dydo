@@ -34,8 +34,16 @@ public class DocScanner : IDocScanner
 
     public List<string> GetAllFolders(string path)
     {
+        // Folder enumeration honors the same scan excludes as file scanning, so the
+        // folder rules (hubs, meta files) and file rules share one exclusion mechanism.
+        var excludes = GetScanExcludes(path);
         var folders = new List<string> { path };
-        folders.AddRange(Directory.GetDirectories(path, "*", SearchOption.AllDirectories));
+        foreach (var dir in Directory.GetDirectories(path, "*", SearchOption.AllDirectories))
+        {
+            var relative = PathUtils.NormalizePath(Path.GetRelativePath(path, dir)) + "/";
+            if (!IsExcluded(relative, excludes))
+                folders.Add(dir);
+        }
         return folders;
     }
 

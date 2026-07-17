@@ -29,6 +29,23 @@ using DynaDocs.Utils;
 /// </summary>
 public static partial class GuardCommand
 {
+    /// <summary>
+    /// Everything the guard needs from the project: the loaded config (nudges, path sets)
+    /// and the machine-local directory where warn-nudge pass-through markers live
+    /// (dydo/_system/.local/ — gitignored, scan-excluded). Replaces the old AgentRegistry:
+    /// with the roster/claim machinery gone (DR-041), the guard only ever needed these two.
+    /// </summary>
+    internal sealed record GuardEnv(DydoConfig? Config, string MarkerDir)
+    {
+        public static GuardEnv Load(string? basePath = null)
+        {
+            var configService = new ConfigService();
+            return new GuardEnv(
+                configService.LoadConfig(basePath),
+                Path.Combine(configService.GetDydoRoot(basePath), "_system", ".local"));
+        }
+    }
+
     public static Command Create()
     {
         var actionOption = new Option<string?>("--action")
@@ -143,15 +160,15 @@ public static partial class GuardCommand
         }
 
         // Init/config load fails CLOSED: a guard that can't load its own rules must not
-        // wave tool calls through. Loading off-limits patterns and the registry happens
-        // here, outside the fail-open boundary below.
+        // wave tool calls through. Loading off-limits patterns and the guard environment
+        // happens here, outside the fail-open boundary below.
         OffLimitsService offLimitsService;
-        AgentRegistry registry;
+        GuardEnv env;
         try
         {
             offLimitsService = new OffLimitsService();
             offLimitsService.LoadPatterns();
-            registry = new AgentRegistry();
+            env = GuardEnv.Load();
         }
         catch (Exception ex)
         {
@@ -163,7 +180,7 @@ public static partial class GuardCommand
         // brick the agent on every subsequent tool. Deliberate blocks are returns, not throws.
         try
         {
-            return Decide(ctx, offLimitsService, registry);
+            return Decide(ctx, offLimitsService, env);
         }
         catch (Exception ex)
         {
@@ -172,7 +189,7 @@ public static partial class GuardCommand
         }
     }
 
-    private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, AgentRegistry registry)
+    private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, GuardEnv env)
     {
         var bashAnalyzer = new BashCommandAnalyzer();
 
@@ -196,7 +213,7 @@ public static partial class GuardCommand
         // ============================================================
         if (!ctx.HasCliArgs && !string.IsNullOrEmpty(ctx.AgentId))
         {
-            return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, registry);
+            return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
         // Native auto-memory (~/.claude/projects/*/memory/) is always accessible —
@@ -206,7 +223,7 @@ public static partial class GuardCommand
 
         var routed = RouteToolLayers(
             filePath, action, bashCommand, toolName, searchPath,
-            sessionId, offLimitsService, bashAnalyzer, registry);
+            sessionId, offLimitsService, bashAnalyzer, env);
         if (routed != null) return routed.Value;
 
         // Reads are allowed for anyone once past off-limits (checked in RouteToolLayers).
@@ -214,7 +231,7 @@ public static partial class GuardCommand
             return ExitCodes.Success;
 
         // Writes are allowed once past off-limits; only tool-scoped nudges remain.
-        return HandleWriteOperation(filePath, toolName, registry, ctx.AgentType);
+        return HandleWriteOperation(filePath, toolName, env, ctx.AgentType);
     }
 
     /// <summary>
@@ -234,26 +251,26 @@ public static partial class GuardCommand
         string? filePath, string? action, string? bashCommand, string? toolName,
         string? searchPath, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry)
+        GuardEnv env)
     {
         // SECURITY LAYER 1: off-limits patterns for direct file operations.
         if (!string.IsNullOrEmpty(filePath))
         {
-            var blocked = BlockIfPathOffLimits(filePath, toolName, sessionId, offLimitsService, registry);
+            var blocked = BlockIfPathOffLimits(filePath, offLimitsService);
             if (blocked != null) return blocked.Value;
         }
 
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(toolName, bashCommand))
         {
-            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry);
+            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, env);
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — off-limits applies
         // to the search root, and the Agent tool gets the Tier-2 worker-lane notice.
         if (toolName != null && SearchTools.Contains(toolName))
         {
-            return HandleSearchTool(searchPath, toolName, sessionId, offLimitsService, registry);
+            return HandleSearchTool(searchPath, toolName, offLimitsService);
         }
 
         // SECURITY LAYER 2.6: Dydo agents must not use Claude Code's built-in plan mode.
@@ -268,7 +285,7 @@ public static partial class GuardCommand
     }
 
     private static int HandleWriteOperation(
-        string? filePath, string? toolName, AgentRegistry registry, string? agentType = null)
+        string? filePath, string? toolName, GuardEnv env, string? agentType = null)
     {
         if (string.IsNullOrEmpty(filePath))
             return ExitCodes.Success;
@@ -279,7 +296,7 @@ public static partial class GuardCommand
         // any anomalous payload that carries a type without an id.
         if (string.IsNullOrEmpty(agentType))
         {
-            var nudged = CheckFileNudges(toolName, filePath, registry);
+            var nudged = CheckFileNudges(toolName, filePath, env.Config);
             if (nudged != null) return nudged.Value;
         }
 
@@ -323,17 +340,17 @@ public static partial class GuardCommand
     private static int HandleWorkerCall(
         GuardContext ctx, string? filePath, string? searchPath,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry)
+        GuardEnv env)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(
                 ctx.BashCommand!, ctx.SessionId,
-                offLimitsService, bashAnalyzer, registry, isWorker: true);
+                offLimitsService, bashAnalyzer, env, isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
         {
-            var offLimitsBlock = BlockIfPathOffLimits(checkPath, ctx.ToolName, ctx.SessionId, offLimitsService, registry);
+            var offLimitsBlock = BlockIfPathOffLimits(checkPath, offLimitsService);
             if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
@@ -345,9 +362,7 @@ public static partial class GuardCommand
     /// code if the path is off-limits, null otherwise. One copy for every lane so the
     /// block message and audit shape cannot drift.
     /// </summary>
-    internal static int? BlockIfPathOffLimits(
-        string path, string? toolName, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry)
+    internal static int? BlockIfPathOffLimits(string path, IOffLimitsService offLimitsService)
     {
         var offLimitsPattern = offLimitsService.IsPathOffLimits(path);
         if (offLimitsPattern == null)
@@ -361,8 +376,7 @@ public static partial class GuardCommand
     }
 
     private static int HandleSearchTool(
-        string? searchPath, string? toolName, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry)
+        string? searchPath, string? toolName, IOffLimitsService offLimitsService)
     {
         if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
         {
@@ -373,7 +387,7 @@ public static partial class GuardCommand
 
         if (!string.IsNullOrEmpty(searchPath))
         {
-            var offLimitsBlock = BlockIfPathOffLimits(searchPath, toolName, sessionId, offLimitsService, registry);
+            var offLimitsBlock = BlockIfPathOffLimits(searchPath, offLimitsService);
             if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
@@ -391,7 +405,7 @@ public static partial class GuardCommand
         string? sessionId,
         IOffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry,
+        GuardEnv env,
         bool isWorker = false)
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
@@ -415,7 +429,7 @@ public static partial class GuardCommand
         }
 
         // Configurable nudges — after hardcoded security checks, for every command.
-        var nudged = CheckNudges(command, sessionId, registry);
+        var nudged = CheckNudges(command, env);
         if (nudged != null) return nudged.Value;
 
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound);
@@ -435,11 +449,11 @@ public static partial class GuardCommand
         return AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
     }
 
-    internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry)
+    internal static int? CheckNudges(string command, GuardEnv env)
     {
         // Always include block-severity default nudges (H19 indirect dydo invocation) even if
         // removed from config. These are security-critical and must not be removable via dydo.json.
-        var nudges = MergeSystemNudges(registry.Config?.Nudges);
+        var nudges = MergeSystemNudges(env.Config?.Nudges);
         if (nudges.Count == 0)
             return null;
 
@@ -469,12 +483,12 @@ public static partial class GuardCommand
 
             if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
             {
-                // Warn = "block once, run again to proceed". With no per-agent workspace in the
-                // identity-free model (DR-041), the pass-through marker lives under the agents
-                // root keyed by pattern hash — global rather than per-agent.
+                // Warn = "block once, run again to proceed". The pass-through marker lives in
+                // machine-local state (dydo/_system/.local/ — gitignored, scan-excluded), keyed
+                // by pattern hash — global rather than per-agent (DR-041, identity-free model).
                 var hash = ComputeNudgeHash(nudge.Pattern);
-                Directory.CreateDirectory(registry.WorkspacePath);
-                var markerPath = Path.Combine(registry.WorkspacePath, $".nudge-{hash}");
+                Directory.CreateDirectory(env.MarkerDir);
+                var markerPath = Path.Combine(env.MarkerDir, $".nudge-{hash}");
 
                 if (!File.Exists(markerPath))
                 {
@@ -509,12 +523,12 @@ public static partial class GuardCommand
     /// Patterns are '|'-separated globs; {source}/{tests} expand to the dydo.json path sets.
     /// Returns an exit code only for block-severity matches, null otherwise.
     /// </summary>
-    internal static int? CheckFileNudges(string? toolName, string filePath, AgentRegistry registry)
+    internal static int? CheckFileNudges(string? toolName, string filePath, DydoConfig? config)
     {
         if (string.IsNullOrEmpty(toolName))
             return null;
 
-        var nudges = registry.Config?.Nudges;
+        var nudges = config?.Nudges;
         if (nudges == null || nudges.Count == 0)
             return null;
 
@@ -527,7 +541,7 @@ public static partial class GuardCommand
             if (nudge.Tools is not { Count: > 0 }) continue;
             if (!nudge.Tools.Any(t => t.Equals(toolName, StringComparison.OrdinalIgnoreCase))) continue;
 
-            pathSets ??= new RoleDefinitionService().ResolvePathSets(registry.Config);
+            pathSets ??= new RoleDefinitionService().ResolvePathSets(config);
             relPath ??= RelativizeToProjectRoot(filePath);
 
             if (!MatchesFileNudgePattern(nudge.Pattern, relPath, pathSets)) continue;

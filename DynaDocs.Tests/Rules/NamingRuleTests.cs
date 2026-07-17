@@ -211,26 +211,6 @@ public class NamingRuleTests
     }
 
     [Fact]
-    public void Validate_SkipsAgentWorkspaceFiles()
-    {
-        var doc = CreateDoc("workflow.md", "agents/Sample/workflow.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
-    public void Validate_SkipsPascalCaseAgentFolders()
-    {
-        var doc = CreateDoc("code-writer.md", "agents/Sample/modes/code-writer.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
     public void Validate_DoesNotSkipNonAgentPascalCaseFolders()
     {
         var doc = CreateDoc("test.md", "BadFolder/test.md");

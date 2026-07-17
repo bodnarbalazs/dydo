@@ -9,7 +9,6 @@ public interface IConfigService
     void SaveConfig(DydoConfig config, string path);
     string? GetProjectRoot(string? startPath = null);
     string GetDydoRoot(string? startPath = null);
-    string GetAgentsPath(string? startPath = null);
     string GetDocsPath(string? startPath = null);
     string GetTasksPath(string? startPath = null);
     string GetAuditPath(string? startPath = null);

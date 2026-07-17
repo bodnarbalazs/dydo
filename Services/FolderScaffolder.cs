@@ -61,10 +61,10 @@ public class FolderScaffolder : IFolderScaffolder
         foreach (var folder in Folders)
             Directory.CreateDirectory(Path.Combine(basePath, folder.Path));
 
-        // Empty, gitignored workspace root. The 26-agent roster was removed (DR-041); the guard
-        // creates this on demand for its global warn-nudge markers, but scaffolding it keeps the
-        // directory the .gitignore entry references present.
-        Directory.CreateDirectory(Path.Combine(basePath, "agents"));
+        // The single SHARED scratch folder (gitignored): agents drop temporary work products
+        // here instead of polluting the repo root. No per-agent subfolders (DR-041 — identity
+        // is assigned at spawn, nothing owns a named workspace).
+        Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
         CopyBuiltInTemplates(basePath);
         ScaffoldTemplateAdditions(basePath);

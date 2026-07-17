@@ -60,6 +60,36 @@ public class DocScannerTests : IDisposable
     }
 
     [Fact]
+    public void ScanDirectory_ExcludesAgentsWorkspace()
+    {
+        // The shared scratch workspace is not documentation — the scanExclude invariant
+        // is the ONE mechanism that keeps every rule and mirror away from it.
+        WriteDoc("understand/about.md");
+        WriteDoc("agents/workspace/scratch-notes.md");
+
+        var docs = NewScanner().ScanDirectory(_tempDir);
+
+        Assert.Contains(docs, d => d.RelativePath.EndsWith("about.md"));
+        Assert.DoesNotContain(docs, d => PathUtils.NormalizePath(d.RelativePath).StartsWith("agents/"));
+    }
+
+    [Fact]
+    public void GetAllFolders_HonorsScanExcludes()
+    {
+        WriteDoc("understand/about.md");
+        WriteDoc("agents/workspace/scratch-notes.md");
+        WriteDoc("_system/.local/worktrees/foo/bar.md");
+
+        var folders = NewScanner().GetAllFolders(_tempDir)
+            .Select(f => PathUtils.NormalizePath(Path.GetRelativePath(_tempDir, f)))
+            .ToList();
+
+        Assert.Contains("understand", folders);
+        Assert.DoesNotContain(folders, f => f.StartsWith("agents"));
+        Assert.DoesNotContain(folders, f => f.StartsWith("_system/.local"));
+    }
+
+    [Fact]
     public void ScanDirectory_DoesNotExcludeTemplates()
     {
         WriteDoc("_system/templates/foo.template.md");
@@ -112,7 +142,6 @@ public class DocScannerTests : IDisposable
         public void SaveConfig(DydoConfig config, string path) { }
         public string? GetProjectRoot(string? startPath = null) => null;
         public string GetDydoRoot(string? startPath = null) => "";
-        public string GetAgentsPath(string? startPath = null) => "";
         public string GetDocsPath(string? startPath = null) => "";
         public string GetTasksPath(string? startPath = null) => "";
         public string GetAuditPath(string? startPath = null) => "";

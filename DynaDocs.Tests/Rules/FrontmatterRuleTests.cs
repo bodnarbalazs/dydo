@@ -217,26 +217,6 @@ public class FrontmatterRuleTests
     #region Exclusions
 
     [Fact]
-    public void Validate_SkipsAgentWorkspaceFiles()
-    {
-        var doc = CreateDocWithFrontmatter(null, "agents/sample/workflow.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
-    public void Validate_SkipsNestedAgentWorkspaceFiles()
-    {
-        var doc = CreateDocWithFrontmatter(null, "agents/peer/modes/code-writer.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
     public void Validate_SkipsFilesOffLimits()
     {
         var doc = CreateDocWithFrontmatter(null, "files-off-limits.md");

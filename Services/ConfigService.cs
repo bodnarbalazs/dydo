@@ -78,14 +78,6 @@ public class ConfigService : IConfigService
     }
 
     /// <summary>
-    /// Get the agents folder path (e.g., /project/dydo/agents/)
-    /// </summary>
-    public string GetAgentsPath(string? startPath = null)
-    {
-        return Path.Combine(GetDydoRoot(startPath), "agents");
-    }
-
-    /// <summary>
     /// Get the docs folder path (dydo root itself contains docs)
     /// </summary>
     public string GetDocsPath(string? startPath = null)

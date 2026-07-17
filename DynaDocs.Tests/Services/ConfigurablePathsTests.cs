@@ -24,23 +24,6 @@ public class ConfigurablePathsTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);
     }
 
-    private void SetupDydoStructure()
-    {
-        var dydoRoot = Path.Combine(_testDir, "dydo");
-        Directory.CreateDirectory(Path.Combine(dydoRoot, "agents"));
-        Directory.CreateDirectory(Path.Combine(dydoRoot, "understand"));
-        Directory.CreateDirectory(Path.Combine(dydoRoot, "guides"));
-        Directory.CreateDirectory(Path.Combine(dydoRoot, "project", "tasks"));
-
-        // Minimal must-read files
-        File.WriteAllText(Path.Combine(dydoRoot, "understand", "about.md"),
-            "---\nmust-read: true\n---\n# About\n");
-        File.WriteAllText(Path.Combine(dydoRoot, "understand", "architecture.md"),
-            "---\nmust-read: true\n---\n# Architecture\n");
-        File.WriteAllText(Path.Combine(dydoRoot, "guides", "coding-standards.md"),
-            "---\nmust-read: true\n---\n# Standards\n");
-    }
-
     [Fact]
     public void DefaultPaths_WhenNoPathsSection()
     {
@@ -78,7 +61,7 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void AgentRegistry_BuildsPermissionsFromConfig()
+    public void GuardEnv_LoadsConfigAndMachineLocalMarkerDir()
     {
         WriteConfig("""
             {
@@ -89,15 +72,13 @@ public class ConfigurablePathsTests : IDisposable
               }
             }
             """);
-        SetupDydoStructure();
 
-        // AgentRegistry reads config in constructor and builds role permissions
-        var registry = new AgentRegistry(_testDir);
+        var env = DynaDocs.Commands.GuardCommand.GuardEnv.Load(_testDir);
 
-        // Verify the config was loaded with custom paths
-        Assert.NotNull(registry.Config);
-        Assert.Equal(["Commands/**", "Services/**"], registry.Config!.Paths.Source);
-        Assert.Equal(["MyTests/**"], registry.Config.Paths.Tests);
+        Assert.NotNull(env.Config);
+        Assert.Equal(["Commands/**", "Services/**"], env.Config!.Paths.Source);
+        Assert.Equal(["MyTests/**"], env.Config.Paths.Tests);
+        Assert.EndsWith(Path.Combine("dydo", "_system", ".local"), env.MarkerDir);
     }
 
     [Fact]

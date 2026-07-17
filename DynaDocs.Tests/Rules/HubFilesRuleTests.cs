@@ -132,46 +132,6 @@ public class HubFilesRuleTests
     }
 
     [Fact]
-    public void ValidateFolder_SkipsAgentWorkspaces()
-    {
-        var docs = new List<DocFile>
-        {
-            CreateDoc("agents/sample/modes/code-writer.md")
-        };
-
-        var violations = _rule.ValidateFolder("/base/agents/sample/modes", docs, "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
-    public void ValidateFolder_SkipsAgentRootFolder()
-    {
-        var docs = new List<DocFile>
-        {
-            CreateDoc("agents/sample/workflow.md")
-        };
-
-        var violations = _rule.ValidateFolder("/base/agents/sample", docs, "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
-    public void ValidateFolder_SkipsAgentsFolder()
-    {
-        var docs = new List<DocFile>
-        {
-            CreateDoc("agents/sample/workflow.md"),
-            CreateDoc("agents/peer/workflow.md")
-        };
-
-        var violations = _rule.ValidateFolder("/base/agents", docs, "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
     public void ValidateFolder_SkipsProjectTasksFolder()
     {
         // D4: project/tasks no longer requires _index.md — task files are transient.

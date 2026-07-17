@@ -185,6 +185,8 @@
   },
   "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
+    "agents/workspace",
+    "agents",
     "project/backlog/residue-hunt-handoff.md",
     "reference/_index.md.tmp.41024.ff252f19ef92",
     "reference/dydo-glossary.md",
@@ -218,9 +220,7 @@
     "reference/about-dynadocs.md.tmp.78972.e66ab45006dd",
     "reference/guardrails.md.tmp.78972.17402f72c2a9",
     "project/backlog/simplification-campaign-handback.md",
-    "project/tasks/chief-of-staff-takeover.md.tmp.7472.08a3e5dab4aa",
     "project/backlog/simplification-handoff-sol.md",
-    "project/backlog/simplification-campaign-plan.md",
     "_assets/dydo_diagram_complex_workflow.svg",
     "_assets/dydo_diagram_simple_workflow.svg"
   ]

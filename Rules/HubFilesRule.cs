@@ -24,12 +24,6 @@ public class HubFilesRule : RuleBase
             yield break;
         }
 
-        // Skip agent workspace folders - managed separately
-        if (relativeFolderPath.StartsWith("agents", StringComparison.OrdinalIgnoreCase))
-        {
-            yield break;
-        }
-
         // Skip project/tasks - task files are transient and not indexed (D4).
         if (relativeFolderPath.Equals("project/tasks", StringComparison.OrdinalIgnoreCase))
         {

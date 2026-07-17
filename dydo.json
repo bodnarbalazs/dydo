@@ -58,7 +58,8 @@
   },
   "scanExclude": [
     "_system/.local/",
-    "_system/audit/"
+    "_system/audit/",
+    "agents/"
   ],
   "nudges": [
     {

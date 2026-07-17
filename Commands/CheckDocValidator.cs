@@ -17,17 +17,10 @@ internal static class CheckDocValidator
         var linkResolver = new LinkResolver();
         var typesService = new FrontmatterTypesService(basePath);
 
-        var allDocs = scanner.ScanDirectory(basePath)
-            .Where(d => !PathUtils.NormalizePath(d.RelativePath)
-                .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        var allFolders = scanner.GetAllFolders(basePath)
-            .Where(f =>
-            {
-                var rel = PathUtils.NormalizePath(Path.GetRelativePath(basePath, f));
-                return !rel.StartsWith("agents", StringComparison.OrdinalIgnoreCase);
-            })
-            .ToList();
+        // agents/ (and the other machine-local dirs) are excluded by the scanner's
+        // scanExclude invariants — files and folders share that one mechanism.
+        var allDocs = scanner.ScanDirectory(basePath);
+        var allFolders = scanner.GetAllFolders(basePath);
 
         var docsToValidate = reportScope == null
             ? allDocs

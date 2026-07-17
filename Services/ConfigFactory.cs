@@ -12,7 +12,10 @@ public static class ConfigFactory
     public static readonly List<string> DydoInternalScanExclude =
     [
         "_system/.local/",
-        "_system/audit/"
+        "_system/audit/",
+        // The shared scratch workspace (dydo/agents/workspace/): agent work products,
+        // not documentation — never scanned, never validated, never mirrored.
+        "agents/"
     ];
 
     public static readonly List<NudgeConfig> DefaultNudges =

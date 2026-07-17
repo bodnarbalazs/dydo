@@ -7,7 +7,6 @@ using DynaDocs.Serialization;
 public class ConfigService : IConfigService
 {
     public const string ConfigFileName = "dydo.json";
-    public const string HumanEnvVar = "DYDO_HUMAN";
     public const string DefaultRoot = "dydo";
 
     // Cache keyed by startPath to avoid repeated directory walks within the same instance
@@ -54,14 +53,6 @@ public class ConfigService : IConfigService
     {
         var json = JsonSerializer.Serialize(config, DydoConfigJsonContext.Default.DydoConfig);
         File.WriteAllText(path, json);
-    }
-
-    /// <summary>
-    /// Get the human name from DYDO_HUMAN environment variable
-    /// </summary>
-    public string? GetHumanFromEnv()
-    {
-        return Environment.GetEnvironmentVariable(HumanEnvVar);
     }
 
     /// <summary>

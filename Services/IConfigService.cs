@@ -7,7 +7,6 @@ public interface IConfigService
     string? FindConfigFile(string? startPath = null);
     DydoConfig? LoadConfig(string? startPath = null);
     void SaveConfig(DydoConfig config, string path);
-    string? GetHumanFromEnv();
     string? GetProjectRoot(string? startPath = null);
     string GetDydoRoot(string? startPath = null);
     string GetAgentsPath(string? startPath = null);

@@ -16,7 +16,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_OffLimitsPath_Blocks()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // .env is off-limits by default
         var result = await GuardAsync("edit", ".env");
@@ -29,7 +29,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_DydoSystemFile_Blocks()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // dydo/index.md is a system file
         var result = await GuardAsync("edit", "dydo/index.md");
@@ -41,7 +41,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_StdinHook_DirectReadOffLimits_Blocks()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // A Read tool-call against an off-limits secret (**/secrets.json) must be blocked —
         // off-limits binds on every direct file op, reads included, not just writes.
@@ -57,7 +57,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_AllowedPath_Passes()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // src/file.cs is not off-limits — allowed
         var result = await GuardAsync("edit", "src/file.cs");
@@ -72,7 +72,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_ReadRootFile_Allows()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await GuardAsync("read", "CLAUDE.md");
 
@@ -83,7 +83,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_ReadSourceFile_Allows()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await GuardAsync("read", "src/code.cs");
 
@@ -94,7 +94,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_ReadNonAgentWorkflow_Allows()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // A file named workflow.md outside the agents folder should NOT be blocked
         var result = await GuardAsync("read", "docs/workflow.md");
@@ -109,7 +109,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_StdinHook_ReadBootstrapFile_Allows()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"CLAUDE.md\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -120,7 +120,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_StdinHook_Write_Allows()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -135,7 +135,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_CommandOption_Parses()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // CLI --command option is accepted (though bash analysis requires hook mode)
         var cmd = GuardCommand.Create();
@@ -170,7 +170,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("py dydo agent claim auto")]
     public async Task Guard_IndirectDydo_IsBlocked(string command)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -192,7 +192,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("py dydo agent claim auto", "py")]
     public async Task Guard_IndirectDydo_ShowsInvokerName(string command, string expectedInvoker)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -216,7 +216,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("py -3 script.py")]
     public async Task Guard_IndirectDydo_FalsePositiveSafety(string command)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -227,7 +227,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_DirectDydo_StillWorks()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo agent claim auto\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -238,7 +238,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_ChainedIndirectDydo_StillCaught()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && npx dydo agent claim auto\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -254,7 +254,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_CdGitCompound_BlocksWithCoachingMessage()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /c/Users/User/Desktop/Projects && git diff --name-only\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -268,7 +268,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_CdNonGitCompound_Blocked()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && ls\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -287,7 +287,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("Grep")]
     public async Task Guard_SearchTool_WithPath_Allows(string toolName)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -300,7 +300,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("Grep")]
     public async Task Guard_SearchTool_NoPath_Allows(string toolName)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -313,7 +313,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("Grep")]
     public async Task Guard_SearchTool_OffLimitsPath_Blocks(string toolName)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // .env is off-limits by default — searching with it as the path should block
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\".env\",\"pattern\":\"*\"}}}}";
@@ -336,7 +336,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("git merge --no-ff main")]
     public async Task Guard_GitStashAndMerge_NotBlocked(string command)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -351,7 +351,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("git log")]
     public async Task Guard_OtherGitCommands_NotBlocked(string command)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -366,7 +366,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_EnterPlanMode_Blocks()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"EnterPlanMode\",\"tool_input\":{}}";
         var result = await GuardWithStdinAsync(json);
@@ -379,7 +379,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_ExitPlanMode_Blocks()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"ExitPlanMode\",\"tool_input\":{}}";
         var result = await GuardWithStdinAsync(json);
@@ -396,7 +396,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_AgentTool_EmitsNudgeAndPasses()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -409,7 +409,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_GlobTool_DoesNotFireAgentNudge()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Glob\",\"tool_input\":{{\"pattern\":\"**/*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -425,7 +425,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_RestoresExpiredModelCap_OnTrigger()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var previousResync = ModelCapService.ResyncOverride;
         ModelCapService.ResyncOverride = _ => 0; // don't emit native agents during the test
@@ -457,7 +457,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_ModelCapRestore_ThrottledWithinWindow()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var previousResync = ModelCapService.ResyncOverride;
         ModelCapService.ResyncOverride = _ => 0;

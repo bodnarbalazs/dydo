@@ -7,14 +7,12 @@ public class RolesResetCommandTests : IDisposable
 {
     private readonly string _testDir;
     private readonly string _originalDir;
-    private readonly string? _originalHuman;
 
     public RolesResetCommandTests()
     {
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-rolesreset-test-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
         _originalDir = Environment.CurrentDirectory;
-        _originalHuman = Environment.GetEnvironmentVariable("DYDO_HUMAN");
 
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
         Directory.CreateDirectory(rolesDir);
@@ -26,7 +24,6 @@ public class RolesResetCommandTests : IDisposable
     public void Dispose()
     {
         Environment.CurrentDirectory = _originalDir;
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", _originalHuman);
         try
         {
             if (Directory.Exists(_testDir))
@@ -36,20 +33,8 @@ public class RolesResetCommandTests : IDisposable
     }
 
     [Fact]
-    public void Reset_FailsWhenDydoHumanNotSet()
-    {
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
-
-        var command = DynaDocs.Commands.RolesCommand.Create();
-        var result = command.Parse("reset").Invoke();
-
-        Assert.Equal(2, result);
-    }
-
-    [Fact]
     public void ResetAll_DeletesAllRoleFilesAndRegenerates()
     {
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
 
         // Add a custom role file
@@ -71,7 +56,6 @@ public class RolesResetCommandTests : IDisposable
     [Fact]
     public void ResetAll_WhenRolesDirDoesNotExist_StillRegenerates()
     {
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
         Directory.Delete(rolesDir, true);
 
@@ -86,7 +70,6 @@ public class RolesResetCommandTests : IDisposable
     [Fact]
     public void Reset_WithoutAll_DeletesOnlyBaseRoles()
     {
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
 
         // Add a custom role file
@@ -107,7 +90,6 @@ public class RolesResetCommandTests : IDisposable
     [Fact]
     public void Reset_WithoutAll_WhenRolesDirDoesNotExist_StillRegenerates()
     {
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
         Directory.Delete(rolesDir, true);
 

@@ -68,15 +68,6 @@ public class HelpCommandTests
     }
 
     [Fact]
-    public void Help_DocumentsEnvironmentVariables()
-    {
-        var output = CaptureHelpOutput();
-
-        Assert.Contains("Environment Variables:", output);
-        Assert.Contains("DYDO_HUMAN", output);
-    }
-
-    [Fact]
     public void Help_HasCategorizedSections()
     {
         var output = CaptureHelpOutput();

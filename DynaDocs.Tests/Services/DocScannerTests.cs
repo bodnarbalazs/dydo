@@ -110,7 +110,6 @@ public class DocScannerTests : IDisposable
 
         public string? FindConfigFile(string? startPath = null) => null;
         public void SaveConfig(DydoConfig config, string path) { }
-        public string? GetHumanFromEnv() => null;
         public string? GetProjectRoot(string? startPath = null) => null;
         public string GetDydoRoot(string? startPath = null) => "";
         public string GetAgentsPath(string? startPath = null) => "";

@@ -17,7 +17,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_CreatesBasicStructure()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         AssertFileExists("dydo.json");
@@ -33,7 +33,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_CreatesFoundationDocs()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         AssertFileExists("dydo/index.md");
@@ -49,7 +49,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_CreatesEmptyAgentsWorkspaceRoot()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
 
@@ -62,7 +62,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_CreatesCorrectConfig()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         AssertFileContains("dydo.json", "\"version\": 1");
@@ -73,7 +73,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_UpdatesGitignore()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         AssertFileExists(".gitignore");
@@ -84,7 +84,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_ScaffoldsSystemLocalDir()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         AssertDirectoryExists("dydo/_system/.local");
@@ -93,7 +93,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_CreatesProjectSubfolderDocs()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
 
@@ -116,7 +116,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_MetaFilesHaveMeaningfulContent()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
 
@@ -146,7 +146,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_CreatesHooksConfig()
     {
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         AssertFileExists(".claude/settings.local.json");
@@ -157,7 +157,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Codex_CreatesProjectAndHooksWithoutClaudeSettings()
     {
-        var result = await InitProjectAsync("codex", "balazs");
+        var result = await InitProjectAsync("codex");
 
         result.AssertSuccess();
         AssertFileExists("dydo.json");
@@ -173,7 +173,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Codex_HooksContainPreToolUseDydoGuard()
     {
-        var result = await InitProjectAsync("codex", "balazs");
+        var result = await InitProjectAsync("codex");
 
         result.AssertSuccess();
 
@@ -253,7 +253,7 @@ public class InitCommandTests : IntegrationTestBase
             }
             """);
 
-        var result = await InitProjectAsync("codex", "balazs");
+        var result = await InitProjectAsync("codex");
 
         result.AssertSuccess();
         var content = ReadFile(".codex/hooks.json");
@@ -332,7 +332,7 @@ public class InitCommandTests : IntegrationTestBase
             }
             """);
 
-        var result = await InitProjectAsync("codex", "balazs");
+        var result = await InitProjectAsync("codex");
 
         result.AssertSuccess();
 
@@ -358,9 +358,9 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Codex_DoesNotDuplicateDydoHook()
     {
-        await InitProjectAsync("codex", "balazs");
+        await InitProjectAsync("codex");
 
-        var result = await JoinProjectAsync("codex", "alice");
+        var result = await JoinProjectAsync("codex");
 
         result.AssertSuccess();
         var content = ReadFile(".codex/hooks.json");
@@ -371,7 +371,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_HooksMatchEditWriteReadBash()
     {
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -381,7 +381,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_MatcherIncludesPlanModeTools()
     {
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -394,7 +394,7 @@ public class InitCommandTests : IntegrationTestBase
     {
         // Bug B: PowerShell was missing from the matcher, so Claude Code did not pipe
         // PowerShell tool calls through `dydo guard` — total bypass of every guard layer.
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -437,7 +437,7 @@ public class InitCommandTests : IntegrationTestBase
             """);
 
         // Act
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         // Assert
         result.AssertSuccess();
@@ -463,11 +463,11 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_Claude_DoesNotDuplicateDydoHook()
     {
         // First init
-        await InitProjectAsync("claude", "balazs");
+        await InitProjectAsync("claude");
 
         // Manually re-run hook configuration (simulating re-init scenario)
         // Since init fails if already initialized, we test via join
-        var result = await JoinProjectAsync("claude", "alice");
+        var result = await JoinProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -487,7 +487,7 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_Claude_MatcherIncludesAskUserQuestion()
     {
         // needs-human detection (Decision 030 §1): the guard must see the AskUserQuestion tool call.
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         Assert.Contains("AskUserQuestion", ReadFile(".claude/settings.local.json"));
@@ -496,7 +496,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_InstallsStopHook_ForNeedsHumanTurnEnd()
     {
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -518,7 +518,7 @@ public class InitCommandTests : IntegrationTestBase
             }
             """);
 
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -530,7 +530,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_AddsDydoAllowEntry()
     {
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -540,7 +540,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_AddsPowerShellDydoAllowEntry()
     {
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -562,7 +562,7 @@ public class InitCommandTests : IntegrationTestBase
             }
             """);
 
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -586,7 +586,7 @@ public class InitCommandTests : IntegrationTestBase
             }
             """);
 
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -598,10 +598,10 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_DoesNotDuplicateAllowEntry()
     {
-        await InitProjectAsync("claude", "balazs");
+        await InitProjectAsync("claude");
 
         // Re-run via join
-        var result = await JoinProjectAsync("claude", "alice");
+        var result = await JoinProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -612,10 +612,10 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_DoesNotDuplicatePowerShellAllowEntry()
     {
-        await InitProjectAsync("claude", "balazs");
+        await InitProjectAsync("claude");
 
         // Re-run via join
-        var result = await JoinProjectAsync("claude", "alice");
+        var result = await JoinProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -633,7 +633,7 @@ public class InitCommandTests : IntegrationTestBase
             }
             """);
 
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -651,7 +651,7 @@ public class InitCommandTests : IntegrationTestBase
             }
             """);
 
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
@@ -663,7 +663,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_GeneratesRoleFiles()
     {
-        var result = await InitProjectAsync("claude", "balazs");
+        var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         AssertDirectoryExists("dydo/_system/roles");
@@ -681,7 +681,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_GeneratesRoleFiles()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
 
@@ -693,7 +693,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_None_DoesNotCreateAllowEntry()
     {
-        var result = await InitProjectAsync("none", "balazs");
+        var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         AssertFileNotExists(".claude/settings.local.json");
@@ -709,7 +709,7 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_Join_WithoutExistingProject_Fails()
     {
         var command = InitCommand.Create();
-        var result = await RunAsync(command, "none", "--join", "--name", "alice");
+        var result = await RunAsync(command, "none", "--join");
 
         result.AssertExitCode(2);
         result.AssertStderrContains("No DynaDocs project found");
@@ -718,11 +718,11 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Join_ExistingProject_Succeeds()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // With the roster gone (DR-041), join no longer assigns agents — it just re-wires the
         // local integration for an already-initialized project, and succeeds.
-        var result = await JoinProjectAsync("none", "alice");
+        var result = await JoinProjectAsync("none");
 
         result.AssertSuccess();
     }
@@ -732,24 +732,10 @@ public class InitCommandTests : IntegrationTestBase
     #region Error Cases
 
     [Fact]
-    public async Task Init_WithoutName_Fails()
-    {
-        ClearHuman();
-        var command = InitCommand.Create();
-
-        // Note: Without --name and without DYDO_HUMAN set, and with empty stdin,
-        // PromptForInput returns empty string
-        var result = await RunAsync(command, "none");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("Name is required");
-    }
-
-    [Fact]
     public async Task Init_InvalidIntegration_Fails()
     {
         var command = InitCommand.Create();
-        var result = await RunAsync(command, "invalid", "--name", "balazs");
+        var result = await RunAsync(command, "invalid");
 
         result.AssertExitCode(2);
         result.AssertStderrContains("Unknown integration");
@@ -759,10 +745,10 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_AlreadyInitialized_Fails()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var command = InitCommand.Create();
-        var result = await RunAsync(command, "none", "--name", "balazs");
+        var result = await RunAsync(command, "none");
 
         result.AssertExitCode(2);
         result.AssertStderrContains("already initialized");
@@ -775,14 +761,14 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_DoesNotOverwriteExistingDocs()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // Modify a file
         WriteFile("dydo/understand/architecture.md", "# Custom Architecture\n\nMy custom content");
 
         // Try to init again (should fail because already initialized)
         var command = InitCommand.Create();
-        var result = await RunAsync(command, "none", "--name", "balazs");
+        var result = await RunAsync(command, "none");
 
         // Init should fail, but more importantly, the file should not be overwritten
         var content = ReadFile("dydo/understand/architecture.md");

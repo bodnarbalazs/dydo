@@ -95,7 +95,7 @@ public class CliEndToEndTests : IDisposable
     [InlineData("none")]
     public async Task Init_CreatesProject(string integration)
     {
-        var result = await RunDydoAsync($"init {integration} --name testuser");
+        var result = await RunDydoAsync($"init {integration}");
 
         Assert.True(result.ExitCode == 0,
             $"dydo init {integration} failed:\nStderr: {result.Stderr}\nStdout: {result.Stdout}");
@@ -109,7 +109,7 @@ public class CliEndToEndTests : IDisposable
     public async Task Init_ThenCheck_RunsWithoutCrash()
     {
         // Initialize
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         // Check should run without crashing (may report validation issues, that's OK)
@@ -132,7 +132,7 @@ public class CliEndToEndTests : IDisposable
     [Fact]
     public async Task Init_ThenTaskCreateAndList_WorkAgentFree()
     {
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         var createResult = await RunDydoAsync("task create my-first-task --area general");
@@ -149,7 +149,7 @@ public class CliEndToEndTests : IDisposable
     [Fact]
     public async Task Check_Subfolder_AcceptsLinksToTargetsOutsideSubfolder()
     {
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         var fixtureSrc = Path.Combine(AppContext.BaseDirectory, "TestData", "link-validator");
@@ -172,7 +172,7 @@ public class CliEndToEndTests : IDisposable
     [Fact]
     public async Task Check_NonExistentPath_ReturnsToolError()
     {
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         var result = await RunDydoAsync("check does-not-exist-path");
@@ -184,7 +184,7 @@ public class CliEndToEndTests : IDisposable
     [Fact]
     public async Task Check_PathOutsideDocsTree_ReturnsToolError()
     {
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         var outside = Path.Combine(_testDir, "elsewhere");
@@ -199,17 +199,6 @@ public class CliEndToEndTests : IDisposable
     #endregion
 
     #region Error Handling Tests
-
-    [Fact]
-    public async Task Init_WithoutName_ShowsError()
-    {
-        var result = await RunDydoAsync("init claude");
-
-        // Should fail gracefully, not crash
-        Assert.True(result.ExitCode != 0, "Should fail without --name");
-        Assert.False(string.IsNullOrEmpty(result.Stderr) && string.IsNullOrEmpty(result.Stdout),
-            "Should show some output explaining the error");
-    }
 
     [Fact]
     public async Task Check_WithoutInit_ShowsError()
@@ -232,7 +221,7 @@ public class CliEndToEndTests : IDisposable
     public async Task TemplateUpdate_EndToEnd_ShippedHooks()
     {
         // Init project, create addition file, run update, verify addition survives
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         // Create an addition file
@@ -253,7 +242,7 @@ public class CliEndToEndTests : IDisposable
     [Fact]
     public async Task TemplateUpdate_EndToEnd_UserAddedInclude()
     {
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         // Add a custom include tag to a template between known lines
@@ -280,7 +269,7 @@ public class CliEndToEndTests : IDisposable
     [Fact]
     public async Task TemplateUpdate_EndToEnd_RepeatedUserEdits()
     {
-        var initResult = await RunDydoAsync("init none --name testuser");
+        var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         var templatePath = Path.Combine(_testDir, "dydo", "_system", "templates", "mode-code-writer.template.md");
@@ -320,9 +309,6 @@ public class CliEndToEndTests : IDisposable
             UseShellExecute = false,
             CreateNoWindow = true
         };
-
-        // Set DYDO_HUMAN for commands that need it
-        psi.Environment["DYDO_HUMAN"] = "testuser";
 
         using var process = Process.Start(psi)!;
         var stdout = await process.StandardOutput.ReadToEndAsync();

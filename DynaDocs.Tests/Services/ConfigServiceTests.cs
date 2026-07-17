@@ -241,22 +241,6 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetHumanFromEnv_ReturnsEnvValue()
-    {
-        var original = Environment.GetEnvironmentVariable("DYDO_HUMAN");
-        try
-        {
-            Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
-            var service = new ConfigService();
-            Assert.Equal("testuser", service.GetHumanFromEnv());
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("DYDO_HUMAN", original);
-        }
-    }
-
-    [Fact]
     public void LoadConfig_LegacyAgentsSection_IsIgnored()
     {
         // The 26-agent roster runtime was removed (DR-041); DydoConfig no longer models an

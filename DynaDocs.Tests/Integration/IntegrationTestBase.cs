@@ -18,7 +18,6 @@ public abstract class IntegrationTestBase : IDisposable
     protected string DydoDir => Path.Combine(TestDir, "dydo");
 
     private readonly string _originalDir;
-    private readonly string? _originalHuman;
     private readonly string? _originalWindow;
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalErr;
@@ -32,7 +31,6 @@ public abstract class IntegrationTestBase : IDisposable
 
         // Save original state
         _originalDir = Environment.CurrentDirectory;
-        _originalHuman = Environment.GetEnvironmentVariable("DYDO_HUMAN");
         _originalWindow = Environment.GetEnvironmentVariable("DYDO_WINDOW");
         _originalOut = Console.Out;
         _originalErr = Console.Error;
@@ -49,7 +47,6 @@ public abstract class IntegrationTestBase : IDisposable
     {
         // Restore original state
         Environment.CurrentDirectory = _originalDir;
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", _originalHuman);
         Environment.SetEnvironmentVariable("DYDO_WINDOW", _originalWindow);
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
@@ -72,22 +69,6 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
-    /// Set the DYDO_HUMAN environment variable.
-    /// </summary>
-    protected void SetHuman(string name)
-    {
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", name);
-    }
-
-    /// <summary>
-    /// Clear the DYDO_HUMAN environment variable.
-    /// </summary>
-    protected void ClearHuman()
-    {
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
-    }
-
-    /// <summary>
     /// Run a command and capture output.
     /// </summary>
     protected async Task<CommandResult> RunAsync(Command command, params string[] args)
@@ -100,24 +81,19 @@ public abstract class IntegrationTestBase : IDisposable
     /// <summary>
     /// Initialize a DynaDocs project with default settings.
     /// </summary>
-    protected async Task<CommandResult> InitProjectAsync(
-        string integration = "none",
-        string humanName = "testuser")
+    protected async Task<CommandResult> InitProjectAsync(string integration = "none")
     {
-        SetHuman(humanName);
         var command = InitCommand.Create();
-        return await RunAsync(command, integration, "--name", humanName);
+        return await RunAsync(command, integration);
     }
 
     /// <summary>
     /// Join an existing DynaDocs project.
     /// </summary>
-    protected async Task<CommandResult> JoinProjectAsync(
-        string integration = "none",
-        string humanName = "alice")
+    protected async Task<CommandResult> JoinProjectAsync(string integration = "none")
     {
         var command = InitCommand.Create();
-        return await RunAsync(command, integration, "--join", "--name", humanName);
+        return await RunAsync(command, integration, "--join");
     }
 
     // Test session ID for integration tests

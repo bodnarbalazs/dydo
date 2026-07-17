@@ -75,9 +75,6 @@ public static class HelpCommand
         Console.WriteLine("  version                Display version information");
         Console.WriteLine("  help                   Display this help");
         Console.WriteLine();
-        Console.WriteLine("Environment Variables:");
-        Console.WriteLine("  DYDO_HUMAN             Human identifier (used by human-only commands like roles reset)");
-        Console.WriteLine();
         Console.WriteLine("Exit codes:");
         Console.WriteLine("  0 - Success / Action allowed");
         Console.WriteLine("  1 - Validation errors found");

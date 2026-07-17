@@ -31,31 +31,24 @@ public static class InitCommand
             Description = "Join an existing DynaDocs project as a new team member"
         };
 
-        var nameOption = new Option<string?>("--name")
-        {
-            Description = "Human name (skips prompt)"
-        };
-
         var command = new Command("init", "Initialize DynaDocs with specified integration");
         command.Arguments.Add(integrationArgument);
         command.Options.Add(joinOption);
-        command.Options.Add(nameOption);
 
         command.SetAction(parseResult =>
         {
             var integration = parseResult.GetValue(integrationArgument)!;
             var join = parseResult.GetValue(joinOption);
-            var name = parseResult.GetValue(nameOption);
 
             return join
-                ? ExecuteJoin(integration, name)
-                : ExecuteInit(integration, name);
+                ? ExecuteJoin(integration)
+                : ExecuteInit(integration);
         });
 
         return command;
     }
 
-    private static int ExecuteInit(string integration, string? providedName)
+    private static int ExecuteInit(string integration)
     {
         if (!IsValidIntegration(integration))
             return IntegrationError(integration);
@@ -74,11 +67,6 @@ public static class InitCommand
         Console.WriteLine("DynaDocs Setup");
         Console.WriteLine(new string('─', 14));
         Console.WriteLine();
-
-        var humanName = ResolveHumanName(providedName);
-        if (humanName == null) return ExitCodes.ToolError;
-
-        Console.WriteLine();
         Console.WriteLine("Creating...");
 
         try
@@ -92,7 +80,7 @@ public static class InitCommand
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
             ScaffoldProject(configService, config, configPath, projectRoot, integration);
-            PrintInitSummary(humanName, integration);
+            PrintInitSummary(integration);
 
             return ExitCodes.Success;
         }
@@ -154,7 +142,7 @@ public static class InitCommand
         GenerateRoleFilesIfMissing(projectRoot);
     }
 
-    private static void PrintInitSummary(string humanName, string integration)
+    private static void PrintInitSummary(string integration)
     {
         Console.WriteLine();
         Console.WriteLine("Documentation funnel created:");
@@ -166,9 +154,8 @@ public static class InitCommand
         }
         Console.WriteLine();
         Console.WriteLine("Next steps:");
-        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN=\"{humanName}\"");
-        Console.WriteLine("  2. Customize dydo/understand/architecture.md for your project");
-        Console.WriteLine("  3. Customize dydo/guides/coding-standards.md");
+        Console.WriteLine("  1. Customize dydo/understand/architecture.md for your project");
+        Console.WriteLine("  2. Customize dydo/guides/coding-standards.md");
         Console.WriteLine();
         Console.WriteLine("Source and test paths default to src/** and tests/**.");
         Console.WriteLine("If your project uses a different layout, update dydo.json:");
@@ -187,7 +174,7 @@ public static class InitCommand
     // human — there is no roster to draw from. It reduces to "wire up this machine's local
     // integration for an already-initialized project" (a fresh clone, or adding a second
     // integration): configure hooks + role files without re-scaffolding or overwriting the tree.
-    private static int ExecuteJoin(string integration, string? providedName)
+    private static int ExecuteJoin(string integration)
     {
         if (!IsValidIntegration(integration))
             return IntegrationError(integration);
@@ -204,9 +191,6 @@ public static class InitCommand
         Console.WriteLine();
         Console.WriteLine("Joining DynaDocs project...");
         Console.WriteLine();
-
-        var humanName = ResolveHumanName(providedName);
-        if (humanName == null) return ExitCodes.ToolError;
 
         try
         {
@@ -230,13 +214,12 @@ public static class InitCommand
                 Console.WriteLine("  - Codex hooks configured");
             }
 
-            Console.WriteLine();
-            Console.WriteLine("Next steps:");
-            Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN=\"{humanName}\"");
-
             var completionResult = ShellCompletionInstaller.Install();
             if (completionResult != null)
+            {
+                Console.WriteLine();
                 Console.WriteLine($"  {completionResult}");
+            }
 
             return ExitCodes.Success;
         }
@@ -247,16 +230,6 @@ public static class InitCommand
         }
     }
 
-    private static string? ResolveHumanName(string? providedName)
-    {
-        var name = providedName ?? PromptForInput("Your name: ");
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            ConsoleOutput.WriteError("Name is required.");
-            return null;
-        }
-        return name.Trim().ToLowerInvariant();
-    }
 
     private static int IntegrationError(string integration)
     {
@@ -510,9 +483,4 @@ public static class InitCommand
     private static string GenerateAgentsMd(string projectName) =>
         TemplateGenerator.GenerateEntryPointMd(projectName);
 
-    private static string PromptForInput(string prompt)
-    {
-        Console.Write(prompt);
-        return Console.ReadLine() ?? string.Empty;
-    }
 }

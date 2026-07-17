@@ -42,18 +42,6 @@ npm install -g dydo
 dotnet tool install -g dydo
 ```
 
-Set the `DYDO_HUMAN` environment variable so agents know who they belong to:
-
-```bash
-# macOS / Linux (add to ~/.bashrc or ~/.zshrc)
-export DYDO_HUMAN="YourName"
-```
-
-```powershell
-# Windows (PowerShell)
-[Environment]::SetEnvironmentVariable("DYDO_HUMAN", "YourName", "User")
-```
-
 ## Quick Start
 
 ```bash

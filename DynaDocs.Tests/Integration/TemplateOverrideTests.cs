@@ -40,7 +40,7 @@ public class TemplateOverrideTests : IntegrationTestBase
     [Fact]
     public async Task Join_DoesNotOverwriteExistingTemplates()
     {
-        await InitProjectAsync("none", "testuser");
+        await InitProjectAsync("none");
 
         // Modify a template
         var templatePath = Path.Combine(TestDir, "dydo/_system/templates/mode-code-writer.template.md");
@@ -48,7 +48,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         File.WriteAllText(templatePath, customContent);
 
         // Join as another user
-        await JoinProjectAsync("none", "alice");
+        await JoinProjectAsync("none");
 
         // Verify custom template was NOT overwritten
         var contentAfterJoin = File.ReadAllText(templatePath);
@@ -161,14 +161,14 @@ public class TemplateOverrideTests : IntegrationTestBase
     [Fact]
     public async Task Join_DoesNotOverwriteExistingAdditions()
     {
-        await InitProjectAsync("none", "testuser");
+        await InitProjectAsync("none");
 
         // Create a custom addition
         var additionsPath = Path.Combine(TestDir, "dydo/_system/template-additions");
         File.WriteAllText(Path.Combine(additionsPath, "custom-step.md"), "Custom content");
 
         // Join as another user
-        await JoinProjectAsync("none", "alice");
+        await JoinProjectAsync("none");
 
         // Verify custom addition was NOT deleted
         Assert.True(File.Exists(Path.Combine(additionsPath, "custom-step.md")));

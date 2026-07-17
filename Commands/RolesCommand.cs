@@ -31,13 +31,6 @@ public static class RolesCommand
 
         resetCommand.SetAction((parseResult, _) =>
         {
-            var human = Environment.GetEnvironmentVariable("DYDO_HUMAN");
-            if (string.IsNullOrEmpty(human))
-            {
-                Console.Error.WriteLine("Error: DYDO_HUMAN not set. This command is human-only.");
-                return Task.FromResult(2);
-            }
-
             var resetAll = parseResult.GetValue(allOption);
             var basePath = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
             var rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");

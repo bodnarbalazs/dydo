@@ -15,7 +15,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Create_CreatesFile()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskCreateAsync("my-feature", area: "backend");
 
@@ -30,7 +30,7 @@ public class TaskTests : IntegrationTestBase
     public async Task Task_Create_EmitsPrettifiedTitle()
     {
         // Spine docs are born with a title: key (issue 0290) so the Notion board never shows "New page".
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskCreateAsync("my-feature", area: "backend");
 
@@ -41,7 +41,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Create_WithDescription()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskCreateAsync("auth-fix", "Fix authentication bug in login", area: "backend");
 
@@ -54,7 +54,7 @@ public class TaskTests : IntegrationTestBase
     {
         // No runtime agent identity (DR-041): a manually-created task lands unassigned/backlog
         // with no vendor/model provenance.
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskCreateAsync("my-task", area: "general");
 
@@ -69,7 +69,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Create_WithSpecialChars_SanitizesFilename()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskCreateAsync("Review: Auth & Email", area: "general");
 
@@ -86,7 +86,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Create_DuplicateFails()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("duplicate-task", area: "general");
 
         var result = await TaskCreateAsync("duplicate-task", area: "general");
@@ -98,7 +98,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Create_FailsWhenChangelogExistsForToday()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var changelogPath = Path.Combine(TestDir, "dydo", "project", "changelog",
             DateTime.UtcNow.ToString("yyyy"), DateTime.UtcNow.ToString("yyyy-MM-dd"));
@@ -115,7 +115,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Create_WithoutArea_Fails()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         // System.CommandLine will reject the command since --area is required
         var command = TaskCommand.Create();
@@ -128,7 +128,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Create_InvalidArea_Fails()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskCreateAsync("bad-area-task", area: "invalid-area");
 
@@ -143,7 +143,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_List_ShowsTasks()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("task-one", area: "backend");
         await TaskCreateAsync("task-two", area: "frontend");
 
@@ -157,7 +157,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_List_Empty_ShowsMessage()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskListAsync();
 
@@ -168,7 +168,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_List_NeedsReview_FiltersCorrectly()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("pending-task", area: "general");
         await TaskCreateAsync("review-task", area: "general");
         await TaskReadyForReviewAsync("review-task", "Ready for review");
@@ -187,7 +187,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_ReadyForReview_UpdatesStatus()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("feature-x", area: "backend");
 
         var result = await TaskReadyForReviewAsync("feature-x", "Feature complete, tests pass");
@@ -201,7 +201,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_ReadyForReview_WithoutSummary_GivesHelpfulError()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("no-summary-task", area: "backend");
 
         // Call ready-for-review without --summary
@@ -216,7 +216,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_ReadyForReview_WithEmptySummary_GivesHelpfulError()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("empty-summary-task", area: "backend");
 
         // Call ready-for-review with --summary "" (empty string)
@@ -230,7 +230,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_ReadyForReview_WithWhitespaceSummary_GivesHelpfulError()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("ws-summary-task", area: "backend");
 
         // Call ready-for-review with --summary "   " (whitespace only)
@@ -244,7 +244,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_ReadyForReview_NotFound_Fails()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await TaskReadyForReviewAsync("nonexistent", "Summary");
 
@@ -259,7 +259,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Done_DifferentAgent_MarksDoneAndKeepsTaskFile()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("peer-done", area: "backend");
         SetTaskAssigned("peer-done", "worker");
         SetTaskStatus("peer-done", "in-progress");
@@ -274,7 +274,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Done_HumanTerminal_MarksDone()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("human-done", area: "backend");
         SetTaskStatus("human-done", "in-progress");
 
@@ -287,7 +287,7 @@ public class TaskTests : IntegrationTestBase
     [Fact]
     public async Task Task_Done_BacklogTask_IsRefused()
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
         await TaskCreateAsync("backlog-task", area: "backend");
 
         var result = await TaskDoneAsync("backlog-task");
@@ -302,7 +302,7 @@ public class TaskTests : IntegrationTestBase
     [InlineData("reject")]
     public async Task Task_ApproveAndReject_AreNotCommands(string commandName)
     {
-        await InitProjectAsync("none", "balazs");
+        await InitProjectAsync("none");
 
         var result = await RunAsync(TaskCommand.Create(), commandName);
 

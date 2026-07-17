@@ -87,7 +87,7 @@ operate under guard until C1 lands; that is the point.
    documented setup — never silently degrade to a weaker sandbox (c1-4 checks, c1-3 documents,
    c1-8 verifies live).
 
-## Slices (rows in `sprint-tasks/`, each born `ready`)
+## Slices (rows in `slices/`, each born `ready`)
 
 | Row | What | Kind | Isolation |
 |---|---|---|---|

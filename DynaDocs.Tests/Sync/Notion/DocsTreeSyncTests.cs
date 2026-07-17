@@ -23,7 +23,7 @@ public class DocsTreeSyncTests : IDisposable
         Seed("guides/coding.md", "---\ntitle: Coding\n---\n\nStandards.");
         Seed("project/decisions/033-mirror.md", "---\ntitle: DR 033\n---\n\nThe mirror decision.");
         Seed("project/campaigns/dydo-2-0.md", "---\ntitle: dydo 2.0\nstatus: active\n---\n\nSpine row, not a doc.");
-        Seed("agents/Charlie/brief.md", "---\ntitle: Brief\n---\n\nAgent workspace, excluded.");
+        Seed("agents/sample/brief.md", "---\ntitle: Brief\n---\n\nAgent workspace, excluded.");
 
         // Pin a model whose Campaign dir is project/campaigns, so the mirror derives that exclusion from the model.
         WriteModel("""

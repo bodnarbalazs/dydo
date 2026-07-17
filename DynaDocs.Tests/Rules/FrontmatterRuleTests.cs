@@ -219,7 +219,7 @@ public class FrontmatterRuleTests
     [Fact]
     public void Validate_SkipsAgentWorkspaceFiles()
     {
-        var doc = CreateDocWithFrontmatter(null, "agents/Adele/workflow.md");
+        var doc = CreateDocWithFrontmatter(null, "agents/sample/workflow.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 
@@ -229,7 +229,7 @@ public class FrontmatterRuleTests
     [Fact]
     public void Validate_SkipsNestedAgentWorkspaceFiles()
     {
-        var doc = CreateDocWithFrontmatter(null, "agents/Brian/modes/code-writer.md");
+        var doc = CreateDocWithFrontmatter(null, "agents/peer/modes/code-writer.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 

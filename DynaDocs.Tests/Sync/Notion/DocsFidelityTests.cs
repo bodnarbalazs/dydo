@@ -10,8 +10,8 @@ using DynaDocs.Sync.Notion;
 /// after a sync (no phantom conflicts, the root cause of issue 0235), a re-run is idempotent, and
 /// <see cref="DocsMarkdownNormalizer.CleanForPersist"/> is byte-safe over the realistic bodies (its
 /// signature-stripping regex must leave a legitimate query untouched while stripping a pre-signed one). The
-/// fake echoes markdown losslessly; the Notion-flavored dialect drift only a live board exhibits is Charlie's
-/// live smoke, not simulated here.</summary>
+/// fake echoes markdown losslessly; the Notion-flavored dialect drift only a live board exhibits is left to
+/// manual live smoke against a real board, not simulated here.</summary>
 public class DocsFidelityTests : IDisposable
 {
     private readonly string _root;

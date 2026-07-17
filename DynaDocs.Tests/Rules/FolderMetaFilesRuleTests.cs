@@ -159,13 +159,13 @@ public class FolderMetaFilesRuleTests
     [Fact]
     public void ValidateFolder_SkipsAgentFolders()
     {
-        // agents/Adele/ should not require meta files
+        // agents/sample/ should not require meta files
         var docs = new List<DocFile>
         {
-            CreateDoc("agents/Adele/workflow.md")
+            CreateDoc("agents/sample/workflow.md")
         };
 
-        var violations = _rule.ValidateFolder("/base/agents/Adele", docs, "/base").ToList();
+        var violations = _rule.ValidateFolder("/base/agents/sample", docs, "/base").ToList();
 
         Assert.Empty(violations);
     }

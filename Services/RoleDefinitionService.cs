@@ -15,19 +15,12 @@ public class RoleDefinitionService : IRoleDefinitionService
     public static readonly HashSet<string> SkillOnlyRoles = new(StringComparer.OrdinalIgnoreCase) { "planner" };
 
     /// <summary>
-    /// Roles that exist only as workflow-spawned agent-types (Decision 026): <c>dydo sync</c>
-    /// compiles them into a native agent + skill like the worker roles, but they are never
-    /// claimable Tier-1 identities, so — like <see cref="SkillOnlyRoles"/> — they are excluded
-    /// from the on-disk role roster and the claimable/mode surfaces.
-    /// </summary>
-    public static readonly HashSet<string> WorkflowOnlyRoles = new(StringComparer.OrdinalIgnoreCase) { "sprint-auditor" };
-
-    /// <summary>
-    /// The union every claimable-surface filter uses (roster, registry fallback, role table,
-    /// mode names) — a single set so those filters can never drift apart.
+    /// The set every claimable-surface filter uses (roster, registry fallback, role table,
+    /// mode names) — a single source so those filters can never drift apart. Currently the
+    /// skill-only roles; kept as a distinct name for the claimable-vs-compiled distinction.
     /// </summary>
     public static readonly HashSet<string> NonClaimableRoles =
-        new(SkillOnlyRoles.Concat(WorkflowOnlyRoles), StringComparer.OrdinalIgnoreCase);
+        new(SkillOnlyRoles, StringComparer.OrdinalIgnoreCase);
 
     public static List<RoleDefinition> GetBaseRoleDefinitions()
     {
@@ -38,47 +31,37 @@ public class RoleDefinitionService : IRoleDefinitionService
                 Name = "code-writer",
                 Description = "Implements features and fixes bugs in source code.",
                 Base = true,
-                WritablePaths = ["{source}", "{tests}", "dydo/agents/{self}/**", "dydo/project/backlog/**"],
+                WritablePaths = ["{source}", "{tests}", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["dydo/**", "project/**"],
                 TemplateFile = "mode-code-writer.template.md",
-                DenialHint = "Code-writer role can only edit configured source/test paths and own workspace."
+                DenialHint = "Code-writer role can only edit configured source/test paths."
             },
             new RoleDefinition
             {
                 Name = "reviewer",
                 Description = "Reviews code changes for quality and correctness.",
                 Base = true,
-                WritablePaths = ["dydo/agents/{self}/**"],
+                WritablePaths = [],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-reviewer.template.md",
-                DenialHint = "Reviewer role can only edit own workspace."
-            },
-            new RoleDefinition
-            {
-                Name = "sprint-auditor",
-                Description = "Audits an entire merged sprint as one unit, hunting real cross-slice issues and returning a strict verdict with findings.",
-                Base = true,
-                WritablePaths = ["dydo/agents/{self}/**"],
-                ReadOnlyPaths = ["**"],
-                TemplateFile = "mode-sprint-auditor.template.md",
-                DenialHint = "Sprint-auditor role can only edit own workspace."
+                DenialHint = "Reviewer role writes nothing — it assesses and reports."
             },
             new RoleDefinition
             {
                 Name = "co-thinker",
                 Description = "Collaborates on design decisions and architecture.",
                 Base = true,
-                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
+                WritablePaths = ["dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["{source}", "{tests}"],
                 TemplateFile = "mode-co-thinker.template.md",
-                DenialHint = "Co-thinker role can edit own workspace and decisions."
+                DenialHint = "Co-thinker role can edit decisions, issues, and backlog."
             },
             new RoleDefinition
             {
                 Name = "chief-of-staff",
                 Description = "The human's right hand — triages the backlog and idea funnel, routes work to domain orchestrators, reports status, and mediates between agents.",
                 Base = true,
-                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
+                WritablePaths = ["dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-chief-of-staff.template.md",
                 DenialHint = "Chief-of-staff writes PM objects and docs, never code."
@@ -88,37 +71,37 @@ public class RoleDefinitionService : IRoleDefinitionService
                 Name = "docs-writer",
                 Description = "Creates and maintains documentation.",
                 Base = true,
-                WritablePaths = ["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"],
+                WritablePaths = ["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md"],
                 ReadOnlyPaths = ["{source}", "{tests}"],
                 TemplateFile = "mode-docs-writer.template.md",
-                DenialHint = "Docs-writer role can only edit dydo/** (except other agents' workspaces) and own workspace."
+                DenialHint = "Docs-writer role can only edit dydo/**."
             },
             new RoleDefinition
             {
                 Name = "planner",
                 Description = "Creates implementation plans and task breakdowns.",
                 Base = true,
-                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**"],
+                WritablePaths = ["dydo/project/tasks/**"],
                 ReadOnlyPaths = ["{source}"],
                 TemplateFile = "mode-planner.template.md",
-                DenialHint = "Planner role can only edit own workspace and tasks."
+                DenialHint = "Planner role can only edit tasks."
             },
             new RoleDefinition
             {
                 Name = "test-writer",
                 Description = "Writes and maintains test suites.",
                 Base = true,
-                WritablePaths = ["dydo/agents/{self}/**", "{tests}", "dydo/project/pitfalls/**"],
+                WritablePaths = ["{tests}", "dydo/project/pitfalls/**"],
                 ReadOnlyPaths = ["{source}"],
                 TemplateFile = "mode-test-writer.template.md",
-                DenialHint = "Test-writer role can edit own workspace, tests, and pitfalls."
+                DenialHint = "Test-writer role can edit tests and pitfalls."
             },
             new RoleDefinition
             {
                 Name = "orchestrator",
                 Description = "Coordinates multi-agent workflows and task dispatch.",
                 Base = true,
-                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
+                WritablePaths = ["dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-orchestrator.template.md",
                 CanOrchestrate = true
@@ -183,8 +166,8 @@ public class RoleDefinitionService : IRoleDefinitionService
             errors.Add("Role name is required.");
         if (string.IsNullOrWhiteSpace(role.Description))
             errors.Add("Role description is required.");
-        if (role.WritablePaths.Count == 0)
-            errors.Add("At least one writable path is required.");
+        // No writable paths is valid: it denotes a read-only role (e.g. reviewer), whose
+        // empty writable surface is what `dydo sync` compiles into a no-Edit/Write tool profile.
         if (string.IsNullOrWhiteSpace(role.TemplateFile))
             errors.Add("Template file is required.");
 

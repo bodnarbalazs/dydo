@@ -56,7 +56,7 @@ public class InitCommandTests : IntegrationTestBase
         // The 26-agent roster was removed (DR-041): init creates the empty, gitignored workspace
         // root but no per-agent workspaces / workflow files.
         AssertDirectoryExists("dydo/agents");
-        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele")));
+        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/sample")));
     }
 
     [Fact]

@@ -36,28 +36,51 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Lists the skill reference files shipped for a role (Templates/skill-references/&lt;role&gt;/*)
-    /// as (fileName, content) pairs — per-target rubrics `dydo sync` copies into the compiled
-    /// skill folder (DR-039 subskills, DR-042). MSBuild mangles hyphenated DIRECTORY names in
-    /// resource ids ('skill-references' → 'skill_references'); file names survive verbatim, so
-    /// both spellings are probed.
+    /// Lists a role's skill resource templates — files named
+    /// `&lt;role&gt;-resource-&lt;name&gt;.template.md` ("resource" is the protected word) — as
+    /// (fileName, content) pairs. `dydo sync` compiles each into the skill folder as
+    /// `resources/&lt;name&gt;.md`. Content resolves through <see cref="ReadTemplate"/>, so
+    /// project-local overrides in `dydo/_system/templates/` apply like any other template.
     /// </summary>
-    public static IEnumerable<(string FileName, string Content)> GetSkillReferences(string roleName)
+    public static IEnumerable<(string FileName, string Content)> GetSkillResources(string roleName)
     {
-        string[] prefixes =
-        [
-            $"DynaDocs.Templates.skill_references.{roleName}.",
-            $"DynaDocs.Templates.skill-references.{roleName}.",
-        ];
-        foreach (var resource in _assembly.GetManifestResourceNames())
+        foreach (var templateName in GetSkillResourceTemplateNames(roleName))
         {
-            var prefix = prefixes.FirstOrDefault(resource.StartsWith);
-            if (prefix == null) continue;
+            var name = templateName[$"{roleName}-resource-".Length..^".template.md".Length];
+            yield return ($"{name}.md", ReadTemplate(templateName));
+        }
+    }
+
+    /// <summary>
+    /// The workflow harness scripts dydo ships (Templates/workflow-&lt;name&gt;.js — "workflow-"
+    /// is the protected prefix). `dydo sync` compiles each to `.claude/workflows/&lt;name&gt;.js`.
+    /// Claude-only for now; a codex equivalent gets a matching emit path when one exists.
+    /// </summary>
+    public static IEnumerable<(string FileName, string Content)> GetWorkflowScripts()
+    {
+        const string prefix = "DynaDocs.Templates.workflow-";
+        foreach (var resource in _assembly.GetManifestResourceNames()
+                     .Where(r => r.StartsWith(prefix) && r.EndsWith(".js"))
+                     .OrderBy(r => r, StringComparer.Ordinal))
+        {
             using var stream = _assembly.GetManifestResourceStream(resource);
             if (stream == null) continue;
             using var reader = new StreamReader(stream);
             yield return (resource[prefix.Length..], reader.ReadToEnd());
         }
+    }
+
+    /// <summary>
+    /// Embedded template names matching `&lt;role&gt;-resource-*.template.md`.
+    /// </summary>
+    public static IReadOnlyList<string> GetSkillResourceTemplateNames(string roleName)
+    {
+        var prefix = $"DynaDocs.Templates.{roleName}-resource-";
+        return _assembly.GetManifestResourceNames()
+            .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md"))
+            .Select(r => r["DynaDocs.Templates.".Length..])
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
     }
 
     /// <summary>
@@ -129,6 +152,9 @@ public static class TemplateGenerator
         {
             if (!string.IsNullOrEmpty(role.TemplateFile))
                 names.Add(role.TemplateFile);
+            // Skill resource templates (<role>-resource-<name>.template.md) ride the same
+            // override/hash machinery as the mode templates.
+            names.AddRange(GetSkillResourceTemplateNames(role.Name));
         }
         return names;
     }
@@ -668,6 +694,37 @@ public static class TemplateGenerator
             ---
 
             Run `dydo <command> --help` for detailed usage of each command.
+            """;
+    }
+
+    /// <summary>
+    /// Generate the dydo glossary reference document.
+    /// Reads from dydo-glossary.template.md if available.
+    /// </summary>
+    public static string GenerateDydoGlossaryMd()
+    {
+        try
+        {
+            return ReadTemplate("dydo-glossary.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return GenerateFallbackDydoGlossaryMd();
+        }
+    }
+
+    internal static string GenerateFallbackDydoGlossaryMd()
+    {
+        return """
+            ---
+            area: reference
+            type: reference
+            ---
+
+            # dydo Glossary
+
+            The dydo system's terms, locked. One meaning per word, used consistently across docs,
+            templates, skills, and records.
             """;
     }
 

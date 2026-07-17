@@ -39,7 +39,7 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "releases")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "campaigns")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "sprints")));
-        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "sprint-tasks")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "slices")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "agents")));
     }
 
@@ -108,6 +108,19 @@ public class FolderScaffolderTests : IDisposable
         Assert.Contains("Glossary", content);
         Assert.Contains("area: general", content);
         Assert.Contains("type: reference", content);
+    }
+
+    [Fact]
+    public void Scaffold_CreatesDydoGlossaryMd()
+    {
+        _scaffolder.Scaffold(_testDir);
+
+        var glossaryPath = Path.Combine(_testDir, "reference", "dydo-glossary.md");
+        Assert.True(File.Exists(glossaryPath), "dydo-glossary.md should be created in reference/");
+
+        var content = File.ReadAllText(glossaryPath);
+        Assert.Contains("# dydo Glossary", content);
+        Assert.Contains("Slice", content);
     }
 
     [Fact]

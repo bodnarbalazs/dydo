@@ -91,7 +91,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         // The 26-agent roster was removed (DR-041): init creates the empty, gitignored workspace
         // root but no per-agent workspaces.
         AssertDirectoryExists("dydo/agents");
-        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele")));
+        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/sample")));
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         initResult.AssertSuccess();
 
         // Write a malformed .md into an agent workspace
-        WriteFile("dydo/agents/Adele/bad-doc.md", "no frontmatter at all, this is invalid");
+        WriteFile("dydo/agents/sample/bad-doc.md", "no frontmatter at all, this is invalid");
 
         // Act
         var checkResult = await CheckAsync();
@@ -213,7 +213,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         initResult.AssertSuccess();
 
         // Assert - No modes/ directory for any agent
-        var expectedAgents = new[] { "Adele", "Brian", "Charlie" };
+        var expectedAgents = new[] { "sample", "peer" };
         foreach (var agent in expectedAgents)
         {
             var modesPath = Path.Combine(TestDir, "dydo", "agents", agent, "modes");

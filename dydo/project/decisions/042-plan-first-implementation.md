@@ -16,7 +16,9 @@ it now — prompts and records — and adds the specification and the prohibitio
 
 ## The format — root + slices, spec + plan
 
-The plan is Sprint + SprintTask records (DR-039 §3, "the plan is the rows"). No new folders.
+The plan is sprint + slice records (DR-039 §3, "the plan is the rows"; the record type
+formerly named SprintTask is renamed **slice** — the natural atomic unit, no longer
+colliding with *task*).
 
 **Root** — `dydo/project/sprints/<name>.md`, statuses `planning → plan-review → active → audit → done`:
 
@@ -26,11 +28,12 @@ The plan is Sprint + SprintTask records (DR-039 §3, "the plan is the rows"). No
 2. **Prior art** — search performed, evidence recorded even when rejected (DR-039 §4).
 3. **Design** — root-level how: touchpoints, named patterns with paths, data/migration hazards,
    rollback.
-4. **Slice map** — table: slice → SprintTask file, disjoint files touched, dependencies, gate.
-5. **Ordering & isolation** — lanes, hot files, why slices can't collide.
+4. **Slice map** — table: slice → slice file, disjoint files touched, dependencies, gate.
+5. **Ordering & isolation** — parallel-worktree vs serial lanes, hot files, why slices can't
+   collide; the orchestrator's merge instructions.
 6. **Watch-outs.**
 
-**Slices** — one `dydo/project/sprint-tasks/<sprint>-<n>-<slug>.md` per row, `ready →
+**Slices** — one `dydo/project/slices/<sprint>-<n>-<slug>.md` per row, `ready →
 in-progress → done`: spec fragment (this slice's deliverable + acceptance), implementation
 detail to the DR-039 bar ("detailed enough that implementation becomes mechanical" — files,
 steps, concrete examples, the pattern to copy and where it lives), out-of-scope, exact gate

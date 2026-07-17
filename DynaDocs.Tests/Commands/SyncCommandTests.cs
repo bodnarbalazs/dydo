@@ -41,15 +41,15 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
     }
 
-    // DR-039 review-target subskills / DR-042: Templates/skill-references/<role>/* land in the
-    // compiled skill's references/ folder, on both the Claude and Codex emit paths.
+    // DR-039 review-target subskills / DR-042: <role>-resource-<name>.template.md files
+    // compile into the skill's resources/ folder, on both the Claude and Codex emit paths.
     [Fact]
     public void SyncRole_EmitsSkillReferences_PlanRubric()
     {
         SyncCommand.SyncRole(_reviewer, _testDir);
 
-        var plan = Path.Combine(_testDir, ".claude", "skills", "reviewer", "references", "plan.md");
-        Assert.True(File.Exists(plan), "reviewer skill must ship references/plan.md");
+        var plan = Path.Combine(_testDir, ".claude", "skills", "reviewer", "resources", "plan.md");
+        Assert.True(File.Exists(plan), "reviewer skill must ship resources/plan.md");
         Assert.Contains("Reviewing a Plan", File.ReadAllText(plan));
     }
 
@@ -59,13 +59,29 @@ public class SyncCommandTests : IDisposable
         SyncCommand.SyncCodexSkill(_reviewer, _testDir);
 
         Assert.True(File.Exists(
-            Path.Combine(_testDir, ".agents", "skills", "reviewer", "references", "plan.md")));
+            Path.Combine(_testDir, ".agents", "skills", "reviewer", "resources", "plan.md")));
     }
 
     [Fact]
-    public void GetSkillReferences_RoleWithoutReferences_IsEmpty()
+    public void GetSkillResources_RoleWithoutReferences_IsEmpty()
     {
-        Assert.Empty(TemplateGenerator.GetSkillReferences("code-writer"));
+        Assert.Empty(TemplateGenerator.GetSkillResources("code-writer"));
+    }
+
+    // Workflow harnesses are dydo-authored (Templates/workflow-<name>.js) and compiled to
+    // .claude/workflows — hand-editing the emitted scripts is the drift the compiler ends.
+    [Fact]
+    public void SyncWorkflows_EmitsRunSprintAndInquisition()
+    {
+        var count = SyncCommand.SyncWorkflows(_testDir);
+
+        Assert.Equal(2, count);
+        var runSprint = Path.Combine(_testDir, ".claude", "workflows", "run-sprint.js");
+        Assert.True(File.Exists(runSprint));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "workflows", "inquisition.js")));
+        var content = File.ReadAllText(runSprint);
+        Assert.Contains("export const meta", content);
+        Assert.DoesNotContain("\r", content); // LF-normalized for Claude Code
     }
 
     [Fact]
@@ -159,7 +175,9 @@ public class SyncCommandTests : IDisposable
         // Timeless methodology survives
         Assert.Contains("Mindset", skill);
         Assert.Contains("YOU SHALL NOT PASS", skill);
-        Assert.Contains("Review checklist", skill);
+        // Target rubrics ride resources/ (DR-039 subskills); the SKILL keeps the pointer map
+        Assert.Contains("Review Targets", skill);
+        Assert.Contains("resources/plan.md", skill);
 
         // Old-runtime orchestration is gone
         Assert.DoesNotContain("## Set Role", skill);
@@ -243,7 +261,7 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var role in new[] { "code-writer", "reviewer", "test-writer", "docs-writer", "sprint-auditor" })
+            foreach (var role in new[] { "code-writer", "reviewer", "test-writer", "docs-writer" })
             {
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")), $"missing agent: {role}");
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")), $"missing skill: {role}");
@@ -448,33 +466,20 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_SprintAuditor_ToolAllowlistOmitsAgentEditWrite()
+    public void SyncRole_Reviewer_MergeSprintReference_CarriesInquisitorJudgeCharacter()
     {
-        // Decision 026: the sprint-auditor must not be able to dispatch subagents or write
-        // files — enforced natively by the tools allowlist in the generated definition.
-        var auditor = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "sprint-auditor");
-        SyncCommand.SyncRole(auditor, _testDir);
+        // DR-039: the sprint-auditor folded into the reviewer — its inquisitor/judge character
+        // now rides the merge-sprint review-target reference the reviewer skill ships.
+        SyncCommand.SyncRole(_reviewer, _testDir);
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "sprint-auditor.md"));
-        var toolsLine = agent.Split('\n').Single(l => l.StartsWith("tools:"));
-        Assert.Equal("tools: Read, Grep, Glob, Bash", toolsLine.TrimEnd());
-    }
-
-    [Fact]
-    public void SyncRole_SprintAuditor_Skill_CarriesInquisitorJudgeCharacter()
-    {
-        var auditor = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "sprint-auditor");
-        SyncCommand.SyncRole(auditor, _testDir);
-
-        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "sprint-auditor", "SKILL.md"));
+        var reference = File.ReadAllText(
+            Path.Combine(_testDir, ".claude", "skills", "reviewer", "resources", "merge-sprint.md"));
         // Inquisitor lens: hunts real cross-slice issues (seams are the signature concern)
-        Assert.Contains("Inquisitor", skill);
-        Assert.Contains("Seams", skill);
+        Assert.Contains("Inquisitor", reference);
+        Assert.Contains("Seams", reference);
         // Judge strictness: verdict with findings, no "pass with notes"
-        Assert.Contains("Judge", skill);
-        Assert.Contains("pass with notes", skill);
-        // Works alone — no subagent dispatch
-        Assert.Contains("cannot dispatch subagents", skill);
+        Assert.Contains("Judge", reference);
+        Assert.Contains("pass with notes", reference);
     }
 
     [Fact]
@@ -570,7 +575,7 @@ public class SyncCommandTests : IDisposable
     public void ResolveModel_UnmappedRole_ReturnsNull()
     {
         // No role → tier entry: inherit the session model (Decision 028 — no silent downgrade).
-        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "sprint-auditor");
+        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "test-writer");
         Assert.Null(model);
         Assert.Null(effort);
     }
@@ -615,10 +620,10 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncRole_UnmappedRole_FallsBackToInherit()
     {
-        var auditor = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "sprint-auditor");
-        SyncCommand.SyncRole(auditor, _testDir, TestModels());
+        var testWriter = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "test-writer");
+        SyncCommand.SyncRole(testWriter, _testDir, TestModels());
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "sprint-auditor.md"));
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "test-writer.md"));
         Assert.Contains("model: inherit", agent);
     }
 

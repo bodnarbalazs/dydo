@@ -159,10 +159,10 @@ public static class InitCommand
         Console.WriteLine();
         Console.WriteLine("Documentation funnel created:");
         if (integration == "codex")
-            Console.WriteLine("  AGENTS.md -> dydo/index.md -> dydo/workflows/*.md -> must-reads");
+            Console.WriteLine("  AGENTS.md -> dydo/index.md (orientation) -> the docs");
         else
         {
-            Console.WriteLine("  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads");
+            Console.WriteLine("  CLAUDE.md → dydo/index.md (orientation) → the docs");
         }
         Console.WriteLine();
         Console.WriteLine("Next steps:");

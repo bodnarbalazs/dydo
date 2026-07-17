@@ -58,7 +58,9 @@ Touchpoints, the existing patterns to follow (with paths), hazards, rollback.
 | 2 | <sprint>-2-<slug>           | path/B.cs                | 1    | <exact command> |
 
 ## 5. Ordering & isolation
-Serial vs parallel lanes; shared hot files; why the slices cannot collide.
+Which lanes run in parallel worktrees vs serial in-tree; shared hot files; why the
+slices cannot collide. The orchestrator assigns worktrees and merges passed slices
+back serially — this section is its instructions.
 
 ## 6. Watch-outs
 The traps a reviewer or implementer must not walk into.
@@ -66,7 +68,7 @@ The traps a reviewer or implementer must not walk into.
 
 ### Write one slice file per row
 
-`dydo/project/sprint-tasks/<sprint>-<n>-<slug>.md`:
+`dydo/project/slices/<sprint>-<n>-<slug>.md`:
 
 ```markdown
 ---
@@ -91,7 +93,7 @@ the existing pattern to copy and where it lives. Mechanical — no decisions lef
 The exact build/test/check commands that must be green before done.
 ```
 
-Slices are **disjoint by file** and **atomic** — each reviewable in one round. A slice file must stand alone: a fresh implementer with only that file and the coding standards can execute it. No model names in plan text.
+Slices are **disjoint by file** and **atomic** — each reviewable in one round. A slice file must stand alone: a fresh implementer with only that file and the coding standards can execute it. No model names in plan text. Use the [dydo glossary](../../../reference/dydo-glossary.md)'s terms in every record — sprint, slice, lane, gate mean exactly one thing each.
 
 ### Hand off to the gate
 

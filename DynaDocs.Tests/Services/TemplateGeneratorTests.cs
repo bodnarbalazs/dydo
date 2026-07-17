@@ -33,7 +33,6 @@ public class TemplateGeneratorTests
     [InlineData("mode-docs-writer.template.md")]
     [InlineData("mode-test-writer.template.md")]
     [InlineData("mode-orchestrator.template.md")]
-    [InlineData("mode-sprint-auditor.template.md")]
     public void ReadBuiltInTemplate_AllListedTemplates_AreAccessible(string templateName)
     {
         var content = TemplateGenerator.ReadBuiltInTemplate(templateName);

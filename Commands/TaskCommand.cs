@@ -11,9 +11,9 @@ using DynaDocs.Utils;
 /// the task files in <c>dydo/project/tasks/</c> (schema: <c>name</c> / <c>assigned</c> / <c>status</c>
 /// backlog→in-progress→in-review→done). This is the in-session work-tracking lifecycle agents and humans use day to day.
 /// <para>
-/// It is NOT the Notion-synced PM board. The board's leaf object is the separate <b>SprintTask</b> type
-/// (Campaign → Sprint → SprintTask) declared in the sync model (<c>Templates/sync-model.template.json</c>,
-/// canonical dir <c>dydo/project/sprint-tasks/</c>) and reconciled by <c>dydo notion sync</c>. The two are
+/// It is NOT the Notion-synced PM board. The board's leaf object is the separate <b>Slice</b> type
+/// (Campaign → Sprint → Slice) declared in the sync model (<c>Templates/sync-model.template.json</c>,
+/// canonical dir <c>dydo/project/slices/</c>) and reconciled by <c>dydo notion sync</c>. The two are
 /// distinct systems with different schemas and directories — do not conflate them.
 /// </para>
 /// </summary>

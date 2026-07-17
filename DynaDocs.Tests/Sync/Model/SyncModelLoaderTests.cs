@@ -35,7 +35,7 @@ public class SyncModelLoaderTests : IDisposable
         var model = SyncModelLoader.Load(_dydoRoot);
 
         Assert.True(File.Exists(path));
-        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue", "Task", "FutureFeature"], model.Objects.Select(o => o.Type));
+        Assert.Equal(["Release", "Campaign", "Sprint", "Slice", "Issue", "Task", "FutureFeature"], model.Objects.Select(o => o.Type));
     }
 
     [Fact]
@@ -55,10 +55,10 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("Campaign", sprint.Properties["campaign"].To);
         Assert.Equal("number", sprint.Properties["seq"].Type);
 
-        var sprintTask = model.Object("SprintTask");
-        Assert.Equal("project/sprint-tasks", sprintTask.Dir);
-        Assert.Equal("Sprint Tasks", sprintTask.NotionTitle);
-        Assert.Equal("Sprint", sprintTask.Properties["sprint"].To);
+        var slice = model.Object("Slice");
+        Assert.Equal("project/slices", slice.Dir);
+        Assert.Equal("Sprint Tasks", slice.NotionTitle);
+        Assert.Equal("Sprint", slice.Properties["sprint"].To);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class SyncModelLoaderTests : IDisposable
         var model = SyncModelLoader.Load(_dydoRoot);
 
         // DR 029 color language on a select option.
-        var status = model.Object("SprintTask").Properties["status"];
+        var status = model.Object("Slice").Properties["status"];
         Assert.Equal("purple", status.Colors!["ready"]);
         Assert.Equal("red", status.Colors!["blocked"]);
 
@@ -99,7 +99,7 @@ public class SyncModelLoaderTests : IDisposable
 
         // Canonical dual-property relation carries its reverse name; a leaf relation does not.
         Assert.Equal("sprints", model.Object("Sprint").Properties["campaign"].Reverse);
-        Assert.Equal("blocks", model.Object("SprintTask").Properties["blocked-by"].Reverse);
+        Assert.Equal("blocks", model.Object("Slice").Properties["blocked-by"].Reverse);
         Assert.Null(model.Object("Issue").Properties["fix-release"].Reverse);
 
         // Computed properties: a done formula and a progress rollup.
@@ -114,8 +114,8 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("percent_checked", progress.RollupFunction);
 
         // Canonical PM properties adopted in DR 030.
-        Assert.Equal("checkbox", model.Object("SprintTask").Properties["needs-human"].Type);
-        Assert.Equal(["feature", "bug", "chore", "spike", "docs"], model.Object("SprintTask").Properties["work-type"].Options!);
+        Assert.Equal("checkbox", model.Object("Slice").Properties["needs-human"].Type);
+        Assert.Equal(["feature", "bug", "chore", "spike", "docs"], model.Object("Slice").Properties["work-type"].Options!);
         Assert.Equal("date", model.Object("Sprint").Properties["start"].Type);
         Assert.Equal("date", model.Object("Sprint").Properties["end"].Type);
         Assert.Equal(["done", "wont-do", "duplicate", "cannot-reproduce", "superseded"], model.Object("Issue").Properties["resolution"].Options!);
@@ -127,13 +127,13 @@ public class SyncModelLoaderTests : IDisposable
         var model = SyncModelLoader.Load(_dydoRoot);
 
         // Engine-computed last-activity date on the leaf work items (DR 030 §3).
-        var lastActivity = model.Object("SprintTask").Properties["last-activity"];
+        var lastActivity = model.Object("Slice").Properties["last-activity"];
         Assert.Equal("date", lastActivity.Type);
         Assert.True(lastActivity.EngineComputed);
         Assert.True(model.Object("Issue").Properties["last-activity"].EngineComputed);
 
         // Staleness formula reads last-activity and status (DR 030 §3).
-        var stale = model.Object("SprintTask").Properties["stale"];
+        var stale = model.Object("Slice").Properties["stale"];
         Assert.Equal("formula", stale.Type);
         Assert.Contains("last-activity", stale.Expression);
         Assert.Contains("dateBetween", stale.Expression);
@@ -173,7 +173,7 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("latest_date", model.Object("Campaign").Properties["end"].RollupFunction);
 
         // Attention composite on every type (DR 030 §4).
-        foreach (var type in new[] { "SprintTask", "Issue", "Sprint", "Campaign", "Release" })
+        foreach (var type in new[] { "Slice", "Issue", "Sprint", "Campaign", "Release" })
             Assert.Equal("formula", model.Object(type).Properties["attention"].Type);
     }
 
@@ -223,7 +223,7 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("resolved", routing.Value.Folders["resolved"]);
 
         // Types without a folders map do not route.
-        Assert.Null(SyncModelLoader.Load(_dydoRoot).Object("SprintTask").FolderRouting());
+        Assert.Null(SyncModelLoader.Load(_dydoRoot).Object("Slice").FolderRouting());
     }
 
     [Fact]
@@ -279,7 +279,7 @@ public class SyncModelLoaderTests : IDisposable
     public void InDependencyOrder_DefaultModel_PutsParentsBeforeChildren()
     {
         var ordered = SyncModelLoader.Load(_dydoRoot).InDependencyOrder();
-        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue", "Task", "FutureFeature"], ordered.Select(o => o.Type));
+        Assert.Equal(["Release", "Campaign", "Sprint", "Slice", "Issue", "Task", "FutureFeature"], ordered.Select(o => o.Type));
     }
 
     [Fact]
@@ -326,15 +326,15 @@ public class SyncModelLoaderTests : IDisposable
             { "objects": [
               { "type": "Sprint", "dir": "s", "notionTitle": "S",
                 "properties": { "title": { "type": "title" } } },
-              { "type": "SprintTask", "dir": "t", "notionTitle": "T",
+              { "type": "Slice", "dir": "t", "notionTitle": "T",
                 "properties": { "title": { "type": "title" },
                   "sprint": { "type": "relation", "to": "Sprint" },
-                  "blocked-by": { "type": "relation", "to": "SprintTask" } } }
+                  "blocked-by": { "type": "relation", "to": "Slice" } } }
             ] }
             """);
 
         var ordered = SyncModelLoader.Load(_dydoRoot).InDependencyOrder();
-        Assert.Equal(["Sprint", "SprintTask"], ordered.Select(o => o.Type));
+        Assert.Equal(["Sprint", "Slice"], ordered.Select(o => o.Type));
     }
 
     [Fact]
@@ -371,9 +371,9 @@ public class SyncModelLoaderTests : IDisposable
     [Fact]
     public void ObjectType_RelationTargets_ReturnsDistinctReferencedTypes()
     {
-        var task = SyncModelLoader.Load(_dydoRoot).Object("SprintTask");
-        // sprint → Sprint, and the blocked-by self-relation → SprintTask.
-        Assert.Equal(["Sprint", "SprintTask"], task.RelationTargets());
+        var task = SyncModelLoader.Load(_dydoRoot).Object("Slice");
+        // sprint → Sprint, and the blocked-by self-relation → Slice.
+        Assert.Equal(["Sprint", "Slice"], task.RelationTargets());
 
         var campaign = SyncModelLoader.Load(_dydoRoot).Object("Campaign");
         Assert.Equal(["Release"], campaign.RelationTargets());

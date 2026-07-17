@@ -100,15 +100,12 @@ public class RoleDefinitionServiceTests : IDisposable
         var roles = RoleDefinitionService.GetBaseRoleDefinitions();
         var result = _service.BuildPermissionMap(roles, pathSets);
 
-        Assert.Equal(9, result.Count);
+        Assert.Equal(8, result.Count);
         Assert.Contains("code-writer", result.Keys);
         Assert.Contains("chief-of-staff", result.Keys);
         Assert.Contains("reviewer", result.Keys);
         Assert.Contains("orchestrator", result.Keys);
         Assert.Contains("planner", result.Keys);
-        Assert.Contains("sprint-auditor", result.Keys);
-        Assert.DoesNotContain("inquisitor", result.Keys);
-        Assert.DoesNotContain("judge", result.Keys);
     }
 
     [Fact]
@@ -125,7 +122,6 @@ public class RoleDefinitionServiceTests : IDisposable
         var (writable, readOnly) = result["code-writer"];
         Assert.Contains("src/**", writable);
         Assert.Contains("tests/**", writable);
-        Assert.Contains("dydo/agents/{self}/**", writable);
         Assert.Contains("dydo/**", readOnly);
     }
 
@@ -172,7 +168,7 @@ public class RoleDefinitionServiceTests : IDisposable
             new()
             {
                 Name = "infra-writer", Description = "test", Base = false,
-                WritablePaths = ["{infra}", "dydo/agents/{self}/**"],
+                WritablePaths = ["{infra}", "config/**"],
                 ReadOnlyPaths = ["{source}"],
                 TemplateFile = "t.md"
             }
@@ -181,7 +177,7 @@ public class RoleDefinitionServiceTests : IDisposable
         var map = _service.BuildPermissionMap(roles, pathSets);
         var (writable, readOnly) = map["infra-writer"];
 
-        Assert.Equal(["terraform/**", "k8s/**", "dydo/agents/{self}/**"], writable);
+        Assert.Equal(["terraform/**", "k8s/**", "config/**"], writable);
         Assert.Equal(["src/**"], readOnly);
     }
 
@@ -279,8 +275,8 @@ public class RoleDefinitionServiceTests : IDisposable
         var files = Directory.GetFiles(rolesDir, "*.role.json");
 
         // Seven claimable Tier-1 roles (chief-of-staff joined per Decision 026 §3).
-        // planner is skill-only and sprint-auditor is workflow-only (no role files);
-        // inquisitor/judge are retired (Decision 024).
+        // planner is skill-only (no role file); inquisitor/judge are retired (Decision 024);
+        // sprint-auditor folded into the reviewer (DR-039).
         Assert.Equal(7, files.Length);
         Assert.Contains(files, f => Path.GetFileName(f) == "code-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "reviewer.role.json");
@@ -290,7 +286,6 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains(files, f => Path.GetFileName(f) == "test-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "orchestrator.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "planner.role.json");
-        Assert.DoesNotContain(files, f => Path.GetFileName(f) == "sprint-auditor.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "inquisitor.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "judge.role.json");
     }
@@ -301,7 +296,7 @@ public class RoleDefinitionServiceTests : IDisposable
         _service.WriteBaseRoleDefinitions(_testDir);
 
         var loaded = _service.LoadRoleDefinitions(_testDir);
-        // Non-claimable roles (planner, sprint-auditor) are not written to disk, so
+        // Non-claimable roles (planner) are not written to disk, so
         // compare against the claimable subset only.
         var original = RoleDefinitionService.GetBaseRoleDefinitions()
             .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name))
@@ -374,8 +369,10 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     [Fact]
-    public void ValidateRoleDefinition_EmptyWritablePaths_Fails()
+    public void ValidateRoleDefinition_EmptyWritablePaths_IsValidReadOnlyRole()
     {
+        // No writable paths is valid: it is how a read-only role (e.g. reviewer) is expressed,
+        // compiled by dydo sync into a no-Edit/Write tool profile.
         var role = new RoleDefinition
         {
             Name = "test", Description = "Test", Base = false,
@@ -385,8 +382,8 @@ public class RoleDefinitionServiceTests : IDisposable
 
         var valid = _service.ValidateRoleDefinition(role, out var errors);
 
-        Assert.False(valid);
-        Assert.Contains(errors, e => e.Contains("writable"));
+        Assert.True(valid);
+        Assert.Empty(errors);
     }
 
     [Fact]
@@ -440,20 +437,6 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains(roles, r => r.Name == "planner");
         // ...but is flagged skill-only, so it is not written as a claimable role file.
         Assert.Contains("planner", RoleDefinitionService.SkillOnlyRoles);
-    }
-
-    [Fact]
-    public void GetBaseRoleDefinitions_SprintAuditor_IsWorkflowOnly()
-    {
-        // Decision 026: sprint-auditor is a workflow-spawned agent-type. It stays in the
-        // base definitions to drive agent+skill generation, but is never a claimable
-        // Tier-1 identity.
-        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
-        Assert.Contains(roles, r => r.Name == "sprint-auditor");
-        Assert.Contains("sprint-auditor", RoleDefinitionService.WorkflowOnlyRoles);
-        Assert.Contains("sprint-auditor", RoleDefinitionService.NonClaimableRoles);
-        // NonClaimableRoles is the union both roster and registry filter on.
-        Assert.Contains("planner", RoleDefinitionService.NonClaimableRoles);
     }
 
     [Fact]

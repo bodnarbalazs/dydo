@@ -213,7 +213,7 @@ public class NamingRuleTests
     [Fact]
     public void Validate_SkipsAgentWorkspaceFiles()
     {
-        var doc = CreateDoc("workflow.md", "agents/Adele/workflow.md");
+        var doc = CreateDoc("workflow.md", "agents/Sample/workflow.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 
@@ -223,7 +223,7 @@ public class NamingRuleTests
     [Fact]
     public void Validate_SkipsPascalCaseAgentFolders()
     {
-        var doc = CreateDoc("code-writer.md", "agents/Adele/modes/code-writer.md");
+        var doc = CreateDoc("code-writer.md", "agents/Sample/modes/code-writer.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 

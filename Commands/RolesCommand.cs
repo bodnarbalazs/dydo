@@ -139,7 +139,7 @@ public static class RolesCommand
                 Name = roleName,
                 Description = "",
                 Base = false,
-                WritablePaths = ["dydo/agents/{self}/**"],
+                WritablePaths = ["{source}"],
                 ReadOnlyPaths = [],
                 TemplateFile = $"mode-{roleName}.template.md",
                 DenialHint = null

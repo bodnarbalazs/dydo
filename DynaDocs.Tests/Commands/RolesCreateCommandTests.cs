@@ -58,7 +58,7 @@ public class RolesCreateCommandTests : IDisposable
         Assert.NotNull(role);
         Assert.Equal("deploy-manager", role.Name);
         Assert.False(role.Base);
-        Assert.Equal(["dydo/agents/{self}/**"], role.WritablePaths);
+        Assert.Equal(["{source}"], role.WritablePaths);
         Assert.Empty(role.ReadOnlyPaths);
         Assert.Equal("mode-deploy-manager.template.md", role.TemplateFile);
     }

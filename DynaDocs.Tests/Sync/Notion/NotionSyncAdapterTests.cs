@@ -70,7 +70,7 @@ public class NotionSyncAdapterTests
     [Fact]
     public void UnresolvedRelation_IsIdempotentAcrossTicks_NoRepoRewrite()
     {
-        // A SprintTask whose `sprint:` points at a sprint that does not resolve to a Notion page id
+        // A Slice whose `sprint:` points at a sprint that does not resolve to a Notion page id
         // round-trips lossily: the relation is omitted on write and reads back empty. Without the field
         // normalizer the engine reads that as an external edit and BLANKS the repo value. Assert the repo
         // file is byte-unchanged across a re-sync — the dangling reference is preserved, never erased.

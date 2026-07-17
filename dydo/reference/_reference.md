@@ -15,6 +15,7 @@ This folder answers "What are the exact specs?" — detailed reference material 
 
 - **writing-docs.md** - Documentation conventions and validation rules
 - **dydo-commands.md** - CLI command reference
+- **dydo-glossary.md** - The dydo system's locked terms
 - **about-dynadocs.md** - About the DynaDocs system
 - **guardrails.md** - Three-tier guardrail system (nudge / soft-block / hard rule)
 - **configuration.md** - dydo.json schema and all config options

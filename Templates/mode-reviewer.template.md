@@ -40,33 +40,24 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 
 ## Review Targets
 
-One reviewer, different targets. The invoking context names yours; each target's rubric lives in this skill's `references/` folder:
+One reviewer, different targets. The invoking context names yours; each target's rubric lives in this skill's `resources/` folder:
 
-- **Code** (default) — the checklist below.
-- **Plan** — read [references/plan.md](references/plan.md). You receive only the plan artifacts, never the planning conversation; your verdict block goes into the sprint root.
-- **Merged sprint** — the audit stage: review the merged seam as one unit against the sprint's acceptance criteria.
+- **Code** — [resources/code.md](resources/code.md)
+- **Plan** — [resources/plan.md](resources/plan.md)
+- **Merged sprint** (audit) — [resources/merge-sprint.md](resources/merge-sprint.md)
+- **Docs** — [resources/docs.md](resources/docs.md)
+- **Tests** — [resources/tests.md](resources/tests.md)
+
+**Reading your target's resource is mandatory — it is step zero of every review.** Its checklist exists so nothing domain-specific gets missed; work it item by item. You only need the one target you were invoked for.
 
 ---
 
 ## Work
 
-1. **Read the brief** — Understand what was implemented and why, or what you've been asked to audit
-2. **Review the changes** — Check against coding standards, including stack specific standards if there are any
-3. **Run tests** — Verify they pass
-4. **Run `dydo check`** — All errors must be clean before approval. Warnings should be addressed if introduced by this commit, or noted as pre-existing in the review verdict.
+1. **Read the brief** — what you're reviewing and against what contract (slice file, sprint root, doc conventions).
+2. **Read your target's resource** — then work through its checklist item by item; every item ends verified or a finding. A review that skipped its checklist is not a review.
+3. **Verify, don't trust** — run the gates and checks yourself; every finding cites file:line evidence.
 {{include:extra-review-steps}}
-
-**Document findings** — Note issues clearly
-
-**Review checklist:**
-
-- [ ] Code follows coding standards
-- [ ] Logic is correct and handles edge cases
-- [ ] Tests exist and are meaningful
-- [ ] No security vulnerabilities introduced
-- [ ] No unnecessary complexity
-- [ ] Changes match the covering slice — deviations are findings
-- [ ] If reviewing documentation, verify against [writing-docs.md](../../../reference/writing-docs.md)
 {{include:extra-review-checklist}}
 
 ### Out-of-Scope Issues

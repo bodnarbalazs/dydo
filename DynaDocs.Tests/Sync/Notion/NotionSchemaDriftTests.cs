@@ -116,11 +116,11 @@ public class NotionSchemaDriftTests : IDisposable
         // The engine-written last-activity date and the health/attention/stale formulas are all model-declared,
         // so the drift check must treat them as legitimate — never flag the engine's own column as rogue.
         var client = new FakeNotionClient();
-        var sprintTask = _model.Object("SprintTask");
-        SeedModelSchema(client, "ds1", sprintTask);
+        var slice = _model.Object("Slice");
+        SeedModelSchema(client, "ds1", slice);
         var output = new StringWriter();
 
-        NotionSchemaDrift.Check(_model, sprintTask, "ds1", client, prune: true, output);
+        NotionSchemaDrift.Check(_model, slice, "ds1", client, prune: true, output);
 
         Assert.Empty(output.ToString());
         Assert.Empty(client.DataSourceUpdates);

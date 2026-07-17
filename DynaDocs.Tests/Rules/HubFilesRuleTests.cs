@@ -136,10 +136,10 @@ public class HubFilesRuleTests
     {
         var docs = new List<DocFile>
         {
-            CreateDoc("agents/Adele/modes/code-writer.md")
+            CreateDoc("agents/sample/modes/code-writer.md")
         };
 
-        var violations = _rule.ValidateFolder("/base/agents/Adele/modes", docs, "/base").ToList();
+        var violations = _rule.ValidateFolder("/base/agents/sample/modes", docs, "/base").ToList();
 
         Assert.Empty(violations);
     }
@@ -149,10 +149,10 @@ public class HubFilesRuleTests
     {
         var docs = new List<DocFile>
         {
-            CreateDoc("agents/Adele/workflow.md")
+            CreateDoc("agents/sample/workflow.md")
         };
 
-        var violations = _rule.ValidateFolder("/base/agents/Adele", docs, "/base").ToList();
+        var violations = _rule.ValidateFolder("/base/agents/sample", docs, "/base").ToList();
 
         Assert.Empty(violations);
     }
@@ -162,8 +162,8 @@ public class HubFilesRuleTests
     {
         var docs = new List<DocFile>
         {
-            CreateDoc("agents/Adele/workflow.md"),
-            CreateDoc("agents/Brian/workflow.md")
+            CreateDoc("agents/sample/workflow.md"),
+            CreateDoc("agents/peer/workflow.md")
         };
 
         var violations = _rule.ValidateFolder("/base/agents", docs, "/base").ToList();

@@ -50,11 +50,14 @@ contain claim-era wording (claim/whoami/dispatch/inbox/wait/workflow.md/roster).
       de-ceremonied, no placeholders, role-specific workflow in the role file). The other
       six (chief-of-staff, co-thinker, docs-writer, orchestrator, sprint-auditor,
       test-writer) still carry claim-era prose + `{{AGENT_NAME}}`.
-      **Parked for the manager templates** (orchestrator/chief-of-staff): the trivial-edit
-      exception ("if it needs a reviewer, it needs a plan" — the spawn-time does-this-need-
-      a-plan call) and the delegation rule (discovery subagents freely; implementation only
-      through worker skills in a reviewed workflow) — both cut from coding-standards as
-      role-file content.
+      **Parked for the manager templates** (orchestrator/chief-of-staff), all blessed
+      2026-07-17: the trivial-edit exception ("if it needs a reviewer, it needs a plan" —
+      the spawn-time call); the delegation rule (discovery subagents freely; implementation
+      only through worker skills in a reviewed workflow); commit discipline (workers never
+      commit; the orchestrator commits a slice exactly when its review passes — one slice,
+      one commit; uncommitted ⇒ un-reviewed); the worktree lifecycle (orchestrator assigns
+      parallel lanes their worktrees per the plan's Ordering & isolation section, merges
+      passed slices back serially; the audit verifies the merged seam).
 - [ ] `dydo/_system/roles/*.role.json` — prose fields only: `description`,
       `mustReads` lists (several point at docs you may delete below), `denialHint`
       remnants. Tier/tools/paths config is fine. (Constraints arrays already removed.)

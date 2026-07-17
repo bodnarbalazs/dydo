@@ -268,7 +268,7 @@ public class OrphanDocsRuleTests
     public void Validate_SkipsAgentWorkspaceFiles()
     {
         var hub = CreateDoc("guides/_index.md", linksTo: []);
-        var agentDoc = CreateDoc("agents/Adele/workflow.md");
+        var agentDoc = CreateDoc("agents/sample/workflow.md");
         var allDocs = new List<DocFile> { hub, agentDoc };
 
         var violations = _rule.Validate(agentDoc, allDocs, BasePath).ToList();
@@ -280,7 +280,7 @@ public class OrphanDocsRuleTests
     public void Validate_SkipsAgentModeFiles()
     {
         var hub = CreateDoc("guides/_index.md", linksTo: []);
-        var modeDoc = CreateDoc("agents/Adele/modes/code-writer.md");
+        var modeDoc = CreateDoc("agents/sample/modes/code-writer.md");
         var allDocs = new List<DocFile> { hub, modeDoc };
 
         var violations = _rule.Validate(modeDoc, allDocs, BasePath).ToList();

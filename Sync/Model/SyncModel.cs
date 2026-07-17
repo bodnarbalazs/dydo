@@ -6,9 +6,9 @@ using System.Text.Json.Serialization;
 /// The sync model (slice brief §1): a project's object types and the relations between them, loaded
 /// from <c>dydo/_system/sync-model.json</c>. Data-driven exactly like dydo roles — any project edits
 /// the file to define its own types, and the engine provisions/maps/relates from it with no hardcoded
-/// type names. The default model (Release, Campaign, Sprint, SprintTask, Issue) ships as a template and auto-seeds.
+/// type names. The default model (Release, Campaign, Sprint, Slice, Issue) ships as a template and auto-seeds.
 /// <para>
-/// The default leaf type <c>SprintTask</c> (canonical dir <c>dydo/project/sprint-tasks/</c>) is the PM
+/// The default leaf type <c>Slice</c> (canonical dir <c>dydo/project/slices/</c>) is the PM
 /// board's work item synced to Notion. It is named distinctly on purpose: it is NOT dydo's runtime agent
 /// task-tracker (<c>dydo task</c> over <c>dydo/project/tasks/</c>, schema name/assigned/status). Those are
 /// separate systems with different schemas and directories.

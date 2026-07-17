@@ -96,8 +96,8 @@
       ]
     },
     {
-      "type": "SprintTask",
-      "dir": "project/sprint-tasks",
+      "type": "Slice",
+      "dir": "project/slices",
       "notionTitle": "Sprint Tasks",
       "icon": "📋",
       "properties": {
@@ -107,7 +107,7 @@
         "priority": { "type": "select", "options": ["Urgent", "High", "Normal", "Low"],
           "colors": { "Urgent": "red", "High": "orange", "Normal": "yellow", "Low": "gray" } },
         "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
-        "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" },
+        "blocked-by": { "type": "relation", "to": "Slice", "reverse": "blocks" },
         "due": { "type": "date" },
         "work-type": { "type": "select", "options": ["feature", "bug", "chore", "spike", "docs"],
           "colors": { "feature": "blue", "bug": "red", "chore": "gray", "spike": "purple", "docs": "brown" } },

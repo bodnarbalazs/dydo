@@ -14,7 +14,7 @@ public sealed class FakeNotionClient : INotionClient
     // Native markdown bodies (DR 035): the docs mirror reads/writes page bodies as markdown strings, mapped
     // block↔markdown server-side by real Notion. The fake echoes the stored markdown verbatim — a faithful
     // model of a lossless round-trip; the Notion-flavored dialect drift only a live board exhibits is covered
-    // by the DocsMarkdownNormalizer unit tests and Charlie's live smoke, not simulated here.
+    // by the DocsMarkdownNormalizer unit tests and manual live smoke, not simulated here.
     private readonly Dictionary<string, string> _pageMarkdown = new();
     // Nested-page tree (DR 033): a page's parent page id and its title, so GetChildPages can walk the tree
     // and the docs mirror can be exercised without HTTP.

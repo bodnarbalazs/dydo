@@ -196,7 +196,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [Theory]
     [InlineData("C:/Users/u/.claude/projects/my-proj/memory/MEMORY.md")]  // wrong home root
     [InlineData("dydo/.claude/projects/x/memory/y.md")]                   // repo-internal lookalike
-    [InlineData("dydo/agents/Adele/memory/notes.md")]
+    [InlineData("dydo/scratch/memory/notes.md")]
     [InlineData("src/Foo.cs")]
     public void IsNativeMemoryPath_NonMemoryPaths_DoNotMatch(string path)
     {

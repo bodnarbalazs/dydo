@@ -26,7 +26,7 @@ public class ValidationServiceTests : IDisposable
     {
         var json = config != null
             ? JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
-            : """{"version":1,"structure":{"root":"dydo"},"paths":{"source":["src/**"],"tests":["tests/**"]},"agents":{"pool":[],"assignments":{}},"integrations":{"claude":true},"dispatch":{"launchInTab":false,"autoClose":false}}""";
+            : """{"version":1,"structure":{"root":"dydo"},"paths":{"source":["src/**"],"tests":["tests/**"]},"integrations":{"claude":true},"dispatch":{"launchInTab":false,"autoClose":false}}""";
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);
     }
 
@@ -147,9 +147,9 @@ public class ValidationServiceTests : IDisposable
         var role = new RoleDefinition
         {
             Name = "deploy-manager", Description = "Manages deployments", Base = false,
-            WritablePaths = ["src/**", "dydo/agents/{self}/**"], ReadOnlyPaths = [],
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
             TemplateFile = "mode-deploy-manager.template.md",
-            DenialHint = "Deploy-manager can only edit source and own workspace."
+            DenialHint = "Deploy-manager can only edit source."
         };
         WriteRoleFile(rolesDir, role);
         CreateTemplateFile("mode-deploy-manager.template.md");

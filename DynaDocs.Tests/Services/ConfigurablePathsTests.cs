@@ -46,8 +46,7 @@ public class ConfigurablePathsTests : IDisposable
     {
         WriteConfig("""
             {
-              "version": 1,
-              "agents": { "pool": ["Adele"], "assignments": { "test": ["Adele"] } }
+              "version": 1
             }
             """);
 
@@ -67,8 +66,7 @@ public class ConfigurablePathsTests : IDisposable
               "paths": {
                 "source": ["Commands/**", "Services/**"],
                 "tests": ["DynaDocs.Tests/**"]
-              },
-              "agents": { "pool": ["Adele"], "assignments": { "test": ["Adele"] } }
+              }
             }
             """);
 
@@ -98,7 +96,6 @@ public class ConfigurablePathsTests : IDisposable
 
         Assert.Contains("src/**", perms["code-writer"].Writable);
         Assert.Contains("tests/**", perms["code-writer"].Writable);
-        Assert.Contains("dydo/agents/{self}/**", perms["code-writer"].Writable);
 
         Assert.Contains("src/**", perms["co-thinker"].ReadOnly);
         Assert.Contains("tests/**", perms["co-thinker"].ReadOnly);
@@ -143,14 +140,13 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void PermissionMap_Returns9Entries()
+    public void PermissionMap_Returns8Entries()
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
-        Assert.Equal(9, perms.Count);
+        Assert.Equal(8, perms.Count);
         Assert.True(perms.ContainsKey("orchestrator"));
         Assert.True(perms.ContainsKey("chief-of-staff"));
-        Assert.True(perms.ContainsKey("sprint-auditor"));
         Assert.False(perms.ContainsKey("inquisitor"));
         Assert.False(perms.ContainsKey("judge"));
     }
@@ -160,8 +156,7 @@ public class ConfigurablePathsTests : IDisposable
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
-        // Orchestrator: writes workspace + tasks + decisions + backlog; reads everything
-        Assert.Contains("dydo/agents/{self}/**", perms["orchestrator"].Writable);
+        // Orchestrator: writes tasks + decisions + issues + backlog; reads everything
         Assert.Contains("dydo/project/tasks/**", perms["orchestrator"].Writable);
         Assert.Contains("dydo/project/decisions/**", perms["orchestrator"].Writable);
         Assert.Contains("dydo/project/backlog/**", perms["orchestrator"].Writable);
@@ -177,8 +172,7 @@ public class ConfigurablePathsTests : IDisposable
               "paths": {
                 "source": ["Commands/**", "Services/**"],
                 "tests": ["MyTests/**"]
-              },
-              "agents": { "pool": ["Adele"], "assignments": { "testuser": ["Adele"] } }
+              }
             }
             """);
         SetupDydoStructure();

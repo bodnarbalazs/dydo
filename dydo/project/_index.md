@@ -26,7 +26,7 @@ Index of project documentation.
 - [Issues](./issues/_index.md) - Actionable work items with lifecycle tracking.
 - [Pitfalls](./pitfalls/_index.md) - Known gotchas and issues that catch people repeatedly.
 - [Releases](./releases/_index.md) - Release records for this project's version/ship history, synced to the Notion "dydo Releases" board (the top of the Release → Campaign → Sprint → S...
-- [Sprint-tasks](./sprint-tasks/_index.md) - TODO: Describe the purpose of this folder.
+- [Slices](./slices/_index.md) - Slice records — the atom of implementation for a sprint, the leaf of the Notion PM sync spine.
 - [Sprints](./sprints/_index.md) - TODO: Describe the purpose of this folder.
 
 ## Tasks

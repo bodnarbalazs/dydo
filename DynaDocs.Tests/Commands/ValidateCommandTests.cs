@@ -144,7 +144,7 @@ public class ValidateCommandTests : IDisposable
     {
         // Minimal valid dydo.json with no roles → no warnings
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
-            """{"version":1,"structure":{"root":"dydo","tasks":"project/tasks","issues":"project/issues"},"paths":{"source":[],"tests":[],"pathSets":null},"agents":{"pool":[],"assignments":{}},"integrations":{"claude":false},"dispatch":{"launchInTab":false,"autoClose":false},"tasks":{"autoCompactInterval":20},"frameworkHashes":{}}""");
+            """{"version":1,"structure":{"root":"dydo","tasks":"project/tasks","issues":"project/issues"},"paths":{"source":[],"tests":[],"pathSets":null},"integrations":{"claude":false},"dispatch":{"launchInTab":false,"autoClose":false},"tasks":{"autoCompactInterval":20},"frameworkHashes":{}}""");
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system"));
     }
 

@@ -12,7 +12,7 @@ Your job: implement one slice, exactly as planned.
 
 Read these before performing any other operations.
 
-1. **Your slice file** — `dydo/project/sprint-tasks/<sprint>-<n>-<slug>.md`. It is your contract.
+1. **Your slice file** — `dydo/project/slices/<sprint>-<n>-<slug>.md`. It is your contract.
 2. [about.md](../../../understand/about.md) — What this project is
 3. [architecture.md](../../../understand/architecture.md) — Codebase structure
 4. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions

@@ -1,11 +1,10 @@
 ---
-agent: {{AGENT_NAME}}
 mode: docs-writer
 ---
 
-# {{AGENT_NAME}} — Docs Writer
+# Docs Writer
 
-You are **{{AGENT_NAME}}**, working as a **docs-writer**. Your job: write and maintain documentation.
+Your job: write and maintain documentation.
 
 ---
 
@@ -18,38 +17,6 @@ Read these before performing any other operations.
 3. [writing-docs.md](../../../reference/writing-docs.md) — Documentation conventions and rules
 
 {{include:extra-must-reads}}
-
----
-
-## Set Role
-
-```bash
-dydo agent role docs-writer --task <task-name>
-```
-
-Don't skip! The hook guard will block you from reading/editing any other files.
-
----
-
-## Register General Wait
-
-Right after setting your role, start a general wait so messages reach you in real time. Run `dydo wait` in the background. This is mandatory — the guard blocks tool calls if no general wait is active.
-
-```bash
-dydo wait    # run in background
-```
-
----
-
-## Verify
-
-```bash
-dydo agent status
-```
-
-You can edit: `dydo/**` (except other agents' workspaces), `dydo/agents/{{AGENT_NAME}}/**` (your workspace)
-
-You cannot edit: source code ({{SOURCE_AND_TEST_PATHS}})
 
 ---
 
@@ -87,7 +54,7 @@ Write for the reader who comes after you. Be clear. Be accurate. Be concise.
 
 Every doc must lead with a summary paragraph immediately after the H1 title — single paragraph, plain prose, no bullets, sets the doc's frame in 2–4 sentences. Schema enforces it; this is your reminder.
 
-### Before Committing
+### Before Finishing
 
 Validate your docs:
 
@@ -96,37 +63,8 @@ dydo check              # Find issues
 dydo fix                # Auto-fix what's possible
 ```
 
-`dydo check` is a release gate, not a suggestion. The reviewer will run it as part of their verdict — any errors block approval.
+`dydo check` is a release gate, not a suggestion. Do not return your work until it exits zero — the reviewer will run it again as part of their verdict, and any errors block approval.
 
 See [writing-docs.md](../../../reference/writing-docs.md) for conventions and validation rules.
 
----
-
-## Complete
-
-Do not proceed until `dydo check` exits zero — clean check is required before dispatching the reviewer (who will run it again as part of their verdict).
-
-### If Docs Need Review
-
-```bash
-dydo dispatch --auto-close --role reviewer --task <task-name> --brief "Documentation ready for review."
-```
-
-This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
-
-After dispatching the reviewer, your work is handed off. The reviewer reports its verdict back to the origin on your behalf.
-
-### If Done (No Review Needed)
-
-If you were dispatched (check inbox `From`/`Origin`), message back before releasing:
-
-```bash
-dydo msg --to <origin> --subject <task-name> --body "Documentation complete. [key details]"
-```
-
-```bash
-dydo inbox clear --all    # Archive any inbox messages
-dydo agent release
-```
-
-
+Return a structured result: what you wrote or changed, where, and anything you noticed but deliberately left alone. The workflow that invoked you owns the review.

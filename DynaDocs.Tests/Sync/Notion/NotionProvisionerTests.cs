@@ -102,7 +102,7 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
 
-        provisioner.Create(_model.Object("SprintTask"), "parent-page",
+        provisioner.Create(_model.Object("Slice"), "parent-page",
             new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
 
         var props = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties;
@@ -151,18 +151,18 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
-    public void Create_SprintTaskFormulas_AreAllInline_SinceNoneReadsARollupOrFormula()
+    public void Create_SliceFormulas_AreAllInline_SinceNoneReadsARollupOrFormula()
     {
         // Notion rejects a formula that references another formula property (notion-sync-formula-fix), so
-        // SprintTask.attention inlines the `stale` staleness condition rather than reading prop("stale").
-        // Every SprintTask formula (done, stale, attention) now reads only stored properties, so all three
+        // Slice.attention inlines the `stale` staleness condition rather than reading prop("stale").
+        // Every Slice formula (done, stale, attention) now reads only stored properties, so all three
         // are created inline and NONE is deferred. The deferral paths stay covered elsewhere: rollup-reading
         // formulas by the Sprint tests, and a formula-reads-formula by AddFormulas_NotionRejectsExpression's
         // synthetic type.
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
 
-        provisioner.Create(_model.Object("SprintTask"), "parent-page",
+        provisioner.Create(_model.Object("Slice"), "parent-page",
             new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
 
         var props = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties;
@@ -170,7 +170,7 @@ public class NotionProvisionerTests : IDisposable
         Assert.NotNull(props["stale"].Formula);
         Assert.NotNull(props["attention"].Formula);
         Assert.NotNull(props["last-activity"].Date);
-        Assert.False(NotionProvisioner.HasDeferredFormulas(_model.Object("SprintTask")));
+        Assert.False(NotionProvisioner.HasDeferredFormulas(_model.Object("Slice")));
     }
 
     [Fact]
@@ -332,24 +332,24 @@ public class NotionProvisionerTests : IDisposable
     {
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
-        provisioner.Create(_model.Object("SprintTask"), "parent-page",
+        provisioner.Create(_model.Object("Slice"), "parent-page",
             new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
         client.DataSourceUpdates.Clear();
 
-        Assert.False(NotionProvisioner.HasRollups(_model.Object("SprintTask")));
-        provisioner.AddRollups(_model.Object("SprintTask"));
+        Assert.False(NotionProvisioner.HasRollups(_model.Object("Slice")));
+        provisioner.AddRollups(_model.Object("Slice"));
         Assert.Empty(client.DataSourceUpdates);
     }
 
     private static SyncObjectType SelfRelationType() => new()
     {
-        Type = "SprintTask",
+        Type = "Slice",
         NotionTitle = "Sprint Tasks",
         Properties = new()
         {
             ["title"] = new SyncPropertyDef { Type = "title" },
             ["sprint"] = new SyncPropertyDef { Type = "relation", To = "Sprint" },
-            ["blocked-by"] = new SyncPropertyDef { Type = "relation", To = "SprintTask" },
+            ["blocked-by"] = new SyncPropertyDef { Type = "relation", To = "Slice" },
         },
     };
 
@@ -400,7 +400,7 @@ public class NotionProvisionerTests : IDisposable
         // source, so the type is REUSED (Lookup non-null) — no second CreateDatabase.
         client.FailUpdateDataSourceAfter = null;
         var second = new NotionProvisioner(client, _statePath);
-        var reused = second.Lookup("SprintTask");
+        var reused = second.Lookup("Slice");
         Assert.NotNull(reused);
         Assert.Equal(record.DataSourceId, reused!.DataSourceId);
         Assert.Single(client.CreatedDatabases); // still one — never duplicated

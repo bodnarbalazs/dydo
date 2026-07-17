@@ -42,18 +42,6 @@ public class CompletionProviderTests
         Assert.Contains(role, completions);
     }
 
-    [Theory]
-    [InlineData("planner")]
-    [InlineData("inquisitor")]
-    [InlineData("judge")]
-    [InlineData("sprint-auditor")]
-    public void Roles_ExcludesNonClaimableRoles(string role)
-    {
-        // planner is skill-only; inquisitor/judge are retired (Decision 024);
-        // sprint-auditor is workflow-only (Decision 026).
-        var completions = CompletionProvider.GetOptionValueCompletions("--role")!.ToList();
-        Assert.DoesNotContain(role, completions);
-    }
 
     [Theory]
     [InlineData("task", new[] { "create", "done", "list", "ready-for-review" })]

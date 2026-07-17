@@ -105,7 +105,6 @@ public static class ConfigFactory
             ["test-writer"] = "standard",
             ["docs-writer"] = "standard",
             ["reviewer"] = "strong",
-            ["sprint-auditor"] = "strong",
             ["inquisitor"] = "strong",
             ["judge"] = "strong",
             ["planner"] = "strong"

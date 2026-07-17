@@ -18,7 +18,7 @@ using DynaDocs.Utils;
 /// replaces.
 ///
 /// Two emission shapes (Decision 024 native pivot):
-/// - Worker roles (code-writer, reviewer, test-writer, docs-writer, sprint-auditor) emit
+/// - Worker roles (code-writer, reviewer, test-writer, docs-writer) emit
 ///   BOTH an agent definition and a skill — they are spawned as typed sub-agents.
 /// - Skill-only roles (planner) emit a skill but NO agent: planner is a methodology the
 ///   orchestrator/co-thinker applies in their own thread, not a claimable identity.
@@ -37,9 +37,7 @@ public static partial class SyncCommand
     // Tier-2 worker roles (Decision 024): spawned by orchestrators/workflows to do scoped
     // task work — they emit BOTH a native sub-agent and a skill. Tier-1 roles (orchestrator,
     // co-thinker) are named terminal agents, not sub-agents, so they are not synced here.
-    // sprint-auditor (Decision 026) is workflow-only: same agent+skill emission, but never
-    // a claimable identity (see RoleDefinitionService.WorkflowOnlyRoles).
-    private static readonly string[] WorkerRoles = ["code-writer", "reviewer", "test-writer", "docs-writer", "sprint-auditor"];
+    private static readonly string[] WorkerRoles = ["code-writer", "reviewer", "test-writer", "docs-writer"];
 
     // Skill-only roles (Decision 024): a methodology the Tier-1 agent applies in its own
     // thread (planner = the orchestrator's planning discipline). They emit a skill but NO
@@ -90,10 +88,30 @@ public static partial class SyncCommand
 
         WriteCodexHooks(projectRoot);
 
+        var workflows = SyncWorkflows(projectRoot);
+
         Console.WriteLine($"Synced {workerRoles.Count} worker role(s) to .claude/ (agents + skills): {string.Join(", ", workerRoles.Select(r => r.Name))}");
         Console.WriteLine($"Synced {skillOnlyRoles.Count} skill-only role(s) to .claude/ (skills only): {string.Join(", ", skillOnlyRoles.Select(r => r.Name))}");
+        Console.WriteLine($"Synced {workflows} workflow(s) to .claude/workflows.");
         Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
         return ExitCodes.Success;
+    }
+
+    /// <summary>
+    /// Workflow harnesses (Templates/workflow-&lt;name&gt;.js) → .claude/workflows/&lt;name&gt;.js.
+    /// Claude-only; a codex emit path is added when codex grows an equivalent runner.
+    /// </summary>
+    internal static int SyncWorkflows(string projectRoot)
+    {
+        var count = 0;
+        foreach (var (fileName, content) in TemplateGenerator.GetWorkflowScripts())
+        {
+            var workflowDir = Path.Combine(projectRoot, ".claude", "workflows");
+            Directory.CreateDirectory(workflowDir);
+            WriteLf(Path.Combine(workflowDir, fileName), content);
+            count++;
+        }
+        return count;
     }
 
     internal static void SyncRole(RoleDefinition role, string projectRoot, ModelsConfig? models = null)
@@ -127,7 +145,7 @@ public static partial class SyncCommand
         var skillDir = Path.Combine(projectRoot, ".agents", "skills", role.Name);
         Directory.CreateDirectory(skillDir);
         WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
-        WriteSkillReferences(role, skillDir);
+        WriteSkillResources(role, skillDir);
     }
 
     internal static void WriteCodexHooks(string projectRoot)
@@ -138,20 +156,20 @@ public static partial class SyncCommand
         var skillDir = Path.Combine(projectRoot, ".claude", "skills", role.Name);
         Directory.CreateDirectory(skillDir);
         WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
-        WriteSkillReferences(role, skillDir);
+        WriteSkillResources(role, skillDir);
     }
 
     /// <summary>
-    /// Per-target rubric files (Templates/skill-references/&lt;role&gt;/*) → the compiled skill's
-    /// references/ folder (DR-039 review-target subskills; DR-042 lands the plan target).
+    /// Skill resource templates (<role>-resource-<name>.template.md) compile into the
+    /// skill folder's resources/ (DR-039 review-target subskills; DR-042).
     /// </summary>
-    private static void WriteSkillReferences(RoleDefinition role, string skillDir)
+    private static void WriteSkillResources(RoleDefinition role, string skillDir)
     {
-        foreach (var (fileName, content) in TemplateGenerator.GetSkillReferences(role.Name))
+        foreach (var (fileName, content) in TemplateGenerator.GetSkillResources(role.Name))
         {
-            var refDir = Path.Combine(skillDir, "references");
-            Directory.CreateDirectory(refDir);
-            WriteLf(Path.Combine(refDir, fileName), content);
+            var resourceDir = Path.Combine(skillDir, "resources");
+            Directory.CreateDirectory(resourceDir);
+            WriteLf(Path.Combine(resourceDir, fileName), content);
         }
     }
 
@@ -166,11 +184,11 @@ public static partial class SyncCommand
 
     /// <summary>
     /// The native sub-agent definition: identity + the tool profile derived from the
-    /// role's permission shape. A role that can only write its own workspace is read-only
-    /// for the codebase, so it gets no Edit/Write — that is how "reviewers don't write
-    /// code" becomes natively enforced rather than guard-RBAC enforced. The allowlist also
+    /// role's permission shape. A role that can write nothing is read-only for the codebase,
+    /// so it gets no Edit/Write — that is how "reviewers don't write code" becomes natively
+    /// enforced rather than guard-RBAC enforced. The allowlist also
     /// deliberately never includes the Agent tool: worker roles cannot dispatch subagents
-    /// (Decision 026 requires this natively for sprint-auditor).
+    /// (Decision 026 requires this natively for the reviewer's merge-sprint audit).
     /// </summary>
     private static string BuildAgent(RoleDefinition role, List<string> mustReads, ModelsConfig? models = null)
     {
@@ -291,10 +309,10 @@ public static partial class SyncCommand
         return body.Trim() + "\n";
     }
 
-    /// <summary>Read-only iff the role can write nothing but its own workspace (only {self}
-    /// paths) — it touches no source/tests/docs, so it needs no Edit/Write tools.</summary>
+    /// <summary>Read-only iff the role has no writable paths — it touches no source/tests/docs,
+    /// so it needs no Edit/Write tools. Reviewer is the sole base role of this shape.</summary>
     private static bool IsReadOnlyRole(RoleDefinition role) =>
-        role.WritablePaths.All(p => p.Contains("{self}"));
+        role.WritablePaths.Count == 0;
 
     /// <summary>
     /// Renumbers each run of consecutive ordered-list items (1., 2., …) so that concatenating

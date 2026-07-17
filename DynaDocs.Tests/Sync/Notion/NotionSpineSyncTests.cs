@@ -16,9 +16,9 @@ public class NotionSpineSyncTests : IDisposable
         _dydoRoot = Path.Combine(_root, "dydo");
         Seed("project/campaigns/dydo-2-0", "---\ntitle: dydo 2.0\nstatus: active\npriority: P0\n---\n\nThe pivot.");
         Seed("project/sprints/notion-sync", "---\ntitle: Notion Sync\nseq: 7\nstatus: active\ncampaign: dydo-2-0\n---\n\nSync work.");
-        Seed("project/sprint-tasks/spine-task", "---\ntitle: Spine task\nstatus: in-progress\npriority: P0\nsprint: notion-sync\n---\n\nProvision the spine.");
+        Seed("project/slices/spine-task", "---\ntitle: Spine task\nstatus: in-progress\npriority: P0\nsprint: notion-sync\n---\n\nProvision the spine.");
 
-        // Pin the classic Campaign → Sprint → SprintTask spine so these mechanics tests stay independent
+        // Pin the classic Campaign → Sprint → Slice spine so these mechanics tests stay independent
         // of the evolving default model (which now also ships Release and Issue types).
         WriteModel("""
             {
@@ -31,7 +31,7 @@ public class NotionSpineSyncTests : IDisposable
                   "properties": { "title": { "type": "title" }, "seq": { "type": "number" },
                     "status": { "type": "select", "options": ["planned", "active", "in-review", "done", "escalated"] },
                     "campaign": { "type": "relation", "to": "Campaign" } } },
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "dydo Sprint Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "dydo Sprint Tasks",
                   "properties": { "title": { "type": "title" },
                     "status": { "type": "select", "options": ["backlog", "ready", "in-progress", "in-review", "blocked", "done"] },
                     "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] },
@@ -129,7 +129,7 @@ public class NotionSpineSyncTests : IDisposable
     {
         // A `_`-prefixed file (e.g. _index.md) beside real docs is folder metadata, not a domain object,
         // and must never sync as a Notion row.
-        Seed("project/sprint-tasks/_index", "---\ntitle: Sprint Tasks\n---\n\nFolder index, not a task.");
+        Seed("project/slices/_index", "---\ntitle: Sprint Tasks\n---\n\nFolder index, not a task.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
@@ -217,23 +217,23 @@ public class NotionSpineSyncTests : IDisposable
     [Fact]
     public void Run_SelfRelation_BlockedBy_RoundTripsLocalIdsBothDirections()
     {
-        // DR 029 §5: blocked-by is a canonical self-relation on SprintTask, synced two-way. On write a
+        // DR 029 §5: blocked-by is a canonical self-relation on Slice, synced two-way. On write a
         // local `blocked-by: task-a` must resolve to task-a's Notion page id (never dropped); on read a
         // blocker linked on the board must render back to the LOCAL id, never a raw Notion page id — else
         // the first human link would inject a UUID into the repo source of truth.
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
-                    "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" } } }
+                    "blocked-by": { "type": "relation", "to": "Slice", "reverse": "blocks" } } }
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
-        Seed("project/sprint-tasks/task-a", "---\ntitle: Task A\n---\n\nFirst.");
-        Seed("project/sprint-tasks/task-b", "---\ntitle: Task B\nblocked-by: task-a\n---\n\nSecond.");
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md")); // ctor seed, off-model
+        Seed("project/slices/task-a", "---\ntitle: Task A\n---\n\nFirst.");
+        Seed("project/slices/task-b", "---\ntitle: Task B\nblocked-by: task-a\n---\n\nSecond.");
 
         var client = new FakeNotionClient();
         // Tick 1 creates both pages; the self-relation can't resolve yet (pages not in the base snapshot).
@@ -253,30 +253,30 @@ public class NotionSpineSyncTests : IDisposable
         pageA.Properties["blocked-by"] = new NotionPropertyValue { Type = "relation", Relation = [new() { Id = pageB.Id }] };
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
 
-        var fileA = File.ReadAllText(Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-a.md"));
+        var fileA = File.ReadAllText(Path.Combine(_dydoRoot, "project", "slices", "task-a.md"));
         Assert.Contains("blocked-by: task-b", fileA);   // rendered to the local id
         Assert.DoesNotContain(pageB.Id, fileA);          // never the raw Notion page id
     }
 
-    /// <summary>A SprintTask self-relation model (blocked-by → SprintTask) with three bare blockers and one
+    /// <summary>A Slice self-relation model (blocked-by → Slice) with three bare blockers and one
     /// task that references two of them, used by the multi-target relation change-detection tests below.</summary>
     private void SeedMultiBlockerSpine()
     {
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
-                    "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" } } }
+                    "blocked-by": { "type": "relation", "to": "Slice", "reverse": "blocks" } } }
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
-        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
-        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
-        Seed("project/sprint-tasks/task-c", "---\ntitle: C\n---\n\nC.");
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md")); // ctor seed, off-model
+        Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA.");
+        Seed("project/slices/task-b", "---\ntitle: B\n---\n\nB.");
+        Seed("project/slices/task-c", "---\ntitle: C\n---\n\nC.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public class NotionSpineSyncTests : IDisposable
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
         Assert.Equal(2, PageByTitle("X").Properties["blocked-by"].Relation!.Count); // baseline: both blockers linked
 
-        var xPath = Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-x.md");
+        var xPath = Path.Combine(_dydoRoot, "project", "slices", "task-x.md");
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by:\n---\n\nX.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
 
@@ -321,7 +321,7 @@ public class NotionSpineSyncTests : IDisposable
         var pageC = PageByTitle("C");
         Assert.Equal([pageA.Id, PageByTitle("B").Id], PageByTitle("X").Properties["blocked-by"].Relation!.Select(r => r.Id));
 
-        var xPath = Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-x.md");
+        var xPath = Path.Combine(_dydoRoot, "project", "slices", "task-x.md");
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-c\n---\n\nX.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
 
@@ -352,7 +352,7 @@ public class NotionSpineSyncTests : IDisposable
         pageX.Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
 
-        var fileX = File.ReadAllText(Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-x.md"));
+        var fileX = File.ReadAllText(Path.Combine(_dydoRoot, "project", "slices", "task-x.md"));
         Assert.Contains("blocked-by: task-a, task-c", fileX); // the Notion edit landed, as local ids
         Assert.DoesNotContain(pageC.Id, fileX);               // never a raw Notion page id
         Assert.Contains("X Renamed", fileX);                  // the co-occurring field edit also landed
@@ -430,14 +430,14 @@ public class NotionSpineSyncTests : IDisposable
         Assert.True(client.DataSourceSchema("ds-1").Properties.ContainsKey("Rogue")); // untouched
     }
 
-    /// <summary>A single-type model whose SprintTask declares the DR 030 attention layer: an engine-computed
+    /// <summary>A single-type model whose Slice declares the DR 030 attention layer: an engine-computed
     /// last-activity date plus the stale/attention formulas that read it.</summary>
     private void SeedLastActivitySpine()
     {
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
                     "status": { "type": "select", "options": ["in-progress", "in-review", "done"] },
@@ -448,20 +448,20 @@ public class NotionSpineSyncTests : IDisposable
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md")); // ctor seed, off-model
     }
 
     private string TaskPath(string localId) =>
-        Path.Combine(_dydoRoot, "project", "sprint-tasks", localId + ".md");
+        Path.Combine(_dydoRoot, "project", "slices", localId + ".md");
 
     private string? LastActivityInBase(string localId) =>
-        new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")).GetLastActivity(localId);
+        new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")).GetLastActivity(localId);
 
     [Fact]
     public void Run_LastActivity_BumpsOnGenuineRepoChange_NotOnExternalWriteOrNoOp_NeverInFrontmatter()
     {
         SeedLastActivitySpine();
-        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one.");
+        Seed("project/slices/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one.");
         File.SetLastWriteTimeUtc(TaskPath("task-1"), new DateTime(2026, 6, 20, 0, 0, 0, DateTimeKind.Utc));
 
         var client = new FakeNotionClient();
@@ -501,7 +501,7 @@ public class NotionSpineSyncTests : IDisposable
     public void Run_ProvisionsEngineDate_AndDeferredFormulas_ForAttentionLayer()
     {
         SeedLastActivitySpine();
-        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
+        Seed("project/slices/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
@@ -542,7 +542,7 @@ public class NotionSpineSyncTests : IDisposable
                     "needs-human-count": { "type": "formula", "expression": "prop(\"needs-human\")" },
                     "attention-count": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "attention", "rollupFunction": "checked" },
                     "attention": { "type": "formula", "expression": "or(prop(\"needs-human\") > 0, prop(\"attention-count\") > 0)" } } },
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
                     "status": { "type": "select", "options": ["in-progress", "done"] },
@@ -561,15 +561,15 @@ public class NotionSpineSyncTests : IDisposable
         int IndexOf(string ds, string key) =>
             updates.FindIndex(u => u.DataSourceId == ds && u.Request.Properties.ContainsKey(key));
 
-        // Data sources are assigned parent-first at create time: Campaign=ds-1, Sprint=ds-2, SprintTask=ds-3.
-        var taskAttention = IndexOf("ds-3", "attention");            // SprintTask's deferred attention formula
+        // Data sources are assigned parent-first at create time: Campaign=ds-1, Sprint=ds-2, Slice=ds-3.
+        var taskAttention = IndexOf("ds-3", "attention");            // Slice's deferred attention formula
         var sprintAttentionCount = IndexOf("ds-2", "attention-count"); // Sprint rollup that TARGETS it
         var sprintNeedsHumanCount = IndexOf("ds-2", "needs-human-count"); // Sprint formula projection
         var campaignNeedsHuman = IndexOf("ds-1", "needs-human");        // Campaign rollup that SUMS it
 
         Assert.True(taskAttention >= 0 && sprintAttentionCount >= 0 && sprintNeedsHumanCount >= 0 && campaignNeedsHuman >= 0);
         Assert.True(taskAttention < sprintAttentionCount,
-            "SprintTask.attention must be patched before Sprint's attention-count rollup references it");
+            "Slice.attention must be patched before Sprint's attention-count rollup references it");
         Assert.True(sprintNeedsHumanCount < campaignNeedsHuman,
             "Sprint.needs-human-count must be patched before Campaign's needs-human rollup sums it");
 
@@ -590,14 +590,14 @@ public class NotionSpineSyncTests : IDisposable
         // fire. Seeding writes only engine-internal store state / the one-way engine column, never frontmatter,
         // and a subsequent no-op tick must issue no repeated write.
         SeedLastActivitySpine();
-        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
+        Seed("project/slices/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
 
         // Simulate a base written by the pre-slice engine: the object is present but the last-activity map is
         // empty (the old file format had no such map), and the page carries no last-activity either.
-        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask");
+        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice");
         var node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(snapPath))!;
         node["lastActivity"] = new System.Text.Json.Nodes.JsonObject();
         File.WriteAllText(snapPath, node.ToJsonString());
@@ -666,8 +666,8 @@ public class NotionSpineSyncTests : IDisposable
         // enqueue a property write against the (now archived) page: real Notion 400s that write, throwing
         // mid-Apply before the base advances, permanently wedging the type's sync with no self-heal.
         SeedLastActivitySpine();
-        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one.");
-        Seed("project/sprint-tasks/task-2", "---\ntitle: Task 2\nstatus: in-progress\n---\n\nBody two.");
+        Seed("project/slices/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one.");
+        Seed("project/slices/task-2", "---\ntitle: Task 2\nstatus: in-progress\n---\n\nBody two.");
 
         var client = new FakeNotionClient();
         // Tick 1: both pages created, each with a seeded last-activity in the base snapshot.
@@ -712,20 +712,20 @@ public class NotionSpineSyncTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_dydoRoot, "_system", ".local", "notion", "provision.json")));
     }
 
-    /// <summary>A single-type SprintTask model whose only relation is the blocked-by self-relation.</summary>
+    /// <summary>A single-type Slice model whose only relation is the blocked-by self-relation.</summary>
     private void SeedSelfRelationSpine()
     {
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
-                    "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" } } }
+                    "blocked-by": { "type": "relation", "to": "Slice", "reverse": "blocks" } } }
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md")); // ctor seed, off-model
     }
 
     [Fact]
@@ -742,14 +742,14 @@ public class NotionSpineSyncTests : IDisposable
         // The body edit is essential: adding only the unresolvable relation is masked by the field normalizer
         // (it reads as no change), so no push would fire on tick 2 and the raw entry never enters the base.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
+        Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: task-a alone
 
         // task-b appears AND task-a is edited (body) and gains the blocker, in the same inter-tick window.
-        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
-        Seed("project/sprint-tasks/task-a", "---\ntitle: A\nblocked-by: task-b\n---\n\nA EDITED.");
+        Seed("project/slices/task-b", "---\ntitle: B\n---\n\nB.");
+        Seed("project/slices/task-a", "---\ntitle: A\nblocked-by: task-b\n---\n\nA EDITED.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: push body; relation unresolvable
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: task-b resolves
 
@@ -773,17 +773,17 @@ public class NotionSpineSyncTests : IDisposable
         // single-value relation as a deletion and WriteToRepo would blank task-b out of the pair. Normalized,
         // the second target is detected as a repo-side addition and pushed.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
+        Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: task-a alone
 
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-x, task-a resolves
 
         // task-b appears AND task-x is edited (body) and gains the second blocker, in the same window.
-        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX EDITED.");
+        Seed("project/slices/task-b", "---\ntitle: B\n---\n\nB.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX EDITED.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: push body; task-b unresolvable
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-b resolves
 
@@ -805,8 +805,8 @@ public class NotionSpineSyncTests : IDisposable
         // must keep the pending task-b on the repo file (the whole-field overlay could not, since blocked-by keeps
         // a non-empty resolvable subset), so it survives and pushes once task-b resolves the next tick.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
+        Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create both
@@ -817,8 +817,8 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Equal(PageByTitle("A").Id, PageByTitle("X").Properties["blocked-by"].Relation!.Single().Id);
 
         // Same inter-tick window: task-b appears (unresolvable this tick), task-x gains it, and the board renames task-x.
-        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
-        var xPath = Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-x.md");
+        Seed("project/slices/task-b", "---\ntitle: B\n---\n\nB.");
+        var xPath = Path.Combine(_dydoRoot, "project", "slices", "task-x.md");
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
         PageByTitle("X").Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
 
@@ -844,8 +844,8 @@ public class NotionSpineSyncTests : IDisposable
         // ones, so the pending entry counts as un-pushed work: the file must NOT be silently deleted — instead the
         // page is resurrected and the pending entry preserved.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
+        Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1
@@ -856,8 +856,8 @@ public class NotionSpineSyncTests : IDisposable
         var oldXId = PageByTitle("X").Id;
 
         // Same window: a pending blocker task-b appears, task-x gains it, and task-x's page is archived in Notion.
-        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
-        var xPath = Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-x.md");
+        Seed("project/slices/task-b", "---\ntitle: B\n---\n\nB.");
+        var xPath = Path.Combine(_dydoRoot, "project", "slices", "task-x.md");
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
         PageByTitle("X").Archived = true;
 
@@ -883,14 +883,14 @@ public class NotionSpineSyncTests : IDisposable
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": { "title": { "type": "title" },
                     "status": { "type": "select", "options": ["in-progress", "done"] } } }
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
-        Seed("project/sprint-tasks/task-1", "---\ntitle: T1\nstatus: in-progress\narea: project\ntype: context\n---\n\nBody.");
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md")); // ctor seed, off-model
+        Seed("project/slices/task-1", "---\ntitle: T1\nstatus: in-progress\narea: project\ntype: context\n---\n\nBody.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create the page
@@ -903,7 +903,7 @@ public class NotionSpineSyncTests : IDisposable
         // The archive propagated: the file is gone, no page was resurrected, and the base entry is retired.
         Assert.False(File.Exists(TaskPath("task-1")));
         Assert.DoesNotContain(client.QueryDataSource("ds-1"), p => !p.Archived);
-        Assert.Null(new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")).Get("task-1"));
+        Assert.Null(new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")).Get("task-1"));
     }
 
     [Fact]
@@ -915,15 +915,15 @@ public class NotionSpineSyncTests : IDisposable
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": { "title": { "type": "title" },
                     "status": { "type": "select", "options": ["open", "done"] } } }
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md"));
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md"));
         var content = "---\ntitle: T1\nstatus: open\n---\n\nBody.";
-        Seed("project/sprint-tasks/task-1", content);
+        Seed("project/slices/task-1", content);
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
@@ -935,7 +935,7 @@ public class NotionSpineSyncTests : IDisposable
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
 
         // The base entry (and the archived page id) is retired from the persisted snapshot.
-        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask");
+        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice");
         Assert.Null(new BaseSnapshotStore(snapPath).Get("task-1"));
         Assert.DoesNotContain(archivedId, File.ReadAllText(snapPath));
 
@@ -954,27 +954,27 @@ public class NotionSpineSyncTests : IDisposable
     [Fact]
     public void Run_TwoRelationFieldsSharingStemAcrossTargetTypes_ResolvePerFieldTarget()
     {
-        // Finding 3: SprintTask has two relations to different types (sprint -> Sprint, blocked-by -> SprintTask).
-        // A Sprint doc and a SprintTask doc share the stem "alpha"; a merged map keyed by bare stem would send
+        // Finding 3: Slice has two relations to different types (sprint -> Sprint, blocked-by -> Slice).
+        // A Sprint doc and a Slice doc share the stem "alpha"; a merged map keyed by bare stem would send
         // one field to the wrong database's page. Per-field resolution keeps each pointed at its target type.
         WriteModel("""
             {
               "objects": [
                 { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
                   "properties": { "title": { "type": "title" } } },
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
                     "sprint": { "type": "relation", "to": "Sprint" },
-                    "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" } } }
+                    "blocked-by": { "type": "relation", "to": "Slice", "reverse": "blocks" } } }
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md"));
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md"));
         File.Delete(Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md"));
         Seed("project/sprints/alpha", "---\ntitle: Sprint Alpha\n---\n\nS.");
-        Seed("project/sprint-tasks/alpha", "---\ntitle: Task Alpha\n---\n\nT.");
-        Seed("project/sprint-tasks/worker", "---\ntitle: Worker\nsprint: alpha\nblocked-by: alpha\n---\n\nW.");
+        Seed("project/slices/alpha", "---\ntitle: Task Alpha\n---\n\nT.");
+        Seed("project/slices/worker", "---\ntitle: Worker\nsprint: alpha\nblocked-by: alpha\n---\n\nW.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
@@ -988,7 +988,7 @@ public class NotionSpineSyncTests : IDisposable
 
         Assert.NotEqual(sprintAlpha.Id, taskAlpha.Id);
         Assert.Equal(sprintAlpha.Id, worker.Properties["sprint"].Relation!.Single().Id);    // -> Sprint database
-        Assert.Equal(taskAlpha.Id, worker.Properties["blocked-by"].Relation!.Single().Id);  // -> SprintTask database
+        Assert.Equal(taskAlpha.Id, worker.Properties["blocked-by"].Relation!.Single().Id);  // -> Slice database
     }
 
     [Fact]
@@ -1000,7 +1000,7 @@ public class NotionSpineSyncTests : IDisposable
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
                     "status": { "type": "select", "options": ["in-progress", "done"] },
@@ -1008,8 +1008,8 @@ public class NotionSpineSyncTests : IDisposable
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md"));
-        Seed("project/sprint-tasks/task-1", "---\ntitle: T1\nstatus: in-progress\ndone: true\n---\n\nBody.");
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md"));
+        Seed("project/slices/task-1", "---\ntitle: T1\nstatus: in-progress\ndone: true\n---\n\nBody.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
@@ -1046,7 +1046,7 @@ public class NotionSpineSyncTests : IDisposable
                     "done": { "type": "checkbox" },
                     "task-progress": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "done", "rollupFunction": "percent_checked" },
                     "sprint-health": { "type": "formula", "expression": "prop(\"task-progress\") > 0.5" } } },
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
                     "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
@@ -1054,7 +1054,7 @@ public class NotionSpineSyncTests : IDisposable
               ]
             }
             """);
-        var client = new FakeNotionClient { FailCreateDatabaseAfter = 2 }; // Campaign, Sprint succeed; SprintTask throws
+        var client = new FakeNotionClient { FailCreateDatabaseAfter = 2 }; // Campaign, Sprint succeed; Slice throws
 
         Assert.Throws<NotionApiException>(
             () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
@@ -1064,20 +1064,20 @@ public class NotionSpineSyncTests : IDisposable
         var recorded = new NotionProvisioner(client, provisionPath);
         Assert.NotNull(recorded.Lookup("Campaign"));
         Assert.NotNull(recorded.Lookup("Sprint"));
-        Assert.Null(recorded.Lookup("SprintTask")); // the throwing create left no record
+        Assert.Null(recorded.Lookup("Slice")); // the throwing create left no record
         Assert.Equal(2, client.CreatedDatabases.Count);
         // The recorded parents own a post-pass that never ran — the throw preceded the post-pass entirely.
         Assert.True(recorded.PostPassPending("Campaign"));
         Assert.True(recorded.PostPassPending("Sprint"));
         Assert.Empty(client.DataSourceUpdates);
 
-        // Retry with a healthy client reuses Campaign + Sprint and creates only SprintTask — no duplicates.
+        // Retry with a healthy client reuses Campaign + Sprint and creates only Slice — no duplicates.
         client.FailCreateDatabaseAfter = null;
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
         Assert.Equal(3, client.CreatedDatabases.Count);
 
         // The retry ran the deferred post-pass for the REUSED parents: their rollups and deferred formulas were
-        // PATCHed onto their existing data sources (ds-1 Campaign, ds-2 Sprint), now that SprintTask exists.
+        // PATCHed onto their existing data sources (ds-1 Campaign, ds-2 Sprint), now that Slice exists.
         Assert.Contains(client.DataSourceUpdates, u => u.DataSourceId == "ds-1" && u.Request.Properties.ContainsKey("progress"));
         Assert.Contains(client.DataSourceUpdates, u => u.DataSourceId == "ds-1" && u.Request.Properties.ContainsKey("health"));
         Assert.Contains(client.DataSourceUpdates, u => u.DataSourceId == "ds-2" && u.Request.Properties.ContainsKey("task-progress"));
@@ -1090,7 +1090,7 @@ public class NotionSpineSyncTests : IDisposable
         Assert.False(new NotionProvisioner(client, provisionPath).PostPassPending("Campaign"));
     }
 
-    /// <summary>A three-type rollup/formula model (Campaign/Sprint/SprintTask) whose parents each own
+    /// <summary>A three-type rollup/formula model (Campaign/Sprint/Slice) whose parents each own
     /// post-pass rollups and deferred formulas, used to exercise mid-post-pass crash recovery.</summary>
     private void WriteRollupModel() => WriteModel("""
         {
@@ -1107,7 +1107,7 @@ public class NotionSpineSyncTests : IDisposable
                 "done": { "type": "checkbox" },
                 "task-progress": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "done", "rollupFunction": "percent_checked" },
                 "sprint-health": { "type": "formula", "expression": "prop(\"task-progress\") > 0.5" } } },
-            { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+            { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
               "properties": {
                 "title": { "type": "title" },
                 "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
@@ -1120,7 +1120,7 @@ public class NotionSpineSyncTests : IDisposable
     public void Run_CrashDuringPostPass_PersistsPerTypeCompletion_RetryResumesUnfinishedOnly()
     {
         // Finding 10: a throw DURING the rollup/formula post-pass must not force an already-completed type to
-        // re-run. The post-pass runs child-first (SprintTask -> Sprint -> Campaign) and MarkPostPassDone persists
+        // re-run. The post-pass runs child-first (Slice -> Sprint -> Campaign) and MarkPostPassDone persists
         // per type immediately, so a crash in Campaign's pass — after Sprint's two patches landed — leaves Sprint
         // done and only Campaign pending. The retry resumes Campaign alone.
         WriteRollupModel();
@@ -1131,7 +1131,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var provisionPath = NotionProvisioner.PathFor(_dydoRoot);
         var recorded = new NotionProvisioner(client, provisionPath);
-        Assert.False(recorded.PostPassPending("SprintTask")); // leaf: no post-pass work, marked done first
+        Assert.False(recorded.PostPassPending("Slice")); // leaf: no post-pass work, marked done first
         Assert.False(recorded.PostPassPending("Sprint"));     // completed and persisted before the crash
         Assert.True(recorded.PostPassPending("Campaign"));    // crashed mid-post-pass, still pending
         Assert.Equal(2, client.DataSourceUpdates.Count);      // exactly Sprint's two patches
@@ -1167,7 +1167,7 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Contains(lines, l => l.Contains("Campaign") && l.Contains("would add rollup properties"));
         Assert.Contains(lines, l => l.Contains("Campaign") && l.Contains("would add formula properties"));
         Assert.DoesNotContain(lines, l => l.Contains("Sprint") && l.Contains("would add"));
-        Assert.DoesNotContain(lines, l => l.Contains("SprintTask") && l.Contains("would add"));
+        Assert.DoesNotContain(lines, l => l.Contains("Slice") && l.Contains("would add"));
         Assert.Empty(client.DataSourceUpdates); // dry-run wrote nothing
     }
 
@@ -1212,7 +1212,7 @@ public class NotionSpineSyncTests : IDisposable
         // WriteToRepo churn while task-later is missing, and a CLEAN push — never a phantom conflict — once it
         // resolves.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
 
         var client = new FakeNotionClient { EchoEmptyRelations = true };
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-x
@@ -1231,7 +1231,7 @@ public class NotionSpineSyncTests : IDisposable
         }
 
         // task-later appears; the blocker now resolves. It must push cleanly, no phantom merge conflict.
-        Seed("project/sprint-tasks/task-later", "---\ntitle: Later\n---\n\nLater body.");
+        Seed("project/slices/task-later", "---\ntitle: Later\n---\n\nLater body.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create task-later
         var resolveOutput = new StringWriter();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, resolveOutput); // task-later resolves
@@ -1254,7 +1254,7 @@ public class NotionSpineSyncTests : IDisposable
         // probe proves blocked-by is a relation, told apart from a local-only key) and resurrect the page rather
         // than silently deleting the file and losing task-ghost forever.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-ghost\n---\n\nX body.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-ghost\n---\n\nX body.");
 
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create task-x, blocker omitted
@@ -1275,21 +1275,21 @@ public class NotionSpineSyncTests : IDisposable
         Assert.NotEqual(oldXId, resurrected.Id); // resurrected as a fresh page, not the archived one
     }
 
-    /// <summary>A single-type SprintTask model with a couple of plain docs, for the re-provision base-reset tests.</summary>
+    /// <summary>A single-type Slice model with a couple of plain docs, for the re-provision base-reset tests.</summary>
     private void SeedReprovisionSpine()
     {
         WriteModel("""
             {
               "objects": [
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": { "title": { "type": "title" },
                     "status": { "type": "select", "options": ["open", "done"] } } }
               ]
             }
             """);
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
-        Seed("project/sprint-tasks/task-1", "---\ntitle: T1\nstatus: open\n---\n\nBody 1.");
-        Seed("project/sprint-tasks/task-2", "---\ntitle: T2\nstatus: open\n---\n\nBody 2.");
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md")); // ctor seed, off-model
+        Seed("project/slices/task-1", "---\ntitle: T1\nstatus: open\n---\n\nBody 1.");
+        Seed("project/slices/task-2", "---\ntitle: T2\nstatus: open\n---\n\nBody 2.");
     }
 
     [Fact]
@@ -1341,7 +1341,7 @@ public class NotionSpineSyncTests : IDisposable
         // The fresh database was minted, and its base snapshot was durably cleared at mint time (file deleted),
         // even though the aborted tick never reached the end-of-tick base Save.
         Assert.Equal(2, client.CreatedDatabases.Count);
-        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")));
+        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")));
 
         // Tick 3: a healthy retry. Lookup reuses the now-valid empty ds-2 (nothing minted this run). With a durable
         // reset the base is empty, so both docs re-push as CREATES — never read as external deletes. Zero deletions.
@@ -1375,7 +1375,7 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Equal(2, client.QueryDataSource("ds-2").Count);
     }
 
-    /// <summary>A parent Sprint + child SprintTask model whose child carries a `sprint` relation, seeded with one
+    /// <summary>A parent Sprint + child Slice model whose child carries a `sprint` relation, seeded with one
     /// of each, for the cross-type re-provision test (finding 1).</summary>
     private void SeedParentChildRelationSpine()
     {
@@ -1384,16 +1384,16 @@ public class NotionSpineSyncTests : IDisposable
               "objects": [
                 { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
                   "properties": { "title": { "type": "title" } } },
-                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                { "type": "Slice", "dir": "project/slices", "notionTitle": "Tasks",
                   "properties": { "title": { "type": "title" },
                     "sprint": { "type": "relation", "to": "Sprint" } } }
               ]
             }
             """);
         File.Delete(Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md"));     // ctor seed, off-model
-        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+        File.Delete(Path.Combine(_dydoRoot, "project", "slices", "spine-task.md")); // ctor seed, off-model
         Seed("project/sprints/sprint-7", "---\ntitle: Sprint 7\n---\n\nParent.");
-        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nsprint: sprint-7\n---\n\nChild.");
+        Seed("project/slices/task-1", "---\ntitle: Task 1\nsprint: sprint-7\n---\n\nChild.");
     }
 
     [Fact]
@@ -1453,7 +1453,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // The recorded database is definitively gone, so tick 2 would re-provision — but the snapshot delete fails.
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
-        using (new UndeletableFile(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")))
+        using (new UndeletableFile(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")))
             Assert.Throws<IOException>(
                 () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
 
@@ -1480,7 +1480,7 @@ public class NotionSpineSyncTests : IDisposable
         // Tick 2: the recorded database is definitively gone (404), forcing a re-provision. The snapshot delete
         // succeeds, but the mint then throws — the create knob fires the instant zero creates remain permitted,
         // so provisioner.Create fails immediately after DeleteSnapshot removed the file. This is the crash window.
-        var snapshotPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask");
+        var snapshotPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice");
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
         client.FailCreateDatabaseAfter = 0;
         Assert.Throws<NotionApiException>(
@@ -1515,11 +1515,11 @@ public class NotionSpineSyncTests : IDisposable
         // target's raw Notion page id into frontmatter (finding 3), and the archive must ultimately delete the
         // repo file — not resurrect forever as a conflict blocked by an immortal raw-id entry.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
 
         var client = new FakeNotionClient { EchoEmptyRelations = true };
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-x (blocker omitted)
-        Seed("project/sprint-tasks/task-later", "---\ntitle: Later\n---\n\nLater body.");
+        Seed("project/slices/task-later", "---\ntitle: Later\n---\n\nLater body.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-later
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: blocker resolves, pushed
 
@@ -1559,12 +1559,12 @@ public class NotionSpineSyncTests : IDisposable
         // (finding 3) and drop the retired recorded entry (finding 4), leaving only the live task-a; the board
         // archive of task-x must then delete the repo file, not resurrect forever behind an immortal raw-id blocker.
         SeedSelfRelationSpine();
-        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA body.");
-        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a, task-later\n---\n\nX body.");
+        Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA body.");
+        Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a, task-later\n---\n\nX body.");
 
         var client = new FakeNotionClient { EchoEmptyRelations = true };
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-a, task-x (blockers omitted)
-        Seed("project/sprint-tasks/task-later", "---\ntitle: Later\n---\n\nLater body.");
+        Seed("project/slices/task-later", "---\ntitle: Later\n---\n\nLater body.");
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-later; task-a resolves, pushed
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: task-later resolves, both pushed
 

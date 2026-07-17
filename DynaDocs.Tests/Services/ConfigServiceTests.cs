@@ -15,8 +15,7 @@ public class ConfigServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
             {
                 "version": 1,
-                "structure": { "root": "dydo" },
-                "agents": { "pool": [], "assignments": {} }
+                "structure": { "root": "dydo" }
             }
             """);
     }
@@ -258,13 +257,34 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
+    public void LoadConfig_LegacyAgentsSection_IsIgnored()
+    {
+        // The 26-agent roster runtime was removed (DR-041); DydoConfig no longer models an
+        // `agents` section. A pre-DR-041 dydo.json still carrying one must load cleanly, with
+        // the dead section silently dropped rather than failing deserialization.
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+            {
+                "version": 1,
+                "structure": { "root": "dydo" },
+                "paths": { "source": ["src/**"], "tests": ["tests/**"] },
+                "agents": { "pool": ["Adele", "Brian"], "assignments": { "testuser": ["Adele"] } }
+            }
+            """);
+
+        var config = new ConfigService().LoadConfig(_testDir);
+
+        Assert.NotNull(config);
+        Assert.Equal(["src/**"], config!.Paths.Source);
+        Assert.Equal(["tests/**"], config.Paths.Tests);
+    }
+
+    [Fact]
     public void LoadConfig_WithNudges_DeserializesCorrectly()
     {
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
             {
                 "version": 1,
                 "structure": { "root": "dydo" },
-                "agents": { "pool": [], "assignments": {} },
                 "nudges": [
                     { "pattern": "dotnet test.*coverlet", "message": "Use gap_check.py.", "severity": "warn" },
                     { "pattern": "rm -rf", "message": "Don't do that.", "severity": "block" }

@@ -261,7 +261,7 @@ public class TaskTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "balazs");
         await TaskCreateAsync("peer-done", area: "backend");
-        SetTaskAssigned("peer-done", "Brian");
+        SetTaskAssigned("peer-done", "worker");
         SetTaskStatus("peer-done", "in-progress");
 
         var result = await TaskDoneAsync("peer-done");

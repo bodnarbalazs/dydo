@@ -29,7 +29,7 @@ mirrored pages are PM records living as doc pages.
 by a fresh-eyes reviewer per DR 039 §2 — route through Adele. **No implementation before the
 green light and the smoke phase completing.**
 
-## Slices (rows in `sprint-tasks/`, each born `ready`)
+## Slices (rows in `slices/`, each born `ready`)
 
 | Row | What | Kind | Isolation |
 |---|---|---|---|

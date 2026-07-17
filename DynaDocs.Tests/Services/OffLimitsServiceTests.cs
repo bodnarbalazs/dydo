@@ -17,8 +17,7 @@ public class OffLimitsServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
             {
                 "version": 1,
-                "structure": { "root": "dydo" },
-                "agents": { "pool": [], "assignments": {} }
+                "structure": { "root": "dydo" }
             }
             """);
     }
@@ -38,15 +37,15 @@ public class OffLimitsServiceTests : IDisposable
             # Files Off-Limits
 
             ```
-            dydo/agents/*/state.md
+            config/*/secret.md
             ```
             """);
 
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        var relative = "dydo/agents/Brian/state.md";
-        var absolute = Path.Combine(_testDir, "dydo", "agents", "Brian", "state.md");
+        var relative = "config/prod/secret.md";
+        var absolute = Path.Combine(_testDir, "config", "prod", "secret.md");
 
         // Both the repo-relative and the absolute form (what Claude Code actually sends)
         // must match the repo-relative pattern.
@@ -767,32 +766,25 @@ public class OffLimitsServiceTests : IDisposable
 
     #endregion
 
-    #region DynaDocs System File Patterns
+    #region User Glob Patterns
+
+    private const string UserOffLimits = """
+        ```
+        config/*/secret.md
+        build/**
+        dydo/index.md
+        dydo/files-off-limits.md
+        ```
+        """;
 
     [Theory]
-    [InlineData("dydo/agents/Adele/workflow.md")]
-    [InlineData("dydo/agents/Brian/workflow.md")]
-    [InlineData("dydo/agents/Adele/state.md")]
-    [InlineData("dydo/agents/Brian/state.md")]
-    [InlineData("dydo/agents/Adele/.session")]
-    [InlineData("dydo/agents/Adele/modes/code-writer.md")]
-    [InlineData("dydo/agents/Adele/modes/reviewer.md")]
-    [InlineData("dydo/agents/agent-states.md")]
+    [InlineData("config/prod/secret.md")]
+    [InlineData("build/output/app.dll")]
     [InlineData("dydo/index.md")]
     [InlineData("dydo/files-off-limits.md")]
-    public void IsPathOffLimits_BlocksDydoSystemFiles(string path)
+    public void IsPathOffLimits_BlocksPathsMatchingUserPatterns(string path)
     {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
-            ```
-            dydo/agents/*/workflow.md
-            dydo/agents/*/state.md
-            dydo/agents/*/.session
-            dydo/agents/*/modes/**
-            dydo/agents/agent-states.md
-            dydo/index.md
-            dydo/files-off-limits.md
-            ```
-            """);
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), UserOffLimits);
 
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
@@ -802,28 +794,13 @@ public class OffLimitsServiceTests : IDisposable
     }
 
     [Theory]
-    [InlineData("dydo/agents/Adele/inbox/message-001.md")]
-    [InlineData("dydo/agents/Adele/brief-feature-x.md")]
-    [InlineData("dydo/agents/Adele/plan-feature-x.md")]
-    [InlineData("dydo/agents/Adele/notes.md")]
-    [InlineData("dydo/agents/Adele/scratch/temp.md")]
-    [InlineData("dydo/welcome.md")]
-    [InlineData("dydo/glossary.md")]
+    [InlineData("config/secret.md")]
+    [InlineData("src/main.cs")]
     [InlineData("dydo/understand/architecture.md")]
     [InlineData("dydo/guides/coding-standards.md")]
-    public void IsPathOffLimits_AllowsAgentWorkArtifacts(string path)
+    public void IsPathOffLimits_AllowsPathsNotMatchingUserPatterns(string path)
     {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
-            ```
-            dydo/agents/*/workflow.md
-            dydo/agents/*/state.md
-            dydo/agents/*/.session
-            dydo/agents/*/modes/**
-            dydo/agents/agent-states.md
-            dydo/index.md
-            dydo/files-off-limits.md
-            ```
-            """);
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), UserOffLimits);
 
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
@@ -837,7 +814,7 @@ public class OffLimitsServiceTests : IDisposable
     #region System Off-Limits
 
     [Fact]
-    public void IsPathOffLimits_SystemPaths_BlockedEvenWhenWhitelistMatchesAgentsPath()
+    public void IsPathOffLimits_SystemPaths_BlockedEvenWhenWhitelistMatches()
     {
         File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
             ## Off-Limits
@@ -847,15 +824,15 @@ public class OffLimitsServiceTests : IDisposable
 
             ## Whitelist
             ```
-            dydo/agents/**
+            logs/**
             ```
             """);
 
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        // Whitelist allows general agent paths
-        Assert.Null(service.IsPathOffLimits("dydo/agents/Adele/inbox/task.md"));
+        // Whitelist allows matching paths
+        Assert.Null(service.IsPathOffLimits("logs/app/debug.log"));
 
         // dydo/_system/** and dydo.json must STILL be blocked by SystemOffLimits
         Assert.NotNull(service.IsPathOffLimits("dydo/_system/roles/code-writer.role.json"));

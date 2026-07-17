@@ -116,7 +116,7 @@ public static class NotionSpineSync
         // referents, so every child column a parent references — including a child's DEFERRED formula, only
         // PATCHed in that child's own formula pass — must already exist when the parent's pass runs. Doing
         // AddRollups(type) then AddFormulas(type) per type, children before parents, guarantees it: e.g.
-        // SprintTask.attention is patched before Sprint's attention-count rollup targets it, and Sprint's
+        // Slice.attention is patched before Sprint's attention-count rollup targets it, and Sprint's
         // needs-human-count formula before Campaign's needs-human rollup sums it.
         // A type owes its post-pass if it is created THIS run, or was recorded on a prior run whose post-pass
         // never completed (a mid-provision throw records databases before their rollups/formulas are PATCHed;
@@ -218,7 +218,7 @@ public static class NotionSpineSync
                 store.Reset();
 
             // Publish this type's own local↔page map from its base snapshot BEFORE building relation maps,
-            // so a self-relation (SprintTask.blocked-by → SprintTask) resolves against pages synced on a
+            // so a self-relation (Slice.blocked-by → Slice) resolves against pages synced on a
             // prior tick — without this seed the type's map is only exposed after its own reconcile, so a
             // self-relation would never resolve on write nor render back to local ids on read (DR 029 §5).
             // It is refreshed after reconcile to publish this tick's newly-created pages to any children.

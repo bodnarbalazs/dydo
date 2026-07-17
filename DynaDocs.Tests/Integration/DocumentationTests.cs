@@ -406,18 +406,18 @@ public class DocumentationTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs");
 
         // A modes folder with files but no _index.md (by design)
-        var modesDir = Path.Combine(TestDir, "dydo/agents/Adele/modes");
+        var modesDir = Path.Combine(TestDir, "dydo/agents/sample/modes");
         Directory.CreateDirectory(modesDir);
         File.WriteAllText(Path.Combine(modesDir, "code-writer.md"), "# code-writer");
 
-        AssertDirectoryExists("dydo/agents/Adele/modes");
-        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes/_index.md")));
+        AssertDirectoryExists("dydo/agents/sample/modes");
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/sample/modes/_index.md")));
 
         var result = await FixAsync();
 
         result.AssertSuccess();
         // Should NOT create _index.md in agent modes folder
-        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes/_index.md")));
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/sample/modes/_index.md")));
     }
 
     [Fact]
@@ -457,7 +457,7 @@ public class DocumentationTests : IntegrationTestBase
 
         result.AssertSuccess();
         // Should not report agent workspace files as needing fixes
-        Assert.DoesNotContain("agents/Adele", result.Stdout);
+        Assert.DoesNotContain("agents/sample", result.Stdout);
     }
 
     #endregion

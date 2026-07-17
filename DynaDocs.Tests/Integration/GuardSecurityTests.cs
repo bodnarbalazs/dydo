@@ -11,7 +11,7 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class GuardSecurityTests : IntegrationTestBase
 {
-    private async Task SetupClaimedAgent(string agentName = "Adele", string role = "code-writer", string task = "test-task")
+    private async Task SetupClaimedAgent()
     {
         await InitProjectAsync("none", "testuser");
         await ReadMustReadsAsync();
@@ -262,7 +262,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(
-            BashJson("dydo wait --cancel && tee dydo/agents/Adele/notes.md"));
+            BashJson("dydo wait --cancel && tee scratch/notes.md"));
 
         result.AssertSuccess();
     }
@@ -743,9 +743,9 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // Code-writer can write to own workspace
+        // A write to a path that isn't off-limits is allowed
         var result = await GuardWithStdinAsync(
-            BashJson("tee dydo/agents/Adele/notes.md"));
+            BashJson("tee scratch/notes.md"));
         result.AssertSuccess();
     }
 

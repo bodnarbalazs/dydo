@@ -208,17 +208,12 @@ public class CompleteCommandTests : IDisposable
         Assert.Contains("task", output);
     }
 
-    private void SetupProject(List<string> agents)
+    private void SetupProject()
     {
         var config = new
         {
             version = 1,
-            structure = new { root = "dydo", tasks = "project/tasks" },
-            agents = new
-            {
-                pool = agents,
-                assignments = new Dictionary<string, List<string>> { ["testuser"] = agents }
-            }
+            structure = new { root = "dydo", tasks = "project/tasks" }
         };
 
         File.WriteAllText(
@@ -228,7 +223,7 @@ public class CompleteCommandTests : IDisposable
 
     private void SetupProjectWithTasks(params string[] taskNames)
     {
-        SetupProject(["Adele"]);
+        SetupProject();
 
         var tasksPath = Path.Combine(_testDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);

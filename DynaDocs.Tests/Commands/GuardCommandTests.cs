@@ -28,11 +28,7 @@ public class GuardCommandTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
             {
                 "version": 1,
-                "structure": { "root": "dydo" },
-                "agents": {
-                    "pool": ["Adele"],
-                    "assignments": { "testuser": ["Adele"] }
-                }
+                "structure": { "root": "dydo" }
             }
             """);
 
@@ -392,7 +388,7 @@ public class GuardCommandTests : IDisposable
     #region Default Nudges — Indirect Dydo Invocation
 
     [Theory]
-    [InlineData("python dydo/agents/Brian/check_coverage.py")]
+    [InlineData("python dydo/scripts/check_coverage.py")]
     [InlineData("python3 dydo/scripts/run.py")]
     [InlineData("py dydo/tools/helper.py")]
     public void DefaultNudges_PythonWithDydoPath_NoMatch(string command)
@@ -416,7 +412,7 @@ public class GuardCommandTests : IDisposable
     }
 
     [Theory]
-    [InlineData("bash dydo/agents/Brian/run.sh")]
+    [InlineData("bash dydo/scripts/run.sh")]
     [InlineData("sh dydo/scripts/setup.sh")]
     public void DefaultNudges_ShellWithDydoPath_NoMatch(string command)
     {
@@ -594,7 +590,6 @@ public class GuardCommandTests : IDisposable
     {
         // A tool-scoped nudge's pattern is a glob, not a regex — bash evaluation must skip
         // it even when the pattern text would match the command.
-        CreateRegistryWithAgent("Adele", "sess-1");
         WriteConfigWithFileNudge("dangerous-command", "file nudge", "block");
         var registry = new AgentRegistry(_testDir);
 
@@ -609,10 +604,6 @@ public class GuardCommandTests : IDisposable
             {
                 "version": 1,
                 "structure": { "root": "dydo" },
-                "agents": {
-                    "pool": ["Adele"],
-                    "assignments": { "testuser": ["Adele"] }
-                },
                 "nudges": [
                   {"pattern": "{{pattern}}", "message": "{{message}}", "severity": "{{severity}}", "tools": ["Edit", "Write", "NotebookEdit"]}
                 ]
@@ -627,7 +618,7 @@ public class GuardCommandTests : IDisposable
     [Fact]
     public void CheckNudges_WarnSeverity_BlocksFirstEncounter_CreatesMarker()
     {
-        var registry = CreateRegistryWithAgent("Adele", "sess-1");
+        var registry = new AgentRegistry(_testDir);
         var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
         var pattern = @"dangerous-command";
         var hash = GuardCommand.ComputeNudgeHash(pattern);
@@ -646,7 +637,7 @@ public class GuardCommandTests : IDisposable
     [Fact]
     public void CheckNudges_WarnSeverity_AllowsSecondEncounter_DeletesMarker()
     {
-        var registry = CreateRegistryWithAgent("Adele", "sess-1");
+        var registry = new AgentRegistry(_testDir);
         var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
         var pattern = @"dangerous-command";
         var hash = GuardCommand.ComputeNudgeHash(pattern);
@@ -668,7 +659,6 @@ public class GuardCommandTests : IDisposable
     [Fact]
     public void CheckNudges_WarnSeverity_DifferentPatterns_ProduceDifferentMarkers()
     {
-        CreateRegistryWithAgent("Adele", "sess-1");
         var patternA = @"risky-alpha";
         var patternB = @"risky-beta";
 
@@ -701,7 +691,6 @@ public class GuardCommandTests : IDisposable
     [InlineData("while :; do check_status; sleep 1; done")]
     public void CheckNudges_OpenEndedPollLoop_BlocksFirstEncounter(string command)
     {
-        CreateRegistryWithAgent("Adele", "sess-1");
         WriteConfigWithOpenEndedPollNudges();
         var registry = new AgentRegistry(_testDir);
 
@@ -716,7 +705,6 @@ public class GuardCommandTests : IDisposable
     [InlineData("echo ready")]
     public void CheckNudges_SafeCommand_DoesNotBlock(string command)
     {
-        CreateRegistryWithAgent("Adele", "sess-1");
         WriteConfigWithOpenEndedPollNudges();
         var registry = new AgentRegistry(_testDir);
 
@@ -724,25 +712,6 @@ public class GuardCommandTests : IDisposable
 
         Assert.Null(result);
         Assert.Empty(stderr);
-    }
-
-    private AgentRegistry CreateRegistryWithAgent(string agentName, string sessionId)
-    {
-        var workspace = Path.Combine(_dydoDir, "agents", agentName);
-        Directory.CreateDirectory(workspace);
-
-        File.WriteAllText(Path.Combine(workspace, ".session"),
-            $$"""{"Agent":"{{agentName}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}"}""");
-
-        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
-            ---
-            agent: {{agentName}}
-            status: working
-            assigned: testuser
-            ---
-            """);
-
-        return new AgentRegistry(_testDir);
     }
 
     private static (int? Result, string Stderr) RunNudge(string command, AgentRegistry registry)
@@ -782,10 +751,6 @@ public class GuardCommandTests : IDisposable
             {
                 "version": 1,
                 "structure": { "root": "dydo" },
-                "agents": {
-                    "pool": ["Adele"],
-                    "assignments": { "testuser": ["Adele"] }
-                },
                 "nudges": [
                   {{nudgeJson}}
                 ]

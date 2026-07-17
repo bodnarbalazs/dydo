@@ -63,15 +63,12 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("mode-code-writer.template.md", templateNames);
         Assert.Contains("mode-reviewer.template.md", templateNames);
         Assert.Contains("mode-planner.template.md", templateNames);
-        Assert.Contains("mode-sprint-auditor.template.md", templateNames);
         Assert.Contains("mode-chief-of-staff.template.md", templateNames);
-        Assert.DoesNotContain("mode-inquisitor.template.md", templateNames);
-        Assert.DoesNotContain("mode-judge.template.md", templateNames);
 
-        // 9 mode templates — the compiler's role sources (planner and sprint-auditor kept as
-        // skill/agent sources; chief-of-staff added per Decision 026 §3; inquisitor/judge
-        // dropped). The per-agent agent-workflow.template.md was removed with the roster (DR-041).
-        Assert.Equal(9, templateNames.Count);
+        // 8 mode templates (the compiler's role sources) + the reviewer's 5 skill
+        // resource templates (<role>-resource-<name>.template.md).
+        Assert.Contains("reviewer-resource-plan.template.md", templateNames);
+        Assert.Equal(13, templateNames.Count);
     }
 
     [Fact]

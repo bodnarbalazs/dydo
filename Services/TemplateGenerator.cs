@@ -155,18 +155,14 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// CLAUDE.md - The entry point. Brief, points to the documentation system.
-    /// Located at project root.
+    /// CLAUDE.md / AGENTS.md - The runtime entry point at the project root.
+    /// Authored in Templates/claude-md.template.md ({{PROJECT_NAME}} placeholder).
     /// </summary>
     public static string GenerateClaudeMd(string projectName)
     {
-        // CLAUDE.md is simple enough to keep inline - it's project-specific
-        return $"""
-            # {projectName}
-
-            This project uses **DynaDocs** for documentation and AI agent workflow management.
-            Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
-            """;
+        return ReadTemplate("claude-md.template.md")
+            .Replace("{{PROJECT_NAME}}", projectName)
+            .TrimEnd('\r', '\n');
     }
 
     /// <summary>

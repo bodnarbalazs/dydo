@@ -15,6 +15,5 @@
   "templateFile": "mode-chief-of-staff.template.md",
   "denialHint": "Chief-of-staff writes PM objects and docs, never code.",
   "canOrchestrate": false,
-  "constraints": [],
   "conditionalMustReads": []
 }

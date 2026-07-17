@@ -506,15 +506,9 @@ public static class InitCommand
         }
     }
 
-    private static string GenerateAgentsMd(string projectName)
-    {
-        return $"""
-            # {projectName}
-
-            This project uses DynaDocs for documentation and AI agent workflow management.
-            Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
-            """;
-    }
+    // AGENTS.md gets the same entry-point content as CLAUDE.md (one authored template).
+    private static string GenerateAgentsMd(string projectName) =>
+        TemplateGenerator.GenerateClaudeMd(projectName);
 
     private static string PromptForInput(string prompt)
     {

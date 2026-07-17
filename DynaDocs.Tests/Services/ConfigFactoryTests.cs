@@ -121,46 +121,9 @@ public class ConfigFactoryTests
         Assert.Contains(config.Nudges, n => n.Pattern == "custom-pattern");
     }
 
-    [Fact]
-    public void CreateDefault_ShipsNoDefaultQueues()
-    {
-        var config = ConfigFactory.CreateDefault();
 
-        Assert.Empty(config.Queues);
-    }
 
-    [Fact]
-    public void EnsureDefaultQueues_AddsToEmptyList()
-    {
-        var config = new DydoConfig();
 
-        var added = ConfigFactory.EnsureDefaultQueues(config);
-
-        Assert.Equal(ConfigFactory.DefaultQueues.Count, added);
-        Assert.Equal(ConfigFactory.DefaultQueues.Count, config.Queues.Count);
-    }
-
-    [Fact]
-    public void EnsureDefaultQueues_SkipsAlreadyPresent()
-    {
-        var config = ConfigFactory.CreateDefault();
-
-        var added = ConfigFactory.EnsureDefaultQueues(config);
-
-        Assert.Equal(0, added);
-    }
-
-    [Fact]
-    public void EnsureDefaultQueues_PreservesCustomQueues()
-    {
-        var config = new DydoConfig { Queues = ["hotfix"] };
-
-        var added = ConfigFactory.EnsureDefaultQueues(config);
-
-        Assert.Equal(ConfigFactory.DefaultQueues.Count, added);
-        Assert.Equal(ConfigFactory.DefaultQueues.Count + 1, config.Queues.Count);
-        Assert.Contains("hotfix", config.Queues);
-    }
 
     [Theory]
     [InlineData("digit worktree add foo")]

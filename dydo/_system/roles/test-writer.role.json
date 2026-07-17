@@ -13,6 +13,5 @@
   "templateFile": "mode-test-writer.template.md",
   "denialHint": "Test-writer role can edit own workspace, tests, and pitfalls.",
   "canOrchestrate": false,
-  "constraints": [],
   "conditionalMustReads": []
 }

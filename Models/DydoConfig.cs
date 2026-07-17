@@ -37,9 +37,6 @@ public class DydoConfig
     [JsonPropertyName("models")]
     public ModelsConfig? Models { get; set; }
 
-    [JsonPropertyName("queues")]
-    public List<string> Queues { get; set; } = new();
-
     [JsonPropertyName("scanExclude")]
     public List<string> ScanExclude { get; set; } = new();
 

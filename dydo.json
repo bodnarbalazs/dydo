@@ -56,7 +56,6 @@
     "efforts": {},
     "fallback": null
   },
-  "queues": [],
   "scanExclude": [
     "_system/.local/",
     "_system/audit/"

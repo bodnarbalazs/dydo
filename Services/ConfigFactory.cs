@@ -4,10 +4,6 @@ using DynaDocs.Models;
 
 public static class ConfigFactory
 {
-    // No shipped default queues: the "merge" queue seeded the worktree-merge review flow,
-    // which was removed with worktree management (DR-041). Users may still define their own.
-    public static readonly List<string> DefaultQueues = [];
-
     /// <summary>
     /// Dydo-internal scan-exclude entries — invariant. The check/fix loop
     /// guarantees these are present in every project's dydo.json (preserving
@@ -160,7 +156,6 @@ public static class ConfigFactory
                 Severity = n.Severity,
                 Tools = n.Tools?.ToList()
             }).ToList(),
-            Queues = DefaultQueues.ToList(),
             ScanExclude = DydoInternalScanExclude.ToList(),
             Models = CreateDefaultModels()
         };
@@ -187,23 +182,6 @@ public static class ConfigFactory
                 Severity = nudge.Severity,
                 Tools = nudge.Tools?.ToList()
             });
-            added++;
-        }
-
-        return added;
-    }
-
-    public static int EnsureDefaultQueues(DydoConfig config)
-    {
-        var existing = new HashSet<string>(config.Queues, StringComparer.OrdinalIgnoreCase);
-        var added = 0;
-
-        foreach (var queue in DefaultQueues)
-        {
-            if (existing.Contains(queue))
-                continue;
-
-            config.Queues.Add(queue);
             added++;
         }
 

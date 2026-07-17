@@ -155,12 +155,13 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// CLAUDE.md / AGENTS.md - The runtime entry point at the project root.
-    /// Authored in Templates/claude-md.template.md ({{PROJECT_NAME}} placeholder).
+    /// The runtime entry-point file at the project root — materialized as CLAUDE.md
+    /// (Claude Code) and AGENTS.md (Codex) from one runtime-neutral template.
+    /// Authored in Templates/entry-point.template.md ({{PROJECT_NAME}} placeholder).
     /// </summary>
-    public static string GenerateClaudeMd(string projectName)
+    public static string GenerateEntryPointMd(string projectName)
     {
-        return ReadTemplate("claude-md.template.md")
+        return ReadTemplate("entry-point.template.md")
             .Replace("{{PROJECT_NAME}}", projectName)
             .TrimEnd('\r', '\n');
     }

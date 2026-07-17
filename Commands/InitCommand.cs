@@ -110,7 +110,7 @@ public static class InitCommand
 
         WriteIfNotExists(
             Path.Combine(projectRoot, "CLAUDE.md"),
-            () => TemplateGenerator.GenerateClaudeMd(projectName),
+            () => TemplateGenerator.GenerateEntryPointMd(projectName),
             "CLAUDE.md (entry point)");
 
         if (integration == "codex")
@@ -508,7 +508,7 @@ public static class InitCommand
 
     // AGENTS.md gets the same entry-point content as CLAUDE.md (one authored template).
     private static string GenerateAgentsMd(string projectName) =>
-        TemplateGenerator.GenerateClaudeMd(projectName);
+        TemplateGenerator.GenerateEntryPointMd(projectName);
 
     private static string PromptForInput(string prompt)
     {

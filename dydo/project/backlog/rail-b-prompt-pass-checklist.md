@@ -18,11 +18,11 @@ contain claim-era wording (claim/whoami/dispatch/inbox/wait/workflow.md/roster).
 
 ## 1. The entry point — your new headline file
 
-- [ ] **`Templates/claude-md.template.md`** ← THIS generates both CLAUDE.md and
-      AGENTS.md (one template, `{{PROJECT_NAME}}` placeholder). Just promoted from a
-      4-line inline C# string so you can author it as markdown — make it as verbose as
-      you want; `dydo init` materializes it (WriteIfNotExists — existing projects keep
-      their copy).
+- [ ] **`Templates/entry-point.template.md`** ← THIS generates both CLAUDE.md and
+      AGENTS.md (one runtime-neutral template, `{{PROJECT_NAME}}` placeholder). Just
+      promoted from a 4-line inline C# string so you can author it as markdown — make
+      it as verbose as you want; `dydo init` materializes it (WriteIfNotExists —
+      existing projects keep their copy).
 - [ ] This repo's own `CLAUDE.md` (and root `AGENTS.md` if present) — edit directly;
       init won't overwrite them.
 

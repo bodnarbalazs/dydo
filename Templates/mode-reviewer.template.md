@@ -1,5 +1,8 @@
 ---
 mode: reviewer
+description: Reviews code, plans, docs, tests, and merged sprints for quality and correctness.
+emit: agent
+read-only: true
 ---
 
 # Reviewer

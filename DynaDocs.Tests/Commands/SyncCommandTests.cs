@@ -722,8 +722,8 @@ public class SyncCommandTests : IDisposable
 
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md"));
         Assert.Contains("Managers Doctrine", skill);
-        Assert.Contains("run-sprint", skill);
-        Assert.Contains("if it needs a reviewer, it needs a workflow", skill);
+        Assert.Contains("reviewed workflow", skill);
+        Assert.Contains("if it needs a reviewer, it needs a plan and a workflow", skill);
     }
 
     [Fact]
@@ -735,11 +735,11 @@ public class SyncCommandTests : IDisposable
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md"));
         // The human's right hand: triage + routing, status reports, mediation
         Assert.Contains("right hand", skill);
-        Assert.Contains("Triage the Funnel", skill);
-        Assert.Contains("Status Reports", skill);
+        Assert.Contains("Triage the funnel", skill);
+        Assert.Contains("Status reports", skill);
         Assert.Contains("Escalations awaiting decisions", skill);
         Assert.Contains("Gates awaiting the human", skill);
-        Assert.Contains("Mediate Between Agents", skill);
+        Assert.Contains("Mediate", skill);
         // Invariants: never in an approval path; PM objects/docs, never code
         Assert.Contains("never in an approval path", skill);
         Assert.Contains("never code", skill);
@@ -768,6 +768,6 @@ public class SyncCommandTests : IDisposable
 
         Assert.DoesNotContain("dydo agent role code-writer", raw);
         Assert.DoesNotContain("--role planner", raw);
-        Assert.Contains("run-sprint", raw);
+        Assert.Contains("reviewed workflow", raw);
     }
 }

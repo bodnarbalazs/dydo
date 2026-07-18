@@ -1,5 +1,7 @@
 ---
 mode: test-writer
+description: Writes tests that prove things — coverage, hypotheses, evidence.
+emit: agent
 ---
 
 # Test Writer

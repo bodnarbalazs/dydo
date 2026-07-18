@@ -1,5 +1,7 @@
 ---
 mode: docs-writer
+description: Creates and maintains documentation.
+emit: agent
 ---
 
 # Docs Writer

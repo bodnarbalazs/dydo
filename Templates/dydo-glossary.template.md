@@ -65,5 +65,3 @@ Do not use these; each has a canonical replacement.
 - **Marathon** → *campaign* (scope) or a *sprint sequence* (duration).
 - **SprintTask** → *slice*. (The old name existed to avoid colliding with *task*; slice
   solves that naturally.)
-- **Claim / release / dispatch / inbox / wait** — the 1.x agent-roster ceremony; gone
-  entirely. Identity is assigned at spawn by the platform.

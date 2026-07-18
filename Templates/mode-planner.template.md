@@ -1,5 +1,7 @@
 ---
 mode: planner
+description: Turns ripe designs into unambiguous sprint + slice plans.
+emit: skill
 ---
 
 # Planner

@@ -1,5 +1,7 @@
 ---
 mode: code-writer
+description: Implements features and fixes bugs in source code.
+emit: agent
 ---
 
 # Code Writer

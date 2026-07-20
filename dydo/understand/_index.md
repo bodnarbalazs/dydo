@@ -12,13 +12,9 @@ Index of understand documentation.
 ## Contents
 
 - [About This Project](./about.md) - DynaDocs (dydo) is a documentation-driven agent orchestration framework for AI coding assistants.
-- [Agent Lifecycle](./agent-lifecycle.md) - How an agent goes from unclaimed to working to released.
 - [Architecture Overview](./architecture.md) - DynaDocs (`dydo`) is a .
-- [Dispatch and Messaging](./dispatch-and-messaging.md) - How agents communicate: dispatching work, inbox delivery, direct messaging, and waiting for responses.
 - [Documentation Model](./documentation-model.md) - The JITI (Just-In-Time Information) philosophy and how dydo structures documentation for AI consumption.
-- [Guard System](./guard-system.md) - How dydo enforces agent behavior through the PreToolUse hook.
-- [Multi-Agent Workflows](./multi-agent-workflows.md) - How multiple agents work in parallel: orchestration patterns, work slicing, and coordination.
-- [Roles and Permissions](./roles-and-permissions.md) - The role system: what roles are, how they define agent capabilities, and how permissions are enforced.
-- [Task Lifecycle](./task-lifecycle.md) - How tasks flow from creation through implementation, review, and approval.
+- [Guard System](./guard-system.md) - How dydo enforces boundaries through the PreToolUse hook.
+- [Task Lifecycle](./task-lifecycle.md) - How tasks flow from creation through implementation, review, and completion.
 - [Templates and Customization](./templates-and-customization.md) - How dydo's template system works: overridable templates, include tags, and the update mechanism.
-- [Work Model](./work-model.md) - dydo tracks work at four nested levels — **Task → Sprint → Campaign → Release**.
+- [Work Model](./work-model.md) - dydo tracks work at four nested levels — **Slice → Sprint → Campaign → Release**.

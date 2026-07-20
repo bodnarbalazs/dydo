@@ -10,11 +10,22 @@ internal static partial class LinkExtractor
         var links = new List<LinkInfo>();
         var lines = content.Split('\n');
         var inCodeBlock = false;
+        var inFrontmatter = false;
 
         for (int i = 0; i < lines.Length; i++)
         {
             var line = lines[i];
             var lineNumber = i + 1;
+
+            // Frontmatter is YAML metadata, not markdown; a link-shaped title: value is not a link
+            if (line.TrimEnd('\r') == "---" && (i == 0 || inFrontmatter))
+            {
+                inFrontmatter = i == 0;
+                continue;
+            }
+
+            if (inFrontmatter)
+                continue;
 
             if (line.TrimStart().StartsWith("```"))
             {
@@ -23,6 +34,10 @@ internal static partial class LinkExtractor
             }
 
             if (inCodeBlock)
+                continue;
+
+            // The H1 IS the doc title; link-shaped text in it is quoted verbatim, not navigable
+            if (TitleLineRegex().IsMatch(line))
                 continue;
 
             foreach (Match match in MarkdownLinkRegex().Matches(line))
@@ -49,6 +64,9 @@ internal static partial class LinkExtractor
 
             foreach (Match match in WikilinkRegex().Matches(line))
             {
+                if (IsInsideInlineCode(line, match.Index))
+                    continue;
+
                 var path = match.Groups[1].Value;
                 var (targetPath, anchor) = SplitAnchor(path);
 
@@ -89,4 +107,7 @@ internal static partial class LinkExtractor
 
     [GeneratedRegex(@"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")]
     private static partial Regex WikilinkRegex();
+
+    [GeneratedRegex(@"^\s{0,3}#\s")]
+    private static partial Regex TitleLineRegex();
 }

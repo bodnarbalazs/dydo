@@ -11,203 +11,54 @@ Common errors, guard blocks, and recovery patterns.
 
 ## Guard blocks
 
-### "No agent identity assigned"
+### "Path is off-limits to all agents"
 
 ```
-BLOCKED: No agent identity assigned to this process. Run 'dydo agent claim auto'...
+BLOCKED: Path is off-limits to all agents.
+  Path: .env
+  Pattern: **/.env*
 ```
 
-**Cause:** You tried to read or write a file without claiming an agent identity first.
+**Cause:** The path matches a pattern in `dydo/files-off-limits.md`. Off-limits applies to every caller — there is no identity or role that bypasses it.
 
-**Fix:**
+**Fix:** If the file genuinely needs to be accessible, add a pattern to the `## Whitelist` section of `dydo/files-off-limits.md` (e.g. `.env.example`). Otherwise, leave it alone — that's the point.
 
-```bash
-dydo agent claim auto         # Claim first available agent
-dydo agent claim Adele        # Or claim a specific agent
-```
-
-### "Read access denied"
+### "Dangerous command pattern detected"
 
 ```
-BLOCKED: Read access denied...
+BLOCKED: Dangerous command pattern detected.
+  Reason: Recursive delete with dangerous glob pattern
 ```
 
-**Cause:** Staged access control. At stage 0 (no identity), you can only read bootstrap files. At stage 1 (claimed, no role), you can read your mode files. Full read access requires stage 2 (role set).
+**Cause:** The bash command matched a destructive pattern (recursive root deletes, fork bombs, `dd` to disk, download-and-execute, …).
 
-**Fix:** Follow the onboarding steps in order — claim identity, then set your role:
+**Fix:** There is no override. Rewrite the command to do the narrow thing you actually intend.
 
-```bash
-dydo agent claim auto
-dydo agent role code-writer --task my-task
-```
-
-### "Cannot edit path"
+### "Don't chain cd with other commands"
 
 ```
-Agent Emma (docs-writer) cannot edit src/AuthService.cs.
+BLOCKED: Don't chain cd with other commands — it breaks auto-approval.
 ```
 
-**Cause:** Your current role doesn't have write permissions for that file path.
+**Fix:** Run `cd` and your command separately, or use absolute paths.
 
-**Fix:** Check your permissions and switch roles if needed:
+### Blocked once, with "Run the same command again to proceed anyway"
 
-```bash
-dydo agent status              # See current role and writable paths
-dydo agent role code-writer --task my-task   # Switch to appropriate role
-```
+**Cause:** A `warn`-severity nudge. It exists to make you pause, not to stop you.
 
-### "DYDO_HUMAN not set"
+**Fix:** Read the message. If the command is still right, run it again — the second attempt passes.
 
-```
-BLOCKED: DYDO_HUMAN not set.
-```
+### "Don't use 'npx' to run dydo"
 
-**Cause:** The `DYDO_HUMAN` environment variable is missing.
+**Cause:** Indirect dydo invocation (`npx dydo`, `dotnet dydo`, `python dydo`, …). dydo is already on your PATH.
 
-**Fix:** Set it in your shell profile:
+**Fix:** Call `dydo` directly, exactly as the message shows.
 
-```bash
-# Bash/Zsh
-export DYDO_HUMAN="your_name"
+### "Dydo agents don't use Claude Code's built-in plan mode"
 
-# PowerShell
-$env:DYDO_HUMAN = "your_name"
-```
+**Cause:** `EnterPlanMode`/`ExitPlanMode` are blocked by design.
 
-Then restart your terminal session.
-
-### "Already claimed"
-
-```
-Already claimed.
-```
-
-**Cause:** Another terminal session has already claimed this agent.
-
-**Fix:**
-
-```bash
-dydo agent claim auto          # Claim a different available agent
-dydo agent list --free         # See which agents are free
-```
-
-### "Must-read files not read"
-
-```
-BLOCKED: You have not read the required files for the docs-writer mode: - about.md - writing-docs.md
-```
-
-**Cause:** Your role's mode file links to files with `must-read: true` in their frontmatter. You must read them before performing writes.
-
-**Fix:** Read the listed files, then retry your operation.
-
----
-
-## Stuck states
-
-### Agent won't release
-
-```
-Cannot release: 2 unprocessed inbox item(s).
-```
-
-**Causes and fixes:**
-
-| Blocker | Fix |
-|---------|-----|
-| Unprocessed inbox | Read the items, then `dydo inbox clear --all` |
-| Active wait markers | `dydo wait --task <name> --cancel` or `dydo wait --cancel` |
-
-### Dispatch fails
-
-```
-Brian is already working on task 'auth-login'.
-```
-
-**Cause:** Double-dispatch protection — another agent is already working on that task.
-
-**Fix:** Either wait for the other agent to finish, or have them release first:
-
-```bash
-dydo agent status Brian        # Check their status
-```
-
-### Wait never resolves
-
-**Cause:** The `dydo wait` command polls every 10 seconds with no timeout. If the dispatched agent never sends a message back, the wait blocks indefinitely.
-
-**Fix:**
-
-```bash
-dydo wait --task my-task --cancel    # Cancel the specific wait
-dydo wait --cancel                   # Cancel all active waits
-```
-
-Then investigate why the dispatched agent didn't respond.
-
-### Agent stuck in `status: working` after its tab closed
-
-**Symptom:** `dydo agent list` shows an agent as `working`, but no live terminal for it exists. Its `state.md` still has `status: working`, task populated, writable/readonly paths populated. The workspace still contains `.session` and `modes/`.
-
-**Cause:** The agent's Claude process ended (context exhaustion, user closed the tab, crash) before `dydo agent release` ran to completion. `ReleaseAgent` is the only code path that transitions Working → Free — nothing else (not the watchdog, not dispatch, not guard) touches that transition. When the session dies mid-work, state.md legitimately reflects "was working when last alive."
-
-Common triggers:
-
-- Context limit reached mid-task.
-- `dispatched code-writers must dispatch a reviewer before releasing` error hit at end-of-work, not resolved before tab closed.
-- Tab was closed before the agent finished.
-- `taskkill /im dydo.exe /f` during an in-flight `dydo agent release` (rare — leaves a `.claim.lock` in the workspace).
-
-**Verify release really didn't run** (before force-cleaning):
-
-```bash
-grep -l '"Claim","agent":"<Name>"' dydo/_system/audit/2026/*.events    # find sessions
-grep '"Release"' dydo/_system/audit/2026/<session-id>.events           # confirm absence
-```
-
-If the agent was running in a **worktree**, audit lives under the worktree's own `dydo/_system/audit/` — only `dydo/agents`, `dydo/_system/roles`, `dydo/project/issues`, `dydo/project/inquisitions` are junctioned across worktrees. Check `dydo/_system/.local/worktrees/<id>/dydo/_system/audit/2026/` too.
-
-**Recovery:** Resume the session with the platform's own tooling — e.g. `claude --resume` in the tab, if it is still open. dydo no longer manages the agent lifecycle, worktrees, or a `dydo agent clean`/`dydo worktree` recovery path ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)); isolation and resume are the native runtime's job now.
-
-See [decision 018](../project/decisions/018-zombie-working-state-recovery.md) for the historical mechanism.
-
-### Watchdog is dead, tabs don't auto-close
-
-**Symptom:** Released agents with `auto-close: true` still have their terminals open after release. `dydo/_system/.local/watchdog.pid` is stale or missing.
-
-**Cause:** The watchdog is only (re)started by `dydo dispatch` when `--auto-close` is set. Release does not revive it. So if `taskkill /im dydo.exe /f` (or a crash) kills the watchdog, it stays dead until the next auto-close dispatch.
-
-**Fix:**
-
-```bash
-dydo watchdog start              # idempotent — no-ops if already running
-```
-
-The next poll (every 10 seconds) will find hung tabs via process-pattern match (`<Agent> --inbox`) and kill them. `window-id: null` in state.md is expected for root dispatches (MRU window targeting) and does NOT prevent auto-close — the kill uses command-line pattern matching.
-
-Planned fix: `dydo agent release` should best-effort revive the watchdog (issue #102).
-
----
-
-## Recovery commands
-
-When you're lost or something is wrong, start here:
-
-```bash
-dydo whoami              # Who am I? What's my role? What's my task?
-dydo agent status        # What are my permissions? What's blocking me?
-dydo inbox show          # Do I have unread messages?
-```
-
-### Reset options
-
-```bash
-dydo wait --cancel               # Clear all stuck waits
-dydo inbox clear --all           # Archive all inbox items
-dydo clean Adele                 # Clean an agent's workspace
-dydo clean --all --force         # Nuclear option: clean all workspaces
-# For zombie working agents specifically, see "Agent stuck in status: working after its tab closed" above.
-```
+**Fix:** Plan through the planner skill — plans are records under `dydo/project/`, not platform plan-mode state.
 
 ---
 
@@ -241,30 +92,20 @@ Auto-fixes: kebab-case renaming, wikilink conversion, missing hub files, missing
 
 ---
 
-## Platform issues
+## Sync issues
 
-### Windows terminal launch errors
+### Compiled skills look stale
 
-If `dydo dispatch` fails to open a new terminal window, check that your terminal emulator is supported. The dispatch command attempts to spawn a new window or tab for the dispatched agent.
+`dydo sync` compiles templates into `.claude/skills`, `.claude/agents`, and `.claude/workflows`. If a compiled artifact doesn't reflect a template change, re-run `dydo sync`; when in doubt, delete the compiled output and sync fresh — the templates are the source of truth.
 
-### Bash command blocks
+### Template update skipped a file
 
-```
-BLOCKED: Don't chain cd with other commands — it breaks auto-approval.
-```
-
-**Fix:** Run `cd` and your command separately, or use absolute paths.
-
-```
-BLOCKED: 'dydo wait' must run in background.
-```
-
-**Fix:** Run `dydo wait` with `run_in_background: true` (or the equivalent in your tool).
+`dydo template update` only refreshes files whose content still matches the shipped original (tracked by hash). A file you customized is deliberately left alone — reconcile it by hand, or delete it and re-run the update to take the shipped version.
 
 ---
 
 ## Related
 
 - [Guard System](../understand/guard-system.md) — How the guard hook works end-to-end
-- [Agent Lifecycle](../understand/agent-lifecycle.md) — Claim, role, work, release
 - [CLI Commands Reference](../reference/dydo-commands.md) — Full command documentation
+- [Customizing Roles](./customizing-roles.md) — Templates, overrides, and what sync emits

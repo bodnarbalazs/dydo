@@ -38,5 +38,5 @@ A is preferred because it restores defence-in-depth without changing user-visibl
 - `Commands/GuardCommand.cs:627-678` — `HandleDydoBashCommand` (no inner-chain analysis).
 - `Commands/GuardCommand.cs:1388-1389` — `DydoCommandRegex` (matches at any chain segment).
 - `Commands/GuardCommand.cs:708-748` — `HandleNonDydoBash` (the contrast: runs full analysis).
-- Inquisition: [wait-rearm-flood-deadlock](../inquisitions/wait-rearm-flood-deadlock.md) — surfaced this bypass during #0149 reproduction work.
-- Issue [#0149](./resolved/0149-wait-rearm-gap-deadlocks-agent-when-3-plus-messages-stack-faster-than-agent-can-process.md) — the live workaround documented there exploits this bypass.
+- Inquisition: [wait-rearm-flood-deadlock](../../inquisitions/wait-rearm-flood-deadlock.md) — surfaced this bypass during #0149 reproduction work.
+- Issue [#0149](./0149-wait-rearm-gap-deadlocks-agent-when-3-plus-messages-stack-faster-than-agent-can-process.md) — the live workaround documented there exploits this bypass.

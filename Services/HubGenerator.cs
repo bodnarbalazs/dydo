@@ -205,7 +205,7 @@ public static class HubGenerator
             {
                 var fileLabel = KebabToTitleCase(Path.GetFileNameWithoutExtension(doc.FileName));
                 var title = isChangelog ? fileLabel : (doc.Title ?? fileLabel);
-                var link = $"[{title}](./{doc.FileName})";
+                var link = $"[{EscapeLinkLiterals(title)}](./{doc.FileName})";
 
                 if (!isChangelog && !string.IsNullOrEmpty(doc.SummaryParagraph))
                 {
@@ -276,6 +276,16 @@ public static class HubGenerator
     }
 
     /// <summary>
+    /// A doc title containing a literal [label](target) would shadow the hub entry's own link —
+    /// the extractor matches the inner pair and the doc goes unreachable. Backslash-escaping
+    /// doesn't help (the extractor is a line regex that honors no escapes), so swap the literal's
+    /// square brackets for parentheses in the display text. Titles without link literals pass
+    /// through untouched.
+    internal static string EscapeLinkLiterals(string title)
+        => System.Text.RegularExpressions.Regex.IsMatch(title, @"\[[^\]]*\]\(")
+            ? title.Replace('[', '(').Replace(']', ')')
+            : title;
+
     /// Converts kebab-case to Title Case (e.g., "user-authentication" -> "User Authentication").
     /// </summary>
     private static string KebabToTitleCase(string name)

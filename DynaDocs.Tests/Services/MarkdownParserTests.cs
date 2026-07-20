@@ -161,6 +161,57 @@ public class MarkdownParserTests
     }
 
     [Fact]
+    public void ExtractLinks_SkipsWikilinksInInlineCode()
+    {
+        var content = """
+            Keep `[[wikilink]]` integrity across moves; bash `until [[ ... ]]; do` is not a link.
+
+            Real wikilink: [[actual-target]]
+            """;
+
+        var links = _parser.ExtractLinks(content);
+
+        Assert.Single(links);
+        Assert.Equal("actual-target", links[0].Target);
+    }
+
+    [Fact]
+    public void ExtractLinks_SkipsFrontmatterLines()
+    {
+        var content = """
+            ---
+            title: Anchor-only links [label](#section) produce broken-link errors
+            area: project
+            ---
+
+            Body link: [Real](./real.md)
+            """;
+
+        var links = _parser.ExtractLinks(content);
+
+        Assert.Single(links);
+        Assert.Equal("./real.md", links[0].Target);
+    }
+
+    [Fact]
+    public void ExtractLinks_SkipsH1TitleLine_ButNotLowerHeadings()
+    {
+        var content = """
+            # Anchor-only links [label](#section) produce broken-link errors
+
+            ## See [Guide](./guide.md)
+
+            Body link: [Real](./real.md)
+            """;
+
+        var links = _parser.ExtractLinks(content);
+
+        Assert.Equal(2, links.Count);
+        Assert.Equal("./guide.md", links[0].Target);
+        Assert.Equal("./real.md", links[1].Target);
+    }
+
+    [Fact]
     public void ExtractLinks_HandlesMultipleCodeBlocks()
     {
         var content = """

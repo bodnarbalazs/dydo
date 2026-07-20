@@ -1,7 +1,6 @@
 ---
 area: understand
 type: context
-must-read: true
 ---
 
 # About This Project
@@ -24,7 +23,7 @@ This is the DyDo project itself. If you're an agent, this is the framework that 
 
 ## Tech Stack
 
-.NET 10 CLI with Native AOT (self-contained binary). Filesystem as state store — no database. All state (agent identity, tasks, inbox, audit) is Markdown or JSON files, human-readable and git-diffable.
+.NET 10 CLI with Native AOT (self-contained binary). Filesystem as state store — no database. Everything (docs, PM records, config) is Markdown or JSON files, human-readable and git-diffable.
 
 ---
 

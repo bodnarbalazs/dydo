@@ -1,7 +1,6 @@
 ---
 area: understand
 type: concept
-must-read: true
 ---
 
 # Architecture Overview
@@ -14,8 +13,8 @@ DynaDocs (`dydo`) is a .NET 10 CLI tool for documentation-driven AI agent orches
 
 1. `dydo init` scaffolds a `dydo/` documentation tree and installs a `PreToolUse` hook into `.claude/settings.local.json`
 2. Before every tool call (Read, Write, Edit, Bash, Glob, Grep), Claude Code pipes JSON to `dydo guard`
-3. The guard enforces staged onboarding (claim identity → set role → read must-reads → work), role-based write permissions, off-limits file patterns, and bash command safety checks
-4. Agents dispatch work to each other via inbox items; a task lifecycle tracks work through to approval
+3. The guard enforces universal rules — off-limits file patterns, dangerous-bash detection, and nudges — the same for every caller
+4. `dydo sync` compiles the mode templates into the platform's native skills, agents, and workflows; PM records (tasks, issues, sprints, decisions) live as Markdown under `dydo/project/`
 
 ---
 
@@ -24,7 +23,7 @@ DynaDocs (`dydo`) is a .NET 10 CLI tool for documentation-driven AI agent orches
 - **.NET 10** with Native AOT — self-contained binary, no runtime needed
 - **System.CommandLine** — CLI framework
 - **Markdig** — Markdown/frontmatter parsing
-- **Filesystem as state store** — agent state, tasks, inbox, and audit logs are all files (Markdown + JSON). No database.
+- **Filesystem as state store** — docs, PM records, and config are all files (Markdown + JSON). No database.
 
 ---
 
@@ -44,39 +43,29 @@ npm/             npm wrapper — downloads native binary per platform
 
 ## Guard System
 
-The guard is the enforcement backbone — a staged access model checked on every tool call:
+The guard is the enforcement backbone — three universal layers checked on every tool call, for every caller ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)):
 
-| Stage | Condition | Can Do |
-|-------|-----------|--------|
-| 0 | No identity | Read bootstrap files only (`index.md`, `workflow.md`) |
-| 1 | Claimed, no role | Read bootstrap + own mode files |
-| 2 | Claimed + role set | Read everything; writes gated by universal off-limits + nudges (per-role write RBAC removed — [Decision 024](../project/decisions/024-dydo-2-native-pivot.md)) |
+1. **Off-limits patterns** (secrets, credentials, system files) hard-block all access.
+2. **Dangerous-bash patterns** (fork bombs, `rm -rf /`, download-and-execute) are always blocked; bash chains are tokenized so each touched path is checked individually.
+3. **Nudges** — configurable regex rules that notice, warn-once, or block.
 
-Additional layers: off-limits patterns (secrets, credentials) block all agents globally; dangerous bash patterns (fork bombs, `rm -rf /`) are always blocked; must-read enforcement blocks writes until critical docs are read.
+`dydo init` also installs a `Stop` hook; it is a retained no-op (the agent-state machinery it drove was removed) so existing hook wiring keeps resolving.
 
-`dydo init` installs a `Stop` hook alongside the `PreToolUse` hook: turn-end while the agent is still working with an in-flight task sets the agent's `needs-human` flag (session idle, waiting on a human — [Decision 030](../project/decisions/030-board-attention-and-pm-properties.md) §1).
+See [Guard System](./guard-system.md) for the full model.
 
 ---
 
-## Role System
+## Roles and Skills
 
-Seven base roles defined in `.role.json` files under `dydo/_system/roles/` — three Tier-1 managers (chief-of-staff, co-thinker, orchestrator) you claim and talk to, and four Tier-2 workers (code-writer, reviewer, test-writer, docs-writer) that `dydo sync` compiles into native subagents ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). Per-role write RBAC was removed: a role's `writablePaths` now shape the **compiled agent's tool profile** (own-workspace-only ⇒ read-only, no Edit/Write) rather than a runtime write-check. `dydo sync` also emits the non-role QA agents (sprint-auditor, inquisitor) and the planner skill.
+The mode template **is** the role: `dydo sync` discovers roles by enumerating `mode-<name>.template.md` files (built-ins plus overrides in `dydo/_system/templates/`) and compiles each into the platform's skill — and, for worker roles, a spawnable agent whose tool profile comes from frontmatter (`read-only: true` ⇒ no Edit/Write). Skill resources (`<role>-resource-<name>.template.md`) compile into the skill's `resources/`, and `workflow-*.js` templates compile into `.claude/workflows/`.
 
-Custom roles: add a `.role.json` file with `"base": false`, then run `dydo sync`. Path patterns use `{source}`, `{tests}`, and `{self}` placeholders resolved from `dydo.json` and agent identity.
-
----
-
-## Dispatch and Messaging
-
-Agents hand off work via `dydo dispatch`, which reserves the target agent (status becomes `Dispatched`), writes a single assignment inbox item carrying the role and brief, and launches a new terminal. The launched agent claims, reads its assignment from the inbox, and sets its role; if the launch fails, the stale-dispatch reclaim returns the agent to a re-dispatchable state. Agents communicate directly via `dydo msg` and `dydo wait`.
-
-A task lifecycle tracks work through states: pending → in-progress → review-pending → approved/rejected. Dispatching with `--role reviewer` auto-transitions to review-pending.
+See [Customizing Roles](../guides/customizing-roles.md) for the authoring guide.
 
 ---
 
 ## Audit Trail
 
-**Removed in 2.0** ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). dydo no longer writes its own JSON audit sessions or the HTML replay — Claude Code's native session transcripts are the record now. The `dydo audit` command is gone and the `dydo/_system/audit/` tree is legacy. Crash-resume bookkeeping the watchdog still needs (recovery kind, resume outcome) lives in the watchdog log, not an audit trail — see Watchdog and [Decision 022](../project/decisions/022-auto-resume-crashed-agents.md).
+**Removed in 2.0** ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). dydo no longer writes its own JSON audit sessions or the HTML replay — Claude Code's native session transcripts are the record now. The `dydo audit` command is gone and the `dydo/_system/audit/` tree is legacy.
 
 ---
 
@@ -84,13 +73,7 @@ A task lifecycle tracks work through states: pending → in-progress → review-
 
 Project-defined regex patterns evaluated in the guard pipeline alongside built-in rules. Each nudge matches against tool inputs and either blocks the operation (exit 2) or injects a warning (exit 0), extending the guard's enforcement model without modifying dydo's source code.
 
-See [Configuration Reference](../reference/configuration.md) for nudge format and [Guardrails](../reference/guardrails.md) for the full enforcement tier model.
-
----
-
-## Conditional Must-Reads
-
-An extension of the guard's must-read enforcement that injects documents into an agent's required reading list based on runtime conditions (role, task context). Conditions are evaluated during the guard check alongside static `must-read: true` frontmatter enforcement.
+See [Configuration Reference](../reference/configuration.md) for nudge format and [Guard System](./guard-system.md) for severities and the shipped defaults.
 
 ---
 
@@ -110,25 +93,17 @@ Replaces the old audit-derived "inquisition coverage" ([Decision 032](../project
 
 ## Watchdog
 
-A background monitoring process that handles lifecycle events for dispatched agents:
-
-- **Auto-close**: When `--auto-close` is set on dispatch, the watchdog polls the target agent's state every 10 seconds. When the agent releases, the watchdog closes its terminal.
-- **Stale-dispatch reclaim**: Returns agents stuck in `Dispatched` (launch never produced a live session) to a re-dispatchable state, bridging launch-failed back to dispatchable.
-- **Orphan detection**: Identifies agents that are stuck in Working state without an active process (parent PID liveness checks).
-- **`needs-human` sweep**: Each tick reconciles derived `needs-human` flags against ground truth (session stopped? task still held?) and clears any flag whose cause disappeared; explicit raises are sticky (wave 4b).
-- **Resume outcome**: For each crash-resume episode (see [Decision 022](../project/decisions/022-auto-resume-crashed-agents.md)), the watchdog log records a `resume_outcome` event at the terminal state — `outcome` (`succeeded` | `failed` | `gave_up`), `attempts`, `elapsed_seconds`, and `reason` (`same_session_reclaim` | `launched_pid_dead` | `cap_reached`). `SaturateResumeAttempts` clears `LastResumeLaunchedAt` on termination so each episode emits exactly once. Paired with `recovery_kind` on the corresponding Claim audit event, the two enable a 4-bucket categorisation of recoveries (auto succeeded, auto failed, not attempted, manual). Enriched in v1.4.6 (commit `036b88c`).
-
-The watchdog runs as a background process spawned by the dispatch command. It's stateless — all state is derived from the filesystem (agent state files, workspace markers).
+A stub. The agent-lifecycle watchdog (auto-close, crash resume, orphan detection) was deleted with the orchestration layer ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)); the `dydo watchdog` command shell is retained awaiting its repurpose as the Notion-sync background process.
 
 ---
 
 ## Key Design Choices
 
 - **Hook enforcement over trust** — every file operation is checked before execution, not after
-- **Markdown-as-database** — tasks, agent state, and changelogs are Markdown with YAML frontmatter (human-readable, git-diffable)
+- **Markdown-as-database** — tasks, issues, decisions, and changelogs are Markdown with YAML frontmatter (human-readable, git-diffable)
 - **No DI framework** — services instantiated directly; interfaces exist for testability
 - **Template overrides** — projects can customize any template at `dydo/_system/templates/` without forking
-- **Data-driven roles** — role permissions defined in JSON, not hardcoded; custom roles via the same mechanism
+- **The template is the role** — roles are Markdown templates with frontmatter, discovered by enumeration; custom roles are just more templates
 
 ---
 
@@ -138,9 +113,7 @@ The watchdog runs as a background process spawned by the dispatch command. It's 
 - [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating the documentation
 - [dydo Commands Reference](../reference/dydo-commands.md) — Full command documentation
 - [Guard System](./guard-system.md) — Guard enforcement details
-- [Roles and Permissions](./roles-and-permissions.md) — Role system in depth
-- [Dispatch and Messaging](./dispatch-and-messaging.md) — Agent communication
-- [Audit System](../reference/audit-system.md) — Audit trail reference
+- [Work Model](./work-model.md) — How work is structured and run
+- [Audit System](../reference/audit-system.md) — Audit trail (removed in 2.0; what replaced it)
 - [DynaDocs](../reference/about-dynadocs.md) — Full feature overview and installation
 - [Configuration Reference](../reference/configuration.md) — Configuration, nudges, and customization
-- [Guardrails](../reference/guardrails.md) — Enforcement tier model

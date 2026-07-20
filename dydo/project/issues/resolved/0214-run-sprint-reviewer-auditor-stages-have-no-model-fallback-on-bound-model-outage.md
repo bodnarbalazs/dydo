@@ -22,7 +22,7 @@ Surfaced repeatedly during the DR 033 docs-mirror sprints: the `run-sprint` **re
 that bound model is unavailable — e.g. the account hits the **Fable 5 monthly spend limit** — the
 `agent()` call returns nothing and the stage **hard-fails**: the slice escalates with
 `reason: "reviewer did not return a result"` and `auditVerdict: skipped`. The whole quality gate of
-every sprint is down until a human raises the limit or rebinds the tier. See [[fable-limit-blocks-sprint-reviewer]].
+every sprint is down until a human raises the limit or rebinds the tier. See `fable-limit-blocks-sprint-reviewer`.
 
 ## Description
 

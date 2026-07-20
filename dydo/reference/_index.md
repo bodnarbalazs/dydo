@@ -16,11 +16,6 @@ Index of reference documentation.
 - [Configuration Reference](./configuration.md) - Complete reference for `dydo.
 - [Coverage Tools](./coverage-tools.md) - An in-house Python script for measuring and enforcing test coverage.
 - [CLI Commands Reference](./dydo-commands.md) - Complete reference for all `dydo` commands.
-- [dydo Glossary](./dydo-glossary.md) - The dydo system's terms, locked. One meaning per word, used consistently across docs, templates, skills, and records.
-- [Guardrails](./guardrails.md) - The three-tier system that shapes agent behavior.
+- [dydo Glossary](./dydo-glossary.md) - The dydo system's terms, locked.
 - [Notion Sync API Reference](./notion-sync.md) - Working notes for the Notion sync adapter (`Sync/Notion/**`): the API version and data-source model the adapter targets, the endpoints it uses, and...
 - [Writing Documentation](./writing-docs.md) - Reference for documentation conventions, structure, and validation rules.
-
-## Subfolders
-
-- [Roles](./roles/_index.md) - Reference pages for each agent role — purpose, permissions, and relationships.

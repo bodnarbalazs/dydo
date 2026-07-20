@@ -26,22 +26,22 @@ dydo init codex --name "Your Name"   # Non-interactive Codex setup
 - `integration` - Integration type: `claude` or `codex` (with hooks wired up), or `none` (for other systems, more setup needed)
 
 **Options:**
-- `--join` - Wire up hooks and role files for an already-initialized project instead of creating a new one
-- `--name <name>` - Human name (skips prompt)
+- `--join` - Wire up this machine's hooks and entry files for an already-initialized project instead of creating a new one
 
 ### dydo sync
 
-Compile dydo role definitions into native Claude Code and Codex artifacts — Claude `.claude/agents/<role>.md` / `.claude/skills/<role>/SKILL.md` outputs plus Codex `.codex/agents/<role>.toml` / `.agents/skills/<role>/SKILL.md` outputs (Decision 024).
+Compile the mode templates into native Claude Code and Codex artifacts — Claude `.claude/agents/<role>.md` / `.claude/skills/<role>/SKILL.md` outputs plus Codex `.codex/agents/<role>.toml` / `.agents/skills/<role>/SKILL.md` outputs.
 
 ```bash
 dydo sync   # emit Claude and Codex agents/skills from roles + docs
 ```
 
 **Behavior:**
-- Worker roles (code-writer, reviewer, test-writer, docs-writer, sprint-auditor) emit both an agent definition and a skill.
-- Tier-1 managers (orchestrator, co-thinker, chief-of-staff) and `planner` emit a skill only.
+- Roles are discovered from the mode templates (`mode-<name>.template.md`, built-in plus `dydo/_system/templates/` overrides); the template's frontmatter declares `description`, `emit` (agent+skill vs skill-only), and `read-only`.
+- Custom role = drop a `mode-<name>.template.md` into `dydo/_system/templates/` and re-run `dydo sync`.
+- Skill resources (`<role>-resource-<name>.template.md`) compile into the skill's `resources/` folder; workflow harnesses (`workflow-<name>.js`) compile to `.claude/workflows/`.
 - Codex outputs are written to `.codex/agents/` and `.agents/skills/`.
-- Model tiers declared per role are bound to concrete models at sync time (Decision 028).
+- Model tiers declared per role are bound to concrete models at sync time (`models` in `dydo.json`).
 
 ---
 
@@ -141,7 +141,7 @@ dydo guard --command "cat secrets.json"
 - `--action <action>` - Action: edit, write, delete, read
 - `--path <path>` - Path being accessed
 - `--command <cmd>` - Bash command to analyze
-- `--stop` - Stop-hook mode: derive the needs-human flag from turn-end (used by the Stop hook)
+- `--stop` - Stop-hook mode: retained no-op so existing Stop-hook wiring keeps resolving (always exits 0)
 
 **Exit codes:** 0 = allowed, 2 = blocked.
 
@@ -305,64 +305,27 @@ dydo template update --force   # Overwrite even if re-anchoring fails (backs up 
 
 ---
 
-## Role Commands
-
-### dydo roles list
-
-List all loaded role definitions.
-
-```bash
-dydo roles list
-```
-
-**Output:** Lists all roles (base and custom) with their descriptions.
-
-### dydo roles reset
-
-Regenerate base role definition files.
-
-```bash
-dydo roles reset              # Regenerate base role files only
-dydo roles reset --all        # Remove all role files (including custom) before regenerating
-```
-
-**Options:**
-- `--all` - Remove all role files (including custom) before regenerating base roles
-
-### dydo roles create
-
-Scaffold a new custom role definition file.
-
-```bash
-dydo roles create my-role
-```
-
-**Arguments:**
-- `name` - Name for the new role
-
-**Creates:** A new `.role.json` file in `dydo/_system/roles/`.
-
----
-
 ## Validation Commands
 
 ### dydo validate
 
-Validate dydo configuration, role files, and agent state.
+Validate the dydo configuration.
 
 ```bash
 dydo validate
 ```
 
-**Validates:** `dydo.json` configuration, role definition files, agent assignments, and overall system integrity.
+**Validates:** `dydo.json` — schema and value ranges, plus nudge definitions (pattern validity, severity values).
 
 ---
 
 ## Model Commands
 
+Time-boxed operational swaps for a model outage. When a tier's bound model becomes unavailable — the canonical case is a weekly spend cap the API blocks with no retry and no native fallback — cap it to a fallback so gated work keeps running, then let it auto-restore.
+
 ### dydo model cap
 
-Temporarily rebind every tier using an unavailable model to a fallback model, then re-sync native agent definitions. The guard restores the original bindings on its next trigger after the reset time passes (throttled), or run `dydo model uncap` to restore on demand.
+Temporarily rebind every tier using an unavailable model to a fallback model, then re-sync native agent definitions. A local marker records what to restore; the guard's housekeeping puts the original bindings back on its next trigger after the reset time passes, or run `dydo model uncap` to restore on demand.
 
 ```bash
 dydo model cap claude-fable-5 --until "07-14 09:00"
@@ -373,7 +336,7 @@ dydo model cap claude-fable-5 --until "2026-07-14 09:00" --fallback claude-opus-
 - `model` - Unavailable model id to cap.
 
 **Options:**
-- `--until <time>` - Local reset time from the limit error, as `[yyyy-]mm-dd hh:mm`.
+- `--until <time>` - Local reset time from the limit error, as `[yyyy-]mm-dd hh:mm` (required).
 - `--fallback <model>` - Model to rebind capped tiers to. Defaults to `models.fallback` in `dydo.json`.
 
 ### dydo model uncap
@@ -471,46 +434,13 @@ dydo notion reset --yes --parent-page <scratch-page-id>
 
 ---
 
-## Model Commands
-
-Time-boxed operational swaps for a model outage (issue #214). When a tier's bound model becomes unavailable — the canonical case is Fable hitting its weekly spend cap, which the API blocks with no retry and no native fallback — cap it to a fallback so the review/audit gate keeps running, then let it auto-restore.
-
-### dydo model cap
-
-Rebind every tier currently pointing at `<model>` to a fallback and re-run `dydo sync` so the compiled agents use it. Pass `--until <time>` (required) with the reset time from the limit error, in `[yyyy-]mm-dd hh:mm` local-time form (the year is optional). Pass `--fallback <model>` to choose the replacement; without it, `models.fallback` from dydo.json is used. A local marker records what to restore, and the watchdog puts the original bindings back once the reset time passes.
-
-```bash
-dydo model cap claude-fable-5 --until "07-13 09:00"
-dydo model cap claude-fable-5 --until "2026-07-13 09:00" --fallback claude-opus-4-8
-```
-
-### dydo model uncap
-
-Restore `<model>`'s tier bindings immediately — the manual counterpart to the watchdog's time-based restore. Reverses the rebind, clears the cap marker, and re-syncs.
-
-```bash
-dydo model uncap claude-fable-5
-```
-
----
-
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `DYDO_HUMAN` | Human identifier for agent assignment |
 | `DYDO_NOTION_TOKEN` | Notion integration token enabling `dydo notion sync` |
 | `DYDO_NOTION_PARENT_PAGE` | Notion parent page the `dydo notion sync` spine databases live under (overridden by `notion.parentPageId` in dydo.json) |
 
-Set before running commands:
-
-```bash
-# Bash/Zsh
-export DYDO_HUMAN="your_name"
-
-# PowerShell
-$env:DYDO_HUMAN = "your_name"
-```
 
 ---
 
@@ -522,8 +452,3 @@ $env:DYDO_HUMAN = "your_name"
 | 1 | Validation errors found |
 | 2 | Tool error / Action blocked |
 
----
-
-## Role Permissions
-
-As of 2.0 (Decision 024), dydo no longer enforces per-role writable/read-only **path matrices**. The guard enforces **universal off-limits + nudges** for every agent, and a worker role's read-only scope is set by its **native tool allowlist** — `dydo sync` emits read-only agents (reviewer, inquisitor, sprint-auditor) with no `Edit`/`Write` tool.

@@ -11,7 +11,7 @@ resolved-date: 2026-07-12
 
 # Test nit: about-dynadocs _assets assertions use loose Assert.Contains("_assets") — would pass even if placeholder asset ref dropped; tighten to 'dydo/_assets/'
 
-(One-line summary)
+Test nit: the about-dynadocs asset assertions used a loose Assert.Contains("_assets") that would still pass if the placeholder asset reference were dropped; tightened to the full 'dydo/_assets/' path.
 
 ## Description
 

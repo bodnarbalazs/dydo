@@ -83,25 +83,6 @@ npm install -g dydo
 dotnet tool install -g dydo
 ```
 
-**Note:** Set the `DYDO_HUMAN` environment variable so agents know who they belong to:
-
-```powershell
-# Windows (PowerShell)
-[Environment]::SetEnvironmentVariable("DYDO_HUMAN", "YourName", "User")
-```
-
-```bash
-# macOS / Linux (add to ~/.bashrc or ~/.zshrc)
-export DYDO_HUMAN="YourName"
-```
-
-### Terminal Compatibility
-
-Launching a named Tier-1 agent in a new terminal tab/window uses your OS terminal. Supported:
-
-- **Windows:** Windows Terminal (Windows 11)
-- **macOS:** iTerm2 recommended
-
 ---
 
 ## Quick Start

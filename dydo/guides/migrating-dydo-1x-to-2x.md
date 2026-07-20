@@ -13,8 +13,16 @@ project** (the repo being migrated), not in the dydo source repo.
 > truth for current conventions. The author did not have the target project's 1.x tree in front of
 > them. Every place that depends on a 1.x-specific detail is marked **[VERIFY]** — stop and check
 > your actual tree there before acting. When in doubt, prefer letting the **dydo binary** do the
-> work (`dydo template update`, `dydo roles reset`, `dydo sync`, `dydo fix`) over hand-editing, and
+> work (`dydo template update`, `dydo sync`, `dydo fix`) over hand-editing, and
 > confirm each step with `dydo check`.
+
+> **2.1 staleness note ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)).**
+> This guide targets the 2.0.x generation. 2.1 removed several things it references: the
+> `.role.json` layer and `dydo roles reset` (the mode template is the role now), the generated
+> `dydo/reference/roles/*.md` docs, agent identity/claim, dispatch, and messaging. Where this guide
+> and the current docs disagree, the current docs win — treat every role/agent/dispatch step below
+> as **[VERIFY]** against [Customizing Roles](./customizing-roles.md) and the
+> [dydo glossary](../reference/dydo-glossary.md).
 
 ---
 

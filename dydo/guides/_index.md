@@ -12,13 +12,12 @@ Index of guides documentation.
 ## Contents
 
 - [Adding a dydo Command: The Doc-Consistency Surfaces](./adding-a-command.md) - Adding a new top-level `dydo` command (or a new required flag) is never a one-file change: `DynaDocs.
-- [Agent General Wait](./agent-general-wait.md) - Every claimed agent runs a single always-active **general wait** in the background.
 - [Coding Standards](./coding-standards.md) - Rules and conventions for writing code in this project.
-- [Customizing Roles](./customizing-roles.md) - How to create custom roles, modify permission sets, and extend the role system.
-- [Getting Started](./getting-started.md) - First-time setup walkthrough: install dydo, initialize a project, and run your first agent session.
-- [How to Review Worktree Merges](./how-to-review-worktree-merges.md) - You are reviewing a merge task.
+- [Customizing Roles](./customizing-roles.md) - The mode template **is** the role.
+- [Getting Started](./getting-started.md) - First-time setup walkthrough: install dydo, initialize a project, compile the skills, and run your first work session.
 - [How to Use These Docs](./how-to-use-docs.md) - This documentation is designed to be navigated by AI agents.
+- [Migrating a Project from dydo 1.x to 2.x](./migrating-dydo-1x-to-2x.md) - A self-contained, ordered procedure for an AI coding agent to migrate an existing project's dydo workspace from the 1.
 - [Orchestration Pitfalls](./orchestration-pitfalls.md) - Field-tested failure modes of multi-agent work on this repo — worktree isolation, workflow invocation, and the shared working tree.
 - [Testing Strategy — Three-Tier System](./testing-strategy.md) - A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested.
 - [Troubleshooting](./troubleshooting.md) - Common errors, guard blocks, and recovery patterns.
-- [Writing Good Briefs](./writing-good-briefs.md) - How to write dispatch briefs that give agents enough context to work independently.
+- [Writing Good Briefs](./writing-good-briefs.md) - The self-containment bar for anything handed to a fresh agent — a slice file's implementation detail, a discovery sub-agent's prompt, a workflow st...

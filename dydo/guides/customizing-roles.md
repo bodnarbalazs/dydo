@@ -5,208 +5,55 @@ type: guide
 
 # Customizing Roles
 
-How to create custom roles, modify permission sets, and extend the role system.
-
-> **2.0 note ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)).** `writablePaths`/`readOnlyPaths` are **no longer enforced as a runtime write-RBAC**. They now inform `dydo sync`: a role writable only to its own workspace (`{self}` paths) compiles to a **read-only** native agent (no Edit/Write); anything broader compiles to a read-write worker. So the schema below still matters — it shapes the compiled agent's tool profile — but "can't write path X" is enforced by universal off-limits + the tool allowlist, not a per-role matrix. After editing a role, run `dydo sync` to recompile it.
-
----
-
-## When to create a custom role
-
-Base roles (code-writer, reviewer, planner, etc.) cover most workflows. Create a custom role when:
-
-- You need a different set of writable/read-only paths
-- You want role-specific constraints (e.g., requiring prior experience)
-- A recurring workflow doesn't map cleanly to any base role
-
-**Don't create a role** for a one-off task — just use the closest base role.
+The mode template **is** the role. There is no separate role registry: `dydo sync` discovers roles by enumerating `mode-<name>.template.md` files — the built-in set plus anything you drop into `dydo/_system/templates/` — and compiles each into your platform's skill (and agent, for workers).
 
 ---
 
 ## Creating a custom role
 
-```bash
-dydo roles create my-role
-```
+1. Create `dydo/_system/templates/mode-<name>.template.md`. Frontmatter declares the metadata; the body is the methodology:
 
-This scaffolds a new `.role.json` file in `dydo/_system/roles/`:
+   ```markdown
+   ---
+   mode: data-migrator
+   description: Plans and executes schema and data migrations safely.
+   emit: agent            # agent = spawnable worker (agent + skill); skill = in-session methodology only
+   read-only: false       # true → the compiled agent gets no Edit/Write tools
+   ---
 
-```
-dydo/_system/roles/my-role.role.json
-```
+   # Data Migrator
 
----
+   Your job: ...
 
-## The .role.json schema
+   ## Mindset
+   ...
 
-A role definition file has this structure:
+   ## Work
+   ...
+   ```
 
-```json
-{
-  "name": "my-role",
-  "description": "What this role does.",
-  "base": false,
-  "writablePaths": [
-    "dydo/agents/{self}/**",
-    "infrastructure/**"
-  ],
-  "readOnlyPaths": [
-    "dydo/**"
-  ],
-  "templateFile": "mode-my-role.template.md",
-  "denialHint": "my-role can only edit infrastructure files and own workspace.",
-  "constraints": []
-}
-```
+2. Run `dydo sync`. The role compiles into `.claude/skills/<name>/` (and `.claude/agents/<name>.md` if `emit: agent`), plus the Codex mirrors.
 
-### Fields
+## Overriding a built-in role
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `name` | Yes | Role identifier (kebab-case, matches filename) |
-| `description` | Yes | One-line description shown in `dydo roles list` |
-| `base` | Yes | `true` for built-in roles, `false` for custom |
-| `writablePaths` | Yes | Glob patterns the role can write to |
-| `readOnlyPaths` | Yes | Glob patterns the role can read (beyond defaults) |
-| `templateFile` | No | Template for the mode file (in `_system/templates/`) |
-| `denialHint` | No | Message shown when a write is blocked (nudge N8) |
-| `constraints` | No | Array of constraint objects (see below) |
+Copy the shipped template into `dydo/_system/templates/` and edit it — project-local templates shadow the built-ins. `dydo template update` refreshes only un-customized files on upgrade; your overrides are left alone.
 
-### Path variables
+## Skill resources
 
-Use these placeholders in `writablePaths` and `readOnlyPaths`:
+Per-domain reference files ride the same convention: `<role>-resource-<name>.template.md` in `dydo/_system/templates/` compiles to the skill's `resources/<name>.md`. The reviewer's per-target rubrics (code, plan, merge-sprint, docs, tests) are the shipped example — add your own targets the same way.
 
-| Variable | Resolves to |
-|----------|-------------|
-| `{self}` | Current agent name |
-| `{source}` | Source code paths from `dydo.json` |
-| `{tests}` | Test paths from `dydo.json` |
+## What the compiler reads
 
----
+| Frontmatter key | Effect |
+|---|---|
+| `mode` | The role's name (must match the filename) |
+| `description` | The compiled skill/agent description |
+| `emit` | `agent` → worker (agent + skill); `skill` → in-session methodology only |
+| `read-only` | `true` → compiled agent gets no Edit/Write tools |
 
-## Constraints
-
-Constraints add behavioral rules enforced by the guard. Three types are supported:
-
-### role-transition
-
-Prevents an agent from switching to this role if it previously held a specific role on the same task.
-
-```json
-{
-  "type": "role-transition",
-  "fromRole": "code-writer",
-  "message": "Agent {agent} was code-writer on task '{task}' and cannot review its own code."
-}
-```
-
-**Use case:** The reviewer role uses this to prevent self-review.
-
-### requires-prior
-
-Requires the agent to have held one of the specified roles on the same task before assuming this role.
-
-```json
-{
-  "type": "requires-prior",
-  "requiredRoles": ["co-thinker", "planner"],
-  "message": "Orchestrator requires prior planning experience on this task."
-}
-```
-
-**Use case:** The orchestrator role requires prior co-thinker or planner experience.
-
-### panel-limit
-
-Caps the number of agents that can hold this role concurrently on the same task.
-
-```json
-{
-  "type": "panel-limit",
-  "maxCount": 3,
-  "message": "Maximum 3 judges active on task '{task}'. Escalate to the human."
-}
-```
-
-**Use case:** The judge role limits the panel size to 3.
-
----
-
-## Managing roles
-
-```bash
-dydo roles list              # List all roles (base + custom)
-dydo roles reset             # Regenerate base role files only
-dydo roles reset --all       # Remove all roles (including custom) and regenerate base
-```
-
-**Warning:** `dydo roles reset --all` deletes custom role files. Back them up first.
-
----
-
-## Examples
-
-### DBA role
-
-A role for database migration work:
-
-```json
-{
-  "name": "dba",
-  "description": "Manages database schemas and migrations.",
-  "base": false,
-  "writablePaths": [
-    "dydo/agents/{self}/**",
-    "migrations/**",
-    "database/**"
-  ],
-  "readOnlyPaths": [
-    "{source}",
-    "{tests}"
-  ],
-  "denialHint": "DBA role can only edit migration and database files.",
-  "constraints": []
-}
-```
-
-### DevOps role
-
-A role for infrastructure and CI/CD:
-
-```json
-{
-  "name": "devops",
-  "description": "Manages infrastructure, CI/CD, and deployment configuration.",
-  "base": false,
-  "writablePaths": [
-    "dydo/agents/{self}/**",
-    ".github/**",
-    "infrastructure/**",
-    "docker/**",
-    "Dockerfile",
-    "docker-compose*.yml"
-  ],
-  "readOnlyPaths": [
-    "{source}",
-    "{tests}"
-  ],
-  "denialHint": "DevOps role can only edit infrastructure, CI/CD, and Docker files.",
-  "constraints": []
-}
-```
-
----
-
-## Mode files for custom roles
-
-If you specify a `templateFile`, create the corresponding template in `dydo/_system/templates/`. The template is used to generate the mode file in each agent's workspace when they claim an identity.
-
-If you omit `templateFile`, agents assigned to the role won't have a mode file with role-specific guidance — they'll rely on the workflow file and the role's path permissions alone.
-
----
+The body compiles into the skill's methodology; `## Must-Reads` links become the compiled agent's read-first list. Model tiers are bound separately in `dydo.json` (`models.roles`).
 
 ## Related
 
-- [Roles and Permissions](../understand/roles-and-permissions.md) — The role system conceptually
-- [Role Reference Pages](../reference/roles/_index.md) — Per-role reference docs
-- [CLI Commands Reference](../reference/dydo-commands.md) — Full command documentation
+- [dydo-glossary.md](../reference/dydo-glossary.md) — role vs skill vs agent, precisely
+- [dydo-commands.md](../reference/dydo-commands.md) — `dydo sync`, `dydo template update`

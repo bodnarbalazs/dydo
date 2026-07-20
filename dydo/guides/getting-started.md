@@ -5,20 +5,14 @@ type: guide
 
 # Getting Started
 
-First-time setup walkthrough: install dydo, initialize a project, and run your first agent session.
+First-time setup walkthrough: install dydo, initialize a project, compile the skills, and run your first work session.
 
 ---
 
 ## Prerequisites
 
-You need one of:
-
-- **Node.js** (v18+) — for the npm package
-- **.NET 10** — for the dotnet tool
-
-And **Claude Code** — DynaDocs uses Claude Code's `PreToolUse` hook system for guard enforcement.
-
----
+- A git repository (dydo's records and docs live in it; git is the safety net)
+- Claude Code or Codex as your coding agent runtime
 
 ## Step 1: Install dydo
 
@@ -30,131 +24,66 @@ npm install -g dydo
 dotnet tool install -g dydo
 ```
 
-Verify the installation:
+## Step 2: Initialize your project
+
+Run from your project's root:
 
 ```bash
-dydo version
+dydo init claude    # or: dydo init codex
 ```
 
----
+This creates the `dydo/` knowledge tree, the templates, the guard hooks for your runtime, and the entry-point file (`CLAUDE.md` for Claude Code, `AGENTS.md` for Codex) that points every session at [dydo/index.md](../index.md).
 
-## Step 2: Set DYDO_HUMAN
-
-Agents need to know who they belong to. Set the `DYDO_HUMAN` environment variable to your name:
+## Step 3: Compile the skills
 
 ```bash
-# Bash/Zsh — add to your shell profile
-export DYDO_HUMAN="your_name"
-
-# PowerShell — add to your profile
-$env:DYDO_HUMAN = "your_name"
+dydo sync
 ```
 
-Use a short, consistent identifier (e.g., first name, username). This ties agents to you and prevents cross-human conflicts in team setups.
+The mode templates compile into your platform's skills and agents (planner, code-writer, reviewer with its per-target resources, …), plus the shipped workflows (`run-sprint`, `inquisition`). Re-run after any template change.
 
----
+## Step 4: Fill in your context
 
-## Step 3: Initialize your project
+The docs are the source of truth agents work from — the more real they are, the better the work:
 
-Run from your project's root directory:
+- `dydo/understand/about.md` — what this project is
+- `dydo/understand/architecture.md` — how it's built
+- `dydo/guides/coding-standards.md` — your conventions
+
+Then validate:
 
 ```bash
-dydo init claude
-```
-
-This creates:
-
-- The `dydo/` folder structure with documentation scaffolding
-- Agent workspaces and workflow files
-- Guard hooks (Claude Code only — wired automatically)
-- A default set of agents assigned to you
-
-**Options:**
-
-```bash
-dydo init claude --name "alice" --agents 3   # Non-interactive setup
-```
-
----
-
-## Step 4: Link your AI entry point
-
-Add this to your `CLAUDE.md`:
-
-```markdown
-This project uses an agent orchestration framework (dydo).
-Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
-```
-
-This is how the AI discovers dydo on each session.
-
----
-
-## Step 5: Verify the setup
-
-```bash
-dydo check          # Validate documentation structure
-dydo agent list     # See your available agents
-```
-
-`dydo check` reports any issues with frontmatter, links, or naming. Fix them with:
-
-```bash
+dydo check          # Report issues (frontmatter, links, naming)
 dydo fix            # Auto-fix what's possible
 ```
 
----
+## Step 5: Your first work session
 
-## Your first agent session
+Open your coding agent in the repo and just talk. The entry file routes it: docs first, skills for the work.
 
-Start a session by naming an agent in your prompt:
+The full loop for a real feature:
 
-```
-Hey Adele, help me fix this bug in the auth service
-```
+1. **Think it through** — the co-thinker skill hashes out the design with you; conclusions land as decision records.
+2. **Plan it** — the planner skill turns the ripe design into a sprint root + slice files.
+3. **Gate it** — a fresh-eyes reviewer (plan resource) passes the plan; the sprint flips `active`.
+4. **Run it** — the orchestrator skill drives `run-sprint`: each slice implemented and reviewed, merged serially, audited as a whole.
 
-What happens:
-
-1. The AI reads `CLAUDE.md`, gets redirected to `dydo/index.md`
-2. It navigates to `dydo/agents/Adele/workflow.md`
-3. Claims its identity: `dydo agent claim Adele`
-4. Reads the prompt, infers the appropriate role, and sets it
-5. The guard hook enforces role-based permissions on every file operation
-
-The agent onboards itself — no manual context-setting needed. The only workflow flag is `--inbox`, used when agents are dispatched by other agents to check their inbox for work items.
-
----
+For a trivial edit — a typo, a one-liner — skip the machinery: if it needs a reviewer, it needs a plan.
 
 ## Joining an existing project
-
-If dydo is already set up and you're joining the team:
 
 ```bash
 dydo init claude --join
 ```
 
-This assigns you a pool of agents without overwriting the existing `dydo/` structure.
+Wires up this machine's hooks and entry files without touching the existing `dydo/` tree.
 
 ---
 
-## Configuring Claude Code
-
-The `CLAUDE.md` pointer is the bridge between Claude Code and dydo. It tells the AI to read `dydo/index.md` at session start, which kicks off the onboarding process.
-
-**Tip:** [Obsidian](https://obsidian.md) makes navigating the documentation easier. If Obsidian converts links when you move files, run `dydo fix` afterward.
-
----
-
-## Next steps
-
-- Fill in `dydo/understand/about.md` with your project context
-- Customize `dydo/guides/coding-standards.md` to match your conventions
-- Edit templates in `dydo/_system/templates/` to fit your workflow
-
----
+**Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier. If Obsidian converts links when you move files, run `dydo fix` afterward.
 
 ## Related
 
 - [About DynaDocs](../reference/about-dynadocs.md) — What dydo is and how it works
-- [Configuration Reference](../reference/configuration.md) — dydo.json and role files
-- [Troubleshooting](./troubleshooting.md) — Common errors and recovery
+- [Customizing Roles](./customizing-roles.md) — Make the skills yours
+- [Configuration Reference](../reference/configuration.md) — dydo.json

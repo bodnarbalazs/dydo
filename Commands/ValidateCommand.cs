@@ -7,7 +7,7 @@ public static class ValidateCommand
 {
     public static Command Create()
     {
-        var command = new Command("validate", "Validate dydo configuration, role files, and agent state");
+        var command = new Command("validate", "Validate dydo configuration and nudges");
 
         command.SetAction((_, _) =>
         {

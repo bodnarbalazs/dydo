@@ -11,7 +11,7 @@ resolved-date: 2026-07-07
 
 # Notion Issue views sort severity backwards (low on top): select sorts by option position, options are critical-first so descending shows low first
 
-(One-line summary)
+Notion Issue board views sorted severity with Low on top: descending sort on a select property orders by option position, and the options are defined critical-first.
 
 ## Description
 

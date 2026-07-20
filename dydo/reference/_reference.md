@@ -17,10 +17,8 @@ This folder answers "What are the exact specs?" — detailed reference material 
 - **dydo-commands.md** - CLI command reference
 - **dydo-glossary.md** - The dydo system's locked terms
 - **about-dynadocs.md** - About the DynaDocs system
-- **guardrails.md** - Three-tier guardrail system (nudge / soft-block / hard rule)
 - **configuration.md** - dydo.json schema and all config options
-- **audit-system.md** - Audit trail format, compaction, replay
-- **roles/** - Individual role reference pages
+- **audit-system.md** - Audit trail (removed in 2.0) and what replaced it
 
 ## When to Add Docs Here
 

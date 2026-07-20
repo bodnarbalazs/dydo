@@ -56,7 +56,7 @@ Net pattern: workers do the code fine; failures concentrate in structured-result
 
 **Mechanism:** dydo agents work concurrently in the **same main working tree**, not per-agent worktrees. At any moment the uncommitted tree can commingle several agents' in-flight changes. A worker running `git commit` — especially `git add -A && commit` — races peers and sweeps their incomplete work into the commit. Green tests do not make it safe: the test runner copies the commingled dirty tree, so the suite can pass while committing it is still wrong. Even staging **explicit paths** is not a safe escape hatch — a peer's in-flight refactor can be modifying the *same files* you edited (observed: a concurrent refactor touching a worker's two files at session start, and a peer rewriting the worker's test file live, under its edits).
 
-**Rule:** As a worker: finish your edits, prove the suite and gate green, report structured results, then **hold** on your general wait. The Tier-1 orchestrator sequences a careful landing — staging only your paths, in dependency order across agents — and sends exact steps; follow them precisely and never improvise a commit. Any "rebase and land your slice" plan that assumes isolated worktrees is wrong here. If you find the tree racing (peer edits in your files), report and hold — verifying or re-applying in a racing tree is futile.
+**Rule:** As a worker: finish your edits, prove the suite and gate green, report structured results, then **stop** — do not commit. The orchestrator sequences a careful landing — staging only your paths, in dependency order across agents — and sends exact steps; follow them precisely and never improvise a commit. Any "rebase and land your slice" plan that assumes isolated worktrees is wrong here. If you find the tree racing (peer edits in your files), report and hold — verifying or re-applying in a racing tree is futile.
 
 ---
 
@@ -76,8 +76,8 @@ Guard gotchas while doing this in Bash: the guard blocks write-commands (redirec
 
 ## Related
 
-- [Coding Standards](./coding-standards.md) — Workflow discipline for Tier-2 workers
-- [Writing Good Briefs](./writing-good-briefs.md) — Briefing dispatched agents
+- [Coding Standards](./coding-standards.md) — The bar delivered work is held to
+- [Writing Good Briefs](./writing-good-briefs.md) — The self-containment bar for briefs
 - [Testing Strategy](./testing-strategy.md) — The gates agents collide through
 - [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) — dydo 2.0 native pivot
 - [Decision 026](../project/decisions/026-tier1-managers-doctrine.md) — Tier-1 managers doctrine

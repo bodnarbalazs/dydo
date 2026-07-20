@@ -15,7 +15,7 @@ resolved-date: 2026-07-07
 
 # Docs mirror creates nested pages but leaves page BODIES empty -- structure syncs, doc content never written (observed on live re-smoke against scratch page, 2.0.4)
 
-(One-line summary)
+The Notion docs mirror created the nested page structure but never wrote page bodies — the tree synced while every page stayed empty (observed on live re-smoke against a scratch page, 2.0.4).
 
 ## Description
 

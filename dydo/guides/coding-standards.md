@@ -1,7 +1,6 @@
 ---
 area: general
 type: reference
-must-read: true
 ---
 
 # Coding Standards
@@ -133,27 +132,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-## 5. Workflow Discipline
-
-**You are not done when the code works.**
-
-Code-writing happens inside a workflow (`run-sprint` and kin). You are a Tier-2 worker on one slice; the workflow — not you — orchestrates the review loop and the merge (Decision 024, Decision 026). Your discipline:
-
-1. **Work your slice only** — implement against the brief in the worktree/scratch space the workflow assigned you. Do not reach into other slices.
-2. **Prove it green** — run the worktree-isolated test runner (`python DynaDocs.Tests/coverage/run_tests.py`) and satisfy the coverage gate before returning.
-3. **Return structured output** — hand the workflow a structured result (what changed, test outcome, files touched). The workflow spawns the reviewer; you do **not** self-dispatch one.
-4. **Address review feedback** — when the loop sends the slice back, the same worker context fixes the flagged issues and re-returns.
-5. **Raise your hand, don't guess** — if the spec is ambiguous, contradicts the codebase, or you are thrashing on one root cause, set the raise-hand signal to escalate early instead of burning review rounds.
-
-**Do not:**
-- Merge your own slice or review your own code — the workflow's reviewer and merge step own that.
-- Edit files outside your slice's scope. If you notice a problem elsewhere, flag it in your result; don't fix it.
-- Mark work complete without the tests and coverage gate passing.
-- Reintroduce worker-tier `dydo dispatch`/`claim`/`release` — that 1.0 machinery is gone (Decision 024).
-
----
-
-## 6. Security
+## 5. Security
 
 Security is not an afterthought. These practices are non-negotiable.
 
@@ -189,7 +168,7 @@ When uncertain about security implications, stop and research or ask.
 
 ### Agent Shell Calls
 
-Never run an open-ended poll in an agent shell call, such as `tail -f` or a `while true`/`until` loop that sleeps. Bound the loop with a maximum number of attempts or a timeout, or use `dydo wait` when waiting for a dydo message or file.
+Never run an open-ended poll in an agent shell call, such as `tail -f` or a `while true`/`until` loop that sleeps. Bound the loop with a maximum number of attempts or a timeout.
 
 ---
 
@@ -259,15 +238,6 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 ```
 
 ---
-
-### Delegation of code-writing
-
-Sub-agents and workflows are **where code gets written** (Decision 026). Worker-tier `dydo dispatch` no longer exists — it was 1.0-era machinery removed by [Decision 024](../project/decisions/024-dydo-2-native-pivot.md).
-
-- **Tier-1 named agents are managers, not implementers.** They run workflows (`run-sprint` and kin) and coordinate; they do **not** write code beyond the trivial-edit exception (typo fixes, single-line config toggles, doc-link repairs). Rule of thumb: *if it needs a reviewer, it needs a workflow.*
-- **Tier-2 workers write the code.** Code-writers, reviewers, and test-writers are native sub-agents spawned by workflows, each with a scoped permission profile. The workflow — not the worker — orchestrates the code → review loop and the merge.
-
-See [Work Model](../understand/work-model.md) for the full hierarchy and [Decision 026](../project/decisions/026-tier1-managers-doctrine.md) for the manager doctrine.
 
 ## Related
 

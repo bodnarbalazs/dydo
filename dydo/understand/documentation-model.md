@@ -19,19 +19,18 @@ The principle: navigate to what you need, when you need it. Leave out what's not
 
 ## The Documentation Funnel
 
-Every agent session follows this reading path:
+Every session follows this reading path:
 
 ```
-index.md → workflow.md → mode file → must-reads → task-specific docs
+entry file → index.md → hub files → task-specific docs
 ```
 
-1. **`index.md`** — The entry point. Directs the agent to its workspace.
-2. **`workflow.md`** — The agent's personal workflow: claim identity, orient, set role.
-3. **Mode file** — Role-specific instructions (e.g., `modes/code-writer.md`): what to read, how to work, how to complete.
-4. **Must-reads** — Critical context documents flagged with `must-read: true`. The guard enforces these — agents can't write until they've read them.
-5. **Task-specific docs** — Whatever the agent needs for the actual work: architecture docs, decision records, reference material.
+1. **Entry file** (`CLAUDE.md` / `AGENTS.md`) — loaded automatically by the platform; points every session at the docs and the skills.
+2. **`index.md`** — dydo orientation: the knowledge tree, the records, the skills model.
+3. **Hub files** (`_index.md`) — each folder's table of contents; navigate down only where the task leads.
+4. **Task-specific docs** — whatever the work needs: architecture docs, decision records, reference material.
 
-Each layer narrows the focus. By the time the agent starts working, it has exactly the context it needs.
+The *how* of working arrives the same way: skills load their methodology when invoked, not upfront. Each layer narrows the focus — by the time work starts, the session has exactly the context it needs.
 
 ---
 
@@ -66,11 +65,10 @@ Every document starts with YAML frontmatter:
 ---
 area: understand
 type: concept
-must-read: true
 ---
 ```
 
-Required fields: `area` (which section) and `type` (what kind of document). Optional: `must-read` (enforced reading), `status` and `date` (for decisions and changelogs).
+Required fields: `area` (which section) and `type` (what kind of document). Optional: `status` and `date` (for decisions and changelogs).
 
 ---
 

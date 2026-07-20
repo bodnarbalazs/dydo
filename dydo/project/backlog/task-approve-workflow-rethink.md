@@ -1,6 +1,6 @@
 ---
 area: project
-type: backlog
+type: context
 date: 2026-07-08
 requested-by: balazs
 ---

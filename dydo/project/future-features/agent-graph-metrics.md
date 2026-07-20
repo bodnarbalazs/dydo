@@ -43,5 +43,4 @@ A `dydo audit metrics` command that builds the graph in-memory, computes metrics
 
 ## Related
 
-- [Audit System](../../reference/audit-system.md) — Audit trail reference
-- [Dispatch and Messaging](../../understand/dispatch-and-messaging.md) — How agents communicate
+- [Audit System](../../reference/audit-system.md) — Audit trail reference (removed in 2.0 — this feature predates that removal)

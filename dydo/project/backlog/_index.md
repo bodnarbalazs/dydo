@@ -18,6 +18,7 @@ Index of backlog documentation.
 - [dydo 2.0 — Hardening, Cleanup & Onboarding Backlog](./dydo-2-hardening.md) - Deferred work surfaced while landing the 2.
 - [dydo 2.0 — Vision Follow-ups (backlog)](./dydo-2-vision-followups.md) - Items that emerged from the 2026-07-03 co-thinking session ([Decision 026](.
 - [Exact-model provenance on display surfaces (not vendor names)](./exact-model-provenance-display.md) - Provenance surfaces should show the exact model (Fable 5, Opus 4.
+- [Mother of All Swarms — launch-ready plan](./mother-of-all-swarms-plan.md) - The plan to crush the open backlog (78 open issues: 15 high / 28 medium / 35 low), the green-lit sprints, and the campaigns using the codex-workhor...
 - [Notion Agent Board + reverse (Notion → agent) messaging](./notion-agent-board-and-reverse-messaging.md) - FutureFeature-class (campaign-sized).
 - [Notion Board (DR 029/030) — Follow-ups Backlog](./notion-board-followups.md) - Deferred items surfaced during the DR 029/030 board sprint and its five-round inquisition QA loop (waves 4a–8, commits fea7915…12c45cc + the wave-8...
 - [Docs → Notion Nested-Pages Sync — design brief](./notion-docs-nested-pages.md) - A parallel-track feature spun off during the notion-sync live shakedown (2026-07-06).
@@ -27,5 +28,12 @@ Index of backlog documentation.
 - [PM Record Taxonomy Migration — follow-on sprint](./pm-record-taxonomy-migration.md) - Execution of [DR 034](.
 - [Portable skill definitions — extend dydo sync beyond roles](./portable-skill-definitions.md) - Define skills once, vendor-neutral, under dydo and let `dydo sync` compile them to every configured platform — the role pipeline already does this;...
 - [Post-2.0.6 Sprint Pipeline (chief-of-staff triage, 2026-07-08)](./post-2.0.6-sprint-pipeline.md) - High-level portfolio only.
+- [Rail B — prompt-engineering pass checklist (balazs)](./rail-b-prompt-pass-checklist.md) - The goal per balazs (2026-07-17): remove/rework ALL prompt files — skills, agents, templates — killing every trace of the old workflow (claim ident...
+- [Residue Hunt — handback](./residue-hunt-handback.md) - Executes [residue-hunt-handoff](.
+- [Residue Hunt — handoff brief](./residue-hunt-handoff.md) - You are hunting DR-041 residue: code that compiles and passes tests but belongs to the deleted agent-roster runtime, plus three restructures balazs...
 - [Review Tiers & Attention — Implementation Backlog](./review-tiers-and-attention.md) - Follow-ups from the 2026-07-03 co-thinking session; design settled in [Decision 031](.
+- [DR-041 Simplification Campaign — handback notes (Rail A complete)](./simplification-campaign-handback.md) - Rail A executed 2026-07-15 by Fable in-conversation, per [DR-041](.
+- [dydo 2.1.0 Simplification Campaign — the deletion marathon plan](./simplification-campaign-plan.md) - Executes [DR-041](.
+- [MASTER HANDOFF — dydo 2.1.0 Simplification Campaign](./simplification-handoff-sol.md) - You are orchestrating a large, deletion-heavy refactor of **dydo** (this repo, `.
+- [Swarm Wave-1 Worklist (from Wave-0 triage of 77 open issues)](./swarm-wave1-worklist.md) - Companion to [mother-of-all-swarms-plan](.
 - [Rethink the task approve/archive workflow](./task-approve-workflow-rethink.md) - > **Resolved 2026-07-08** — the co-thinker round converged; design settled in > [Decision 036](.

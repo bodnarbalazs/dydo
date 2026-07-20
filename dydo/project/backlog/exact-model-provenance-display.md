@@ -1,6 +1,6 @@
 ---
 area: general
-type: backlog
+type: context
 status: resolved
 created: 2026-07-08
 created-by: Adele

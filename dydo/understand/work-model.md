@@ -5,7 +5,7 @@ type: concept
 
 # Work Model
 
-dydo tracks work at four nested levels — **Task → Sprint → Campaign → Release**. The levels are defined by their **exit gate**, not their size: what has to be true for the work to be *done and sound* is the invariant; span (minutes to weeks) merely follows. This is the ontology behind the canonical PM files under `dydo/project/` and the shape `dydo sync` projects into external views like Notion.
+dydo tracks work at four nested levels — **Slice → Sprint → Campaign → Release**. The levels are defined by their **exit gate**, not their size: what has to be true for the work to be *done and sound* is the invariant; span (minutes to weeks) merely follows. This is the ontology behind the records under `dydo/project/` and the shape the Notion view mirrors. (A **task** sits outside this chain: day-to-day tracked work in `project/tasks/`, with its own lifecycle.)
 
 Two concepts are kept strictly orthogonal:
 
@@ -16,32 +16,53 @@ Confusing the two is the classic PM tangle. "Backlog" is a **status**, not a con
 
 ---
 
+## How work runs
+
+```mermaid
+flowchart TD
+    Y([you]) <-->|"hash out the issue,<br/>decisions recorded"| CT["co-thinker (skill)"]
+    CT --> PL["planner (skill)<br/>writes sprint root + slice files"]
+    PL --> PR{{"plan-review<br/>reviewer agent, plan resource — fresh eyes"}}
+    PR -->|"findings"| PL
+    PR -->|"no ambiguity left ⇒ active"| OR["orchestrator (skill)<br/>run-sprint workflow"]
+    OR -->|"per slice, parallel lanes"| CW["code-writer agent"]
+    CW --> RC["reviewer agent, code resource"]
+    RC -->|"loop until pass"| CW
+    RC -->|"slices merged serially"| AU["reviewer agent, merge-sprint resource<br/>(the audit)"]
+    AU -->|"verdict"| Y
+    Y -.->|"at larger milestones"| INQ["inquisition workflow<br/>(multi-lens sweep + verify)"]
+```
+
+Skills are the Tier-1 methodologies you invoke in-session (co-thinker, planner, orchestrator, chief-of-staff); agents are the spawned workers with tool profiles (code-writer, reviewer, test-writer, docs-writer); the reviewer's per-target rubrics are its skill resources.
+
+---
+
 ## The Four Levels
 
 Each level is a gate. Work crosses it exactly when the gate's condition is met — nothing about elapsed time or line count.
 
 | Level | One-liner | Exit gate | Typical span |
 |---|---|---|---|
-| **Task** | One agent-loop's worth of work; specific and verifiable | reviewer **PASS** | minutes–hours |
-| **Sprint** | One `run-sprint` invocation: a few disjoint tasks/slices, merged | **human re-engages** to refine the next sprint | hours–a day |
-| **Campaign** | One goal, many sprints; the unit of "actually done and sound" | **mandatory inquisition QA gate** | days |
-| **Release** | One ship vehicle; a spec-driven set of campaigns | **ship checklist** (regression / beta) | weeks+ |
+| **Slice** | The atom of implementation: one disjoint piece of a sprint | reviewer **PASS** (code resource) | minutes–hours |
+| **Sprint** | One plan's execution: root record + slices, `planning → plan-review → active → audit → done` | the **audit** (reviewer, merge-sprint resource) over the merged diff | hours–a day |
+| **Campaign** | One goal, many sprints; the unit of "actually done and sound" | **inquisition QA gate** | days |
+| **Release** | One ship vehicle; a set of campaigns | **ship checklist** | weeks+ |
 
-### Task
+### Slice
 
-A task is the smallest scheduled unit: one code → review → loop → pass cycle inside a workflow. Its gate is a reviewer verdict. Tasks are the leaves the `run-sprint` workflow drives (see [Delegation](../guides/coding-standards.md); Decision 026).
+The smallest scheduled unit: one code → review → pass cycle inside a workflow, executed against its slice file — the self-contained contract the plan gate certified. Its gate is a reviewer verdict.
 
 ### Sprint
 
-A sprint is exactly what one `run-sprint` workflow invocation covers — a handful of disjoint slices run in parallel, then merged sequentially. Its gate is *social*, not automated: the human re-engages to inspect the merged result and shape the next sprint. That human touchpoint is the sprint boundary.
+A sprint is one plan: the root record (specification + slice map) plus its slices. It enters implementation only through the **plan gate** (`plan-review`, fresh eyes), and exits through the **audit** — the whole merged diff reviewed as one unit against the root's acceptance criteria. The human re-engages at the audit verdict to shape what's next.
 
 ### Campaign
 
-A campaign is one goal pursued across many sprints — the unit at which we claim work is genuinely finished and trustworthy. Its gate is the **mandatory inquisition** (no-bugs / coverage / well-tested). Per-sprint inquisitions are overkill; the QA gate lives at campaign end (on-demand for critical work in between). See the [dydo 2.0 campaign roadmap](../project/backlog/dydo-2-campaign-roadmap.md) for a worked example: seven sprints capped by one inquisition.
+A campaign is one goal pursued across many sprints — the unit at which we claim work is genuinely finished and trustworthy. Its gate is the **inquisition** (multi-lens sweep, adversarially verified findings). Per-sprint inquisitions are overkill; the QA gate lives at campaign end (on-demand for critical work in between).
 
 ### Release
 
-A release is different in kind. Campaigns, sprints, and tasks are **work** — they burn down through workflows. A release is a **goal state** driven by a spec document: a title, a spec reference, its set of campaigns, and a status. No workflow machinery *runs* a release; it is modeled lightly and gated by a ship checklist. Release is the fourth spine level above Campaign (Decision 025 session).
+A release is different in kind. Campaigns, sprints, and slices are **work** — they burn down through workflows. A release is a **goal state**: a title, a spec reference, its set of campaigns, and a status, gated by a ship checklist. No workflow machinery runs a release.
 
 ---
 
@@ -92,7 +113,7 @@ The rule that follows: **sequence tree-shared work.** Parallelize only slices wh
 ## Related
 
 - [Architecture Overview](./architecture.md) — Technical structure of the framework
-- [Coding Standards — Delegation](../guides/coding-standards.md) — Who writes code and how work is delegated
+- [Coding Standards](../guides/coding-standards.md) — How code is written here
 - [dydo 2.0 Campaign Roadmap](../project/backlog/dydo-2-campaign-roadmap.md) — A campaign modeled sprint-by-sprint
 - [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) — Native pivot: two-tier identity, workflows own orchestration
 - [Decision 025](../project/decisions/025-notion-sync-architecture.md) — Canonical files, swappable view adapter (frontmatter-canonical basis)

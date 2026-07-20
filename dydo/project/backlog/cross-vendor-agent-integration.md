@@ -16,7 +16,7 @@ FutureFeature-class. Keep for later; develop via a co-thinker → decision recor
 > **2026-07-08 — co-thinker round concluded: [DR 037](../decisions/037-cross-vendor-dispatch-same-vendor-default.md) (accepted).**
 > Ruling: no new abstraction — same-vendor dispatch by default, cross-vendor as an explicit dispatch-time
 > override; vendor binds only at the dispatch boundary (roles vendor-free, workflows vendor-homogeneous);
-> sprints may mix vendors across slices, workflows never do. Hardening: [[0239]] (friendly error on
+> sprints may mix vendors across slices, workflows never do. Hardening: [#0239](../issues/resolved/0239-dispatch-vendor-override-needs-a-friendly-error-when-the-target-vendor-is-not-co.md) (friendly error on
 > unavailable vendor override). Still open here: the Codex guard adapter (Codex has pre/post tool-use
 > hooks, GA — install `dydo guard` there at init/sync), and the reroute-on-limit heuristic below, which
 > stays deferred until manual overrides prove routine.
@@ -38,7 +38,7 @@ workflow-internal layer.
 **Resolution direction:** operate the cross-vendor reroute at the **task/dispatch boundary**, not by
 model-substitution inside a live workflow. I.e. when Claude's tier is exhausted, route the *whole job*
 to a Codex agent, which runs its *own* vendor-native workflow with GPT models. For the *workflow-internal*
-case, keep the **same-vendor tier fallback** (Fable → Sonnet) — that's exactly issue [[0214]]'s Option A.
+case, keep the **same-vendor tier fallback** (Fable → Sonnet) — that's exactly issue [#0214](../issues/resolved/0214-run-sprint-reviewer-auditor-stages-have-no-model-fallback-on-bound-model-outage.md)'s Option A.
 So: within a vendor, tier-fallback; across vendors, task-level reroute. Two different levers at two levels.
 
 ## Seed ideas for seamless integration (cooperate, don't compete)
@@ -63,7 +63,7 @@ So: within a vendor, tier-fallback; across vendors, task-level reroute. Two diff
 ## Open questions to assess (co-thinker → DR)
 
 - How does a Codex agent onboard into dydo identity/claim/wait? Does it honor the guard hooks?
-- Detection that drives the reroute — ties to [[0214]] (a capped Fable surfaces as an API-error null /
+- Detection that drives the reroute — ties to [#0214](../issues/resolved/0214-run-sprint-reviewer-auditor-stages-have-no-model-fallback-on-bound-model-outage.md) (a capped Fable surfaces as an API-error null /
   OTel `api_error`). Same signal can trip a cross-vendor reroute, not just a same-vendor fallback.
 - Task-boundary reroute mechanics: does the dispatcher pick vendor at dispatch time, and on what signal?
 - Cost/quality parity: when is a Codex substitution acceptable vs. worth waiting for the Claude tier?

@@ -24,6 +24,30 @@ public class HubGeneratorTests
     }
 
     [Fact]
+    public void GenerateHub_TitleWithLinkLiteral_SwapsBracketsSoEntryLinkParses()
+    {
+        var doc = MakeDoc(
+            relativePath: "project/issues/anchor-bug.md",
+            fileName: "anchor-bug.md",
+            title: "Anchor-only links [label](#section) produce broken-link errors");
+
+        var hub = HubGenerator.GenerateHub(
+            relativeFolderPath: "project/issues",
+            docsInFolder: [doc],
+            subfolderHubs: [],
+            allDocs: [doc]);
+
+        Assert.Contains("[Anchor-only links (label)(#section) produce broken-link errors](./anchor-bug.md)", hub);
+        Assert.DoesNotContain("[label](#section)", hub);
+    }
+
+    [Fact]
+    public void EscapeLinkLiterals_TitleWithoutLinkShape_PassesThroughUntouched()
+    {
+        Assert.Equal("Fix the [VERIFY] markers in migration", HubGenerator.EscapeLinkLiterals("Fix the [VERIFY] markers in migration"));
+    }
+
+    [Fact]
     public void GenerateHub_NonChangelogFolder_FallsBackToKebabWhenTitleNull()
     {
         var doc = MakeDoc(

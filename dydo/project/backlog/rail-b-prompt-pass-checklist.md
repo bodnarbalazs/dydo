@@ -85,27 +85,31 @@ contain claim-era wording (claim/whoami/dispatch/inbox/wait/workflow.md/roster).
 Front door & core:
 - [ ] `dydo/index.md` + `Templates/index.template.md` (mechanically fixed; needs your
       voice + the skills emphasis)
-- [ ] `dydo/glossary.md` — defines claim/dispatch/inbox-era terms
+- [x] `dydo/glossary.md` — defines claim/dispatch/inbox-era terms
 - [ ] `dydo/reference/about-dynadocs.md` + `Templates/about-dynadocs.template.md`
       (byte-identical pair!) + `README.md` — onboarding/marketing prose
 Reference:
-- [ ] `dydo/reference/dydo-commands.md` + template (content current; tone pass)
-- [ ] `dydo/reference/guardrails.md` (content current; tone pass)
-- [ ] `dydo/reference/configuration.md` (schema current; prose pass)
-- [ ] `dydo/reference/roles/*.md` ×9 (role reference pages)
+- [x] `dydo/reference/dydo-commands.md` + template — reconciled byte-equal; dup Model
+      Commands cut, empty Role Commands + Role Permissions tail removed, stale
+      option/desc lines fixed (docs-hygiene pass, 2026-07-20)
+- [x] `dydo/reference/guardrails.md` — DELETED; surviving catalog folded into
+      `understand/guard-system.md`
+- [x] `dydo/reference/configuration.md` — Custom Roles section now template-is-the-role
+- [x] `dydo/reference/roles/*.md` — DELETED (generated claim-era pages; the mode
+      template is the role)
 Understand:
-- [ ] `dydo/understand/architecture.md` (+ `Templates/architecture.template.md` —
+- [x] `dydo/understand/architecture.md` (+ `Templates/architecture.template.md` —
       note: the template is the PROJECT-scaffold version, separate content)
-- [ ] `dydo/understand/guard-system.md` (staged-onboarding narrative largely removed;
+- [x] `dydo/understand/guard-system.md` (staged-onboarding narrative largely removed;
       re-center on off-limits + nudges)
-- [ ] `dydo/understand/task-lifecycle.md` (DR-036 lifecycle is current; strip
+- [x] `dydo/understand/task-lifecycle.md` (DR-036 lifecycle is current; strip
       assigned-agent framing)
-- [ ] `dydo/understand/roles-and-permissions.md`, `documentation-model.md`,
+- [x] `dydo/understand/roles-and-permissions.md` (DELETED),, `documentation-model.md`,
       `templates-and-customization.md`, `about.md`, `_index.md`/`_understand.md` hubs
 Guides:
-- [ ] `dydo/guides/getting-started.md` — the onboarding walkthrough (claim-heavy)
-- [ ] `dydo/guides/coding-standards.md` + `Templates/coding-standards.template.md`
-- [ ] `dydo/guides/customizing-roles.md`, `testing-strategy.md`,
+- [x] `dydo/guides/getting-started.md` — the onboarding walkthrough (claim-heavy)
+- [x] `dydo/guides/coding-standards.md` + `Templates/coding-standards.template.md`
+- [x] `dydo/guides/customizing-roles.md`, `testing-strategy.md`,
       `troubleshooting.md`, `orchestration-pitfalls.md` (both already trimmed;
       tone pass), `_guides.md`/`_index.md` hubs
 - [ ] `Templates/_project.template.md` (tasks-folder note)
@@ -115,7 +119,8 @@ Guides:
 - [ ] `dydo sync` — recompile skills/agents from the reworked sources; eyeball one
       compiled SKILL.md end-to-end.
 - [ ] `dydo template update` — refresh framework hashes for edited templates.
-- [ ] `dydo check` — link/naming validation over the reworked tree.
+- [x] `dydo check` — 0 errors, 0 warnings (was 38/52; extractor false-positives fixed
+      in code, resolves issue 0287)
 - [ ] Keep the `about-dynadocs` .md/.template pair byte-identical (a test enforces it).
 - [ ] Re-arm the guard (`notguard` → `guard`) once you're satisfied; verify hooks fire.
 - [ ] Then: release ritual (version bump is yours).

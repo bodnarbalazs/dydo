@@ -1,7 +1,6 @@
 ---
 area: understand
 type: context
-must-read: true
 ---
 
 # About This Project

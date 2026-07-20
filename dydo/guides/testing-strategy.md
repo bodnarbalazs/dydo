@@ -28,7 +28,7 @@ For important code that handles significant business logic or user-facing workfl
 - **Coverage:** 100% line coverage, ≥ 80% branch coverage, edge cases systematically covered
 - **Character:** "Does it hold up under pressure?"
 - **What to test:** Boundary conditions, error states, concurrent scenarios, complex state transitions, all error paths
-- **Examples:** Guard enforcement, agent state management, dispatch orchestration
+- **Examples:** Guard enforcement, bash command analysis, sync compilation
 
 No `coverage:ignore` escape hatches. If code is unreachable, delete it. If a guard triggers rarely, that's exactly what T2 testing should catch.
 

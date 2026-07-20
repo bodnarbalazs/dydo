@@ -1,6 +1,6 @@
 ---
 area: general
-type: backlog
+type: context
 status: open
 date: 2026-07-06
 ---

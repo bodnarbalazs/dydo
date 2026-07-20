@@ -31,7 +31,7 @@ universal rules — no per-agent identity gates:
 
 - **Off-limits paths** (`files-off-limits.md`) — secrets and system files are blocked for everyone.
 - **Dangerous-bash patterns** — destructive commands (e.g. `rm -rf /`, fork bombs) are always blocked.
-- **Nudges** — configurable regex reminders that warn or block (see [reference/guardrails.md](reference/guardrails.md)).
+- **Nudges** — configurable regex reminders that warn or block (see [understand/guard-system.md](understand/guard-system.md)).
 
 If the guard blocks you, re-read the relevant docs first — most blocks are a misuse, not a
 wall. If you're still blocked, tell the human. Don't work around it.

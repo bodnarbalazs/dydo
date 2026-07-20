@@ -23,12 +23,12 @@ dydo's own audit trail — per-session JSON logs, baseline+delta compaction, and
 
 ## Why
 
-Native subagents and workflows share the parent session's transcript, so Claude Code already captures every tool call, block, and result. Maintaining a second, parallel audit store was duplicated effort with no unique signal once the runtime went native ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). The one thing dydo still needs — crash-resume bookkeeping — lives in the watchdog log, not an audit trail.
+Native subagents and workflows share the parent session's transcript, so Claude Code already captures every tool call, block, and result. Maintaining a second, parallel audit store was duplicated effort with no unique signal once the runtime went native ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)).
 
 ---
 
 ## Related
 
-- [Architecture Overview](../understand/architecture.md) — where audit fit, and the watchdog that remains
+- [Architecture Overview](../understand/architecture.md) — where audit fit in the system
 - [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) — the native pivot that removed the audit trail
 - [CLI Commands Reference](./dydo-commands.md) — the current command surface

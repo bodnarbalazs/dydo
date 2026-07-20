@@ -5,15 +5,13 @@ type: concept
 
 # Guard System
 
-How dydo enforces agent behavior through the PreToolUse hook. Every file operation passes through `dydo guard` before execution.
-
-> **2.0 note ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)).** Per-role *write* RBAC — the `WritablePaths`/`ReadOnlyPaths` matrices matched on every write — was **removed** (`GuardCommand.cs:414`). Write enforcement is now **universal off-limits + nudges**, applied to every agent regardless of role; a worker role's read-only scope comes from its **native tool allowlist** (`dydo sync` emits read-only agents with no Edit/Write). Everything else here — staged onboarding, off-limits, must-reads, bash safety, soft-blocks, and the hard rules — still holds. Passages that describe per-role `WritablePaths` matching (H1, the old "Role-Based Permission Checking" step) reflect the pre-2.0 model.
+How dydo enforces boundaries through the PreToolUse hook. Every tool call — reads, writes, searches, bash, in the main thread and inside every subagent and workflow — passes through `dydo guard` before execution. Three layers: off-limits paths, dangerous-bash detection, and nudges.
 
 ---
 
 ## How the Hook Intercepts Tool Calls
 
-The guard integrates with Claude Code through the **PreToolUse** hook event. Before every tool call (Read, Write, Edit, Bash, Glob, Grep), Claude Code pipes a JSON payload to `dydo guard` via stdin:
+The guard integrates with the platform through the **PreToolUse** hook event. Before every tool call, the platform pipes a JSON payload to `dydo guard` via stdin:
 
 ```json
 {
@@ -28,162 +26,86 @@ The guard integrates with Claude Code through the **PreToolUse** hook event. Bef
 ```
 
 The guard evaluates the request and returns:
-- **Exit 0** — action allowed (tool proceeds)
-- **Exit 2** — action blocked (error message sent to stderr, tool fails)
+
+- **Exit 0** — action allowed (a `NOTICE:` on stderr may ride along)
+- **Exit 2** — action blocked (`BLOCKED: <reason>` on stderr, tool fails)
+
+There is no identity, no staging, no per-role permission matrix: the same rules apply to every caller, every time ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)).
 
 ---
 
-## Staged Onboarding Enforcement
+## Layer 1: Off-Limits Paths
 
-The guard enforces a progressive unlock. An agent cannot skip stages — each gate must be passed in order.
+Global patterns in `dydo/files-off-limits.md` hard-block **every** operation — read, write, search, or bash — for all callers.
 
-**Stage 0 (No Identity):** Only bootstrap files are readable (`dydo/index.md`, agent workflows, root-level files). All writes and search tools blocked.
-
-**Stage 1 (Claimed, No Role):** Adds own mode files to readable set (`dydo/agents/{self}/modes/*.md`). Writes and search tools still blocked.
-
-**Stage 2 (Claimed + Role):** All reads allowed. Writes permitted to role's `WritablePaths`, but only after all `must-read: true` files have been read. Search tools (Glob, Grep, Agent) unlocked. Stage 2 also widens the off-limits mode-file bypass to **all** agents' mode files, not just the agent's own — see "Stage-2 cross-agent mode-file bypass" under Off-Limits File Enforcement below.
-
-See [Agent Lifecycle](./agent-lifecycle.md) for the full stage progression.
-
----
-
-## Write Enforcement (off-limits + nudges)
-
-Per-role write RBAC was removed in 2.0 ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)); the guard no longer matches writes against per-role `WritablePaths`/`ReadOnlyPaths`. Write enforcement is now:
-
-1. **Universal off-limits** (below) — sensitive paths hard-block for every agent, regardless of role.
-2. **Nudges** — soft guidance injected on allowed operations; a project can define a nudge that blocks.
-3. **Native tool allowlists** — read-only roles are enforced at the tool level: `dydo sync` emits worker agents (reviewer, inquisitor, sprint-auditor) whose allowlist omits Edit/Write, so they physically cannot modify files.
-
-Coarse write scope is set by the agent's native tool profile, not a dydo path matrix. Off-limits patterns still use glob syntax (`**/` for optional directory prefix, `**` for any path, `*` within a segment, `?` for single character).
-
----
-
-## Off-Limits File Enforcement
-
-Global off-limits patterns are defined in `dydo/files-off-limits.md`. These apply to **all** agents regardless of role.
-
-**Protected categories include:**
-- DynaDocs system files (workflow files, mode files, state files, `index.md`)
-- Secrets and credentials (`.env*`, `*.pem`, `*.key`, `secrets.json`, database configs)
-
-**Whitelist exceptions:** The file supports a `## Whitelist` section where patterns can override off-limits rules (e.g., `.env.example`).
-
-**Bootstrap bypass:** Files needed for onboarding (bootstrap files, mode files) bypass off-limits checks based on the agent's current stage.
-
-**Stage-2 cross-agent mode-file bypass (security-adjacent):** Once an agent has a role set (Stage 2), the off-limits enforcement bypasses for *any* agent's mode file (`dydo/agents/*/modes/*.md`), not just the agent's own. The bypass is intentional — it lets a docs-writer or co-thinker reason about the role system across agents without requiring elevated access — but it means a stage-2 agent can read the mode files of every other agent in the project, not only its own. Implemented at `Commands/GuardCommand.cs:351-360 ShouldBypassOffLimits` and `:1216-1223 IsAnyModeFile`. The narrower self-only variant (`IsModeFile(filePath, agent.Name)`) on line 355 is the Stage-1 bypass; the unconditional `IsAnyModeFile` on line 357 is the Stage-2 widening. If you need to scope this down, change the Stage-2 branch to call `IsModeFile(filePath, agent.Name)` instead.
-
----
-
-## Bash Command Analysis
-
-Bash commands go through multi-stage analysis:
-
-**1. Dangerous pattern detection** (immediate block): Recursive root deletes, fork bombs, direct disk writes (`dd`), download-and-execute (`curl | sh`), eval of untrusted input, history clearing, security disables.
-
-**2. Bypass detection** (warnings, not blocks): Command substitution (`$(...)`), base64/hex decode, variable expansion, embedded newlines — flagged because they may obscure the actual file paths being operated on.
-
-**3. File operation extraction**: Commands are tokenized and categorized — reads (`cat`, `grep`), writes (`tee`, `>`, `>>`), deletes (`rm`), copies/moves (`cp`, `mv`), and permission changes (`chmod`). `sed -i` is classified as a write.
-
-**4. File operation validation**: Each extracted file operation is checked individually — off-limits patterns are enforced for all operations, staged access control (read gating by onboarding stage) is enforced for reads, and RBAC (role permission matching) is enforced for writes, deletes, moves, copies, and permission changes. The same rules apply as for direct tool calls, but the mechanism differs: bash commands are first split and each file operation is checked separately, whereas direct tool calls check the path in the tool input directly.
-
-**Special blocks:**
-- Chained `cd` (`cd /path && command`) — breaks path analysis; run `cd` separately
-- Indirect dydo invocation (`npx dydo`, `dotnet dydo`) — use `dydo` directly
-
----
-
-## Guard Lift
-
-The guard lift temporarily bypasses RBAC permission checking for a specific agent. This is a human-only administrative mechanism — agents cannot lift their own guard.
-
-### Usage
-
-```bash
-dydo guard lift <agent>          # Lift indefinitely
-dydo guard lift <agent> 30       # Lift for 30 minutes (auto-expires)
-dydo guard restore <agent>       # Restore guard enforcement
-```
-
-### How It Works
-
-1. `dydo guard lift` writes a marker file at `dydo/agents/{agent}/.guard-lift.json` containing the agent name, who lifted it, the timestamp, and an optional expiration time.
-2. On every write operation, the guard checks `IsGuardLifted()` before RBAC. If the marker exists and hasn't expired, RBAC is skipped entirely and the write is allowed.
-3. Off-limits enforcement (Layer 1) is NOT bypassed — system files like `state.md`, mode files, and `files-off-limits.md` remain protected.
-4. Expired markers are automatically deleted on the next guard check.
-
-(With per-role write RBAC removed in 2.0, the lift's original job — skipping the `WritablePaths` check — is moot for worker scope; it remains as a human-only escape hatch for the gates that survive. See the 2.0 note at the top.)
-
-### Protection
-
-- The `dydo guard lift` and `dydo guard restore` commands are blocked for agents by the human-only command restriction.
-- The marker file `dydo/agents/*/.guard-lift.json` is protected by system off-limits, preventing agents from writing their own lift markers.
-
-### When to Use
-
-Guard lift is intended for situations where a human needs to temporarily grant an agent broader write access — for example, during a complex refactoring that spans role boundaries. Use the time-limited form (`dydo guard lift <agent> 30`) when possible.
-
----
-
-## Three-Tier Guardrail System
-
-All guardrails fall into three tiers:
-
-**Nudges (N-tier):** Exit 0, action allowed but guidance injected. Examples: release hints when inbox is empty, bash command warnings about variable expansion, role-specific denial hints.
-
-**Soft-Blocks (S-tier):** Exit 2 on first encounter; a marker file is created so the same check passes on retry. Examples: role mismatch warning on dispatch, `--no-launch` confirmation, pending wait registration, inactive-agent messaging.
-
-**Hard Rules (H-tier):** Exit 2, no override, no retry. Categories include:
-- **Access control** (H1–H6, H27): Role permissions, off-limits, staged reads, must-read enforcement, search tool lockout, plan mode lockout
-- **Onboarding** (H7–H9): No identity/role blocks writes, session ID required
-- **Role constraints** (H10–H11): No self-review, orchestrator graduation (doc-shorthand for `.role.json` constraint types; the H12 judge-panel limit was retired with the judge role in Decision 024)
-- **Release blocking** (H13–H16, H25): Unprocessed inbox, active waits, pending replies, worktree merges, code-writer review enforcement
-- **Bash safety** (H17, H18): Dangerous commands, chained cd. (H19 indirect-dydo is a severity-pinned default nudge — message editable, severity force-restored to `block`. See [Guardrails Reference](../reference/guardrails.md) under Extensibility.)
-- **Messaging** (H21–H22): No self-messaging, no cross-human messaging
-- **Dispatch** (H23–H24): Double-dispatch protection, conflicting launch flags
-- **Pending state** (H30): Unread inbox blocks every operation until cleared (was S3 — re-classified because the gate has no marker/override and re-fires on every tool call)
-
-See [Guardrails Reference](../reference/guardrails.md) for the full catalog.
-
----
-
-## Guard Exit Codes and Error Messages
-
-| Exit Code | Meaning |
-|-----------|---------|
-| 0 | Action allowed (nothing printed to stdout) |
-| 2 | Action blocked (error message to stderr) |
-
-Error messages follow a consistent format:
+- **Protected categories:** secrets and credentials (`.env*`, `*.pem`, `*.key`, `secrets.json`, database configs) and dydo system files.
+- **Whitelist:** a `## Whitelist` section carves exceptions (e.g. `.env.example`).
+- **Patterns** use glob syntax: `**/` for optional directory prefix, `**` for any path, `*` within a segment, `?` for a single character.
+- The only exemption is the platform's native auto-memory directory outside the repo.
 
 ```
-BLOCKED: <reason>
-  <details>
-  <guidance for recovery>
+BLOCKED: Path is off-limits to all agents.
+  Path: .env
+  Pattern: **/.env*
+  Configure exceptions in dydo/files-off-limits.md
 ```
 
-Examples:
-- `BLOCKED: Path is off-limits to all agents.` — with the matched pattern and path
-- `BLOCKED: Agent Brian (code-writer) cannot edit src/test.cs.` — with the role's denial hint
-- `BLOCKED: You have not read the required files for the code-writer mode:` — listing unread must-reads
-- `BLOCKED: Dangerous command pattern detected.` — with reason and the flagged command
+---
+
+## Layer 2: Bash Command Analysis
+
+Bash commands get deeper treatment than direct tool calls:
+
+1. **Dangerous pattern detection** (immediate block): recursive root/home deletes, fork bombs, direct disk writes (`dd`), download-and-execute (`curl | sh`), eval of untrusted input, history clearing, security disables.
+2. **Bypass detection** (warnings, not blocks): command substitution (`$(...)`), base64/hex decode, variable expansion, embedded newlines — flagged because they can obscure the paths actually being touched.
+3. **File operation extraction**: the command is tokenized into reads (`cat`, `grep`), writes (`tee`, `>`, `>>`, `sed -i`), deletes (`rm`), copies/moves (`cp`, `mv`), and permission changes (`chmod`) — and each extracted path is checked against off-limits individually. A chain can't smuggle a protected path past the guard.
+4. **Chained `cd` block**: `cd /path && command` breaks path analysis — run `cd` separately or use absolute paths.
+
+The guard fires on `dydo` commands themselves too — nudges and off-limits apply to dydo's own CLI like anything else.
+
+---
+
+## Layer 3: Nudges
+
+Nudges are project-configurable rules in `dydo.json`: a pattern plus a message, at one of three severities.
+
+| Severity | Behavior |
+|----------|----------|
+| `notice` | `NOTICE:` on stderr, never blocks (exit 0) |
+| `warn` | Blocks once with "(Run the same command again to proceed anyway.)"; the retry passes. The pass-through marker lives in `dydo/_system/.local/` (gitignored), keyed by pattern hash. |
+| `block` | Always blocks |
+
+Two kinds:
+
+- **Command nudges** — regex matched against bash command text. Capture groups substitute into the message (`$1`, `$2`, …).
+- **File nudges** (`tools` key) — glob patterns matched against direct tool-call paths; `{source}` and `{tests}` expand to the path sets in `dydo.json`. The shipped example is the Tier-1 source-write reminder ([Decision 026](../project/decisions/026-tier1-managers-doctrine.md)): a `notice` that reminds managers to route implementation through worker skills without ever blocking the trivial-edit exception.
+
+**Shipped defaults and self-healing:** the indirect-dydo-invocation nudges (`npx dydo`, `dotnet dydo`, `python dydo`, …) are severity-pinned — `MergeSystemNudges` reconciles config against the shipped set on every guard call: a deleted block-default is re-added, a downgraded severity is restored to `block`, and a nudge still carrying a known-stale shipped message is healed to the current text or dropped if its default was retired. A message the user customized matches no known-stale text and is never clobbered.
+
+---
+
+## Also Enforced
+
+- **Plan-mode block**: `EnterPlanMode`/`ExitPlanMode` are blocked — planning happens through the planner skill and plan records, not the platform's plan mode.
+- **Agent-tool notice**: invoking the platform's built-in `Agent` tool passes with a stderr reminder that sub-agent calls run anonymous and governed by the same three layers.
+
+## Housekeeping Rides Along
+
+Because the guard runs on every tool call, it carries two throttled maintenance jobs: a **daily validation** (config checks, report-only, never blocks) and **model-cap auto-restore** (expired `dydo model cap` fallbacks are lifted without human intervention).
 
 ---
 
 ## Integration for Other AI Tools
 
-Any AI coding tool can integrate with dydo's guard system through two input modes:
+Any coding tool can integrate through two input modes with the same contract (exit 0 allows, exit 2 blocks with stderr message):
 
-**Stdin JSON (preferred for hooks):** Pipe a JSON object with `session_id`, `tool_name`, `tool_input`, and `hook_event_name` to `dydo guard` via stdin. The tool input schema varies by tool type (`file_path` for file tools, `command` for bash, `path` for search tools).
-
-**CLI arguments (for testing):** Pass `--action {edit|write|delete|read}`, `--path <path>`, and `--command <command>` directly. Useful for development and integration testing.
-
-The return contract is the same for both modes: exit 0 allows the action, exit 2 blocks it with an error message on stderr.
+- **Stdin JSON** (preferred for hooks) — the payload shown above; `file_path` for file tools, `command` for bash, `path` for search tools.
+- **CLI arguments** (for testing) — `--action {edit|write|delete|read}`, `--path <path>`, `--command <command>`.
 
 ---
 
 ## Related
 
-- [Guardrails Reference](../reference/guardrails.md) — Full catalog of nudges, soft-blocks, and hard rules
-- [Agent Lifecycle](./agent-lifecycle.md)
-- [Roles and Permissions](./roles-and-permissions.md)
+- [Configuration Reference](../reference/configuration.md) — nudge format, off-limits, path sets
+- [Architecture Overview](./architecture.md) — where the guard sits in the system
+- [Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md) — why identity-gated enforcement left the guard

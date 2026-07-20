@@ -1,6 +1,6 @@
 ---
 area: project
-type: backlog
+type: context
 status: done
 date: 2026-07-06
 ---

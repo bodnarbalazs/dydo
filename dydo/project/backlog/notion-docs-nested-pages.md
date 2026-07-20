@@ -1,6 +1,6 @@
 ---
 area: project
-type: backlog
+type: context
 status: open
 date: 2026-07-06
 ---
@@ -50,7 +50,7 @@ Sync the knowledge-base docs tree to Notion as a **nested-page hierarchy mirrori
 `NotionBlockConverter` (done), the `BaseSnapshotStore`/`provision.json` persistence pattern,
 `NotionParentResolver`. Live-verify against real Notion: nested-page creation, append-children batch limits,
 and archive-on-delete — the same "FakeNotionClient can't catch it" gap that bit the formula sync
-([[notion-sync-live-api-constraints]]).
+(`notion-sync-live-api-constraints`).
 
 ## Deliverable
 

@@ -1,6 +1,6 @@
 ---
 area: project
-type: backlog
+type: context
 name: post-2.0.6-sprint-pipeline
 status: open
 created: 2026-07-08

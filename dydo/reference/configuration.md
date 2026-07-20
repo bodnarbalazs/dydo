@@ -63,17 +63,6 @@ Located at the project root. Created by `dydo init`. This is the primary configu
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DYDO_HUMAN` | Yes | Identifies the human operating the terminal. Used to stamp authorship on tasks and issues. |
-
-Set `DYDO_HUMAN` before running any commands:
-
-```bash
-# Bash/Zsh
-export DYDO_HUMAN="your_name"
-
-# PowerShell
-$env:DYDO_HUMAN = "your_name"
-```
 
 ---
 
@@ -181,9 +170,9 @@ Custom tags: add any `{{include:whatever}}` to a template, create `whatever.md` 
 
 ### Custom Roles
 
-`dydo/_system/roles/` contains `.role.json` files defining role permissions. Base roles are built-in; add custom roles by creating new `.role.json` files with `"base": false`.
+The mode template is the role: drop a `mode-<name>.template.md` into `dydo/_system/templates/` and run `dydo sync`. Frontmatter (`mode`, `description`, `emit`, `read-only`) declares the metadata; the body is the methodology.
 
-See [Roles and Permissions](../understand/roles-and-permissions.md) for the role definition schema.
+See [Customizing Roles](../guides/customizing-roles.md) for the full guide.
 
 ### Off-Limits Patterns
 

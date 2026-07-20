@@ -59,4 +59,4 @@ Template dispatch examples should include `--auto-close` since the primary audie
 
 - [Decision 003 — Agent Messaging](./003-agent-messaging.md)
 - [Decision 005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md)
-- [Guardrails Reference](../../reference/guardrails.md)
+- Guardrails Reference — historical; the tier catalog it pointed to was folded into [Guard System](../../understand/guard-system.md) when the claim-era guardrails were removed

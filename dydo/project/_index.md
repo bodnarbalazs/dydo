@@ -26,9 +26,9 @@ Index of project documentation.
 - [Issues](./issues/_index.md) - Actionable work items with lifecycle tracking.
 - [Pitfalls](./pitfalls/_index.md) - Known gotchas and issues that catch people repeatedly.
 - [Releases](./releases/_index.md) - Release records for this project's version/ship history, synced to the Notion "dydo Releases" board (the top of the Release → Campaign → Sprint → S...
-- [Slices](./slices/_index.md) - Slice records — the atom of implementation for a sprint, the leaf of the Notion PM sync spine.
+- [Slices](./slices/_index.md) - Slice records — the atom of implementation for a sprint.
 - [Sprints](./sprints/_index.md) - TODO: Describe the purpose of this folder.
 
 ## Tasks
 
-Agent task files live under `tasks/`. They are transient (one per agent role-assignment) and not indexed; locate by name via `dydo whoami` or `dydo agent status`.
+Agent task files live under `tasks/`. They are transient (one per agent role-assignment) and not indexed; locate them by name.

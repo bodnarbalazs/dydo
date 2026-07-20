@@ -4,7 +4,8 @@ id: 287
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
+resolved-date: 2026-07-20
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -14,7 +15,7 @@ date: 2026-07-12
 
 # Issue/task title and H1 literal anchor-links still trip BrokenLinks after 0205 (heading is the title; needs generator-side escaping or create-time sanitization)
 
-Residual from 0205: the literal [label](#section) in issue 0186/0205 own frontmatter title + H1 still flags BrokenLinks; the 0205 prose-escape/hub-skip approach cannot touch titles. Needs HubGenerator title-escaping, validator title-line exemption, or issue-create title sanitization.
+Residual from 0205: the literal `[label](#section)` in issue 0186/0205 own frontmatter title + H1 still flags BrokenLinks; the 0205 prose-escape/hub-skip approach cannot touch titles. Needs HubGenerator title-escaping, validator title-line exemption, or issue-create title sanitization.
 
 ## Description
 
@@ -39,4 +40,4 @@ Low severity â€” cosmetic `dydo check` noise confined to two meta-issues that do
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-20. Took the minimal option: `LinkExtractor.Extract` now skips frontmatter lines (YAML metadata, not markdown) and the H1 title line (the heading IS the title; link-shaped text in it is quoted, not navigable), and the wikilink loop gained the same `IsInsideInlineCode` guard the markdown-link loop already had — backticked `[[wikilink]]` examples and bash `[[ ... ]]` syntax no longer flag. Covered by three new MarkdownParserTests (frontmatter skip, H1-but-not-H2 skip, wikilink-in-inline-code skip).

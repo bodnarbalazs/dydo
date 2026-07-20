@@ -717,6 +717,55 @@ public class NotionSpineSyncTests : IDisposable
         Assert.False(File.Exists(St().ProvisionPath));
     }
 
+    [Fact]
+    public void Run_OneTypeTripsMassDeleteFuse_SiblingStillReconciles_AbortReportedNotThrown()
+    {
+        // Slice ns-2: a Notion-side mass archive that would locally delete a large share of one type's records
+        // aborts that type's apply — as a RESULT, never an exception, so a sibling type still reconciles in the
+        // same tick and the abort is reported with the override flag and a truncated path list.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Alpha", "dir": "project/alpha", "notionTitle": "Alphas",
+                  "properties": { "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["open", "done"] } } },
+                { "type": "Beta", "dir": "project/beta", "notionTitle": "Betas",
+                  "properties": { "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["open", "done"] } } }
+              ]
+            }
+            """);
+        for (var i = 0; i < 30; i++)
+            Seed($"project/alpha/a{i:D2}", $"---\ntitle: A{i}\nstatus: open\n---\n\nBody.");
+        Seed("project/beta/b0", "---\ntitle: B0\nstatus: open\n---\n\nBody.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: create everything
+
+        // A Notion-side sweep archives 25 of the 30 Alpha pages; the sibling Beta doc is edited in the same window.
+        foreach (var page in client.QueryDataSource("ds-1").Take(25))
+            page.Archived = true;
+        File.WriteAllText(Path.Combine(_dydoRoot, "project", "beta", "b0.md"), "---\ntitle: B0\nstatus: done\n---\n\nBody.");
+
+        var output = new StringWriter();
+        var result = NotionSpineSync.Run(client, St(), dryRun: false, output);
+
+        // Alpha tripped (25 of 30 > 5 and > 20%); the run returns it rather than throwing.
+        Assert.True(result.FuseTripped);
+        Assert.Equal(["Alpha"], result.FuseTrippedTypes);
+        var text = output.ToString();
+        Assert.Contains("mass-delete fuse", text);
+        Assert.Contains("--allow-mass-delete", text);
+        Assert.Contains("+5 more", text); // 25 would-be-deleted paths: first 20 listed, then "+5 more"
+
+        // No Alpha repo file was deleted — the whole type's apply was aborted.
+        for (var i = 0; i < 30; i++)
+            Assert.True(File.Exists(Path.Combine(_dydoRoot, "project", "alpha", $"a{i:D2}.md")));
+
+        // The sibling Beta type still reconciled after Alpha tripped: its edit reached Notion.
+        Assert.Equal("done", client.QueryDataSource("ds-2").Single().Properties["status"].Select!.Name);
+    }
+
     /// <summary>A single-type Slice model whose only relation is the blocked-by self-relation.</summary>
     private void SeedSelfRelationSpine()
     {

@@ -413,6 +413,8 @@ The sync model owns the schema shape one-way (project → Notion): data values s
 
 Alongside the PM spine, sync can also mirror the browsable docs tree to a nested-page hierarchy under the same parent (a `Docs` page). The mirror is **opt-in**: the plain `dydo notion sync` runs the spine only. Pass `--docs` to run the spine plus the docs mirror, `--docs-only` for the mirror alone (never touches the PM board), or `--spine-only` for the explicit spine-only scope (the default); `--docs-only` and `--spine-only` are mutually exclusive. Pass `--parent-page <page-id>` to mirror under an explicit page, overriding `notion.parentPageId` / `DYDO_NOTION_PARENT_PAGE` — e.g. to smoke-test the docs mirror against a scratch page.
 
+A mass-delete fuse guards the repo: if a reconcile would locally delete more than 5 of a type's records **and** more than 20% of the type's tracked records (a poisoned snapshot, or a Notion-side mass archive), that type's apply aborts loudly, lists the would-be-deleted files, and the run exits non-zero — no other type is affected. Pass `--allow-mass-delete` to disable the fuse and apply the deletions anyway when they are intended.
+
 ```bash
 dydo notion sync
 dydo notion sync --dry-run
@@ -420,6 +422,7 @@ dydo notion sync --prune
 dydo notion sync --docs
 dydo notion sync --docs-only --parent-page <scratch-page-id>
 dydo notion sync --spine-only
+dydo notion sync --allow-mass-delete
 ```
 
 ### dydo notion reset

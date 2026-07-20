@@ -447,4 +447,112 @@ public class SyncRunnerTests : IDisposable
         Assert.True(File.Exists(ClosedPath("bug")));
         Assert.False(File.Exists(OpenPath("bug")));
     }
+
+    // --- Mass-delete fuse (slice ns-2) ---
+
+    /// <summary>Sync <paramref name="tracked"/> fresh docs (each gets an external row and a base entry), materialize
+    /// every repo file on disk, then archive <paramref name="deletions"/> of them on the external side. A re-run then
+    /// reconciles exactly <paramref name="deletions"/> LOCAL file deletions against <paramref name="tracked"/> tracked
+    /// records — the mass-delete fuse's exact inputs.</summary>
+    private List<SyncDoc> SeedTrackedThenExternallyDelete(int tracked, int deletions)
+    {
+        var docs = Enumerable.Range(0, tracked)
+            .Select(i => RepoDoc($"t{i:D3}", "body", ("status", "open")))
+            .ToList();
+        NewRunner().Run(docs);
+        foreach (var doc in docs)
+            SyncDocFile.Write(OpenPath(doc.LocalId), doc);
+        foreach (var doc in docs.Take(deletions))
+            _adapter.DeleteExternal(_base.Get(doc.LocalId)!.ExternalId!);
+        return docs;
+    }
+
+    [Fact]
+    public void MassDeleteFuse_SixOfTen_Aborts_TouchingNothing()
+    {
+        // 6 > 5 AND 6 > 20% of 10 -> both arms fire, the run aborts before applying anything.
+        var docs = SeedTrackedThenExternallyDelete(tracked: 10, deletions: 6);
+
+        var result = NewRunner().Run(docs);
+
+        Assert.True(result.FuseTripped);
+        Assert.Equal(6, result.WouldDeletePaths.Count);
+        Assert.Equal(docs.Take(6).Select(d => OpenPath(d.LocalId)).OrderBy(p => p), result.WouldDeletePaths.OrderBy(p => p));
+        // Nothing applied: every repo file still on disk and every base entry intact.
+        Assert.All(docs, d => Assert.True(File.Exists(OpenPath(d.LocalId))));
+        Assert.All(docs, d => Assert.NotNull(_base.Get(d.LocalId)));
+    }
+
+    [Fact]
+    public void MassDeleteFuse_SixOfHundred_BelowPercentArm_Applies()
+    {
+        // 6 > 5 but 6 is only 6% of 100 -> the 20% arm fails, so the deletions apply normally.
+        var docs = SeedTrackedThenExternallyDelete(tracked: 100, deletions: 6);
+
+        var result = NewRunner().Run(docs);
+
+        Assert.False(result.FuseTripped);
+        Assert.All(docs.Take(6), d => Assert.False(File.Exists(OpenPath(d.LocalId))));
+        Assert.All(docs.Take(6), d => Assert.Null(_base.Get(d.LocalId)));
+    }
+
+    [Fact]
+    public void MassDeleteFuse_ThreeOfFour_BelowCountArm_Applies()
+    {
+        // 3 is 75% of 4 but not > 5 -> the count arm fails, so the deletions apply normally.
+        var docs = SeedTrackedThenExternallyDelete(tracked: 4, deletions: 3);
+
+        var result = NewRunner().Run(docs);
+
+        Assert.False(result.FuseTripped);
+        Assert.All(docs.Take(3), d => Assert.False(File.Exists(OpenPath(d.LocalId))));
+        Assert.All(docs.Take(3), d => Assert.Null(_base.Get(d.LocalId)));
+    }
+
+    [Fact]
+    public void MassDeleteFuse_AllowMassDelete_AppliesDespiteThreshold()
+    {
+        // The same 6-of-10 plan that trips the fuse applies when the override is set.
+        var docs = SeedTrackedThenExternallyDelete(tracked: 10, deletions: 6);
+        var runner = new SyncRunner(_adapter, _base,
+            (localId, _, _) => OpenPath(localId), allowMassDelete: true);
+
+        var result = runner.Run(docs);
+
+        Assert.False(result.FuseTripped);
+        Assert.All(docs.Take(6), d => Assert.False(File.Exists(OpenPath(d.LocalId))));
+        Assert.All(docs.Take(6), d => Assert.Null(_base.Get(d.LocalId)));
+    }
+
+    [Fact]
+    public void MassDeleteFuse_SixOfThirtyTracked_AtStrictBoundary_DoesNotTrip_DenominatorIsBaseNotFileCount()
+    {
+        // Base tracks EXACTLY 30 records; 6 of them are deleted externally. 6 * 5 == 30 is NOT > 30, so the strict
+        // boundary holds and the fuse must NOT trip (a > -> >= regression would flip this). Ten EXTRA untracked
+        // local files (40 on disk, only 30 in the base) pin that the denominator is the base snapshot's tracked
+        // count, never the repo file count.
+        var tracked = Enumerable.Range(0, 30)
+            .Select(i => RepoDoc($"t{i:D3}", "body", ("status", "open")))
+            .ToList();
+        NewRunner().Run(tracked); // base now tracks exactly 30
+        foreach (var doc in tracked)
+            SyncDocFile.Write(OpenPath(doc.LocalId), doc);
+        foreach (var doc in tracked.Take(6))
+            _adapter.DeleteExternal(_base.Get(doc.LocalId)!.ExternalId!);
+
+        // Ten brand-new, unsynced local files: on disk but absent from the base snapshot.
+        var untracked = Enumerable.Range(0, 10)
+            .Select(i => RepoDoc($"n{i:D3}", "body", ("status", "open")))
+            .ToList();
+        foreach (var doc in untracked)
+            SyncDocFile.Write(OpenPath(doc.LocalId), doc);
+        Assert.Equal(30, _base.LocalIds.Count); // 40 files on disk, 30 tracked
+
+        var result = NewRunner().Run(tracked.Concat(untracked).ToList());
+
+        Assert.False(result.FuseTripped);
+        // The 6 deletions applied and the 10 untracked docs were created — never counted as deletions.
+        Assert.All(tracked.Take(6), d => Assert.Null(_base.Get(d.LocalId)));
+        Assert.All(untracked, d => Assert.NotNull(_base.Get(d.LocalId)));
+    }
 }

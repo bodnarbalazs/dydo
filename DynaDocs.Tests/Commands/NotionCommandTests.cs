@@ -86,6 +86,13 @@ public class NotionCommandTests
     }
 
     [Fact]
+    public void SyncCommand_HasAllowMassDeleteOption()
+    {
+        var sync = NotionCommand.Create().Subcommands.First(c => c.Name == "sync");
+        Assert.Contains(sync.Options, o => o.Name == "--allow-mass-delete");
+    }
+
+    [Fact]
     public void Sync_DocsOnlyAndSpineOnly_RejectedBeforeAnyWork()
     {
         // The mutual-exclusion guard is the first thing RunSync checks, so it trips regardless of token/project.

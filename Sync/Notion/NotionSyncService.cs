@@ -24,7 +24,8 @@ public static class NotionSyncService
         string? parentPageOverride = null,
         bool docs = false,
         bool docsOnly = false,
-        bool spineOnly = false)
+        bool spineOnly = false,
+        bool allowMassDelete = false)
     {
         // Belt-and-suspenders: the CLI already rejects these combinations, but Execute is also called directly
         // (tests, any future caller), so guard the incoherent scope here too rather than silently favouring one.
@@ -76,17 +77,21 @@ public static class NotionSyncService
             // --spine-only is the explicit spine-only (== default). A docs smoke must never touch the live PM board.
             var runSpine = !docsOnly;
             var runDocs = !spineOnly && (docs || docsOnly);
+            var fuseTripped = false;
             if (runSpine)
             {
                 // The one decision point resolves every parent-scoped spine state path AND migrates legacy
                 // project-scoped files, identically for sync and reset (issue 0257).
                 var state = NotionSpineState.Resolve(
                     config.GetDydoRoot(), configuredParentPageId, parentPageOverride, dryRun, output);
-                NotionSpineSync.Run(client, state, dryRun, output, prune);
+                fuseTripped = NotionSpineSync.Run(client, state, dryRun, output, prune, allowMassDelete).FuseTripped;
             }
             if (runDocs)
                 DocsTreeSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output);
-            return ExitCodes.Success;
+            // A tripped mass-delete fuse (slice ns-2) is a tool error the operator must see and act on — every
+            // other type still reconciled, so this is reported only after the whole run, mapping the trip to a
+            // non-zero exit rather than a silent success.
+            return fuseTripped ? ExitCodes.ToolError : ExitCodes.Success;
         }
         catch (NotionApiException ex)
         {

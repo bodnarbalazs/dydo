@@ -352,6 +352,84 @@ public class NotionSyncServiceTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Execute_MassDeleteFuseTrips_ExitsToolError()
+    {
+        // Slice ns-2: a reconcile that would locally delete a large share of a type's tracked records aborts and
+        // the service maps the trip to a tool error — after the whole run, so every other type still reconciled.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpMassDeleteProject(out var client, tracked: 10);
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            NotionSyncService.Execute("tok", new ConfigService(), _ => client, dryRun: false,
+                new StringWriter(), new StringWriter()); // tick 1: create every page
+
+            foreach (var page in client.QueryDataSource("ds-1").Take(6))
+                page.Archived = true; // a Notion-side sweep of 6 of 10 pages
+
+            var output = new StringWriter();
+            var code = NotionSyncService.Execute("tok", new ConfigService(), _ => client, dryRun: false,
+                output, new StringWriter());
+
+            Assert.Equal(ExitCodes.ToolError, code);
+            Assert.Contains("mass-delete fuse", output.ToString());
+            // The fuse held: no note file was deleted.
+            Assert.Equal(10, Directory.GetFiles(Path.Combine(project, "dydo", "project", "notes")).Length);
+        }
+        finally { Directory.SetCurrentDirectory(savedCwd); }
+    }
+
+    [Fact]
+    public void Execute_MassDelete_AllowOverride_AppliesAndExitsSuccess()
+    {
+        // The same sweep applies when --allow-mass-delete is passed: the deletions land and the run exits clean.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpMassDeleteProject(out var client, tracked: 10);
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            NotionSyncService.Execute("tok", new ConfigService(), _ => client, dryRun: false,
+                new StringWriter(), new StringWriter());
+
+            foreach (var page in client.QueryDataSource("ds-1").Take(6))
+                page.Archived = true;
+
+            var code = NotionSyncService.Execute("tok", new ConfigService(), _ => client, dryRun: false,
+                new StringWriter(), new StringWriter(), allowMassDelete: true);
+
+            Assert.Equal(ExitCodes.Success, code);
+            // The override applied the deletions: 6 note files were removed, 4 remain.
+            Assert.Equal(4, Directory.GetFiles(Path.Combine(project, "dydo", "project", "notes")).Length);
+        }
+        finally { Directory.SetCurrentDirectory(savedCwd); }
+    }
+
+    /// <summary>Build a project with a single-type model ("Note") holding <paramref name="tracked"/> docs, so a run
+    /// that archives a large share of the pages exercises the mass-delete fuse.</summary>
+    private string SetUpMassDeleteProject(out FakeNotionClient client, int tracked)
+    {
+        var project = Path.Combine(_dir, "proj-" + Guid.NewGuid().ToString("N")[..6]);
+        var notes = Path.Combine(project, "dydo", "project", "notes");
+        Directory.CreateDirectory(notes);
+        File.WriteAllText(Path.Combine(project, "dydo.json"), "{\"version\":1,\"notion\":{\"parentPageId\":\"page-root\"}}");
+        var model = Path.Combine(project, "dydo", "_system", "sync-model.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(model)!);
+        File.WriteAllText(model, """
+            {
+              "objects": [
+                { "type": "Note", "dir": "project/notes", "notionTitle": "Notes",
+                  "properties": { "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["open", "done"] } } }
+              ]
+            }
+            """);
+        for (var i = 0; i < tracked; i++)
+            File.WriteAllText(Path.Combine(notes, $"n{i:D2}.md"), $"---\ntitle: N{i}\nstatus: open\n---\n\nBody.");
+        client = new FakeNotionClient();
+        return project;
+    }
+
     /// <summary>Build a minimal dydo project (dydo.json + a seed campaign) and a fake client. Returns the root.</summary>
     private string SetUpProject(out FakeNotionClient client, string? parentPageId)
     {

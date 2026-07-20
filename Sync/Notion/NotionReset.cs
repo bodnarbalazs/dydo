@@ -99,9 +99,11 @@ public static class NotionReset
 
             // Recreate: the normal spine path mints a fresh database per type (Lookup now returns null) and
             // re-pushes every repo doc as a create. The mint path also deletes each type's stale base snapshot,
-            // so the empty new databases are reconciled against an empty base — no spurious mass-delete.
-            NotionSpineSync.Run(client, state, dryRun: false, output);
-            return ExitCodes.Success;
+            // so the empty new databases are reconciled against an empty base — no spurious mass-delete, so the
+            // fuse is untrippable here today. Still map any trip to a tool error the same way NotionSyncService
+            // does, so a future path that could trip a reset never exits Success silently.
+            var result = NotionSpineSync.Run(client, state, dryRun: false, output);
+            return result.FuseTripped ? ExitCodes.ToolError : ExitCodes.Success;
         }
         catch (NotionApiException ex)
         {

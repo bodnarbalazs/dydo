@@ -14,7 +14,7 @@ using DynaDocs.Sync.Notion.Provisioning;
 /// </summary>
 public static class NotionSpineSync
 {
-    public static void Run(INotionClient client, NotionSpineState state, bool dryRun, TextWriter output, bool prune = false)
+    public static NotionSpineSyncResult Run(INotionClient client, NotionSpineState state, bool dryRun, TextWriter output, bool prune = false, bool allowMassDelete = false)
     {
         var dydoRoot = state.DydoRoot;
         var model = SyncModelLoader.Load(dydoRoot);
@@ -32,7 +32,7 @@ public static class NotionSpineSync
         if (!dryRun)
             CheckDrift(client, model, types, dataSourceIds, prune, output);
 
-        Reconcile(client, state, types, dataSourceIds, minted, dryRun, output);
+        return Reconcile(client, state, types, dataSourceIds, minted, dryRun, allowMassDelete, output);
     }
 
     /// <summary>Schema-shape ownership (DR 029 §6): after every type's data source is resolved, compare its
@@ -187,11 +187,12 @@ public static class NotionSpineSync
         }
     }
 
-    private static void Reconcile(
+    private static NotionSpineSyncResult Reconcile(
         INotionClient client, NotionSpineState state, IReadOnlyList<SyncObjectType> types,
-        IReadOnlyDictionary<string, string> dataSourceIds, IReadOnlySet<string> minted, bool dryRun, TextWriter output)
+        IReadOnlyDictionary<string, string> dataSourceIds, IReadOnlySet<string> minted, bool dryRun, bool allowMassDelete, TextWriter output)
     {
         var localToPageByType = new Dictionary<string, Dictionary<string, string>>();
+        var fuseTripped = new List<string>();
 
         foreach (var type in types)
         {
@@ -235,7 +236,7 @@ public static class NotionSpineSync
             var adapter = new NotionSyncAdapter(
                 client, dataSourceId, type.FieldSchema(), relationLocalToPageByField, relationPageToLocal, type.Icon,
                 engineSchema, store.GetLastActivity);
-            var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor);
+            var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor, allowMassDelete: allowMassDelete);
 
             if (dryRun)
             {
@@ -245,13 +246,38 @@ public static class NotionSpineSync
             else
             {
                 var run = runner.Run(docs);
-                output.WriteLine($"  sync       {type.Type,-9} reconciled {run.Results.Count} object(s)");
-                if (run.ConflictCount > 0)
-                    output.WriteLine($"             {run.ConflictCount} conflict(s): {string.Join(", ", run.ConflictedLocalIds)}");
+                if (run.FuseTripped)
+                {
+                    fuseTripped.Add(type.Type);
+                    ReportFuseTrip(type.Type, run.WouldDeletePaths, output);
+                }
+                else
+                {
+                    output.WriteLine($"  sync       {type.Type,-9} reconciled {run.Results.Count} object(s)");
+                    if (run.ConflictCount > 0)
+                        output.WriteLine($"             {run.ConflictCount} conflict(s): {string.Join(", ", run.ConflictedLocalIds)}");
+                }
             }
 
             localToPageByType[type.Type] = LocalToPageIds(store);
         }
+
+        return new NotionSpineSyncResult { FuseTrippedTypes = fuseTripped };
+    }
+
+    /// <summary>Report a mass-delete fuse abort for one type (slice ns-2): the type reconciled NOTHING this tick —
+    /// no page archived, no repo file deleted, base un-advanced — because it would have locally deleted a large
+    /// share of its tracked records. Names the override flag and lists the would-be-deleted paths, first 20 then a
+    /// "+N more" tail so a runaway plan does not flood the log.</summary>
+    private static void ReportFuseTrip(string type, IReadOnlyList<string> wouldDelete, TextWriter output)
+    {
+        output.WriteLine(
+            $"  sync       {type,-9} ABORTED by mass-delete fuse: would delete {wouldDelete.Count} local record(s) — refusing. "
+            + "Pass --allow-mass-delete to override. Would delete:");
+        foreach (var path in wouldDelete.Take(20))
+            output.WriteLine($"             {path}");
+        if (wouldDelete.Count > 20)
+            output.WriteLine($"             +{wouldDelete.Count - 20} more");
     }
 
     /// <summary>Build this type's relation id maps. On write each relation FIELD maps to its own declared

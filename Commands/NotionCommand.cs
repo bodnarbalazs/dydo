@@ -102,19 +102,25 @@ public static class NotionCommand
         {
             Description = "Run only the PM spine, skipping the docs mirror (the default scope). Mutually exclusive with --docs-only.",
         };
+        var allowMassDelete = new Option<bool>("--allow-mass-delete")
+        {
+            Description = "Disable the mass-delete fuse: apply a reconcile even when it would locally delete a large share of a type's tracked records. Without it, such a run aborts loudly and exits non-zero.",
+        };
         command.Options.Add(dryRun);
         command.Options.Add(prune);
         command.Options.Add(parentPage);
         command.Options.Add(docs);
         command.Options.Add(docsOnly);
         command.Options.Add(spineOnly);
+        command.Options.Add(allowMassDelete);
         command.SetAction(parse => RunSync(
             parse.GetValue(dryRun), parse.GetValue(prune),
-            parse.GetValue(parentPage), parse.GetValue(docs), parse.GetValue(docsOnly), parse.GetValue(spineOnly)));
+            parse.GetValue(parentPage), parse.GetValue(docs), parse.GetValue(docsOnly), parse.GetValue(spineOnly),
+            parse.GetValue(allowMassDelete)));
         return command;
     }
 
-    private static int RunSync(bool dryRun, bool prune, string? parentPageOverride, bool docs, bool docsOnly, bool spineOnly)
+    private static int RunSync(bool dryRun, bool prune, string? parentPageOverride, bool docs, bool docsOnly, bool spineOnly, bool allowMassDelete)
     {
         if (docsOnly && spineOnly)
         {
@@ -135,7 +141,7 @@ public static class NotionCommand
             return failCode;
 
         return NotionSyncService.Execute(
-            token, config, CreateClient, dryRun, Console.Out, Console.Error, prune, parentPageOverride, docs, docsOnly, spineOnly);
+            token, config, CreateClient, dryRun, Console.Out, Console.Error, prune, parentPageOverride, docs, docsOnly, spineOnly, allowMassDelete);
     }
 
     private static Command CreateResetCommand()

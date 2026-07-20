@@ -19,6 +19,7 @@ public sealed class SyncRunner
     private readonly BaseSnapshotStore _base;
     private readonly Func<string, IReadOnlyList<SyncField>, string?, string> _repoPathFor;
     private readonly Func<string, string>? _conflictShadowPathFor;
+    private readonly bool _allowMassDelete;
 
     /// <param name="repoPathFor">The canonical repo path for a doc, given its local id, fields, and current
     /// on-disk path (null when the doc has none yet). Fields are passed so folder placement can derive from
@@ -30,15 +31,21 @@ public sealed class SyncRunner
     /// so the sync can NEVER corrupt a canonical doc with conflict markers (root cause of issue 0235). Null
     /// (the default, and the spine) keeps the historical behavior of writing the merged body — markers and all —
     /// to the canonical file.</param>
+    /// <param name="allowMassDelete">Disables the mass-delete fuse (slice ns-2) for this run. Off by default: a
+    /// reconcile that would locally delete more than 5 records AND more than 20% of the type's tracked base
+    /// records aborts before applying anything (see <see cref="SyncRunResult.FuseTripped"/>), a loud tripwire
+    /// against a poisoned/stale snapshot or a Notion-side mass archive sweeping the repo. Pass true to override.</param>
     public SyncRunner(
         ISyncAdapter adapter, BaseSnapshotStore baseStore,
         Func<string, IReadOnlyList<SyncField>, string?, string> repoPathFor,
-        Func<string, string>? conflictShadowPathFor = null)
+        Func<string, string>? conflictShadowPathFor = null,
+        bool allowMassDelete = false)
     {
         _adapter = adapter;
         _base = baseStore;
         _repoPathFor = repoPathFor;
         _conflictShadowPathFor = conflictShadowPathFor;
+        _allowMassDelete = allowMassDelete;
     }
 
     private static SyncDoc WithBody(SyncDoc doc, string body) => new()
@@ -100,7 +107,10 @@ public sealed class SyncRunner
         localIds.UnionWith(repoByLocalId.Keys);
         localIds.UnionWith(externalByLocalId.Keys);
 
-        var changes = new SyncChangeSet();
+        // Tracked-record count for the mass-delete fuse, captured before reconcile: base entries are only
+        // removed later in CommitBase, so this is the type's tracked-base size going into the run.
+        var trackedCount = _base.LocalIds.Count;
+
         var results = new List<ReconcileResult>();
         var shadowed = new HashSet<string>();
 
@@ -113,10 +123,35 @@ public sealed class SyncRunner
             var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure);
             results.Add(result);
             RecordActivity(result, repo);
-            if (RouteConflictToShadow(result, shadowed))
+            RouteConflictToShadow(result, shadowed);
+        }
+
+        // Mass-delete fuse (slice ns-2): count the LOCAL file deletions this reconcile would materialize — a Delete
+        // that removes a repo file (RepoDelete), not an external-only archive of an already-removed doc — and abort
+        // BEFORE any file is touched if it crosses the threshold. Returned as a result, never thrown, so the caller
+        // maps the trip to a tool error while sibling types still reconcile.
+        var wouldDelete = results
+            .Where(r => r.Action == ReconcileAction.Delete && r.RepoDelete != null)
+            .Select(r => r.RepoDelete!)
+            .ToList();
+        if (!_allowMassDelete && FuseTrips(wouldDelete.Count, trackedCount))
+            return new SyncRunResult
+            {
+                Results = results,
+                ShadowedLocalIds = shadowed.ToList(),
+                FuseTripped = true,
+                WouldDeletePaths = wouldDelete,
+            };
+
+        var changes = new SyncChangeSet();
+        foreach (var result in results)
+        {
+            if (shadowed.Contains(result.LocalId))
                 continue;
-            ApplyResult(localId, result, repo, changes);
-            EnqueueEngineComputedRefresh(localId, result, external, changes);
+            repoByLocalId.TryGetValue(result.LocalId, out var repo);
+            externalByLocalId.TryGetValue(result.LocalId, out var external);
+            ApplyResult(result.LocalId, result, repo, changes);
+            EnqueueEngineComputedRefresh(result.LocalId, result, external, changes);
         }
 
         // Apply is non-atomic; the base advance is deferred until Apply reports back so a mid-batch
@@ -146,6 +181,13 @@ public sealed class SyncRunner
 
         return new SyncRunResult { Results = results, ShadowedLocalIds = shadowed.ToList() };
     }
+
+    /// <summary>The mass-delete fuse predicate (sprint decision, ns-2): trip when a reconcile would locally delete
+    /// MORE than 5 records AND more than 20% of the type's tracked base records. Both arms must fire, so a handful
+    /// of deletions on a large board and a tiny board's whole contents both pass; the <c>* 5</c> compare is the
+    /// exact 20% test in integers.</summary>
+    private static bool FuseTrips(int deletions, int trackedCount) =>
+        deletions > 5 && deletions * 5 > trackedCount;
 
     /// <summary>Divert a conflicted body to the shadow tree instead of the canonical repo file (DR 035 §4/§5 —
     /// the docs mirror). Active only when a shadow-path resolver was supplied; the spine passes none and this is

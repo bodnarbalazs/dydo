@@ -452,7 +452,7 @@ public class NotionSyncServiceTests : IDisposable
         public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) { }
         public void ArchiveDatabase(string databaseId) { }
         public void CreateView(NotionViewCreateRequest request) { }
-        public IReadOnlyList<string> ListViewIds(string databaseId) => [];
+        public IReadOnlyList<NotionViewRef> ListViews(string databaseId) => [];
         public void DeleteView(string viewId) { }
         public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) => [];
         public NotionPage CreatePage(NotionPageCreateRequest request) => new();
@@ -463,6 +463,6 @@ public class NotionSyncServiceTests : IDisposable
         public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) => [];
         public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request) { }
         public void DeleteBlock(string blockId) { }
-        public IReadOnlyList<string> SearchDataSources() => [];
+        public IReadOnlyList<NotionSearchResult> SearchDataSources() => [];
     }
 }

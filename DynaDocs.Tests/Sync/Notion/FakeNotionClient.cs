@@ -24,7 +24,7 @@ public sealed class FakeNotionClient : INotionClient
     private int _nextBlock = 1;
     private int _nextDb = 1;
 
-    public List<string> DiscoverableDataSources { get; } = [];
+    public List<NotionSearchResult> DiscoverableDataSources { get; } = [];
     public Dictionary<string, NotionDatabase> Databases { get; } = new();
     public List<NotionDatabaseCreateRequest> CreatedDatabases { get; } = [];
 
@@ -34,9 +34,10 @@ public sealed class FakeNotionClient : INotionClient
     public List<(string DataSourceId, NotionDataSourceUpdateRequest Request)> DataSourceUpdates { get; } = [];
     public List<NotionViewCreateRequest> CreatedViews { get; } = [];
 
-    /// <summary>View ids per database — seeded with an auto-created "default" on CreateDatabase (as real Notion
-    /// does), appended by CreateView, and pruned by DeleteView — so the provisioner's default-view removal is testable.</summary>
-    private readonly Dictionary<string, List<string>> _viewsByDb = new();
+    /// <summary>Views per database — seeded with an auto-created "default" on CreateDatabase (as real Notion
+    /// does), appended by CreateView, and pruned by DeleteView — so the provisioner's default-view removal and
+    /// the CreateView match-by-name recovery are testable.</summary>
+    private readonly Dictionary<string, List<NotionViewRef>> _viewsByDb = new();
     private int _nextView = 1;
     public List<string> DeletedViews { get; } = [];
 
@@ -83,6 +84,33 @@ public sealed class FakeNotionClient : INotionClient
     /// <summary>When set, <see cref="CreateDatabase"/> throws once this many database creates have succeeded —
     /// drives the mid-provision-failure test (provision state must persist the databases already created).</summary>
     public int? FailCreateDatabaseAfter { get; set; }
+
+    /// <summary>One-shot: the next <see cref="CreateDatabase"/> creates the database AND registers it discoverable
+    /// (as real Notion would) but then throws an AMBIGUOUS 500 — modelling a create that succeeded server-side
+    /// before its response was lost. Drives the provisioner's re-search-and-adopt recovery (ns-5).</summary>
+    public bool CreateDatabaseSucceedsThenAmbiguous5xx { get; set; }
+
+    /// <summary>One-shot: the next <see cref="CreateDatabase"/> throws an AMBIGUOUS 500 BEFORE creating anything —
+    /// modelling a create that truly failed. Drives the recovery's re-create-fresh branch (search finds nothing).</summary>
+    public bool CreateDatabaseFailsAmbiguously { get; set; }
+
+    /// <summary>One-shot: the next <see cref="CreatePage"/> stores the page but then throws an AMBIGUOUS 500 —
+    /// modelling a page create that landed server-side before its response was lost. Drives the adapter's
+    /// re-query-and-adopt recovery (ns-5).</summary>
+    public bool CreatePageSucceedsThenAmbiguous5xx { get; set; }
+
+    /// <summary>One-shot: the next <see cref="CreatePage"/> throws an AMBIGUOUS 500 BEFORE storing anything —
+    /// modelling a page create that truly failed. Drives the adapter's re-create-fresh branch.</summary>
+    public bool CreatePageFailsAmbiguously { get; set; }
+
+    /// <summary>One-shot: the next <see cref="CreateView"/> records the view (so a subsequent <see cref="ListViews"/>
+    /// finds it by name) but then throws an AMBIGUOUS 500 — modelling a view create that landed server-side before
+    /// its response was lost. Drives the provisioner's match-by-name recovery (ns-5).</summary>
+    public bool CreateViewSucceedsThenAmbiguous5xx { get; set; }
+
+    /// <summary>One-shot: the next <see cref="CreateView"/> throws an AMBIGUOUS 500 BEFORE recording anything —
+    /// modelling a view create that truly failed. Drives the recovery's re-create branch.</summary>
+    public bool CreateViewFailsAmbiguously { get; set; }
 
     /// <summary>When set, <see cref="UpdateDataSource"/> throws once this many updates have succeeded — drives
     /// the mid-post-pass-failure tests: a self-relation PATCH crash (finding 3) and a rollup/formula post-pass
@@ -192,16 +220,32 @@ public sealed class FakeNotionClient : INotionClient
     {
         if (FailCreateDatabaseAfter is { } limit && CreatedDatabases.Count >= limit)
             throw new NotionApiException(429, "simulated database create failure");
+        if (CreateDatabaseFailsAmbiguously)
+        {
+            CreateDatabaseFailsAmbiguously = false;
+            throw new NotionApiException(500, "simulated ambiguous database create failure (nothing persisted)");
+        }
         var n = _nextDb++;
         var dataSourceId = $"ds-{n}";
+        var title = NotionRichText.Flatten(request.Title);
         var db = new NotionDatabase
         {
             Id = $"db-{n}",
-            DataSources = [new NotionDataSourceRef { Id = dataSourceId, Name = NotionRichText.Flatten(request.Title) }],
+            Parent = new NotionParent { Type = "page_id", PageId = request.Parent.PageId },
+            DataSources = [new NotionDataSourceRef { Id = dataSourceId, Name = title }],
         };
         Databases[db.Id] = db;
-        _viewsByDb[db.Id] = [$"default-{n}"]; // Notion auto-creates a default view on database creation
+        _viewsByDb[db.Id] = [new NotionViewRef { Id = $"default-{n}", Name = "Default view" }]; // Notion auto-creates one
         CreatedDatabases.Add(request);
+        // Real Notion makes every created data source searchable — the source of truth the CreateDatabase
+        // recovery re-queries when a create response is lost (ns-5).
+        DiscoverableDataSources.Add(new NotionSearchResult
+        {
+            Id = dataSourceId,
+            Object = "data_source",
+            Name = title,
+            Parent = new NotionParent { Type = "database_id", DatabaseId = db.Id },
+        });
         _dataSources[dataSourceId] = new NotionDataSource
         {
             Id = dataSourceId,
@@ -211,6 +255,11 @@ public sealed class FakeNotionClient : INotionClient
         // by using the property name as its id so RetrieveDataSource yields a usable name→id map in tests.
         foreach (var (name, schema) in _dataSources[dataSourceId].Properties)
             schema.Id ??= name;
+        if (CreateDatabaseSucceedsThenAmbiguous5xx)
+        {
+            CreateDatabaseSucceedsThenAmbiguous5xx = false;
+            throw new NotionApiException(500, "simulated ambiguous database create failure (persisted server-side)");
+        }
         return db;
     }
 
@@ -248,20 +297,30 @@ public sealed class FakeNotionClient : INotionClient
 
     public void CreateView(NotionViewCreateRequest request)
     {
+        if (CreateViewFailsAmbiguously)
+        {
+            CreateViewFailsAmbiguously = false;
+            throw new NotionApiException(500, "simulated ambiguous view create failure (nothing persisted)");
+        }
         CreatedViews.Add(request);
         if (!_viewsByDb.TryGetValue(request.DatabaseId, out var list))
             _viewsByDb[request.DatabaseId] = list = [];
-        list.Add($"view-{_nextView++}");
+        list.Add(new NotionViewRef { Id = $"view-{_nextView++}", Name = request.Name });
+        if (CreateViewSucceedsThenAmbiguous5xx)
+        {
+            CreateViewSucceedsThenAmbiguous5xx = false;
+            throw new NotionApiException(500, "simulated ambiguous view create failure (persisted server-side)");
+        }
     }
 
-    public IReadOnlyList<string> ListViewIds(string databaseId) =>
+    public IReadOnlyList<NotionViewRef> ListViews(string databaseId) =>
         _viewsByDb.TryGetValue(databaseId, out var list) ? list.ToList() : [];
 
     public void DeleteView(string viewId)
     {
         DeletedViews.Add(viewId);
         foreach (var list in _viewsByDb.Values)
-            list.Remove(viewId);
+            list.RemoveAll(v => v.Id == viewId);
     }
 
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
@@ -280,6 +339,11 @@ public sealed class FakeNotionClient : INotionClient
         CreateChildCounts.Add(request.Children?.Count ?? 0);
         if (request.Children?.Count > 100)
             throw new NotionApiException(400, "body failed validation: body.children.length should be <= 100");
+        if (CreatePageFailsAmbiguously)
+        {
+            CreatePageFailsAmbiguously = false;
+            throw new NotionApiException(500, "simulated ambiguous page create failure (nothing persisted)");
+        }
         if (FailCreateAfter is { } limit && _createCount >= limit)
             throw new NotionApiException(500, "simulated create failure");
         _createCount++;
@@ -301,6 +365,11 @@ public sealed class FakeNotionClient : INotionClient
             if (!SilentlyIgnoreCreateMarkdown)
                 _pageMarkdown[id] = request.Markdown;
             _throwMarkdownReadAfterBodyCreate = ThrowFirstMarkdownReadAfterBodyCreate;
+        }
+        if (CreatePageSucceedsThenAmbiguous5xx)
+        {
+            CreatePageSucceedsThenAmbiguous5xx = false;
+            throw new NotionApiException(500, "simulated ambiguous page create failure (persisted server-side)");
         }
         return page;
     }
@@ -428,5 +497,5 @@ public sealed class FakeNotionClient : INotionClient
             list.RemoveAll(b => b.Id == blockId);
     }
 
-    public IReadOnlyList<string> SearchDataSources() => DiscoverableDataSources;
+    public IReadOnlyList<NotionSearchResult> SearchDataSources() => DiscoverableDataSources;
 }

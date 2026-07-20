@@ -67,13 +67,14 @@ public sealed class NotionProvisioner
         var firstPass = type.Properties.Where(p =>
             !selfRelations.Contains(p) && !rollups.Contains(p) && !deferredFormulas.Contains(p.Key));
 
-        var db = Push($"provisioning {type.Type} (create database)", () => _client.CreateDatabase(new NotionDatabaseCreateRequest
+        var request = new NotionDatabaseCreateRequest
         {
             Parent = new NotionDatabaseParent { PageId = parentPageId },
             Title = NotionRichText.Of(type.NotionTitle),
             Icon = NotionIcon.Of(type.Icon),
             InitialDataSource = new NotionInitialDataSource { Properties = BuildSchema(firstPass, resolvedDataSourceIds) },
-        }));
+        };
+        var db = CreateDatabaseWithRecovery(type, request);
 
         var record = new NotionProvisionedType
         {
@@ -89,6 +90,41 @@ public sealed class NotionProvisioner
         // post-pass with the same idempotent PATCH semantics as rollups/deferred formulas.
         Save();
         return record;
+    }
+
+    /// <summary>Create the database, recovering from an ambiguous failure (ns-5). CreateDatabase no longer
+    /// blind-retries a 5xx/transport-throw — the create may have succeeded server-side before the response was
+    /// lost — so re-search the accessible data sources for one whose title matches this type's AND whose owning
+    /// database sits under the SAME parent page this create targeted. The parent check is essential: search is
+    /// workspace-wide and multiple parents per token are supported (ns-1), so a same-titled board under a
+    /// different project's page must never be adopted (review major 2). A confirmed match ⇒ adopt the
+    /// already-created database, never a duplicate board; no match ⇒ the create truly failed (or belongs to
+    /// another parent), so re-create. A rate response (429/529) or a hard 4xx propagates unchanged.</summary>
+    private NotionDatabase CreateDatabaseWithRecovery(SyncObjectType type, NotionDatabaseCreateRequest request)
+    {
+        try
+        {
+            return Push($"provisioning {type.Type} (create database)", () => _client.CreateDatabase(request));
+        }
+        catch (NotionApiException e) when (e.AmbiguousOutcome)
+        {
+            foreach (var hit in _client.SearchDataSources()
+                         .Where(h => h.Name == type.NotionTitle && h.Parent?.DatabaseId != null))
+            {
+                var database = _client.RetrieveDatabase(hit.Parent!.DatabaseId!);
+                // Notion echoes the parent as a dashed UUID while config may hold the undashed form —
+                // compare canonically or adoption would silently never fire for undashed-config setups.
+                if (database.Parent?.PageId != null
+                    && ParentPageKey.Normalize(database.Parent.PageId) == ParentPageKey.Normalize(request.Parent.PageId)
+                    && !database.InTrash && !database.Archived)
+                    return new NotionDatabase
+                    {
+                        Id = hit.Parent.DatabaseId!,
+                        DataSources = [new NotionDataSourceRef { Id = hit.Id, Name = hit.Name }],
+                    };
+            }
+            return Push($"provisioning {type.Type} (re-create database)", () => _client.CreateDatabase(request));
+        }
     }
 
     /// <summary>Whether a recorded type still owes its rollup/formula post-pass — created (so present in the
@@ -189,14 +225,34 @@ public sealed class NotionProvisioner
         // The auto-created default view(s) present BEFORE we add ours — captured so they can be removed after,
         // once the declared views exist (Notion requires a database keep at least one view). The default is a
         // worse-ordered duplicate of the "All" view, so the board reads cleaner without it.
-        var defaultViews = _client.ListViewIds(record.DatabaseId);
+        var defaultViews = _client.ListViews(record.DatabaseId).Select(v => v.Id).ToList();
         var idByName = _client.RetrieveDataSource(record.DataSourceId).Properties
             .ToDictionary(p => p.Key, p => p.Value.Id ?? "");
         foreach (var view in views)
-            Push($"provisioning {type.Type} view \"{view.Name}\"",
-                () => _client.CreateView(BuildView(type, record, view, idByName)));
+            CreateViewWithRecovery(type, record, view, idByName);
         foreach (var viewId in defaultViews)
             Push($"provisioning {type.Type} (remove default view)", () => _client.DeleteView(viewId));
+    }
+
+    /// <summary>Create one declared view, recovering from an ambiguous failure (ns-5). CreateView no longer
+    /// blind-retries a 5xx/transport-throw — the view may already exist server-side — so list the database's
+    /// views and, if one already carries this name, adopt it (do nothing) rather than duplicate it; otherwise
+    /// re-create. A rate response (429/529) or a hard 4xx propagates unchanged through <see cref="Push"/>.</summary>
+    private void CreateViewWithRecovery(
+        SyncObjectType type, NotionProvisionedType record, SyncViewDef view, IReadOnlyDictionary<string, string> idByName)
+    {
+        try
+        {
+            Push($"provisioning {type.Type} view \"{view.Name}\"",
+                () => _client.CreateView(BuildView(type, record, view, idByName)));
+        }
+        catch (NotionApiException e) when (e.AmbiguousOutcome)
+        {
+            if (_client.ListViews(record.DatabaseId).Any(v => v.Name == view.Name))
+                return;
+            Push($"provisioning {type.Type} view \"{view.Name}\" (re-create)",
+                () => _client.CreateView(BuildView(type, record, view, idByName)));
+        }
     }
 
     private static NotionViewCreateRequest BuildView(

@@ -26,6 +26,7 @@ The sprint's verification gate: run the ns-9 harness against real Notion with th
    - **0236** (phantom spine conflicts) — sync → no edits → sync is a no-op live (ns-8).
 3. Record the smoke run in `dydo/reference/notion-sync.md` (same format as the 2026-07-06/07-09 entries).
 4. Also do one manual `dydo notion sync` against the scratch parent and eyeball the board (titles, colors, relations) — automated assertions don't see rendering.
+5. Verify the ns-5 recovery wire shapes live: search hit `name` + `parent.database_id`; view list `name`; database retrieve `parent` (used by the CreateDatabase/CreatePage/CreateView adoption recoveries — a wrong key degrades to re-create, never a wrong adopt, but confirm the exact keys live).
 
 ## Files
 

@@ -53,9 +53,11 @@ public sealed class NotionClient : INotionClient
     public NotionDataSource RetrieveDataSource(string dataSourceId) =>
         Get($"data_sources/{dataSourceId}", NotionJsonContext.Default.NotionDataSource);
 
+    // Non-idempotent: a create that dies on a 5xx/transport-throw may have succeeded server-side, so it must
+    // not blind-retry (ns-5). The provisioner recovers by re-searching before re-creating.
     public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request) =>
         Post("databases", request, NotionJsonContext.Default.NotionDatabaseCreateRequest,
-            NotionJsonContext.Default.NotionDatabase);
+            NotionJsonContext.Default.NotionDatabase, idempotent: false);
 
     public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) =>
         Send(HttpMethod.Patch, $"data_sources/{dataSourceId}", request,
@@ -67,11 +69,13 @@ public sealed class NotionClient : INotionClient
 
     // The created-view response is discarded (deserialized into the shared NotionDatabase shape, whose
     // unknown-field tolerance ignores the view payload) — the provisioner needs only that it succeeded.
+    // Non-idempotent (ns-5): a 5xx/transport-throw is recovered by listing views and matching by name.
     public void CreateView(NotionViewCreateRequest request) =>
-        Post("views", request, NotionJsonContext.Default.NotionViewCreateRequest, NotionJsonContext.Default.NotionDatabase);
+        Post("views", request, NotionJsonContext.Default.NotionViewCreateRequest, NotionJsonContext.Default.NotionDatabase,
+            idempotent: false);
 
-    public IReadOnlyList<string> ListViewIds(string databaseId) =>
-        Get($"views?database_id={databaseId}", NotionJsonContext.Default.NotionViewList).Results.Select(v => v.Id).ToList();
+    public IReadOnlyList<NotionViewRef> ListViews(string databaseId) =>
+        Get($"views?database_id={databaseId}", NotionJsonContext.Default.NotionViewList).Results;
 
     public void DeleteView(string viewId)
     {
@@ -100,9 +104,11 @@ public sealed class NotionClient : INotionClient
         return pages;
     }
 
+    // Non-idempotent (ns-5): re-creating a page that a lost 5xx/transport-throw already created duplicates a
+    // row, so the adapter recovers by re-querying the data source for the record's title before re-creating.
     public NotionPage CreatePage(NotionPageCreateRequest request) =>
         Post("pages", request, NotionJsonContext.Default.NotionPageCreateRequest,
-            NotionJsonContext.Default.NotionPage);
+            NotionJsonContext.Default.NotionPage, idempotent: false);
 
     public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request) =>
         Send(HttpMethod.Patch, $"pages/{pageId}", request,
@@ -150,8 +156,11 @@ public sealed class NotionClient : INotionClient
         for (var i = 0; i < request.Children.Count; i += maxPerRequest)
         {
             var chunk = request.Children.GetRange(i, Math.Min(maxPerRequest, request.Children.Count - i));
+            // Non-idempotent (ns-5): re-appending duplicates blocks, so a 5xx/transport-throw is surfaced as a
+            // body-sync error rather than retried — the record's snapshot does not advance and the next tick retries.
             Send(HttpMethod.Patch, $"blocks/{blockId}/children", new NotionAppendChildrenRequest { Children = chunk },
-                NotionJsonContext.Default.NotionAppendChildrenRequest, NotionJsonContext.Default.NotionBlockList);
+                NotionJsonContext.Default.NotionAppendChildrenRequest, NotionJsonContext.Default.NotionBlockList,
+                idempotent: false);
         }
     }
 
@@ -165,14 +174,11 @@ public sealed class NotionClient : INotionClient
         }
     }
 
-    public IReadOnlyList<string> SearchDataSources()
+    public IReadOnlyList<NotionSearchResult> SearchDataSources()
     {
         var response = Post("search", new NotionSearchRequest(),
             NotionJsonContext.Default.NotionSearchRequest, NotionJsonContext.Default.NotionSearchResponse);
-        return response.Results
-            .Where(r => r.Object == "data_source")
-            .Select(r => r.Id)
-            .ToList();
+        return response.Results.Where(r => r.Object == "data_source").ToList();
     }
 
     private TResp Get<TResp>(string path, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo)
@@ -184,36 +190,39 @@ public sealed class NotionClient : INotionClient
     private TResp Post<TReq, TResp>(
         string path, TReq body,
         System.Text.Json.Serialization.Metadata.JsonTypeInfo<TReq> reqInfo,
-        System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo) =>
-        Send(HttpMethod.Post, path, body, reqInfo, respInfo);
+        System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo, bool idempotent = true) =>
+        Send(HttpMethod.Post, path, body, reqInfo, respInfo, idempotent);
 
     private TResp Send<TReq, TResp>(
         HttpMethod method, string path, TReq body,
         System.Text.Json.Serialization.Metadata.JsonTypeInfo<TReq> reqInfo,
-        System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo)
+        System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo, bool idempotent = true)
     {
         using var resp = SendWithRetry(() => new HttpRequestMessage(method, path)
         {
             Content = JsonContent.Create(body, reqInfo),
-        });
+        }, idempotent);
         return ReadResponse(resp, respInfo);
     }
 
     /// <summary>
     /// The single send path every request helper routes through, so spine and docs syncs share one
-    /// resiliency policy. Retries transient failures — both retryable statuses (429 + 500/502/503/504)
-    /// and transport-level throws (a forcibly-closed socket / connection reset surfaces as an
-    /// <see cref="HttpRequestException"/> before any response exists; a client timeout as a
-    /// <see cref="TaskCanceledException"/>) — up to <see cref="MaxAttempts"/> total tries: on 429 it
-    /// honours a <c>Retry-After</c> header when present, otherwise it backs off exponentially with
-    /// jitter. Every other status — success or a hard 4xx like the archived-ancestor 400 — returns on
-    /// the first try, so non-retryable errors still fail immediately. On the final try a transport
-    /// throw is wrapped in a <see cref="NotionApiException"/> so the caller's existing catch surfaces a
-    /// clean error instead of an unhandled crash. The request is rebuilt per attempt because an
-    /// <see cref="HttpRequestMessage"/> (and its content stream) cannot be resent. <see cref="Throttle"/>
-    /// still gates each attempt; the backoff is in addition to it.
+    /// resiliency policy. Rate responses (429 + 529 <c>service_overload</c>) are retried for EVERY request —
+    /// they are unambiguous rejections, so nothing was created — honouring a <c>Retry-After</c> header when
+    /// present, else backing off exponentially with jitter. The 5xx server errors (500/502/503/504) and
+    /// transport-level throws (a forcibly-closed socket surfaces as an <see cref="HttpRequestException"/>
+    /// before any response exists; a client timeout as a <see cref="TaskCanceledException"/>) are retried only
+    /// when <paramref name="idempotent"/> is true: a non-idempotent create (page/database/view/append) may have
+    /// succeeded server-side before the error surfaced, so re-sending would duplicate — the create sender opts
+    /// out and recovers by re-query instead (ns-5). Retries run up to <see cref="MaxAttempts"/> total tries.
+    /// Every other status — success or a hard 4xx like the archived-ancestor 400 — returns on the first try.
+    /// On the final try (or an opted-out non-idempotent throw) a transport throw is wrapped in a
+    /// <see cref="NotionApiException"/> (status 0) so the caller's catch surfaces a clean error instead of an
+    /// unhandled crash. The request is rebuilt per attempt because an <see cref="HttpRequestMessage"/> (and its
+    /// content stream) cannot be resent. <see cref="Throttle"/> still gates each attempt; the backoff is in
+    /// addition to it.
     /// </summary>
-    private HttpResponseMessage SendWithRetry(Func<HttpRequestMessage> requestFactory)
+    private HttpResponseMessage SendWithRetry(Func<HttpRequestMessage> requestFactory, bool idempotent = true)
     {
         for (var attempt = 1; ; attempt++)
         {
@@ -226,13 +235,13 @@ public sealed class NotionClient : INotionClient
             }
             catch (Exception ex) when (IsTransientTransport(ex))
             {
-                if (attempt >= MaxAttempts)
+                if (!idempotent || attempt >= MaxAttempts)
                     throw new NotionApiException(0, ex.Message);
                 _sleep(Backoff(attempt));
                 continue;
             }
 
-            if (resp.IsSuccessStatusCode || attempt >= MaxAttempts || !IsRetryable((int)resp.StatusCode))
+            if (resp.IsSuccessStatusCode || attempt >= MaxAttempts || !ShouldRetry((int)resp.StatusCode, idempotent))
                 return resp;
 
             var delay = RetryDelay(resp, attempt);
@@ -241,7 +250,15 @@ public sealed class NotionClient : INotionClient
         }
     }
 
-    private static bool IsRetryable(int status) => status is 429 or 500 or 502 or 503 or 504;
+    // A rate response (429/529) is retried for every request; a 5xx server error only for idempotent ones.
+    private static bool ShouldRetry(int status, bool idempotent) =>
+        IsRateResponse(status) || (idempotent && IsServerError(status));
+
+    private static bool IsRateResponse(int status) => status is 429 or 529;
+
+    // NotionApiException.AmbiguousOutcome mirrors this set (plus status 0 for a transport throw) — the statuses a
+    // non-idempotent create suppresses here are exactly the ones its recovery re-queries on. Keep the two in sync.
+    private static bool IsServerError(int status) => status is 500 or 502 or 503 or 504;
 
     // A transport failure throws before any HTTP response: a forcibly-closed socket / IO error surfaces
     // as HttpRequestException, and a client-side timeout as TaskCanceledException (OperationCanceledException).
@@ -252,7 +269,8 @@ public sealed class NotionClient : INotionClient
 
     private static TimeSpan RetryDelay(HttpResponseMessage resp, int attempt)
     {
-        if ((int)resp.StatusCode == 429 && resp.Headers.RetryAfter is { } retryAfter)
+        // Both rate responses (429 + 529) carry a Retry-After the server wants honoured; a 5xx does not.
+        if (IsRateResponse((int)resp.StatusCode) && resp.Headers.RetryAfter is { } retryAfter)
         {
             if (retryAfter.Delta is { } delta && delta > TimeSpan.Zero)
                 return delta;

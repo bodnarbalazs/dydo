@@ -387,17 +387,21 @@ public class NotionClientTests
     }
 
     [Fact]
-    public void SearchDataSources_PostsSearch_AndFiltersToDataSourceObjects()
+    public void SearchDataSources_PostsSearch_AndFiltersToDataSourceObjects_CarryingTitleAndParent()
     {
         var handler = new FakeHttpMessageHandler().Enqueue(
-            """{"results":[{"id":"ds1","object":"data_source"},{"id":"x","object":"page"}]}""");
+            """{"results":[{"id":"ds1","object":"data_source","name":"Campaigns","parent":{"type":"database_id","database_id":"db1"}},{"id":"x","object":"page"}]}""");
 
-        var ids = Client(handler).SearchDataSources();
+        var hits = Client(handler).SearchDataSources();
 
         var req = handler.Requests.Single();
         Assert.Equal("/v1/search", req.Path);
         Assert.Contains("\"value\":\"data_source\"", req.Body);
-        Assert.Equal(["ds1"], ids);
+        var hit = Assert.Single(hits);
+        Assert.Equal("ds1", hit.Id);
+        // ns-5: the recovery matches on the title and adopts the owning database from the parent.
+        Assert.Equal("Campaigns", hit.Name);
+        Assert.Equal("db1", hit.Parent!.DatabaseId);
     }
 
     [Fact]
@@ -440,6 +444,103 @@ public class NotionClientTests
         Assert.Equal("db1", db.Id);
         Assert.Equal(2, handler.Requests.Count);
         Assert.Equal(TimeSpan.FromSeconds(2), Assert.Single(delays));
+    }
+
+    [Fact]
+    public void ServiceOverload529_IsRetried_WithBackoff_ThenSucceeds()
+    {
+        // 529 service_overload is a rate response like 429: it must be retried (ns-5). With no Retry-After it
+        // falls to the computed exponential backoff — a positive delay captured via the injected sleep.
+        var delays = new List<TimeSpan>();
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"message":"overloaded"}""", (HttpStatusCode)529)
+            .Enqueue("""{"id":"db1","data_sources":[]}""");
+
+        var db = Client(handler, sleep: delays.Add).RetrieveDatabase("db1");
+
+        Assert.Equal("db1", db.Id);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.True(Assert.Single(delays) > TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void ServiceOverload529_HonorsRetryAfterHeader()
+    {
+        // A 529 carrying Retry-After waits exactly that, like a 429 — not the computed backoff.
+        var delays = new List<TimeSpan>();
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"message":"overloaded"}""", (HttpStatusCode)529, retryAfterSeconds: 3)
+            .Enqueue("""{"id":"db1","data_sources":[]}""");
+
+        Client(handler, sleep: delays.Add).RetrieveDatabase("db1");
+
+        Assert.Equal(TimeSpan.FromSeconds(3), Assert.Single(delays));
+    }
+
+    [Fact]
+    public void NonIdempotentCreate_ServerError500_IsNotRetried_FailsImmediately()
+    {
+        // A create (POST /v1/pages) is non-idempotent: a 500 may mean the page WAS created, so re-sending would
+        // duplicate. The client must surface the 500 on the first try — no retry, no backoff — leaving recovery
+        // to the caller (ns-5).
+        var sleepCalls = 0;
+        var handler = new FakeHttpMessageHandler().Enqueue(
+            """{"message":"server error"}""", HttpStatusCode.InternalServerError);
+
+        var ex = Assert.Throws<NotionApiException>(() => Client(handler, sleep: _ => sleepCalls++).CreatePage(
+            new NotionPageCreateRequest { Parent = new NotionParent { DataSourceId = "ds1" } }));
+
+        Assert.Equal(500, ex.StatusCode);
+        Assert.Single(handler.Requests);
+        Assert.Equal(0, sleepCalls);
+    }
+
+    [Fact]
+    public void NonIdempotentCreate_TransportThrow_IsNotRetried_WrappedAsStatusZero()
+    {
+        // A transport throw on a create is equally ambiguous — the request may have reached Notion — so it is
+        // NOT retried; it surfaces at once as a status-0 NotionApiException the caller's recovery keys on.
+        var handler = new FakeHttpMessageHandler()
+            .EnqueueThrow(new HttpRequestException("connection forcibly closed"));
+
+        var ex = Assert.Throws<NotionApiException>(() => Client(handler, sleep: _ => { }).CreatePage(
+            new NotionPageCreateRequest { Parent = new NotionParent { DataSourceId = "ds1" } }));
+
+        Assert.Equal(0, ex.StatusCode);
+        Assert.Single(handler.Requests);
+    }
+
+    [Fact]
+    public void NonIdempotentCreate_RateLimited429_IsStillRetried()
+    {
+        // 429 is unambiguous — the create was rejected, nothing was made — so even a non-idempotent create
+        // retries it (ns-5), unlike a 5xx. The retry then succeeds.
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"message":"rate limited"}""", (HttpStatusCode)429)
+            .Enqueue("""{"id":"new-page","properties":{}}""");
+
+        var page = Client(handler, sleep: _ => { }).CreatePage(
+            new NotionPageCreateRequest { Parent = new NotionParent { DataSourceId = "ds1" } });
+
+        Assert.Equal("new-page", page.Id);
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
+    public void NonIdempotentAppend_ServerError500_IsNotRetried()
+    {
+        // Re-appending duplicates blocks, so AppendBlockChildren opts out of 5xx retry too (ns-5): a 500
+        // surfaces on the first try as a body-sync error the caller lets abort the record.
+        var handler = new FakeHttpMessageHandler().Enqueue(
+            """{"message":"server error"}""", HttpStatusCode.InternalServerError);
+
+        Assert.Throws<NotionApiException>(() => Client(handler, sleep: _ => { }).AppendBlockChildren("p1",
+            new NotionAppendChildrenRequest
+            {
+                Children = [new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("x") } }],
+            }));
+
+        Assert.Single(handler.Requests);
     }
 
     [Fact]

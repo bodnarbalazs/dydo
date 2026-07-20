@@ -252,6 +252,147 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
+    public void Create_AmbiguousServerError_AdoptsAlreadyCreatedDatabaseByTitle_NoDuplicate()
+    {
+        // A CreateDatabase that 500s may have landed server-side (it no longer blind-retries a 5xx). The
+        // provisioner must re-search, match the already-created database by title, and adopt it — never mint a
+        // duplicate board (ns-5).
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        client.CreateDatabaseSucceedsThenAmbiguous5xx = true; // database persists + becomes discoverable, then 500s
+        var record = provisioner.Create(_model.Object("Campaign"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        Assert.Single(client.CreatedDatabases);        // one create — adopted, not re-created
+        Assert.Equal("db-1", record.DatabaseId);
+        Assert.Equal("ds-1", record.DataSourceId);
+        // The adopted ids were persisted, so a reload reuses the database rather than minting another.
+        var reloaded = new NotionProvisioner(client, _statePath);
+        Assert.Equal("ds-1", reloaded.Lookup("Campaign")!.DataSourceId);
+    }
+
+    [Fact]
+    public void Create_AmbiguousServerError_NoMatch_ReCreatesDatabase()
+    {
+        // When the ambiguous create truly failed (nothing persisted, nothing discoverable), the re-search finds
+        // no match, so the database is re-created — the other half of the recovery (ns-5).
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        client.CreateDatabaseFailsAmbiguously = true; // 500s before persisting — search finds nothing
+        var record = provisioner.Create(_model.Object("Campaign"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        Assert.Single(client.CreatedDatabases); // exactly one surviving database — the re-created one
+        Assert.Equal("db-1", record.DatabaseId);
+    }
+
+    [Fact]
+    public void Create_AmbiguousServerError_SameTitleDifferentParent_IsNotAdopted_ReCreates()
+    {
+        // Search is workspace-wide; a same-titled board under ANOTHER parent page must never be adopted (review
+        // major 2 — ns-1 supports multiple parents per token). The recovery confirms the hit's database sits
+        // under THIS create's parent page; a mismatch falls through to re-create.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        // A foreign "Campaigns" board, discoverable, but owned by a DIFFERENT parent page.
+        client.Databases["foreign-db"] = new NotionDatabase
+        {
+            Id = "foreign-db",
+            Parent = new NotionParent { Type = "page_id", PageId = "other-parent" },
+            DataSources = [new NotionDataSourceRef { Id = "foreign-ds", Name = "Campaigns" }],
+        };
+        client.DiscoverableDataSources.Add(new NotionSearchResult
+        {
+            Id = "foreign-ds", Object = "data_source", Name = "Campaigns",
+            Parent = new NotionParent { Type = "database_id", DatabaseId = "foreign-db" },
+        });
+
+        client.CreateDatabaseFailsAmbiguously = true; // our own create fails ambiguously
+        var record = provisioner.Create(_model.Object("Campaign"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        // The foreign board was skipped (wrong parent) and a fresh database minted under our parent instead.
+        Assert.NotEqual("foreign-db", record.DatabaseId);
+        Assert.NotEqual("foreign-ds", record.DataSourceId);
+        Assert.Equal("db-1", record.DatabaseId);
+        Assert.Single(client.CreatedDatabases);
+    }
+
+    [Fact]
+    public void Create_AmbiguousServerError_ParentEchoedDashed_ConfigUndashed_StillAdopts()
+    {
+        // Notion echoes parent page ids as dashed UUIDs while config typically holds the undashed form; the
+        // adoption comparison must canonicalize both sides or recovery would silently never fire and mint a
+        // duplicate board — the exact failure it exists to prevent.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        // The lost create landed server-side under OUR parent, echoed in dashed form.
+        client.Databases["lost-db"] = new NotionDatabase
+        {
+            Id = "lost-db",
+            Parent = new NotionParent { Type = "page_id", PageId = "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d" },
+            DataSources = [new NotionDataSourceRef { Id = "lost-ds", Name = "Campaigns" }],
+        };
+        client.DiscoverableDataSources.Add(new NotionSearchResult
+        {
+            Id = "lost-ds", Object = "data_source", Name = "Campaigns",
+            Parent = new NotionParent { Type = "database_id", DatabaseId = "lost-db" },
+        });
+
+        client.CreateDatabaseFailsAmbiguously = true;
+        var record = provisioner.Create(_model.Object("Campaign"), "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        Assert.Equal("lost-db", record.DatabaseId);
+        Assert.Equal("lost-ds", record.DataSourceId);
+        Assert.Empty(client.CreatedDatabases);
+    }
+
+    [Fact]
+    public void AddViews_AmbiguousViewCreate_AdoptsExistingViewByName_NoDuplicate()
+    {
+        // A CreateView that 500s may have landed server-side. The provisioner lists views, finds one already
+        // carrying the name, and adopts it rather than re-creating a duplicate (ns-5).
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(_model.Object("Issue"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        client.CreateViewSucceedsThenAmbiguous5xx = true; // the first declared view lands, then its create 500s
+        provisioner.AddViews(_model.Object("Issue"));
+
+        var declared = _model.Object("Issue").Views!;
+        // Each declared view exists exactly once — the adopted one was recorded once and never re-created.
+        Assert.Equal(declared.Count, client.CreatedViews.Count);
+        var remaining = client.ListViews(record.DatabaseId);
+        foreach (var view in declared)
+            Assert.Equal(1, remaining.Count(v => v.Name == view.Name));
+    }
+
+    [Fact]
+    public void AddViews_AmbiguousViewCreate_NoExistingView_ReCreates()
+    {
+        // When the ambiguous view create left nothing behind, the list-by-name finds no match, so the view is
+        // re-created — the other half of the recovery (ns-5).
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(_model.Object("Issue"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        client.CreateViewFailsAmbiguously = true; // the first view create 500s before recording anything
+        provisioner.AddViews(_model.Object("Issue"));
+
+        var declared = _model.Object("Issue").Views!;
+        var remaining = client.ListViews(record.DatabaseId);
+        foreach (var view in declared)
+            Assert.Equal(1, remaining.Count(v => v.Name == view.Name));
+    }
+
+    [Fact]
     public void AddViews_TimelineView_CarriesRollupDateAxis()
     {
         var client = new FakeNotionClient();
@@ -279,8 +420,8 @@ public class NotionProvisionerTests : IDisposable
 
         // The default view present at create time is deleted; only the declared views remain.
         Assert.Contains(client.DeletedViews, id => id.StartsWith("default-", StringComparison.Ordinal));
-        var remaining = client.ListViewIds(record.DatabaseId);
-        Assert.DoesNotContain(remaining, id => id.StartsWith("default-", StringComparison.Ordinal));
+        var remaining = client.ListViews(record.DatabaseId);
+        Assert.DoesNotContain(remaining, v => v.Id.StartsWith("default-", StringComparison.Ordinal));
         Assert.Equal(_model.Object("Issue").Views!.Count, remaining.Count);
     }
 

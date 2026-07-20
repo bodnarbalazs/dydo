@@ -80,6 +80,7 @@ Index of issues documentation.
 - [Skill-only and workflow-only roles are undiscoverable - the 7-vs-9 roster gap silently manufactures false bug reports](./0294-skill-only-and-workflow-only-roles-are-undiscoverable-the-7-vs-9-roster-gap-sile.md) - planner (skill-only, DR-024) and sprint-auditor (workflow-only, DR-026) are correctly excluded from the claimable roster, but nothing says so - dis...
 - [Guard never sees codex shell commands - PreToolUse matcher lists Claude tool names, codex uses shell_command (unguarded shell for every codex agent)](./0295-guard-never-sees-codex-shell-commands-pretooluse-matcher-lists-claude-tool-names.md) - Empirically proven: a codex worker cat'd an off-limits agent state file and got the contents.
 - [Dispatch preflight falsely reports the codex guard as trusted/active when codex has silently disabled it (dydo cannot compute codex's opaque hook hash)](./0296-dispatch-preflight-falsely-reports-the-codex-guard-as-trusted-active-when-codex.md) - Codex trusts hooks by an opaque per-entry hash dydo can't reproduce; any change to .
+- [Docs mirror CreatePage lost blind 5xx retry and has no adoption recovery](./0297-docs-mirror-createpage-lost-blind-5xx-retry-and-has-no-adoption-recovery.md) - An ambiguous create failure in the docs-mirror page adapter can orphan a child page that duplicates on the next tick.
 
 ## Subfolders
 

@@ -20,4 +20,14 @@ public sealed class NotionApiException(int statusCode, string body, string? cont
     /// <summary>What the caller was provisioning when Notion rejected the request, or null for a bare
     /// transport error straight off the wire.</summary>
     public string? Context { get; } = context;
+
+    /// <summary>Whether this failure leaves a non-idempotent create's outcome AMBIGUOUS — the request may
+    /// have reached Notion and created the object before the error surfaced. True for a transport throw
+    /// (status 0: no response ever arrived) and the retryable 5xx server errors; false for a rate response
+    /// (429/529, an unambiguous rejection — nothing was created) or any hard 4xx. A create sender's recovery
+    /// re-queries on this and adopts an existing object rather than blindly re-creating (ns-5).
+    /// <para>This set mirrors <c>NotionClient.IsServerError</c> (plus status 0 for a transport throw): the
+    /// statuses a non-idempotent create suppresses at the send layer are exactly the ones recovery re-queries
+    /// on. The two must move together.</para></summary>
+    public bool AmbiguousOutcome => StatusCode is 0 or 500 or 502 or 503 or 504;
 }

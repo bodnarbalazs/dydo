@@ -31,9 +31,10 @@ public interface INotionClient
     /// default, with its own filter, sorts, and column order/visibility.</summary>
     void CreateView(NotionViewCreateRequest request);
 
-    /// <summary>List a database's view ids (GET /v1/views?database_id=…) — used to find the auto-created
-    /// default view so it can be removed after the declared views are added.</summary>
-    IReadOnlyList<string> ListViewIds(string databaseId);
+    /// <summary>List a database's views (GET /v1/views?database_id=…) — used to find the auto-created default
+    /// view so it can be removed after the declared views are added, and to match a view by name when a
+    /// CreateView recovery must decide whether the view already exists (ns-5).</summary>
+    IReadOnlyList<NotionViewRef> ListViews(string databaseId);
 
     /// <summary>Delete a database view (DELETE /v1/views/{id}).</summary>
     void DeleteView(string viewId);
@@ -75,6 +76,7 @@ public interface INotionClient
     /// <summary>Archive (soft-delete) a single block — used to clear a page body before re-appending.</summary>
     void DeleteBlock(string blockId);
 
-    /// <summary>Discover accessible data-source ids via POST /v1/search.</summary>
-    IReadOnlyList<string> SearchDataSources();
+    /// <summary>Discover accessible data sources via POST /v1/search — each hit carries its id, title, and
+    /// owning database, so the CreateDatabase recovery can match one by title and adopt it (ns-5).</summary>
+    IReadOnlyList<NotionSearchResult> SearchDataSources();
 }

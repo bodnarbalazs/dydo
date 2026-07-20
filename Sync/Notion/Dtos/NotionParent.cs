@@ -18,6 +18,13 @@ public sealed class NotionParent
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? PageId { get; set; }
 
+    /// <summary>Read side only: a data source's parent is its database, so a search hit carries the owning
+    /// database id here. The provisioner's CreateDatabase recovery reads it to adopt an already-created
+    /// database (ns-5). Never set on a page-create write.</summary>
+    [JsonPropertyName("database_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DatabaseId { get; set; }
+
     /// <summary>A page created as a row of a data source (the PM spine).</summary>
     public static NotionParent DataSource(string dataSourceId) =>
         new() { Type = "data_source_id", DataSourceId = dataSourceId };

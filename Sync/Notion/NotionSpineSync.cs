@@ -233,9 +233,13 @@ public static class NotionSpineSync
             var engineSchema = type.Properties
                 .Where(p => p.Value.EngineComputed)
                 .ToDictionary(p => p.Key, p => p.Value.Type);
+            // The pages this type's base already maps at tick start — an ambiguous-create recovery must never
+            // adopt one of these (they belong to other records; ns-5, review major 1). A minted type's store was
+            // just reset, so this is empty and every repo doc re-creates.
+            var mappedExternalIds = localToPageByType[type.Type].Values.ToHashSet();
             var adapter = new NotionSyncAdapter(
                 client, dataSourceId, type.FieldSchema(), relationLocalToPageByField, relationPageToLocal, type.Icon,
-                engineSchema, store.GetLastActivity);
+                engineSchema, store.GetLastActivity, mappedExternalIds);
             var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor, allowMassDelete: allowMassDelete);
 
             if (dryRun)

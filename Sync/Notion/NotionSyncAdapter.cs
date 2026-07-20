@@ -31,6 +31,10 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     private readonly string? _icon;
     private readonly IReadOnlyDictionary<string, string>? _engineComputedSchema;
     private readonly Func<string, string?>? _engineComputedValue;
+    // Page ids this type's base snapshot already maps to some local id at tick start — pages an ambiguous-create
+    // recovery must NOT adopt, since they belong to another record (ns-5, review major 1). Duplicate titles are
+    // legal in PM records, so title alone cannot distinguish an orphaned lost-create from a long-mapped page.
+    private readonly IReadOnlySet<string> _mappedExternalIds;
     private IReadOnlyDictionary<string, string> _schema = new Dictionary<string, string>();
 
     /// <summary>The engine-computed property values (non-empty only) each page currently carries, captured
@@ -44,6 +48,9 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     /// type declares none.</param>
     /// <param name="engineComputedValue">Given a local id, the current value for the engine-computed properties
     /// (the engine's derived last-activity date), or null to write nothing for that object this tick.</param>
+    /// <param name="mappedExternalIds">Page ids already mapped to some local id in this type's base snapshot at
+    /// tick start. An ambiguous-create recovery excludes these so it never adopts a page that belongs to another
+    /// record (ns-5). Null/empty on a freshly minted database (nothing mapped yet).</param>
     public NotionSyncAdapter(
         INotionClient client,
         string dataSourceId,
@@ -52,7 +59,8 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null,
         string? icon = null,
         IReadOnlyDictionary<string, string>? engineComputedSchema = null,
-        Func<string, string?>? engineComputedValue = null)
+        Func<string, string?>? engineComputedValue = null,
+        IReadOnlySet<string>? mappedExternalIds = null)
     {
         _client = client;
         _dataSourceId = dataSourceId;
@@ -62,6 +70,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         _icon = icon;
         _engineComputedSchema = engineComputedSchema is { Count: > 0 } ? engineComputedSchema : null;
         _engineComputedValue = engineComputedValue;
+        _mappedExternalIds = mappedExternalIds ?? new HashSet<string>();
     }
 
     public bool WritesEngineComputed => _engineComputedSchema != null;
@@ -126,13 +135,14 @@ public sealed class NotionSyncAdapter : ISyncAdapter
 
             if (upsert.ExternalId == null)
             {
-                var page = _client.CreatePage(new NotionPageCreateRequest
+                var request = new NotionPageCreateRequest
                 {
                     Parent = new NotionParent { Type = "data_source_id", DataSourceId = _dataSourceId },
                     Properties = properties,
                     Icon = NotionIcon.Of(_icon),
                     Children = blocks.Count > 0 ? blocks.Take(MaxChildrenPerRequest).ToList() : null,
-                });
+                };
+                var page = CreatePageWithRecovery(request, TitleText(properties, schema), assigned);
                 // Record the id the instant the page exists, so a later create in this batch throwing
                 // does not lose it (the caller persists the base in a finally) — no duplicate on retry.
                 assigned[upsert.LocalId] = page.Id;
@@ -299,6 +309,44 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         var resolved = string.Join(", ", ids.Where(id => map?.ContainsKey(id) ?? false));
         return resolved.Length > 0 ? resolved : null;
     }
+
+    /// <summary>Create a page, recovering from an ambiguous failure (ns-5). A create that dies on a 5xx or a
+    /// transport throw may have succeeded server-side — CreatePage no longer blind-retries those — so re-query
+    /// the data source for a page carrying the record's title: found (and NOT already claimed by another record
+    /// — neither mapped in the base snapshot nor assigned earlier this batch) ⇒ adopt it, avoiding a duplicate
+    /// row; not found ⇒ the create truly failed, so re-create. Excluding already-claimed pages is what keeps a
+    /// second record sharing a legal duplicate title from stealing an existing page (review major 1). A rate
+    /// response (429/529) or a hard 4xx is unambiguous and propagates unchanged.</summary>
+    private NotionPage CreatePageWithRecovery(
+        NotionPageCreateRequest request, string title, IDictionary<string, string> assigned)
+    {
+        try
+        {
+            return _client.CreatePage(request);
+        }
+        catch (NotionApiException e) when (e.AmbiguousOutcome)
+        {
+            var adopted = _client.QueryDataSource(_dataSourceId).FirstOrDefault(p =>
+                !p.Archived && !_mappedExternalIds.Contains(p.Id) && !assigned.Values.Contains(p.Id)
+                && PageTitle(p) == title);
+            return adopted ?? _client.CreatePage(request);
+        }
+    }
+
+    /// <summary>The title text a create is (or was) writing — flattened from the title-typed property in the
+    /// mapped payload, so recovery matches an adopted page against exactly what would have been stored.</summary>
+    private static string TitleText(
+        IReadOnlyDictionary<string, NotionPropertyValue> properties, IReadOnlyDictionary<string, string> schema)
+    {
+        var titleProperty = schema.FirstOrDefault(entry => entry.Value == "title").Key;
+        return titleProperty != null && properties.TryGetValue(titleProperty, out var value)
+            ? NotionRichText.Flatten(value.Title)
+            : "";
+    }
+
+    /// <summary>A page's title text — flattened from its title-typed property, whichever name it carries.</summary>
+    private static string PageTitle(NotionPage page) =>
+        NotionRichText.Flatten(page.Properties.Values.FirstOrDefault(v => v.Type == "title")?.Title);
 
     /// <summary>Replace a page's body by appending the new blocks FIRST, then deleting the previously
     /// existing ones (their ids snapshotted before the append). Notion has no atomic body replace, so

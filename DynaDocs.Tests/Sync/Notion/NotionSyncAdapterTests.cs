@@ -68,6 +68,108 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
+    public void CreatePage_AmbiguousServerError_AdoptsExistingPageByTitle_NoDuplicate()
+    {
+        // A create that 500s may have landed server-side (CreatePage no longer blind-retries a 5xx). The adapter
+        // must re-query the data source for the record's title and ADOPT the page its lost create made — never
+        // re-create a duplicate row (ns-5).
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        client.CreatePageSucceedsThenAmbiguous5xx = true; // page persists, then the create 500s
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "t1", Fields = [new SyncField { Key = "title", Value = "My Title" }], Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        Assert.Equal("page-1", assigned["t1"]);
+        Assert.Single(client.QueryDataSource("ds1"));    // no duplicate row
+        Assert.Single(client.CreateChildCounts);         // exactly one CreatePage call — adopted, not re-created
+    }
+
+    [Fact]
+    public void CreatePage_AmbiguousServerError_NoExistingPage_CreatesFresh()
+    {
+        // When the ambiguous create truly failed (nothing persisted), the re-query finds no matching page, so the
+        // adapter re-creates — the other half of the recovery (ns-5).
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        client.CreatePageFailsAmbiguously = true; // the create 500s before persisting anything
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "t1", Fields = [new SyncField { Key = "title", Value = "My Title" }], Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        Assert.Equal("page-1", assigned["t1"]);
+        Assert.Single(client.QueryDataSource("ds1"));    // exactly one surviving page
+        Assert.Equal(2, client.CreateChildCounts.Count); // failed attempt + the re-create
+    }
+
+    [Fact]
+    public void CreatePage_AmbiguousServerError_DoesNotAdoptPageMappedToAnotherRecord_CreatesFresh()
+    {
+        // Duplicate titles are legal in PM records. A page titled "T" already mapped to ANOTHER local id in the
+        // base must never be adopted by a different record's ambiguous create — that would collapse two locals
+        // onto one page (review major 1). With no lost create to find, recovery must create fresh.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title" };
+        client.SeedPage("existing-P", new Dictionary<string, NotionPropertyValue> { ["title"] = Title("T") });
+        var adapter = new NotionSyncAdapter(client, "ds1", schema,
+            mappedExternalIds: new HashSet<string> { "existing-P" });
+
+        client.CreatePageFailsAmbiguously = true;
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "t2", Fields = [new SyncField { Key = "title", Value = "T" }], Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        Assert.NotEqual("existing-P", assigned["t2"]);        // never stole the mapped page
+        Assert.Equal("page-1", assigned["t2"]);               // created a fresh page instead
+        Assert.Equal(2, client.QueryDataSource("ds1").Count); // P plus the fresh page
+    }
+
+    [Fact]
+    public void CreatePage_AmbiguousServerError_AdoptsLostCreate_NotSameTitledMappedPage()
+    {
+        // Two pages end up titled "T": one long-mapped to another record, and the orphan the lost create just
+        // made. Recovery must adopt its OWN orphan and skip the mapped one (review major 1).
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title" };
+        client.SeedPage("existing-P", new Dictionary<string, NotionPropertyValue> { ["title"] = Title("T") });
+        var adapter = new NotionSyncAdapter(client, "ds1", schema,
+            mappedExternalIds: new HashSet<string> { "existing-P" });
+
+        client.CreatePageSucceedsThenAmbiguous5xx = true; // the lost create persists a NEW page titled "T"
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "t2", Fields = [new SyncField { Key = "title", Value = "T" }], Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        Assert.Equal("page-1", assigned["t2"]);        // adopted its own lost create
+        Assert.NotEqual("existing-P", assigned["t2"]); // not the mapped duplicate-titled page
+        Assert.Single(client.CreateChildCounts);       // adopted, not re-created
+    }
+
+    [Fact]
     public void UnresolvedRelation_IsIdempotentAcrossTicks_NoRepoRewrite()
     {
         // A Slice whose `sprint:` points at a sprint that does not resolve to a Notion page id

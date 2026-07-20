@@ -10,6 +10,12 @@ public sealed class NotionDatabase
     [JsonPropertyName("id")]
     public string Id { get; set; } = "";
 
+    /// <summary>The page this database is nested under (GET /v1/databases returns <c>parent</c>). The CreateDatabase
+    /// recovery reads it to confirm a same-titled search hit lives under the RIGHT parent page before adopting it,
+    /// so two projects' identically-titled boards under different parents are never cross-wired (ns-5).</summary>
+    [JsonPropertyName("parent")]
+    public NotionParent? Parent { get; set; }
+
     [JsonPropertyName("data_sources")]
     public List<NotionDataSourceRef> DataSources { get; set; } = [];
 

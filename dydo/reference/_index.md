@@ -17,5 +17,6 @@ Index of reference documentation.
 - [Coverage Tools](./coverage-tools.md) - An in-house Python script for measuring and enforcing test coverage.
 - [CLI Commands Reference](./dydo-commands.md) - Complete reference for all `dydo` commands.
 - [dydo Glossary](./dydo-glossary.md) - The dydo system's terms, locked.
+- [Notion Sync OSS Survey (2026-07-20)](./notion-oss-survey.md) - Survey of the open-source Markdown/Obsidian ↔ Notion sync ecosystem, distilled into portable lessons for dydo's sync engine.
 - [Notion Sync API Reference](./notion-sync.md) - Working notes for the Notion sync adapter (`Sync/Notion/**`): the API version and data-source model the adapter targets, the endpoints it uses, and...
 - [Writing Documentation](./writing-docs.md) - Reference for documentation conventions, structure, and validation rules.

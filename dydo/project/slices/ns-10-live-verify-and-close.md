@@ -1,0 +1,38 @@
+---
+title: ns-10 Live Verification and Issue Closure
+blocked-by: ns-9-live-smoke-harness, ns-5-client-retry-nuances, ns-6-depth-limit-append, ns-7-converter-hardening, ns-8-canonical-hash
+due:
+needs-human: true
+priority: Critical
+sprint: notion-stabilization
+status: backlog
+work-type: chore
+area: backend
+type: context
+---
+
+# ns-10 Live Verification and Issue Closure
+
+The sprint's verification gate: run the ns-9 harness against real Notion with the human-provided scratch credentials, confirm the fixes that have only ever been fake-verified, and close the open issues with live evidence. **Blocked on the human**: needs `DYDO_NOTION_TEST_TOKEN` (integration token) and `DYDO_NOTION_TEST_PARENT` (scratch parent page id) from balazs before starting.
+
+## Task
+
+1. Run the live collection (`dotnet test --filter Category=notion-live` with the env vars). Triage every failure: fix-forward small issues within this slice; anything structural goes back to its owning slice's lane as a reopened review.
+2. On a green live run, update and close with live evidence (run date, scratch parent, observed behavior):
+   - **0290** (spine titles) — cards show real titles;
+   - **0291** (>100-block create) — large body lands chunked;
+   - **0278** (FutureFeature title/options) — verify against the *model's* option list (`raw/shaping/promoted/dropped` — note the issue text says `idea`; reconcile the text to the model while closing). **Color half disposition:** under the sprint's locked "colors are Notion-owned" decision, option colors on an already-provisioned board are explicitly WONTFIX (a human recolors in Notion once; sync never touches colors again); a fresh mint gets whatever colors the model's create payload specifies. Record exactly this in the closure;
+   - **0257** (reset scoping) — scratch reset leaves other-parent state untouched (ns-1);
+   - **0236** (phantom spine conflicts) — sync → no edits → sync is a no-op live (ns-8).
+3. Record the smoke run in `dydo/reference/notion-sync.md` (same format as the 2026-07-06/07-09 entries).
+4. Also do one manual `dydo notion sync` against the scratch parent and eyeball the board (titles, colors, relations) — automated assertions don't see rendering.
+
+## Files
+
+- `dydo/project/issues/` (the five issues → `resolved/` with resolution sections)
+- `dydo/reference/notion-sync.md`
+
+## Success criteria
+
+- Live collection green on a real run; the five issues resolved with live evidence and moved to `resolved/`; smoke run recorded.
+- Full (fake) ratchet still green afterward.

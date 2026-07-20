@@ -5,7 +5,7 @@ end:
 gate-result: 
 seq: 7
 start: 
-status: active
+status: done
 area: project
 type: context
 ---

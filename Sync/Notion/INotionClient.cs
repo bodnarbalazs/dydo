@@ -70,8 +70,11 @@ public interface INotionClient
     /// §3). The docs mirror walks the page tree with this the way the spine queries a data source.</summary>
     IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId);
 
-    /// <summary>Append block children to a page, chunked at Notion's 100-children-per-request cap (DR 033).</summary>
-    void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request);
+    /// <summary>Append block children to a page, chunked at Notion's 100-children-per-request cap (DR 033),
+    /// returning the created blocks' ids in payload order. The response carries only the top-level appended blocks'
+    /// ids — never a nested child's — which is exactly what the depth-limited append driver needs to resolve a
+    /// deferred deeper level against its parent's real id (ns-6).</summary>
+    IReadOnlyList<string> AppendBlockChildren(string blockId, NotionAppendChildrenRequest request);
 
     /// <summary>Archive (soft-delete) a single block — used to clear a page body before re-appending.</summary>
     void DeleteBlock(string blockId);

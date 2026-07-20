@@ -557,6 +557,108 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
+    public void ReadExternalState_FlatBody_ReadsOncePerPage_NoRecursiveChildFetch()
+    {
+        // The has_children gate must keep a flat body cheap: exactly one GetBlockChildren per page, no recursion.
+        var client = new FakeNotionClient();
+        client.SeedPage("p1", new() { ["Name"] = Title("x") }, [Paragraph("flat line one", "b1"), Paragraph("flat line two", "b2")]);
+        var adapter = new NotionSyncAdapter(client, "ds1");
+
+        adapter.ReadExternalState();
+
+        Assert.Equal(1, client.GetBlockChildrenCalls);
+    }
+
+    [Fact]
+    public void Apply_Create_ManyShallowBlocksWithChildren_CapsCreateHeadByTotalElements()
+    {
+        // 50 top-level bullets each with 30 children = 1550 elements. All are shallow (children are leaves), so the
+        // 100-block cap alone would put all 50 in the create's children and 400 on Notion's 1000-element cap. The
+        // create head must cap by total elements instead, carrying fewer than 50, and the rest append after.
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var body = string.Join("\n", Enumerable.Range(0, 50).Select(i =>
+            $"- item {i}\n" + string.Join("\n", Enumerable.Range(0, 30).Select(j => $"  - sub {i}-{j}"))));
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "big", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "Big" }], Body = body,
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        Assert.True(client.CreateChildCounts.Single() < 50, "create head must be capped below all 50 top-level blocks by the element cap");
+        Assert.True(client.MaxPayloadDepth <= 2);
+        Assert.Equal(body, adapter.ReadExternalState().Single(r => r.ExternalId == assigned["big"]).Body); // whole body landed
+    }
+
+    [Fact]
+    public void Apply_Create_NestedBody_WritesHierarchy_WithinDepth2()
+    {
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "nested", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "Nested" }],
+            Body = "- A\n  - B\n    - C\n      - D",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        Assert.True(client.MaxPayloadDepth <= 2, $"max payload depth was {client.MaxPayloadDepth}");
+        // The deep list read back reconstructs the four-deep hierarchy the body described.
+        var record = adapter.ReadExternalState().Single(r => r.ExternalId == assigned["nested"]);
+        Assert.Equal("- A\n  - B\n    - C\n      - D", record.Body);
+    }
+
+    [Fact]
+    public void NestedBody_IsIdempotentAcrossTicks_NoRepoRewrite()
+    {
+        // A nested list must round-trip through write (depth-cut appends) and read (recursive child fetch) so an
+        // untouched doc is not seen as changed next tick — the guarantee that keeps the spine from thrashing on
+        // nested bodies.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["Status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-nested-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            // Nested bullets and numbered items PLUS the three old-converter divergence classes the fixed-point fix
+            // must survive a full write→read tick: a paragraph directly above a --- rule (no setext promotion), an
+            // indented code block kept verbatim (no fencing), and a numbered run not starting at 1 (kept verbatim).
+            var doc = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "Status", Value = "open" }],
+                Body = "## Lists\n\n- a\n  - b\n    - c\n- d\n  1. one\n  2. two\n\n## Rule\n\npara above a rule\n---\nmore text\n\n## Numbers\n\n3. three\n4. four\n\n## Code\n\n    indented one\n    indented two",
+                SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+            var before = File.ReadAllText(repoPath);
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+            Assert.Equal(before, File.ReadAllText(repoPath)); // byte-unchanged, no WriteToRepo
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void Apply_Create_BodyExactly100Blocks_SingleCreateNoAppend()
     {
         var client = new FakeNotionClient();

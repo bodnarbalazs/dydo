@@ -40,9 +40,28 @@ public sealed class NotionBlock
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NotionBlockBody? BulletedListItem { get; set; }
 
+    [JsonPropertyName("numbered_list_item")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionBlockBody? NumberedListItem { get; set; }
+
     [JsonPropertyName("code")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NotionBlockBody? Code { get; set; }
+
+    /// <summary>Nested block children (bulleted/numbered list hierarchies). On write, Notion accepts at most two
+    /// levels of nesting per request, so a payload is cut at depth 2 and deeper levels appended iteratively against
+    /// the ids the API returns (<see cref="DynaDocs.Sync.Notion.NotionBlockAppender"/>). Omitted when null so a flat
+    /// block carries no empty array.</summary>
+    [JsonPropertyName("children")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<NotionBlock>? Children { get; set; }
+
+    /// <summary>Read-only flag Notion sets on a block that has nested children. GetBlockChildren returns one level
+    /// at a time (never inlining descendants), so the reader recurses into a block's children only when this is
+    /// true — a flat body then costs no extra reads. Never sent on write.</summary>
+    [JsonPropertyName("has_children")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? HasChildren { get; set; }
 
     /// <summary>Set on a <c>child_page</c> block Notion returns for a nested sub-page (DR 033). Read-only:
     /// child pages are created via the pages endpoint, never appended as blocks.</summary>

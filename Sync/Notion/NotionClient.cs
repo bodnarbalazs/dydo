@@ -150,18 +150,27 @@ public sealed class NotionClient : INotionClient
 
     // Notion rejects an append of more than 100 children with a 400, so a large doc's body is chunked
     // across successive PATCHes (DR 033). Zero children issues no request — Notion 400s an empty append.
-    public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
+    // Returns the created blocks' ids in payload order (across chunks), so the depth-limited append driver can
+    // resolve a deferred deeper level against the id of the block it belongs under (ns-6).
+    public IReadOnlyList<string> AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
     {
-        const int maxPerRequest = 100;
-        for (var i = 0; i < request.Children.Count; i += maxPerRequest)
+        var ids = new List<string>();
+        // Chunk by both caps (≤100 top-level blocks AND ≤1000 total elements including inlined children) — a
+        // depth-2 chunk of 100 parent blocks can otherwise breach Notion's 1000-element payload limit with a 400.
+        foreach (var chunk in NotionBlockAppender.Chunk(request.Children))
         {
-            var chunk = request.Children.GetRange(i, Math.Min(maxPerRequest, request.Children.Count - i));
             // Non-idempotent (ns-5): re-appending duplicates blocks, so a 5xx/transport-throw is surfaced as a
             // body-sync error rather than retried — the record's snapshot does not advance and the next tick retries.
-            Send(HttpMethod.Patch, $"blocks/{blockId}/children", new NotionAppendChildrenRequest { Children = chunk },
+            var response = Send(HttpMethod.Patch, $"blocks/{blockId}/children",
+                new NotionAppendChildrenRequest { Children = chunk },
                 NotionJsonContext.Default.NotionAppendChildrenRequest, NotionJsonContext.Default.NotionBlockList,
                 idempotent: false);
+            // Every appended top-level block comes back with an id; a missing one means an unexpected response
+            // shape the depth driver cannot resolve a deferred level against, so fail loudly rather than defer to "".
+            ids.AddRange(response.Results.Select(b => b.Id
+                ?? throw new NotionApiException(0, "append response missing a created block id")));
         }
+        return ids;
     }
 
     public void DeleteBlock(string blockId)

@@ -1,100 +1,250 @@
 namespace DynaDocs.Sync.Notion;
 
 using System.Text;
+using Markdig;
+using Markdig.Parsers;
+using Markdig.Syntax;
 using DynaDocs.Sync.Notion.Dtos;
 
 /// <summary>
-/// Best-effort, intentionally lossy markdown ⇄ Notion block conversion (Decision 025 §6, slice
-/// brief §4). Write: each non-blank line becomes one block — headings (#/##/###), bulleted list
-/// items (-/*), fenced code, else a paragraph; blank lines separate but produce no block. Read:
-/// each block renders back to one markdown line. Rich inline formatting and nesting are dropped —
-/// the structured frontmatter↔property path carries the reliable data; bodies are a 3-way *text*
-/// merge over this approximation.
+/// Structure-aware, best-effort markdown ⇄ Notion block conversion (Decision 025 §6, ns-6). Write: parse the
+/// Markdig AST and map each block — headings (# / ## / ###), paragraphs, fenced/indented code (with language
+/// normalization), and bulleted/numbered lists including nested sub-lists carried as block <c>children</c>.
+/// Inline text stays a plain, unannotated run: the raw source span is kept verbatim (no bold/italic/link
+/// parsing this sprint), so a marker like <c>**x**</c> survives unchanged. Read: each block renders back to a
+/// markdown line, nested children indented under their parent. The structured frontmatter↔property path carries
+/// the reliable data; bodies are a 3-way *text* merge over this approximation.
 /// </summary>
 public static class NotionBlockConverter
 {
     public static List<NotionBlock> ToBlocks(string markdown)
     {
+        var text = markdown.Replace("\r\n", "\n");
+        var document = Markdown.Parse(text, Pipeline);
         var blocks = new List<NotionBlock>();
-        var lines = markdown.Replace("\r\n", "\n").Split('\n');
-
-        var inFence = false;
-        var fenceLang = "";
-        var fenceLines = new List<string>();
-
-        foreach (var line in lines)
-        {
-            if (line.StartsWith("```", StringComparison.Ordinal))
-            {
-                if (inFence)
-                {
-                    blocks.Add(CodeBlock(string.Join("\n", fenceLines), fenceLang));
-                    fenceLines.Clear();
-                    inFence = false;
-                }
-                else
-                {
-                    inFence = true;
-                    fenceLang = line[3..].Trim();
-                }
-                continue;
-            }
-
-            if (inFence)
-            {
-                fenceLines.Add(line);
-                continue;
-            }
-
-            if (line.Trim().Length == 0)
-                continue;
-
-            blocks.Add(LineToBlock(line));
-        }
-
-        // An unterminated fence still yields a code block rather than losing the content.
-        if (inFence)
-            blocks.Add(CodeBlock(string.Join("\n", fenceLines), fenceLang));
-
+        foreach (var node in document)
+            blocks.AddRange(Convert(node, text, nested: false));
         return blocks;
+    }
+
+    /// <summary>Setext headings are disabled: a paragraph directly above a <c>---</c>/<c>===</c> line must stay a
+    /// paragraph, never be promoted to a heading. Body normalization strips blank lines, which brings a
+    /// blank-separated thematic-break <c>---</c> adjacent to the paragraph above it; setext promotion there makes
+    /// <c>FromBlocks∘ToBlocks</c> non-idempotent and would silently rewrite the canonical doc on the next sync.</summary>
+    private static readonly MarkdownPipeline Pipeline = BuildPipeline();
+
+    private static MarkdownPipeline BuildPipeline()
+    {
+        var builder = new MarkdownPipelineBuilder();
+        builder.BlockParsers.Find<ParagraphBlockParser>()!.ParseSetexHeadings = false;
+        return builder.Build();
     }
 
     public static string FromBlocks(IReadOnlyList<NotionBlock> blocks)
     {
         var sb = new StringBuilder();
-        foreach (var block in blocks)
-        {
-            // A child_page block is a nested sub-page (DR 033), not body content — the docs mirror keeps
-            // structure repo-owned, so it never renders into or round-trips through a page's body text.
-            if (block.Type == "child_page")
-                continue;
-            sb.Append(BlockToLine(block)).Append('\n');
-        }
+        Render(sb, blocks, "");
         return sb.ToString().TrimEnd('\n');
     }
 
-    private static NotionBlock LineToBlock(string line)
+    /// <param name="nested">True when this block is a child inside a list item, so its rendered lines will carry an
+    /// indent prefix. A nested multi-line paragraph must have its continuation-line indentation stripped or the
+    /// prefix would double it every normalization (runaway indent); a top-level paragraph keeps its lines verbatim,
+    /// matching the old converter and staying idempotent (an indented line there is stable prose, not re-indented).</param>
+    private static List<NotionBlock> Convert(Block node, string src, bool nested)
     {
-        if (line.StartsWith("### ", StringComparison.Ordinal))
-            return new NotionBlock { Type = "heading_3", Heading3 = Body(line[4..]) };
-        if (line.StartsWith("## ", StringComparison.Ordinal))
-            return new NotionBlock { Type = "heading_2", Heading2 = Body(line[3..]) };
-        if (line.StartsWith("# ", StringComparison.Ordinal))
-            return new NotionBlock { Type = "heading_1", Heading1 = Body(line[2..]) };
-        if (line.StartsWith("- ", StringComparison.Ordinal) || line.StartsWith("* ", StringComparison.Ordinal))
-            return new NotionBlock { Type = "bulleted_list_item", BulletedListItem = Body(line[2..]) };
-        return new NotionBlock { Type = "paragraph", Paragraph = Body(line) };
+        switch (node)
+        {
+            // H1–H3 map to the matching Notion heading; H4+ has no Notion equivalent this sprint (the clamp to
+            // heading_3 is ns-7), so it degrades to a verbatim paragraph, exactly as the prior line converter did.
+            case HeadingBlock heading when heading.Level is >= 1 and <= 3:
+            {
+                var body = Body(StripHeadingMarker(Slice(heading, src)));
+                return heading.Level switch
+                {
+                    1 => [new NotionBlock { Type = "heading_1", Heading1 = body }],
+                    2 => [new NotionBlock { Type = "heading_2", Heading2 = body }],
+                    _ => [new NotionBlock { Type = "heading_3", Heading3 = body }],
+                };
+            }
+            // Only a FENCED code block becomes a Notion code block. An INDENTED code block (a plain CodeBlock —
+            // FencedCodeBlock, its subtype, is matched here first) has no Notion equivalent and the old line
+            // converter kept those lines verbatim, so it falls through to a verbatim paragraph — which also keeps
+            // normalization idempotent, since a rendered indented block re-parses as a paragraph continuation.
+            case FencedCodeBlock fenced:
+                return [CodeBlock(TrimTrailingNewline(fenced.Lines.ToString()), fenced.Info ?? "")];
+            // An indented code block keeps its leading whitespace verbatim (it IS the content), so it is emitted as
+            // a raw-span paragraph without continuation-line cleaning — a rendered indented block re-parses to the
+            // same paragraph.
+            case CodeBlock code:
+                return [new NotionBlock { Type = "paragraph", Paragraph = Body(Slice(code, src).TrimEnd('\n')) }];
+            case ListBlock list:
+            {
+                // An ordered list whose item numbers are not exactly 1..n (a run starting ≠1, or with gaps) cannot
+                // round-trip as numbered_list_item — Notion stores no ordinal, so FromBlocks re-sequences from 1 and
+                // would rewrite the original numbers. Such a run stays verbatim paragraph lines, matching the old
+                // converter's echo; only a clean 1..n run becomes real numbered items.
+                if (list.IsOrdered && !IsSequentialFromOne(list))
+                    return VerbatimOrderedItems(list, src);
+                var items = new List<NotionBlock>();
+                foreach (var child in list)
+                    if (child is ListItemBlock item)
+                        items.Add(ConvertListItem(item, list.IsOrdered, src));
+                return items;
+            }
+            default:
+                var span = Slice(node, src);
+                return [new NotionBlock { Type = "paragraph", Paragraph = Body(nested ? CleanText(span) : span) }];
+        }
     }
 
-    private static string BlockToLine(NotionBlock block) => block.Type switch
+    /// <summary>A list item's own text is its first paragraph; every following child block — chiefly a nested
+    /// sub-list — becomes the item's <c>children</c>, so an indented list lands as a real hierarchy.</summary>
+    private static NotionBlock ConvertListItem(ListItemBlock item, bool ordered, string src)
+    {
+        string? text = null;
+        var children = new List<NotionBlock>();
+        foreach (var child in item)
+        {
+            if (text == null && child is ParagraphBlock paragraph)
+                text = CleanText(Slice(paragraph, src));
+            else
+                children.AddRange(Convert(child, src, nested: true));
+        }
+        var body = Body(text ?? "");
+        return new NotionBlock
+        {
+            Type = ordered ? "numbered_list_item" : "bulleted_list_item",
+            BulletedListItem = ordered ? null : body,
+            NumberedListItem = ordered ? body : null,
+            Children = children.Count > 0 ? children : null,
+        };
+    }
+
+    /// <summary>Whether an ordered list's items are exactly 1, 2, 3, …, n — the only shape that round-trips as
+    /// numbered items, since render re-sequences from 1.</summary>
+    private static bool IsSequentialFromOne(ListBlock list)
+    {
+        var expected = 1;
+        foreach (var child in list)
+        {
+            if (child is not ListItemBlock item || item.Order != expected)
+                return false;
+            expected++;
+        }
+        return true;
+    }
+
+    /// <summary>Render a non-1..n ordered list as verbatim paragraph lines (old-converter behavior): each item is a
+    /// paragraph carrying its original marker (<c>3. </c>) and text, with any nested blocks kept as children.</summary>
+    private static List<NotionBlock> VerbatimOrderedItems(ListBlock list, string src)
+    {
+        var result = new List<NotionBlock>();
+        foreach (var child in list)
+        {
+            if (child is not ListItemBlock item)
+                continue;
+            string? text = null;
+            var children = new List<NotionBlock>();
+            foreach (var sub in item)
+            {
+                if (text == null && sub is ParagraphBlock paragraph)
+                    text = CleanText(Slice(paragraph, src));
+                else
+                    children.AddRange(Convert(sub, src, nested: true));
+            }
+            var marker = item.Order + list.OrderedDelimiter.ToString() + " ";
+            result.Add(new NotionBlock
+            {
+                Type = "paragraph",
+                Paragraph = Body(marker + (text ?? "")),
+                Children = children.Count > 0 ? children : null,
+            });
+        }
+        return result;
+    }
+
+    private static void Render(StringBuilder sb, IReadOnlyList<NotionBlock> blocks, string prefix)
+    {
+        // Numbered items are re-sequenced from 1 within each contiguous run at this level: Notion stores no
+        // ordinal on a numbered_list_item, so on read we can only count, and on write a 1,2,3… list round-trips.
+        var number = 0;
+        foreach (var block in blocks)
+        {
+            // A child_page block is a nested sub-page (DR 033), not body content — never rendered into a body.
+            if (block.Type == "child_page")
+                continue;
+            number = block.Type == "numbered_list_item" ? number + 1 : 0;
+            // Prefix EVERY physical line, not just the first: a multi-line block (a code fence, a soft-wrapped
+            // paragraph) nested under a list item must carry the indent on all its lines, or the un-indented
+            // continuation lines break out of the item and the body stops round-tripping.
+            foreach (var physical in BlockToLine(block, number).Split('\n'))
+                sb.Append(prefix).Append(physical).Append('\n');
+            if (block.Children is { Count: > 0 } children)
+                Render(sb, children, prefix + new string(' ', MarkerWidth(block, number)));
+        }
+    }
+
+    private static string BlockToLine(NotionBlock block, int number) => block.Type switch
     {
         "heading_1" => "# " + Text(block.Heading1),
         "heading_2" => "## " + Text(block.Heading2),
         "heading_3" => "### " + Text(block.Heading3),
         "bulleted_list_item" => "- " + Text(block.BulletedListItem),
+        "numbered_list_item" => number + ". " + Text(block.NumberedListItem),
         "code" => Fence(block.Code),
         _ => Text(block.Paragraph),
     };
+
+    /// <summary>The indentation a child list needs to nest under its parent item — the width of the parent's list
+    /// marker (<c>"- "</c> = 2, <c>"1. "</c> = 3), the CommonMark minimum, so the rendered indent re-parses as a
+    /// child rather than a sibling.
+    /// <para>KNOWN EDGE: a non-1..n ordered list is emitted verbatim as <c>paragraph</c> blocks (see
+    /// <see cref="VerbatimOrderedItems"/>), not numbered_list_item, so a child under such an item uses the default
+    /// width 2 even though its rendered <c>"N. "</c> marker is 3+ wide. The child is then under-indented and
+    /// un-nests one level on re-parse, so a shape like <c>"3. text\n   - sub"</c> is NOT a pass-1 fixed point — it
+    /// converges after a second normalization (the sub-item becomes a top-level sibling). No synced record contains
+    /// a non-1 ordered run with a nested child, so this never fires in practice; pinned by a converter test.</para></summary>
+    private static int MarkerWidth(NotionBlock block, int number) =>
+        block.Type == "numbered_list_item" ? number.ToString().Length + 2 : 2;
+
+    /// <summary>The verbatim source text a Markdig block spans — kept unparsed so inline markers survive a
+    /// round-trip (structure-only sprint). An empty or unset span yields the empty string.</summary>
+    private static string Slice(Block block, string src)
+    {
+        var span = block.Span;
+        if (span.Start < 0 || span.Length <= 0 || span.Start >= src.Length)
+            return "";
+        return src.Substring(span.Start, Math.Min(span.Length, src.Length - span.Start));
+    }
+
+    /// <summary>Strip the leading indentation off a multi-line text block's continuation lines. A paragraph or
+    /// list-item text nested in a list carries the source's continuation indentation inside its span; without this
+    /// the per-line render prefix would double it, and each normalization would add another level (runaway indent).
+    /// The first line already starts at the content column, so only lines after it are trimmed; prose continuation
+    /// whitespace is never semantic.</summary>
+    private static string CleanText(string raw)
+    {
+        var newline = raw.IndexOf('\n');
+        if (newline < 0)
+            return raw;
+        var lines = raw.Split('\n');
+        for (var i = 1; i < lines.Length; i++)
+            lines[i] = lines[i].TrimStart(' ', '\t');
+        return string.Join('\n', lines);
+    }
+
+    private static string StripHeadingMarker(string raw)
+    {
+        var i = 0;
+        while (i < raw.Length && raw[i] == '#')
+            i++;
+        while (i < raw.Length && (raw[i] == ' ' || raw[i] == '\t'))
+            i++;
+        return raw[i..];
+    }
+
+    private static string TrimTrailingNewline(string s) => s.EndsWith('\n') ? s[..^1] : s;
 
     private static NotionBlockBody Body(string text) => new()
     {

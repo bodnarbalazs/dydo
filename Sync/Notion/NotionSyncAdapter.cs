@@ -96,7 +96,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 _externalEngineComputed[page.Id] = allFields
                     .Where(f => _engineComputedSchema.ContainsKey(f.Key) && !string.IsNullOrEmpty(f.Value))
                     .ToDictionary(f => f.Key, f => f.Value);
-            var blocks = _client.GetBlockChildren(page.Id);
+            var blocks = ReadBlockTree(page.Id);
             records.Add(new SyncRecord
             {
                 ExternalId = page.Id,
@@ -123,7 +123,6 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
         ICollection<string> emptyBodied)
     {
-        const int MaxChildrenPerRequest = 100; // DR-033
         var schema = EnsureSchema();
 
         foreach (var upsert in changes.Upserts)
@@ -135,24 +134,38 @@ public sealed class NotionSyncAdapter : ISyncAdapter
 
             if (upsert.ExternalId == null)
             {
+                // The create carries the leading run of top-level blocks whose whole subtree fits one depth-≤2,
+                // ≤100-child payload; anything deeper or past 100 is appended after, keeping the emptyBodied
+                // classification (ns-5) — a create with only the create-carried body succeeds, and any deferred
+                // body-append failure surfaces as a body-sync error that leaves the record's snapshot un-advanced.
+                var head = new List<NotionBlock>();
+                var index = 0;
+                var headElements = 0;
+                while (index < blocks.Count && head.Count < NotionBlockAppender.MaxChildrenPerRequest
+                    && headElements + NotionBlockAppender.TotalElements(blocks[index]) <= NotionBlockAppender.MaxElementsPerRequest
+                    && NotionBlockAppender.IsShallow(blocks[index]))
+                {
+                    headElements += NotionBlockAppender.TotalElements(blocks[index]);
+                    head.Add(blocks[index++]);
+                }
+                var createChildren = NotionBlockAppender.Cut(head).Payload;
+                var tail = blocks.Skip(index).ToList();
+
                 var request = new NotionPageCreateRequest
                 {
                     Parent = new NotionParent { Type = "data_source_id", DataSourceId = _dataSourceId },
                     Properties = properties,
                     Icon = NotionIcon.Of(_icon),
-                    Children = blocks.Count > 0 ? blocks.Take(MaxChildrenPerRequest).ToList() : null,
+                    Children = createChildren.Count > 0 ? createChildren : null,
                 };
                 var page = CreatePageWithRecovery(request, TitleText(properties, schema), assigned);
                 // Record the id the instant the page exists, so a later create in this batch throwing
                 // does not lose it (the caller persists the base in a finally) — no duplicate on retry.
                 assigned[upsert.LocalId] = page.Id;
-                if (blocks.Count > MaxChildrenPerRequest)
+                if (tail.Count > 0)
                 {
                     emptyBodied.Add(upsert.LocalId);
-                    _client.AppendBlockChildren(page.Id, new NotionAppendChildrenRequest
-                    {
-                        Children = blocks.Skip(MaxChildrenPerRequest).ToList(),
-                    });
+                    NotionBlockAppender.AppendForest(_client, page.Id, tail);
                     emptyBodied.Remove(upsert.LocalId);
                 }
             }
@@ -354,16 +367,32 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     /// worst temporarily duplicated, never empty (slice brief §5).</summary>
     private void ReplaceBody(string pageId, List<NotionBlock> blocks)
     {
+        // Snapshot the existing TOP-LEVEL block ids before appending; archiving a top-level block trashes its
+        // descendants too, so deleting the old roots clears the whole prior body.
         var existingIds = _client.GetBlockChildren(pageId)
             .Select(b => b.Id)
             .Where(id => id != null)
             .ToList();
 
-        if (blocks.Count > 0)
-            _client.AppendBlockChildren(pageId, new NotionAppendChildrenRequest { Children = blocks });
+        NotionBlockAppender.AppendForest(_client, pageId, blocks);
 
         foreach (var id in existingIds)
             _client.DeleteBlock(id!);
+    }
+
+    /// <summary>Read a page's body as a nested block tree. Notion returns one level of children per request and
+    /// flags a block that has more via <c>has_children</c>, so recurse only into flagged blocks — a flat body then
+    /// costs no extra reads, while a nested list is reconstructed so the round-trip matches what was written and an
+    /// untouched doc stays idempotent across ticks.</summary>
+    private IReadOnlyList<NotionBlock> ReadBlockTree(string blockId)
+    {
+        var blocks = _client.GetBlockChildren(blockId);
+        foreach (var block in blocks)
+            // A child_page is a nested sub-page (DR 033), not body — FromBlocks drops it, so never descend into
+            // one and pull a whole sub-page's content in as if it were this page's body.
+            if (block.HasChildren == true && block.Id != null && block.Type != "child_page")
+                block.Children = ReadBlockTree(block.Id).ToList();
+        return blocks;
     }
 
     /// <summary>Apply may run before a read in principle; resolve the schema once if so.</summary>

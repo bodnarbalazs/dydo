@@ -55,6 +55,14 @@ public sealed class FakeNotionClient : INotionClient
     }
     public List<string> AppendedTo { get; } = [];
 
+    /// <summary>The nesting depth of every children payload Notion was asked to persist — one entry per create
+    /// (when it carried a body) and per append PATCH. Notion accepts at most two levels per request, so the depth
+    /// driver must keep every emitted payload ≤2; a test asserts <see cref="MaxPayloadDepth"/> never exceeds it.</summary>
+    public List<int> PayloadDepths { get; } = [];
+
+    /// <summary>The deepest children payload ever emitted (0 when none) — the depth-limit guard for ns-6.</summary>
+    public int MaxPayloadDepth => PayloadDepths.Count == 0 ? 0 : PayloadDepths.Max();
+
     public List<int> CreateChildCounts { get; } = [];
     public List<string> DeletedBlocks { get; } = [];
 
@@ -337,6 +345,13 @@ public sealed class FakeNotionClient : INotionClient
     public NotionPage CreatePage(NotionPageCreateRequest request)
     {
         CreateChildCounts.Add(request.Children?.Count ?? 0);
+        if (request.Children is { Count: > 0 })
+        {
+            var depth = BlockDepth(request.Children);
+            PayloadDepths.Add(depth);
+            if (depth > 2)
+                throw new NotionApiException(400, $"body.children nested {depth} deep exceeds Notion's 2-level cap");
+        }
         if (request.Children?.Count > 100)
             throw new NotionApiException(400, "body failed validation: body.children.length should be <= 100");
         if (CreatePageFailsAmbiguously)
@@ -355,7 +370,9 @@ public sealed class FakeNotionClient : INotionClient
             _pageParent[id] = request.Parent.PageId;
         if (request.Properties.TryGetValue("title", out var title) && title.Title != null)
             _pageTitle[id] = NotionRichText.Flatten(title.Title);
-        _blocks[id] = request.Children ?? [];
+        _blocks[id] = [];
+        foreach (var child in request.Children ?? [])
+            Store(id, child);
         // Create-with-body (DR 035 §1): a markdown body carried in the create is stored atomically with the page,
         // so the read-back echoes it verbatim — modelling the atomic create the docs mirror relies on. It is NOT
         // recorded in MarkdownUpdates (which tracks UpdatePageMarkdown calls only), so a test can assert an atomic
@@ -422,8 +439,23 @@ public sealed class FakeNotionClient : INotionClient
         return false;
     }
 
-    public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId) =>
-        _blocks.TryGetValue(blockId, out var b) ? b : [];
+    /// <summary>Number of <see cref="GetBlockChildren"/> calls — lets a test assert a flat body triggers exactly
+    /// one read (the page) and no recursive child fetches, so the has_children read gate is honoured.</summary>
+    public int GetBlockChildrenCalls { get; private set; }
+
+    public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId)
+    {
+        GetBlockChildrenCalls++;
+        if (!_blocks.TryGetValue(blockId, out var blocks))
+            return [];
+        // Model Notion's has_children: a block owns children exactly when a child list is stored under its id —
+        // whether they were appended inline (one nested payload) or deferred to a follow-up append, so the reader
+        // reconstructs the tree the same way regardless of how the depth driver cut it.
+        foreach (var block in blocks)
+            if (block.Id != null)
+                block.HasChildren = _blocks.TryGetValue(block.Id, out var kids) && kids.Count > 0;
+        return blocks;
+    }
 
     /// <summary>The raw stored markdown body of a page, WITHOUT the child-page reference tags
     /// <see cref="GetPageMarkdown"/> appends to model Notion's export — the exact body a write persisted. Lets a
@@ -477,18 +509,50 @@ public sealed class FakeNotionClient : INotionClient
                 child.Archived = true;
     }
 
-    public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
+    public IReadOnlyList<string> AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
     {
         if (FailAppend)
             throw new NotionApiException(500, "simulated append failure");
         AppendedTo.Add(blockId);
-        _blocks.TryAdd(blockId, []);
-        foreach (var child in request.Children)
+        if (request.Children.Count > 0)
         {
-            child.Id ??= $"block-{_nextBlock++}";
-            _blocks[blockId].Add(child);
+            var depth = BlockDepth(request.Children);
+            PayloadDepths.Add(depth);
+            // Notion accepts at most two nesting levels per request; guarding it here makes every suite that appends
+            // enforce the invariant for free, so a depth-cut regression fails loudly instead of silently over-nesting.
+            if (depth > 2)
+                throw new NotionApiException(400, $"body.children nested {depth} deep exceeds Notion's 2-level cap");
         }
+        _blocks.TryAdd(blockId, []);
+        // Notion's append response returns only the ids of the blocks appended at the TOP level — never a nested
+        // child's — so mint and return those, storing any inline descendants under their own minted ids (Store)
+        // the way real Notion persists a nested payload.
+        return request.Children.Select(child => Store(blockId, child)).ToList();
     }
+
+    /// <summary>Persist a block under <paramref name="parentId"/>, minting its id and recursively storing any inline
+    /// children under it, so a nested payload lands as the same id-keyed tree real Notion builds — and the stored
+    /// block is left childless (its children reachable via its own id), matching what GetBlockChildren returns.</summary>
+    private string Store(string parentId, NotionBlock block)
+    {
+        block.Id ??= $"block-{_nextBlock++}";
+        var inline = block.Children;
+        block.Children = null;
+        _blocks.TryAdd(parentId, []);
+        _blocks[parentId].Add(block);
+        if (inline is { Count: > 0 })
+        {
+            _blocks.TryAdd(block.Id, []);
+            foreach (var child in inline)
+                Store(block.Id, child);
+        }
+        return block.Id;
+    }
+
+    /// <summary>The nesting depth of a children payload as sent (a flat list is 1, a block carrying leaf children
+    /// is 2) — computed before <see cref="Store"/> flattens it.</summary>
+    private static int BlockDepth(IReadOnlyList<NotionBlock> blocks) =>
+        blocks.Count == 0 ? 0 : 1 + blocks.Max(b => b.Children is { Count: > 0 } c ? BlockDepth(c) : 0);
 
     public void DeleteBlock(string blockId)
     {

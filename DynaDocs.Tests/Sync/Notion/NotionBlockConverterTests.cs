@@ -68,6 +68,66 @@ public class NotionBlockConverterTests
         Assert.Equal("code", blocks.Single().Type);
     }
 
+    [Fact]
+    public void NestedBulletList_ConvertsToChildrenHierarchy_AndRoundTrips()
+    {
+        const string md = "- a\n- b\n  - b1\n  - b2\n    - b1x";
+        var blocks = NotionBlockConverter.ToBlocks(md);
+
+        // Two top-level items; the nested sub-lists land as block children, not flattened siblings.
+        Assert.Equal(["a", "b"], blocks.Select(b => NotionRichText.Flatten(b.BulletedListItem!.RichText)));
+        var b = blocks[1];
+        Assert.Equal(["b1", "b2"], b.Children!.Select(c => NotionRichText.Flatten(c.BulletedListItem!.RichText)));
+        Assert.Equal("b1x", NotionRichText.Flatten(b.Children![1].Children!.Single().BulletedListItem!.RichText));
+
+        Assert.Equal(md, NotionBlockConverter.FromBlocks(blocks));
+    }
+
+    [Fact]
+    public void TwoDeepList_NestsInOneChildrenLevel()
+    {
+        var blocks = NotionBlockConverter.ToBlocks("- a\n  - b");
+        var top = Assert.Single(blocks);
+        var child = Assert.Single(top.Children!);
+        Assert.Equal("bulleted_list_item", child.Type);
+        Assert.Equal("b", NotionRichText.Flatten(child.BulletedListItem!.RichText));
+        Assert.Null(child.Children); // b is a leaf — the nesting is exactly one level
+    }
+
+    [Fact]
+    public void NumberedList_ConvertsToNumberedItems_AndRoundTrips()
+    {
+        const string md = "1. one\n2. two\n3. three";
+        var blocks = NotionBlockConverter.ToBlocks(md);
+        Assert.All(blocks, b => Assert.Equal("numbered_list_item", b.Type));
+        Assert.Equal(md, NotionBlockConverter.FromBlocks(blocks));
+    }
+
+    [Fact]
+    public void NestedNumberedUnderBullet_RoundTrips()
+    {
+        const string md = "- a\n  1. one\n  2. two";
+        Assert.Equal(md, NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(md)));
+    }
+
+    [Fact]
+    public void NestedBulletUnderNumbered_RoundTrips_WithMarkerWidthIndent()
+    {
+        // A child under a numbered item indents to the marker width ("1. " = 3), the CommonMark minimum, so it
+        // re-parses as a child rather than a sibling.
+        const string md = "1. one\n   - sub";
+        Assert.Equal(md, NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(md)));
+    }
+
+    [Fact]
+    public void InlineMarkers_KeptVerbatim_AsPlainRuns()
+    {
+        // Structure-only sprint: inline markup is not parsed into annotations, it survives as literal text.
+        const string md = "para **bold** and `code` and [x](y)";
+        var blocks = NotionBlockConverter.ToBlocks(md);
+        Assert.Equal(md, NotionRichText.Flatten(Assert.Single(blocks).Paragraph!.RichText));
+    }
+
     [Theory]
     [InlineData("csharp", "c#")]   // the alias that wedged a live reconcile — Notion spells it "c#"
     [InlineData("cs", "c#")]

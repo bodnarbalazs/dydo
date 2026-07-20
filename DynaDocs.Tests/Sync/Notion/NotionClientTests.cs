@@ -335,6 +335,110 @@ public class NotionClientTests
     }
 
     [Fact]
+    public void AppendBlockChildren_250Children_SplitsIntoExactly_100_100_50()
+    {
+        // The ns-6 success criterion: 250 flat blocks chunk 100/100/50. Each block carries exactly one rich_text,
+        // so counting "rich_text" per request body pins the chunk sizes, not just the request count.
+        var handler = new FakeHttpMessageHandler();
+        for (var i = 0; i < 3; i++)
+            handler.Enqueue("""{"results":[]}""");
+
+        var children = Enumerable.Range(0, 250)
+            .Select(i => new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("l" + i) } })
+            .ToList();
+        Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = children });
+
+        int Blocks(int req) => System.Text.RegularExpressions.Regex.Matches(handler.Requests[req].Body, "rich_text").Count;
+        Assert.Equal([100, 100, 50], new[] { Blocks(0), Blocks(1), Blocks(2) });
+    }
+
+    [Fact]
+    public void AppendBlockChildren_ChunksByTotalElementCount_NoRequestExceeds1000Elements()
+    {
+        // 100 top-level blocks each carrying 15 children = 1600 total elements. The 100-per-array cap alone would
+        // send them in one request and 400 on Notion's 1000-element payload cap; chunking by total elements must
+        // split so no request exceeds 1000. Each block/child carries exactly one rich_text, so counting them per
+        // request body pins the element count.
+        var handler = new FakeHttpMessageHandler();
+        for (var i = 0; i < 6; i++)
+            handler.Enqueue("""{"results":[]}""");
+
+        NotionBlock Item(string t) => new()
+        {
+            Type = "bulleted_list_item", BulletedListItem = new NotionBlockBody { RichText = NotionRichText.Of(t) },
+        };
+        var blocks = Enumerable.Range(0, 100).Select(i =>
+        {
+            var parent = Item("p" + i);
+            parent.Children = Enumerable.Range(0, 15).Select(j => Item("c")).ToList();
+            return parent;
+        }).ToList();
+
+        Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = blocks });
+
+        Assert.True(handler.Requests.Count > 1, "1600 elements must split across requests");
+        foreach (var request in handler.Requests)
+        {
+            var elements = System.Text.RegularExpressions.Regex.Matches(request.Body, "rich_text").Count;
+            Assert.True(elements <= 1000, $"a request carried {elements} elements, over the 1000 cap");
+        }
+    }
+
+    [Fact]
+    public void AppendBlockChildren_SerializesNestedChildren_InRequestBody()
+    {
+        // Source-gen regressions on the recursive children property only surface on the wire, so pin the nested
+        // shape through the real NotionJsonContext.
+        var handler = new FakeHttpMessageHandler().Enqueue("""{"results":[]}""");
+        var parent = new NotionBlock
+        {
+            Type = "bulleted_list_item",
+            BulletedListItem = new NotionBlockBody { RichText = NotionRichText.Of("parent") },
+            Children = [new NotionBlock { Type = "bulleted_list_item", BulletedListItem = new NotionBlockBody { RichText = NotionRichText.Of("child") } }],
+        };
+
+        Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = [parent] });
+
+        var body = handler.Requests.Single().Body;
+        Assert.Contains("\"children\"", body);
+        Assert.Contains("\"parent\"", body);
+        Assert.Contains("\"child\"", body);
+    }
+
+    [Fact]
+    public void GetBlockChildren_DeserializesHasChildrenAndNestedChildren()
+    {
+        // The read side must deserialize has_children (the recursion gate) and any nested children through the
+        // source-gen context.
+        var handler = new FakeHttpMessageHandler().Enqueue(
+            """{"results":[{"type":"bulleted_list_item","id":"b1","has_children":true,"bulleted_list_item":{"rich_text":[]},"children":[{"type":"bulleted_list_item","id":"b2","bulleted_list_item":{"rich_text":[]}}]}],"has_more":false}""");
+
+        var block = Assert.Single(Client(handler).GetBlockChildren("p1"));
+
+        Assert.True(block.HasChildren);
+        Assert.Equal("b2", block.Children!.Single().Id);
+    }
+
+    [Fact]
+    public void AppendBlockChildren_ReturnsCreatedBlockIds_InPayloadOrderAcrossChunks()
+    {
+        // The response's top-level block ids are what the depth driver resolves deferred deeper levels against.
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"results":[{"type":"paragraph","id":"a"},{"type":"paragraph","id":"b"}]}""");
+
+        var ids = Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest
+        {
+            Children =
+            [
+                new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("x") } },
+                new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("y") } },
+            ],
+        });
+
+        Assert.Equal(["a", "b"], ids);
+    }
+
+    [Fact]
     public void AppendBlockChildren_Exactly100Children_IssuesOneRequest()
     {
         // The 100-per-append cap is inclusive: exactly 100 children fit in a single PATCH.

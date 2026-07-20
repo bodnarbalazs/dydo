@@ -461,7 +461,7 @@ public class NotionSyncServiceTests : IDisposable
         public NotionMarkdownResponse GetPageMarkdown(string pageId) => new();
         public void UpdatePageMarkdown(string pageId, string markdown, bool allowDeletingContent) { }
         public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) => [];
-        public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request) { }
+        public IReadOnlyList<string> AppendBlockChildren(string blockId, NotionAppendChildrenRequest request) => [];
         public void DeleteBlock(string blockId) { }
         public IReadOnlyList<NotionSearchResult> SearchDataSources() => [];
     }

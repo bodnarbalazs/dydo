@@ -21,12 +21,14 @@ public sealed class NotionProvisioner
 {
     private readonly INotionClient _client;
     private readonly string _statePath;
+    private readonly TextWriter _output;
     private readonly Dictionary<string, NotionProvisionedType> _state;
 
-    public NotionProvisioner(INotionClient client, string statePath)
+    public NotionProvisioner(INotionClient client, string statePath, TextWriter? output = null)
     {
         _client = client;
         _statePath = statePath;
+        _output = output ?? TextWriter.Null;
         _state = Load(statePath).Types.ToDictionary(t => t.ObjectType);
     }
 
@@ -427,17 +429,25 @@ public sealed class NotionProvisioner
         File.WriteAllText(_statePath, JsonSerializer.Serialize(file, NotionProvisionJsonContext.Default.NotionProvisionState));
     }
 
-    /// <summary>A recorded type is valid only if its database still exists and still owns the recorded
-    /// data source — so a deleted or replaced database is detected and re-provisioned. Only a DEFINITIVE
-    /// not-found (HTTP 404 / Notion <c>object_not_found</c>) counts as gone: a transient probe failure
-    /// (429 rate-limit, 5xx) must propagate and abort the tick, never be misread as a deleted database —
-    /// else the provisioner re-creates an empty data source and the same tick mass-deletes every repo doc
-    /// whose base points at the now-absent pages (finding 1).</summary>
+    /// <summary>A recorded type is valid only if its database still exists, is not trashed, and still owns
+    /// the recorded data source — so a deleted, trashed, or replaced database is detected and re-provisioned.
+    /// A database moved to Notion trash still 200s on retrieval carrying <c>in_trash: true</c> (it does not
+    /// 404), so it is treated exactly as a definitive not-found: dropped and re-minted, never synced into
+    /// (ns-3). Only a DEFINITIVE not-found (HTTP 404 / Notion <c>object_not_found</c>) counts as gone by
+    /// exception: a transient probe failure (429 rate-limit, 5xx) must propagate and abort the tick, never be
+    /// misread as a deleted database — else the provisioner re-creates an empty data source and the same tick
+    /// mass-deletes every repo doc whose base points at the now-absent pages (finding 1).</summary>
     private bool StillValid(NotionProvisionedType record)
     {
         try
         {
-            return _client.RetrieveDatabase(record.DatabaseId).DataSources.Any(d => d.Id == record.DataSourceId);
+            var database = _client.RetrieveDatabase(record.DatabaseId);
+            if (database.InTrash || database.Archived)
+            {
+                _output.WriteLine($"  provision  {record.ObjectType,-9} recorded database {record.DatabaseId} is trashed — not reusable");
+                return false;
+            }
+            return database.DataSources.Any(d => d.Id == record.DataSourceId);
         }
         catch (NotionApiException e) when (IsDefinitiveNotFound(e))
         {

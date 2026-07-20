@@ -506,6 +506,55 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
+    public void Lookup_TrashedDatabase_IsNotReused_AndLogsReMint()
+    {
+        // ns-3. A database moved to Notion trash still 200s on retrieval with in_trash:true — it does NOT 404 —
+        // so the provisioner would happily reuse it and sync the spine into a dead board. It must detect the
+        // trashed state and re-mint instead: Lookup returns null (the same re-provision path as a 404), and one
+        // clear line names the trashed database.
+        var client = new FakeNotionClient();
+        var log = new StringWriter();
+        var provisioner = new NotionProvisioner(client, _statePath, log);
+        var created = provisioner.Create(_model.Object("Campaign"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        client.Databases[created.DatabaseId].InTrash = true;
+        Assert.Null(provisioner.Lookup("Campaign"));
+        Assert.Contains("trashed", log.ToString());
+        Assert.Contains(created.DatabaseId, log.ToString());
+    }
+
+    [Fact]
+    public void Lookup_ArchivedDatabase_IsNotReused()
+    {
+        // The archived flag is the other half of Notion's soft-delete state and is treated identically to
+        // in_trash: an archived database is re-minted, never reused.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var created = provisioner.Create(_model.Object("Campaign"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        client.Databases[created.DatabaseId].Archived = true;
+        Assert.Null(provisioner.Lookup("Campaign"));
+    }
+
+    [Fact]
+    public void Lookup_NotTrashedDatabase_IsReused()
+    {
+        // in_trash:false (the default, pinned explicitly here) is the healthy case — the recorded database is
+        // reused exactly as today, no re-mint.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var created = provisioner.Create(_model.Object("Campaign"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        client.Databases[created.DatabaseId].InTrash = false;
+        var reused = provisioner.Lookup("Campaign");
+        Assert.NotNull(reused);
+        Assert.Equal(created.DataSourceId, reused!.DataSourceId);
+    }
+
+    [Fact]
     public void Lookup_TransientProbeFailure_Propagates_NoReprovisionNoReuse()
     {
         // Finding 1 (SEVERE). A recorded type's validity probe hitting a TRANSIENT Notion failure (429 rate

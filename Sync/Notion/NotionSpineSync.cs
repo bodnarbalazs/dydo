@@ -19,7 +19,7 @@ public static class NotionSpineSync
         var dydoRoot = state.DydoRoot;
         var model = SyncModelLoader.Load(dydoRoot);
         var types = model.InDependencyOrder();
-        var provisioner = new NotionProvisioner(client, state.ProvisionPath);
+        var provisioner = new NotionProvisioner(client, state.ProvisionPath, output);
 
         output.WriteLine(dryRun
             ? $"notion sync --dry-run: model has {types.Count} object type(s) [{string.Join(" -> ", types.Select(t => t.Type))}] under parent page {state.ParentPageId}"

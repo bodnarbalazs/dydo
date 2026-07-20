@@ -1409,6 +1409,33 @@ public class NotionSpineSyncTests : IDisposable
     }
 
     [Fact]
+    public void Run_ReprovisionTrashedDatabase_ResetsBaseSnapshot_RepushesAsCreates_ZeroRepoDeletions()
+    {
+        // ns-3. A database moved to Notion trash still 200s on retrieval (in_trash:true) — it does NOT 404 —
+        // so StillValid must detect the trashed state and re-mint through the same re-provision path as a 404.
+        // The stale base snapshot (parent-scoped, ns-1) is durably cleared at mint time and every repo doc
+        // re-pushes as a CREATE into the fresh database; zero repo deletions.
+        SeedReprovisionSpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        Assert.Equal(2, client.QueryDataSource("ds-1").Count);
+        Assert.True(File.Exists(St().SnapshotPath("Slice")));
+
+        // The recorded database is moved to trash — it still retrieves (in_trash:true), it does not 404.
+        client.Databases["db-1"].InTrash = true;
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, St(), dryRun: false, output); // tick 2: re-provision
+
+        Assert.Contains("trashed", output.ToString());
+        Assert.True(File.Exists(TaskPath("task-1")));  // never deleted
+        Assert.True(File.Exists(TaskPath("task-2")));
+        Assert.Equal(2, client.CreatedDatabases.Count);        // a fresh database was minted
+        Assert.Equal(2, client.QueryDataSource("ds-2").Count); // both docs re-pushed as creates into it
+        Assert.True(File.Exists(St().SnapshotPath("Slice")));  // the parent-scoped base was cleared then rebuilt
+    }
+
+    [Fact]
     public void Run_ReprovisionDataSourceMismatch_ResetsBaseSnapshot_ZeroRepoDeletions()
     {
         // Finding 1 variant. The database still EXISTS but no longer owns the recorded data source (it was

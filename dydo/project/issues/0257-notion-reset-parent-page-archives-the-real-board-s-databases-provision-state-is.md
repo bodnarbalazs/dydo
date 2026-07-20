@@ -46,4 +46,14 @@ REDESIGN NEEDED: also parent-scope the spine BASE SNAPSHOT name (mirror `DocsTre
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by slice ns-1 (notion-stabilization sprint) — the full REDESIGN the reverted attempt missed:
+
+- **One decision point.** `NotionSpineState.Resolve` (`Sync/Notion/NotionSpineState.cs`) is the single function that resolves every parent-scoped spine state path AND runs the legacy migration, for BOTH `sync` and `reset`. Nothing else computes a state path; `NotionSpineSync.Run` now takes a resolved `NotionSpineState` instead of a bare `parentPageId`.
+- **CRITICAL 1 (base snapshots).** Snapshots are now `notion-<hash8(parent)>-<type>` (was project-scoped `notion-<type>`), mirroring `DocsTreeSync.SnapshotAdapterName`. Provision state is `provision-<hash8>.json`. A scratch reset can no longer poison the real board's base snapshots. New test `Execute_OverrideParent_LeavesConfiguredParentStateAndSnapshotsByteIdentical` + repo-survival `Execute_ScratchResetThenConfiguredSync_LeavesRepoRecordsIntact` (asserts `c1.md` survives and no `page-*.md` junk appears under `project/`).
+- **CRITICAL 2 (sync adopts scratch state).** `NotionSyncService` resolves through the same decision point; `sync --parent-page <scratch>` writes only scratch-scoped state. New test `Execute_SpineParentPageOverride_ResolvesScratchScopedState_NotConfigured`.
+- **MEDIUM 3 (override == configured).** An override equal to the configured parent counts as non-override — it migrates and resolves the same scoped state, never orphaning legacy state or minting a duplicate. New tests `SpineState_MigratesLegacyOnce_ForConfiguredParent_NeverForDifferentOverride`, `SpineState_OverrideEqualToConfigured_MigratesLikeNoOverride`.
+- **Migration.** First non-dry configured run renames the legacy files into scoped names once, logging one line per file; an override to a different parent never migrates.
+
+Left OPEN until ns-10's live verification against a real Notion board (fake-backed suite green; the parent-scoping is not itself catchable by `FakeNotionClient` semantics beyond path assertions).
+
+Review-round addendum (2026-07-20): dry-run now previews the legacy state a real run would migrate (no more 'would archive 0' in the upgrade window); migration runs only after the destructive confirm; parent ids are canonicalized (lowercase, dashes stripped) via the shared Sync/ParentPageKey.cs before both the override-equality check and the hash — dashed and undashed forms of one board scope identically.

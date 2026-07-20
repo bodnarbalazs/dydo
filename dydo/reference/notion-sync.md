@@ -41,7 +41,15 @@ Verified empirically under the data-source model:
 - **Create database:** `POST /v1/databases` with `parent: {"type":"page_id","page_id":"<id>"}`, `title: [{type:text,text:{content}}]`, `properties: {...}` (Name = `{title:{}}`, select = `{select:{options:[...]}}`, etc.). The response includes `data_sources[0].id` — capture it.
 - **Relation property:** `{"relation": {"data_source_id": "<target>", "single_property": {}}}` — references the **data_source_id**, not the database_id. Provision in two passes: create all DBs, then PATCH relation properties referencing the now-known data-source ids.
 - **Archive a DB:** `PATCH /v1/databases/{id}` with body `{"in_trash": true}`.
-- **Trash traps:** a workspace-level page cannot be un-trashed via the API ("Unarchiving workspace level pages not supported") — the human must restore it from Notion Trash. Creating under a trashed parent fails with "Can't edit block that is archived" — check the page's `in_trash` before building under it. Also, `NotionProvisioner.StillValid()` will happily reuse a **trashed** (soft-deleted, still API-retrievable) database instead of re-minting — clear `dydo/_system/.local/notion/provision.json` to force a fresh mint.
+- **Trash traps:** a workspace-level page cannot be un-trashed via the API ("Unarchiving workspace level pages not supported") — the human must restore it from Notion Trash. Creating under a trashed parent fails with "Can't edit block that is archived" — check the page's `in_trash` before building under it. Also, `NotionProvisioner.StillValid()` will happily reuse a **trashed** (soft-deleted, still API-retrievable) database instead of re-minting — clear this parent's `provision-<hash8>.json` (see State files) to force a fresh mint.
+
+### State files
+
+All spine state under the gitignored `dydo/_system/.local/` tree is **parent-page-scoped** (issue 0257), keyed by `ParentPageKey.Hash8(parentPageId)` — the same helper `DocsTreeSync.SnapshotAdapterName` uses for the docs mirror — so a scratch `--parent-page` target's state is disjoint from the configured board's and a `notion reset --parent-page <scratch>` can never archive or poison the real board. `NotionSpineState` is the one place that resolves these paths (for both `sync` and `reset`). The parent id is canonicalized first (`ParentPageKey.Normalize`: lowercase, strip dashes), so the dashed and undashed forms of the same page id resolve to one state and an override equal to the configured page — in either form — counts as non-override.
+
+- **Provision state:** `notion/provision-<hash8>.json` — the tracked `{objectType → databaseId, dataSourceId}` per parent.
+- **Base snapshots:** `sync/notion-<hash8>-<type>/snapshot.json` — the per-type 3-way-merge base per parent.
+- **Migration:** the first non-dry configured run renames the legacy project-scoped files (`notion/provision.json`, `sync/notion-<type>/snapshot.json`) into the scoped names, once, logging one line per file. A `--parent-page` override equal to the configured page counts as non-override (it migrates); an override to any other page starts clean.
 
 Docs: developers.notion.com/reference/versioning · developers.notion.com/docs/upgrade-guide-2025-09-03 · developers.notion.com/llms.txt (full index).
 

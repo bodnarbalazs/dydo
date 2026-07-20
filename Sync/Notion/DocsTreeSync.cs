@@ -26,13 +26,8 @@ public static class DocsTreeSync
     /// leak into the real run as stale/foreign state. Folding a short stable hash of the parent page id into the
     /// name gives each target its own snapshot, so alternating targets never cross-contaminate.</summary>
     public static string SnapshotAdapterName(string parentPageId) =>
-        AdapterName + "-" + ShortHash(parentPageId);
+        AdapterName + "-" + ParentPageKey.Hash8(parentPageId);
 
-    private static string ShortHash(string value)
-    {
-        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(value));
-        return Convert.ToHexString(bytes)[..8].ToLowerInvariant();
-    }
     // The dydo-root folder's local id — its page is the "Docs" root. A single reserved token so it can never
     // collide with a real doc path (a repo path is never bare ".").
     private const string RootLocalId = ".";

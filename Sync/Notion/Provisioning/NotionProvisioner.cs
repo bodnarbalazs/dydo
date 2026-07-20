@@ -30,7 +30,9 @@ public sealed class NotionProvisioner
         _state = Load(statePath).Types.ToDictionary(t => t.ObjectType);
     }
 
-    /// <summary>The provision-state file path under the gitignored .local/ tree.</summary>
+    /// <summary>The LEGACY project-scoped provision-state file path under the gitignored .local/ tree. State is now
+    /// parent-scoped (<c>provision-&lt;hash8&gt;.json</c>, resolved by <see cref="NotionSpineState"/>); this bare
+    /// name survives only as the migration source and the directory anchor its scoped siblings sit beside.</summary>
     public static string PathFor(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "notion", "provision.json");
 

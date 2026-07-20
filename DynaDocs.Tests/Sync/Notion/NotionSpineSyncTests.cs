@@ -62,11 +62,16 @@ public class NotionSpineSyncTests : IDisposable
         File.WriteAllText(path, json);
     }
 
+    /// <summary>The parent-scoped spine state for the tests' fixed "parent-page" target (no override), resolved
+    /// through the one decision point exactly as production does.</summary>
+    private NotionSpineState St() =>
+        NotionSpineState.Resolve(_dydoRoot, "parent-page", null, dryRun: false, TextWriter.Null);
+
     [Fact]
     public void Run_ProvisionsThreeDatabases_InDependencyOrder_WithRelationsInBody()
     {
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.Equal(
             ["dydo Campaigns", "dydo Sprints", "dydo Sprint Tasks"],
@@ -81,7 +86,7 @@ public class NotionSpineSyncTests : IDisposable
     public void Run_CreatesRelatedPages_ResolvingLocalIdsToParentPageIds()
     {
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var campaign = Assert.Single(client.QueryDataSource("ds-1"));
         var sprint = Assert.Single(client.QueryDataSource("ds-2"));
@@ -96,8 +101,8 @@ public class NotionSpineSyncTests : IDisposable
     public void Run_SecondPass_IsIdempotent_NoNewDatabasesOrPages()
     {
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.Equal(3, client.CreatedDatabases.Count);
         Assert.Single(client.QueryDataSource("ds-1"));
@@ -112,12 +117,12 @@ public class NotionSpineSyncTests : IDisposable
         // second pass; the campaign relation must round-trip to the local id, not a raw page id, so the
         // sprint file keeps `campaign: dydo-2-0` rather than gaining a page-id reference.
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var sprintPage = client.QueryDataSource("ds-2").Single();
         sprintPage.Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("Renamed In Notion") };
 
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var sprintFile = File.ReadAllText(Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md"));
         Assert.Contains("campaign: dydo-2-0", sprintFile);
@@ -132,7 +137,7 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/_index", "---\ntitle: Sprint Tasks\n---\n\nFolder index, not a task.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var task = Assert.Single(client.QueryDataSource("ds-3")); // only the real spine-task, not _index
         Assert.Equal("Spine task", NotionRichText.Flatten(task.Properties["title"].Title));
@@ -158,7 +163,7 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/items/item-1", "---\ntitle: Widget\narea: design\nowner: alice\n---\n\nAn item.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var area = Assert.Single(client.QueryDataSource("ds-1"));
         var owner = Assert.Single(client.QueryDataSource("ds-2"));
@@ -169,7 +174,7 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Equal(owner.Id, item.Properties["owner"].Relation!.Single().Id);
 
         // Read direction: a second pass keeps the item file's local-id references, not raw page ids.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         var itemFile = File.ReadAllText(Path.Combine(_dydoRoot, "project", "items", "item-1.md"));
         Assert.Contains("area: design", itemFile);
         Assert.Contains("owner: alice", itemFile);
@@ -181,7 +186,7 @@ public class NotionSpineSyncTests : IDisposable
         // A colleague edits the sprint's body in Notion while the repo edits the same line differently.
         // The overlapping edit must surface as a conflict (reported + visible markers), never a silent clobber.
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
         File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
@@ -190,7 +195,7 @@ public class NotionSpineSyncTests : IDisposable
         client.SetBlockChildren(sprintPage.Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
 
         var output = new StringWriter();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output);
+        NotionSpineSync.Run(client, St(), dryRun: false, output);
 
         Assert.Contains("conflict", output.ToString());
         var merged = File.ReadAllText(sprintPath);
@@ -238,8 +243,8 @@ public class NotionSpineSyncTests : IDisposable
         var client = new FakeNotionClient();
         // Tick 1 creates both pages; the self-relation can't resolve yet (pages not in the base snapshot).
         // Tick 2 resolves it now that task-a's page id is recorded — proving the base-seeded self map works.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -251,7 +256,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // Read direction: a human links task-a as blocked by task-b on the board.
         pageA.Properties["blocked-by"] = new NotionPropertyValue { Type = "relation", Relation = [new() { Id = pageB.Id }] };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var fileA = File.ReadAllText(Path.Combine(_dydoRoot, "project", "slices", "task-a.md"));
         Assert.Contains("blocked-by: task-b", fileA);   // rendered to the local id
@@ -289,8 +294,8 @@ public class NotionSpineSyncTests : IDisposable
 
         var client = new FakeNotionClient();
         // Two ticks: tick 1 creates every page, tick 2 resolves the self-relation to both blockers' page ids.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -298,7 +303,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var xPath = Path.Combine(_dydoRoot, "project", "slices", "task-x.md");
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by:\n---\n\nX.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.Empty(PageByTitle("X").Properties["blocked-by"].Relation!);
     }
@@ -312,8 +317,8 @@ public class NotionSpineSyncTests : IDisposable
         SeedMultiBlockerSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -323,7 +328,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var xPath = Path.Combine(_dydoRoot, "project", "slices", "task-x.md");
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-c\n---\n\nX.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // The swap propagated: task-b's page id is gone, task-c's is in, order preserved.
         Assert.Equal([pageA.Id, pageC.Id], PageByTitle("X").Properties["blocked-by"].Relation!.Select(r => r.Id));
@@ -339,8 +344,8 @@ public class NotionSpineSyncTests : IDisposable
         SeedMultiBlockerSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -350,7 +355,7 @@ public class NotionSpineSyncTests : IDisposable
         // A colleague swaps task-b for task-c on the board AND renames the task, in the same tick.
         pageX.Properties["blocked-by"] = new NotionPropertyValue { Type = "relation", Relation = [new() { Id = PageByTitle("A").Id }, new() { Id = pageC.Id }] };
         pageX.Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var fileX = File.ReadAllText(Path.Combine(_dydoRoot, "project", "slices", "task-x.md"));
         Assert.Contains("blocked-by: task-a, task-c", fileX); // the Notion edit landed, as local ids
@@ -382,7 +387,7 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/sprints/s1", "---\ntitle: S1\ncampaign: c1\n---\n\nBody.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // Campaign (ds-1) created first; its priority select carries colors.
         var campaignDb = client.CreatedDatabases[0];
@@ -404,13 +409,13 @@ public class NotionSpineSyncTests : IDisposable
     public void Run_Prune_DeletesRogueNotionProperty()
     {
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // A colleague adds a column in Notion that the model does not define.
         client.DataSourceSchema("ds-1").Properties["Rogue"] = new NotionPropertySchema();
 
         var output = new StringWriter();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output, prune: true);
+        NotionSpineSync.Run(client, St(), dryRun: false, output, prune: true);
 
         Assert.Contains("PRUNE rogue property \"Rogue\"", output.ToString());
         Assert.False(client.DataSourceSchema("ds-1").Properties.ContainsKey("Rogue"));
@@ -420,11 +425,11 @@ public class NotionSpineSyncTests : IDisposable
     public void Run_WarnsRogueProperty_ButLeavesIt_WithoutPrune()
     {
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         client.DataSourceSchema("ds-1").Properties["Rogue"] = new NotionPropertySchema();
 
         var output = new StringWriter();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output);
+        NotionSpineSync.Run(client, St(), dryRun: false, output);
 
         Assert.Contains("WARN rogue property \"Rogue\"", output.ToString());
         Assert.True(client.DataSourceSchema("ds-1").Properties.ContainsKey("Rogue")); // untouched
@@ -455,7 +460,7 @@ public class NotionSpineSyncTests : IDisposable
         Path.Combine(_dydoRoot, "project", "slices", localId + ".md");
 
     private string? LastActivityInBase(string localId) =>
-        new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")).GetLastActivity(localId);
+        new BaseSnapshotStore(St().SnapshotPath("Slice")).GetLastActivity(localId);
 
     [Fact]
     public void Run_LastActivity_BumpsOnGenuineRepoChange_NotOnExternalWriteOrNoOp_NeverInFrontmatter()
@@ -466,7 +471,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var client = new FakeNotionClient();
         // Tick 1: create. last-activity initialises from the file's mtime and is written one-way to Notion.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var page = client.QueryDataSource("ds-1").Single();
         Assert.Equal("2026-06-20", page.Properties["last-activity"].Date!.Start);
@@ -475,14 +480,14 @@ public class NotionSpineSyncTests : IDisposable
         Assert.DoesNotContain("last-activity", File.ReadAllText(TaskPath("task-1")));
 
         // Tick 2: nothing changed — no bump, Notion value untouched.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         Assert.Equal("2026-06-20", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
         Assert.Equal("2026-06-20", LastActivityInBase("task-1"));
 
         // Tick 3: a genuine repo-side edit bumps last-activity to the file's new mtime.
         File.WriteAllText(TaskPath("task-1"), "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one EDITED.");
         File.SetLastWriteTimeUtc(TaskPath("task-1"), new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc));
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         Assert.Equal("2026-07-01", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
         Assert.Equal("2026-07-01", LastActivityInBase("task-1"));
 
@@ -490,7 +495,7 @@ public class NotionSpineSyncTests : IDisposable
         // last-activity must hold, even though the engine rewrites the repo file (bumping its mtime).
         var external = client.QueryDataSource("ds-1").Single();
         external.Properties["status"] = new NotionPropertyValue { Type = "select", Select = new NotionSelectOption { Name = "in-review" } };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.Equal("2026-07-01", LastActivityInBase("task-1"));
         Assert.Equal("2026-07-01", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
@@ -504,7 +509,7 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // The engine date and the leaf stale formula are provisioned in the create; attention (which reads
         // stale) is PATCHed on afterwards.
@@ -555,7 +560,7 @@ public class NotionSpineSyncTests : IDisposable
             """);
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var updates = client.DataSourceUpdates;
         int IndexOf(string ds, string key) =>
@@ -593,11 +598,11 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // Simulate a base written by the pre-slice engine: the object is present but the last-activity map is
         // empty (the old file format had no such map), and the page carries no last-activity either.
-        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice");
+        var snapPath = St().SnapshotPath("Slice");
         var node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(snapPath))!;
         node["lastActivity"] = new System.Text.Json.Nodes.JsonObject();
         File.WriteAllText(snapPath, node.ToJsonString());
@@ -608,7 +613,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // The stalled task's file is untouched for days; a no-op tick seeds last-activity from its mtime.
         File.SetLastWriteTimeUtc(TaskPath("task-1"), new DateTime(2026, 6, 25, 0, 0, 0, DateTimeKind.Utc));
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.Equal("2026-06-25", LastActivityInBase("task-1"));
         Assert.DoesNotContain("last-activity", File.ReadAllText(TaskPath("task-1")));
@@ -617,7 +622,7 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Single(client.LastActivityWrites);
 
         // Idempotent: a further no-op tick sees the page already in sync and issues no repeated write.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         Assert.Single(client.LastActivityWrites);
         Assert.Equal("2026-06-25", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
     }
@@ -632,7 +637,7 @@ public class NotionSpineSyncTests : IDisposable
         SeedLastActivitySpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // provision ds-1, no docs
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // provision ds-1, no docs
 
         // A human creates a task directly on the board; it maps to a repo file on the next tick.
         client.SeedPage("ext-task", new Dictionary<string, DynaDocs.Sync.Notion.Dtos.NotionPropertyValue>
@@ -642,7 +647,7 @@ public class NotionSpineSyncTests : IDisposable
         }, dataSourceId: "ds-1");
         client.LastActivityWrites.Clear();
 
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // The Notion-created object was filed to the repo AND stamped both in the store and on the page.
         Assert.True(File.Exists(TaskPath("ext-task")));
@@ -653,7 +658,7 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Equal(["ext-task"], client.LastActivityWrites);
 
         // Idempotent: the now-repo-backed, unchanged object issues no further engine-computed write.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         Assert.Equal(["ext-task"], client.LastActivityWrites);
     }
 
@@ -671,7 +676,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var client = new FakeNotionClient();
         // Tick 1: both pages created, each with a seeded last-activity in the base snapshot.
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -685,8 +690,8 @@ public class NotionSpineSyncTests : IDisposable
         client.LastActivityWrites.Clear();
 
         // Two further ticks must not throw (the hardened fake 400s any property write on an archived page).
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // No property write was ever attempted against the archived page — its state is untouched.
         Assert.DoesNotContain(archivedPageId, client.LastActivityWrites);
@@ -703,13 +708,13 @@ public class NotionSpineSyncTests : IDisposable
         var client = new FakeNotionClient();
         var output = new StringWriter();
 
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: true, output);
+        NotionSpineSync.Run(client, St(), dryRun: true, output);
 
         var text = output.ToString();
         Assert.Contains("--dry-run", text);
         Assert.Contains("would create database", text);
         Assert.Empty(client.CreatedDatabases);
-        Assert.False(File.Exists(Path.Combine(_dydoRoot, "_system", ".local", "notion", "provision.json")));
+        Assert.False(File.Exists(St().ProvisionPath));
     }
 
     /// <summary>A single-type Slice model whose only relation is the blocked-by self-relation.</summary>
@@ -745,13 +750,13 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: task-a alone
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: task-a alone
 
         // task-b appears AND task-a is edited (body) and gains the blocker, in the same inter-tick window.
         Seed("project/slices/task-b", "---\ntitle: B\n---\n\nB.");
         Seed("project/slices/task-a", "---\ntitle: A\nblocked-by: task-b\n---\n\nA EDITED.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: push body; relation unresolvable
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: task-b resolves
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: push body; relation unresolvable
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 3: task-b resolves
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -776,16 +781,16 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-a", "---\ntitle: A\n---\n\nA.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: task-a alone
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: task-a alone
 
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-x, task-a resolves
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: create task-x, task-a resolves
 
         // task-b appears AND task-x is edited (body) and gains the second blocker, in the same window.
         Seed("project/slices/task-b", "---\ntitle: B\n---\n\nB.");
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX EDITED.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: push body; task-b unresolvable
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-b resolves
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 3: push body; task-b unresolvable
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 4: task-b resolves
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -809,8 +814,8 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create both
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: task-a resolves, pushed
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: create both
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: task-a resolves, pushed
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -822,13 +827,13 @@ public class NotionSpineSyncTests : IDisposable
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
         PageByTitle("X").Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
 
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: WriteToRepo (rename), task-b pending
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 3: WriteToRepo (rename), task-b pending
 
         var fileAfterWrite = File.ReadAllText(xPath);
         Assert.Contains("X Renamed", fileAfterWrite);                    // the board rename landed
         Assert.Contains("blocked-by: task-a, task-b", fileAfterWrite);   // the pending entry survived the rewrite
 
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-b resolves -> push
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 4: task-b resolves -> push
 
         Assert.Equal(
             [PageByTitle("A").Id, PageByTitle("B").Id],
@@ -848,8 +853,8 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: task-a resolves, pushed
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: task-a resolves, pushed
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -861,7 +866,7 @@ public class NotionSpineSyncTests : IDisposable
         File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
         PageByTitle("X").Archived = true;
 
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: page gone, pending entry present
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 3: page gone, pending entry present
 
         // The file was NOT silently deleted, and the pending entry is intact.
         Assert.True(File.Exists(xPath));
@@ -893,17 +898,17 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-1", "---\ntitle: T1\nstatus: in-progress\narea: project\ntype: context\n---\n\nBody.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create the page
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // create the page
 
         // The board archives the page; the repo file is untouched since push — only its local-only keys differ
         // from the base, which is recorded normalized and so never held them.
         client.QueryDataSource("ds-1").Single().Archived = true;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // The archive propagated: the file is gone, no page was resurrected, and the base entry is retired.
         Assert.False(File.Exists(TaskPath("task-1")));
         Assert.DoesNotContain(client.QueryDataSource("ds-1"), p => !p.Archived);
-        Assert.Null(new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")).Get("task-1"));
+        Assert.Null(new BaseSnapshotStore(St().SnapshotPath("Slice")).Get("task-1"));
     }
 
     [Fact]
@@ -926,23 +931,23 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-1", content);
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         var archivedId = client.QueryDataSource("ds-1").Single().Id;
 
         // Both sides vanish in the same window: repo file deleted, Notion page archived.
         File.Delete(TaskPath("task-1"));
         client.QueryDataSource("ds-1").Single().Archived = true;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         // The base entry (and the archived page id) is retired from the persisted snapshot.
-        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice");
+        var snapPath = St().SnapshotPath("Slice");
         Assert.Null(new BaseSnapshotStore(snapPath).Get("task-1"));
         Assert.DoesNotContain(archivedId, File.ReadAllText(snapPath));
 
         // git restores the file with content identical to the old base. It must be treated as a NEW create,
         // round-tripping to Notion — never silently deleted.
         File.WriteAllText(TaskPath("task-1"), content);
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.True(File.Exists(TaskPath("task-1")));
         var live = client.QueryDataSource("ds-1").Where(p => !p.Archived).ToList();
@@ -977,8 +982,8 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/worker", "---\ntitle: Worker\nsprint: alpha\nblocked-by: alpha\n---\n\nW.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         NotionPage PageIn(string ds, string title) =>
             client.QueryDataSource(ds).Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == title);
@@ -1012,9 +1017,9 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-1", "---\ntitle: T1\nstatus: in-progress\ndone: true\n---\n\nBody.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var file = File.ReadAllText(TaskPath("task-1"));
         Assert.Contains("done: true", file);          // never deleted
@@ -1057,9 +1062,9 @@ public class NotionSpineSyncTests : IDisposable
         var client = new FakeNotionClient { FailCreateDatabaseAfter = 2 }; // Campaign, Sprint succeed; Slice throws
 
         Assert.Throws<NotionApiException>(
-            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+            () => NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()));
 
-        var provisionPath = NotionProvisioner.PathFor(_dydoRoot);
+        var provisionPath = St().ProvisionPath;
         Assert.True(File.Exists(provisionPath));
         var recorded = new NotionProvisioner(client, provisionPath);
         Assert.NotNull(recorded.Lookup("Campaign"));
@@ -1073,7 +1078,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // Retry with a healthy client reuses Campaign + Sprint and creates only Slice — no duplicates.
         client.FailCreateDatabaseAfter = null;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         Assert.Equal(3, client.CreatedDatabases.Count);
 
         // The retry ran the deferred post-pass for the REUSED parents: their rollups and deferred formulas were
@@ -1085,7 +1090,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // Completion is now persisted, so a further idempotent tick re-runs no post-pass.
         var updatesAfterRetry = client.DataSourceUpdates.Count;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
         Assert.Equal(updatesAfterRetry, client.DataSourceUpdates.Count);
         Assert.False(new NotionProvisioner(client, provisionPath).PostPassPending("Campaign"));
     }
@@ -1127,9 +1132,9 @@ public class NotionSpineSyncTests : IDisposable
         var client = new FakeNotionClient { FailUpdateDataSourceAfter = 2 }; // Sprint's two patches land; Campaign's first throws
 
         Assert.Throws<NotionApiException>(
-            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+            () => NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()));
 
-        var provisionPath = NotionProvisioner.PathFor(_dydoRoot);
+        var provisionPath = St().ProvisionPath;
         var recorded = new NotionProvisioner(client, provisionPath);
         Assert.False(recorded.PostPassPending("Slice")); // leaf: no post-pass work, marked done first
         Assert.False(recorded.PostPassPending("Sprint"));     // completed and persisted before the crash
@@ -1138,7 +1143,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // Retry: only Campaign's post-pass re-runs (both patches on ds-1), Sprint's does NOT.
         client.FailUpdateDataSourceAfter = null;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var newUpdates = client.DataSourceUpdates.Skip(2).ToList();
         Assert.All(newUpdates, u => Assert.Equal("ds-1", u.DataSourceId)); // Campaign is ds-1
@@ -1155,12 +1160,12 @@ public class NotionSpineSyncTests : IDisposable
         WriteRollupModel();
         var client = new FakeNotionClient { FailUpdateDataSourceAfter = 2 };
         Assert.Throws<NotionApiException>(
-            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+            () => NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()));
 
         client.FailUpdateDataSourceAfter = null;
         client.DataSourceUpdates.Clear();
         var output = new StringWriter();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: true, output);
+        NotionSpineSync.Run(client, St(), dryRun: true, output);
 
         var lines = output.ToString().Split('\n');
         // Every database already exists, so all are reused; only Campaign still owes its post-pass.
@@ -1191,10 +1196,10 @@ public class NotionSpineSyncTests : IDisposable
             }
             """);
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // provision for real
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // provision for real
 
         var output = new StringWriter();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: true, output);
+        NotionSpineSync.Run(client, St(), dryRun: true, output);
 
         var text = output.ToString();
         Assert.Contains("reuse data source", text);
@@ -1215,7 +1220,7 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
 
         var client = new FakeNotionClient { EchoEmptyRelations = true };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-x
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: create task-x
 
         var xPath = TaskPath("task-x");
         var afterCreate = File.ReadAllText(xPath);
@@ -1225,16 +1230,16 @@ public class NotionSpineSyncTests : IDisposable
         for (var i = 0; i < 3; i++)
         {
             var output = new StringWriter();
-            NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output);
+            NotionSpineSync.Run(client, St(), dryRun: false, output);
             Assert.DoesNotContain("conflict", output.ToString());
             Assert.Equal(afterCreate, File.ReadAllText(xPath)); // byte-identical: no WriteToRepo churn
         }
 
         // task-later appears; the blocker now resolves. It must push cleanly, no phantom merge conflict.
         Seed("project/slices/task-later", "---\ntitle: Later\n---\n\nLater body.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create task-later
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // create task-later
         var resolveOutput = new StringWriter();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, resolveOutput); // task-later resolves
+        NotionSpineSync.Run(client, St(), dryRun: false, resolveOutput); // task-later resolves
 
         Assert.DoesNotContain("conflict", resolveOutput.ToString());
 
@@ -1257,7 +1262,7 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-ghost\n---\n\nX body.");
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create task-x, blocker omitted
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // create task-x, blocker omitted
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -1265,7 +1270,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // The board archives task-x's page; task-x's repo file is untouched but carries the all-unresolvable relation.
         PageByTitle("X").Archived = true;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var xPath = TaskPath("task-x");
         Assert.True(File.Exists(xPath)); // not silently deleted
@@ -1302,12 +1307,12 @@ public class NotionSpineSyncTests : IDisposable
         SeedReprovisionSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
         Assert.Equal(2, client.QueryDataSource("ds-1").Count);
 
         // The recorded database is definitively gone; the next tick re-provisions into a fresh database.
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: re-provision
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: re-provision
 
         Assert.True(File.Exists(TaskPath("task-1")));  // never deleted
         Assert.True(File.Exists(TaskPath("task-2")));
@@ -1328,7 +1333,7 @@ public class NotionSpineSyncTests : IDisposable
         SeedReprovisionSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
         Assert.Equal(2, client.QueryDataSource("ds-1").Count);
 
         // Tick 2: the recorded database is definitively gone, forcing a re-provision into a fresh database — but
@@ -1336,18 +1341,18 @@ public class NotionSpineSyncTests : IDisposable
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
         client.FailRetrieveDataSource = new NotionApiException(429, "simulated transient drift-probe failure");
         Assert.Throws<NotionApiException>(
-            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+            () => NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()));
 
         // The fresh database was minted, and its base snapshot was durably cleared at mint time (file deleted),
         // even though the aborted tick never reached the end-of-tick base Save.
         Assert.Equal(2, client.CreatedDatabases.Count);
-        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")));
+        Assert.False(File.Exists(St().SnapshotPath("Slice")));
 
         // Tick 3: a healthy retry. Lookup reuses the now-valid empty ds-2 (nothing minted this run). With a durable
         // reset the base is empty, so both docs re-push as CREATES — never read as external deletes. Zero deletions.
         client.FailRetrieveDatabase = null;
         client.FailRetrieveDataSource = null;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.True(File.Exists(TaskPath("task-1")));
         Assert.True(File.Exists(TaskPath("task-2")));
@@ -1363,11 +1368,11 @@ public class NotionSpineSyncTests : IDisposable
         SeedReprovisionSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1
 
         // The database now reports a DIFFERENT data source than the one recorded.
         client.Databases["db-1"].DataSources = [new NotionDataSourceRef { Id = "ds-orphan", Name = "Tasks" }];
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: re-provision
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: re-provision
 
         Assert.True(File.Exists(TaskPath("task-1")));
         Assert.True(File.Exists(TaskPath("task-2")));
@@ -1409,7 +1414,7 @@ public class NotionSpineSyncTests : IDisposable
         SeedParentChildRelationSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: provision both
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: provision both
 
         NotionPage Child() => client.QueryDataSource("ds-2").Single(p => !p.Archived);
         var oldParentPageId = client.QueryDataSource("ds-1").Single().Id;
@@ -1417,7 +1422,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // The PARENT database is definitively gone; only it re-provisions on the next tick (the child reuses ds-2).
         client.NotFoundDatabaseIds.Add("db-1");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: parent re-mints; child stale echo -> re-push
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: parent re-mints; child stale echo -> re-push
 
         // The child's relation SURVIVED in the repo — never silently cleared to empty.
         Assert.Contains("sprint: sprint-7", File.ReadAllText(TaskPath("task-1")));
@@ -1431,7 +1436,7 @@ public class NotionSpineSyncTests : IDisposable
         // conflict, still pointed at the new parent page, still `sprint: sprint-7` in frontmatter). The relation no
         // longer churns: the finding-1 stale echo is gone once the board points at the re-minted pages.
         var output = new StringWriter();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output);
+        NotionSpineSync.Run(client, St(), dryRun: false, output);
         Assert.DoesNotContain("conflict", output.ToString());
         Assert.Contains("sprint: sprint-7", File.ReadAllText(TaskPath("task-1")));
         Assert.Equal(newParentPageId, Child().Properties["sprint"].Relation!.Single().Id);
@@ -1448,14 +1453,14 @@ public class NotionSpineSyncTests : IDisposable
         SeedReprovisionSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
         Assert.Single(client.CreatedDatabases);
 
         // The recorded database is definitively gone, so tick 2 would re-provision — but the snapshot delete fails.
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
-        using (new UndeletableFile(BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice")))
+        using (new UndeletableFile(St().SnapshotPath("Slice")))
             Assert.Throws<IOException>(
-                () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+                () => NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()));
 
         // Delete precedes create: the failed reset aborted before any fresh database was minted.
         Assert.Single(client.CreatedDatabases);
@@ -1474,23 +1479,23 @@ public class NotionSpineSyncTests : IDisposable
         SeedReprovisionSpine();
 
         var client = new FakeNotionClient();
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
         Assert.Equal(2, client.QueryDataSource("ds-1").Count);
 
         // Tick 2: the recorded database is definitively gone (404), forcing a re-provision. The snapshot delete
         // succeeds, but the mint then throws — the create knob fires the instant zero creates remain permitted,
         // so provisioner.Create fails immediately after DeleteSnapshot removed the file. This is the crash window.
-        var snapshotPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice");
+        var snapshotPath = St().SnapshotPath("Slice");
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
         client.FailCreateDatabaseAfter = 0;
         Assert.Throws<NotionApiException>(
-            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+            () => NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()));
 
         // The window's exact state: the snapshot file is gone (the delete succeeded), yet no fresh database was
         // minted (the create threw) and provision.json still records the dead database db-1.
         Assert.False(File.Exists(snapshotPath));
         Assert.Single(client.CreatedDatabases);
-        Assert.Contains("db-1", File.ReadAllText(NotionProvisioner.PathFor(_dydoRoot)));
+        Assert.Contains("db-1", File.ReadAllText(St().ProvisionPath));
 
         // Tick 3: the transient create failure clears, but the database is still genuinely gone (FailRetrieveDatabase
         // stays set — that IS the reason we re-provision; clearing it would resurrect a phantom-valid db-1 whose stale
@@ -1498,7 +1503,7 @@ public class NotionSpineSyncTests : IDisposable
         // re-provisions into a fresh EMPTY database (ds-2) and, against the durably-cleared base, re-pushes both docs
         // as creates. No repo file is ever deleted.
         client.FailCreateDatabaseAfter = null;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         Assert.True(File.Exists(TaskPath("task-1")));  // never deleted
         Assert.True(File.Exists(TaskPath("task-2")));
@@ -1518,10 +1523,10 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
 
         var client = new FakeNotionClient { EchoEmptyRelations = true };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-x (blocker omitted)
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: create task-x (blocker omitted)
         Seed("project/slices/task-later", "---\ntitle: Later\n---\n\nLater body.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-later
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: blocker resolves, pushed
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: create task-later
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 3: blocker resolves, pushed
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => !p.Archived && NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -1531,12 +1536,12 @@ public class NotionSpineSyncTests : IDisposable
         // Retire task-later: delete its repo file AND archive its page; its local↔page mapping is gone next tick.
         File.Delete(TaskPath("task-later"));
         PageByTitle("Later").Archived = true;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-later retires
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 4: task-later retires
 
         // The board renames task-x while its relation still points at task-later's archived page — which now
         // renders as a raw Notion page id on read. The overlay must NOT plant that raw id in the repo file.
         PageByTitle("X").Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 5: WriteToRepo (rename)
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 5: WriteToRepo (rename)
 
         var fileX = File.ReadAllText(TaskPath("task-x"));
         Assert.Contains("X Renamed", fileX);
@@ -1544,7 +1549,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // The board archives task-x: with no un-pushed raw-id entry, the delete propagates rather than resurrecting.
         PageByTitle("X Renamed").Archived = true;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 6: archive propagates
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 6: archive propagates
         Assert.False(File.Exists(TaskPath("task-x")));
     }
 
@@ -1563,10 +1568,10 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/slices/task-x", "---\ntitle: X\nblocked-by: task-a, task-later\n---\n\nX body.");
 
         var client = new FakeNotionClient { EchoEmptyRelations = true };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-a, task-x (blockers omitted)
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: create task-a, task-x (blockers omitted)
         Seed("project/slices/task-later", "---\ntitle: Later\n---\n\nLater body.");
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-later; task-a resolves, pushed
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: task-later resolves, both pushed
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: create task-later; task-a resolves, pushed
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 3: task-later resolves, both pushed
 
         NotionPage PageByTitle(string t) =>
             client.QueryDataSource("ds-1").Single(p => !p.Archived && NotionRichText.Flatten(p.Properties["title"].Title) == t);
@@ -1576,11 +1581,11 @@ public class NotionSpineSyncTests : IDisposable
         // Retire task-later: delete its repo file AND archive its page; its local↔page mapping is gone next tick.
         File.Delete(TaskPath("task-later"));
         PageByTitle("Later").Archived = true;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-later retires
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 4: task-later retires
 
         // The board renames task-x while its relation still references task-later's archived page (renders raw on read).
         PageByTitle("X").Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 5: WriteToRepo (rename)
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 5: WriteToRepo (rename)
 
         var fileX = File.ReadAllText(TaskPath("task-x"));
         Assert.Contains("X Renamed", fileX);
@@ -1590,7 +1595,82 @@ public class NotionSpineSyncTests : IDisposable
 
         // The board archives task-x: with no un-pushed raw-id/retired entry, the delete propagates.
         PageByTitle("X Renamed").Archived = true;
-        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 6: archive propagates
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 6: archive propagates
         Assert.False(File.Exists(TaskPath("task-x")));
+    }
+
+    [Fact]
+    public void SpineState_MigratesLegacyOnce_ForConfiguredParent_NeverForDifferentOverride()
+    {
+        // Issue 0257: the first configured spine run migrates legacy project-scoped state (provision.json + a
+        // notion-<type> snapshot) into the parent-scoped names, once. A second run does not re-migrate; an override
+        // to a DIFFERENT parent never migrates and starts clean.
+        SeedReprovisionSpine(); // single Slice model
+        var legacyProvision = NotionProvisioner.PathFor(_dydoRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(legacyProvision)!);
+        File.WriteAllText(legacyProvision, "{\"types\":[]}");
+        var legacySnapshot = BaseSnapshotStore.PathFor(_dydoRoot, "notion-slice");
+        Directory.CreateDirectory(Path.GetDirectoryName(legacySnapshot)!);
+        File.WriteAllText(legacySnapshot, "{\"objects\":[]}");
+
+        // First configured run migrates both legacy files into the scoped names.
+        var configured = NotionSpineState.Resolve(_dydoRoot, "cfg", null, dryRun: false, TextWriter.Null);
+        Assert.False(File.Exists(legacyProvision));
+        Assert.False(File.Exists(legacySnapshot));
+        Assert.True(File.Exists(configured.ProvisionPath));
+        Assert.True(File.Exists(configured.SnapshotPath("Slice")));
+
+        // A stray legacy file reappears; a second configured run must NOT re-migrate over the scoped state.
+        File.WriteAllText(legacyProvision, "{\"types\":[\"stale\"]}");
+        NotionSpineState.Resolve(_dydoRoot, "cfg", null, dryRun: false, TextWriter.Null);
+        Assert.True(File.Exists(legacyProvision)); // left untouched — the scoped state already exists
+        Assert.DoesNotContain("stale", File.ReadAllText(configured.ProvisionPath));
+
+        // An override to a DIFFERENT parent never migrates: the legacy file stays, no other-scoped file appears.
+        var other = NotionSpineState.Resolve(_dydoRoot, "cfg", "other", dryRun: false, TextWriter.Null);
+        Assert.True(File.Exists(legacyProvision));
+        Assert.False(File.Exists(other.ProvisionPath));
+    }
+
+    [Fact]
+    public void SpineState_OverrideEqualToConfigured_MigratesLikeNoOverride()
+    {
+        // Issue 0257 MEDIUM 3: an explicit --parent-page EQUAL to the configured page counts as non-override — it
+        // migrates and resolves the SAME scoped state as no override, so resetting the configured board by explicit
+        // id never orphans legacy state or re-mints a duplicate.
+        SeedReprovisionSpine();
+        var legacyProvision = NotionProvisioner.PathFor(_dydoRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(legacyProvision)!);
+        File.WriteAllText(legacyProvision, "{\"types\":[]}");
+
+        var explicitSame = NotionSpineState.Resolve(_dydoRoot, "cfg", "cfg", dryRun: false, TextWriter.Null);
+        var noOverride = NotionSpineState.Resolve(_dydoRoot, "cfg", null, dryRun: true, TextWriter.Null);
+
+        Assert.Equal(noOverride.ProvisionPath, explicitSame.ProvisionPath);
+        Assert.False(File.Exists(legacyProvision));            // migrated, exactly as a no-override run would
+        Assert.True(File.Exists(explicitSame.ProvisionPath));
+    }
+
+    [Fact]
+    public void SpineState_DashedAndUndashedParentId_ResolveSameStateAndCountAsSameParent()
+    {
+        // A Notion page id may be written dashed or undashed; both denote the same board, so state paths key off the
+        // canonical form and an override in the other dash form counts as the SAME parent (non-override, migrates).
+        SeedReprovisionSpine();
+        const string dashed = "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d";
+        const string undashed = "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d";
+
+        var byDashed = NotionSpineState.Resolve(_dydoRoot, dashed, null, dryRun: true, TextWriter.Null);
+        var byUndashed = NotionSpineState.Resolve(_dydoRoot, undashed, null, dryRun: true, TextWriter.Null);
+        Assert.Equal(byDashed.ProvisionPath, byUndashed.ProvisionPath);
+        Assert.Equal(byDashed.SnapshotPath("Slice"), byUndashed.SnapshotPath("Slice"));
+
+        // An explicit --parent-page in the OTHER dash form is the configured parent, so it migrates like no override.
+        var legacyProvision = NotionProvisioner.PathFor(_dydoRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(legacyProvision)!);
+        File.WriteAllText(legacyProvision, "{\"types\":[]}");
+        var overrideOtherForm = NotionSpineState.Resolve(_dydoRoot, dashed, undashed, dryRun: false, TextWriter.Null);
+        Assert.False(File.Exists(legacyProvision));            // migrated -> treated as non-override
+        Assert.Equal(byDashed.ProvisionPath, overrideOtherForm.ProvisionPath);
     }
 }

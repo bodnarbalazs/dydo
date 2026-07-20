@@ -14,24 +14,25 @@ using DynaDocs.Sync.Notion.Provisioning;
 /// </summary>
 public static class NotionSpineSync
 {
-    public static void Run(INotionClient client, string dydoRoot, string parentPageId, bool dryRun, TextWriter output, bool prune = false)
+    public static void Run(INotionClient client, NotionSpineState state, bool dryRun, TextWriter output, bool prune = false)
     {
+        var dydoRoot = state.DydoRoot;
         var model = SyncModelLoader.Load(dydoRoot);
         var types = model.InDependencyOrder();
-        var provisioner = new NotionProvisioner(client, NotionProvisioner.PathFor(dydoRoot));
+        var provisioner = new NotionProvisioner(client, state.ProvisionPath);
 
         output.WriteLine(dryRun
-            ? $"notion sync --dry-run: model has {types.Count} object type(s) [{string.Join(" -> ", types.Select(t => t.Type))}] under parent page {parentPageId}"
-            : $"notion sync: provisioning + reconciling {types.Count} object type(s) under parent page {parentPageId}");
+            ? $"notion sync --dry-run: model has {types.Count} object type(s) [{string.Join(" -> ", types.Select(t => t.Type))}] under parent page {state.ParentPageId}"
+            : $"notion sync: provisioning + reconciling {types.Count} object type(s) under parent page {state.ParentPageId}");
 
-        var (dataSourceIds, minted) = Provision(provisioner, types, dydoRoot, parentPageId, dryRun, output);
+        var (dataSourceIds, minted) = Provision(provisioner, types, state, dryRun, output);
         // No provisioner.Save() here: persistence now lives inside Create and MarkPostPassDone, each of which
         // writes the instant its fact is established (wave 5). A standalone Save would only re-serialize identical
         // state.
         if (!dryRun)
             CheckDrift(client, model, types, dataSourceIds, prune, output);
 
-        Reconcile(client, dydoRoot, types, dataSourceIds, minted, dryRun, output);
+        Reconcile(client, state, types, dataSourceIds, minted, dryRun, output);
     }
 
     /// <summary>Schema-shape ownership (DR 029 §6): after every type's data source is resolved, compare its
@@ -54,7 +55,7 @@ public static class NotionSpineSync
     /// pages the stale base does not point at (finding 1).</summary>
     private static (Dictionary<string, string> DataSourceIds, HashSet<string> Minted) Provision(
         NotionProvisioner provisioner, IReadOnlyList<SyncObjectType> types,
-        string dydoRoot, string parentPageId, bool dryRun, TextWriter output)
+        NotionSpineState state, bool dryRun, TextWriter output)
     {
         var dataSourceIds = new Dictionary<string, string>();
         var minted = new HashSet<string>();
@@ -98,8 +99,8 @@ public static class NotionSpineSync
                 // deletes no repo file) — a loud wedge, never the pre-wave-8 silent clear. Full convergence requires schema
                 // re-pointing plus reverse-relation/rollup re-synthesis, deferred to the retro-provisioning work pending
                 // live-Notion verification.
-                BaseSnapshotStore.DeleteSnapshot(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
-                var record = provisioner.Create(type, parentPageId, dataSourceIds);
+                BaseSnapshotStore.DeleteSnapshot(state.SnapshotPath(type.Type));
+                var record = provisioner.Create(type, state.ParentPageId, dataSourceIds);
                 output.WriteLine($"  provision  {type.Type,-9} created database {record.DatabaseId} (data source {record.DataSourceId})");
                 dataSourceIds[type.Type] = record.DataSourceId;
                 minted.Add(type.Type);
@@ -187,14 +188,14 @@ public static class NotionSpineSync
     }
 
     private static void Reconcile(
-        INotionClient client, string dydoRoot, IReadOnlyList<SyncObjectType> types,
+        INotionClient client, NotionSpineState state, IReadOnlyList<SyncObjectType> types,
         IReadOnlyDictionary<string, string> dataSourceIds, IReadOnlySet<string> minted, bool dryRun, TextWriter output)
     {
         var localToPageByType = new Dictionary<string, Dictionary<string, string>>();
 
         foreach (var type in types)
         {
-            var docsDir = Path.Combine(dydoRoot, type.Dir);
+            var docsDir = Path.Combine(state.DydoRoot, type.Dir);
             var docs = LoadDocs(docsDir);
 
             if (!dataSourceIds.TryGetValue(type.Type, out var dataSourceId))
@@ -203,7 +204,7 @@ public static class NotionSpineSync
                 continue;
             }
 
-            var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
+            var store = new BaseSnapshotStore(state.SnapshotPath(type.Type));
 
             // A freshly minted database is EMPTY, but this type's base snapshot still points at the pages of the
             // now-abandoned database. Reconciling against the stale base would read every external as deleted and

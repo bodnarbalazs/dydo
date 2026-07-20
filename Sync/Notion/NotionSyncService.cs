@@ -56,9 +56,10 @@ public static class NotionSyncService
 
         // An explicit --parent-page wins over config/env (NotionParentResolver): a smoke can target a SCRATCH
         // page without touching the configured workspace. Absent it, resolution is unchanged.
+        var configuredParentPageId = config.LoadConfig()?.Notion?.ParentPageId;
         var parentPageId = !string.IsNullOrWhiteSpace(parentPageOverride)
             ? parentPageOverride
-            : NotionParentResolver.Resolve(config.LoadConfig()?.Notion?.ParentPageId);
+            : NotionParentResolver.Resolve(configuredParentPageId);
         if (string.IsNullOrWhiteSpace(parentPageId))
         {
             error.WriteLine(
@@ -76,7 +77,13 @@ public static class NotionSyncService
             var runSpine = !docsOnly;
             var runDocs = !spineOnly && (docs || docsOnly);
             if (runSpine)
-                NotionSpineSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output, prune);
+            {
+                // The one decision point resolves every parent-scoped spine state path AND migrates legacy
+                // project-scoped files, identically for sync and reset (issue 0257).
+                var state = NotionSpineState.Resolve(
+                    config.GetDydoRoot(), configuredParentPageId, parentPageOverride, dryRun, output);
+                NotionSpineSync.Run(client, state, dryRun, output, prune);
+            }
             if (runDocs)
                 DocsTreeSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output);
             return ExitCodes.Success;

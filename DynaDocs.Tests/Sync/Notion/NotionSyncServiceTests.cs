@@ -255,6 +255,32 @@ public class NotionSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public void Execute_SpineParentPageOverride_ResolvesScratchScopedState_NotConfigured()
+    {
+        // Issue 0257 CRITICAL 2: a scratch spine sync via --parent-page must resolve SCRATCH-scoped provision state
+        // — through the same decision point reset uses — so it writes the scratch file and never provisions the
+        // configured board (whose scoped file stays absent).
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        var dydoRoot = Path.Combine(project, "dydo");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), new StringWriter(),
+                prune: false, parentPageOverride: "scratch-page", spineOnly: true);
+
+            Assert.Equal(ExitCodes.Success, code);
+            var scratch = NotionSpineState.Resolve(dydoRoot, "page-root", "scratch-page", dryRun: true, TextWriter.Null);
+            var configured = NotionSpineState.Resolve(dydoRoot, "page-root", null, dryRun: true, TextWriter.Null);
+            Assert.NotEqual(scratch.ProvisionPath, configured.ProvisionPath);
+            Assert.True(File.Exists(scratch.ProvisionPath));     // scratch state was provisioned
+            Assert.False(File.Exists(configured.ProvisionPath));  // the configured board was never touched
+        }
+        finally { Directory.SetCurrentDirectory(savedCwd); }
+    }
+
+    [Fact]
     public void Execute_DocsOnly_SkipsSpine_CreatesDocsPage()
     {
         var savedCwd = Directory.GetCurrentDirectory();

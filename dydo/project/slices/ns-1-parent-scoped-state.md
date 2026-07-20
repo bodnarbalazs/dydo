@@ -5,7 +5,7 @@ due:
 needs-human: false
 priority: Critical
 sprint: notion-stabilization
-status: backlog
+status: done
 work-type: bug
 area: backend
 type: context

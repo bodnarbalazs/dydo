@@ -121,6 +121,104 @@ public class NotionResetTests : IDisposable
     }
 
     [Fact]
+    public void Execute_OverrideParent_LeavesConfiguredParentStateAndSnapshotsByteIdentical()
+    {
+        // Issue 0257: resetting a SCRATCH parent must leave the configured board's provision state AND its base
+        // snapshots byte-identical — never archiving the real databases nor poisoning the snapshots the next
+        // configured sync reconciles against.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, out _);
+        var dydoRoot = Path.Combine(project, "dydo");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            Assert.Equal(ExitCodes.Success, Sync(client)); // provision the REAL (configured) board
+
+            var real = NotionSpineState.Resolve(dydoRoot, "page-root", null, dryRun: true, TextWriter.Null);
+            var provisionBefore = File.ReadAllBytes(real.ProvisionPath);
+            var snapshotPath = real.SnapshotPath("Campaign");
+            var snapshotBefore = File.ReadAllBytes(snapshotPath);
+            var archivedBefore = client.ArchivedDatabases.Count;
+
+            var code = NotionReset.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, confirm: () => true,
+                new StringWriter(), new StringWriter(), parentPageOverride: "scratch-page");
+
+            Assert.Equal(ExitCodes.Success, code);
+            // Nothing of the real board was touched: no database archived, provision + snapshot bytes unchanged.
+            Assert.Equal(archivedBefore, client.ArchivedDatabases.Count);
+            Assert.Equal(provisionBefore, File.ReadAllBytes(real.ProvisionPath));
+            Assert.Equal(snapshotBefore, File.ReadAllBytes(snapshotPath));
+        }
+        finally { Directory.SetCurrentDirectory(savedCwd); }
+    }
+
+    [Fact]
+    public void Execute_ScratchResetThenConfiguredSync_LeavesRepoRecordsIntact()
+    {
+        // Issue 0257 repo-survival (the 0257-mandated blind-spot test): the full documented scratch flow — reset a
+        // throwaway parent, then a normal configured sync — must end with the original repo records intact. Under
+        // the reverted attempt the scratch reset poisoned the real board's base snapshot and the following sync
+        // mass-deleted the canonical docs, re-importing pages as <page-id>.md.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, out _);
+        var dydoRoot = Path.Combine(project, "dydo");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            Assert.Equal(ExitCodes.Success, Sync(client)); // provision the real board; c1.md -> a page
+
+            Assert.Equal(ExitCodes.Success, NotionReset.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, confirm: () => true,
+                new StringWriter(), new StringWriter(), parentPageOverride: "scratch-page"));
+            Assert.Equal(ExitCodes.Success, Sync(client)); // a plain configured sync, post-scratch-reset
+
+            // The seeded record survived, and no page-id-named junk doc was imported anywhere under project/.
+            Assert.True(File.Exists(Path.Combine(dydoRoot, "project", "campaigns", "c1.md")));
+            var projectDocs = Directory.EnumerateFiles(Path.Combine(dydoRoot, "project"), "*.md", SearchOption.AllDirectories);
+            Assert.DoesNotContain(projectDocs, p => Path.GetFileNameWithoutExtension(p).StartsWith("page-", StringComparison.Ordinal));
+        }
+        finally { Directory.SetCurrentDirectory(savedCwd); }
+    }
+
+    [Fact]
+    public void Execute_DryRun_UpgradeWindow_PreviewsRealArchivePlan_FromLegacyState_WithoutMigrating()
+    {
+        // Issue 0257 (dry-run must not understate the destructive plan): in the pre-migration upgrade window a
+        // reset --dry-run must read the LEGACY provision state a real run would migrate first, so it previews the
+        // real databases ("would archive N", plus "would migrate") — never "would archive 0" off a not-yet-created
+        // scoped file — and it renames nothing.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, out var scopedStatePath);
+        var dydoRoot = Path.Combine(project, "dydo");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            Assert.Equal(ExitCodes.Success, Sync(client)); // writes the SCOPED provision file
+
+            // Reconstruct the pre-migration window: move the scoped file back to the legacy name.
+            var legacyPath = NotionProvisioner.PathFor(dydoRoot);
+            File.Move(scopedStatePath, legacyPath);
+
+            var output = new StringWriter();
+            var code = NotionReset.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: true,
+                confirm: () => throw new InvalidOperationException("confirm must not run in dry-run"),
+                output, new StringWriter());
+
+            Assert.Equal(ExitCodes.Success, code);
+            var text = output.ToString();
+            Assert.DoesNotContain("would archive 0", text); // the real board is previewed, not an empty scoped file
+            Assert.Contains("Campaign", text);
+            Assert.Contains("would migrate", text);
+            // Dry-run renamed nothing: the legacy file survives and no scoped file was created.
+            Assert.True(File.Exists(legacyPath));
+            Assert.False(File.Exists(scopedStatePath));
+        }
+        finally { Directory.SetCurrentDirectory(savedCwd); }
+    }
+
+    [Fact]
     public void Execute_ConfirmDeclined_Aborts_MakesZeroWrites()
     {
         var savedCwd = Directory.GetCurrentDirectory();
@@ -140,6 +238,34 @@ public class NotionResetTests : IDisposable
             Assert.Contains("aborted", output.ToString());
             Assert.Empty(client.ArchivedDatabases);
             Assert.Equal(createdBefore, client.CreatedDatabases.Count);
+        }
+        finally { Directory.SetCurrentDirectory(savedCwd); }
+    }
+
+    [Fact]
+    public void Execute_ConfirmDeclined_UpgradeWindow_MigratesNothing()
+    {
+        // Issue 0257 (migrate after confirm): legacy migration must run only AFTER the destructive confirm, so a
+        // declined reset renames nothing and the "nothing changed" message stays honest.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, out var scopedStatePath);
+        var dydoRoot = Path.Combine(project, "dydo");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            Assert.Equal(ExitCodes.Success, Sync(client));
+            var legacyPath = NotionProvisioner.PathFor(dydoRoot);
+            File.Move(scopedStatePath, legacyPath); // pre-migration window
+
+            var output = new StringWriter();
+            var code = NotionReset.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, confirm: () => false,
+                output, new StringWriter());
+
+            Assert.Equal(ExitCodes.Success, code);
+            Assert.Contains("nothing changed", output.ToString());
+            Assert.True(File.Exists(legacyPath));        // legacy left untouched — migration never ran
+            Assert.False(File.Exists(scopedStatePath));
         }
         finally { Directory.SetCurrentDirectory(savedCwd); }
     }
@@ -247,7 +373,7 @@ public class NotionResetTests : IDisposable
             """);
         File.WriteAllText(Path.Combine(campaigns, "c1.md"), "---\ntitle: C1\nstatus: active\n---\n\nBody.");
 
-        statePath = NotionProvisioner.PathFor(dydoRoot);
+        statePath = NotionSpineState.Resolve(dydoRoot, "page-root", null, dryRun: true, TextWriter.Null).ProvisionPath;
         client = new FakeNotionClient();
         return project;
     }

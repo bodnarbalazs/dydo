@@ -2,6 +2,7 @@ namespace DynaDocs.Sync.Notion;
 
 using DynaDocs.Models;
 using DynaDocs.Sync.Model;
+using DynaDocs.Sync.Notion.Dtos;
 using DynaDocs.Sync.Notion.Provisioning;
 
 /// <summary>
@@ -30,21 +31,38 @@ public static class NotionSpineSync
         // writes the instant its fact is established (wave 5). A standalone Save would only re-serialize identical
         // state.
         if (!dryRun)
-            CheckDrift(client, model, types, dataSourceIds, prune, output);
+            ReconcileSchema(client, provisioner, model, types, dataSourceIds, minted, prune, output);
 
         return Reconcile(client, state, types, dataSourceIds, minted, dryRun, allowMassDelete, output);
     }
 
-    /// <summary>Schema-shape ownership (DR 029 §6): after every type's data source is resolved, compare its
-    /// live schema against the model and report rogue additions — warned and left, or deleted under
-    /// <paramref name="prune"/>. Read-only in the default path; never runs in dry-run.</summary>
-    private static void CheckDrift(
-        INotionClient client, SyncModel model, IReadOnlyList<SyncObjectType> types,
-        IReadOnlyDictionary<string, string> dataSourceIds, bool prune, TextWriter output)
+    /// <summary>The two model-vs-live schema passes for every resolved type, sharing ONE live-schema read each
+    /// (never runs in dry-run):
+    /// <list type="bullet">
+    /// <item>Additive model-evolution (ns-11, model → live): for a REUSED board, add a property, a select
+    /// option, or a title the model gained since provisioning. Skipped for a freshly minted board — it was just
+    /// built from the current model.</item>
+    /// <item>Drift check (DR 029 §6, live → model): warn on (or, under <paramref name="prune"/>, delete) a
+    /// property or option Notion has but the model does not.</item>
+    /// </list>
+    /// A reused type reads its live schema once and feeds it to BOTH passes; the additive PATCH only adds model
+    /// properties, so the pre-additive snapshot the drift check sees carries the identical rogue set.</summary>
+    private static void ReconcileSchema(
+        INotionClient client, NotionProvisioner provisioner, SyncModel model, IReadOnlyList<SyncObjectType> types,
+        IReadOnlyDictionary<string, string> dataSourceIds, IReadOnlySet<string> minted, bool prune, TextWriter output)
     {
         foreach (var type in types)
-            if (dataSourceIds.TryGetValue(type.Type, out var dataSourceId))
-                NotionSchemaDrift.Check(model, type, dataSourceId, client, prune, output);
+        {
+            if (!dataSourceIds.TryGetValue(type.Type, out var dataSourceId))
+                continue;
+            NotionDataSource? live = null;
+            if (!minted.Contains(type.Type))
+            {
+                live = client.RetrieveDataSource(dataSourceId);
+                provisioner.ApplyModelAdditions(type, live, dataSourceIds, output);
+            }
+            NotionSchemaDrift.Check(model, type, dataSourceId, client, prune, output, live);
+        }
     }
 
     /// <summary>Resolve each type's data source id, creating the database when not already provisioned.

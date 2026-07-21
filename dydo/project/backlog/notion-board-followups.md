@@ -34,10 +34,15 @@ cannot be verified with fixtures alone — it requires a live-Notion smoke:
   `UpdateDataSource` machinery already exists), plus **reverse-relation / rollup re-synthesis** on the new
   data source (a re-minted parent carrying rollups re-runs `AddRollups` against reverse properties that only
   a child dual-property relation against the NEW data source creates).
-- **Existing-board schema evolution.** Provisioning only creates schemas for *newly minted* databases; the
-  post-pass runs only for created types and drift never flags *missing* model properties. An already-live
-  board never gains new columns/colors when the model changes — needs a "re-provision or one-time schema
-  patch" story. (First surfaced round 1; `postPassDone` from wave 4a closed only the crash-retry sub-case.)
+- **Existing-board schema evolution.** ✅ **Landed (ns-11, half B).** An already-provisioned, still-valid
+  type now runs an additive-only pass (`NotionProvisioner.ApplyModelAdditions`, driven from
+  `NotionSpineSync` alongside the drift check, sharing one live-schema read): it creates missing model
+  properties, appends missing select options by name (existing options and their Notion-owned colors left
+  untouched; name match is case-insensitive), and renames
+  the data source title when `notionTitle` changed — all via `UpdateDataSource`, never a re-mint. Strictly
+  additive: retype/delete drift is still only warned (a `--prune` decision). NOT covered: ordering-aware
+  addition of an interdependent rollup/formula (a single PATCH, no post-pass sequencing) and the
+  relation-repoint case below — both still need the live-Notion smoke.
 - **Prerequisite:** one manual live-Notion provision smoke to verify (a) whether Notion accepts a relation
   write whose pages belong to a data source the property does not target, and (b) `dual_property.synced_property_name`
   honored-at-create, before relying on any of the above in production.

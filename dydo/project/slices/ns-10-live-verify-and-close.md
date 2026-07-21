@@ -27,6 +27,9 @@ The sprint's verification gate: run the ns-9 harness against real Notion with th
 3. Record the smoke run in `dydo/reference/notion-sync.md` (same format as the 2026-07-06/07-09 entries).
 4. Also do one manual `dydo notion sync` against the scratch parent and eyeball the board (titles, colors, relations) — automated assertions don't see rendering.
 5. Verify the ns-5 recovery wire shapes live: search hit `name` + `parent.database_id`; view list `name`; database retrieve `parent` (used by the CreateDatabase/CreatePage/CreateView adoption recoveries — a wrong key degrades to re-create, never a wrong adopt, but confirm the exact keys live).
+6. Verify the ns-11 additive-provisioning wire shapes live (both fake-verified only):
+   - **Data-source rename** — `PATCH /v1/data_sources/{id}` with `title: [{type:text,text:{content}}]` (rich-text array, mirroring create) actually renames the data source. A wrong key silently no-ops the rename; confirm the board title changes live.
+   - **Select option-union PATCH** — `ApplyModelAdditions` re-sends the existing options WITHOUT their ids (name+color only) plus the new option by name; Notion must match the existing options BY NAME (not id) so their colors/values survive the union. Confirm adding one option leaves the others' colors and existing rows' values intact.
 
 ## Files
 

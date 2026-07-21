@@ -543,6 +543,77 @@ public class NotionSpineSyncTests : IDisposable
         Assert.True(client.DataSourceSchema("ds-1").Properties.ContainsKey("Rogue")); // untouched
     }
 
+    [Fact]
+    public void Run_NotionTitleChange_RenamesReusedDataSource_ExactlyOnce_NoReMint()
+    {
+        // ns-11 / ns-12: a model whose notionTitle changed must rename the already-provisioned board in place
+        // via a single UpdateDataSource title call on the next reuse tick — never re-mint.
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 1: mint (Slice = "dydo Sprint Tasks")
+        var dbCount = client.CreatedDatabases.Count;
+        client.DataSourceUpdates.Clear();
+
+        var modelPath = Path.Combine(_dydoRoot, "_system", "sync-model.json");
+        File.WriteAllText(modelPath, File.ReadAllText(modelPath).Replace("dydo Sprint Tasks", "dydo Slices"));
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick 2: reuse + additive rename
+
+        var titlePatch = Assert.Single(client.DataSourceUpdates, u => u.Request.Title != null);
+        Assert.Equal("ds-3", titlePatch.DataSourceId); // Slice's data source
+        Assert.Equal("dydo Slices", NotionRichText.Flatten(titlePatch.Request.Title));
+        Assert.Equal(dbCount, client.CreatedDatabases.Count); // renamed in place, never re-minted
+
+        // Idempotent: the new title is recorded, so a third tick issues no further title PATCH.
+        client.DataSourceUpdates.Clear();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        Assert.DoesNotContain(client.DataSourceUpdates, u => u.Request.Title != null);
+    }
+
+    [Fact]
+    public void Run_ModelGainsProperty_AddsItToReusedBoard_NoReMint()
+    {
+        // ns-11: a model that gained a property reaches an already-live board additively on the next tick.
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        var dbCount = client.CreatedDatabases.Count;
+        client.DataSourceUpdates.Clear();
+
+        var modelPath = Path.Combine(_dydoRoot, "_system", "sync-model.json");
+        File.WriteAllText(modelPath, File.ReadAllText(modelPath).Replace(
+            "\"sprint\": { \"type\": \"relation\", \"to\": \"Sprint\" }",
+            "\"sprint\": { \"type\": \"relation\", \"to\": \"Sprint\" }, \"kind\": { \"type\": \"select\", \"options\": [\"feature\", \"bug\"] }"));
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var patch = Assert.Single(client.DataSourceUpdates, u => u.Request.Properties.ContainsKey("kind"));
+        Assert.Equal("ds-3", patch.DataSourceId);
+        Assert.Equal(["feature", "bug"], patch.Request.Properties["kind"].Select!.Options.Select(o => o.Name));
+        Assert.Equal(dbCount, client.CreatedDatabases.Count); // added in place, never re-minted
+    }
+
+    [Fact]
+    public void Run_ModelGainsRelationProperty_ResolvesTargetViaMap_NoReMint()
+    {
+        // ns-11 fix 7: a reused board gaining a RELATION property must resolve its target's data source id from
+        // the provision map — pinning the KeyNotFound crash class — not blow up.
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        var dbCount = client.CreatedDatabases.Count;
+        client.DataSourceUpdates.Clear();
+
+        var modelPath = Path.Combine(_dydoRoot, "_system", "sync-model.json");
+        File.WriteAllText(modelPath, File.ReadAllText(modelPath).Replace(
+            "\"sprint\": { \"type\": \"relation\", \"to\": \"Sprint\" }",
+            "\"sprint\": { \"type\": \"relation\", \"to\": \"Sprint\" }, \"camp\": { \"type\": \"relation\", \"to\": \"Campaign\" }"));
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var patch = Assert.Single(client.DataSourceUpdates, u => u.Request.Properties.ContainsKey("camp"));
+        Assert.Equal("ds-3", patch.DataSourceId);                                     // patched onto Slice's data source
+        Assert.Equal("ds-1", patch.Request.Properties["camp"].Relation!.DataSourceId); // resolved to Campaign's ds
+        Assert.Equal(dbCount, client.CreatedDatabases.Count);                          // added in place, never re-minted
+    }
+
     /// <summary>A single-type model whose Slice declares the DR 030 attention layer: an engine-computed
     /// last-activity date plus the stale/attention formulas that read it.</summary>
     private void SeedLastActivitySpine()

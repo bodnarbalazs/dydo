@@ -81,6 +81,7 @@ public sealed class NotionProvisioner
             ObjectType = type.Type,
             DatabaseId = db.Id,
             DataSourceId = db.DataSources.Count > 0 ? db.DataSources[0].Id : "",
+            NotionTitle = type.NotionTitle,
         };
         _state[type.Type] = record;
         // Persist the instant this database exists (finding 3): the self-relation PATCH, rollups, and deferred
@@ -253,6 +254,89 @@ public sealed class NotionProvisioner
             Push($"provisioning {type.Type} view \"{view.Name}\" (re-create)",
                 () => _client.CreateView(BuildView(type, record, view, idByName)));
         }
+    }
+
+    /// <summary>Additive-only model-evolution pass for an already-provisioned, still-valid type (ns-11): bring a
+    /// LIVE board forward to a model that has since gained a property, a select option, or a new
+    /// <c>notionTitle</c> — without a reset. Strictly additive and non-destructive: it creates missing
+    /// properties, appends missing select options (existing options and their Notion-owned colors echoed back
+    /// untouched — Notion owns option colors, DR 029 survey spine-lesson), and renames the data source title
+    /// when the model's title changed (exactly once — the new title is recorded, so the next tick is a no-op).
+    /// It NEVER deletes or retypes: a property present in Notion but absent from the model, or one whose live
+    /// type differs from the model's, is left for the warn-only drift check (destructive changes stay a
+    /// <c>--prune</c> decision). Called only for REUSED types; a freshly minted board is already current.</summary>
+    public void ApplyModelAdditions(SyncObjectType type, NotionDataSource live, IReadOnlyDictionary<string, string> resolvedDataSourceIds, TextWriter output)
+    {
+        var record = _state[type.Type];
+        var patch = new Dictionary<string, NotionPropertySchema>();
+
+        foreach (var (name, def) in type.Properties)
+        {
+            if (!live.Properties.TryGetValue(name, out var liveProp))
+            {
+                // Absent from the live schema — create it. BuildSchema resolves a relation's target from the
+                // passed map exactly as a mint would, so any property type is added uniformly.
+                patch[name] = ToSchema(def, resolvedDataSourceIds);
+                output.WriteLine($"  provision  {type.Type,-9} add missing property \"{name}\"");
+            }
+            else if (def.Type == "select" && liveProp.Select is { } liveSelect
+                     && AddedOptions(def, liveSelect) is { } added)
+            {
+                patch[name] = new NotionPropertySchema { Select = added.Schema };
+                foreach (var option in added.NewNames)
+                    output.WriteLine($"  provision  {type.Type,-9} add missing option \"{option}\" on \"{name}\"");
+            }
+        }
+
+        var request = new NotionDataSourceUpdateRequest { Properties = patch };
+        string? renameTo = null;
+        if (record.NotionTitle.Length == 0)
+        {
+            // A pre-ns-11 record carries no title: the live board already shows the title it was provisioned
+            // with, so seed the record from the model WITHOUT a rename (no live PATCH depends on it).
+            if (record.NotionTitle != type.NotionTitle)
+            {
+                record.NotionTitle = type.NotionTitle;
+                Save();
+            }
+        }
+        else if (record.NotionTitle != type.NotionTitle)
+        {
+            request.Title = NotionRichText.Of(type.NotionTitle);
+            renameTo = type.NotionTitle;
+            output.WriteLine($"  provision  {type.Type,-9} rename title \"{record.NotionTitle}\" -> \"{type.NotionTitle}\"");
+        }
+
+        if (patch.Count == 0 && request.Title == null)
+            return;
+
+        Push($"provisioning {type.Type} model additions", () => _client.UpdateDataSource(record.DataSourceId, request));
+
+        // Record the new title ONLY after the PATCH succeeds: a failed rename must leave the OLD title recorded
+        // so the next tick retries it (UpdateDataSource is idempotent-classified and the payload is identical) —
+        // recording before the push would lose the rename forever on a throw.
+        if (renameTo != null)
+        {
+            record.NotionTitle = renameTo;
+            Save();
+        }
+    }
+
+    /// <summary>The select schema to PATCH when the model declares options the live select lacks, plus the
+    /// names of just those new options; null when none are missing. Existing live options are echoed back
+    /// verbatim — name AND Notion-owned color — so an additive tick never resets a colleague's colors; the new
+    /// options are appended by name only (no color: Notion assigns and owns option colors). Name matching is
+    /// case-insensitive so a human recasing "open" -> "Open" is not re-added as a near-duplicate every tick
+    /// (the sprint's locked normalized-casing decision).</summary>
+    private static (NotionSelectSchema Schema, List<string> NewNames)? AddedOptions(SyncPropertyDef def, NotionSelectSchema liveSelect)
+    {
+        var liveNames = liveSelect.Options.Select(o => o.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var newNames = (def.Options ?? []).Where(o => !liveNames.Contains(o)).ToList();
+        if (newNames.Count == 0)
+            return null;
+        var options = new List<NotionSelectOption>(liveSelect.Options);
+        options.AddRange(newNames.Select(o => new NotionSelectOption { Name = o }));
+        return (new NotionSelectSchema { Options = options }, newNames);
     }
 
     private static NotionViewCreateRequest BuildView(

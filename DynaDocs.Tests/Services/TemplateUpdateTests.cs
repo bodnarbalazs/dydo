@@ -433,6 +433,69 @@ public class TemplateUpdateTests : IDisposable
     }
 
     [Fact]
+    public void FrameworkGeneratedFiles_RegistersSyncModel()
+    {
+        // Issue 0252: the live sync-model.json must ride the hash-tracked template-update flow, so a template
+        // change reaches a provisioned board without a hand copy under the agent-off-limits _system tree.
+        Assert.Contains("_system/sync-model.json", TemplateCommand.FrameworkGeneratedFiles);
+    }
+
+    [Fact]
+    public void UpdateFile_SyncModel_UnCustomized_Refreshed()
+    {
+        // An un-customized (tracked, unedited) but STALE live model is refreshed to the current template.
+        var relativePath = "_system/sync-model.json";
+        var embedded = TemplateGenerator.ReadBuiltInTemplate(
+            DynaDocs.Sync.Model.SyncModelLoader.DefaultTemplateName);
+        var stale = "{ \"objects\": [ { \"type\": \"Old\", \"dir\": \"x\", \"notionTitle\": \"X\", \"properties\": {} } ] }\n";
+        WriteTemplate(relativePath, stale);
+        var config = new DydoConfig();
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(stale); // stored == on-disk ⇒ not user-edited
+
+        TemplateCommand.UpdateGeneratedFile(relativePath, _dydoRoot, config, diff: false);
+
+        Assert.Equal(embedded, ReadTemplate(relativePath));
+        Assert.Equal(TemplateCommand.ComputeHash(embedded), config.FrameworkHashes[relativePath]);
+    }
+
+    [Fact]
+    public void UpdateFile_SyncModel_Customized_LeftUntouched()
+    {
+        // A project-customized model (on-disk hash ≠ stored baseline) is a user edit — left alone, warned.
+        var relativePath = "_system/sync-model.json";
+        var embedded = TemplateGenerator.ReadBuiltInTemplate(
+            DynaDocs.Sync.Model.SyncModelLoader.DefaultTemplateName);
+        var customized = "{ \"objects\": [ { \"type\": \"MyCustom\", \"dir\": \"project/mine\", \"notionTitle\": \"Mine\", \"properties\": { \"title\": { \"type\": \"title\" } } } ] }\n";
+        WriteTemplate(relativePath, customized);
+        var config = new DydoConfig();
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(embedded); // baseline was the template
+
+        TemplateCommand.UpdateGeneratedFile(relativePath, _dydoRoot, config, diff: false);
+
+        Assert.Equal(customized, ReadTemplate(relativePath)); // untouched
+        Assert.NotEqual(embedded, ReadTemplate(relativePath));
+    }
+
+    [Fact]
+    public void UpdateFile_SyncModel_CustomizedWithNoStoredHash_LeftUntouched()
+    {
+        // Every install BEFORE ns-11: the live model was materialized lazily and never seeded a baseline hash.
+        // A project that hand-edited it (storedHash == null AND on-disk differs from the template) must NOT be
+        // silently reverted on the first `dydo template update` — the null baseline is treated as a user edit.
+        var relativePath = "_system/sync-model.json";
+        var embedded = TemplateGenerator.ReadBuiltInTemplate(
+            DynaDocs.Sync.Model.SyncModelLoader.DefaultTemplateName);
+        var customized = "{ \"objects\": [ { \"type\": \"MyCustom\", \"dir\": \"project/mine\", \"notionTitle\": \"Mine\", \"properties\": { \"title\": { \"type\": \"title\" } } } ] }\n";
+        WriteTemplate(relativePath, customized);
+        var config = new DydoConfig(); // no FrameworkHashes entry at all — the pre-ns-11 state
+
+        TemplateCommand.UpdateGeneratedFile(relativePath, _dydoRoot, config, diff: false);
+
+        Assert.Equal(customized, ReadTemplate(relativePath));                  // survived intact
+        Assert.False(config.FrameworkHashes.ContainsKey(relativePath));        // a user edit is never fingerprinted
+    }
+
+    [Fact]
     public void UpdateFile_BinaryFile_ComparesBytes()
     {
         var bytesA = new byte[] { 0x89, 0x50, 0x4E, 0x47 }; // PNG magic

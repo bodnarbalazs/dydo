@@ -17,9 +17,11 @@ public static class NotionSchemaDrift
 {
     public static void Check(
         SyncModel model, SyncObjectType type, string dataSourceId,
-        INotionClient client, bool prune, TextWriter output)
+        INotionClient client, bool prune, TextWriter output, NotionDataSource? live = null)
     {
-        var live = client.RetrieveDataSource(dataSourceId);
+        // The additive pass (ns-11) already fetched the live schema for a reused type this tick; reuse it so the
+        // two model-vs-live passes cost one read, not two. A freshly minted type passes null and reads here.
+        live ??= client.RetrieveDataSource(dataSourceId);
         var known = KnownNames(model, type);
         var patch = new Dictionary<string, NotionPropertySchema>();
 

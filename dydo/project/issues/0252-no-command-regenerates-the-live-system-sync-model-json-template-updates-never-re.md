@@ -4,12 +4,13 @@ id: 252
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-09
+resolved-by: ns-11
 ---
 
 # No command regenerates the live _system/sync-model.json - template updates never reach a provisioned board
@@ -26,4 +27,14 @@ Live 2.0.6 reset smoke (2026-07-09): dydo notion reset rebuilt the board from th
 
 ## Resolution
 
-(Filled when resolved)
+Resolved by ns-11 (half A). The live `dydo/_system/sync-model.json` now joins the hash-tracked
+template-update flow: `TemplateCommand.FrameworkGeneratedFiles` registers it, handled by a dedicated
+`UpdateGeneratedFile` (embedded content via `GetEmbeddedDocContent` → `SyncModelLoader.DefaultTemplateName`).
+`dydo template update` refreshes an un-customized copy from `Templates/sync-model.template.json` and leaves a
+project-customized one untouched. Because the model is materialized lazily (never seeded a baseline hash at
+init), the handler is stricter than the doc-file path: a MISSING stored hash is treated as a user edit, so an
+existing install that hand-edited its model — the pre-ns-11 state, where no hash exists — is skipped + warned,
+never silently reverted; only an on-disk copy proven identical to the template (re)records the baseline so the
+next bump is trusted. Reset/sync now consume model changes without a hand copy under the agent-off-limits
+`_system` tree. Covered by `TemplateUpdateTests.UpdateFile_SyncModel_UnCustomized_Refreshed` /
+`_Customized_LeftUntouched` / `_CustomizedWithNoStoredHash_LeftUntouched`.

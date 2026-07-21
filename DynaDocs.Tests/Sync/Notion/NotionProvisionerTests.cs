@@ -750,4 +750,181 @@ public class NotionProvisionerTests : IDisposable
         client.FailRetrieveDatabase = new NotionApiException(400, "{\"object\":\"error\",\"code\":\"object_not_found\"}");
         Assert.Null(reloaded.Lookup("Campaign"));
     }
+
+    // --- ns-11: additive-only model-evolution pass (ApplyModelAdditions) ---
+
+    private static SyncObjectType AdditiveBaseType() => new()
+    {
+        Type = "Thing",
+        NotionTitle = "Things",
+        Properties = new()
+        {
+            ["title"] = new SyncPropertyDef { Type = "title" },
+            ["status"] = new SyncPropertyDef { Type = "select", Options = ["open", "done"] },
+        },
+    };
+
+    [Fact]
+    public void ApplyModelAdditions_AddsMissingProperty_LeavesExistingUntouched()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        client.DataSourceUpdates.Clear();
+
+        var evolved = AdditiveBaseType();
+        evolved.Properties["priority"] = new SyncPropertyDef { Type = "select", Options = ["P0", "P1"] };
+        provisioner.ApplyModelAdditions(evolved, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+
+        var (_, update) = Assert.Single(client.DataSourceUpdates);
+        Assert.Equal(["P0", "P1"], update.Properties["priority"].Select!.Options.Select(o => o.Name));
+        Assert.False(update.Properties.ContainsKey("title"));  // an unchanged property is never re-sent
+        Assert.False(update.Properties.ContainsKey("status"));
+        Assert.Null(update.Title);                             // title unchanged — a pure schema addition
+        Assert.Single(client.CreatedDatabases);                // added in place, never re-minted
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_AddsMissingSelectOption_WithoutTouchingExistingColors()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        // Notion owns option colors: simulate the live board having assigned them to the existing options.
+        var liveStatus = client.DataSourceSchema(record.DataSourceId).Properties["status"].Select!;
+        liveStatus.Options.Single(o => o.Name == "open").Color = "blue";
+        liveStatus.Options.Single(o => o.Name == "done").Color = "green";
+        client.DataSourceUpdates.Clear();
+
+        var evolved = AdditiveBaseType();
+        evolved.Properties["status"] = new SyncPropertyDef { Type = "select", Options = ["open", "done", "blocked"] };
+        provisioner.ApplyModelAdditions(evolved, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+
+        var (_, update) = Assert.Single(client.DataSourceUpdates);
+        var options = update.Properties["status"].Select!.Options;
+        Assert.Equal(["open", "done", "blocked"], options.Select(o => o.Name));
+        Assert.Equal("blue", options.Single(o => o.Name == "open").Color);   // existing colors echoed back, untouched
+        Assert.Equal("green", options.Single(o => o.Name == "done").Color);
+        Assert.Null(options.Single(o => o.Name == "blocked").Color);          // new option: no color, Notion owns it
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_RecasedLiveOption_IsNotReAddedAsNearDuplicate()
+    {
+        // The sprint locked option names to normalized casing: a human recasing "open" -> "Open" on the board
+        // must NOT make the model's "open" a fresh addition every tick. Name matching is case-insensitive.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        client.DataSourceSchema(record.DataSourceId).Properties["status"].Select!.Options
+            .Single(o => o.Name == "open").Name = "Open"; // recased on the board
+        client.DataSourceUpdates.Clear();
+
+        provisioner.ApplyModelAdditions(AdditiveBaseType(), client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+
+        Assert.Empty(client.DataSourceUpdates); // "open" already present (case-insensitively) — no near-duplicate
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_RenamesTitle_OnNotionTitleChange_ExactlyOnce_NoReMint()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        client.DataSourceUpdates.Clear();
+
+        var renamed = AdditiveBaseType();
+        renamed.NotionTitle = "Widgets";
+        provisioner.ApplyModelAdditions(renamed, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+
+        var (dataSourceId, update) = Assert.Single(client.DataSourceUpdates);
+        Assert.Equal(record.DataSourceId, dataSourceId);
+        Assert.Equal("Widgets", NotionRichText.Flatten(update.Title));
+        Assert.Empty(update.Properties);            // a pure rename touches no schema
+        Assert.Single(client.CreatedDatabases);     // renamed in place, never re-minted
+
+        // The new title is recorded, so a second pass is a no-op — exactly one UpdateDataSource title call.
+        provisioner.ApplyModelAdditions(renamed, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+        Assert.Single(client.DataSourceUpdates);
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_RenamePatchThrows_KeepsOldTitle_SoNextTickRetries()
+    {
+        // The record must NOT advance to the new title until the PATCH succeeds: a failed rename that had already
+        // recorded the new title would no-op forever. On a throw the OLD title stays recorded, so the next tick
+        // re-issues the (idempotent, payload-identical) rename.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+
+        var renamed = AdditiveBaseType();
+        renamed.NotionTitle = "Widgets";
+        client.FailUpdateDataSourceAfter = 0; // the rename PATCH throws
+        Assert.Throws<NotionApiException>(() =>
+            provisioner.ApplyModelAdditions(renamed, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter()));
+
+        // A fresh provisioner over the persisted state still holds the OLD title — the rename was not recorded.
+        Assert.Equal("Things", NotionProvisioner.LoadTracked(_statePath).Single().NotionTitle);
+
+        // Next tick, the PATCH succeeds and the rename lands.
+        client.FailUpdateDataSourceAfter = null;
+        var retry = new NotionProvisioner(client, _statePath);
+        retry.ApplyModelAdditions(renamed, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+        Assert.Equal("Widgets", NotionRichText.Flatten(Assert.Single(client.DataSourceUpdates).Request.Title));
+        Assert.Equal("Widgets", NotionProvisioner.LoadTracked(_statePath).Single().NotionTitle);
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_NeverRetypesOrDeletes_DestructiveDriftLeftToTheWarnPath()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        var live = client.DataSourceSchema(record.DataSourceId).Properties;
+        live["Owner"] = new NotionPropertySchema { RichText = new NotionEmptyConfig() };  // rogue, not in the model
+        live["status"] = new NotionPropertySchema { Checkbox = new NotionEmptyConfig() };  // live type != model's select
+        client.DataSourceUpdates.Clear();
+
+        provisioner.ApplyModelAdditions(AdditiveBaseType(), client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+
+        // Additive is strictly non-destructive: it never deletes the rogue column nor retypes status back to a
+        // select — those stay a warn/--prune decision in the drift check.
+        Assert.Empty(client.DataSourceUpdates);
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_InSync_IsNoOp()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        client.DataSourceUpdates.Clear();
+
+        provisioner.ApplyModelAdditions(AdditiveBaseType(), client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+        Assert.Empty(client.DataSourceUpdates);
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_LegacyRecordWithoutTitle_SeedsWithoutRenaming()
+    {
+        // A record written before ns-11 carries no notionTitle. The live board already shows the title it was
+        // provisioned with, so the pass seeds the record from the model WITHOUT a rename PATCH.
+        var client = new FakeNotionClient();
+        File.WriteAllText(_statePath,
+            "{\"types\":[{\"objectType\":\"Thing\",\"databaseId\":\"db-x\",\"dataSourceId\":\"ds-x\",\"postPassDone\":true}]}");
+        client.DataSourceSchema("ds-x").Properties["title"] = new NotionPropertySchema { Title = new NotionEmptyConfig() };
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        var type = new SyncObjectType
+        {
+            Type = "Thing",
+            NotionTitle = "Things",
+            Properties = new() { ["title"] = new SyncPropertyDef { Type = "title" } },
+        };
+        provisioner.ApplyModelAdditions(type, client.RetrieveDataSource("ds-x"), new Dictionary<string, string>(), new StringWriter());
+
+        Assert.Empty(client.DataSourceUpdates);  // no rename PATCH on the seed tick
+        Assert.Equal("Things", NotionProvisioner.LoadTracked(_statePath).Single().NotionTitle);  // seed persisted
+    }
 }

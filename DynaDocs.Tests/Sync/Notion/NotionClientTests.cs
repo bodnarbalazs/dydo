@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Sync.Notion;
 
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 
@@ -385,10 +386,12 @@ public class NotionClientTests
     }
 
     [Fact]
-    public void AppendBlockChildren_SerializesNestedChildren_InRequestBody()
+    public void AppendBlockChildren_NestsChildrenInsideTheTypePayload_NeverAtBlockTopLevel()
     {
-        // Source-gen regressions on the recursive children property only surface on the wire, so pin the nested
-        // shape through the real NotionJsonContext.
+        // Wire-truth pin (ns-12 live 400): Notion requires a block's children INSIDE its type payload
+        // (bulleted_list_item.children), never as a top-level block field — so assert the payload-level children key
+        // is present and the block-level one is absent. Source-gen regressions on the recursive property only surface
+        // on the wire, so this goes through the real NotionJsonContext.
         var handler = new FakeHttpMessageHandler().Enqueue("""{"results":[]}""");
         var parent = new NotionBlock
         {
@@ -399,24 +402,27 @@ public class NotionClientTests
 
         Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = [parent] });
 
-        var body = handler.Requests.Single().Body;
-        Assert.Contains("\"children\"", body);
-        Assert.Contains("\"parent\"", body);
-        Assert.Contains("\"child\"", body);
+        using var doc = JsonDocument.Parse(handler.Requests.Single().Body);
+        var block = doc.RootElement.GetProperty("children")[0];
+        Assert.False(block.TryGetProperty("children", out _)); // NEVER at the block's top level
+        var payload = block.GetProperty("bulleted_list_item");
+        Assert.True(payload.TryGetProperty("children", out var nested)); // children nest in the type payload
+        Assert.Equal("child", nested[0].GetProperty("bulleted_list_item").GetProperty("rich_text")[0].GetProperty("text").GetProperty("content").GetString());
     }
 
     [Fact]
-    public void GetBlockChildren_DeserializesHasChildrenAndNestedChildren()
+    public void GetBlockChildren_DeserializesHasChildren_TheRecursionGate()
     {
-        // The read side must deserialize has_children (the recursion gate) and any nested children through the
-        // source-gen context.
+        // Notion never inlines a block's children on read — it flags has_children and the reader fetches the next
+        // level separately (GetBlockChildren). So the read side deserializes only the gate; there is no inline
+        // top-level children field to parse.
         var handler = new FakeHttpMessageHandler().Enqueue(
-            """{"results":[{"type":"bulleted_list_item","id":"b1","has_children":true,"bulleted_list_item":{"rich_text":[]},"children":[{"type":"bulleted_list_item","id":"b2","bulleted_list_item":{"rich_text":[]}}]}],"has_more":false}""");
+            """{"results":[{"type":"bulleted_list_item","id":"b1","has_children":true,"bulleted_list_item":{"rich_text":[]}}],"has_more":false}""");
 
         var block = Assert.Single(Client(handler).GetBlockChildren("p1"));
 
         Assert.True(block.HasChildren);
-        Assert.Equal("b2", block.Children!.Single().Id);
+        Assert.Null(block.Children);
     }
 
     [Fact]
@@ -493,8 +499,9 @@ public class NotionClientTests
     [Fact]
     public void SearchDataSources_PostsSearch_AndFiltersToDataSourceObjects_CarryingTitleAndParent()
     {
+        // A search hit carries its title as a rich-text ARRAY under "title" — no "name" key (ns-12 live).
         var handler = new FakeHttpMessageHandler().Enqueue(
-            """{"results":[{"id":"ds1","object":"data_source","name":"Campaigns","parent":{"type":"database_id","database_id":"db1"}},{"id":"x","object":"page"}]}""");
+            """{"results":[{"id":"ds1","object":"data_source","title":[{"type":"text","text":{"content":"Campaigns"},"plain_text":"Campaigns"}],"parent":{"type":"database_id","database_id":"db1"}},{"id":"x","object":"page"}]}""");
 
         var hits = Client(handler).SearchDataSources();
 
@@ -503,7 +510,7 @@ public class NotionClientTests
         Assert.Contains("\"value\":\"data_source\"", req.Body);
         var hit = Assert.Single(hits);
         Assert.Equal("ds1", hit.Id);
-        // ns-5: the recovery matches on the title and adopts the owning database from the parent.
+        // ns-5: the recovery matches on the title (flattened from the rich-text array) and adopts the owning database.
         Assert.Equal("Campaigns", hit.Name);
         Assert.Equal("db1", hit.Parent!.DatabaseId);
     }

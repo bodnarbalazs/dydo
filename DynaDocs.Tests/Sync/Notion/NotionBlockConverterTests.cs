@@ -398,9 +398,11 @@ public class NotionBlockConverterTests
     }
 
     [Fact]
-    public void Table_WithoutTablePayload_DerivesWidthFromRows()
+    public void Table_WithoutExplicitWidth_DerivesWidthFromRows()
     {
-        var table = new NotionBlock { Type = "table", Children = [Row("a", "b"), Row("1", "2")] };
+        // TableWidth left at its 0 default: the renderer derives the width from the widest row. The rows live in the
+        // table payload (where a block's children are reached — Table.Children), as on every table.
+        var table = new NotionBlock { Type = "table", Table = new NotionTable(), Children = [Row("a", "b"), Row("1", "2")] };
         Assert.Equal("| a | b |\n| --- | --- |\n| 1 | 2 |", NotionBlockConverter.FromBlocks([table]));
     }
 

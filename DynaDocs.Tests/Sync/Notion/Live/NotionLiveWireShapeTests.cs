@@ -6,8 +6,9 @@ using DynaDocs.Sync.Notion.Dtos;
 /// LIVE (ns-9, ns-5): the recovery DTOs the create/view re-query paths depend on actually deserialize non-null
 /// from real Notion responses. The fake hand-builds these shapes, so a field Notion names differently (or nests
 /// elsewhere) would pass the fake yet leave the ambiguous-create recovery unable to match a lost create. This
-/// creates one database and asserts the three live shapes the recovery reads: <c>RetrieveDatabase.parent.page_id</c>,
-/// <c>ListViews[].name</c>, and a <c>SearchDataSources</c> hit's <c>name</c> + <c>parent.database_id</c>.
+/// creates one database and asserts the live shapes the recovery reads: <c>RetrieveDatabase.parent.page_id</c>,
+/// the bare <c>ListViews[].id</c> (the list carries NO name, ns-12) with the name surfacing only via
+/// <c>RetrieveView.name</c>, and a <c>SearchDataSources</c> hit's <c>name</c> + <c>parent.database_id</c>.
 /// </summary>
 [Trait("Category", "notion-live")]
 public sealed class NotionLiveWireShapeTests : NotionLiveTestBase
@@ -31,10 +32,13 @@ public sealed class NotionLiveWireShapeTests : NotionLiveTestBase
         Assert.NotNull(retrieved.Parent);
         Assert.False(string.IsNullOrEmpty(retrieved.Parent!.PageId));
 
-        // ListViews exposes each view's name (the CreateView recovery matches by name).
+        // ListViews returns BARE refs — id only, no name (ns-12 live). The name the CreateView recovery matches by
+        // surfaces only through RetrieveView, so retrieve the auto-created default view and assert its name lands.
         var views = Client.ListViews(db.Id);
         Assert.NotEmpty(views);
-        Assert.All(views, v => Assert.False(string.IsNullOrEmpty(v.Name)));
+        Assert.All(views, v => Assert.False(string.IsNullOrEmpty(v.Id)));
+        var retrievedView = Client.RetrieveView(views[0].Id);
+        Assert.False(string.IsNullOrEmpty(retrievedView.Name));
 
         // A SearchDataSources hit exposes its name and its owning database id (the CreateDatabase recovery adopts it).
         // Notion search is eventually consistent, so poll for the just-created data source to be indexed (up to 3

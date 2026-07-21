@@ -453,6 +453,7 @@ public class NotionSyncServiceTests : IDisposable
         public void ArchiveDatabase(string databaseId) { }
         public void CreateView(NotionViewCreateRequest request) { }
         public IReadOnlyList<NotionViewRef> ListViews(string databaseId) => [];
+        public NotionView RetrieveView(string viewId) => new();
         public void DeleteView(string viewId) { }
         public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) => [];
         public NotionPage CreatePage(NotionPageCreateRequest request) => new();

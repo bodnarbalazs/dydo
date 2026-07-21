@@ -1,5 +1,7 @@
 namespace DynaDocs.Tests.Sync.Notion;
 
+using System.Text.Json;
+using DynaDocs.Serialization;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 
@@ -34,10 +36,13 @@ public sealed class FakeNotionClient : INotionClient
     public List<(string DataSourceId, NotionDataSourceUpdateRequest Request)> DataSourceUpdates { get; } = [];
     public List<NotionViewCreateRequest> CreatedViews { get; } = [];
 
-    /// <summary>Views per database — seeded with an auto-created "default" on CreateDatabase (as real Notion
-    /// does), appended by CreateView, and pruned by DeleteView — so the provisioner's default-view removal and
-    /// the CreateView match-by-name recovery are testable.</summary>
+    /// <summary>View ids per database — seeded with an auto-created "default" on CreateDatabase (as real Notion
+    /// does), appended by CreateView, and pruned by DeleteView. The list carries bare id-only refs, mirroring the
+    /// real list endpoint (ns-12); a view's name/type live in <see cref="_viewNames"/>/<see cref="_viewTypes"/> and
+    /// surface only through <see cref="RetrieveView"/>, so the CreateView recovery must retrieve to match by name.</summary>
     private readonly Dictionary<string, List<NotionViewRef>> _viewsByDb = new();
+    private readonly Dictionary<string, string> _viewNames = new();
+    private readonly Dictionary<string, string?> _viewTypes = new();
     private int _nextView = 1;
     public List<string> DeletedViews { get; } = [];
 
@@ -243,7 +248,10 @@ public sealed class FakeNotionClient : INotionClient
             DataSources = [new NotionDataSourceRef { Id = dataSourceId, Name = title }],
         };
         Databases[db.Id] = db;
-        _viewsByDb[db.Id] = [new NotionViewRef { Id = $"default-{n}", Name = "Default view" }]; // Notion auto-creates one
+        var defaultViewId = $"default-{n}"; // Notion auto-creates one; the list exposes only its id
+        _viewsByDb[db.Id] = [new NotionViewRef { Id = defaultViewId }];
+        _viewNames[defaultViewId] = "Default view";
+        _viewTypes[defaultViewId] = "table";
         CreatedDatabases.Add(request);
         // Real Notion makes every created data source searchable — the source of truth the CreateDatabase
         // recovery re-queries when a create response is lost (ns-5).
@@ -251,7 +259,7 @@ public sealed class FakeNotionClient : INotionClient
         {
             Id = dataSourceId,
             Object = "data_source",
-            Name = title,
+            Title = NotionRichText.Of(title), // real search hits carry the title as a rich-text array, not a name key
             Parent = new NotionParent { Type = "database_id", DatabaseId = db.Id },
         });
         _dataSources[dataSourceId] = new NotionDataSource
@@ -314,7 +322,10 @@ public sealed class FakeNotionClient : INotionClient
         CreatedViews.Add(request);
         if (!_viewsByDb.TryGetValue(request.DatabaseId, out var list))
             _viewsByDb[request.DatabaseId] = list = [];
-        list.Add(new NotionViewRef { Id = $"view-{_nextView++}", Name = request.Name });
+        var viewId = $"view-{_nextView++}";
+        list.Add(new NotionViewRef { Id = viewId });
+        _viewNames[viewId] = request.Name;
+        _viewTypes[viewId] = request.Type;
         if (CreateViewSucceedsThenAmbiguous5xx)
         {
             CreateViewSucceedsThenAmbiguous5xx = false;
@@ -324,6 +335,14 @@ public sealed class FakeNotionClient : INotionClient
 
     public IReadOnlyList<NotionViewRef> ListViews(string databaseId) =>
         _viewsByDb.TryGetValue(databaseId, out var list) ? list.ToList() : [];
+
+    // Mirrors GET /v1/views/{id}: the name-bearing shape the bare list omits (ns-12).
+    public NotionView RetrieveView(string viewId) => new()
+    {
+        Id = viewId,
+        Name = _viewNames.GetValueOrDefault(viewId),
+        Type = _viewTypes.GetValueOrDefault(viewId),
+    };
 
     public void DeleteView(string viewId)
     {
@@ -348,6 +367,7 @@ public sealed class FakeNotionClient : INotionClient
         CreateChildCounts.Add(request.Children?.Count ?? 0);
         if (request.Children is { Count: > 0 })
         {
+            RejectTopLevelChildren(request.Children);
             var depth = BlockDepth(request.Children);
             PayloadDepths.Add(depth);
             if (depth > 2)
@@ -519,6 +539,7 @@ public sealed class FakeNotionClient : INotionClient
         AppendedTo.Add(blockId);
         if (request.Children.Count > 0)
         {
+            RejectTopLevelChildren(request.Children);
             var depth = BlockDepth(request.Children);
             PayloadDepths.Add(depth);
             // Notion accepts at most two nesting levels per request; guarding it here makes every suite that appends
@@ -536,25 +557,15 @@ public sealed class FakeNotionClient : INotionClient
 
     /// <summary>Persist a block under <paramref name="parentId"/>, minting its id and recursively storing any inline
     /// children under it, so a nested payload lands as the same id-keyed tree real Notion builds — and the stored
-    /// block is left childless (its children reachable via its own id), matching what GetBlockChildren returns. A
-    /// TABLE carries its rows in the table payload (Table.Children); Notion persists them as the table block's own
-    /// children and returns them via GetBlockChildren, so move them under the table's id and store a childless table
-    /// payload — the exact read shape RenderTable's block-children fallback consumes.</summary>
+    /// block is left childless (its children reachable via its own id), matching what GetBlockChildren returns.
+    /// <see cref="NotionBlock.Children"/> is the uniform accessor wherever the payload carries children — a text
+    /// body's children or a TABLE's rows (Table.Children) — so clearing it strips both, leaving a childless payload
+    /// (the exact read shape RenderTable's block-children fallback consumes for a table).</summary>
     private string Store(string parentId, NotionBlock block)
     {
         block.Id ??= $"block-{_nextBlock++}";
         var inline = block.Children;
         block.Children = null;
-        if (inline == null && block.Table?.Children is { Count: > 0 } rows)
-        {
-            inline = rows;
-            block.Table = new NotionTable
-            {
-                TableWidth = block.Table.TableWidth,
-                HasColumnHeader = block.Table.HasColumnHeader,
-                HasRowHeader = block.Table.HasRowHeader,
-            };
-        }
         _blocks.TryAdd(parentId, []);
         _blocks[parentId].Add(block);
         if (inline is { Count: > 0 })
@@ -574,7 +585,23 @@ public sealed class FakeNotionClient : INotionClient
         blocks.Count == 0 ? 0 : 1 + blocks.Max(ChildDepth);
 
     private static int ChildDepth(NotionBlock block) =>
-        (block.Children ?? block.Table?.Children) is { Count: > 0 } c ? BlockDepth(c) : 0;
+        block.Children is { Count: > 0 } c ? BlockDepth(c) : 0;
+
+    /// <summary>Mirror the live 400 (ns-12): real Notion rejects a block that carries <c>children</c> at its top
+    /// level — children must nest INSIDE the type payload (<c>bulleted_list_item.children</c>, …). Serialize the
+    /// payload through the real source-gen context (the exact wire body) and reject any block whose JSON has a
+    /// top-level <c>children</c> key, so every append/create in the suite enforces the shape the live API does — a
+    /// regression that re-adds a top-level children field would fail loudly here instead of only in live smoke.</summary>
+    private static void RejectTopLevelChildren(IReadOnlyList<NotionBlock> blocks)
+    {
+        var json = JsonSerializer.Serialize(
+            new NotionAppendChildrenRequest { Children = [.. blocks] }, NotionJsonContext.Default.NotionAppendChildrenRequest);
+        using var doc = JsonDocument.Parse(json);
+        foreach (var block in doc.RootElement.GetProperty("children").EnumerateArray())
+            if (block.TryGetProperty("children", out _))
+                throw new NotionApiException(400,
+                    "body failed validation: body.children[0].children should be not present");
+    }
 
     /// <summary>Throw Notion's 400 if any table in the payload carries more rows than a single children array holds —
     /// the table-payload counterpart to the top-level ≤100 check, so a row-cap regression fails loudly in tests.</summary>

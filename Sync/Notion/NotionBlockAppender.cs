@@ -43,11 +43,12 @@ public static class NotionBlockAppender
             yield return chunk;
     }
 
-    /// <summary>A block's total element count — itself plus every descendant. A table carries its rows in the
-    /// <c>table</c> payload's own children (Notion's nesting), not the generic block children, so those count too;
-    /// otherwise a 150-row table reads as one element and a payload silently breaches the 1000-element cap.</summary>
+    /// <summary>A block's total element count — itself plus every descendant. <see cref="NotionBlock.Children"/> is
+    /// the uniform accessor over a block's children wherever the payload carries them (a text body's children or a
+    /// table's rows), so a 150-row table counts its rows too; otherwise it would read as one element and a payload
+    /// silently breach the 1000-element cap.</summary>
     public static int TotalElements(NotionBlock block) =>
-        1 + (block.Children?.Sum(TotalElements) ?? 0) + (block.Table?.Children?.Sum(TotalElements) ?? 0);
+        1 + (block.Children?.Sum(TotalElements) ?? 0);
 
     /// <summary>Append a whole nested forest as children of <paramref name="parentId"/>, resolving each deeper
     /// level against the ids the previous append returned. Order is preserved: a block's deferred children are
@@ -120,26 +121,45 @@ public static class NotionBlockAppender
         || (children.Count <= MaxChildrenPerRequest && children.All(IsLeaf));
 
     private static bool IsLeaf(NotionBlock block) =>
-        block.Children is null or { Count: 0 } && block.Table?.Children is null or { Count: 0 };
+        block.Children is null or { Count: 0 };
 
-    // A shallow clone carrying a REPLACED children list. Every payload-bearing property must be copied or the
-    // clone silently drops it (the ns-7 table/quote regression) — a reflection test pins that the only properties
-    // NOT propagated here are the read-only Id/HasChildren and the deliberately-replaced Children.
+    // A shallow clone carrying a REPLACED children list. Because children now live INSIDE the payload
+    // (NotionBlockBody.Children / NotionTable.Children), the active payload is cloned with the replaced list rather
+    // than shared — otherwise setting a deferred parent childless, or the downstream append minting ids, would mutate
+    // the caller's source tree. Every payload-bearing property must be carried or the clone silently drops it (the
+    // ns-7 table/quote regression) — a reflection test pins that the only NotionBlock properties NOT carried are the
+    // read-only Id/HasChildren and the deliberately-replaced Children accessor.
     private static NotionBlock WithChildren(NotionBlock block, List<NotionBlock>? children) => new()
     {
         Object = block.Object,
         Type = block.Type,
-        Paragraph = block.Paragraph,
-        Heading1 = block.Heading1,
-        Heading2 = block.Heading2,
-        Heading3 = block.Heading3,
-        BulletedListItem = block.BulletedListItem,
-        NumberedListItem = block.NumberedListItem,
-        Code = block.Code,
-        Quote = block.Quote,
-        Table = block.Table,
+        Paragraph = Rebody(block.Paragraph, children),
+        Heading1 = Rebody(block.Heading1, children),
+        Heading2 = Rebody(block.Heading2, children),
+        Heading3 = Rebody(block.Heading3, children),
+        BulletedListItem = Rebody(block.BulletedListItem, children),
+        NumberedListItem = Rebody(block.NumberedListItem, children),
+        Code = Rebody(block.Code, children),
+        Quote = Rebody(block.Quote, children),
+        Table = Retable(block.Table, children),
         TableRow = block.TableRow,
         ChildPage = block.ChildPage,
-        Children = children,
     };
+
+    // Clone a text payload with a replaced children list (only the active body is non-null, so only it receives the
+    // list; the rich-text runs are immutable and shared).
+    private static NotionBlockBody? Rebody(NotionBlockBody? body, List<NotionBlock>? children) =>
+        body is null ? null : new NotionBlockBody { RichText = body.RichText, Language = body.Language, Children = children };
+
+    // Clone a table payload with replaced rows (the table's children).
+    private static NotionTable? Retable(NotionTable? table, List<NotionBlock>? children) =>
+        table is null
+            ? null
+            : new NotionTable
+            {
+                TableWidth = table.TableWidth,
+                HasColumnHeader = table.HasColumnHeader,
+                HasRowHeader = table.HasRowHeader,
+                Children = children,
+            };
 }

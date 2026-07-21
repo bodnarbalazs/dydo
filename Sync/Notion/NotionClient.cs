@@ -77,6 +77,9 @@ public sealed class NotionClient : INotionClient
     public IReadOnlyList<NotionViewRef> ListViews(string databaseId) =>
         Get($"views?database_id={databaseId}", NotionJsonContext.Default.NotionViewList).Results;
 
+    public NotionView RetrieveView(string viewId) =>
+        Get($"views/{viewId}", NotionJsonContext.Default.NotionView);
+
     public void DeleteView(string viewId)
     {
         using var resp = SendWithRetry(() => new HttpRequestMessage(HttpMethod.Delete, $"views/{viewId}"));

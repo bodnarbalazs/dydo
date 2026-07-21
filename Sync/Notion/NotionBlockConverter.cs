@@ -394,8 +394,12 @@ public static class NotionBlockConverter
     private static void RenderQuote(StringBuilder sb, NotionBlock block, string prefix)
     {
         var inner = new List<NotionBlock>();
+        // Wrap the quote's own text in a fresh, CHILDLESS paragraph body: the quote's children now live inside the
+        // quote payload (Quote.Children, reached via block.Children), so reusing the quote body directly would let
+        // the paragraph render recurse into them AND have block.Children render them again — a duplicate. The
+        // children are added once, below, as their own inner blocks.
         if (block.Quote is { } quote && NotionRichText.Flatten(quote.RichText).Length > 0)
-            inner.Add(new NotionBlock { Type = "paragraph", Paragraph = quote });
+            inner.Add(new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = quote.RichText } });
         if (block.Children is { Count: > 0 } children)
             inner.AddRange(children);
 

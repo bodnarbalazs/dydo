@@ -236,9 +236,11 @@ public sealed class NotionProvisioner
     }
 
     /// <summary>Create one declared view, recovering from an ambiguous failure (ns-5). CreateView no longer
-    /// blind-retries a 5xx/transport-throw — the view may already exist server-side — so list the database's
-    /// views and, if one already carries this name, adopt it (do nothing) rather than duplicate it; otherwise
-    /// re-create. A rate response (429/529) or a hard 4xx propagates unchanged through <see cref="Push"/>.</summary>
+    /// blind-retries a 5xx/transport-throw — the view may already exist server-side — so list the database's view
+    /// ids and, retrieving each (the list carries no name, ns-12 live), adopt one that already carries this name
+    /// (do nothing) rather than duplicate it; otherwise re-create. The retrieve fan-out is bounded — this runs only
+    /// on the recovery path, over a handful of views. A rate response (429/529) or a hard 4xx propagates unchanged
+    /// through <see cref="Push"/>.</summary>
     private void CreateViewWithRecovery(
         SyncObjectType type, NotionProvisionedType record, SyncViewDef view, IReadOnlyDictionary<string, string> idByName)
     {
@@ -249,7 +251,7 @@ public sealed class NotionProvisioner
         }
         catch (NotionApiException e) when (e.AmbiguousOutcome)
         {
-            if (_client.ListViews(record.DatabaseId).Any(v => v.Name == view.Name))
+            if (_client.ListViews(record.DatabaseId).Any(v => _client.RetrieveView(v.Id).Name == view.Name))
                 return;
             Push($"provisioning {type.Type} view \"{view.Name}\" (re-create)",
                 () => _client.CreateView(BuildView(type, record, view, idByName)));

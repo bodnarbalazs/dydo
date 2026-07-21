@@ -32,9 +32,14 @@ public interface INotionClient
     void CreateView(NotionViewCreateRequest request);
 
     /// <summary>List a database's views (GET /v1/views?database_id=…) — used to find the auto-created default
-    /// view so it can be removed after the declared views are added, and to match a view by name when a
-    /// CreateView recovery must decide whether the view already exists (ns-5).</summary>
+    /// view so it can be removed after the declared views are added, and to enumerate view ids the CreateView
+    /// recovery retrieves to match by name (ns-5). The list carries only ids, no names (ns-12 live).</summary>
     IReadOnlyList<NotionViewRef> ListViews(string databaseId);
+
+    /// <summary>Retrieve one view by id (GET /v1/views/{id}) — the name-bearing shape the list endpoint omits.
+    /// Idempotent. The CreateView recovery retrieves each listed view to decide whether one already carries the
+    /// declared name (ns-5) before re-creating.</summary>
+    NotionView RetrieveView(string viewId);
 
     /// <summary>Delete a database view (DELETE /v1/views/{id}).</summary>
     void DeleteView(string viewId);

@@ -12,10 +12,15 @@ public sealed class NotionSearchResult
     [JsonPropertyName("object")]
     public string? Object { get; set; }
 
-    /// <summary>The data source's title — matched against a type's Notion title to recover a database whose
-    /// create response was lost to an ambiguous failure.</summary>
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
+    /// <summary>The data source's title — a rich-text ARRAY on the wire (ns-12 live: a search hit carries no
+    /// <c>name</c> key), flattened via <see cref="Name"/> to match against a type's Notion title and recover a
+    /// database whose create response was lost to an ambiguous failure.</summary>
+    [JsonPropertyName("title")]
+    public List<NotionRichText>? Title { get; set; }
+
+    /// <summary>The hit's title as plain text — the recovery's match key.</summary>
+    [JsonIgnore]
+    public string Name => NotionRichText.Flatten(Title);
 
     /// <summary>The hit's parent — for a data source, the database that owns it (carrying the database id the
     /// recovery adopts).</summary>

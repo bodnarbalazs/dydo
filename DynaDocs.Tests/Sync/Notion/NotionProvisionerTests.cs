@@ -306,7 +306,7 @@ public class NotionProvisionerTests : IDisposable
         };
         client.DiscoverableDataSources.Add(new NotionSearchResult
         {
-            Id = "foreign-ds", Object = "data_source", Name = "Campaigns",
+            Id = "foreign-ds", Object = "data_source", Title = NotionRichText.Of("Campaigns"),
             Parent = new NotionParent { Type = "database_id", DatabaseId = "foreign-db" },
         });
 
@@ -339,7 +339,7 @@ public class NotionProvisionerTests : IDisposable
         };
         client.DiscoverableDataSources.Add(new NotionSearchResult
         {
-            Id = "lost-ds", Object = "data_source", Name = "Campaigns",
+            Id = "lost-ds", Object = "data_source", Title = NotionRichText.Of("Campaigns"),
             Parent = new NotionParent { Type = "database_id", DatabaseId = "lost-db" },
         });
 
@@ -370,7 +370,7 @@ public class NotionProvisionerTests : IDisposable
         Assert.Equal(declared.Count, client.CreatedViews.Count);
         var remaining = client.ListViews(record.DatabaseId);
         foreach (var view in declared)
-            Assert.Equal(1, remaining.Count(v => v.Name == view.Name));
+            Assert.Equal(1, remaining.Count(v => client.RetrieveView(v.Id).Name == view.Name));
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class NotionProvisionerTests : IDisposable
         var declared = _model.Object("Issue").Views!;
         var remaining = client.ListViews(record.DatabaseId);
         foreach (var view in declared)
-            Assert.Equal(1, remaining.Count(v => v.Name == view.Name));
+            Assert.Equal(1, remaining.Count(v => client.RetrieveView(v.Id).Name == view.Name));
     }
 
     [Fact]

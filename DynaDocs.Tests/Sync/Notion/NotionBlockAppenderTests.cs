@@ -187,9 +187,12 @@ public class NotionBlockAppenderTests
     [Fact]
     public void WithChildren_PropagatesEveryPayloadProperty_ExceptTheReadOnlyAndReplacedSet()
     {
-        // Structural guard (moderate 5): the shallow clone in Cut must carry EVERY payload-bearing property, or a
-        // newly added block field is silently dropped on write (the ns-7 table/quote regression). Pins the exact
-        // exclusion set: Id/HasChildren are read-only (never written), Children is the deliberately-replaced arg.
+        // Structural guard (moderate 5): the clone in Cut must CARRY every payload-bearing property, or a newly
+        // added block field is silently dropped on write (the ns-7 table/quote regression). Children now live inside
+        // the payload, so WithChildren clones the active body/table rather than sharing it (source-mutation safety,
+        // ns-12) — the clone is therefore a distinct instance, so the guard checks each property is PRESENT (carried,
+        // not dropped) rather than reference-identical. Pins the exclusion set: Id/HasChildren are read-only (never
+        // written), Children is the deliberately-replaced accessor.
         var excluded = new HashSet<string> { nameof(NotionBlock.Id), nameof(NotionBlock.HasChildren), nameof(NotionBlock.Children) };
         var props = typeof(NotionBlock).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
@@ -203,7 +206,7 @@ public class NotionBlockAppenderTests
 
         foreach (var p in props)
             if (!excluded.Contains(p.Name))
-                Assert.True(Equals(p.GetValue(source), p.GetValue(clone)),
+                Assert.True(p.GetValue(clone) != null,
                     $"WithChildren dropped NotionBlock.{p.Name} — add it to the clone or the exclusion set");
     }
 

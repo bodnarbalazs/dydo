@@ -180,16 +180,24 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Contains("owner: alice", itemFile);
     }
 
+    /// <summary>The spine's per-type conflict shadow file for a local id (slice ns-4):
+    /// <c>dydo/_system/notion_sync/spine/&lt;type&gt;/&lt;name&gt;.md</c>.</summary>
+    private string SpineShadowPath(string type, string localId) =>
+        Path.Combine(_dydoRoot, "_system", "notion_sync_spine", type, localId + ".md");
+
     [Fact]
-    public void Run_DivergingRepoAndNotionBodyEdits_ReportConflict_RepoFileGetsMarkers()
+    public void Run_DivergingRepoAndNotionBodyEdits_DivertsToShadow_CanonicalUntouched_BaseNotAdvanced_Reported()
     {
-        // A colleague edits the sprint's body in Notion while the repo edits the same line differently.
-        // The overlapping edit must surface as a conflict (reported + visible markers), never a silent clobber.
+        // Slice ns-4: a colleague edits the sprint's body in Notion while the repo edits the same line differently.
+        // The overlapping edit must be diverted to the spine shadow tree — NEVER written as conflict markers into the
+        // canonical PM file (DR 035 §4/§5) — and reported with both paths, leaving the canonical file byte-identical
+        // to the repo's own edit and the base snapshot un-advanced so it re-detects until a human resolves it.
         var client = new FakeNotionClient();
         NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
 
         var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
-        File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
+        var repoEdit = File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO.");
+        File.WriteAllText(sprintPath, repoEdit);
 
         var sprintPage = client.QueryDataSource("ds-2").Single();
         client.SetBlockChildren(sprintPage.Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
@@ -197,11 +205,111 @@ public class NotionSpineSyncTests : IDisposable
         var output = new StringWriter();
         NotionSpineSync.Run(client, St(), dryRun: false, output);
 
+        // Diverted to the shadow tree, carrying both sides of the conflict; reported with both paths.
+        var shadowPath = SpineShadowPath("Sprint", "notion-sync");
+        Assert.True(File.Exists(shadowPath));
+        var shadow = File.ReadAllText(shadowPath);
+        Assert.Contains("<<<<<<< repo", shadow);
+        Assert.Contains("Sync work REPO.", shadow);
+        Assert.Contains("Sync work EXTERNAL.", shadow);
+        var text = output.ToString();
+        Assert.Contains("conflict", text);
+        Assert.Contains(shadowPath, text);
+        Assert.Contains(sprintPath, text);
+
+        // The canonical PM file is byte-identical to the repo's own edit — and NEVER carries conflict markers.
+        Assert.Equal(repoEdit, File.ReadAllText(sprintPath));
+        Assert.DoesNotContain("<<<<<<< repo", File.ReadAllText(sprintPath));
+
+        // The base did not advance: it still holds the pre-conflict body, so the two-sided edit re-detects next tick.
+        var baseBody = new BaseSnapshotStore(St().SnapshotPath("Sprint")).Get("notion-sync")!.Body;
+        Assert.Contains("Sync work", baseBody);
+        Assert.DoesNotContain("REPO", baseBody);
+        Assert.DoesNotContain("EXTERNAL", baseBody);
+    }
+
+    [Fact]
+    public void Run_UnresolvedShadow_ReDetectsConflict_NextTick_NeverMarkersInCanonical()
+    {
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
+        File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
+        client.SetBlockChildren(client.QueryDataSource("ds-2").Single().Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick: divert
+        var shadowPath = SpineShadowPath("Sprint", "notion-sync");
+        var firstShadow = File.ReadAllText(shadowPath);
+
+        // The human has NOT resolved the shadow: the next tick re-detects the same two-sided edit, leaves the shadow
+        // (never clobbering the human's would-be in-progress edit), and still never writes markers to the canonical.
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, St(), dryRun: false, output);
+
         Assert.Contains("conflict", output.ToString());
-        var merged = File.ReadAllText(sprintPath);
-        Assert.Contains("<<<<<<< repo", merged);
-        Assert.Contains("Sync work REPO.", merged);
-        Assert.Contains("Sync work EXTERNAL.", merged);
+        Assert.True(File.Exists(shadowPath));
+        Assert.Equal(firstShadow, File.ReadAllText(shadowPath));
+        Assert.DoesNotContain("<<<<<<< repo", File.ReadAllText(sprintPath));
+    }
+
+    [Fact]
+    public void Run_ResolvedShadow_IsPromotedToCanonical_RepoWins_AndConvergesClean()
+    {
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
+        File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
+        client.SetBlockChildren(client.QueryDataSource("ds-2").Single().Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick: divert to shadow
+
+        // The human resolves the shadow file (removes markers, keeps their own line), then resyncs.
+        var shadowPath = SpineShadowPath("Sprint", "notion-sync");
+        File.WriteAllText(shadowPath, "---\ntitle: Notion Sync\nseq: 7\nstatus: active\ncampaign: dydo-2-0\n---\n\nSync work RESOLVED.");
+
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, St(), dryRun: false, output);
+
+        // Promoted onto the canonical file, the shadow removed, and the resolution pushed to Notion (repo-wins).
+        Assert.False(File.Exists(shadowPath));
+        Assert.Contains("Sync work RESOLVED.", File.ReadAllText(sprintPath));
+        Assert.DoesNotContain("<<<<<<< repo", File.ReadAllText(sprintPath));
+        var pushed = NotionBlockConverter.FromBlocks(client.GetBlockChildren(client.QueryDataSource("ds-2").Single().Id));
+        Assert.Contains("Sync work RESOLVED.", pushed);
+
+        // Idempotent: a further tick with the two sides now aligned reconciles clean — no new conflict, no shadow.
+        var output2 = new StringWriter();
+        NotionSpineSync.Run(client, St(), dryRun: false, output2);
+        Assert.DoesNotContain("conflict", output2.ToString());
+        Assert.False(File.Exists(shadowPath));
+    }
+
+    [Fact]
+    public void Run_ResolveByAligningCanonicalToNotion_ConvergesClean_NoMarkersEverInCanonical()
+    {
+        // The other resolution gesture (take remote): the human deletes the shadow and aligns the canonical file to
+        // Notion's body. With repo == external the reconcile merges cleanly — no conflict, and the canonical never
+        // held a marker at any point.
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
+        File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
+        client.SetBlockChildren(client.QueryDataSource("ds-2").Single().Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick: divert to shadow
+
+        var shadowPath = SpineShadowPath("Sprint", "notion-sync");
+        File.Delete(shadowPath);
+        File.WriteAllText(sprintPath, "---\ntitle: Notion Sync\nseq: 7\nstatus: active\ncampaign: dydo-2-0\n---\n\nSync work EXTERNAL.");
+
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, St(), dryRun: false, output);
+
+        Assert.DoesNotContain("conflict", output.ToString());
+        Assert.False(File.Exists(shadowPath));
+        Assert.DoesNotContain("<<<<<<< repo", File.ReadAllText(sprintPath));
+        Assert.Contains("Sync work EXTERNAL.", File.ReadAllText(sprintPath));
     }
 
     [Fact]

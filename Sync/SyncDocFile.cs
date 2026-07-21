@@ -32,7 +32,13 @@ public static class SyncDocFile
     public static void Write(string filePath, SyncDoc doc)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-        File.WriteAllText(filePath, Render(doc));
+        // Atomic write (ns-4 finding 4): a torn WriteAllText could leave a conflict-shadow file with no surviving
+        // merge sentinel, which PromoteResolvedShadows would then mistake for a human's resolution and promote over
+        // the canonical doc. Render to a temp sibling, then move-with-overwrite (a same-directory rename), so any
+        // reader — this process or the next tick — ever sees only the complete content, never a half-written body.
+        var temp = filePath + ".tmp" + Guid.NewGuid().ToString("N")[..8];
+        File.WriteAllText(temp, Render(doc));
+        File.Move(temp, filePath, overwrite: true);
     }
 
     public static string Render(SyncDoc doc)

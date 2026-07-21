@@ -57,6 +57,24 @@ Docs: developers.notion.com/reference/versioning · developers.notion.com/docs/u
 
 ---
 
+## Conflict shadows (PM spine)
+
+When the spine reconcile hits a genuine two-sided edit it can't auto-merge — the same line changed differently in the repo and on the board — it **never** writes conflict markers into the canonical PM file (the corruption class of issues [0235](../project/issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)/[0236](../project/issues/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)/0291). Instead it diverts the conflicted body to a **shadow file** and leaves the canonical file byte-identical to your repo edit, un-pushed, with the base snapshot un-advanced (so the conflict re-detects every sync until resolved). Each diverted conflict is reported with both paths ([Decision 035](../project/decisions/035-docs-body-sync-via-notion-native-markdown-api.md) §4/§5, the spine sibling of the docs-mirror shadow tree).
+
+- **Shadow path:** `dydo/_system/notion_sync_spine/<type>/<name>.md` (under `_system`, so it is outside every type's own dir and never re-read as a PM row — a diverted conflict can never cascade back through the sync). It is a **sibling** of the docs mirror's `_system/notion_sync/` shadow root, never nested inside it, so the docs mirror's promote pass never sweeps up a spine shadow. The shadow holds the 3-way merge with `<<<<<<< repo` / `>>>>>>> external` markers so both sides are visible.
+
+### Resolving a spine conflict
+
+Open the shadow file, then pick a resolution and re-run `dydo notion sync`:
+
+- **Take remote (adopt Notion's version):** edit the canonical PM file to Notion's side of the markers — the block below `=======` in the shadow — then delete the shadow (never copy the marker lines themselves). Re-run: with the two sides aligned the reconcile converges clean, no markers ever touch the canonical file.
+- **Take local (keep your repo edit):** your edit already sits in the canonical file untouched. Resolve the shadow to that same content (markers removed) so the next sync promotes it and **repo wins** — the base is aligned to the current board body and your version is pushed over it. Deleting the shadow without aligning the canonical only re-diverts the still-live two-sided edit, so resolve it rather than merely deleting it.
+- **Hand-merge:** edit the shadow to the final body you want (markers removed) and re-run; it is promoted onto the canonical file and pushed (repo-wins), converging in one tick.
+
+A shadow that still carries markers is treated as unresolved and left alone — the reconcile re-derives the same conflict deterministically until you finish. Promotion reads the board once to align the base; if that page was archived/trashed while the conflict sat unresolved, the alignment is skipped (the reconcile resurrects the doc from your repo edit) rather than wedging the type's sync.
+
+---
+
 ## Live-API Validation Constraints
 
 The PM-board sync's first live run (2026-07-06) and the docs-body live smoke (2026-07-09) surfaced the constraints below against real Notion resources. **None are catchable by `FakeNotionClient`** — it treats expressions and bodies as opaque strings — so changes in these areas need a live smoke test, not just the fake-backed suite.

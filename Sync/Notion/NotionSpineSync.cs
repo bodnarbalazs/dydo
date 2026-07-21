@@ -240,26 +240,44 @@ public static class NotionSpineSync
             var adapter = new NotionSyncAdapter(
                 client, dataSourceId, type.FieldSchema(), relationLocalToPageByField, relationPageToLocal, type.Icon,
                 engineSchema, store.GetLastActivity, mappedExternalIds);
-            var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor, allowMassDelete: allowMassDelete);
+            var shadowDir = SpineShadowDir(state.DydoRoot, type.Type);
 
             if (dryRun)
             {
+                var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor);
                 foreach (var result in runner.Plan(docs))
                     output.WriteLine($"  sync       {type.Type,-9} {result.Action,-14} {result.LocalId}");
             }
             else
             {
+                // Promote any shadow file a human has resolved (DR 035 §4) before reconciling, so its content becomes
+                // the canonical PM doc this tick and is pushed — the spine half of the resolution flow. Re-read the
+                // type's docs after a promotion so the reconcile sees the adopted body.
+                if (PromoteResolvedShadows(shadowDir, adapter, store, docsDir, docs))
+                    docs = LoadDocs(docsDir);
+
+                // A genuine two-sided conflict is diverted to the spine shadow tree — NEVER written as conflict
+                // markers into the canonical PM file (DR 035 §4/§5, the spine sibling of the docs-mirror fix for
+                // issue 0235; 0291's degraded path and the 0235/0236 phantom-conflict class made canonical markers
+                // worse). The shadow tree lives under _system, outside every type's own dir, so a diverted conflict
+                // is never re-read as a repo doc and can never cascade back through the sync.
+                var runner = new SyncRunner(
+                    adapter, store, RepoFolderLayout.For(type, docsDir).PathFor,
+                    localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete);
+
                 var run = runner.Run(docs);
                 if (run.FuseTripped)
                 {
                     fuseTripped.Add(type.Type);
                     ReportFuseTrip(type.Type, run.WouldDeletePaths, output);
+                    // The apply was aborted, but any two-sided conflicts were already diverted to shadows in the
+                    // reconcile loop before the fuse tripped — report them so the human is not left unaware (finding 3).
+                    ReportConflicts(run, docs, docsDir, shadowDir, output);
                 }
                 else
                 {
                     output.WriteLine($"  sync       {type.Type,-9} reconciled {run.Results.Count} object(s)");
-                    if (run.ConflictCount > 0)
-                        output.WriteLine($"             {run.ConflictCount} conflict(s): {string.Join(", ", run.ConflictedLocalIds)}");
+                    ReportConflicts(run, docs, docsDir, shadowDir, output);
                 }
             }
 
@@ -269,10 +287,11 @@ public static class NotionSpineSync
         return new NotionSpineSyncResult { FuseTrippedTypes = fuseTripped };
     }
 
-    /// <summary>Report a mass-delete fuse abort for one type (slice ns-2): the type reconciled NOTHING this tick —
-    /// no page archived, no repo file deleted, base un-advanced — because it would have locally deleted a large
-    /// share of its tracked records. Names the override flag and lists the would-be-deleted paths, first 20 then a
-    /// "+N more" tail so a runaway plan does not flood the log.</summary>
+    /// <summary>Report a mass-delete fuse abort for one type (slice ns-2): the type's APPLY was aborted — no page
+    /// archived, no repo file deleted, base un-advanced — because it would have locally deleted a large share of its
+    /// tracked records (any two-sided conflicts were still diverted to shadows before the abort and are reported
+    /// separately). Names the override flag and lists the would-be-deleted paths, first 20 then a "+N more" tail so
+    /// a runaway plan does not flood the log.</summary>
     private static void ReportFuseTrip(string type, IReadOnlyList<string> wouldDelete, TextWriter output)
     {
         output.WriteLine(
@@ -282,6 +301,102 @@ public static class NotionSpineSync
             output.WriteLine($"             {path}");
         if (wouldDelete.Count > 20)
             output.WriteLine($"             +{wouldDelete.Count - 20} more");
+    }
+
+    /// <summary>The spine's conflict shadow tree for one object type (DR 035 §4, slice ns-4): a diverted conflict
+    /// lands at <c>dydo/_system/notion_sync_spine/&lt;type&gt;/&lt;name&gt;.md</c> — under <c>_system</c> so it is
+    /// outside every type's own dir and never re-read as a repo doc, and split per type so two types can never
+    /// collide on a shared local-id stem. Deliberately a SIBLING of the docs mirror's <c>_system/notion_sync/</c>
+    /// shadow root, never NESTED inside it: <see cref="DocsTreeSync"/>'s promote pass enumerates
+    /// <c>notion_sync/**</c> recursively, so a nested spine shadow a docs-only run encountered would be promoted to
+    /// a junk canonical path and deleted — silently losing the human's resolution (finding 1).</summary>
+    private static string SpineShadowDir(string dydoRoot, string objectType) =>
+        Path.Combine(dydoRoot, "_system", "notion_sync_spine", objectType);
+
+    /// <summary>Report this type's conflicts (slice ns-4). Each conflict diverted to the shadow tree names BOTH the
+    /// canonical PM file — left untouched at its last-good state — and the shadow path holding the conflicted body,
+    /// so the operator knows exactly where to resolve it. A delete/modify conflict that resurrected a side carries
+    /// no markers, so it is not shadowed; those are reported by local id as before.</summary>
+    private static void ReportConflicts(SyncRunResult run, IReadOnlyList<SyncDoc> docs, string docsDir, string shadowDir, TextWriter output)
+    {
+        var shadowed = run.ShadowedLocalIds.ToHashSet();
+        foreach (var localId in run.ShadowedLocalIds)
+        {
+            var canonical = docs.FirstOrDefault(d => d.LocalId == localId)?.SourcePath is { Length: > 0 } path
+                ? path
+                : Path.Combine(docsDir, localId + ".md");
+            // A type dir carries forward slashes from the model JSON, so a doc's SourcePath mixes separators;
+            // GetFullPath normalizes both paths to the platform separator for a clean, uniform report line.
+            output.WriteLine(
+                $"             conflict {localId} diverted to shadow (canonical untouched): "
+                + $"{Path.GetFullPath(canonical)} -> {Path.GetFullPath(Path.Combine(shadowDir, localId + ".md"))}");
+        }
+
+        var unshadowed = run.ConflictedLocalIds.Where(id => !shadowed.Contains(id)).ToList();
+        if (unshadowed.Count > 0)
+            output.WriteLine($"             {unshadowed.Count} conflict(s): {string.Join(", ", unshadowed)}");
+    }
+
+    /// <summary>Promote every shadow file a human has resolved — one no longer carrying merge sentinels — onto its
+    /// canonical PM doc, then delete it (DR 035 §4 resolution flow; the spine sibling of
+    /// <see cref="DocsTreeSync"/>'s PromoteResolvedShadows). A shadow still bearing markers is left untouched: the
+    /// human has not finished, and the reconcile re-derives the same conflict deterministically.
+    /// <para>The resolution must WIN over the still-diverged Notion side (else the reconcile re-detects the two-
+    /// sided edit and re-diverts): the base body is aligned to the CURRENT external body, so the reconcile reads
+    /// Notion as unchanged and pushes the resolved repo body over it (repo-wins) rather than merging a fresh
+    /// conflict. That external read is GUARDED — a page archived/trashed while the conflict sat unresolved is simply
+    /// skipped (base left as-is) rather than throwing at the same point every tick and wedging the whole type's
+    /// sync; the reconcile then resurrects the doc from the surviving repo edit. Returns whether anything was
+    /// promoted, so the caller re-reads the type's docs.</para></summary>
+    private static bool PromoteResolvedShadows(
+        string shadowDir, NotionSyncAdapter adapter, BaseSnapshotStore store, string docsDir, IReadOnlyList<SyncDoc> docs)
+    {
+        if (!Directory.Exists(shadowDir))
+            return false;
+
+        // Build tolerantly (first-wins): two repo files sharing a stem is SyncRunner.IndexByLocalId's deliberate
+        // both-paths error to raise, not ours to pre-empt with ToDictionary's bare ArgumentException (finding 2).
+        var canonicalByLocalId = new Dictionary<string, string>();
+        foreach (var d in docs)
+            canonicalByLocalId.TryAdd(d.LocalId, d.SourcePath);
+        // Read the external side lazily and once: only when a resolved shadow actually needs its base aligned, and
+        // reused across every promotion this tick so a batch of resolutions costs one data-source read, not N.
+        IReadOnlyList<SyncRecord>? external = null;
+
+        var promoted = false;
+        foreach (var shadowFile in Directory.EnumerateFiles(shadowDir, "*.md"))
+        {
+            var content = File.ReadAllText(shadowFile);
+            if (ThreeWayTextMerge.ContainsConflictMarkers(content))
+                continue; // still unresolved — leave it for the human
+
+            var localId = Path.GetFileNameWithoutExtension(shadowFile);
+            var canonical = canonicalByLocalId.TryGetValue(localId, out var path) && !string.IsNullOrEmpty(path)
+                ? path
+                : Path.Combine(docsDir, localId + ".md");
+
+            Directory.CreateDirectory(Path.GetDirectoryName(canonical)!);
+            File.WriteAllText(canonical, content);
+            File.Delete(shadowFile);
+            promoted = true;
+
+            if (store.Get(localId) is { ExternalId: { } pageId } snap)
+            {
+                external ??= adapter.ReadExternalState();
+                if (external.FirstOrDefault(r => r.ExternalId == pageId) is { } record)
+                    store.Set(new SyncDoc
+                    {
+                        LocalId = snap.LocalId,
+                        ExternalId = snap.ExternalId,
+                        Fields = snap.Fields,
+                        Body = record.Body,
+                        SourcePath = "",
+                    });
+            }
+        }
+        if (promoted)
+            store.Save();
+        return promoted;
     }
 
     /// <summary>Build this type's relation id maps. On write each relation FIELD maps to its own declared

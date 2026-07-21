@@ -712,8 +712,9 @@ public class NotionSyncAdapterTests
         // ns-8 (issue 0236 reproduction): a body edited on BOTH sides on the same line — repo and the Notion
         // read-back each diverging from base there — must still be detected as a two-sided conflict even though the
         // body travels through the dialect-lossy block round-trip. This is the criterion the normalization must not
-        // OVER-mask: real dual edits still conflict. (Routing that conflict to a shadow tree is ns-4's concern; the
-        // spine currently writes markers to the canonical file, so this asserts the engine-level Conflict decision.)
+        // OVER-mask: real dual edits still conflict. This runner is constructed with NO shadow resolver, so it
+        // asserts the engine-level Conflict decision itself; routing that conflict to the spine shadow tree (ns-4)
+        // is exercised where NotionSpineSync passes a resolver.
         var client = new FakeNotionClient();
         var schema = new Dictionary<string, string> { ["Status"] = "select" };
         var adapter = new NotionSyncAdapter(client, "ds1", schema);

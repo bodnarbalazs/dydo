@@ -360,6 +360,33 @@ public class DocsShadowConflictTests : IDisposable
         Assert.DoesNotContain("body NOTION.", File.ReadAllText(DocPath("understand/architecture.md")));
     }
 
+    [Fact]
+    public void SpineShadowSibling_SurvivesDocsMirrorPromotePass_Untouched()
+    {
+        // Regression (ns-4 finding 1): the PM spine's conflict shadows live at _system/notion_sync_spine/ — a
+        // SIBLING of this docs mirror's _system/notion_sync/ shadow root, never nested inside it. The docs mirror's
+        // PromoteResolvedShadows enumerates notion_sync/** recursively, so a nested (resolved) spine shadow met by a
+        // docs-only run would be promoted to a junk canonical path and DELETED, silently losing the human's
+        // resolution. With the sibling namespace the docs promote pass must leave the spine shadow untouched.
+        Seed("understand/architecture.md", "---\ntitle: Architecture\n---\n\n# Arch\n\nbody.");
+        WriteModel(SpineModel);
+
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        // A resolved spine shadow (no markers) sits in the sibling tree while the docs mirror runs its promote pass.
+        var spineShadow = Path.Combine(_dydoRoot, "_system", "notion_sync_spine", "Sprint", "notion-sync.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(spineShadow)!);
+        var resolved = "---\ntitle: Notion Sync\n---\n\nSync work RESOLVED.";
+        File.WriteAllText(spineShadow, resolved);
+
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        // Untouched: content intact, not promoted to any junk canonical, not deleted.
+        Assert.True(File.Exists(spineShadow));
+        Assert.Equal(resolved, File.ReadAllText(spineShadow));
+    }
+
     // ---- helpers -----------------------------------------------------------------------------------------
 
     private static (FakeNotionClient Client, string Root, string Child) SeedTree(string childBody)

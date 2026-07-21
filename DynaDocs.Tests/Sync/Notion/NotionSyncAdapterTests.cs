@@ -659,6 +659,101 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
+    public void BodyDialectOnlyDifference_NoDriftNoConflict_AcrossTwoPasses()
+    {
+        // ns-8 (issue 0236): the phantom-conflict class for spine bodies. A body whose Notion round-trip differs
+        // from the repo ONLY in dialect — list-marker choice (`*` echoes back `-`) and blank-line spacing the block
+        // converter collapses — must produce NO drift and NO conflict across repeated sync passes: the raw canonical
+        // file stays byte-identical, every reconcile is a no-op, and no conflict markers are ever written.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["Status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-dialect-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "Status", Value = "open" }],
+                Body = "intro\n\n* alpha\n* beta", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);              // create: the board renders `- ` bullets, no blank line
+            SyncDocFile.Write(repoPath, doc); // materialize the raw `*`-marker file
+            var before = File.ReadAllText(repoPath);
+
+            // Guard the premise: the board's read-back genuinely DIFFERS in dialect from the raw repo body, so a
+            // naive raw compare WOULD manufacture a drift — the no-op below is the normalization doing its job.
+            Assert.Equal("intro\n- alpha\n- beta",
+                NotionBlockConverter.FromBlocks(client.GetBlockChildren(client.QueryDataSource("ds1").Single().Id)));
+
+            // Two full re-sync passes: the dialect gap (repo `* alpha`, board echo `- alpha`) must never register.
+            for (var pass = 0; pass < 2; pass++)
+            {
+                var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+                Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+                Assert.Equal(before, File.ReadAllText(repoPath));            // byte-unchanged, no WriteToRepo
+                Assert.DoesNotContain("<<<<<<<", File.ReadAllText(repoPath)); // no conflict markers
+            }
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void DualBodyEdit_SameLine_Conflicts_ThroughLossyRoundTrip()
+    {
+        // ns-8 (issue 0236 reproduction): a body edited on BOTH sides on the same line — repo and the Notion
+        // read-back each diverging from base there — must still be detected as a two-sided conflict even though the
+        // body travels through the dialect-lossy block round-trip. This is the criterion the normalization must not
+        // OVER-mask: real dual edits still conflict. (Routing that conflict to a shadow tree is ns-4's concern; the
+        // spine currently writes markers to the canonical file, so this asserts the engine-level Conflict decision.)
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["Status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-dual-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "Status", Value = "open" }],
+                Body = "line one\nline two\nline three", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+
+            // Repo edits line two; a colleague edits the SAME line differently in Notion.
+            var repoEdited = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "Status", Value = "open" }],
+                Body = "line one\nline two REPO\nline three", SourcePath = repoPath,
+            };
+            SyncDocFile.Write(repoPath, repoEdited);
+            var page = client.QueryDataSource("ds1").Single();
+            client.SetBlockChildren(page.Id, NotionBlockConverter.ToBlocks("line one\nline two NOTION\nline three"));
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.Conflict, Assert.Single(result.Results).Action);
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void Apply_Create_BodyExactly100Blocks_SingleCreateNoAppend()
     {
         var client = new FakeNotionClient();

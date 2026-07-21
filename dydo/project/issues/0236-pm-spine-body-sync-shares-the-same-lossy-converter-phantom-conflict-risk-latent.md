@@ -43,4 +43,20 @@ spine as a no-op-in-normal-operation guard.
 2. `dydo notion sync` → the raw 3-way merge writes conflict markers into the canonical row file.
 
 ## Resolution
-(Filled when resolved — likely folded into the 0235 normalization decision if it goes engine-level.)
+Fix landed engine-level (the option 0235 flagged): `ReconcileEngine.Equal` compares spine bodies in
+**normalized space on both sides** via `NotionSyncAdapter.NormalizeBody` (`FromBlocks∘ToBlocks`), so a
+dialect-only round-trip difference (escapes, whitespace, list markers) can no longer be misread as an
+external edit — killing the phantom-conflict class at the compare. Delivered across the sprint:
+- **ns-6/ns-7** rebuilt `NotionBlockConverter` (Markdig AST; setext-off; tables/quotes/nested lists;
+  deterministic `[!missing]` markers for unsupported blocks) so the round-trip is a **fixed point** on every
+  real record body — pinned by `NotionBodyFixedPointTests` (idempotency sweep + the pre-ns-7 migration sweep).
+- **ns-8** confirmed the phantom class is closed for spine bodies and locked it with adapter-level regression
+  tests through the real converter + `FakeNotionClient`: `BodyDialectOnlyDifference_NoDriftNoConflict_AcrossTwoPasses`
+  (dialect-only echo → no-op both passes, file byte-identical, no markers) and
+  `DualBodyEdit_SameLine_Conflicts_ThroughLossyRoundTrip` (a genuine two-sided edit still conflicts — the
+  normalization does not over-mask). No snapshot-canonical/hash refactor was needed: storing the base body
+  canonical would perturb the raw-body `ThreeWayTextMerge` and the ns-7 migration shim for no reachable gain
+  (non-idempotent bodies are ruled out by the fixed-point sweep).
+
+**Status kept open** pending **ns-10**'s live pass: `sync → no edits → sync` must be verified a no-op against
+real Notion (only fake-verified so far). Close there with live evidence.

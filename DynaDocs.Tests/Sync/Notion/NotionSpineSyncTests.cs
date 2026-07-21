@@ -181,7 +181,7 @@ public class NotionSpineSyncTests : IDisposable
     }
 
     /// <summary>The spine's per-type conflict shadow file for a local id (slice ns-4):
-    /// <c>dydo/_system/notion_sync/spine/&lt;type&gt;/&lt;name&gt;.md</c>.</summary>
+    /// <c>dydo/_system/notion_sync_spine/&lt;type&gt;/&lt;name&gt;.md</c>.</summary>
     private string SpineShadowPath(string type, string localId) =>
         Path.Combine(_dydoRoot, "_system", "notion_sync_spine", type, localId + ".md");
 

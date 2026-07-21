@@ -19,7 +19,7 @@ When the spine reconcile detects a both-sides-changed conflict, today it writes 
 
 ## Task
 
-1. Pass a spine shadow-path resolver where `NotionSpineSync` constructs its `SyncRunner` (~:237): conflicts route to `dydo/_system/notion_sync/spine/<type>/<name>.md`, canonical file untouched, base snapshot not advanced (all of which the existing engine machinery then does for free — verify, don't reimplement).
+1. Pass a spine shadow-path resolver where `NotionSpineSync` constructs its `SyncRunner` (~:237): conflicts route to `dydo/_system/notion_sync_spine/<type>/<name>.md`, canonical file untouched, base snapshot not advanced (all of which the existing engine machinery then does for free — verify, don't reimplement). Note: the shadow path moved to the `notion_sync_spine` sibling (not a `spine/` subdir of the docs mirror's `notion_sync/`) per review, so the spine and docs shadow trees stay disjoint — this record now matches the implemented path.
 2. Port a spine equivalent of `DocsTreeSync.PromoteResolvedShadows` (~:131) so a human-resolved conflict (shadow deleted, or shadow content adopted into the canonical file) converges on the next sync instead of re-detecting forever.
 3. Report each routed conflict in sync output with both paths (canonical + shadow).
 4. Document the resolution flow in `dydo/reference/notion-sync.md` (take local: delete shadow + resync; take remote: copy shadow over canonical + resync).

@@ -30,6 +30,10 @@ The sprint's verification gate: run the ns-9 harness against real Notion with th
 6. Verify the ns-11 additive-provisioning wire shapes live (both fake-verified only):
    - **Data-source rename** — `PATCH /v1/data_sources/{id}` with `title: [{type:text,text:{content}}]` (rich-text array, mirroring create) actually renames the data source. A wrong key silently no-ops the rename; confirm the board title changes live.
    - **Select option-union PATCH** — `ApplyModelAdditions` re-sends the existing options WITHOUT their ids (name+color only) plus the new option by name; Notion must match the existing options BY NAME (not id) so their colors/values survive the union. Confirm adding one option leaves the others' colors and existing rows' values intact.
+   - **Data-source title on retrieve (F1 wire shape)** — `GET /v1/data_sources/{id}` returns the data source's live title under `name` (the key `NotionDataSource.Name` reads). The additive pass seeds a pre-ns-11 record's title from this so a model rename before the first post-upgrade sync still fires. Confirm the retrieve response actually carries the title under `name`; if it is absent/under a different key, the seed degrades to the model (no rename) — verify which, and adjust the DTO key if live disagrees.
+7. Verify two remaining live assumptions the fake cannot settle:
+   - **Batch-append an existing table past 100 rows** — `NotionBlockAppender.GuardTableWidth` throws for a table wider than 100 rows because there is no known way to append rows to an already-created table (a `table.children` array caps at 100). Confirm live whether row-batching an existing table IS possible; if so, lift the guard and implement batching, otherwise keep it and record the confirmation.
+   - **Markdown `---` imports as a `divider` block** — `NotionLiveBodyRoundTripTests` assumes a thematic break round-trips through Notion's markdown import as a real `divider` block (which the spine converter surfaces as `[!missing]`). Confirm the live import actually produces a `divider` (not a heading/paragraph), so the round-trip assertion rests on observed behavior.
 
 ## Files
 

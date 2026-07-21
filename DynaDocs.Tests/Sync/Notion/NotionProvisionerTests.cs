@@ -906,14 +906,16 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
-    public void ApplyModelAdditions_LegacyRecordWithoutTitle_SeedsWithoutRenaming()
+    public void ApplyModelAdditions_LegacyRecordWithoutTitle_LiveTitleAbsent_SeedsFromModelWithoutRenaming()
     {
-        // A record written before ns-11 carries no notionTitle. The live board already shows the title it was
-        // provisioned with, so the pass seeds the record from the model WITHOUT a rename PATCH.
+        // A record written before ns-11 carries no notionTitle. When the live retrieve response has NO title on the
+        // wire (Name null — the ns-10 wire-shape check's degrade case), the pass falls back to seeding the record
+        // from the model WITHOUT a rename PATCH — the original pre-ns-11 behavior.
         var client = new FakeNotionClient();
         File.WriteAllText(_statePath,
             "{\"types\":[{\"objectType\":\"Thing\",\"databaseId\":\"db-x\",\"dataSourceId\":\"ds-x\",\"postPassDone\":true}]}");
         client.DataSourceSchema("ds-x").Properties["title"] = new NotionPropertySchema { Title = new NotionEmptyConfig() };
+        Assert.Null(client.RetrieveDataSource("ds-x").Name);  // live title absent on the wire
         var provisioner = new NotionProvisioner(client, _statePath);
 
         var type = new SyncObjectType
@@ -924,7 +926,41 @@ public class NotionProvisionerTests : IDisposable
         };
         provisioner.ApplyModelAdditions(type, client.RetrieveDataSource("ds-x"), new Dictionary<string, string>(), new StringWriter());
 
-        Assert.Empty(client.DataSourceUpdates);  // no rename PATCH on the seed tick
+        Assert.Empty(client.DataSourceUpdates);  // no rename PATCH on the degrade-safe seed tick
         Assert.Equal("Things", NotionProvisioner.LoadTracked(_statePath).Single().NotionTitle);  // seed persisted
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_LegacyRecordWithoutTitle_SeedsFromLiveTitle_ThenRenamesToModelExactlyOnce()
+    {
+        // A record written before ns-11 carries no notionTitle. The board was provisioned as "Sprint Tasks"; the
+        // model has since been renamed to "Slices" (exactly ns-12's plan). Seeding the record from the LIVE title —
+        // not the model's — lets the rename check fire, so the board is PATCHed to the model title exactly once (F1).
+        // Seeding from the model would have silently adopted "Slices" and dropped the board rename forever.
+        var client = new FakeNotionClient();
+        File.WriteAllText(_statePath,
+            "{\"types\":[{\"objectType\":\"Thing\",\"databaseId\":\"db-x\",\"dataSourceId\":\"ds-x\",\"postPassDone\":true}]}");
+        var liveDs = client.DataSourceSchema("ds-x");
+        liveDs.Name = "Sprint Tasks";  // the title the live board actually shows
+        liveDs.Properties["title"] = new NotionPropertySchema { Title = new NotionEmptyConfig() };
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        var type = new SyncObjectType
+        {
+            Type = "Thing",
+            NotionTitle = "Slices",  // renamed in the model since provisioning
+            Properties = new() { ["title"] = new SyncPropertyDef { Type = "title" } },
+        };
+        provisioner.ApplyModelAdditions(type, client.RetrieveDataSource("ds-x"), new Dictionary<string, string>(), new StringWriter());
+
+        // Seeded from live "Sprint Tasks", detected model "Slices" != live -> exactly one rename PATCH.
+        var (dataSourceId, update) = Assert.Single(client.DataSourceUpdates);
+        Assert.Equal("ds-x", dataSourceId);
+        Assert.Equal("Slices", NotionRichText.Flatten(update.Title));
+        Assert.Equal("Slices", NotionProvisioner.LoadTracked(_statePath).Single().NotionTitle);
+
+        // The new title is recorded, so the next tick is a no-op — the rename fires exactly once.
+        provisioner.ApplyModelAdditions(type, client.RetrieveDataSource("ds-x"), new Dictionary<string, string>(), new StringWriter());
+        Assert.Single(client.DataSourceUpdates);
     }
 }

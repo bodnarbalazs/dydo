@@ -94,6 +94,10 @@ Four seams, one theme each:
 
 Workers never commit; every slice lands through review; one slice one commit. The full ratchet (commands in the Specification) gates every slice; live slices additionally gate on the harness run.
 
+## Seam audit (2026-07-21, overnight run)
+
+Ten slices (ns-1..9, ns-11) landed as individually reviewed commits; a merge-sprint seam audit over v2.1.0..HEAD returned DEFECTIVE (5 findings: live-title seed hazard, 2 unrecorded live-check flags, docs fuse-result discard, missing fuse-x-shadow composed test, stale path strings), all fixed and re-verified SOUND. ns-10 (live verification, needs human env vars), ns-12 (rename, blocked by ns-10), ns-13 (daemon, stretch) remain. ns-10 tasks 5-7 carry the complete accumulated live-check list.
+
 ## Watch-outs
 
 - **`.claude/worktrees/` contains ~48 stale copies of old source** — any grep/edit hitting `worktrees/**` is working on a corpse. Workers must scope to the repo root excluding `.claude/`.

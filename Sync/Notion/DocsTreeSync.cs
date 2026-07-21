@@ -92,6 +92,11 @@ public static class DocsTreeSync
             // from the mirror's walk (ExcludedDirs), so a conflict can never cascade back through the sync.
             localId => ShadowPathFor(dydoRoot, localId));
 
+        // The mass-delete fuse (SyncRunner, ns-2) counts RepoDeletes, and a repo-owned-structure reconcile emits
+        // NONE: an external-gone page whose repo doc is present routes to CreateToExternal, and RepoDelete is only
+        // produced in ReconcileEngine's !repoOwnedStructure branch (ExternalDeleted). So the fuse can never trip on
+        // the docs path — result.FuseTripped is structurally always false here and needs no handling. Only the
+        // shadow count below is actionable (RepoOwnedStructure_AllExternalGone_PlansZeroRepoDeletes_FuseCannotTrip pins this).
         var result = runner.Run(docs);
         output.WriteLine($"notion docs sync: reconciled {result.Results.Count} page(s) under \"{RootTitle}\"");
         if (result.ShadowedLocalIds.Count > 0)

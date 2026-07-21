@@ -257,6 +257,7 @@ public sealed class FakeNotionClient : INotionClient
         _dataSources[dataSourceId] = new NotionDataSource
         {
             Id = dataSourceId,
+            Name = title, // real Notion echoes the data source's title on retrieve — the additive pass's rename seed (F1)
             Properties = new Dictionary<string, NotionPropertySchema>(request.InitialDataSource.Properties),
         };
         // Real Notion assigns each property an id, returned on read and referenced by view configs; mirror that

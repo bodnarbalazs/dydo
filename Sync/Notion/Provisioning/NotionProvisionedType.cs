@@ -17,8 +17,9 @@ public sealed class NotionProvisionedType
 
     /// <summary>The <c>notionTitle</c> this data source was last provisioned/renamed to. The additive
     /// model-evolution pass (ns-11) compares it against the current model to rename the board exactly once
-    /// when the title changed — no live read needed, no re-mint. Empty on a record written before ns-11; the
-    /// additive pass seeds it from the model without a rename (the live board already carries that title).</summary>
+    /// when the title changed — no re-mint. Empty on a record written before ns-11; the additive pass then
+    /// seeds it from the LIVE data source title (not the model's), so a model title that changed before the
+    /// first post-upgrade sync is still detected as a rename rather than silently adopted (F1).</summary>
     [JsonPropertyName("notionTitle")]
     public string NotionTitle { get; set; } = "";
 

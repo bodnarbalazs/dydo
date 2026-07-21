@@ -31,6 +31,11 @@ public sealed class FakeSyncAdapter : ISyncAdapter
     /// tests where a failing Apply holds base advances back (a Retire must still commit, finding 7).</summary>
     public bool FailApply { get; set; }
 
+    /// <summary>When true, this adapter owns its structure like the docs mirror (DR 033 §2): an external-gone
+    /// record whose repo doc is present re-creates rather than deletes, so the reconcile emits no RepoDelete and
+    /// the mass-delete fuse can never trip (F3 pin). Default false keeps the spine's bidirectional delete semantics.</summary>
+    public bool RepoOwnedStructure { get; set; }
+
     public IReadOnlyList<SyncRecord> ReadExternalState() => _records.Values.ToList();
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned) =>

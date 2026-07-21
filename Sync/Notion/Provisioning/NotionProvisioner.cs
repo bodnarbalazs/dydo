@@ -289,18 +289,21 @@ public sealed class NotionProvisioner
         }
 
         var request = new NotionDataSourceUpdateRequest { Properties = patch };
-        string? renameTo = null;
         if (record.NotionTitle.Length == 0)
         {
-            // A pre-ns-11 record carries no title: the live board already shows the title it was provisioned
-            // with, so seed the record from the model WITHOUT a rename (no live PATCH depends on it).
-            if (record.NotionTitle != type.NotionTitle)
-            {
-                record.NotionTitle = type.NotionTitle;
-                Save();
-            }
+            // A pre-ns-11 record carries no title. Seed it from the LIVE data source title, NOT the model's: the
+            // model's notionTitle may have changed before this first post-upgrade sync (the board still shows the
+            // OLD title), and seeding from the model would silently adopt the new name and lose the board rename
+            // forever (F1). Seeding from live lets the rename check below fire when live != model. When the live
+            // title is absent on the wire (an ns-10 wire-shape check), fall back to the model — degrade-safe, no
+            // rename (the original pre-ns-11 behavior). Persisted now so a throw in the rename PATCH below still
+            // leaves the recovered live title recorded for the next tick to retry against.
+            record.NotionTitle = live.Name ?? type.NotionTitle;
+            Save();
         }
-        else if (record.NotionTitle != type.NotionTitle)
+
+        string? renameTo = null;
+        if (record.NotionTitle != type.NotionTitle)
         {
             request.Title = NotionRichText.Of(type.NotionTitle);
             renameTo = type.NotionTitle;

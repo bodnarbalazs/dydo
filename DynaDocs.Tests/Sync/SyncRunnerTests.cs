@@ -555,4 +555,81 @@ public class SyncRunnerTests : IDisposable
         Assert.All(tracked.Take(6), d => Assert.Null(_base.Get(d.LocalId)));
         Assert.All(untracked, d => Assert.NotNull(_base.Get(d.LocalId)));
     }
+
+    [Fact]
+    public void RepoOwnedStructure_AllExternalGone_PlansZeroRepoDeletes_FuseCannotTrip()
+    {
+        // F3 pin: the docs mirror (DR 033 §2, repoOwnedStructure) owns its structure — a page gone from the external
+        // read while its repo doc is present is re-created, never deleted (ReconcileEngine.ExternalDeleted ->
+        // CreateToExternal). No repoOwnedStructure branch ever emits a RepoDelete, and the mass-delete fuse counts
+        // RepoDeletes, so the fuse can NEVER trip on the docs path — which is why DocsTreeSync safely discards
+        // runner.Run's result. Archiving EVERY tracked page externally (a spine adapter would trip on this) still
+        // plans zero RepoDeletes and leaves the fuse untripped.
+        _adapter.RepoOwnedStructure = true;
+        var docs = Enumerable.Range(0, 10)
+            .Select(i => RepoDoc($"d{i:D3}", "body", ("status", "open")))
+            .ToList();
+        NewRunner().Run(docs);
+        foreach (var doc in docs)
+            SyncDocFile.Write(OpenPath(doc.LocalId), doc);
+
+        foreach (var doc in docs)
+            _adapter.DeleteExternal(_base.Get(doc.LocalId)!.ExternalId!);
+
+        var result = NewRunner().Run(docs);
+
+        Assert.False(result.FuseTripped);
+        Assert.Empty(result.WouldDeletePaths);
+        Assert.DoesNotContain(result.Results, r => r.RepoDelete != null);
+        Assert.All(docs, d => Assert.True(File.Exists(OpenPath(d.LocalId)))); // every repo file survives
+    }
+
+    [Fact]
+    public void MassDeleteFuse_TripsWhileAConflictShadows_ShadowWritten_NothingApplied_ShadowExcludedFromDeletions()
+    {
+        // F4 composed spine tick (ns-2 fuse x ns-4 shadow): in ONE run, one record's two-sided body edit routes to
+        // the shadow tree WHILE six external deletions trip the mass-delete fuse. The shadow is written during the
+        // reconcile loop (before the fuse check), but the fuse then aborts the apply — so no repo file is deleted,
+        // no base entry drops, and the shadowed conflict is counted as a conflict, never a deletion.
+        var docs = Enumerable.Range(0, 10)
+            .Select(i => RepoDoc($"t{i:D3}", "one\ntwo\nthree", ("status", "open")))
+            .ToList();
+        NewRunner().Run(docs);
+        foreach (var doc in docs)
+            SyncDocFile.Write(OpenPath(doc.LocalId), doc);
+
+        // Six records archived externally (repo files unchanged) -> six pending Deletes: 6 > 5 AND 6 > 20% of 10.
+        foreach (var doc in docs.Take(6))
+            _adapter.DeleteExternal(_base.Get(doc.LocalId)!.ExternalId!);
+
+        // A seventh record edited on both sides on the same line -> a genuine two-sided conflict.
+        var conflictId = docs[9].LocalId;
+        _adapter.Edit(_base.Get(conflictId)!.ExternalId!, F(("status", "open")), "one\nEXT\nthree");
+        var runDocs = docs.Take(9)
+            .Append(RepoDoc(conflictId, "one\nREPO\nthree", ("status", "open")))
+            .ToList();
+
+        var shadowDir = Path.Combine(_dir, "shadow");
+        var runner = new SyncRunner(_adapter, _base, (localId, _, _) => OpenPath(localId),
+            conflictShadowPathFor: localId => Path.Combine(shadowDir, localId + ".md"));
+
+        var result = runner.Run(runDocs);
+
+        // Fuse tripped; the conflict shadowed. Six deletions counted, the shadowed conflict excluded from them.
+        Assert.True(result.FuseTripped);
+        Assert.Equal([conflictId], result.ShadowedLocalIds);
+        Assert.Equal(6, result.WouldDeletePaths.Count);
+        Assert.DoesNotContain(OpenPath(conflictId), result.WouldDeletePaths);
+
+        // The shadow file WAS written (loop side effect) and carries the conflict markers.
+        var shadowPath = Path.Combine(shadowDir, conflictId + ".md");
+        Assert.True(File.Exists(shadowPath));
+        Assert.Contains("<<<<<<< repo", File.ReadAllText(shadowPath));
+
+        // Nothing applied: every repo file intact, every base entry intact, and the canonical conflict file was NOT
+        // overwritten with markers (its shadow was neither pushed nor committed — the base did not advance).
+        Assert.All(docs, d => Assert.True(File.Exists(OpenPath(d.LocalId))));
+        Assert.All(docs, d => Assert.NotNull(_base.Get(d.LocalId)));
+        Assert.DoesNotContain("<<<<<<< repo", File.ReadAllText(OpenPath(conflictId)));
+    }
 }

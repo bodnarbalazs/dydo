@@ -77,7 +77,7 @@ A shadow that still carries markers is treated as unresolved and left alone — 
 
 ## Live-API Validation Constraints
 
-The PM-board sync's first live run (2026-07-06) and the docs-body live smoke (2026-07-09) surfaced the constraints below against real Notion resources. **None are catchable by `FakeNotionClient`** — it treats expressions and bodies as opaque strings — so changes in these areas need a live smoke test, not just the fake-backed suite.
+The PM-board sync's first live run (2026-07-06) and the docs-body live smoke (2026-07-09) surfaced the constraints below against real Notion resources. **None are catchable by `FakeNotionClient`** — it treats expressions and bodies as opaque strings — so changes in these areas need a live smoke test, not just the fake-backed suite. The **token-gated live suite** (below) makes each constraint testable on demand.
 
 1. **A formula expression cannot reference another formula property.** `prop("<anotherFormula>")` → `400 "Type error with formula"` (opaque — the error names no property). Proven minimal: referencing a trivial `1 > 0` formula fails. Rollup-over-formula, formula-over-rollup, and `dateBetween` over a date-rollup all *do* work. Fix: **inline** the referenced formula's body. This broke all five `attention` formulas (they read `stale`/`health`).
 2. **Code-fence language must be in Notion's fixed vocabulary.** `csharp` → 400 (Notion spells it `c#`); `text` and `pwsh` are also rejected. `NotionBlockConverter.NormalizeLanguage` alias-maps and falls back to `plain text` for anything unknown.
@@ -87,6 +87,30 @@ The PM-board sync's first live run (2026-07-06) and the docs-body live smoke (20
 6. **The native Markdown API round-trip is lossy without dialect convergence.** Notion extracts a leading H1 as the page title, adds backslash escapes, and collapses blank lines (as well as changing list indentation); without H1-as-title, escape, whitespace, and indent normalization, the read-back becomes a phantom external edit and can overwrite a canonical file — the corruption class that hit DR-040 ([Decision 035](../project/decisions/035-docs-body-sync-via-notion-native-markdown-api.md)).
 
 `NotionProvisioner` re-throws schema-push failures tagged with the object type, property, and expression — turning Notion's context-free 400s into actionable errors.
+
+---
+
+## Live Smoke Harness
+
+A token-gated live test suite (ns-9) exercises the spine's live constraints above against real Notion, from inside the normal test project (`DynaDocs.Tests/Sync/Notion/Live/`) but wired into **nothing in CI**. Constraints 5 (folder-body child-tag rule) and 6 (native-markdown round-trip losses) are **docs-mirror** behavior, out of this sprint's spine-first scope, and are not covered by this suite. Each test carries `[Trait("Category", "notion-live")]` and provisions into its own uniquely named child page (`smoke-<utcstamp>-<rand4>`) under the test parent, archiving it in teardown (best-effort — a leaked page is visible in the scratch parent).
+
+**Gating (the `[NotionLiveFact]` contract).** Fixtures read two env vars:
+
+- `DYDO_NOTION_TEST_TOKEN` — a Notion integration token (the integration must be shared with the target parent page).
+- `DYDO_NOTION_TEST_PARENT` — the parent page id the smoke child pages are created under.
+
+**Both unset ⇒ every live test is reported skipped** (the fake suite stays green in CI). **Either one set but the pair incomplete ⇒ the fixture throws and the tests FAIL loudly** — a half-configured live run never silently passes zero real tests (unlike `dydo notion sync`, which exits success on missing config). A complete-but-wrong pair fails when the first real API call is rejected.
+
+**Live testing is sanctioned in prod** (balazs, 2026-07-20): the token/parent may target the real workspace — `dydo notion reset` + git restore is the recovery path — so a dedicated scratch page is optional.
+
+**Invocation** (never run in CI — needs a real token):
+
+```
+DYDO_NOTION_TEST_TOKEN=<token> DYDO_NOTION_TEST_PARENT=<page-id> \
+  dotnet test --filter Category=notion-live
+```
+
+The suite covers, one focused test each: spine provisioning of all seven types with formulas accepted; the 0290 title fallback; the 0291 >100-block create-then-append (whose body also carries a >2000-char run, covering constraint 3); a 3-deep nested list (ns-6); every code-fence language alias; the 0278 FutureFeature title + status options; 0257 reset scoping (scratch reset leaves a second parent's state file untouched); the ns-5 recovery DTO wire shapes (`SearchDataSources` name + `parent.database_id`, `ListViews` names, `RetrieveDatabase` parent); a table + quote + `[!missing]` body round-trip; and the `GuardTableWidth` >100-row abort.
 
 ---
 

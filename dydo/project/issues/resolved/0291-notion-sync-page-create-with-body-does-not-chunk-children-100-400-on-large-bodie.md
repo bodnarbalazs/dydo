@@ -4,7 +4,8 @@ id: 291
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
+resolved-date: 2026-07-21
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -57,4 +58,4 @@ In the CreatePage-with-body path, create the page with at most 100 children (or 
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by ns-6: `NotionBlockAppender` chunks block payloads at ≤100 top-level AND ≤1000 total elements, with depth-2 cutting + iterative appends for nested structure; `CreatePage` carries a capped head and appends the remainder. LIVE-VERIFIED 2026-07-21 (ns-10, Opus 4.8 continuation): `NotionLiveLargeBodyTests` (a >100-block body — including a >2000-char run — creates then appends without a 400) passes against real Notion, and a full real-board sync reconciled 397 records including large bodies with zero 400s. Closed.

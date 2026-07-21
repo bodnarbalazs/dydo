@@ -14,7 +14,7 @@ write page bodies. Notion performs the block↔markdown mapping **server-side, f
 receive markdown strings. This **retires the phantom-conflict corruption class at its root** ([issue
 0235](../issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)),
 and — when adopted for the spine too — its latent sibling
-([0236](../issues/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)).
+([0236](../issues/resolved/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)).
 It **supersedes [DR 025](./025-notion-sync-architecture.md) §6's "custom block↔markdown conversion"**;
 §6's *direct-REST, no-SDK, source-generated-JSON, AOT* stance **stands unchanged**.
 

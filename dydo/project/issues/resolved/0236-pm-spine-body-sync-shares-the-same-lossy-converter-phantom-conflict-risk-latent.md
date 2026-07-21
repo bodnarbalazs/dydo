@@ -5,7 +5,8 @@ fix-release:
 needs-human: false
 resolution: 
 severity: low
-status: open
+status: resolved
+resolved-date: 2026-07-21
 work-type: 
 id: 236
 type: issue
@@ -16,7 +17,7 @@ date: 2026-07-08
 # PM-spine body sync shares the same lossy-converter phantom-conflict risk (latent)
 
 Surfaced while root-causing the docs-mirror corruption
-([0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter](./0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)).
+([0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter](../0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)).
 The PM-spine sync (`NotionSpineSync` → `NotionSyncAdapter` → `SyncRunner`/`ReconcileEngine`) reconciles
 each DB row's **page body** through the **same** lossy `NotionBlockConverter` round-trip and the **same**
 raw-text 3-way merge that manufactured phantom conflicts in the docs mirror. So the spine carries the
@@ -60,3 +61,5 @@ external edit — killing the phantom-conflict class at the compare. Delivered a
 
 **Status kept open** pending **ns-10**'s live pass: `sync → no edits → sync` must be verified a no-op against
 real Notion (only fake-verified so far). Close there with live evidence.
+
+LIVE-VERIFIED 2026-07-21 (ns-10, Opus 4.8 continuation): the definitive proof — a full real-board reset+push followed by `dydo notion sync --dry-run` plans ZERO actions across all 397 records (no phantom `WriteToRepo`, no phantom conflicts). Four additional live-only asymmetry classes surfaced during ns-10 and were closed in ns-10 core: schema-default field echoes (checkbox `false`/empty select), title-fallback echo, field-only body collateral rewrite, and frontmatter field order vs. Notion's canonical echo order. Closed.

@@ -4,7 +4,8 @@ id: 290
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
+resolved-date: 2026-07-21
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -39,4 +40,4 @@ Find where spine objects are written as database rows and ensure the title prope
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by `EnsureTitle` (`Sync/Notion/NotionSyncAdapter.cs`, ns-5/ns-10): a spine doc with no title-typed value is pushed with a synthesized title (prettified frontmatter `title` → `name` → localId; a raw slug never surfaces). LIVE-VERIFIED 2026-07-21 (ns-10, Opus 4.8 continuation): `NotionLiveTitleFallbackTests` passes against real Notion, and every card on the real board now shows a real title (e.g. `git-status` → "Git Status", confirmed by live page query) — no "New page" cards remain. The ns-10 equilibrium work additionally made the synthesized-title echo round-trip as a no-op (`NormalizeFields` recognizes the exact `SynthesizedTitle` value via the shared helper) so it never churns a phantom rewrite, while a genuine human board rename still imports. Closed.

@@ -59,7 +59,7 @@ Docs: developers.notion.com/reference/versioning · developers.notion.com/docs/u
 
 ## Conflict shadows (PM spine)
 
-When the spine reconcile hits a genuine two-sided edit it can't auto-merge — the same line changed differently in the repo and on the board — it **never** writes conflict markers into the canonical PM file (the corruption class of issues [0235](../project/issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)/[0236](../project/issues/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)/0291). Instead it diverts the conflicted body to a **shadow file** and leaves the canonical file byte-identical to your repo edit, un-pushed, with the base snapshot un-advanced (so the conflict re-detects every sync until resolved). Each diverted conflict is reported with both paths ([Decision 035](../project/decisions/035-docs-body-sync-via-notion-native-markdown-api.md) §4/§5, the spine sibling of the docs-mirror shadow tree).
+When the spine reconcile hits a genuine two-sided edit it can't auto-merge — the same line changed differently in the repo and on the board — it **never** writes conflict markers into the canonical PM file (the corruption class of issues [0235](../project/issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)/[0236](../project/issues/resolved/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)/0291). Instead it diverts the conflicted body to a **shadow file** and leaves the canonical file byte-identical to your repo edit, un-pushed, with the base snapshot un-advanced (so the conflict re-detects every sync until resolved). Each diverted conflict is reported with both paths ([Decision 035](../project/decisions/035-docs-body-sync-via-notion-native-markdown-api.md) §4/§5, the spine sibling of the docs-mirror shadow tree).
 
 - **Shadow path:** `dydo/_system/notion_sync_spine/<type>/<name>.md` (under `_system`, so it is outside every type's own dir and never re-read as a PM row — a diverted conflict can never cascade back through the sync). It is a **sibling** of the docs mirror's `_system/notion_sync/` shadow root, never nested inside it, so the docs mirror's promote pass never sweeps up a spine shadow. The shadow holds the 3-way merge with `<<<<<<< repo` / `>>>>>>> external` markers so both sides are visible.
 
@@ -111,6 +111,21 @@ DYDO_NOTION_TEST_TOKEN=<token> DYDO_NOTION_TEST_PARENT=<page-id> \
 ```
 
 The suite covers, one focused test each: spine provisioning of all seven types with formulas accepted; the 0290 title fallback; the 0291 >100-block create-then-append (whose body also carries a >2000-char run, covering constraint 3); a 3-deep nested list (ns-6); every code-fence language alias; the 0278 FutureFeature title + status options; 0257 reset scoping (scratch reset leaves a second parent's state file untouched); the ns-5 recovery DTO wire shapes (`SearchDataSources` name + `parent.database_id`, `ListViews` names, `RetrieveDatabase` parent); a table + quote + `[!missing]` body round-trip; and the `GuardTableWidth` >100-row abort.
+
+## Live Acceptance Run (2026-07-21, ns-10)
+
+First real-workspace run of the stabilized engine against the actual dydo board (parent `392798c3…`). **8/10 live tests passed on first contact; the harness caught the two the fake could not**, each a wire shape modeled from inference in a previously-dead DTO — fixed against probed ground truth, and the fake was tightened to reject the wrong shape suite-wide:
+
+- **Nested children** must serialize *inside* the type payload (`{type, bulleted_list_item:{…, children}}`), never as a top-level block `children` field (live 400 `body.children[0].children should be not present`).
+- **View list** (`GET /v1/views`) returns id-only refs — names require `RetrieveView(id)`; name-based view adoption now retrieves each.
+- **Search hit** title is a rich-text array under `title`, not a `name` string.
+
+The real-board sync then surfaced live-only constraints the fake still could not see, each fixed:
+
+- **`gate-result` was a `select`** whose values are free-prose verdict sentences containing commas → `Invalid select option, commas not allowed`. Retyped to `rich_text`; the `health` and `attention` formulas read it with dual-case `contains()` (the API formula dialect has no `lower()`, confirmed by live probe).
+- **Field/body equilibrium (four asymmetry classes)**: a full reset+push then `dydo notion sync --dry-run` initially planned rewrites for 196 of 397 records; driven to **zero** by canonicalizing absent==empty==default (checkbox/scalar schema-default echoes), recognizing the synthesized-title echo, preserving the local body on field-only writes, and comparing fields order-insensitively (frontmatter order vs. Notion's canonical echo order). See the ns-10-core commit.
+
+**Result:** `dydo notion sync --dry-run` plans **zero actions across all 397 spine records** — genuine board↔repo equilibrium. Recovery note confirmed live: local files degraded by a mid-debug apply were restored from git and the board rebuilt from repo canon, exactly the sanctioned "reset + git restore" path.
 
 ---
 

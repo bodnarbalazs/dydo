@@ -4,7 +4,8 @@ id: 257
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
+resolved-date: 2026-07-21
 found-by: inquisition
 found-by-agent: Leo
 found-by-vendor: claude
@@ -57,3 +58,5 @@ Fixed by slice ns-1 (notion-stabilization sprint) — the full REDESIGN the reve
 Left OPEN until ns-10's live verification against a real Notion board (fake-backed suite green; the parent-scoping is not itself catchable by `FakeNotionClient` semantics beyond path assertions).
 
 Review-round addendum (2026-07-20): dry-run now previews the legacy state a real run would migrate (no more 'would archive 0' in the upgrade window); migration runs only after the destructive confirm; parent ids are canonicalized (lowercase, dashes stripped) via the shared Sync/ParentPageKey.cs before both the override-equality check and the hash — dashed and undashed forms of one board scope identically.
+
+LIVE-VERIFIED 2026-07-21 (ns-10, Opus 4.8 continuation): `NotionLiveResetScopingTests.ScratchReset_LeavesConfiguredParentStateUntouched` passes against the real workspace, and a full real-board reset this session archived only this parent's databases (the pre-rename orphan included), leaving no other parent's state touched. Closed.

@@ -4,7 +4,8 @@ id: 278
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
+resolved-date: 2026-07-21
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -26,4 +27,8 @@ Live Notion board 2026-07-11 (Future Features board): (1) TITLES - every FutureF
 
 ## Resolution
 
-(Filled when resolved)
+**Titles:** fixed by the same `EnsureTitle` fallback as 0290 — FutureFeature rows now render real titles. LIVE-VERIFIED 2026-07-21 (ns-10, Opus 4.8 continuation): `NotionLiveFutureFeatureTests` passes (FutureFeature provisions with its status options and a created row's title reads back non-empty); the 3 FutureFeature records synced with real titles on the real board.
+
+**Status options:** the model's canonical set is `raw`/`shaping`/`promoted`/`dropped` (the issue text's `idea` was a stale label, reconciled to the model).
+
+**Color half:** WONTFIX per the sprint's locked "option colors are Notion-owned" decision — sync manages option *names* only and never touches colors (drift ignores color); a human recolors once in Notion, and a fresh mint takes the model's create-payload colors. Closed.

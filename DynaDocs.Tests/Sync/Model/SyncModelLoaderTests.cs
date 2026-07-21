@@ -147,11 +147,14 @@ public class SyncModelLoaderTests : IDisposable
         }
         Assert.Contains("gate-result", model.Object("Sprint").Properties["health"].Expression);
 
-        // Canonical gate-result select on Sprint (pass=green, fail=red, no default).
+        // gate-result is free prose (rich_text) since the DR-042 workflow records verdict sentences,
+        // not a pass/fail enum — Notion rejects commas in select options (live 400, ns-10). The health
+        // formula reads it with dual-case contains() — the API formula dialect has no lower() (live probe).
         var gate = model.Object("Sprint").Properties["gate-result"];
-        Assert.Equal(["pass", "fail"], gate.Options!);
-        Assert.Equal("green", gate.Colors!["pass"]);
+        Assert.Equal("rich_text", gate.Type);
+        Assert.Null(gate.Options);
         Assert.False(gate.EngineComputed);
+        Assert.Contains("contains(prop(\"gate-result\"), \"fail\")", model.Object("Sprint").Properties["health"].Expression);
 
         // needs-human COUNT rollups on Sprint and Campaign (DR 030 §1).
         var sprintNeedsHuman = model.Object("Sprint").Properties["needs-human"];

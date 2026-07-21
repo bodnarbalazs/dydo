@@ -183,7 +183,7 @@ public static class ReconcileEngine
             // the stale relation is preserved from the repo AND re-pushed with the merge, never read as a clear the
             // merge would archive on the board (finding 1, concurrent-edit variant).
             return !repoChanged && !hasStale
-                ? WriteToRepoResult(external, repo, baseDoc, externalId, fieldNorm)
+                ? WriteToRepoResult(external, repo, baseDoc, externalId, norm, fieldNorm)
                 : MergeBoth(baseDoc, repo, externalView, fieldNorm);
 
         // repoChanged is a real repo edit; upgradeBody is only the board holding the old converter's projection of an
@@ -227,10 +227,16 @@ public static class ReconcileEngine
 
     /// <summary>Write a one-sided external change back to the repo, overlaying the repo's adapter-invisible fields
     /// so the external side's inability to round-trip them does not blank the file, and recording only the
-    /// round-trippable subset in the base so those fields are not read as an external deletion next tick (§1).</summary>
-    private static ReconcileResult WriteToRepoResult(SyncDoc external, SyncDoc repo, SyncDoc baseDoc, string? externalId, Func<SyncDoc, SyncDoc> fieldNorm)
+    /// round-trippable subset in the base so those fields are not read as an external deletion next tick (§1).
+    /// When the external change is FIELD-only — the bodies are equal modulo the adapter's body round-trip — the
+    /// repo's own body is carried through unchanged, so a field edit never collateral-rewrites the file body into
+    /// the external's normalized dialect (blank-line-stripped, marker-swapped); the external body is written only
+    /// when it genuinely differs (issue 0164, body class).</summary>
+    private static ReconcileResult WriteToRepoResult(SyncDoc external, SyncDoc repo, SyncDoc baseDoc, string? externalId, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
     {
-        var toRepo = OverlayAdapterInvisibleFields(WithSourcePath(external, repo.SourcePath), repo, baseDoc, fieldNorm);
+        var bodyUnchanged = norm(external.Body.Replace("\r\n", "\n")) == norm(repo.Body.Replace("\r\n", "\n"));
+        var source = WithSourcePath(bodyUnchanged ? WithBody(external, repo.Body) : external, repo.SourcePath);
+        var toRepo = OverlayAdapterInvisibleFields(source, repo, baseDoc, fieldNorm);
         return new ReconcileResult
         {
             LocalId = repo.LocalId,
@@ -682,11 +688,21 @@ public static class ReconcileEngine
     {
         if (norm(a.Body.Replace("\r\n", "\n")) != norm(b.Body.Replace("\r\n", "\n")))
             return false;
-        var fa = fieldNorm(a).Fields;
-        var fb = WithoutEmptyEchoesAbsentFrom(fieldNorm(b).Fields, RecordedKeys(a));
+        // Order-INSENSITIVE field compare (issue 0164). Field order is cosmetic — the repo keeps a doc's authored
+        // frontmatter order, while the external echo comes back in NotionPropertyMapper.ToFields' canonical order
+        // (title first, then alphabetical). A pure reorder must not read as a change, or a record whose frontmatter
+        // order differs from that canonical order (e.g. `status` before `needs-human`) churns WriteToRepo every tick
+        // — reordering the file and dragging in the title/empty-key rewrite side-effects. Sort both sides by
+        // (key, value) so the same field set compares equal regardless of order, while a genuine value/key
+        // difference still registers.
+        var fa = Sorted(fieldNorm(a).Fields);
+        var fb = Sorted(WithoutEmptyEchoesAbsentFrom(fieldNorm(b).Fields, RecordedKeys(a)));
         return fa.Count == fb.Count
             && fa.Zip(fb).All(p => p.First.Key == p.Second.Key && p.First.Value == p.Second.Value);
     }
+
+    private static List<SyncField> Sorted(IEnumerable<SyncField> fields) =>
+        fields.OrderBy(f => f.Key, StringComparer.Ordinal).ThenBy(f => f.Value, StringComparer.Ordinal).ToList();
 
     /// <summary>The keys the base actually RECORDED — read from its RAW snapshot fields, not a re-normalization
     /// against the CURRENT relation maps (finding 4). The base is stored already-normalized, so `a.Fields` is

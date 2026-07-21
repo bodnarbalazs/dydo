@@ -76,17 +76,16 @@
         "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" },
         "start": { "type": "date" },
         "end": { "type": "date" },
-        "gate-result": { "type": "select", "options": ["pass", "fail"],
-          "colors": { "pass": "green", "fail": "red" } },
+        "gate-result": { "type": "rich_text" },
         "done": { "type": "formula", "expression": "prop(\"status\") == \"done\"" },
         "progress": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "done", "rollupFunction": "percent_checked" },
         "needs-human": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "needs-human", "rollupFunction": "checked" },
         "needs-human-count": { "type": "formula", "expression": "prop(\"needs-human\")", "hidden": true },
         "attention-count": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "attention", "rollupFunction": "checked", "hidden": true },
         "health": { "type": "formula",
-          "expression": "if(or(prop(\"gate-result\") == \"fail\", and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1))), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\"))" },
+          "expression": "if(or(or(contains(prop(\"gate-result\"), \"fail\"), contains(prop(\"gate-result\"), \"FAIL\")), and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1))), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\"))" },
         "attention": { "type": "formula",
-          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"status\") == \"escalated\", or(prop(\"attention-count\") > 0, if(or(prop(\"gate-result\") == \"fail\", and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1))), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\")) != \"On Track\")))" }
+          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"status\") == \"escalated\", or(prop(\"attention-count\") > 0, if(or(or(contains(prop(\"gate-result\"), \"fail\"), contains(prop(\"gate-result\"), \"FAIL\")), and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1))), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\")) != \"On Track\")))" }
       },
       "views": [
         { "name": "Board", "type": "board", "groupBy": "status" },

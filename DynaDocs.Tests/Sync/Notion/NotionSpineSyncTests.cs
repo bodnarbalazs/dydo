@@ -98,6 +98,30 @@ public class NotionSpineSyncTests : IDisposable
     }
 
     [Fact]
+    public void Run_BodyEndingInQuote_IsIdempotent_NoBodyDrift()
+    {
+        // Issue 0164 (body class): the mass-closed records whose body ENDS IN A QUOTE. Through the full spine
+        // pipeline — provision, push (block-convert), read-back (FromBlocks), reconcile — the canonical file must
+        // stay byte-identical across passes; a quote at end-of-document must round-trip without churning the body.
+        Seed("project/slices/git-status",
+            "---\ntitle: Git Status\nstatus: done\n---\n\n# Task: git-status\n\n(No description)\n\n## Progress\n\n"
+            + "- [ ] (Not started)\n\n## Files Changed\n\n(None yet)\n\n## Review Summary\n\n(Pending)\n\n"
+            + "> Mass-closed 2026-07-16 (DR-041 campaign wrap-up): pre-campaign roster-era task; the work either "
+            + "landed before the pivot or was abandoned with the roster. See git history.\n");
+        var path = Path.Combine(_dydoRoot, "project", "slices", "git-status.md");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // provision + create
+        var before = File.ReadAllText(path);
+
+        for (var pass = 0; pass < 2; pass++)
+        {
+            NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+            Assert.Equal(before, File.ReadAllText(path)); // byte-identical, no body drift
+        }
+    }
+
+    [Fact]
     public void Run_SecondPass_IsIdempotent_NoNewDatabasesOrPages()
     {
         var client = new FakeNotionClient();

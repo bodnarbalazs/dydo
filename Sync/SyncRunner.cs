@@ -76,7 +76,7 @@ public sealed class SyncRunner
             var baseDoc = _base.Get(localId);
             repoByLocalId.TryGetValue(localId, out var repo);
             externalByLocalId.TryGetValue(localId, out var external);
-            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure));
+            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho));
         }
         return results;
     }
@@ -120,7 +120,7 @@ public sealed class SyncRunner
             repoByLocalId.TryGetValue(localId, out var repo);
             externalByLocalId.TryGetValue(localId, out var external);
 
-            var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure);
+            var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho);
             results.Add(result);
             RecordActivity(result, repo);
             RouteConflictToShadow(result, shadowed);

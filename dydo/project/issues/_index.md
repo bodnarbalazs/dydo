@@ -81,6 +81,7 @@ Index of issues documentation.
 - [Guard never sees codex shell commands - PreToolUse matcher lists Claude tool names, codex uses shell_command (unguarded shell for every codex agent)](./0295-guard-never-sees-codex-shell-commands-pretooluse-matcher-lists-claude-tool-names.md) - Empirically proven: a codex worker cat'd an off-limits agent state file and got the contents.
 - [Dispatch preflight falsely reports the codex guard as trusted/active when codex has silently disabled it (dydo cannot compute codex's opaque hook hash)](./0296-dispatch-preflight-falsely-reports-the-codex-guard-as-trusted-active-when-codex.md) - Codex trusts hooks by an opaque per-entry hash dydo can't reproduce; any change to .
 - [Docs mirror CreatePage lost blind 5xx retry and has no adoption recovery](./0297-docs-mirror-createpage-lost-blind-5xx-retry-and-has-no-adoption-recovery.md) - An ambiguous create failure in the docs-mirror page adapter can orphan a child page that duplicates on the next tick.
+- [NotionBlockConverter: single-line paragraph past ~100 rich_text runs does not converge](./0298-notionblockconverter-single-line-paragraph-past-100-rich-text-runs-does-not-conv.md) - The per-block rich_text overflow (ns-7 item 1) splits a >200KB single logical line into sibling paragraph blocks; the join newline re-parses into t...
 
 ## Subfolders
 

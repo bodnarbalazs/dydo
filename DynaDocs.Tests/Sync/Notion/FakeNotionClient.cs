@@ -354,6 +354,8 @@ public sealed class FakeNotionClient : INotionClient
         }
         if (request.Children?.Count > 100)
             throw new NotionApiException(400, "body failed validation: body.children.length should be <= 100");
+        if (request.Children is { Count: > 0 })
+            GuardTableRowCap(request.Children);
         if (CreatePageFailsAmbiguously)
         {
             CreatePageFailsAmbiguously = false;
@@ -522,6 +524,7 @@ public sealed class FakeNotionClient : INotionClient
             // enforce the invariant for free, so a depth-cut regression fails loudly instead of silently over-nesting.
             if (depth > 2)
                 throw new NotionApiException(400, $"body.children nested {depth} deep exceeds Notion's 2-level cap");
+            GuardTableRowCap(request.Children);
         }
         _blocks.TryAdd(blockId, []);
         // Notion's append response returns only the ids of the blocks appended at the TOP level — never a nested
@@ -532,12 +535,25 @@ public sealed class FakeNotionClient : INotionClient
 
     /// <summary>Persist a block under <paramref name="parentId"/>, minting its id and recursively storing any inline
     /// children under it, so a nested payload lands as the same id-keyed tree real Notion builds — and the stored
-    /// block is left childless (its children reachable via its own id), matching what GetBlockChildren returns.</summary>
+    /// block is left childless (its children reachable via its own id), matching what GetBlockChildren returns. A
+    /// TABLE carries its rows in the table payload (Table.Children); Notion persists them as the table block's own
+    /// children and returns them via GetBlockChildren, so move them under the table's id and store a childless table
+    /// payload — the exact read shape RenderTable's block-children fallback consumes.</summary>
     private string Store(string parentId, NotionBlock block)
     {
         block.Id ??= $"block-{_nextBlock++}";
         var inline = block.Children;
         block.Children = null;
+        if (inline == null && block.Table?.Children is { Count: > 0 } rows)
+        {
+            inline = rows;
+            block.Table = new NotionTable
+            {
+                TableWidth = block.Table.TableWidth,
+                HasColumnHeader = block.Table.HasColumnHeader,
+                HasRowHeader = block.Table.HasRowHeader,
+            };
+        }
         _blocks.TryAdd(parentId, []);
         _blocks[parentId].Add(block);
         if (inline is { Count: > 0 })
@@ -550,9 +566,28 @@ public sealed class FakeNotionClient : INotionClient
     }
 
     /// <summary>The nesting depth of a children payload as sent (a flat list is 1, a block carrying leaf children
-    /// is 2) — computed before <see cref="Store"/> flattens it.</summary>
+    /// is 2) — computed before <see cref="Store"/> flattens it. A table's rows live in the table payload, one level
+    /// below the table, so they count toward depth just like block children — a table nested under a list item thus
+    /// reads as depth 3 and trips the 2-level guard, exactly as real Notion would.</summary>
     private static int BlockDepth(IReadOnlyList<NotionBlock> blocks) =>
-        blocks.Count == 0 ? 0 : 1 + blocks.Max(b => b.Children is { Count: > 0 } c ? BlockDepth(c) : 0);
+        blocks.Count == 0 ? 0 : 1 + blocks.Max(ChildDepth);
+
+    private static int ChildDepth(NotionBlock block) =>
+        (block.Children ?? block.Table?.Children) is { Count: > 0 } c ? BlockDepth(c) : 0;
+
+    /// <summary>Throw Notion's 400 if any table in the payload carries more rows than a single children array holds —
+    /// the table-payload counterpart to the top-level ≤100 check, so a row-cap regression fails loudly in tests.</summary>
+    private static void GuardTableRowCap(IReadOnlyList<NotionBlock> blocks)
+    {
+        foreach (var block in blocks)
+        {
+            if (block.Table?.Children is { Count: > 100 } rows)
+                throw new NotionApiException(400,
+                    $"table_row children array length {rows.Count} should be <= 100");
+            if (block.Children is { Count: > 0 } c)
+                GuardTableRowCap(c);
+        }
+    }
 
     public void DeleteBlock(string blockId)
     {

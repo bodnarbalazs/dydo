@@ -1223,4 +1223,49 @@ public class ReconcileEngineTests
         Assert.Null(result.RepoWrite.GetField("sprint"));         // raw page id NOT written to frontmatter
         Assert.Null(result.NewBase!.GetField("sprint"));          // nor recorded in the base
     }
+
+    // ── ns-7 blocker: converter-migration shim ────────────────────────────────────────────────────
+
+    // The board holds "degraded" (the old converter's projection of the canonical "canonical" body); the shim maps
+    // that pair to true. Identity body normalizer keeps the two visibly distinct so the drift is real.
+    private static bool StaleEcho(string external, string @base) => external == "degraded" && @base == "canonical";
+
+    [Fact]
+    public void StaleConverterEcho_ForcesRepoUpgradePush_NeverOverwritesTheCanonicalFile()
+    {
+        var b = Doc("t", "canonical", ("status", "open"));
+        var repo = Doc("t", "canonical", ("status", "open"));
+        var ext = Doc("t", "degraded", ("status", "open")); // board still on the old converter's rendering
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, staleConverterEcho: StaleEcho);
+
+        Assert.Equal(ReconcileAction.PushToExternal, result.Action); // repo wins → board re-rendered
+        Assert.Equal("canonical", result.ExternalWrite!.Body);       // the canonical body, not the degraded echo
+        Assert.Null(result.RepoWrite);                               // the file is NOT overwritten
+        Assert.False(result.RepoChanged);                            // a migration, not a user edit — no activity bump
+    }
+
+    [Fact]
+    public void GenuineBoardBodyEdit_NotClassifiedStale_WritesToRepoAsUsual()
+    {
+        var b = Doc("t", "canonical", ("status", "open"));
+        var repo = Doc("t", "canonical", ("status", "open"));
+        var ext = Doc("t", "a real human board edit", ("status", "open"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, staleConverterEcho: StaleEcho);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("a real human board edit", result.RepoWrite!.Body);
+    }
+
+    [Fact]
+    public void AlreadyUpgradedBody_DoesNotChurn_EvenIfPredicateWouldMatch()
+    {
+        // The predicate is only consulted when the body genuinely drifts under the normalizer; an unchanged body
+        // (board already on the new converter) stays a no-op, never a perpetual upgrade push.
+        var b = Doc("t", "canonical", ("status", "open"));
+        var result = ReconcileEngine.Reconcile(b, Doc("t", "canonical", ("status", "open")),
+            Doc("t", "canonical", ("status", "open")), staleConverterEcho: static (_, _) => true);
+        Assert.Equal(ReconcileAction.None, result.Action);
+    }
 }

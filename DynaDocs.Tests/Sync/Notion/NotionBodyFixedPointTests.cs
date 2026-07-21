@@ -47,6 +47,45 @@ public class NotionBodyFixedPointTests
             + string.Join("\n", drifting));
     }
 
+    /// <summary>The ns-7 migration bar: a board synced by the ns-6 converter holds the OLD projection of each
+    /// record body. Read back and normalized under the NEW converter it may diverge from the new normalization of
+    /// the canonical body — which would overwrite the file. For EVERY synced record the shim must hold: either the
+    /// old echo already normalizes equal to the body, OR the adapter classifies that echo as a stale converter echo
+    /// (so the reconcile force-pushes the repo body instead of clobbering it). Mirrors the reviewer's strong sweep.</summary>
+    [Fact]
+    public void EverySyncedRecordBody_MigratesCleanlyOrIsShimClassifiedUnchanged()
+    {
+        var adapter = new NotionSyncAdapter(new FakeNotionClient(), "ds1");
+        // Control: the classifier is not vacuously true — a genuine board edit is NOT a stale echo.
+        Assert.False(adapter.IsStaleConverterEcho("a genuine human board edit", "canonical base body"));
+
+        var root = FindRepoRoot();
+        var model = File.ReadAllText(Path.Combine(root, "dydo", "_system", "sync-model.json"));
+        var dirs = Regex.Matches(model, "\"dir\"\\s*:\\s*\"([^\"]+)\"").Select(m => m.Groups[1].Value).ToList();
+
+        var offenders = new List<string>();
+        var swept = 0;
+        foreach (var dir in dirs)
+        {
+            var full = Path.Combine(root, "dydo", dir);
+            if (!Directory.Exists(full))
+                continue;
+            foreach (var file in Directory.EnumerateFiles(full, "*.md", SearchOption.AllDirectories))
+            {
+                var body = SyncDocFile.Read(file, "probe", file).Body;
+                swept++;
+                var legacyEcho = NotionLegacyEcho.Render(body); // what the pre-ns-7 board still holds for this record
+                if (Norm(legacyEcho) != Norm(body) && !adapter.IsStaleConverterEcho(legacyEcho, body))
+                    offenders.Add(Path.GetRelativePath(root, file));
+            }
+        }
+
+        Assert.True(swept > 0, "swept no record bodies — repo root resolution is wrong");
+        Assert.True(offenders.Count == 0,
+            $"{offenders.Count} record(s) whose pre-ns-7 board echo neither normalizes to the body nor is caught by "
+            + "the migration shim — the first sync would overwrite the canonical file:\n" + string.Join("\n", offenders));
+    }
+
     [Theory]
     [InlineData("para above a rule\n---\nmore text")]        // setext OFF: the --- stays with the paragraph, never a heading
     [InlineData("    code line 1\n    code line 2")]           // an indented code block stays verbatim, never a fence

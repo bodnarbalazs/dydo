@@ -2,6 +2,7 @@ namespace DynaDocs.Sync.Notion;
 
 using System.Text;
 using Markdig;
+using Markdig.Extensions.Tables;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using DynaDocs.Sync.Notion.Dtos;
@@ -21,9 +22,20 @@ public static class NotionBlockConverter
     {
         var text = markdown.Replace("\r\n", "\n");
         var document = Markdown.Parse(text, Pipeline);
+        return ConvertSiblings([.. document], text, nested: false);
+    }
+
+    /// <summary>Convert a run of sibling blocks, passing each block the start of the NEXT sibling as a span clamp.
+    /// Markdig can over-extend a paragraph's span across a following block it did not consume (a pipe table flush
+    /// against the paragraph, no blank line between), so slicing that span raw would carry the table's text into the
+    /// paragraph AND emit the table block — duplicating it and growing the body every normalization. Clamping at the
+    /// next sibling's start closes that hole at every level (document and nested), the same guard <see cref="SplitItem"/>
+    /// applies to a list item's own paragraph.</summary>
+    private static List<NotionBlock> ConvertSiblings(IReadOnlyList<Block> nodes, string src, bool nested)
+    {
         var blocks = new List<NotionBlock>();
-        foreach (var node in document)
-            blocks.AddRange(Convert(node, text, nested: false));
+        for (var i = 0; i < nodes.Count; i++)
+            blocks.AddRange(Convert(nodes[i], src, nested, i + 1 < nodes.Count ? nodes[i + 1].Span.Start : -1));
         return blocks;
     }
 
@@ -36,6 +48,7 @@ public static class NotionBlockConverter
     private static MarkdownPipeline BuildPipeline()
     {
         var builder = new MarkdownPipelineBuilder();
+        builder.UsePipeTables();
         builder.BlockParsers.Find<ParagraphBlockParser>()!.ParseSetexHeadings = false;
         return builder.Build();
     }
@@ -51,22 +64,20 @@ public static class NotionBlockConverter
     /// indent prefix. A nested multi-line paragraph must have its continuation-line indentation stripped or the
     /// prefix would double it every normalization (runaway indent); a top-level paragraph keeps its lines verbatim,
     /// matching the old converter and staying idempotent (an indented line there is stable prose, not re-indented).</param>
-    private static List<NotionBlock> Convert(Block node, string src, bool nested)
+    private static List<NotionBlock> Convert(Block node, string src, bool nested, int clampEnd)
     {
         switch (node)
         {
-            // H1–H3 map to the matching Notion heading; H4+ has no Notion equivalent this sprint (the clamp to
-            // heading_3 is ns-7), so it degrades to a verbatim paragraph, exactly as the prior line converter did.
-            case HeadingBlock heading when heading.Level is >= 1 and <= 3:
-            {
-                var body = Body(StripHeadingMarker(Slice(heading, src)));
-                return heading.Level switch
-                {
-                    1 => [new NotionBlock { Type = "heading_1", Heading1 = body }],
-                    2 => [new NotionBlock { Type = "heading_2", Heading2 = body }],
-                    _ => [new NotionBlock { Type = "heading_3", Heading3 = body }],
-                };
-            }
+            // H1–H3 map to the matching Notion heading; H4–H6 clamp to heading_3 (ns-7 item 5) — see ConvertHeading.
+            case HeadingBlock heading when heading.Level is >= 1 and <= 6:
+                return [ConvertHeading(heading, src)];
+            // A blockquote becomes a Notion quote block: its first paragraph fills the quote's own rich_text
+            // (else Notion renders "Empty quote"), any remaining blocks become children. Re-parsing the quote's
+            // inner content keeps inline markers verbatim like every other block (ns-7 item 4).
+            case QuoteBlock quote:
+                return [QuoteBlock(quote, src)];
+            case Table table:
+                return [TableBlock(table, src)];
             // Only a FENCED code block becomes a Notion code block. An INDENTED code block (a plain CodeBlock —
             // FencedCodeBlock, its subtype, is matched here first) has no Notion equivalent and the old line
             // converter kept those lines verbatim, so it falls through to a verbatim paragraph — which also keeps
@@ -79,39 +90,160 @@ public static class NotionBlockConverter
             case CodeBlock code:
                 return [new NotionBlock { Type = "paragraph", Paragraph = Body(Slice(code, src).TrimEnd('\n')) }];
             case ListBlock list:
-            {
-                // An ordered list whose item numbers are not exactly 1..n (a run starting ≠1, or with gaps) cannot
-                // round-trip as numbered_list_item — Notion stores no ordinal, so FromBlocks re-sequences from 1 and
-                // would rewrite the original numbers. Such a run stays verbatim paragraph lines, matching the old
-                // converter's echo; only a clean 1..n run becomes real numbered items.
-                if (list.IsOrdered && !IsSequentialFromOne(list))
-                    return VerbatimOrderedItems(list, src);
-                var items = new List<NotionBlock>();
-                foreach (var child in list)
-                    if (child is ListItemBlock item)
-                        items.Add(ConvertListItem(item, list.IsOrdered, src));
-                return items;
-            }
+                return ConvertList(list, src);
             default:
-                var span = Slice(node, src);
-                return [new NotionBlock { Type = "paragraph", Paragraph = Body(nested ? CleanText(span) : span) }];
+                var text = ClampedSlice(node, clampEnd, src);
+                return ParagraphBlocks(nested ? CleanText(text) : text);
         }
+    }
+
+    private static NotionBlock ConvertHeading(HeadingBlock heading, string src)
+    {
+        var body = Body(StripHeadingMarker(Slice(heading, src)));
+        return heading.Level switch
+        {
+            1 => new NotionBlock { Type = "heading_1", Heading1 = body },
+            2 => new NotionBlock { Type = "heading_2", Heading2 = body },
+            _ => new NotionBlock { Type = "heading_3", Heading3 = body },
+        };
+    }
+
+    /// <summary>Convert a list. An ordered list whose item numbers are not exactly 1..n (a run starting ≠1, or with
+    /// gaps) cannot round-trip as numbered_list_item — Notion stores no ordinal, so FromBlocks re-sequences from 1
+    /// and would rewrite the original numbers. Such a run stays verbatim paragraph lines, matching the old
+    /// converter's echo; only a clean 1..n run becomes real numbered items.</summary>
+    private static List<NotionBlock> ConvertList(ListBlock list, string src)
+    {
+        if (list.IsOrdered && !IsSequentialFromOne(list))
+            return VerbatimOrderedItems(list, src);
+        var items = new List<NotionBlock>();
+        foreach (var child in list)
+            if (child is ListItemBlock item)
+                items.Add(ConvertListItem(item, list.IsOrdered, src));
+        return items;
+    }
+
+    /// <summary>Notion rejects a block whose rich_text array exceeds ~100 runs with a 400. A paragraph long
+    /// enough to split into more than that (200KB+ of unbroken text) is emitted across sibling paragraph blocks
+    /// of ≤100 runs each — the ecosystem's overflow rule (survey: "overflowing into sibling paragraphs, not
+    /// truncation").
+    /// <para>KNOWN INSTABILITY: for a single logical line this long, the sibling split inserts a join newline that
+    /// the next parse absorbs into the paragraph and re-splits at a shifted boundary — so such a body does NOT
+    /// converge to a fixed point (it oscillates), unlike everything else the converter emits. No synced record comes
+    /// within orders of magnitude of ~100 runs, so this is unreachable in practice and the fixed-point sweep never
+    /// exercises it; documented and pinned by a converter test, tracked as issue 0298.</para></summary>
+    private const int MaxRichTextPerBlock = 100;
+
+    private static List<NotionBlock> ParagraphBlocks(string text)
+    {
+        var runs = NotionRichText.Of(text);
+        if (runs.Count <= MaxRichTextPerBlock)
+            return [new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = runs } }];
+
+        var blocks = new List<NotionBlock>();
+        for (var i = 0; i < runs.Count; i += MaxRichTextPerBlock)
+            blocks.Add(new NotionBlock
+            {
+                Type = "paragraph",
+                Paragraph = new NotionBlockBody { RichText = runs.GetRange(i, Math.Min(MaxRichTextPerBlock, runs.Count - i)) },
+            });
+        return blocks;
+    }
+
+    /// <summary>Convert a blockquote to a Notion quote block. The quote's inner content is re-parsed (its <c>&gt;</c>
+    /// markers stripped) so nested structure and inline markers convert exactly as top-level content does; the first
+    /// paragraph becomes the quote's own rich_text and the rest become children.</summary>
+    private static NotionBlock QuoteBlock(QuoteBlock quote, string src)
+    {
+        var inner = ToBlocks(StripQuoteMarkers(Slice(quote, src)));
+        NotionBlockBody body;
+        List<NotionBlock> children;
+        if (inner.Count > 0 && inner[0].Type == "paragraph")
+        {
+            body = inner[0].Paragraph!;
+            children = inner.Skip(1).ToList();
+        }
+        else
+        {
+            body = Body("");
+            children = inner;
+        }
+        return new NotionBlock { Type = "quote", Quote = body, Children = children.Count > 0 ? children : null };
+    }
+
+    /// <summary>Convert a markdown pipe table to a Notion table block: <c>table_width</c> is the widest row, short
+    /// rows pad with empty cells, and every recognised markdown table carries a header row (GFM requires the
+    /// separator), so <c>has_column_header</c> is set. Cell text is sliced raw so inline markers stay verbatim.
+    /// The rows land in the table payload's own children (Notion's nesting for tables).</summary>
+    private static NotionBlock TableBlock(Table table, string src)
+    {
+        var rows = new List<List<string>>();
+        foreach (var child in table)
+            if (child is TableRow row)
+                rows.Add(row.Select(cell => CellText((TableCell)cell, src)).ToList());
+
+        var width = rows.Count == 0 ? 0 : rows.Max(r => r.Count);
+        var rowBlocks = rows.Select(cells => new NotionBlock
+        {
+            Type = "table_row",
+            TableRow = new NotionTableRow
+            {
+                Cells = Enumerable.Range(0, width)
+                    .Select(i => NotionRichText.Of(i < cells.Count ? cells[i] : ""))
+                    .ToList(),
+            },
+        }).ToList();
+
+        return new NotionBlock
+        {
+            Type = "table",
+            Table = new NotionTable
+            {
+                TableWidth = width,
+                HasColumnHeader = true,
+                HasRowHeader = false,
+                Children = rowBlocks,
+            },
+        };
+    }
+
+    /// <summary>A table cell's verbatim text — sliced from its paragraph's raw source (keeping inline markers) with
+    /// surrounding cell padding trimmed and any soft-wrap collapsed to a space.</summary>
+    private static string CellText(TableCell cell, string src)
+    {
+        var paragraph = cell.Descendants<ParagraphBlock>().FirstOrDefault();
+        var raw = paragraph != null ? Slice(paragraph, src) : Slice(cell, src);
+        return raw.Replace('\n', ' ').Trim();
+    }
+
+    /// <summary>Strip one leading <c>&gt;</c> quote marker (and its optional single space) from every line, leaving
+    /// the quote's inner markdown to be re-parsed. A lazy-continuation line without a marker is kept as-is.</summary>
+    private static string StripQuoteMarkers(string raw)
+    {
+        var lines = raw.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i];
+            var j = 0;
+            while (j < line.Length && line[j] == ' ')
+                j++;
+            if (j < line.Length && line[j] == '>')
+            {
+                j++;
+                if (j < line.Length && line[j] == ' ')
+                    j++;
+                lines[i] = line[j..];
+            }
+        }
+        return string.Join('\n', lines);
     }
 
     /// <summary>A list item's own text is its first paragraph; every following child block — chiefly a nested
     /// sub-list — becomes the item's <c>children</c>, so an indented list lands as a real hierarchy.</summary>
     private static NotionBlock ConvertListItem(ListItemBlock item, bool ordered, string src)
     {
-        string? text = null;
-        var children = new List<NotionBlock>();
-        foreach (var child in item)
-        {
-            if (text == null && child is ParagraphBlock paragraph)
-                text = CleanText(Slice(paragraph, src));
-            else
-                children.AddRange(Convert(child, src, nested: true));
-        }
-        var body = Body(text ?? "");
+        var (text, children) = SplitItem(item, src);
+        var body = Body(text);
         return new NotionBlock
         {
             Type = ordered ? "numbered_list_item" : "bulleted_list_item",
@@ -119,6 +251,45 @@ public static class NotionBlockConverter
             NumberedListItem = ordered ? body : null,
             Children = children.Count > 0 ? children : null,
         };
+    }
+
+    /// <summary>Split a list item into its first-paragraph text and its remaining child blocks. The paragraph text
+    /// is sliced from its span CLAMPED to the start of the next sibling block: Markdig's paragraph span can
+    /// over-cover a following sibling (an indented pipe table stays inside the paragraph's span while ALSO parsing as
+    /// its own Table child), and slicing the raw span would carry that block's text into the item's rich_text AND
+    /// emit the block, duplicating it and growing the body every normalization. Continuation-line indentation is
+    /// then cleaned as before.</summary>
+    private static (string Text, List<NotionBlock> Children) SplitItem(ListItemBlock item, string src)
+    {
+        var blocks = new List<Block>(item);
+        var firstParagraph = blocks.FindIndex(b => b is ParagraphBlock);
+        var text = "";
+        var children = new List<NotionBlock>();
+        for (var i = 0; i < blocks.Count; i++)
+        {
+            var clampEnd = i + 1 < blocks.Count ? blocks[i + 1].Span.Start : -1;
+            if (i == firstParagraph)
+                text = CleanText(ClampedSlice(blocks[i], clampEnd, src));
+            else
+                children.AddRange(Convert(blocks[i], src, nested: true, clampEnd));
+        }
+        return (text, children);
+    }
+
+    /// <summary>Slice a block's source span, but end no later than <paramref name="clampEnd"/> (the next sibling
+    /// block's start, or -1 for none). Clamps ONLY when the next sibling begins before this span ends — i.e. Markdig
+    /// over-extended the span across a block it did not consume — trimming the trailing whitespace/newlines the clamp
+    /// exposes; an un-over-covered block keeps its raw span verbatim (the prior behaviour, so a hard line break's
+    /// trailing spaces are untouched).</summary>
+    private static string ClampedSlice(Block block, int clampEnd, string src)
+    {
+        var start = block.Span.Start;
+        if (start < 0 || start >= src.Length)
+            return "";
+        var end = block.Span.End + 1;
+        if (clampEnd >= 0 && clampEnd < end)
+            return src[start..clampEnd].TrimEnd('\n', ' ', '\t');
+        return src[start..Math.Min(end, src.Length)];
     }
 
     /// <summary>Whether an ordered list's items are exactly 1, 2, 3, …, n — the only shape that round-trips as
@@ -144,20 +315,12 @@ public static class NotionBlockConverter
         {
             if (child is not ListItemBlock item)
                 continue;
-            string? text = null;
-            var children = new List<NotionBlock>();
-            foreach (var sub in item)
-            {
-                if (text == null && sub is ParagraphBlock paragraph)
-                    text = CleanText(Slice(paragraph, src));
-                else
-                    children.AddRange(Convert(sub, src, nested: true));
-            }
+            var (text, children) = SplitItem(item, src);
             var marker = item.Order + list.OrderedDelimiter.ToString() + " ";
             result.Add(new NotionBlock
             {
                 Type = "paragraph",
-                Paragraph = Body(marker + (text ?? "")),
+                Paragraph = Body(marker + text),
                 Children = children.Count > 0 ? children : null,
             });
         }
@@ -174,6 +337,23 @@ public static class NotionBlockConverter
             // A child_page block is a nested sub-page (DR 033), not body content — never rendered into a body.
             if (block.Type == "child_page")
                 continue;
+            // Quotes and tables own their children (quote continuations, table rows), so they render whole here.
+            // Quotes, tables AND the [!missing] marker (itself a quote on re-parse) must be fenced by blank lines:
+            // a block rendered flush against a quote is swallowed as a lazy continuation on the next parse, and a
+            // pipe table is only recognised when a blank line precedes it — either way the round-trip would drift.
+            if (!IsLineRendered(block.Type))
+            {
+                EnsureBlankSeparator(sb, prefix);
+                if (block.Type == "quote")
+                    RenderQuote(sb, block, prefix);
+                else if (block.Type == "table")
+                    RenderTable(sb, block, prefix);
+                else
+                    sb.Append(prefix).Append(BlockToLine(block, 0)).Append('\n'); // unsupported type → [!missing] marker
+                EnsureBlankSeparator(sb, prefix);
+                number = 0;
+                continue;
+            }
             number = block.Type == "numbered_list_item" ? number + 1 : 0;
             // Prefix EVERY physical line, not just the first: a multi-line block (a code fence, a soft-wrapped
             // paragraph) nested under a list item must carry the indent on all its lines, or the un-indented
@@ -185,15 +365,101 @@ public static class NotionBlockConverter
         }
     }
 
+    /// <summary>Block types that render as one (or a few) plain indented markdown lines via <see cref="BlockToLine"/>,
+    /// as opposed to the blank-fenced whole-block path (quote, table) or a swallow-prone unsupported-type marker.
+    /// child_page is filtered before this set is consulted.</summary>
+    private static readonly HashSet<string> LineRenderedTypes = new(StringComparer.Ordinal)
+    {
+        "paragraph", "heading_1", "heading_2", "heading_3", "bulleted_list_item", "numbered_list_item", "code",
+    };
+
+    private static bool IsLineRendered(string type) => LineRenderedTypes.Contains(type);
+
+    /// <summary>Ensure the buffer ends with a blank line separator (an empty line) so a following block cannot merge
+    /// into a quote or table. A no-op at the very start and when a blank line is already present, so it never stacks
+    /// blanks — keeping the render a fixed point.</summary>
+    private static void EnsureBlankSeparator(StringBuilder sb, string prefix)
+    {
+        if (sb.Length == 0)
+            return;
+        if (sb.Length >= 2 && sb[^1] == '\n' && sb[^2] == '\n')
+            return;
+        sb.Append(prefix).Append('\n');
+    }
+
+    /// <summary>Render a quote block back to a markdown blockquote. The first paragraph (the quote's own rich_text)
+    /// and each child block are rendered independently and joined with a blank line, then every line is prefixed
+    /// with <c>&gt; </c> (a blank line becomes a bare <c>&gt;</c>) — so a multi-paragraph quote keeps its separators
+    /// and round-trips exactly.</summary>
+    private static void RenderQuote(StringBuilder sb, NotionBlock block, string prefix)
+    {
+        var inner = new List<NotionBlock>();
+        if (block.Quote is { } quote && NotionRichText.Flatten(quote.RichText).Length > 0)
+            inner.Add(new NotionBlock { Type = "paragraph", Paragraph = quote });
+        if (block.Children is { Count: > 0 } children)
+            inner.AddRange(children);
+
+        var parts = inner.Select(b =>
+        {
+            var buffer = new StringBuilder();
+            Render(buffer, [b], "");
+            return buffer.ToString().TrimEnd('\n');
+        });
+        var content = string.Join("\n\n", parts);
+        if (content.Length == 0)
+        {
+            sb.Append(prefix).Append('>').Append('\n');
+            return;
+        }
+        foreach (var line in content.Split('\n'))
+            sb.Append(prefix).Append(line.Length == 0 ? ">" : "> " + line).Append('\n');
+    }
+
+    /// <summary>Render a table block back to a GFM pipe table: the first row plus a <c>| --- |</c> separator, then
+    /// the remaining rows, every row padded to <c>table_width</c>. Rows come from the table payload's children on
+    /// write and from the block's generic children on read (Notion returns them via GetBlockChildren).</summary>
+    private static void RenderTable(StringBuilder sb, NotionBlock block, string prefix)
+    {
+        var rows = block.Table?.Children ?? block.Children ?? [];
+        var width = block.Table?.TableWidth is { } w and > 0
+            ? w
+            : rows.Count == 0 ? 0 : rows.Max(r => r.TableRow?.Cells.Count ?? 0);
+        if (rows.Count == 0 || width == 0)
+            return;
+
+        for (var i = 0; i < rows.Count; i++)
+        {
+            sb.Append(prefix).Append(RenderRow(rows[i], width)).Append('\n');
+            if (i == 0)
+                sb.Append(prefix).Append("| ").Append(string.Join(" | ", Enumerable.Repeat("---", width)))
+                    .Append(" |").Append('\n');
+        }
+    }
+
+    private static string RenderRow(NotionBlock row, int width)
+    {
+        var cells = row.TableRow?.Cells ?? [];
+        var texts = Enumerable.Range(0, width).Select(i => i < cells.Count ? NotionRichText.Flatten(cells[i]) : "");
+        return "| " + string.Join(" | ", texts) + " |";
+    }
+
     private static string BlockToLine(NotionBlock block, int number) => block.Type switch
+    {
+        "bulleted_list_item" => "- " + Text(block.BulletedListItem),
+        "numbered_list_item" => number + ". " + Text(block.NumberedListItem),
+        "code" => Fence(block.Code),
+        "paragraph" => Text(block.Paragraph),
+        _ => HeadingOrMissingLine(block),
+    };
+
+    private static string HeadingOrMissingLine(NotionBlock block) => block.Type switch
     {
         "heading_1" => "# " + Text(block.Heading1),
         "heading_2" => "## " + Text(block.Heading2),
         "heading_3" => "### " + Text(block.Heading3),
-        "bulleted_list_item" => "- " + Text(block.BulletedListItem),
-        "numbered_list_item" => number + ". " + Text(block.NumberedListItem),
-        "code" => Fence(block.Code),
-        _ => Text(block.Paragraph),
+        // An unsupported Notion block type (image, divider, callout, …) renders as a visible marker instead of a
+        // silent drop, so lost content is deterministic text that hashes stably (ns-7 item 6, ns-8 depends on it).
+        _ => "> [!missing] " + block.Type,
     };
 
     /// <summary>The indentation a child list needs to nest under its parent item — the width of the parent's list
@@ -288,7 +554,7 @@ public static class NotionBlockConverter
         ["cpp"] = "c++",
         ["fsharp"] = "f#",
         ["py"] = "python",
-        ["js"] = "javascript",
+        ["js"] = "javascript", ["node"] = "javascript",
         ["ts"] = "typescript",
         ["yml"] = "yaml",
         ["sh"] = "shell", ["zsh"] = "shell", ["console"] = "shell", ["shell-session"] = "shell",

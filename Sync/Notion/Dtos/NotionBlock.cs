@@ -48,6 +48,18 @@ public sealed class NotionBlock
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NotionBlockBody? Code { get; set; }
 
+    [JsonPropertyName("quote")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionBlockBody? Quote { get; set; }
+
+    [JsonPropertyName("table")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionTable? Table { get; set; }
+
+    [JsonPropertyName("table_row")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionTableRow? TableRow { get; set; }
+
     /// <summary>Nested block children (bulleted/numbered list hierarchies). On write, Notion accepts at most two
     /// levels of nesting per request, so a payload is cut at depth 2 and deeper levels appended iteratively against
     /// the ids the API returns (<see cref="DynaDocs.Sync.Notion.NotionBlockAppender"/>). Omitted when null so a flat

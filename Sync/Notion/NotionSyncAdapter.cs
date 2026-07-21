@@ -232,6 +232,18 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     public string NormalizeBody(string body) =>
         NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body));
 
+    /// <summary>Whether the board's body is just the ns-6 converter's degraded echo of the base — the pre-ns-7
+    /// migration case (ns-7 blocker). The board holds blocks the OLD converter pushed; reading them with the new
+    /// reader and normalizing diverges from the new normalization of the base (tables/quotes were flat, blank lines
+    /// dropped). We recognise that by re-deriving the old echo of the base (<see cref="NotionLegacyEcho"/>) and
+    /// normalizing both under the current converter: equal means the board simply hasn't been upgraded yet, not a
+    /// real edit. The reconcile then force-pushes the repo body, upgrading the board in one tick, after which the
+    /// echo matches <see cref="NormalizeBody"/> of the base and this stops firing.
+    /// <para>REMOVAL: delete this method, <see cref="NotionLegacyEcho"/>, and the reconcile shim once ns-10's live
+    /// run confirms every board has been re-rendered under the new converter.</para></summary>
+    public bool IsStaleConverterEcho(string externalBody, string baseBody) =>
+        NormalizeBody(externalBody) == NormalizeBody(NotionLegacyEcho.Render(baseBody));
+
     /// <summary>Map a doc's fields to the form Notion echoes back, so the engine does not read this
     /// adapter's write-time losses as an external edit (slice brief §1). A field whose key is not a
     /// property this data source can write is dropped (it is never persisted, so never read back). A

@@ -24,10 +24,13 @@ public static class ReconcileEngine
     /// external read while its repo doc is present is re-created from the repo, never treated as a deletion:
     /// a present repo doc's page is never archived and its file is never deleted. Default false keeps the
     /// spine's bidirectional delete/modify semantics.</param>
+    /// <param name="staleConverterEcho">Whether the external body is the PREVIOUS converter version's degraded
+    /// projection of the base body — a one-time migration artifact, not a board edit (ns-7). When it returns true
+    /// the engine treats the body as unchanged and force-pushes the repo body to upgrade the board. Default: never.</param>
     public static ReconcileResult Reconcile(
         SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external,
         Func<string, string>? bodyNormalizer = null, Func<SyncDoc, SyncDoc>? fieldNormalizer = null,
-        bool repoOwnedStructure = false)
+        bool repoOwnedStructure = false, Func<string, string, bool>? staleConverterEcho = null)
     {
         var norm = bodyNormalizer ?? (static s => s);
         var fieldNorm = fieldNormalizer ?? (static d => d);
@@ -41,7 +44,7 @@ public static class ReconcileEngine
         if (repo == null || external == null)
             return DeleteOne(baseDoc, repo, external, norm, fieldNorm, repoOwnedStructure);
 
-        return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm);
+        return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm, staleConverterEcho);
     }
 
     /// <summary>Gone from both sides. A lingering base entry is retired (slice brief §2): left as None the
@@ -139,8 +142,17 @@ public static class ReconcileEngine
     }
 
     /// <summary>Both sides present: propagate a one-sided change, else 3-way merge.</summary>
-    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
+    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm, Func<string, string, bool>? staleEcho)
     {
+        // Converter-migration shim (ns-7 blocker): a board synced before the converter upgrade holds the OLD
+        // converter's degraded projection of the base body. Read back and normalized under the new converter it
+        // diverges, which the checks below would misread as an external edit and use to overwrite the canonical file.
+        // ApplyMigrationShim detects that, swaps the base body in (so it neither trips change-detection nor pollutes
+        // the 3-way merge), and flags a forced repo→board push so the board re-renders in one tick — after which the
+        // echo matches and this stops firing.
+        var (shimmed, upgradeBody) = ApplyMigrationShim(external, baseDoc, norm, staleEcho);
+        external = shimmed;
+
         // A parent-type re-provision re-creates its pages with NEW ids (wave 7), so a child's relation on the board
         // still points at the OLD, now-abandoned parent page. That renders as a raw page id the field normalizer
         // drops, making the external's resolvable subset for the key EMPTY — yet the repo value still resolves (the
@@ -174,8 +186,10 @@ public static class ReconcileEngine
                 ? WriteToRepoResult(external, repo, baseDoc, externalId, fieldNorm)
                 : MergeBoth(baseDoc, repo, externalView, fieldNorm);
 
-        if (repoChanged)
-            return PushToExternalResult(repo, externalId, fieldNorm, repoChanged: true);
+        // repoChanged is a real repo edit; upgradeBody is only the board holding the old converter's projection of an
+        // otherwise-unchanged body — both push the repo body to the board, but only the former is a repo-side edit.
+        if (repoChanged || upgradeBody)
+            return PushToExternalResult(repo, externalId, fieldNorm, repoChanged: repoChanged);
 
         // Neither side changed. A lingering stale echo means the board still points at the abandoned parent page —
         // re-push the repo relation to resolve it to the new page id (finding 1; folds in finding 4's no-converge
@@ -183,6 +197,19 @@ public static class ReconcileEngine
         return hasStale
             ? PushToExternalResult(repo, externalId, fieldNorm, repoChanged: false)
             : Simple(repo.LocalId, ReconcileAction.None);
+    }
+
+    /// <summary>The converter-migration shim (ns-7 blocker). When the external body is the previous converter
+    /// version's degraded echo of the base — it genuinely drifts under the new normalizer AND that drift is exactly
+    /// the old converter's echo — swap the base body in (so change-detection and the merge see no body edit) and
+    /// flag a forced repo→board push. A board already on the new converter normalizes equal to base, so nothing
+    /// fires and there is no churn; a null predicate (adapters with no migration) is a no-op.</summary>
+    private static (SyncDoc External, bool Upgrade) ApplyMigrationShim(SyncDoc external, SyncDoc baseDoc, Func<string, string> norm, Func<string, string, bool>? staleEcho)
+    {
+        var upgrade = staleEcho != null
+            && !string.Equals(norm(external.Body.Replace("\r\n", "\n")), norm(baseDoc.Body.Replace("\r\n", "\n")), StringComparison.Ordinal)
+            && staleEcho(external.Body, baseDoc.Body);
+        return upgrade ? (WithBody(external, baseDoc.Body), true) : (external, false);
     }
 
     /// <summary>Push the repo doc to the external side, recording only the round-trippable subset in the base (a
@@ -633,6 +660,15 @@ public static class ReconcileEngine
         Fields = doc.Fields,
         Body = doc.Body,
         SourcePath = sourcePath,
+    };
+
+    private static SyncDoc WithBody(SyncDoc doc, string body) => new()
+    {
+        LocalId = doc.LocalId,
+        ExternalId = doc.ExternalId,
+        Fields = doc.Fields,
+        Body = body,
+        SourcePath = doc.SourcePath,
     };
 
     /// <summary>Equality with fields compared RAW (identity normalizer), the body still modulo the adapter's

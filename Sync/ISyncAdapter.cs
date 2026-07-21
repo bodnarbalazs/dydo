@@ -62,6 +62,16 @@ public interface ISyncAdapter
     bool WritesEngineComputed => false;
 
     /// <summary>
+    /// Whether the given external body is merely the PREVIOUS converter version's degraded projection of the base
+    /// body — a one-time migration artifact, not a genuine board edit (ns-7). A board synced before a converter
+    /// upgrade holds blocks the old converter pushed; read back and normalized under the new converter they diverge,
+    /// which the reconcile would otherwise mistake for an external edit and use to overwrite the canonical file. An
+    /// adapter that upgrades its converter overrides this to recognise that projection so the engine treats it as
+    /// unchanged and force-pushes the repo body to upgrade the board instead. Default false — no migration in play.
+    /// </summary>
+    bool IsStaleConverterEcho(string externalBody, string baseBody) => false;
+
+    /// <summary>
     /// Whether this view's TREE STRUCTURE is repo-owned one-way (DR 033 §2 — the docs nested-page mirror),
     /// as opposed to the fully bidirectional spine. When true, a page missing from the external read while its
     /// repo doc is still present is NEVER a deletion — it is listing eventual-consistency lag, or a colleague's

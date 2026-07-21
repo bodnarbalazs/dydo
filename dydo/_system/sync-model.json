@@ -97,7 +97,7 @@
     {
       "type": "Slice",
       "dir": "project/slices",
-      "notionTitle": "Sprint Tasks",
+      "notionTitle": "Slices",
       "icon": "📋",
       "properties": {
         "title": { "type": "title" },

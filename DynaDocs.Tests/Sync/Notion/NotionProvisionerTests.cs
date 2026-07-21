@@ -941,7 +941,9 @@ public class NotionProvisionerTests : IDisposable
         File.WriteAllText(_statePath,
             "{\"types\":[{\"objectType\":\"Thing\",\"databaseId\":\"db-x\",\"dataSourceId\":\"ds-x\",\"postPassDone\":true}]}");
         var liveDs = client.DataSourceSchema("ds-x");
-        liveDs.Name = "Sprint Tasks";  // the title the live board actually shows
+        // The full data-source retrieve carries the title as a rich-text array under `title` (confirmed live,
+        // ns-12) — NOT a flat `name` string; NotionDataSource.Name flattens it.
+        liveDs.Title = NotionRichText.Of("Sprint Tasks");  // the title the live board actually shows
         liveDs.Properties["title"] = new NotionPropertySchema { Title = new NotionEmptyConfig() };
         var provisioner = new NotionProvisioner(client, _statePath);
 

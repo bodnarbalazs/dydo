@@ -127,6 +127,10 @@ The real-board sync then surfaced live-only constraints the fake still could not
 
 **Result:** `dydo notion sync --dry-run` plans **zero actions across all 397 spine records** — genuine board↔repo equilibrium. Recovery note confirmed live: local files degraded by a mid-debug apply were restored from git and the board rebuilt from repo canon, exactly the sanctioned "reset + git restore" path.
 
+### Slice board rename (ns-12) and a further wire truth
+
+Changing the Slice type's `notionTitle` `"Sprint Tasks"` → `"Slices"` and re-syncing fired ns-11's additive rename **in place** — the data source kept its id (no re-mint), the board title now reads "Slices", relations intact, dry-run back to zero. But confirming it exposed one more shape the fake had modeled wrong: **the full data-source retrieve (`GET /v1/data_sources/{id}`) carries its title as a rich-text array under `title`, not a flat `name` string** (only the database's `data_sources[]` refs and search hits use `name`). ns-11's F1 rename-seed read `NotionDataSource.Name` from the `name` key, so it silently read null on a live retrieve — dormant, degrade-safe (null ⇒ seed from model), and never exercised on this board (every type was fresh-minted with a recorded title). `NotionDataSource` now reads `title` and flattens it, so the F1 seed works for a genuinely pre-ns-11 board.
+
 ---
 
 ## Related

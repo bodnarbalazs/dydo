@@ -57,7 +57,9 @@ public class SyncModelLoaderTests : IDisposable
 
         var slice = model.Object("Slice");
         Assert.Equal("project/slices", slice.Dir);
-        Assert.Equal("Sprint Tasks", slice.NotionTitle);
+        // Board display title is "Slices" (ns-12); the SprintTask→Slice rename reached the Notion board
+        // via ns-11's additive rename PATCH, no reset required.
+        Assert.Equal("Slices", slice.NotionTitle);
         Assert.Equal("Sprint", slice.Properties["sprint"].To);
     }
 

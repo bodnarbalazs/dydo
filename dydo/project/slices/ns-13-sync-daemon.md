@@ -35,7 +35,7 @@ The promised DR-041 repurpose (scope sketch in `dydo/project/tasks/notion-sync-d
    - **Provision probe caching:** `StillValid`'s per-type retrieves run once every N ticks (e.g. 20) and immediately on any tick failure, not every tick.
    - The interactive `dydo notion sync` path keeps its current full-read behavior unless sharing the pre-filter is free — correctness of the manual path must not depend on daemon tick state.
 5. Throttling: rely on `NotionClient`'s built-in 3 req/s throttle; no additional pacing needed beyond the interval floor.
-6. Update `dydo/reference/dydo-commands.md` + `Templates/dydo-commands.template.md` (watchdog section), `dydo/understand/architecture.md` (Watchdog section — currently says "a stub"), and close `dydo/project/tasks/notion-sync-daemon.md` **recording the descopes explicitly in the task file**: the guard-trigger self-start from the original scope is deliberately dropped (a manually started daemon is the v1), and the ~15s interval became a 60s default with a 15s floor. Descoped items that still matter move to a backlog note, not silence.
+6. Update `dydo/reference/dydo-commands.md` + `Templates/dydo-commands.template.md` (watchdog section), `dydo/understand/architecture.md` (Watchdog section — currently says "a stub"), and close `dydo/project/tasks/notion-sync-daemon.md` **recording the descopes explicitly in the task file**: the guard-trigger self-start from the original scope is deliberately dropped (a manually started daemon is the v1), and the interval is 15s default / 5s floor as originally sketched (an interim 60s plan-time guess was rejected and superseded — see the spec amendments). Descoped items that still matter move to a backlog note, not silence.
 
 ## Files
 

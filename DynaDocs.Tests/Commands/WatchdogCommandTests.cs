@@ -26,27 +26,15 @@ public class WatchdogCommandTests
         Assert.True(runCmd.Hidden);
     }
 
-    // The watchdog is a stub awaiting its Notion-sync repurpose (DR-041): every subcommand
-    // prints the awaiting notice, exits 0, and does nothing harmful.
-    [Theory]
-    [InlineData("start")]
-    [InlineData("stop")]
-    [InlineData("run")]
-    public void Subcommand_PrintsAwaitingNotice_AndExitsZero(string subcommand)
+    [Fact]
+    public void StartAndRun_ExposeIntervalAndCensusOptions()
     {
-        var (output, exitCode) = RunSubcommand(subcommand);
-
-        Assert.Equal(0, exitCode);
-        Assert.Contains("awaiting its Notion-sync repurpose", output);
-    }
-
-    private static (string output, int exitCode) RunSubcommand(string subcommand)
-    {
-        var (exitCode, stdout, _) = ConsoleCapture.All(() =>
+        var command = WatchdogCommand.Create();
+        foreach (var name in new[] { "start", "run" })
         {
-            var command = WatchdogCommand.Create();
-            return command.Parse(subcommand).Invoke();
-        });
-        return (stdout, exitCode);
+            var sub = command.Subcommands.First(c => c.Name == name);
+            Assert.Contains(sub.Options, o => o.Name == "--interval");
+            Assert.Contains(sub.Options, o => o.Name == "--census-interval");
+        }
     }
 }

@@ -632,4 +632,31 @@ public class SyncRunnerTests : IDisposable
         Assert.All(docs, d => Assert.NotNull(_base.Get(d.LocalId)));
         Assert.DoesNotContain("<<<<<<< repo", File.ReadAllText(OpenPath(conflictId)));
     }
+
+    [Fact]
+    public void ConflictShadow_ResolvedMarkerFreeShadow_IsNeverOverwritten()
+    {
+        // ns-13 F3 backstop: a shadow a human already RESOLVED (no markers) must never be clobbered with fresh
+        // conflict markers when a reconcile re-detects the same two-sided edit before the promote pass consumes it.
+        var doc = RepoDoc("t1", "one\ntwo\nthree", ("status", "open"));
+        NewRunner().Run([doc]);
+        SyncDocFile.Write(OpenPath("t1"), doc);
+
+        // A genuine two-sided overlapping edit -> the reconcile decides Conflict for t1.
+        _adapter.Edit(_base.Get("t1")!.ExternalId!, F(("status", "open")), "one\nEXT\nthree");
+        var runDoc = RepoDoc("t1", "one\nREPO\nthree", ("status", "open"));
+
+        var shadowDir = Path.Combine(_dir, "shadow");
+        Directory.CreateDirectory(shadowDir);
+        var shadowPath = Path.Combine(shadowDir, "t1.md");
+        const string resolved = "---\nstatus: open\n---\n\nhuman resolved body";
+        File.WriteAllText(shadowPath, resolved); // marker-FREE — the human's resolution
+
+        var runner = new SyncRunner(_adapter, _base, (localId, _, _) => OpenPath(localId),
+            conflictShadowPathFor: localId => Path.Combine(shadowDir, localId + ".md"));
+        var result = runner.Run([runDoc]);
+
+        Assert.Contains("t1", result.ShadowedLocalIds);          // still shadowed, base un-advanced
+        Assert.Equal(resolved, File.ReadAllText(shadowPath));     // the resolution was left untouched
+    }
 }

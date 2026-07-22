@@ -456,6 +456,7 @@ public class NotionSyncServiceTests : IDisposable
         public NotionView RetrieveView(string viewId) => new();
         public void DeleteView(string viewId) { }
         public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) => [];
+        public IReadOnlyList<NotionPage> QueryDataSourceSince(string dataSourceId, string? cursor) => [];
         public NotionPage CreatePage(NotionPageCreateRequest request) => new();
         public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request) => new();
         public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId) => [];

@@ -195,17 +195,41 @@ public sealed class FakeNotionClient : INotionClient
     /// ordering actually archived a page, since <see cref="GetChildPages"/> hides archived pages from the walk.</summary>
     public bool IsArchived(string pageId) => _pages.TryGetValue(pageId, out var p) && p.Archived;
 
-    /// <summary>Replace a page's block children outright — simulates an external body edit in Notion.</summary>
-    public void SetBlockChildren(string pageId, List<NotionBlock> blocks) => _blocks[pageId] = blocks;
+    /// <summary>Replace a page's block children outright — simulates an external body edit in Notion, bumping the
+    /// page's last_edited_time to the current clock the way a real edit would.</summary>
+    public void SetBlockChildren(string pageId, List<NotionBlock> blocks)
+    {
+        _blocks[pageId] = blocks;
+        if (_pages.TryGetValue(pageId, out var page)) page.LastEditedTime = CurrentStamp();
+    }
 
     /// <summary>Replace a page's native markdown body outright — simulates an external body edit in Notion for
     /// the docs mirror's markdown-API path (DR 035), the counterpart to <see cref="SetBlockChildren"/>.</summary>
     public void SetPageMarkdown(string pageId, string markdown) => _pageMarkdown[pageId] = markdown;
 
+    /// <summary>A page's default server stamp when one is created/seeded without an explicit edit — old enough that
+    /// every page shares it, so the daemon's first-tick cursor is this value and no page is a filter hit until a
+    /// test bumps it with <see cref="SetLastEditedTime"/> to a later stamp (ns-13).</summary>
+    public const string DefaultStamp = "2026-01-01T00:00:00.000Z";
+
+    // Minute-granular clock modelling real Notion's last_edited_time. Every create AND every mutating call
+    // (UpdatePage, SetBlockChildren, AppendBlockChildren, UpdatePageMarkdown) stamps the touched page with the
+    // current clock, so the daemon's own push makes the page a next-tick boundary hit (ns-13). By default each read
+    // of the clock advances one minute, so distinct edits carry distinct stamps; PIN the clock to reproduce a
+    // same-minute re-edit (two edits sharing one stamp).
+    private int _stampSeq;
+
+    /// <summary>When set, every stamp the clock issues is this value — pin it to model two edits in the same minute
+    /// (the F1 same-stamp lost-update scenario). Null lets each stamp advance one minute.</summary>
+    public string? PinnedStamp { get; set; }
+
+    private string CurrentStamp() =>
+        PinnedStamp ?? new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMinutes(_stampSeq++).ToString("yyyy-MM-ddTHH:mm:00.000'Z'");
+
     public NotionPage SeedPage(string id, Dictionary<string, NotionPropertyValue> props,
         List<NotionBlock>? blocks = null, string dataSourceId = "ds1")
     {
-        var page = new NotionPage { Id = id, Properties = props };
+        var page = new NotionPage { Id = id, Properties = props, LastEditedTime = DefaultStamp };
         _pages[id] = page;
         _pageDataSource[id] = dataSourceId;
         _blocks[id] = blocks ?? [];
@@ -349,8 +373,15 @@ public sealed class FakeNotionClient : INotionClient
             list.RemoveAll(v => v.Id == viewId);
     }
 
+    /// <summary>Number of full (unfiltered) <see cref="QueryDataSource"/> calls and filtered
+    /// <see cref="QueryDataSourceSince"/> calls — lets a scale-invariance test assert a quiet tick issues exactly
+    /// one filtered query per type and zero full sweeps, regardless of corpus size (ns-13).</summary>
+    public int QueryDataSourceCalls { get; private set; }
+    public int QueryDataSourceSinceCalls { get; private set; }
+
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
     {
+        QueryDataSourceCalls++;
         var pages = _pages.Values.Where(p => _pageDataSource[p.Id] == dataSourceId).ToList();
         if (EchoEmptyRelations && _dataSources.TryGetValue(dataSourceId, out var ds))
             foreach (var page in pages)
@@ -359,6 +390,24 @@ public sealed class FakeNotionClient : INotionClient
                         page.Properties[name] = new NotionPropertyValue { Type = "relation", Relation = [] };
         return pages;
     }
+
+    /// <summary>Model Notion's server-side <c>last_edited_time</c> filter (ns-13): return only pages whose stamp is
+    /// on or after the cursor (inclusive), sorted oldest-first. A null cursor falls through to the full query. A
+    /// page with no seeded stamp is treated as unchanged (never a filter hit) unless the cursor is null.</summary>
+    public IReadOnlyList<NotionPage> QueryDataSourceSince(string dataSourceId, string? cursor)
+    {
+        QueryDataSourceSinceCalls++;
+        if (string.IsNullOrEmpty(cursor))
+            return QueryDataSource(dataSourceId);
+        return _pages.Values
+            .Where(p => _pageDataSource[p.Id] == dataSourceId && !p.Archived
+                && p.LastEditedTime != null && string.CompareOrdinal(p.LastEditedTime, cursor) >= 0)
+            .OrderBy(p => p.LastEditedTime, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>Set a page's server stamp — the fake counterpart to a Notion edit bumping <c>last_edited_time</c>.</summary>
+    public void SetLastEditedTime(string pageId, string stamp) => _pages[pageId].LastEditedTime = stamp;
 
     public NotionPage CreatePage(NotionPageCreateRequest request)
     {
@@ -384,7 +433,7 @@ public sealed class FakeNotionClient : INotionClient
             throw new NotionApiException(500, "simulated create failure");
         _createCount++;
         var id = $"page-{_nextPage++}";
-        var page = new NotionPage { Id = id, Properties = request.Properties };
+        var page = new NotionPage { Id = id, Properties = request.Properties, LastEditedTime = CurrentStamp() };
         _pages[id] = page;
         _pageDataSource[id] = request.Parent.DataSourceId ?? "";
         if (request.Parent.PageId != null)
@@ -449,6 +498,11 @@ public sealed class FakeNotionClient : INotionClient
                 page.Properties[k] = new NotionPropertyValue { Type = type };
         if (request.Archived == true)
             page.Archived = true;
+        // Any real property/clear edit bumps last_edited_time — including the daemon's own push, so the pushed page
+        // is a boundary hit next tick that norm-compares None (no churn). An archive removes the page from queries,
+        // so its stamp no longer matters.
+        else if (request.Properties != null || request.PropertyClears != null)
+            page.LastEditedTime = CurrentStamp();
         return page;
     }
 
@@ -528,6 +582,7 @@ public sealed class FakeNotionClient : INotionClient
         MarkdownUpdates.Add(pageId);
         MarkdownUpdateCalls.Add((pageId, allowDeletingContent));
         _pageMarkdown[pageId] = markdown;
+        if (_pages.TryGetValue(pageId, out var mdPage)) mdPage.LastEditedTime = CurrentStamp();
         // Model the Notion child-page-trash bug (makenotion/notion-mcp-server#171, DR 035 §3): a destructive
         // replace_content (allow_deleting_content:true) TRASHES the page's child pages. A child-safe update
         // (false) replaces the body and leaves the nested child pages intact — the behaviour the adapter relies on.
@@ -544,6 +599,8 @@ public sealed class FakeNotionClient : INotionClient
     {
         if (FailAppend)
             throw new NotionApiException(500, "simulated append failure");
+        // Appending body to a page bumps its last_edited_time (a real edit); ignored when blockId is a nested block.
+        if (_pages.TryGetValue(blockId, out var appendedPage)) appendedPage.LastEditedTime = CurrentStamp();
         _blocks.TryAdd(blockId, []);
         var ids = new List<string>();
         // Chunk like the real NotionClient.AppendBlockChildren (≤100 top-level blocks AND ≤1000 elements per

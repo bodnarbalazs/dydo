@@ -17,6 +17,12 @@ public sealed class BaseSnapshotStore
     private readonly Dictionary<string, SyncSnapshot> _byLocalId;
     private readonly Dictionary<string, string> _lastActivity;
 
+    /// <summary>Whether any base/last-activity entry was mutated since load or the last <see cref="Save"/>. The
+    /// daemon's delta tick skips <see cref="Save"/> when a tick changed nothing (ns-13): at 40k entries a no-op
+    /// tick must not rewrite the whole snapshot file every 15s. The full sync path saves unconditionally as
+    /// before.</summary>
+    public bool Dirty { get; private set; }
+
     public BaseSnapshotStore(string filePath)
     {
         _path = filePath;
@@ -66,12 +72,14 @@ public sealed class BaseSnapshotStore
     public void Set(SyncDoc doc)
     {
         _byLocalId[doc.LocalId] = ToSnapshot(doc);
+        Dirty = true;
     }
 
     public void Remove(string localId)
     {
         _byLocalId.Remove(localId);
         _lastActivity.Remove(localId);
+        Dirty = true;
     }
 
     /// <summary>Drop every recorded base, so the next reconcile sees baseDoc == null for all pairs and
@@ -83,6 +91,7 @@ public sealed class BaseSnapshotStore
     {
         _byLocalId.Clear();
         _lastActivity.Clear();
+        Dirty = true;
     }
 
     /// <summary>The engine-derived last-activity date for an object (DR 030 §3), or null before its first
@@ -92,7 +101,11 @@ public sealed class BaseSnapshotStore
 
     /// <summary>Record an object's last genuine repo-side change (DR 030 §3). Kept out of the object's
     /// field snapshot — and therefore out of frontmatter — so persisting it never provokes an edit loop.</summary>
-    public void SetLastActivity(string localId, string isoDate) => _lastActivity[localId] = isoDate;
+    public void SetLastActivity(string localId, string isoDate)
+    {
+        _lastActivity[localId] = isoDate;
+        Dirty = true;
+    }
 
     /// <summary>Drop last-activity entries with no surviving base object (finding 7). A create whose external
     /// id never confirmed (a crash mid-Apply) or a doc whose base entry never existed leaves a seeded
@@ -102,11 +115,15 @@ public sealed class BaseSnapshotStore
     public void PruneOrphanLastActivity()
     {
         foreach (var localId in _lastActivity.Keys.Where(k => !_byLocalId.ContainsKey(k)).ToList())
+        {
             _lastActivity.Remove(localId);
+            Dirty = true;
+        }
     }
 
     public void Save()
     {
+        Dirty = false;
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         var file = new SyncSnapshotFile
         {

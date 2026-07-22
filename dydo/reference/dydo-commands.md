@@ -435,6 +435,18 @@ dydo notion reset
 dydo notion reset --yes --parent-page <scratch-page-id>
 ```
 
+### dydo watchdog
+
+Run a background daemon that keeps the Notion board current without manual `dydo notion sync`. `dydo watchdog start` spawns a detached loop that fires one **cheap** sync tick every interval (default 15s, floor 5s via `--interval <seconds>`); `dydo watchdog stop` ends it. A single instance is enforced by a pid file (`dydo/_system/.local/watchdog.pid`): a second `start` while one is live refuses, naming the running pid; a stale pid file (its process gone) is cleared automatically. The daemon refuses to start on a config error (no token, no dydo project, no configured parent page) but never dies on a sync/API error — it logs to `dydo/_system/.local/watchdog.log` and retries the next tick. It syncs the spine only, against the configured parent (the same token/parent resolution as `dydo notion sync`).
+
+A tick is **O(changes), not O(corpus)** — a doc base 100× this repo syncs just as comfortably. Each tick asks Notion only for pages edited on or after its stamp cursor (one server-side filtered query, returning just the newest boundary page(s) on a quiet tick at any board size) and stat-walks the repo for changed files, then reconciles only that changed set; a quiet tick reads only its boundary pages (typically 0-2, which reconcile to no-ops), never the corpus. Because a filtered query cannot see archived pages, remote deletions are caught by a periodic **census** (`--census-interval <ticks>`, default 240 ≈ hourly) — a body-free id/stamp pagination whose disappeared ids surface archives, fuse-guarded. The full everything-reconcile stays with the manual `dydo notion sync`, run rarely and on purpose (which also seeds the daemon's cheap-tick state, so a watchdog started afterwards begins warm). `dydo watchdog run` is the foreground loop itself, used by `start`.
+
+```bash
+dydo watchdog start
+dydo watchdog start --interval 30 --census-interval 120
+dydo watchdog stop
+```
+
 ---
 
 ## Environment Variables

@@ -99,14 +99,40 @@ public sealed class SyncRunner
         return byLocalId;
     }
 
-    public SyncRunResult Run(IReadOnlyList<SyncDoc> repoDocs)
+    public SyncRunResult Run(IReadOnlyList<SyncDoc> repoDocs) =>
+        Run(repoDocs, _adapter.ReadExternalState(), onlyLocalIds: null, saveWhenClean: true);
+
+    /// <summary>Reconcile ONLY the changed-id union (ns-13 delta tick): <paramref name="repoDocs"/> is just the
+    /// files that changed on disk, <paramref name="external"/> only the pages the daemon's filtered query surfaced
+    /// (plus base-derived synthetics for local-only changes), and <paramref name="changedLocalIds"/> the union of
+    /// both. Every untouched record's base entry carries forward verbatim — it is never iterated, so it is never
+    /// read, parsed, or re-pushed — and the snapshot <see cref="BaseSnapshotStore.Save"/> is skipped when the tick
+    /// mutated nothing. The mass-delete fuse still sees the FULL tracked-base count, so a delta that would archive a
+    /// large share still trips. Correctness is identical to a full <see cref="Run(IReadOnlyList{SyncDoc})"/> over the
+    /// same union: the reconcile engine is unchanged.</summary>
+    public SyncRunResult RunDelta(
+        IReadOnlyList<SyncDoc> repoDocs, IReadOnlyList<SyncRecord> external, IReadOnlySet<string> changedLocalIds) =>
+        Run(repoDocs, external, changedLocalIds, saveWhenClean: false);
+
+    private SyncRunResult Run(
+        IReadOnlyList<SyncDoc> repoDocs, IReadOnlyList<SyncRecord> externalRecords,
+        IReadOnlySet<string>? onlyLocalIds, bool saveWhenClean)
     {
-        var externalByLocalId = MapExternalToLocalId(_adapter.ReadExternalState());
+        var externalByLocalId = MapExternalToLocalId(externalRecords);
         var repoByLocalId = IndexByLocalId(repoDocs);
 
-        var localIds = new HashSet<string>(_base.LocalIds);
-        localIds.UnionWith(repoByLocalId.Keys);
-        localIds.UnionWith(externalByLocalId.Keys);
+        IEnumerable<string> localIds;
+        if (onlyLocalIds != null)
+        {
+            localIds = onlyLocalIds;
+        }
+        else
+        {
+            var union = new HashSet<string>(_base.LocalIds);
+            union.UnionWith(repoByLocalId.Keys);
+            union.UnionWith(externalByLocalId.Keys);
+            localIds = union;
+        }
 
         // Tracked-record count for the mass-delete fuse, captured before reconcile: base entries are only
         // removed later in CommitBase, so this is the type's tracked-base size going into the run.
@@ -178,7 +204,10 @@ public sealed class SyncRunner
             // retry, when the pending create either confirms (base entry appears) or is swept then.
             if (applied)
                 _base.PruneOrphanLastActivity();
-            _base.Save();
+            // A delta tick that mutated nothing (filter false positives that normalize to None) must not rewrite
+            // the whole snapshot file — skip the Save when clean (ns-13). The full path always saves as before.
+            if (saveWhenClean || _base.Dirty)
+                _base.Save();
         }
 
         return new SyncRunResult { Results = results, ShadowedLocalIds = shadowed.ToList() };
@@ -209,12 +238,13 @@ public sealed class SyncRunner
             return false;
 
         var shadowPath = _conflictShadowPathFor(result.LocalId);
-        // Don't clobber a human's in-progress resolution: if the shadow already exists and still carries conflict
-        // markers, the previous tick recorded this same two-sided edit and the human may be mid-edit — overwriting
-        // would discard their partial work. Leave it; the conflict stays active (shadowed below, base un-advanced)
-        // until the human finishes and the resolved shadow is promoted. A fully resolved shadow (no markers) is
-        // promoted before the reconcile, so it is never seen here.
-        if (!(File.Exists(shadowPath) && ThreeWayTextMerge.ContainsConflictMarkers(File.ReadAllText(shadowPath))))
+        // Never clobber an existing shadow — mark the result shadowed (base un-advanced) and leave the file be. Two
+        // cases both demand this: a marker-BEARING shadow is a human's in-progress resolution the previous tick
+        // recorded, and a marker-FREE shadow is one the human already RESOLVED but the promote pass has not yet
+        // consumed (a fast daemon tick re-detecting the conflict before promotion, or a promotion that could not
+        // align its base) — overwriting either with fresh markers would discard the human's work (ns-13 F3). Only a
+        // genuinely absent shadow is written afresh.
+        if (!File.Exists(shadowPath))
             SyncDocFile.Write(shadowPath, repoWrite);
         shadowed.Add(result.LocalId);
         return true;

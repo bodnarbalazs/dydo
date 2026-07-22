@@ -296,6 +296,15 @@ public static class NotionSpineSync
                 {
                     output.WriteLine($"  sync       {type.Type,-9} reconciled {run.Results.Count} object(s)");
                     ReportConflicts(run, docs, docsDir, shadowDir, output);
+
+                    // Seed the daemon's cheap-tick state (ns-13 F2c) so a watchdog started after this manual sync
+                    // begins warm — no remote gap (cursor = the newest stamp this sync saw) and no phantom local
+                    // changes (mtimes = the post-sync on-disk state). NOT on a tripped run (minor 2): a fuse abort
+                    // applied nothing, so advancing the cursor past the read-but-unapplied edits would make the daemon
+                    // skip them. A dry-run never reaches here.
+                    NotionDeltaState.Seed(
+                        NotionDeltaState.PathFor(state.DydoRoot, state.SnapshotAdapterName(type.Type)),
+                        adapter.MaxSeenStamp, NotionDeltaState.ScanMtimes(docsDir));
                 }
             }
 
@@ -366,7 +375,7 @@ public static class NotionSpineSync
     /// skipped (base left as-is) rather than throwing at the same point every tick and wedging the whole type's
     /// sync; the reconcile then resurrects the doc from the surviving repo edit. Returns whether anything was
     /// promoted, so the caller re-reads the type's docs.</para></summary>
-    private static bool PromoteResolvedShadows(
+    internal static bool PromoteResolvedShadows(
         string shadowDir, NotionSyncAdapter adapter, BaseSnapshotStore store, string docsDir, IReadOnlyList<SyncDoc> docs)
     {
         if (!Directory.Exists(shadowDir))

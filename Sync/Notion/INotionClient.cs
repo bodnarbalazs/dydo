@@ -47,6 +47,13 @@ public interface INotionClient
     /// <summary>Query a data source, following pagination, returning every page.</summary>
     IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId);
 
+    /// <summary>Query a data source for only the pages edited on or after <paramref name="cursor"/> — a server-side
+    /// <c>last_edited_time</c> filter (ns-13), sorted oldest-first so the cursor advances to the newest stamp seen.
+    /// This is the sync daemon's cheap-tick pre-filter: a quiet tick is ONE request returning empty, at any corpus
+    /// size. A null cursor returns every page (the first tick has no cursor yet). Bodies are NOT read here — only
+    /// the returned hits get a <see cref="GetBlockChildren"/> read.</summary>
+    IReadOnlyList<NotionPage> QueryDataSourceSince(string dataSourceId, string? cursor);
+
     NotionPage CreatePage(NotionPageCreateRequest request);
 
     NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request);

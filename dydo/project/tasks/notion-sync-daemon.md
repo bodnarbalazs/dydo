@@ -2,7 +2,7 @@
 title: Notion Sync Daemon
 area: general
 name: notion-sync-daemon
-status: backlog
+status: done
 created: 2026-07-16T00:00:00.0000000Z
 assigned: unassigned
 ---
@@ -26,12 +26,26 @@ Runs parallel to balazs's Rail B prompt-file pass (balazs, 2026-07-16).
 
 ## Progress
 
-- [ ] (Not started)
+- [x] Delivered as slice [ns-13](../slices/ns-13-sync-daemon.md): `dydo watchdog` repurposed from an inert stub into the Notion-sync daemon — pid-file lifecycle, single-flight loop, cheap O(changes) delta ticks, hourly census, docs.
+
+## Descopes (recorded per ns-13 §6)
+
+- **Guard-trigger self-start — dropped for v1.** The original scope had the dydo CLI auto-start the daemon on a guard trigger (mirroring the throttled-stamp pattern). Deliberately not built: a **manually started** daemon (`dydo watchdog start`) is the v1. A daemon multiplies whatever behaviour exists, so it must be started on purpose, not silently by a hook. Revisit only if the manual start proves a friction point.
+- **Interval — 15s default, 5s floor** (as the task originally sketched "~15s"; balazs 2026-07-22 confirmed 15s over the sprint plan's 60s guess — board updates should feel instant on context switch). Not a 60s default.
+- **Collaborator file-sync between commits (DR-041 bonus)** — delivered implicitly: a running daemon reconciles both directions every tick, so a colleague's board edits land in the repo between commits. No separate feature was needed.
+- **OSS pattern research** — done and recorded separately in [notion-oss-survey.md](../../reference/notion-oss-survey.md); its conflict-handling / rate-limiting / debounce findings are folded into the engine (3 req/s throttle, mass-delete fuse, shadow-tree conflict diversion) and the delta cursor.
+
+## Backlog (descoped but still worth doing)
+
+- **FileSystemWatcher push path.** The tick stat-walks the corpus for changed files (O(corpus) stats, trivial constants — fine at 100×). A watcher-driven push would make even the stat-walk O(changes). Future optimization, not v1.
+- **Local-parse scaling seam.** Each tick still loads every type's base snapshot and stat-walks the whole corpus (both O(corpus)-local, trivial constants — well under a second warm at 100×). A push-based `FileSystemWatcher` and an incremental base-snapshot index would make even those O(changes). Future optimization, not v1.
+- **Same-minute bulk-push boundary re-reads.** Pages sharing the cursor's exact minute are re-read each tick until a strictly later edit appears (the F1 correctness guarantee). A bulk push landing many pages in one minute makes them all boundary hits for a few ticks — a cost, not a correctness issue; the serial reconcile degrades gracefully. A per-page seen-stamp ledger could trim it if ever hot.
+- **Delta-path promotion reads the whole board.** A human-resolved shadow's base alignment currently triggers a full `ReadExternalState` (rare — only when a resolved shadow exists). A targeted single-page read would keep it O(1).
 
 ## Files Changed
 
-(None yet)
+See ns-13 for the full list. Core: `Services/WatchdogService.cs`, `Commands/WatchdogCommand.cs`, `Sync/Notion/NotionSpineDelta.cs`, `Sync/Notion/NotionDeltaState.cs`, `Sync/Notion/NotionSyncService.cs` (daemon entry points), `Sync/SyncRunner.cs` (delta overload).
 
 ## Review Summary
 
-(Pending)
+Delivered under ns-13. Live 15s / under-5s quiet-tick measurement against the real ~400-record board is performed by the orchestrator after review (no token in the implementing environment).

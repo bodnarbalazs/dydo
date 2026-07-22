@@ -22,6 +22,8 @@ using DynaDocs.Sync.Notion.Provisioning;
 [JsonSerializable(typeof(NotionPageList))]
 [JsonSerializable(typeof(NotionBlockList))]
 [JsonSerializable(typeof(NotionQueryRequest))]
+[JsonSerializable(typeof(NotionQueryFilter))]
+[JsonSerializable(typeof(NotionQuerySort))]
 [JsonSerializable(typeof(NotionPageCreateRequest))]
 [JsonSerializable(typeof(NotionPageUpdateRequest))]
 [JsonSerializable(typeof(NotionAppendChildrenRequest))]

@@ -90,13 +90,26 @@ public sealed class NotionClient : INotionClient
         }
     }
 
-    public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
+    public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) =>
+        QueryPaged(dataSourceId, filter: null, sorts: null);
+
+    public IReadOnlyList<NotionPage> QueryDataSourceSince(string dataSourceId, string? cursor)
+    {
+        if (string.IsNullOrEmpty(cursor))
+            return QueryDataSource(dataSourceId); // no stamp cursor yet — the first tick reads the whole board once
+        return QueryPaged(
+            dataSourceId,
+            new NotionQueryFilter { LastEditedTime = new NotionTimestampBound { OnOrAfter = cursor } },
+            [new NotionQuerySort()]);
+    }
+
+    private IReadOnlyList<NotionPage> QueryPaged(string dataSourceId, NotionQueryFilter? filter, List<NotionQuerySort>? sorts)
     {
         var pages = new List<NotionPage>();
         string? cursor = null;
         do
         {
-            var body = new NotionQueryRequest { StartCursor = cursor };
+            var body = new NotionQueryRequest { StartCursor = cursor, Filter = filter, Sorts = sorts };
             var page = Post(
                 $"data_sources/{dataSourceId}/query",
                 body, NotionJsonContext.Default.NotionQueryRequest,

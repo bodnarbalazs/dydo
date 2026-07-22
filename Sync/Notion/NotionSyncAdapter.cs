@@ -35,6 +35,10 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     // recovery must NOT adopt, since they belong to another record (ns-5, review major 1). Duplicate titles are
     // legal in PM records, so title alone cannot distinguish an orphaned lost-create from a long-mapped page.
     private readonly IReadOnlySet<string> _mappedExternalIds;
+    // The daemon's cheap tick (ns-13) reads external state for ONLY the pages its server-side last_edited_time
+    // filter surfaced — supplied here so ReadExternalState maps and body-reads exactly those, never the whole board.
+    // Null on the full path, which queries every page as before.
+    private readonly IReadOnlyList<NotionPage>? _pagesOverride;
     private IReadOnlyDictionary<string, string> _schema = new Dictionary<string, string>();
 
     /// <summary>The engine-computed property values (non-empty only) each page currently carries, captured
@@ -60,7 +64,8 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         string? icon = null,
         IReadOnlyDictionary<string, string>? engineComputedSchema = null,
         Func<string, string?>? engineComputedValue = null,
-        IReadOnlySet<string>? mappedExternalIds = null)
+        IReadOnlySet<string>? mappedExternalIds = null,
+        IReadOnlyList<NotionPage>? pagesOverride = null)
     {
         _client = client;
         _dataSourceId = dataSourceId;
@@ -71,13 +76,28 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         _engineComputedSchema = engineComputedSchema is { Count: > 0 } ? engineComputedSchema : null;
         _engineComputedValue = engineComputedValue;
         _mappedExternalIds = mappedExternalIds ?? new HashSet<string>();
+        _pagesOverride = pagesOverride;
     }
 
     public bool WritesEngineComputed => _engineComputedSchema != null;
 
+    /// <summary>The newest <c>last_edited_time</c> this adapter has seen — across every page read AND every page it
+    /// created/updated this run. The manual sync uses it to seed the daemon's cheap-tick cursor (ns-13 F2c) so a
+    /// watchdog started afterwards begins warm. Under-estimating is safe: a page whose stamp we did not capture is
+    /// simply re-read (and norm-compares None) on the daemon's first tick, never missed.</summary>
+    public string? MaxSeenStamp { get; private set; }
+
+    private void TrackStamp(string? stamp)
+    {
+        if (stamp != null && (MaxSeenStamp == null || string.CompareOrdinal(stamp, MaxSeenStamp) > 0))
+            MaxSeenStamp = stamp;
+    }
+
     public IReadOnlyList<SyncRecord> ReadExternalState()
     {
-        var pages = _client.QueryDataSource(_dataSourceId);
+        var pages = _pagesOverride ?? _client.QueryDataSource(_dataSourceId);
+        foreach (var page in pages)
+            TrackStamp(page.LastEditedTime);
         // A provisioned data source knows its own schema; otherwise infer it from the live pages so
         // we never push a property of the wrong type or one the DB doesn't have.
         _schema = _explicitSchema ?? NotionPropertyMapper.InferSchema(pages);
@@ -159,6 +179,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                     Children = createChildren.Count > 0 ? createChildren : null,
                 };
                 var page = CreatePageWithRecovery(request, TitleText(properties, schema), assigned);
+                TrackStamp(page.LastEditedTime);
                 // Record the id the instant the page exists, so a later create in this batch throwing
                 // does not lose it (the caller persists the base in a finally) — no duplicate on retry.
                 assigned[upsert.LocalId] = page.Id;
@@ -174,11 +195,11 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 // Genuine clears (issue 0299, F5): a scalar the base recorded that the repo now blanks is omitted by
                 // ToProperties ("blank means unset"), so an update alone would leave the board value intact and
                 // silently revert the local clear next tick. Emit the explicit clear shape for those keys instead.
-                _client.UpdatePage(upsert.ExternalId, new NotionPageUpdateRequest
+                TrackStamp(_client.UpdatePage(upsert.ExternalId, new NotionPageUpdateRequest
                 {
                     Properties = properties,
                     PropertyClears = BuildClears(upsert.ClearedKeys, schema),
-                });
+                }).LastEditedTime);
                 ReplaceBody(upsert.ExternalId, blocks);
             }
         }

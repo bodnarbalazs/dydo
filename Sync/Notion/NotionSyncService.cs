@@ -100,4 +100,36 @@ public static class NotionSyncService
             return ExitCodes.ToolError;
         }
     }
+
+    /// <summary>Validate the sync daemon's config exactly as <see cref="Execute"/> does (ns-13), returning a
+    /// human-readable reason the daemon must REFUSE TO START — a missing token, no dydo project, or no configured
+    /// parent page — or null when everything the daemon needs is present. The daemon dies on these startup config
+    /// errors (never a silent idle loop) but survives every later API/sync error.</summary>
+    public static string? DaemonConfigError(string? token, IConfigService config)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return $"not configured — set {NotionTokenResolver.TokenEnvVar} to a Notion integration token.";
+        if (config.GetProjectRoot() == null)
+            return "no dydo.json found; run the daemon inside a dydo project.";
+        if (string.IsNullOrWhiteSpace(NotionParentResolver.Resolve(config.LoadConfig()?.Notion?.ParentPageId)))
+            return "no parent page configured — set notion.parentPageId in dydo.json or "
+                + $"{NotionParentResolver.ParentPageEnvVar}.";
+        return null;
+    }
+
+    /// <summary>Run one cheap daemon tick against the CONFIGURED board, spine-only (ns-13). Resolves the same
+    /// parent-scoped state the manual sync uses, then delegates to <see cref="NotionSpineDelta"/>: a filtered remote
+    /// query + local mtime scan feed only the changed-id union to the reconcile engine. Assumes the config was
+    /// validated at startup (<see cref="DaemonConfigError"/>). A <see cref="NotionApiException"/> propagates so the
+    /// daemon can log it and retry next tick — it never dies on a sync error.</summary>
+    public static NotionDeltaTickResult DeltaTick(
+        string token, IConfigService config, Func<string, INotionClient> clientFactory,
+        bool census, bool validateProvisioning, bool allowMassDelete = false)
+    {
+        var client = clientFactory(token);
+        var configuredParentPageId = config.LoadConfig()?.Notion?.ParentPageId;
+        var state = NotionSpineState.Resolve(
+            config.GetDydoRoot(), configuredParentPageId, parentPageOverride: null, dryRun: false, TextWriter.Null);
+        return NotionSpineDelta.Run(client, state, census, validateProvisioning, allowMassDelete);
+    }
 }

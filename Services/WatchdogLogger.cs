@@ -74,12 +74,56 @@ public static partial class WatchdogLogger
             new ModelCapRestoreEvent(Now(), "model_cap_restored", model, fallback),
             WatchdogLogJsonContext.Default.ModelCapRestoreEvent);
 
+    /// <summary>The sync daemon's one summary line per tick (ns-13): a quiet tick carries all-zero counters and the
+    /// fast-path count, so the log makes plain that 99%+ of ticks did no work — the cheap-tick contract, visible.</summary>
+    public static void LogSyncTick(
+        string dydoRoot, int reconciled, int created, int updated, int archived, int conflicts, int fuseTrips,
+        long durationMs, bool quiet, bool census) =>
+        Write(dydoRoot,
+            new SyncTickEvent(Now(), "sync_tick", reconciled, created, updated, archived, conflicts, fuseTrips,
+                durationMs, quiet, census),
+            WatchdogLogJsonContext.Default.SyncTickEvent);
+
+    /// <summary>A tick the single-flight guard skipped because the previous one was still running (ns-13) — logged
+    /// once, never queued.</summary>
+    public static void LogTickSkipped(string dydoRoot) =>
+        Write(dydoRoot, new SimpleEvent(Now(), "tick_skipped"), WatchdogLogJsonContext.Default.SimpleEvent);
+
+    /// <summary>A tick whose sync/API call threw (ns-13): logged loudly; the loop continues and retries next tick.</summary>
+    public static void LogTickError(string dydoRoot, string message) =>
+        Write(dydoRoot, new TickErrorEvent(Now(), "tick_error", message), WatchdogLogJsonContext.Default.TickErrorEvent);
+
     private sealed record ModelCapRestoreEvent(
         [property: JsonPropertyName("ts")] string Ts,
         [property: JsonPropertyName("event")] string Event,
         [property: JsonPropertyName("model")] string Model,
         [property: JsonPropertyName("fallback")] string Fallback);
 
+    private sealed record SyncTickEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("reconciled")] int Reconciled,
+        [property: JsonPropertyName("created")] int Created,
+        [property: JsonPropertyName("updated")] int Updated,
+        [property: JsonPropertyName("archived")] int Archived,
+        [property: JsonPropertyName("conflicts")] int Conflicts,
+        [property: JsonPropertyName("fuse_trips")] int FuseTrips,
+        [property: JsonPropertyName("duration_ms")] long DurationMs,
+        [property: JsonPropertyName("quiet")] bool Quiet,
+        [property: JsonPropertyName("census")] bool Census);
+
+    private sealed record TickErrorEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("message")] string Message);
+
+    private sealed record SimpleEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event);
+
     [JsonSerializable(typeof(ModelCapRestoreEvent))]
+    [JsonSerializable(typeof(SyncTickEvent))]
+    [JsonSerializable(typeof(TickErrorEvent))]
+    [JsonSerializable(typeof(SimpleEvent))]
     private partial class WatchdogLogJsonContext : JsonSerializerContext { }
 }

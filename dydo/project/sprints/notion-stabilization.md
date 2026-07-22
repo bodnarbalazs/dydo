@@ -1,11 +1,11 @@
 ---
 title: Notion Stabilization
 campaign: dydo-2-0
-end:
-gate-result: pass (fresh-eyes plan review, 2 rounds, 2026-07-20)
+end: 2026-07-22
+gate-result: plan-review PASS (2026-07-20, 2 rounds) + seam-audit SOUND (2026-07-21, after 5 fixes) + live acceptance PASS (2026-07-21/22, zero drift x397) + inquisition FAIL(22)->fix-reviewed PASS (2026-07-22, issue 0299)
 seq: 8
 start:
-status: active
+status: done
 area: project
 type: context
 ---
@@ -93,6 +93,10 @@ Four seams, one theme each:
 **Execution order:** ns-1 → ns-2 → ns-3 → ns-5 → ns-6 → ns-7 → ns-8 → ns-4 → ns-9 → ns-11 → ns-10 → ns-12 → ns-13(stretch). ns-4 runs after Lane B because both touch the adapter; ns-10 needs the human env vars and everything before it; ns-12 needs ns-10's live access; ns-9 must never run before ns-1+ns-2 (no live tooling before scoping + fuse exist).
 
 Workers never commit; every slice lands through review; one slice one commit. The full ratchet (commands in the Specification) gates every slice; live slices additionally gate on the harness run.
+
+## Closure (2026-07-22)
+
+Sprint DONE. All four Done criteria live-verified; ns-13 (daemon, stretch) explicitly deferred to a follow-up sprint per the cuttable clause. Final gate trail: plan gate (2 rounds) -> 12 slices each fresh-eyes reviewed -> merge-sprint seam audit (5 findings fixed, SOUND) -> live acceptance against the real board (3 wire-truth bugs + 4 equilibrium asymmetry classes found and fixed live; 196->0 planned actions across 397 records) -> campaign inquisition (22 confirmed findings, 1 high, all fixed and fresh-eyes review-PASSed; issue 0299) -> final state: live suite 10/10, dry-run zero, board displays 'Slices', full ratchet green (2443 tests, gap_check 127/127, dydo check 0/0).
 
 ## Seam audit (2026-07-21, overnight run)
 

@@ -53,6 +53,16 @@ public interface ISyncAdapter
     SyncDoc NormalizeFields(SyncDoc doc) => doc;
 
     /// <summary>
+    /// The keys this view can round-trip as a SCALAR regardless of value — its schema-mapped, non-relation,
+    /// non-computed properties (issue 0299). The overlay treats these as adapter-visible even when
+    /// <see cref="NormalizeFields"/> drops a false/empty value, so a genuine board edit (a checkbox checked, a
+    /// date set) imports and the local value is never restored over it. Relations and out-of-schema keys are
+    /// excluded — they keep value-based visibility (a relation is representable only to the extent its ids
+    /// resolve). Default: empty — the docs mirror represents no fields, so every field stays adapter-invisible.
+    /// </summary>
+    IReadOnlySet<string> RepresentableScalarKeys => new HashSet<string>();
+
+    /// <summary>
     /// Whether this view maintains engine-computed properties (last-activity, DR 030 §3) that the engine
     /// writes one-way. When true, the runner enqueues an engine-computed refresh for objects a tick would
     /// otherwise leave un-pushed (a no-op, an external-to-repo write, or an externally-created page), so a

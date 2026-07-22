@@ -27,25 +27,35 @@ public static class ReconcileEngine
     /// <param name="staleConverterEcho">Whether the external body is the PREVIOUS converter version's degraded
     /// projection of the base body — a one-time migration artifact, not a board edit (ns-7). When it returns true
     /// the engine treats the body as unchanged and force-pushes the repo body to upgrade the board. Default: never.</param>
+    /// <param name="representableScalarKeys">The adapter's schema-mapped scalar keys (issue 0299): keys it can
+    /// round-trip regardless of value, so the overlay must NOT restore the repo's value over the external one even
+    /// when the field normalizer drops a false/empty. Null/empty keeps the docs-mirror semantics (every field
+    /// adapter-invisible), so a plain page's frontmatter is still preserved on the repo.</param>
     public static ReconcileResult Reconcile(
         SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external,
         Func<string, string>? bodyNormalizer = null, Func<SyncDoc, SyncDoc>? fieldNormalizer = null,
-        bool repoOwnedStructure = false, Func<string, string, bool>? staleConverterEcho = null)
+        bool repoOwnedStructure = false, Func<string, string, bool>? staleConverterEcho = null,
+        IReadOnlySet<string>? representableScalarKeys = null)
     {
         var norm = bodyNormalizer ?? (static s => s);
         var fieldNorm = fieldNormalizer ?? (static d => d);
+        var representable = NonNull(representableScalarKeys);
 
         if (repo == null && external == null)
             return BothGone(baseDoc);
 
         if (baseDoc == null)
-            return ReconcileNew(repo, external, fieldNorm);
+            return ReconcileNew(repo, external, fieldNorm, representable);
 
         if (repo == null || external == null)
             return DeleteOne(baseDoc, repo, external, norm, fieldNorm, repoOwnedStructure);
 
-        return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm, staleConverterEcho);
+        return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm, staleConverterEcho, representable);
     }
+
+    private static readonly IReadOnlySet<string> EmptyKeys = new HashSet<string>();
+
+    private static IReadOnlySet<string> NonNull(IReadOnlySet<string>? keys) => keys ?? EmptyKeys;
 
     /// <summary>Gone from both sides. A lingering base entry is retired (slice brief §2): left as None the
     /// stale entry (archived-page ExternalId + last-activity) would live forever — a git-restored file equal to
@@ -56,10 +66,10 @@ public static class ReconcileEngine
 
     /// <summary>Nothing in base, present on at least one side: create on the missing side, or — new
     /// on both at once — treat any divergence as a conflict against an empty synthetic base.</summary>
-    private static ReconcileResult ReconcileNew(SyncDoc? repo, SyncDoc? external, Func<SyncDoc, SyncDoc> fieldNorm) =>
+    private static ReconcileResult ReconcileNew(SyncDoc? repo, SyncDoc? external, Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable) =>
         external == null ? CreateToExternal(repo!, fieldNorm)
         : repo == null ? CreateToRepo(external)
-        : MergeBoth(SyntheticBase(repo, external), repo, external, fieldNorm);
+        : MergeBoth(SyntheticBase(repo, external), repo, external, fieldNorm, representable);
 
     /// <summary>Present in base, gone on exactly one side now (slice brief §1). If the surviving side
     /// is unchanged since base, the deletion is intentional and propagates to the other side. If the
@@ -142,7 +152,7 @@ public static class ReconcileEngine
     }
 
     /// <summary>Both sides present: propagate a one-sided change, else 3-way merge.</summary>
-    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm, Func<string, string, bool>? staleEcho)
+    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm, Func<string, string, bool>? staleEcho, IReadOnlySet<string> representable)
     {
         // Converter-migration shim (ns-7 blocker): a board synced before the converter upgrade holds the OLD
         // converter's degraded projection of the base body. Read back and normalized under the new converter it
@@ -183,19 +193,24 @@ public static class ReconcileEngine
             // the stale relation is preserved from the repo AND re-pushed with the merge, never read as a clear the
             // merge would archive on the board (finding 1, concurrent-edit variant).
             return !repoChanged && !hasStale
-                ? WriteToRepoResult(external, repo, baseDoc, externalId, norm, fieldNorm)
-                : MergeBoth(baseDoc, repo, externalView, fieldNorm);
+                ? WriteToRepoResult(external, repo, baseDoc, externalId, norm, fieldNorm, representable)
+                : MergeBoth(baseDoc, repo, externalView, fieldNorm, representable);
 
         // repoChanged is a real repo edit; upgradeBody is only the board holding the old converter's projection of an
         // otherwise-unchanged body — both push the repo body to the board, but only the former is a repo-side edit.
+        // A repo-side edit that emptied a scalar the base recorded must explicitly CLEAR it on the board (F5).
+        // ClearedScalarKeys returns empty whenever base and repo agree (repoChanged false / stale re-push / body
+        // upgrade), so it is safe to compute unconditionally on every push branch.
         if (repoChanged || upgradeBody)
-            return PushToExternalResult(repo, externalId, fieldNorm, repoChanged: repoChanged);
+            return PushToExternalResult(repo, externalId, fieldNorm, repoChanged,
+                ClearedScalarKeys(baseDoc, repo, representable, externalId));
 
         // Neither side changed. A lingering stale echo means the board still points at the abandoned parent page —
         // re-push the repo relation to resolve it to the new page id (finding 1; folds in finding 4's no-converge
         // churn), not a repo-side edit (RepoChanged stays false). Otherwise a genuine no-op.
         return hasStale
-            ? PushToExternalResult(repo, externalId, fieldNorm, repoChanged: false)
+            ? PushToExternalResult(repo, externalId, fieldNorm, repoChanged: false,
+                ClearedScalarKeys(baseDoc, repo, representable, externalId))
             : Simple(repo.LocalId, ReconcileAction.None);
     }
 
@@ -216,14 +231,35 @@ public static class ReconcileEngine
     /// field the external drops — an as-yet-unresolvable relation — reads back absent, so an un-normalized base would
     /// misread that absence next tick as a deletion and blank the repo value, slice brief §1). <paramref name="repoChanged"/>
     /// is false only for a stale-echo re-push (finding 1): the repo already equals the base, so no activity bump.</summary>
-    private static ReconcileResult PushToExternalResult(SyncDoc repo, string? externalId, Func<SyncDoc, SyncDoc> fieldNorm, bool repoChanged) => new()
+    private static ReconcileResult PushToExternalResult(SyncDoc repo, string? externalId, Func<SyncDoc, SyncDoc> fieldNorm, bool repoChanged, IReadOnlyList<string> clearedKeys) => new()
     {
         LocalId = repo.LocalId,
         Action = ReconcileAction.PushToExternal,
         ExternalWrite = WithExternalId(repo, externalId),
         NewBase = fieldNorm(WithExternalId(repo, externalId)),
         RepoChanged = repoChanged,
+        ClearedKeys = clearedKeys,
     };
+
+    /// <summary>Scalar keys this push must explicitly CLEAR on the external side (issue 0299, F5): a representable
+    /// scalar the base recorded NON-EMPTY that the repo now carries empty-or-absent, on an UPDATE only (a create
+    /// omits blanks — "blank means unset"). Relations and out-of-schema keys are excluded (not representable
+    /// scalars). Without this the update's PATCH omits the blank property, the board keeps the old value, and the
+    /// non-empty echo re-imports it next tick — a silent revert of the local clear. Caveat for adapter authors:
+    /// for a title-less doc the base records the adapter's synthesized title while the raw repo lacks the key, so
+    /// the returned list can carry the title key — the Notion adapter filters it in BuildClears; any future
+    /// adapter consuming ClearedKeys must do the same or it will emit a phantom title clear.</summary>
+    private static IReadOnlyList<string> ClearedScalarKeys(SyncDoc baseDoc, SyncDoc pushed, IReadOnlySet<string> representable, string? externalId)
+    {
+        if (externalId == null)
+            return [];
+        var pushedMap = FirstWins(pushed.Fields);
+        return FirstWins(baseDoc.Fields)
+            .Where(kv => representable.Contains(kv.Key) && kv.Value.Length > 0
+                && (!pushedMap.TryGetValue(kv.Key, out var v) || v.Length == 0))
+            .Select(kv => kv.Key)
+            .ToList();
+    }
 
     /// <summary>Write a one-sided external change back to the repo, overlaying the repo's adapter-invisible fields
     /// so the external side's inability to round-trip them does not blank the file, and recording only the
@@ -231,12 +267,12 @@ public static class ReconcileEngine
     /// When the external change is FIELD-only — the bodies are equal modulo the adapter's body round-trip — the
     /// repo's own body is carried through unchanged, so a field edit never collateral-rewrites the file body into
     /// the external's normalized dialect (blank-line-stripped, marker-swapped); the external body is written only
-    /// when it genuinely differs (issue 0164, body class).</summary>
-    private static ReconcileResult WriteToRepoResult(SyncDoc external, SyncDoc repo, SyncDoc baseDoc, string? externalId, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
+    /// when it genuinely differs (issue 0299, body class).</summary>
+    private static ReconcileResult WriteToRepoResult(SyncDoc external, SyncDoc repo, SyncDoc baseDoc, string? externalId, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable)
     {
         var bodyUnchanged = norm(external.Body.Replace("\r\n", "\n")) == norm(repo.Body.Replace("\r\n", "\n"));
         var source = WithSourcePath(bodyUnchanged ? WithBody(external, repo.Body) : external, repo.SourcePath);
-        var toRepo = OverlayAdapterInvisibleFields(source, repo, baseDoc, fieldNorm);
+        var toRepo = OverlayAdapterInvisibleFields(source, repo, baseDoc, fieldNorm, representable);
         return new ReconcileResult
         {
             LocalId = repo.LocalId,
@@ -296,7 +332,7 @@ public static class ReconcileEngine
         };
     }
 
-    private static ReconcileResult MergeBoth(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm)
+    private static ReconcileResult MergeBoth(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable)
     {
         // Filter the external's empty-relation echoes the base never recorded before the 3-way merge (finding 2):
         // an all-unresolvable relation reads back empty from real Notion, and FieldMerge would otherwise see it
@@ -315,7 +351,7 @@ public static class ReconcileEngine
             Fields = fields.Fields,
             Body = body.Text,
             SourcePath = repo.SourcePath,
-        }, repo, baseDoc, fieldNorm);
+        }, repo, baseDoc, fieldNorm, representable);
 
         return new ReconcileResult
         {
@@ -327,6 +363,8 @@ public static class ReconcileEngine
             // adapter-invisible field is not misread as an external deletion next tick (slice brief §1).
             NewBase = fieldNorm(merged),
             RepoChanged = true,
+            // A scalar the base recorded that the merge resolved to empty must be explicitly cleared on push (F5).
+            ClearedKeys = ClearedScalarKeys(baseDoc, merged, representable, externalId),
         };
     }
 
@@ -341,7 +379,7 @@ public static class ReconcileEngine
     /// field the repo genuinely deleted is absent from the repo doc, so it is not in this set and is never
     /// resurrected. With the default identity normalizer this set is empty and the input passes through.
     /// </summary>
-    private static SyncDoc OverlayAdapterInvisibleFields(SyncDoc written, SyncDoc repo, SyncDoc baseDoc, Func<SyncDoc, SyncDoc> fieldNorm)
+    private static SyncDoc OverlayAdapterInvisibleFields(SyncDoc written, SyncDoc repo, SyncDoc baseDoc, Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable)
     {
         var visible = FirstWins(fieldNorm(repo).Fields);
         // What the base RECORDED per key (raw). A whole-field-invisible relation preserves only the repo entries
@@ -352,7 +390,11 @@ public static class ReconcileEngine
 
         // Whole-field invisible: a key the normalizer drops ENTIRELY — an out-of-schema/local-only frontmatter
         // key, or a relation that resolves to nothing — reads back absent, so the external doc would blank it.
-        var invisible = FirstWins(repo.Fields.Where(f => !visible.ContainsKey(f.Key)));
+        // A schema-mapped SCALAR (issue 0299, F1) is NEVER invisible even when the normalizer drops its false/empty
+        // value: the adapter faithfully round-trips false/empty, so restoring the repo's value here would clobber a
+        // genuine board edit (a checkbox checked, a date set) and loop forever. Excluding representable scalars means
+        // the external value passes through for them; relations keep value-based visibility (representable excludes them).
+        var invisible = FirstWins(repo.Fields.Where(f => !visible.ContainsKey(f.Key) && !representable.Contains(f.Key)));
         // The repo's un-pushed pending entries: a relation target the normalizer DROPS (not yet syncable) AND the
         // base never recorded. An entry the base DID record but the board no longer shows was cleared/retired
         // there, not un-pushed work, so it is excluded — it must not be re-appended to the file nor block the
@@ -384,8 +426,23 @@ public static class ReconcileEngine
             .Where(k => !resolvableExternal.ContainsKey(k) && IsRelationKey(k, written, fieldNorm))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        // F3 (issue 0299): a schema-default scalar echo — a false checkbox or empty scalar the normalizer drops —
+        // the file never carried (absent from BOTH repo and base) must not be planted into frontmatter on a genuine
+        // WriteToRepo/merge, or it seeds finding-1's explicit-false/empty clobber shape. Drop those keys from the
+        // written doc. A key repo or base DID carry is kept (an explicit local false, or a recorded value that may
+        // be a genuine board clear).
+        var repoKeys = repo.Fields.Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var schemaDefaultEchoes = written.Fields
+            .Where(f => representable.Contains(f.Key) && !resolvableExternal.ContainsKey(f.Key)
+                && !repoKeys.Contains(f.Key) && !recordedEntries.ContainsKey(f.Key))
+            .Select(f => f.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var overlaid = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var fields = written.Fields.Select(f => OverlayOne(f, invisible, invisibleRelations, pending, resolvableExternal, recordedEntries, externalRelationKeys, overlaid)).ToList();
+        var fields = written.Fields
+            .Where(f => !schemaDefaultEchoes.Contains(f.Key))
+            .Select(f => OverlayOne(f, invisible, invisibleRelations, pending, resolvableExternal, recordedEntries, externalRelationKeys, overlaid))
+            .ToList();
         AppendUnseen(fields, invisible, invisibleRelations, pending, recordedEntries, overlaid);
 
         return new SyncDoc
@@ -688,7 +745,7 @@ public static class ReconcileEngine
     {
         if (norm(a.Body.Replace("\r\n", "\n")) != norm(b.Body.Replace("\r\n", "\n")))
             return false;
-        // Order-INSENSITIVE field compare (issue 0164). Field order is cosmetic — the repo keeps a doc's authored
+        // Order-INSENSITIVE field compare (issue 0299). Field order is cosmetic — the repo keeps a doc's authored
         // frontmatter order, while the external echo comes back in NotionPropertyMapper.ToFields' canonical order
         // (title first, then alphabetical). A pure reorder must not read as a change, or a record whose frontmatter
         // order differs from that canonical order (e.g. `status` before `needs-human`) churns WriteToRepo every tick

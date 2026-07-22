@@ -1139,7 +1139,7 @@ public class NotionSyncAdapterTests
     [Fact]
     public void SchemaDefaultEchoes_FalseCheckboxAndEmptySelect_NoWriteToRepo_AcrossTwoPasses()
     {
-        // Issue 0164: a spine record whose frontmatter PREDATES the needs-human/resolution model keys. Real
+        // Issue 0299: a spine record whose frontmatter PREDATES the needs-human/resolution model keys. Real
         // Notion returns EVERY schema property, so the page echoes needs-human=false and resolution=None —
         // schema defaults the base never recorded. The read must canonicalize these to absent so the reconcile
         // is a no-op. Before the fix the non-empty "false" checkbox echo escaped the empty-echo filter and drove
@@ -1229,9 +1229,49 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
+    public void RemoteSelectValueSet_LocalKeyAbsent_ImportsValue()
+    {
+        // Scalar sibling of the checkbox quadrant above (review observation, issue 0299): a colleague setting a
+        // select value on the board for a legacy file that never carried the key is a real external edit — the
+        // absent==empty==default canonicalization must not mask the import.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["resolution"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-selset-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "title", Value = "Issue" }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            client.QueryDataSource("ds1").Single()
+                .Properties["resolution"] = new NotionPropertyValue { Type = "select", Select = new NotionSelectOption { Name = "wont-do" } };
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.WriteToRepo, Assert.Single(result.Results).Action);
+            Assert.Equal("wont-do", SyncDocFile.Read(repoPath, "t", repoPath).GetField("resolution"));
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void CheckboxClearedLocally_PushesFalseToNotion_AndConverges()
     {
-        // Round-trip property (issue 0164 §2): canonicalizing a false checkbox to absent in COMPARISON must not
+        // Round-trip property (issue 0299 §2): canonicalizing a false checkbox to absent in COMPARISON must not
         // break the WRITE path's ability to clear it. A record whose needs-human was checked, synced, then set
         // back to false locally must PUSH that false to the board — repoChanged fires because the BASE still
         // holds the old true — clearing the remote checkbox, after which the next tick is a clean no-op.
@@ -1301,7 +1341,7 @@ public class NotionSyncAdapterTests
     [Fact]
     public void NameSlugTask_RealSchema_PrettifiedTitleEcho_NoImport_AcrossTwoPasses()
     {
-        // Issue 0164 (final field class). A real Task file keyed `name: git-status` with NO `title:` — the board
+        // Issue 0299 (final field class). A real Task file keyed `name: git-status` with NO `title:` — the board
         // title EnsureTitle synthesizes is "Git Status", echoed back as a title field the file lacks. The compare
         // view must match the echo AND ignore the cosmetic frontmatter-vs-ToFields field-order difference, so the
         // reconcile is a no-op: no `title:` imported, no `priority:`/`work-type:` empty keys injected, file untouched.
@@ -1373,7 +1413,7 @@ public class NotionSyncAdapterTests
     [Fact]
     public void BodyEndingInQuote_LiveReadShape_NormalizesEqualToLocalBody_AndFullCycleIsNoOp()
     {
-        // Issue 0164 (body class): the mass-closed drifters whose body ENDS IN A QUOTE. Seed the fake with the
+        // Issue 0299 (body class): the mass-closed drifters whose body ENDS IN A QUOTE. Seed the fake with the
         // EXACT live block sequence captured from GET children on task git-status, read it back through
         // ReadExternalState/FromBlocks, and assert the normalized external body equals the normalized local body
         // — the quote-at-end-of-document round-trips with zero byte divergence. A full push→read→reconcile cycle
@@ -1428,7 +1468,7 @@ public class NotionSyncAdapterTests
     [Fact]
     public void NameSlugLocal_NoTitle_SynthesizedTitleEcho_NoWriteToRepo_AcrossTwoPasses()
     {
-        // Issue 0164 (name/raw-slug class, the final live drifters — git-status.md, reform-r1.md, …). The file
+        // Issue 0299 (name/raw-slug class, the final live drifters — git-status.md, reform-r1.md, …). The file
         // has a `name:` field holding the raw slug and NO `title:` key. EnsureTitle pushes the PRETTIFIED form
         // ("Git Status"), which Notion echoes back — the raw slug is gone from the board. The normalizer must
         // synthesize the same prettified value on the local/base side (from the doc's own name/local id) so the
@@ -1516,7 +1556,7 @@ public class NotionSyncAdapterTests
     [Fact]
     public void TitleLessLocal_SynthesizedTitleEcho_NoWriteToRepo_AcrossTwoPasses()
     {
-        // Issue 0164 (title class): an old record whose frontmatter has NO `title:` key. On push EnsureTitle
+        // Issue 0299 (title class): an old record whose frontmatter has NO `title:` key. On push EnsureTitle
         // (issue 0290) writes a prettified-local-id page title, which Notion then echoes back — a title field the
         // title-less local/base doc has no key for. The normalizer must mirror that synthesized title so the echo
         // round-trips as a no-op instead of an eternal WriteToRepo re-injecting `title:` into the file.
@@ -1603,7 +1643,7 @@ public class NotionSyncAdapterTests
     [Fact]
     public void FieldOnlyExternalChange_PreservesLocalBodyBytes()
     {
-        // Issue 0164 (body class): a genuine external FIELD change fires WriteToRepo, but the body was NOT
+        // Issue 0299 (body class): a genuine external FIELD change fires WriteToRepo, but the body was NOT
         // touched — it only differs from the local file by the block round-trip's dialect (blank lines the
         // converter collapses). The RepoWrite must carry the LOCAL body verbatim so a field edit never
         // collateral-strips the file body into Notion's canonical dialect.
@@ -1688,5 +1728,359 @@ public class NotionSyncAdapterTests
         {
             Directory.Delete(dir, true);
         }
+    }
+
+    [Fact]
+    public void LocalPresentFalseCheckbox_BoardChecks_ImportsTrue()
+    {
+        // Issue 0299 (F1): a file carrying an EXPLICIT `needs-human: false` makes the field normalizer-dropped, so
+        // the overlay used to classify it adapter-invisible and restore the local "false" over a genuine board
+        // check — the board edit never imported and WriteToRepo looped forever. A schema scalar must be adapter-
+        // visible even when false/empty, so the board's true imports.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["needs-human"] = "checkbox" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-f1cb-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t",
+                Fields = [new SyncField { Key = "title", Value = "T" }, new SyncField { Key = "needs-human", Value = "false" }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            client.QueryDataSource("ds1").Single()
+                .Properties["needs-human"] = new NotionPropertyValue { Type = "checkbox", Checkbox = true };
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.WriteToRepo, Assert.Single(result.Results).Action);
+            Assert.Equal("true", SyncDocFile.Read(repoPath, "t", repoPath).GetField("needs-human")); // board check imported
+            // And it converges: the next tick is a clean no-op.
+            var settle = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+            Assert.All(settle.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void LocalEmptyDate_BoardSetsDate_Imports()
+    {
+        // Issue 0299 (F1): a present-but-empty `start:` scalar is normalizer-dropped; a human setting the date on
+        // the board must still import (not be restored to empty from the local file).
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["start"] = "date" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-f1date-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t",
+                Fields = [new SyncField { Key = "title", Value = "T" }, new SyncField { Key = "start", Value = "" }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            client.QueryDataSource("ds1").Single()
+                .Properties["start"] = new NotionPropertyValue { Type = "date", Date = new NotionDate { Start = "2026-06-01" } };
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.WriteToRepo, Assert.Single(result.Results).Action);
+            Assert.Equal("2026-06-01", SyncDocFile.Read(repoPath, "t", repoPath).GetField("start")); // board date imported
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void GenuineTitleEdit_LegacyFile_ImportsTitle_WithoutInjectingSchemaDefaultKeys()
+    {
+        // Issue 0299 (F3): a genuine board title edit on a legacy file (no needs-human/resolution keys) must import
+        // the title WITHOUT planting `needs-human: false` / empty `resolution:` schema-default echoes into the file.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string>
+        {
+            ["title"] = "title", ["status"] = "select", ["needs-human"] = "checkbox", ["resolution"] = "select",
+        };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-f3-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            // Legacy file: title + status only (predates needs-human/resolution keys).
+            var doc = new SyncDoc
+            {
+                LocalId = "t",
+                Fields = [new SyncField { Key = "title", Value = "Old Title" }, new SyncField { Key = "status", Value = "open" }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            // Board echoes schema defaults for the unset props, AND a human renames the title.
+            var page = client.QueryDataSource("ds1").Single();
+            page.Properties["needs-human"] = new NotionPropertyValue { Type = "checkbox", Checkbox = false };
+            page.Properties["resolution"] = new NotionPropertyValue { Type = "select", Select = null };
+            page.Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("New Title") };
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.WriteToRepo, Assert.Single(result.Results).Action);
+            var after = SyncDocFile.Read(repoPath, "t", repoPath);
+            Assert.Equal("New Title", after.GetField("title"));     // genuine edit imported
+            Assert.Null(after.GetField("needs-human"));             // schema-default echo NOT planted
+            Assert.Null(after.GetField("resolution"));              // schema-default echo NOT planted
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void EmptyTitleValue_SynthesizedEcho_NoOp_AcrossTwoPasses_AndHumanRenameImports()
+    {
+        // Issue 0299 (F2/F10): a doc with `title: ""` pushes a synthesized board title; the NormalizeFields mirror
+        // must fire on the same predicate EnsureTitle uses (empty/whitespace, not just absent), so the echo is a
+        // no-op across passes. A genuine human rename still imports.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-f2-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "agent-graph.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "agent-graph",
+                Fields = [new SyncField { Key = "title", Value = "" }, new SyncField { Key = "status", Value = "open" }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+            var before = File.ReadAllText(repoPath);
+            Assert.Equal("Agent Graph", NotionRichText.Flatten(client.QueryDataSource("ds1").Single().Properties["title"].Title));
+
+            for (var pass = 0; pass < 2; pass++)
+            {
+                var result = Runner().Run([SyncDocFile.Read(repoPath, "agent-graph", repoPath)]);
+                Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+                Assert.Equal(before, File.ReadAllText(repoPath));
+            }
+
+            // Genuine human rename still imports.
+            client.QueryDataSource("ds1").Single()
+                .Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("Renamed By Human") };
+            var edit = Runner().Run([SyncDocFile.Read(repoPath, "agent-graph", repoPath)]);
+            Assert.Equal(ReconcileAction.WriteToRepo, Assert.Single(edit.Results).Action);
+            Assert.Equal("Renamed By Human", SyncDocFile.Read(repoPath, "agent-graph", repoPath).GetField("title"));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Theory]
+    [InlineData("status", "select", "open")]
+    [InlineData("due", "date", "2026-06-01")]
+    public void ScalarClearedLocally_PushesClearToNotion_AndConverges(string key, string type, string value)
+    {
+        // Issue 0299 (F5): setting a select/date, syncing, then CLEARING it locally must push an explicit clear so
+        // the board value is removed — not omit the property and silently re-import the old value next tick.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", [key] = type };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-clear-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t",
+                Fields = [new SyncField { Key = "title", Value = "T" }, new SyncField { Key = key, Value = value }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]); // create with the scalar set
+            var page = client.QueryDataSource("ds1").Single();
+            Assert.Equal(value, type == "select" ? page.Properties[key].Select!.Name : page.Properties[key].Date!.Start);
+
+            // Clear it locally (remove the key), then sync.
+            var cleared = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "title", Value = "T" }], Body = "body", SourcePath = repoPath,
+            };
+            SyncDocFile.Write(repoPath, cleared);
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.PushToExternal, Assert.Single(result.Results).Action);
+            page = client.QueryDataSource("ds1").Single();
+            if (type == "select") Assert.Null(page.Properties[key].Select); // board cleared
+            else Assert.Null(page.Properties[key].Date);
+
+            // Converges: the next tick is a clean no-op.
+            var settle = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+            Assert.All(settle.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void AbsentKeyNeverRecorded_NoClearOnUpdate()
+    {
+        // Issue 0299 (F5): a scalar the file never carried and the base never recorded must NOT be cleared on an
+        // update (a create/update omits blanks — "unset", not "clear"), so a genuine title edit issues no phantom
+        // clear for the absent status property.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-noclear-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc { LocalId = "t", Fields = [new SyncField { Key = "title", Value = "Old" }], Body = "b", SourcePath = repoPath };
+            Runner().Run([doc]); // create; status never recorded
+            SyncDocFile.Write(repoPath, doc);
+            // Board gains a status a colleague set directly (never in the repo/base).
+            client.QueryDataSource("ds1").Single().Properties["status"] = new NotionPropertyValue { Type = "select", Select = new NotionSelectOption { Name = "open" } };
+
+            // Local retitles; the push must not clear the board's status.
+            var edited = new SyncDoc { LocalId = "t", Fields = [new SyncField { Key = "title", Value = "New" }], Body = "b", SourcePath = repoPath };
+            SyncDocFile.Write(repoPath, edited);
+            Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal("open", client.QueryDataSource("ds1").Single().Properties["status"].Select!.Name); // NOT cleared
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void UpdateRequest_Clears_SerializeToExplicitNullAndEmptyArrayWireShapes()
+    {
+        // Issue 0299 (F5): the write-only converter must emit the live-probed clear shapes the source generator's
+        // WhenWritingNull would otherwise drop — explicit null for scalar types, empty array for the collection types.
+        var request = new NotionPageUpdateRequest
+        {
+            Properties = new Dictionary<string, NotionPropertyValue>
+            {
+                ["title"] = new() { Type = "title", Title = NotionRichText.Of("Keep") },
+            },
+            PropertyClears = new Dictionary<string, string>
+            {
+                ["resolution"] = "select", ["due"] = "date", ["points"] = "number",
+                ["link"] = "url", ["notes"] = "rich_text", ["needs-human"] = "checkbox",
+            },
+        };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(request, DynaDocs.Serialization.NotionJsonContext.Default.NotionPageUpdateRequest);
+
+        Assert.Contains("\"resolution\":{\"select\":null}", json);
+        Assert.Contains("\"due\":{\"date\":null}", json);
+        Assert.Contains("\"points\":{\"number\":null}", json);
+        Assert.Contains("\"link\":{\"url\":null}", json);
+        Assert.Contains("\"notes\":{\"rich_text\":[]}", json);
+        Assert.Contains("\"needs-human\":{\"checkbox\":false}", json);
+        Assert.Contains("\"title\":{", json); // the typed property still serializes alongside the clears
+    }
+
+    [Fact]
+    public void GenuineBoardClearOfRecordedSelect_ImportsThroughCanonicalization()
+    {
+        // Issue 0299 (F6): a human clearing a recorded select on the board must import through the
+        // absent==empty==default canonicalization — the two-path split (normalized change-detection vs raw-echo
+        // WriteToRepo) that lets a genuine clear survive is pinned here.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-boardclear-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t",
+                Fields = [new SyncField { Key = "title", Value = "T" }, new SyncField { Key = "status", Value = "open" }],
+                Body = "b", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            // A human clears the select on the board (present but null).
+            client.QueryDataSource("ds1").Single().Properties["status"] = new NotionPropertyValue { Type = "select", Select = null };
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.WriteToRepo, Assert.Single(result.Results).Action);
+            Assert.NotEqual("open", SyncDocFile.Read(repoPath, "t", repoPath).GetField("status")); // clear imported
+            var settle = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+            Assert.All(settle.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void RemoteCheckboxUncheck_BaseTrue_ImportsFalse()
+    {
+        // Issue 0299 (F7): the fourth checkbox quadrant — base records needs-human=true, the board UNCHECKS it —
+        // must import (the attention flag going false is meaningful). Threads the drop layers via the raw echo.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["needs-human"] = "checkbox" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-uncheck-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t",
+                Fields = [new SyncField { Key = "title", Value = "T" }, new SyncField { Key = "needs-human", Value = "true" }],
+                Body = "b", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            client.QueryDataSource("ds1").Single().Properties["needs-human"] = new NotionPropertyValue { Type = "checkbox", Checkbox = false };
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal(ReconcileAction.WriteToRepo, Assert.Single(result.Results).Action);
+            Assert.NotEqual("true", SyncDocFile.Read(repoPath, "t", repoPath).GetField("needs-human")); // uncheck imported
+            var settle = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+            Assert.All(settle.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+        }
+        finally { Directory.Delete(dir, true); }
     }
 }

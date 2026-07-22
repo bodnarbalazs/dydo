@@ -14,8 +14,12 @@ using DynaDocs.Sync.Notion.Dtos;
 /// dropped), which the reconcile would otherwise misread as an external edit and use to overwrite the canonical
 /// file. <see cref="NotionSyncAdapter.IsStaleConverterEcho"/> compares an external body against
 /// <see cref="Render"/> of the base to detect exactly that case and force a repo→board upgrade instead.
-/// <para>Do NOT extend or "fix" this — it must reproduce the old behaviour byte-for-byte. Remove the whole file
-/// (and the shim) once ns-10's live run confirms every board has been re-rendered under the new converter.</para>
+/// <para>Do NOT extend or "fix" this — it must reproduce the old behaviour byte-for-byte. REMOVAL DEFERRED (issue
+/// 0299 F13): remove the whole file and the shim once every DOWNSTREAM install has synced at least once post-2.2.
+/// ns-10's live run only confirmed THIS repo's board is re-rendered under the new converter; the frozen echo is the
+/// ns-6-era Markdig converter (never shipped in a release — ns-6/ns-7 are both inside v2.1.0..HEAD), so it targets
+/// dev-window boards, but whether a v2.1.0-era board (pushed by the older LINE-based converter) still needs it is
+/// undetermined — hence the deferral rather than deletion. Tracked in dydo/project/backlog/notion-board-followups.md.</para>
 /// Excluded from coverage: frozen dead-on-arrival code, exercised behaviourally by the migration standing test but
 /// not maintained to the active tier.
 /// </summary>

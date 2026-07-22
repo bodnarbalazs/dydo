@@ -38,11 +38,10 @@ public sealed class FakeNotionClient : INotionClient
 
     /// <summary>View ids per database — seeded with an auto-created "default" on CreateDatabase (as real Notion
     /// does), appended by CreateView, and pruned by DeleteView. The list carries bare id-only refs, mirroring the
-    /// real list endpoint (ns-12); a view's name/type live in <see cref="_viewNames"/>/<see cref="_viewTypes"/> and
+    /// real list endpoint (ns-12); a view's name lives in <see cref="_viewNames"/> and
     /// surface only through <see cref="RetrieveView"/>, so the CreateView recovery must retrieve to match by name.</summary>
     private readonly Dictionary<string, List<NotionViewRef>> _viewsByDb = new();
     private readonly Dictionary<string, string> _viewNames = new();
-    private readonly Dictionary<string, string?> _viewTypes = new();
     private int _nextView = 1;
     public List<string> DeletedViews { get; } = [];
 
@@ -251,7 +250,6 @@ public sealed class FakeNotionClient : INotionClient
         var defaultViewId = $"default-{n}"; // Notion auto-creates one; the list exposes only its id
         _viewsByDb[db.Id] = [new NotionViewRef { Id = defaultViewId }];
         _viewNames[defaultViewId] = "Default view";
-        _viewTypes[defaultViewId] = "table";
         CreatedDatabases.Add(request);
         // Real Notion makes every created data source searchable — the source of truth the CreateDatabase
         // recovery re-queries when a create response is lost (ns-5).
@@ -327,7 +325,6 @@ public sealed class FakeNotionClient : INotionClient
         var viewId = $"view-{_nextView++}";
         list.Add(new NotionViewRef { Id = viewId });
         _viewNames[viewId] = request.Name;
-        _viewTypes[viewId] = request.Type;
         if (CreateViewSucceedsThenAmbiguous5xx)
         {
             CreateViewSucceedsThenAmbiguous5xx = false;
@@ -343,7 +340,6 @@ public sealed class FakeNotionClient : INotionClient
     {
         Id = viewId,
         Name = _viewNames.GetValueOrDefault(viewId),
-        Type = _viewTypes.GetValueOrDefault(viewId),
     };
 
     public void DeleteView(string viewId)
@@ -445,6 +441,12 @@ public sealed class FakeNotionClient : INotionClient
             foreach (var (k, v) in request.Properties)
                 page.Properties[k] = v;
         }
+        // Honor explicit clears like live Notion (issue 0299, F5): the property stays PRESENT but empty (a select/
+        // date/number/url reads back null → "", a checkbox → false), so a subsequent read echoes the cleared shape
+        // rather than the old value. Per-key merge above already models live's partial-update semantics.
+        if (request.PropertyClears != null)
+            foreach (var (k, type) in request.PropertyClears)
+                page.Properties[k] = new NotionPropertyValue { Type = type };
         if (request.Archived == true)
             page.Archived = true;
         return page;
@@ -534,27 +536,37 @@ public sealed class FakeNotionClient : INotionClient
                 child.Archived = true;
     }
 
+    /// <summary>Row-count per append chunk, in call order (issue 0299, F19) — lets a wide-table test assert a
+    /// 250-row table lands as create(100) + append(100) + append(50), mirroring live's ≤100-per-request cap.</summary>
+    public List<int> AppendChildCounts { get; } = [];
+
     public IReadOnlyList<string> AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
     {
         if (FailAppend)
             throw new NotionApiException(500, "simulated append failure");
-        AppendedTo.Add(blockId);
-        if (request.Children.Count > 0)
+        _blocks.TryAdd(blockId, []);
+        var ids = new List<string>();
+        // Chunk like the real NotionClient.AppendBlockChildren (≤100 top-level blocks AND ≤1000 elements per
+        // request), then validate and store each chunk as one PATCH — so a >100-block level (a wide table's
+        // overflow rows) lands across multiple requests, exactly as live requires (F19). RejectTopLevelChildren and
+        // the depth/row-cap guards model the per-request server checks each chunk must satisfy.
+        foreach (var chunk in NotionBlockAppender.Chunk(request.Children))
         {
-            RejectTopLevelChildren(request.Children);
-            var depth = BlockDepth(request.Children);
+            AppendedTo.Add(blockId);
+            AppendChildCounts.Add(chunk.Count);
+            RejectTopLevelChildren(chunk);
+            var depth = BlockDepth(chunk);
             PayloadDepths.Add(depth);
-            // Notion accepts at most two nesting levels per request; guarding it here makes every suite that appends
-            // enforce the invariant for free, so a depth-cut regression fails loudly instead of silently over-nesting.
             if (depth > 2)
                 throw new NotionApiException(400, $"body.children nested {depth} deep exceeds Notion's 2-level cap");
-            GuardTableRowCap(request.Children);
+            if (chunk.Count > 100)
+                throw new NotionApiException(400, $"body.children length {chunk.Count} should be <= 100");
+            GuardTableRowCap(chunk);
+            // Notion's append response returns only the ids of the blocks appended at the TOP level — never a nested
+            // child's — so mint and return those, storing any inline descendants under their own minted ids (Store).
+            ids.AddRange(chunk.Select(child => Store(blockId, child)));
         }
-        _blocks.TryAdd(blockId, []);
-        // Notion's append response returns only the ids of the blocks appended at the TOP level — never a nested
-        // child's — so mint and return those, storing any inline descendants under their own minted ids (Store)
-        // the way real Notion persists a nested payload.
-        return request.Children.Select(child => Store(blockId, child)).ToList();
+        return ids;
     }
 
     /// <summary>Persist a block under <paramref name="parentId"/>, minting its id and recursively storing any inline

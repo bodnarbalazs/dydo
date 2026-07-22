@@ -1268,4 +1268,81 @@ public class ReconcileEngineTests
             Doc("t", "canonical", ("status", "open")), staleConverterEcho: static (_, _) => true);
         Assert.Equal(ReconcileAction.None, result.Action);
     }
+
+    /// <summary>A docs-mirror normalizer: every field is adapter-invisible (a plain page carries no properties).</summary>
+    private static SyncDoc DropAllFields(SyncDoc d) => new()
+    {
+        LocalId = d.LocalId, Fields = [], Body = d.Body, SourcePath = d.SourcePath,
+    };
+
+    private static SyncDoc DocX(string localId, string externalId, string body, params (string Key, string Value)[] fields) => new()
+    {
+        LocalId = localId, ExternalId = externalId,
+        Fields = fields.Select(f => new SyncField { Key = f.Key, Value = f.Value }).ToList(),
+        Body = body, SourcePath = $"tasks/{localId}.md",
+    };
+
+    private static readonly IReadOnlySet<string> StatusIsRepresentable = new HashSet<string> { "status" };
+
+    [Fact]
+    public void LocalScalarClearOnUpdate_SurfacesClearedKey_ForPush()
+    {
+        // Issue 0299 (F5): the base recorded a scalar the repo now blanks on an existing (externalId) object — the
+        // push must carry it as an explicit clear so the board value is removed, not a silent revert.
+        var b = DocX("t", "ext-1", "body", ("status", "open"));
+        var repo = DocX("t", "ext-1", "body"); // status removed
+        var ext = DocX("t", "ext-1", "body", ("status", "open")); // board still shows the old value
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, representableScalarKeys: StatusIsRepresentable);
+
+        Assert.Equal(ReconcileAction.PushToExternal, result.Action);
+        Assert.Contains("status", result.ClearedKeys);
+    }
+
+    [Fact]
+    public void ScalarClear_OnCreate_NoClearedKeys()
+    {
+        // A create (no externalId) omits blanks — "unset", not "clear" — so ClearedKeys stays empty even though the
+        // synthetic base for a both-new merge carries no status.
+        var repo = Doc("t", "body", ("status", "done"));
+        var ext = Doc("t", "body", ("priority", "high")); // both new, different fields → merge with no externalId
+
+        var result = ReconcileEngine.Reconcile(null, repo, ext, representableScalarKeys: StatusIsRepresentable);
+
+        Assert.Empty(result.ClearedKeys);
+    }
+
+    [Fact]
+    public void MergeBoth_ScalarResolvedToEmpty_SurfacesClearedKey()
+    {
+        // Two-sided edit whose merge drops a base-recorded scalar must also push the clear (F5).
+        var b = DocX("t", "ext-1", "base body", ("status", "open"), ("priority", "low"));
+        var repo = DocX("t", "ext-1", "base body", ("priority", "high")); // repo dropped status, changed priority
+        var ext = DocX("t", "ext-1", "EXTERNAL body", ("status", "open"), ("priority", "low")); // board edited the body
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, representableScalarKeys: new HashSet<string> { "status", "priority" });
+
+        Assert.True(result.Action is ReconcileAction.Merged or ReconcileAction.Conflict);
+        Assert.Contains("status", result.ClearedKeys);
+    }
+
+    [Fact]
+    public void DocsMirrorOverlay_ExternalBodyEdit_PreservesAllFrontmatter_Unchanged()
+    {
+        // Issue 0299 (F1 pin): with no representable-scalar-keys set (the docs-mirror default), EVERY field is
+        // adapter-invisible and must be restored from the repo when a board body edit writes back — so frontmatter
+        // is byte-preserved. This pins that the F1 fix (representable scalars visible for the spine) did NOT change
+        // the docs-mirror all-invisible behavior.
+        var b = Doc("t", "body", ("area", "project"), ("type", "folder-meta"), ("needs-human", "false"));
+        var repo = Doc("t", "body", ("area", "project"), ("type", "folder-meta"), ("needs-human", "false"));
+        var ext = Doc("t", "edited body on the board"); // docs mirror: external carries no fields, only body
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropAllFields); // representable omitted ⇒ empty
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("edited body on the board", result.RepoWrite!.Body);
+        Assert.Equal("project", result.RepoWrite.GetField("area"));       // frontmatter preserved
+        Assert.Equal("folder-meta", result.RepoWrite.GetField("type"));
+        Assert.Equal("false", result.RepoWrite.GetField("needs-human"));  // NOT clobbered/dropped in docs mirror
+    }
 }

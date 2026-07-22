@@ -75,8 +75,10 @@ public class NotionBlockAppenderTests
 
         NotionBlockAppender.AppendForest(client, "page", tree);
 
-        // A flat forest is one level: a single logical append (the real client splits it 100/100/50).
-        Assert.Equal(["page"], client.AppendedTo);
+        // A flat forest is one level, split by the ≤100-per-request cap: 100/100/50 (issue 0299, F19 — the fake now
+        // chunks like the real client).
+        Assert.Equal(["page", "page", "page"], client.AppendedTo);
+        Assert.Equal([100, 100, 50], client.AppendChildCounts);
         Assert.Equal(1, client.MaxPayloadDepth);
         Assert.Equal(250, client.GetBlockChildren("page").Count);
     }
@@ -178,10 +180,34 @@ public class NotionBlockAppenderTests
     }
 
     [Fact]
-    public void OverWideTable_FailsLoudly_RatherThanShippingA400Payload()
+    public void WideTable_RowBatches_FirstHundredInlineRestDeferred()
     {
-        var ex = Assert.Throws<NotSupportedException>(() => NotionBlockAppender.Cut([Table(101)]));
-        Assert.Contains("101 rows", ex.Message);
+        // Issue 0299 (F19; live-confirmed 2026-07-22): a table wider than 100 rows is no longer a hard error — the
+        // first 100 rows ride inline in the table payload and the remainder defer to the table's returned id.
+        var (payload, deferrals) = NotionBlockAppender.Cut([Table(250)]);
+
+        var table = Assert.Single(payload);
+        Assert.Equal("table", table.Type);
+        Assert.Equal(100, table.Table!.Children!.Count);       // first 100 rows inline
+        var (index, rest) = Assert.Single(deferrals);
+        Assert.Equal(0, index);                                 // deferred against the table at payload index 0
+        Assert.Equal(150, rest.Count);                          // remaining 150 rows appended to the table id
+        Assert.All(rest, r => Assert.Equal("table_row", r.Type));
+    }
+
+    [Fact]
+    public void WideTable_AppendForest_Lands250Rows_Via100_100_50()
+    {
+        // End-to-end: a 250-row table appended as a body block lands all rows via the create/first-append carrying
+        // 100 and the overflow appended to the table id in 100/50 chunks (F19).
+        var client = new FakeNotionClient();
+
+        NotionBlockAppender.AppendForest(client, "page", [Table(250)]);
+
+        var table = Assert.Single(client.GetBlockChildren("page"));
+        Assert.Equal(250, client.GetBlockChildren(table.Id!).Count); // every row landed
+        // First append carries the table (with 100 inline rows); the deferred 150 append to the table id as 100/50.
+        Assert.Equal([100, 50], client.AppendChildCounts.Skip(1).ToList());
     }
 
     [Fact]

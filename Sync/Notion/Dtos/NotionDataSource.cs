@@ -13,10 +13,11 @@ public sealed class NotionDataSource
     [JsonPropertyName("id")]
     public string Id { get; set; } = "";
 
-    /// <summary>The data source's live title. The <c>data_sources[]</c> refs and search hits carry it as a
-    /// flat <c>name</c> string, but the FULL retrieve (GET /v1/data_sources/{id}) carries it as a rich-text
-    /// array under <c>title</c> — confirmed live (ns-12, 2026-07-21). A wrong key here is why the F1 seed was
-    /// dormant.</summary>
+    /// <summary>The data source's live title. A database's <c>data_sources[]</c> ref carries it as a flat
+    /// <c>name</c> string, but a SEARCH hit carries a rich-text <c>title</c> array (ns-12 live: a search hit
+    /// carries no <c>name</c> key — see <see cref="NotionSearchResult"/>), and the FULL retrieve (GET
+    /// /v1/data_sources/{id}) likewise carries it as a rich-text array under <c>title</c> — confirmed live
+    /// (ns-12, 2026-07-21). A wrong key here is why the F1 seed was dormant.</summary>
     [JsonPropertyName("title")]
     public List<NotionRichText>? Title { get; set; }
 

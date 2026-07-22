@@ -156,7 +156,11 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("rich_text", gate.Type);
         Assert.Null(gate.Options);
         Assert.False(gate.EngineComputed);
-        Assert.Contains("contains(prop(\"gate-result\"), \"fail\")", model.Object("Sprint").Properties["health"].Expression);
+        // gate-result matched case-insensitively via the Notion formula dialect's test() regex (issue 0299, F4/F11):
+        // pin the test() form in BOTH the health and attention expressions so neither can silently drop it.
+        Assert.Contains("test(prop(\"gate-result\"), \"(?i)fail\")", model.Object("Sprint").Properties["health"].Expression);
+        Assert.Contains("test(prop(\"gate-result\"), \"(?i)fail\")", model.Object("Sprint").Properties["attention"].Expression);
+        Assert.DoesNotContain("contains(prop(\"gate-result\")", model.Object("Sprint").Properties["health"].Expression);
 
         // needs-human COUNT rollups on Sprint and Campaign (DR 030 §1).
         var sprintNeedsHuman = model.Object("Sprint").Properties["needs-human"];

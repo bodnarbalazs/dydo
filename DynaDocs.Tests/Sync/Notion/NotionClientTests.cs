@@ -55,6 +55,52 @@ public class NotionClientTests
     }
 
     [Fact]
+    public void RetrieveDataSource_ParsesTitleRichTextArray_IntoName_NotAFlatNameKey()
+    {
+        // Issue 0299 (F8): GET /v1/data_sources/{id} carries the title as a rich-text ARRAY under `title` (live-
+        // proven ns-12), NOT a flat `name` string — the wrong-key mistake that left the F1 rename seed dormant.
+        // Pin the real JSON round-trip through NotionJsonContext so a JsonPropertyName regression fails here.
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"id":"ds1","title":[{"type":"text","text":{"content":"My Board"},"plain_text":"My Board"}],"properties":{}}""");
+
+        var ds = Client(handler).RetrieveDataSource("ds1");
+
+        var req = handler.Requests.Single();
+        Assert.Equal("GET", req.Method);
+        Assert.Equal("/v1/data_sources/ds1", req.Path);
+        Assert.Equal("My Board", ds.Name); // rich-text array flattens to Name
+    }
+
+    [Fact]
+    public void RetrieveDataSource_FlatNameKey_DoesNotPopulateName()
+    {
+        // The negative half: a response carrying only a flat `name` (the wrong shape) must leave Name null, so the
+        // provisioner's rename seed degrades to the model title rather than silently reading a phantom name (F8).
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"id":"ds1","name":"Wrong Shape","properties":{}}""");
+
+        Assert.Null(Client(handler).RetrieveDataSource("ds1").Name);
+    }
+
+    [Fact]
+    public void RetrieveView_GetsCorrectPath_AndParsesName()
+    {
+        // Issue 0299 (F9): the name-based view-adoption path (CreateView duplicate recovery) depends on
+        // RetrieveView(id).Name. Pin its HTTP path and JSON mapping offline so a URL or DTO regression fails here
+        // rather than only creating a duplicate view live.
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"id":"view-1","name":"Board"}""");
+
+        var view = Client(handler).RetrieveView("view-1");
+
+        var req = handler.Requests.Single();
+        Assert.Equal("GET", req.Method);
+        Assert.Equal("/v1/views/view-1", req.Path);
+        Assert.Equal("view-1", view.Id);
+        Assert.Equal("Board", view.Name);
+    }
+
+    [Fact]
     public void QueryDataSource_PostsToQueryPath_AndFollowsPagination()
     {
         var handler = new FakeHttpMessageHandler()

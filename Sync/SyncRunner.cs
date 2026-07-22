@@ -70,13 +70,14 @@ public sealed class SyncRunner
         localIds.UnionWith(repoByLocalId.Keys);
         localIds.UnionWith(externalByLocalId.Keys);
 
+        var representable = _adapter.RepresentableScalarKeys;
         var results = new List<ReconcileResult>();
         foreach (var localId in localIds.OrderBy(x => x))
         {
             var baseDoc = _base.Get(localId);
             repoByLocalId.TryGetValue(localId, out var repo);
             externalByLocalId.TryGetValue(localId, out var external);
-            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho));
+            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho, representable));
         }
         return results;
     }
@@ -111,6 +112,7 @@ public sealed class SyncRunner
         // removed later in CommitBase, so this is the type's tracked-base size going into the run.
         var trackedCount = _base.LocalIds.Count;
 
+        var representable = _adapter.RepresentableScalarKeys;
         var results = new List<ReconcileResult>();
         var shadowed = new HashSet<string>();
 
@@ -120,7 +122,7 @@ public sealed class SyncRunner
             repoByLocalId.TryGetValue(localId, out var repo);
             externalByLocalId.TryGetValue(localId, out var external);
 
-            var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho);
+            var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho, representable);
             results.Add(result);
             RecordActivity(result, repo);
             RouteConflictToShadow(result, shadowed);
@@ -341,7 +343,7 @@ public sealed class SyncRunner
             case ReconcileAction.Conflict:
             case ReconcileAction.Create:
                 if (result.ExternalWrite != null)
-                    changes.Upserts.Add(ToUpsert(result.ExternalWrite));
+                    changes.Upserts.Add(ToUpsert(result.ExternalWrite, result.ClearedKeys));
                 // RepoWrite rewrites the file; else (a pure push, or a create-to-external) the repo doc is
                 // unchanged and only its folder may need to move to match a status change.
                 PlaceRepoFile(localId, result.RepoWrite ?? repo, rewrite: result.RepoWrite != null);
@@ -394,12 +396,13 @@ public sealed class SyncRunner
     private static bool SamePath(string a, string b) =>
         string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
 
-    private static SyncUpsert ToUpsert(SyncDoc doc) => new()
+    private static SyncUpsert ToUpsert(SyncDoc doc, IReadOnlyList<string> clearedKeys) => new()
     {
         LocalId = doc.LocalId,
         ExternalId = doc.ExternalId,
         Fields = doc.Fields,
         Body = doc.Body,
+        ClearedKeys = clearedKeys,
     };
 
     /// <summary>

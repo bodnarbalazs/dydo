@@ -84,11 +84,19 @@ public static class NotionBlockAppender
         for (var i = 0; i < blocks.Count; i++)
         {
             var block = blocks[i];
-            GuardTableWidth(block);
-            if (IsShallow(block))
+            if (block.Type == "table" && block.Table?.Children is { Count: > MaxChildrenPerRequest } rows)
             {
-                // A table travels WHOLE: its rows must ride inline in the table payload (Notion has no way to append
-                // rows to a not-yet-created table), so they are never deferred — WithChildren keeps Table.Children.
+                // Row-batch a wide table (issue 0299, F19; live-confirmed 2026-07-22 that appending table_row
+                // children to an EXISTING table via PATCH /blocks/{table_id}/children works): the create/append
+                // carries the first 100 rows inline in the table payload, and the remaining rows defer to the
+                // table's returned block id, appended there in ≤100 chunks by the client. Order is preserved.
+                payload.Add(WithChildren(block, rows.Take(MaxChildrenPerRequest).ToList()));
+                deferrals.Add((i, rows.Skip(MaxChildrenPerRequest).ToList()));
+            }
+            else if (IsShallow(block))
+            {
+                // A table with ≤100 rows travels WHOLE: its rows ride inline in the table payload — WithChildren
+                // keeps Table.Children.
                 payload.Add(WithChildren(block, block.Children));
             }
             else
@@ -98,18 +106,6 @@ public static class NotionBlockAppender
             }
         }
         return (payload, deferrals);
-    }
-
-    /// <summary>A table's rows ride in one <c>table.children</c> array, which Notion caps at 100 like any children
-    /// array, and there is no way to append rows to an already-created table — so a table wider than the cap cannot
-    /// be written this sprint. Fail loudly rather than shipping a payload Notion 400s (ns-10: confirm live whether
-    /// row-batching an existing table is possible, then lift this).</summary>
-    private static void GuardTableWidth(NotionBlock block)
-    {
-        if (block.Type == "table" && block.Table?.Children is { Count: > MaxChildrenPerRequest } rows)
-            throw new NotSupportedException(
-                $"table has {rows.Count} rows but Notion caps a table_row children array at {MaxChildrenPerRequest} "
-                + "per request and dydo cannot yet row-batch a table across appends (ns-10 live check) — split the table.");
     }
 
     /// <summary>Whether a block's whole subtree fits in one depth-≤2, ≤100-child payload: no children, or children

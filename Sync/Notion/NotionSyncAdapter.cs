@@ -171,7 +171,14 @@ public sealed class NotionSyncAdapter : ISyncAdapter
             }
             else
             {
-                _client.UpdatePage(upsert.ExternalId, new NotionPageUpdateRequest { Properties = properties });
+                // Genuine clears (issue 0299, F5): a scalar the base recorded that the repo now blanks is omitted by
+                // ToProperties ("blank means unset"), so an update alone would leave the board value intact and
+                // silently revert the local clear next tick. Emit the explicit clear shape for those keys instead.
+                _client.UpdatePage(upsert.ExternalId, new NotionPageUpdateRequest
+                {
+                    Properties = properties,
+                    PropertyClears = BuildClears(upsert.ClearedKeys, schema),
+                });
                 ReplaceBody(upsert.ExternalId, blocks);
             }
         }
@@ -229,6 +236,20 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 properties[prop.Key] = prop.Value;
     }
 
+    /// <summary>The clear payload for an update (issue 0299, F5): each key the base recorded but the repo now
+    /// blanks, mapped to its Notion type so the converter emits the wire clear shape. The title property is
+    /// excluded — its value is owned by <see cref="EnsureTitle"/>, never cleared — as are computed/engine-computed
+    /// keys (never written).</summary>
+    private Dictionary<string, string>? BuildClears(IReadOnlyList<string> clearedKeys, IReadOnlyDictionary<string, string> schema)
+    {
+        var clears = new Dictionary<string, string>();
+        foreach (var key in clearedKeys)
+            if (schema.TryGetValue(key, out var type) && type != "title"
+                && !NotionPropertyMapper.IsComputedType(type) && _engineComputedSchema?.ContainsKey(key) != true)
+                clears[key] = type;
+        return clears.Count > 0 ? clears : null;
+    }
+
     public string NormalizeBody(string body) =>
         NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body));
 
@@ -239,10 +260,28 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     /// normalizing both under the current converter: equal means the board simply hasn't been upgraded yet, not a
     /// real edit. The reconcile then force-pushes the repo body, upgrading the board in one tick, after which the
     /// echo matches <see cref="NormalizeBody"/> of the base and this stops firing.
-    /// <para>REMOVAL: delete this method, <see cref="NotionLegacyEcho"/>, and the reconcile shim once ns-10's live
-    /// run confirms every board has been re-rendered under the new converter.</para></summary>
+    /// <para>REMOVAL DEFERRED (issue 0299 F13): delete this method, <see cref="NotionLegacyEcho"/>, and the reconcile
+    /// shim once every DOWNSTREAM install has synced once post-2.2 — ns-10 only confirmed THIS repo's board is
+    /// re-rendered. Tracked in dydo/project/backlog/notion-board-followups.md.</para></summary>
     public bool IsStaleConverterEcho(string externalBody, string baseBody) =>
         NormalizeBody(externalBody) == NormalizeBody(NotionLegacyEcho.Render(baseBody));
+
+    /// <summary>This data source's schema-mapped scalar keys — every property this adapter can write whose type
+    /// is not a relation and not computed/engine-computed (issue 0299). The overlay treats these as adapter-visible
+    /// even when a false checkbox or empty scalar is dropped from the normalized view, so a genuine board edit
+    /// imports and the local value is never restored over it. When the schema is not yet known this is empty.</summary>
+    public IReadOnlySet<string> RepresentableScalarKeys
+    {
+        get
+        {
+            var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (name, type) in EnsureSchema())
+                if (type != "relation" && !NotionPropertyMapper.IsComputedType(type)
+                    && _engineComputedSchema?.ContainsKey(name) != true)
+                    keys.Add(name);
+            return keys;
+        }
+    }
 
     /// <summary>Map a doc's fields to the form Notion echoes back, so the engine does not read this
     /// adapter's write-time losses as an external edit (slice brief §1). A field whose key is not a
@@ -252,7 +291,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     /// id is kept (the rest are omitted on write and so read back absent) and re-joined. The whole field
     /// is dropped only when a non-empty value resolves to nothing; an empty relation value stays (a valid
     /// clear the IsRelationKey probe relies on). A non-relation scalar is canonicalized so ABSENT == EMPTY
-    /// == DEFAULT (issue 0164): a checkbox keeps only its "true" state and drops false/empty, every other
+    /// == DEFAULT (issue 0299): a checkbox keeps only its "true" state and drops false/empty, every other
     /// scalar drops when empty — so Notion's schema-default echoes (false/None on properties the base never
     /// recorded) do not read as external edits. A non-empty scalar and a fully-resolvable relation keep
     /// their value verbatim, so a genuine external value change is still detected. When the schema is not
@@ -281,7 +320,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 normalized.Add(new SyncField { Key = field.Key, Value = resolved });
                 continue;
             }
-            // Canonicalize ABSENT == EMPTY == DEFAULT (issue 0164). Notion returns every schema property, so
+            // Canonicalize ABSENT == EMPTY == DEFAULT (issue 0299). Notion returns every schema property, so
             // an unset scalar reads back empty and an unset checkbox reads back "false" — schema-default echoes
             // the base never recorded that must not register as an external edit and churn a phantom WriteToRepo.
             // A checkbox has one meaningful state: keep "true" (canonicalized), drop everything else, so an
@@ -303,16 +342,21 @@ public sealed class NotionSyncAdapter : ISyncAdapter
 
         // Reflect the write-side title fallback (issue 0290) in the echo. A doc with no title-property key is
         // pushed with a synthesized title by EnsureTitle, which Notion then returns on read — a title field the
-        // title-less local/base doc has no key for, an eternal extChanged (issue 0164, title class). Adding that
+        // title-less local/base doc has no key for, an eternal extChanged (issue 0299, title class). Adding that
         // exact synthesized value here (same helper, so the two can never drift) makes the normalized view honest
         // about what the board holds: base and external now agree and a no-op stays a no-op. A title kept VISIBLE
         // this way (never dropped) means a genuinely human-renamed board title — which differs from the synthesized
         // value — still reads as an external change and writes to the repo through the overlay, rather than being
         // restored from the local file as an adapter-invisible field.
+        // Mirror EnsureTitle EXACTLY (issue 0299, F2): the writer synthesizes a title whenever the mapped payload
+        // carries no NON-EMPTY title (absent key OR `title: ""`/whitespace), so the echo view must synthesize on the
+        // same predicate — a present-but-empty title key would otherwise push a synthesized board title the base
+        // never records, an eternal WriteToRepo. The empty title value itself was dropped by the empty-scalar rule
+        // above, so this never double-adds. Prepend to align the recorded base's order with ToFields' title-first
+        // render (the compare itself is order-insensitive).
         var titleProperty = schema.FirstOrDefault(entry => entry.Value == "title").Key;
-        if (titleProperty != null && doc.Fields.All(f => f.Key != titleProperty))
-            // Prepend to mirror NotionPropertyMapper.ToFields, which renders the title property FIRST — keeping the
-            // recorded base's field order aligned with the echo (the compare itself is order-insensitive).
+        if (titleProperty != null
+            && string.IsNullOrWhiteSpace(doc.Fields.FirstOrDefault(f => f.Key == titleProperty)?.Value))
             normalized.Insert(0, new SyncField { Key = titleProperty, Value = SynthesizedTitle(doc.Fields, doc.LocalId) });
 
         return new SyncDoc
@@ -331,7 +375,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     /// value for it, inject the <see cref="SynthesizedTitle"/> — frontmatter <c>title</c>, else <c>name</c>,
     /// else the local id, prettified (a raw slug like <c>swarm-0119</c> must never surface as the board
     /// title). <see cref="NormalizeFields"/> mirrors this exact value so the board's echo of it round-trips as
-    /// a no-op rather than a phantom external edit (issue 0164).</summary>
+    /// a no-op rather than a phantom external edit (issue 0299).</summary>
     private static void EnsureTitle(
         Dictionary<string, NotionPropertyValue> properties,
         IReadOnlyDictionary<string, string> schema,
@@ -352,7 +396,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     /// <summary>The board title <see cref="EnsureTitle"/> synthesizes for a doc with no usable title property
     /// (issue 0290): the prettified frontmatter <c>title</c>, else <c>name</c>, else the local id. The single
     /// source of truth for that value, reused by <see cref="NormalizeFields"/> so its echo of the synthesized
-    /// title is recognized (never read as an external edit) and the two can never drift apart (issue 0164).</summary>
+    /// title is recognized (never read as an external edit) and the two can never drift apart (issue 0299).</summary>
     private static string SynthesizedTitle(IReadOnlyList<SyncField> fields, string localId) =>
         TitlePrettifier.Prettify(FirstNonEmpty(fields, "title") ?? FirstNonEmpty(fields, "name") ?? localId);
 

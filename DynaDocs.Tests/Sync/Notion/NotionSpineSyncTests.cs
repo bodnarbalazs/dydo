@@ -100,7 +100,7 @@ public class NotionSpineSyncTests : IDisposable
     [Fact]
     public void Run_BodyEndingInQuote_IsIdempotent_NoBodyDrift()
     {
-        // Issue 0164 (body class): the mass-closed records whose body ENDS IN A QUOTE. Through the full spine
+        // Issue 0299 (body class): the mass-closed records whose body ENDS IN A QUOTE. Through the full spine
         // pipeline — provision, push (block-convert), read-back (FromBlocks), reconcile — the canonical file must
         // stay byte-identical across passes; a quote at end-of-document must round-trip without churning the body.
         Seed("project/slices/git-status",

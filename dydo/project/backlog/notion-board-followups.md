@@ -74,3 +74,14 @@ delivered stringified, collapsing slices into one in-tree `slice-1` (recurred ev
 fake "serialization probe" escalation; (3) StructuredOutput retry-cap (×5) killing a workflow after the
 worker had already completed and applied its in-tree work. Mitigation that worked: single-slice waves with
 plain-prose briefs, and salvaging completed in-tree work from the journal when the workflow died.
+
+## Migration shim removal (issue 0299 F13, deferred 2026-07-22)
+
+`NotionLegacyEcho` (frozen ns-6-era converter), `NotionSyncAdapter.IsStaleConverterEcho`, the `ISyncAdapter`
+default member, and `ReconcileEngine.ApplyMigrationShim` are dead-on-arrival for THIS repo — ns-10's live run
+confirmed this board is fully re-rendered under the new converter (dry-run zero across 397 records). REMOVAL is
+deferred, not done: remove the whole shim once every downstream install has synced at least once post-2.2. Open
+question to resolve first: the frozen echo reproduces the ns-6 Markdig converter (never shipped — ns-6/ns-7 are
+both inside v2.1.0..HEAD), so it targets only dev-window boards; a v2.1.0-era board was pushed by the older
+LINE-based converter the shim cannot recognise anyway, so it may already be safe to delete. Confirm the downstream
+board lineage, then delete per the pins.

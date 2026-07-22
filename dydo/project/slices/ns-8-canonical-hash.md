@@ -15,6 +15,12 @@ type: context
 
 Kills the phantom-conflict class for spine bodies (issue 0236; root-caused for docs in 0235). Spine body drift is currently detected by comparing the lossy `NotionBlockConverter` round-trip against the local body — dialect differences (escapes, whitespace, list markers) manufacture diffs where no one edited anything, and with ns-4 those become shadow conflicts; without it, marker writes. The survey's stability recipe: compare hashes of the **normalized canonical rendering**, using the base snapshot's stored canonical form as the reference — a body only counts as remotely changed when its canonical re-render differs from the canonical form at last sync.
 
+> **DEVIATION (reviewer-ratified cc547317 / issue 0236; recorded 2026-07-22 per issue 0299 F21):** tasks 2–3
+> (store the canonical form/hash in the snapshot; compare hashes) were SKIPPED as already-satisfied/net-negative.
+> The phantom-conflict class was instead eliminated by a normalized-space comparison in `ReconcileEngine.Equal`
+> over `NotionBlockConverter`'s `FromBlocks∘ToBlocks` fixed-point round-trip (fed as the body normalizer) — no
+> hashing and no snapshot-canonical storage exists in the code. Task 4 (raw files untouched) holds.
+
 ## Task
 
 1. Define one canonical normalization for spine bodies (reuse/extract from `DocsMarkdownNormalizer` where the rules match: escapes, blank-line collapse, list markers, trailing whitespace) and apply it symmetrically to both the local body and the Notion-side re-render before comparison.

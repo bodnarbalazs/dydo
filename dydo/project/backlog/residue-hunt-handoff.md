@@ -94,6 +94,8 @@ to the parallel session — hand them the list instead of editing.
   `FolderScaffolder` but not hash-tracked for `template update`) — wire it.
 - `Sync/` model: `notionTitle: "Sprint Tasks"` deliberately still displays the old name —
   DO NOT change; it belongs to the upcoming Notion-engine pass (type is already `Slice`).
+  - **SUPERSEDED 2026-07-22 (issue 0299 F14/F20):** ns-12 (03fc1cab) landed that rename —
+    `notionTitle` is now `"Slices"` in both model files, live-verified. This flag is DONE; do not act on it.
 - `ProcessUtils` — re-verify every remaining member has a production caller.
 - `dydo/_system/templates/` in THIS repo still contains stale override copies (e.g.
   `agent-workflow.template.md`, old mode templates) — stale overrides shadow the new

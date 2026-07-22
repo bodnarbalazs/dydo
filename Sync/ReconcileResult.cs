@@ -33,5 +33,10 @@ public sealed class ReconcileResult
     /// counts as activity.</summary>
     public bool RepoChanged { get; init; }
 
+    /// <summary>Scalar keys this push must explicitly CLEAR on the external side (issue 0299, F5): a value the base
+    /// recorded non-empty that the repo now carries empty-or-absent, on an UPDATE (not a create). Carried through
+    /// to the upsert so the adapter emits the wire clear shape instead of omitting the property and reverting.</summary>
+    public IReadOnlyList<string> ClearedKeys { get; init; } = [];
+
     public bool Conflicted => Action == ReconcileAction.Conflict;
 }

@@ -1,26 +1,36 @@
 namespace DynaDocs.Tests.Sync.Notion.Live;
 
 using DynaDocs.Sync.Notion;
+using DynaDocs.Sync.Notion.Dtos;
 
 /// <summary>
-/// LIVE (ns-9, ns-7 <c>GuardTableWidth</c>): a table with more rows than Notion's 100-per-children-array cap
-/// fails loudly through our own guard BEFORE any request reaches Notion, rather than shipping a payload Notion
-/// 400s. The guard fires inside <see cref="NotionBlockAppender.Cut"/>, so the append throws
-/// <see cref="NotSupportedException"/> without a network round-trip. ns-10 confirms live whether row-batching an
-/// existing table is possible; until then this pins that the guard fires first.
+/// LIVE (ns-9; issue 0299 F19): a table with more rows than Notion's 100-per-children-array cap ROW-BATCHES — the
+/// create/first append carries the first 100 rows inline, and the remainder append to the returned table block id
+/// via PATCH /blocks/{table_id}/children in ≤100 chunks (live-confirmed 2026-07-22 that appending table_row
+/// children to an existing table works). This retargets the old <c>GuardTableWidth</c> loud-abort pin: batching is
+/// now implemented, so the assertion is that all rows LAND, not that the guard throws.
 /// </summary>
 [Trait("Category", "notion-live")]
 public sealed class NotionLiveWideTableTests : NotionLiveTestBase
 {
     [NotionLiveFact]
-    public void TableOver100Rows_FailsLoudly_ThroughGuardBeforeNotion()
+    public void TableOver100Rows_RowBatches_AllRowsLand()
     {
-        // Header + 101 data rows = 102 table_row children, past the 100-per-array cap.
+        // Header + 149 data rows = 150 table_row children, past the 100-per-array cap — must land via batching.
         var lines = new List<string> { "| a | b |", "| --- | --- |" };
-        for (var i = 0; i < 101; i++)
-            lines.Add("| 1 | 2 |");
+        for (var i = 0; i < 149; i++)
+            lines.Add($"| {i} | x |");
         var blocks = NotionBlockConverter.ToBlocks(string.Join("\n", lines));
 
-        Assert.Throws<NotSupportedException>(() => NotionBlockAppender.AppendForest(Client, ChildPageId, blocks));
+        var page = Client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page(ChildPageId),
+            Properties = new() { ["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of(ScratchName()) } },
+        });
+
+        NotionBlockAppender.AppendForest(Client, page.Id, blocks);
+
+        var table = Assert.Single(Client.GetBlockChildren(page.Id));
+        Assert.Equal(150, Client.GetBlockChildren(table.Id!).Count); // header + 149 rows all landed via row-batching
     }
 }

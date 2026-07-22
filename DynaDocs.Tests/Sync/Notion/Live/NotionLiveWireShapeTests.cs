@@ -32,6 +32,12 @@ public sealed class NotionLiveWireShapeTests : NotionLiveTestBase
         Assert.NotNull(retrieved.Parent);
         Assert.False(string.IsNullOrEmpty(retrieved.Parent!.PageId));
 
+        // RetrieveDataSource carries the live TITLE as a rich-text array under `title` (issue 0299 F8) — the F1
+        // rename seed reads NotionDataSource.Name (a flatten of it). Assert it lands non-null live, or the seed
+        // silently degrades to the model title and a board rename never imports (the dormant-seed bug class).
+        var dataSourceId = db.DataSources.Single().Id;
+        Assert.False(string.IsNullOrEmpty(Client.RetrieveDataSource(dataSourceId).Name));
+
         // ListViews returns BARE refs — id only, no name (ns-12 live). The name the CreateView recovery matches by
         // surfaces only through RetrieveView, so retrieve the auto-created default view and assert its name lands.
         var views = Client.ListViews(db.Id);

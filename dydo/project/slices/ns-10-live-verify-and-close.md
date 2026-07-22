@@ -3,7 +3,7 @@ title: ns-10 Live Verification and Issue Closure
 blocked-by: ns-9-live-smoke-harness, ns-5-client-retry-nuances, ns-6-depth-limit-append, ns-7-converter-hardening, ns-8-canonical-hash
 due:
 needs-human: true
-priority: Critical
+priority: Urgent
 sprint: notion-stabilization
 status: done
 work-type: chore

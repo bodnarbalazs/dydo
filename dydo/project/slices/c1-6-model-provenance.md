@@ -3,7 +3,7 @@ title: c1-6 Exact-Model Provenance + whoami Host/Model
 blocked-by: c1-2-durable-wait, c1-3-codex-posture
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: c1-codex-adoption
 status: done
 work-type: feature

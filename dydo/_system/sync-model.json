@@ -71,8 +71,8 @@
       "properties": {
         "title": { "type": "title" },
         "seq": { "type": "number" },
-        "status": { "type": "select", "options": ["planned", "active", "in-review", "done", "escalated"],
-          "colors": { "planned": "gray", "active": "blue", "in-review": "yellow", "done": "green", "escalated": "red" } },
+        "status": { "type": "select", "options": ["planning", "plan-review", "planned", "active", "in-review", "audit", "done", "escalated"],
+          "colors": { "planning": "gray", "plan-review": "yellow", "planned": "gray", "active": "blue", "in-review": "yellow", "audit": "purple", "done": "green", "escalated": "red" } },
         "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" },
         "start": { "type": "date" },
         "end": { "type": "date" },

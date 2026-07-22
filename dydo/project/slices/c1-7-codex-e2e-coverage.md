@@ -3,7 +3,7 @@ title: c1-7 Codex Paths E2E Regression Coverage
 blocked-by: c1-1-read-verb, c1-2-durable-wait, c1-3-codex-posture, c1-4-dispatch-preflight, c1-5-role-validation, c1-6-model-provenance
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: c1-codex-adoption
 status: done
 work-type: test

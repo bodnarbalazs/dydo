@@ -3,7 +3,7 @@ title: ns-9 Live Smoke Harness
 blocked-by: ns-1-parent-scoped-state, ns-2-deletion-fuse
 due:
 needs-human: false
-priority: Critical
+priority: Urgent
 sprint: notion-stabilization
 status: done
 work-type: feature

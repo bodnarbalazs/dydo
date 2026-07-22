@@ -3,7 +3,7 @@ title: ns-5 Client Retry Nuances
 blocked-by:
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: notion-stabilization
 status: done
 work-type: feature

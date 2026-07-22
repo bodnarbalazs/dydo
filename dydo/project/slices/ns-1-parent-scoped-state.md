@@ -3,7 +3,7 @@ title: ns-1 Parent-Scoped Spine State
 blocked-by:
 due:
 needs-human: false
-priority: Critical
+priority: Urgent
 sprint: notion-stabilization
 status: done
 work-type: bug

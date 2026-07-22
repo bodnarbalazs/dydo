@@ -3,7 +3,7 @@ title: ns-3 Trashed-Database Detection in StillValid
 blocked-by: ns-1-parent-scoped-state
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: notion-stabilization
 status: done
 work-type: bug

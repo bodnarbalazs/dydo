@@ -3,7 +3,7 @@ title: c1-5 Dispatch Role Validation + Caller-Role Resolution
 blocked-by: c1-2-durable-wait
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: c1-codex-adoption
 status: done
 work-type: bug

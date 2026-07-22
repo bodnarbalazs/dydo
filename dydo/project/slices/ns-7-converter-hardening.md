@@ -3,7 +3,7 @@ title: ns-7 Converter Hardening
 blocked-by: ns-6-depth-limit-append
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: notion-stabilization
 status: done
 work-type: feature

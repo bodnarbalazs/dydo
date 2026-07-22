@@ -3,7 +3,7 @@ title: ns-11 Model Regeneration and Additive Re-Provisioning
 blocked-by:
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: notion-stabilization
 status: done
 work-type: feature

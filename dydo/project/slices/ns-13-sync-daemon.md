@@ -3,7 +3,7 @@ title: ns-13 Notion Sync Daemon (Watchdog Repurpose)
 blocked-by: ns-10-live-verify-and-close
 due:
 needs-human: false
-priority: Medium
+priority: Normal
 sprint: notion-stabilization
 status: backlog
 work-type: feature

@@ -27,19 +27,59 @@ public sealed class NotionSpineDeltaTests : IDisposable
     }
 
     [Fact]
-    public void QuietTick_ReadsOnlyBoundaryPages_AndOneFilteredQuery()
+    public void SteadyQuietTick_ExactProfile_OneFilteredQueryPerType_NoRetrievesNoBodies()
     {
+        // The acceptance criterion in request terms (ns-13): a steady quiet, non-cadence tick costs EXACTLY one
+        // filtered query per type — zero provisioning/schema retrieves, zero body reads (an idle type's old newest
+        // page is never re-read). One "Note" type here, so exactly one request.
         WithProject(count: 3, (project, client) =>
         {
-            DeltaTick(client, census: false); // warm tick (state seeded by the manual sync)
+            DeltaTick(client, census: false); // warm
+            var req = client.RequestCount;
+            var retrieves = client.RetrieveDatabaseCalls;
+            var bodies = client.GetBlockChildrenCalls;
 
-            var bodyBefore = client.GetBlockChildrenCalls;
-            var sinceBefore = client.QueryDataSourceSinceCalls;
-            var result = DeltaTick(client, census: false);
+            var result = DeltaTick(client, census: false); // non-cadence
 
             Assert.True(result.Quiet);
-            Assert.True(client.GetBlockChildrenCalls - bodyBefore <= 2);      // only boundary pages, never the corpus
-            Assert.Equal(sinceBefore + 1, client.QueryDataSourceSinceCalls);  // exactly one filtered query for the type
+            Assert.Equal(1, result.Requests);                        // one filtered query, nothing else
+            Assert.Equal(req + 1, client.RequestCount);
+            Assert.Equal(retrieves, client.RetrieveDatabaseCalls);   // ZERO provisioning probes off-cadence
+            Assert.Equal(bodies, client.GetBlockChildrenCalls);      // ZERO body reads (idle boundary skipped)
+        });
+    }
+
+    [Fact]
+    public void CadenceTick_AddsExactlyOneProvisioningProbePerType()
+    {
+        // A validation (cadence / process-start) tick re-probes each type's database — one RetrieveDatabase per type,
+        // on top of the one filtered query. Explicitly: 2 requests for one type.
+        WithProject(count: 3, (project, client) =>
+        {
+            DeltaTick(client, census: false); // warm
+            var retrieves = client.RetrieveDatabaseCalls;
+
+            var result = NotionSyncService.DeltaTick("tok", new ConfigService(), _ => client, census: false, validateProvisioning: true);
+
+            Assert.Equal(1, client.RetrieveDatabaseCalls - retrieves); // one probe per type
+            Assert.Equal(2, result.Requests);                          // filtered query + provisioning probe
+        });
+    }
+
+    [Fact]
+    public void RecentlyEditedBoundaryPage_IsRereadWhenNowIsNearItsStamp()
+    {
+        // The recency window: with "now" pinned near the boundary stamp, a boundary page (stamp == cursor) IS re-read
+        // — the F1 same-minute-safety — whereas the idle steady tick (real now, far past the fixture stamps) skips it.
+        WithProject(count: 3, (project, client) =>
+        {
+            DeltaTick(client, census: false); // warm
+            var bodies = client.GetBlockChildrenCalls;
+
+            var result = DeltaTickAt(client, BoundaryTime(client));
+
+            Assert.Equal(bodies + 1, client.GetBlockChildrenCalls); // the recent boundary page was re-read
+            Assert.True(result.Quiet);                              // and reconciled to None
         });
     }
 
@@ -52,7 +92,7 @@ public sealed class NotionSpineDeltaTests : IDisposable
         Assert.Equal(small, large);      // identical request profile at 50 and 5,000 records
         Assert.Equal(1, small.Since);    // one filtered query
         Assert.Equal(0, small.Full);     // zero full sweeps
-        Assert.True(small.Body <= 2);    // only the boundary page(s)
+        Assert.Equal(0, small.Body);     // zero body reads — the idle boundary is not re-read
     }
 
     [Fact]
@@ -62,7 +102,8 @@ public sealed class NotionSpineDeltaTests : IDisposable
         {
             DeltaTick(client, census: false); // warm
 
-            // The newest page is the cursor boundary; a genuine later edit to it is read and written back.
+            // The newest page is the cursor boundary; a genuine later edit to it (stamp bumped past the cursor) is
+            // read and written back regardless of the recency window.
             var pageId = BoundaryPageId(client);
             client.SetBlockChildren(pageId, [Paragraph("edited remotely")]); // F6 bumps its stamp past the cursor
             var localId = LocalIdOf(client, pageId);
@@ -87,10 +128,11 @@ public sealed class NotionSpineDeltaTests : IDisposable
 
             var pageId = BoundaryPageId(client);
             var localId = LocalIdOf(client, pageId);
+            var now = BoundaryTime(client);                                                            // "now" ≈ the edit minute
             client.PinnedStamp = client.QueryDataSource("ds-1").First(p => p.Id == pageId).LastEditedTime; // pin = cursor
             client.SetBlockChildren(pageId, [Paragraph("same minute edit")]); // stamp stays == cursor
 
-            var result = DeltaTick(client, census: false);
+            var result = DeltaTickAt(client, now);
 
             Assert.True(result.Updated >= 1);
             Assert.Contains("same minute edit", File.ReadAllText(Path.Combine(project, "dydo", "project", "notes", localId + ".md")));
@@ -433,6 +475,14 @@ public sealed class NotionSpineDeltaTests : IDisposable
 
     private static NotionDeltaTickResult DeltaTick(FakeNotionClient client, bool census) =>
         NotionSyncService.DeltaTick("tok", new ConfigService(), _ => client, census, validateProvisioning: false);
+
+    private static NotionDeltaTickResult DeltaTickAt(FakeNotionClient client, DateTime nowUtc) =>
+        NotionSyncService.DeltaTick("tok", new ConfigService(), _ => client, census: false, validateProvisioning: false, nowUtc: nowUtc);
+
+    /// <summary>The wall-clock time of the newest page's stamp — a "now" that puts the boundary inside the recency window.</summary>
+    private static DateTime BoundaryTime(FakeNotionClient client) =>
+        DateTimeOffset.Parse(client.QueryDataSource("ds-1")
+            .OrderByDescending(p => p.LastEditedTime, StringComparer.Ordinal).First().LastEditedTime!).UtcDateTime;
 
     private static string ExternalIdOf(FakeNotionClient client, string localId) =>
         client.QueryDataSource("ds-1").First(p =>

@@ -26,6 +26,14 @@ public sealed class FakeNotionClient : INotionClient
     private int _nextBlock = 1;
     private int _nextDb = 1;
 
+    /// <summary>Cumulative HTTP-equivalent request count — bumped by every API method, so a test can pin a tick's
+    /// exact request profile (ns-13). <see cref="RetrieveDatabaseCalls"/>/<see cref="RetrieveDataSourceCalls"/> count
+    /// the provisioning/schema probes specifically, so a non-cadence tick can be proven to issue zero of them.</summary>
+    private int _requestCount;
+    public int RequestCount => _requestCount;
+    public int RetrieveDatabaseCalls { get; private set; }
+    public int RetrieveDataSourceCalls { get; private set; }
+
     public List<NotionSearchResult> DiscoverableDataSources { get; } = [];
     public Dictionary<string, NotionDatabase> Databases { get; } = new();
     public List<NotionDatabaseCreateRequest> CreatedDatabases { get; } = [];
@@ -238,6 +246,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionDatabase RetrieveDatabase(string databaseId)
     {
+        _requestCount++;
+        RetrieveDatabaseCalls++;
         if (NotFoundDatabaseIds.Contains(databaseId))
             throw new NotionApiException(404, "{\"code\":\"object_not_found\"}");
         if (FailRetrieveDatabase is { } ex)
@@ -247,6 +257,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionDataSource RetrieveDataSource(string dataSourceId)
     {
+        _requestCount++;
+        RetrieveDataSourceCalls++;
         if (FailRetrieveDataSource is { } ex)
             throw ex;
         return DataSourceSchema(dataSourceId);
@@ -381,6 +393,7 @@ public sealed class FakeNotionClient : INotionClient
 
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
     {
+        _requestCount++;
         QueryDataSourceCalls++;
         var pages = _pages.Values.Where(p => _pageDataSource[p.Id] == dataSourceId).ToList();
         if (EchoEmptyRelations && _dataSources.TryGetValue(dataSourceId, out var ds))
@@ -398,7 +411,8 @@ public sealed class FakeNotionClient : INotionClient
     {
         QueryDataSourceSinceCalls++;
         if (string.IsNullOrEmpty(cursor))
-            return QueryDataSource(dataSourceId);
+            return QueryDataSource(dataSourceId); // delegates — QueryDataSource counts the request
+        _requestCount++;
         return _pages.Values
             .Where(p => _pageDataSource[p.Id] == dataSourceId && !p.Archived
                 && p.LastEditedTime != null && string.CompareOrdinal(p.LastEditedTime, cursor) >= 0)
@@ -411,6 +425,7 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionPage CreatePage(NotionPageCreateRequest request)
     {
+        _requestCount++;
         CreateChildCounts.Add(request.Children?.Count ?? 0);
         if (request.Children is { Count: > 0 })
         {
@@ -470,6 +485,7 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request)
     {
+        _requestCount++;
         if (FailUpdate)
             throw new NotionApiException(500, "simulated update failure");
         var page = _pages[pageId];
@@ -526,6 +542,7 @@ public sealed class FakeNotionClient : INotionClient
 
     public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId)
     {
+        _requestCount++;
         GetBlockChildrenCalls++;
         if (!_blocks.TryGetValue(blockId, out var blocks))
             return [];
@@ -597,6 +614,7 @@ public sealed class FakeNotionClient : INotionClient
 
     public IReadOnlyList<string> AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
     {
+        _requestCount++;
         if (FailAppend)
             throw new NotionApiException(500, "simulated append failure");
         // Appending body to a page bumps its last_edited_time (a real edit); ignored when blockId is a nested block.
@@ -690,6 +708,7 @@ public sealed class FakeNotionClient : INotionClient
 
     public void DeleteBlock(string blockId)
     {
+        _requestCount++;
         DeletedBlocks.Add(blockId);
         foreach (var list in _blocks.Values)
             list.RemoveAll(b => b.Id == blockId);

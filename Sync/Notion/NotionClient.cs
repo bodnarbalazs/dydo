@@ -28,6 +28,9 @@ public sealed class NotionClient : INotionClient
     private readonly TimeSpan _minInterval;
     private readonly Action<TimeSpan> _sleep;
     private DateTime _lastRequestUtc = DateTime.MinValue;
+    private int _requestCount;
+
+    public int RequestCount => _requestCount;
 
     /// <param name="http">The transport. Tests pass one built over a fake handler.</param>
     /// <param name="token">Notion integration token — set as the bearer header, never logged.</param>
@@ -252,6 +255,7 @@ public sealed class NotionClient : INotionClient
         for (var attempt = 1; ; attempt++)
         {
             Throttle();
+            _requestCount++; // one throttled HTTP request (retries counted too — they pay the throttle as well)
             using var request = requestFactory();
             HttpResponseMessage resp;
             try

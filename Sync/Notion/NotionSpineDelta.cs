@@ -17,9 +17,18 @@ using DynaDocs.Sync.Notion.Provisioning;
 /// </summary>
 public static class NotionSpineDelta
 {
+    /// <summary>Body re-reads of a boundary page (stamp == cursor) are limited to pages edited within this window of
+    /// "now" — a page last edited long ago cannot receive a same-minute edit now, so it is never re-read (ns-13). The
+    /// margin absorbs a couple of minutes of clock skew between the local clock and Notion's; err large. Without it a
+    /// steady quiet tick would re-read the newest page of EVERY type every tick, blowing the request budget.</summary>
+    private static readonly TimeSpan BoundaryRecencyMargin = TimeSpan.FromMinutes(2);
+
     public static NotionDeltaTickResult Run(
-        INotionClient client, NotionSpineState state, bool census, bool validateProvisioning, bool allowMassDelete = false)
+        INotionClient client, NotionSpineState state, bool census, bool validateProvisioning,
+        bool allowMassDelete = false, DateTime? nowUtc = null)
     {
+        var now = nowUtc ?? DateTime.UtcNow;
+        var requestsBefore = client.RequestCount;
         var model = SyncModelLoader.Load(state.DydoRoot);
         var types = model.InDependencyOrder();
         var dataSourceIds = ResolveDataSourceIds(client, state, types, validateProvisioning);
@@ -36,15 +45,15 @@ public static class NotionSpineDelta
         {
             if (!dataSourceIds.TryGetValue(type.Type, out var dataSourceId))
                 continue; // not provisioned (or a validation probe dropped it) — the manual sync must provision first
-            summary = summary.Add(RunType(client, state, type, dataSourceId, localToPageByType, stores[type.Type], census, allowMassDelete));
+            summary = summary.Add(RunType(client, state, type, dataSourceId, localToPageByType, stores[type.Type], census, allowMassDelete, now));
         }
-        return summary;
+        return summary with { Requests = client.RequestCount - requestsBefore };
     }
 
     private static NotionDeltaTickResult RunType(
         INotionClient client, NotionSpineState state, SyncObjectType type, string dataSourceId,
         IReadOnlyDictionary<string, Dictionary<string, string>> localToPageByType, BaseSnapshotStore store,
-        bool census, bool allowMassDelete)
+        bool census, bool allowMassDelete, DateTime nowUtc)
     {
         var docsDir = Path.Combine(state.DydoRoot, type.Dir);
         var shadowDir = SpineShadowDir(state.DydoRoot, type.Type);
@@ -71,9 +80,10 @@ public static class NotionSpineDelta
         var (localChanged, filesChanged) = LocalChanges(files, currentMtimes, delta.Files);
 
         // Remote changes. A null cursor (first/degraded tick) or a census reads the full page list for ids+stamps
-        // ONLY; otherwise one filtered query returns the pages edited since the cursor (boundary pages included —
-        // re-read every tick until a strictly later stamp is seen, so a same-minute re-edit is never lost — F1).
-        var (hits, disappeared, maxStamp) = ReadRemoteDelta(client, dataSourceId, delta.Cursor, census, store);
+        // ONLY; otherwise one filtered query returns the pages edited on or after the cursor. Of those, only pages
+        // strictly newer than the cursor OR recently edited (within the recency margin — the same-minute-re-edit
+        // window, F1) get a body re-read; an idle type's old newest page is never re-read (the request-budget fix).
+        var (hits, disappeared, maxStamp) = ReadRemoteDelta(client, dataSourceId, delta.Cursor, census, store, nowUtc);
         // Establish a non-null baseline cursor even for an empty board (F2b), so the next tick is a normal filtered
         // tick rather than another full cold-start read.
         var cursorToSave = maxStamp ?? (delta.Cursor == null ? NotionDeltaState.SentinelEpoch : null);
@@ -185,22 +195,25 @@ public static class NotionSpineDelta
     /// <summary>Read the remote delta for one type. Cold start (null cursor) reads the full page list for ids/stamps
     /// ONLY — no body reads, no reconcile of remote — it just baselines the cursor. A census does the same full read
     /// AND reports base external ids that have disappeared (remote archives). The steady-state path is one filtered
-    /// query for the pages edited on or after the cursor. Boundary pages (stamp == cursor) ARE returned and re-read
-    /// each tick until a strictly later stamp is seen for them — the norm-compare yields None when unchanged, but a
-    /// same-minute re-edit is caught rather than silently deduped forever (F1).</summary>
+    /// query for the pages edited on or after the cursor. Only pages that are genuinely newer than the cursor, or
+    /// recent enough to still be inside the same-minute-re-edit window (F1), get a body re-read — an idle type's old
+    /// newest page is skipped, so a quiet tick costs one filtered query and no body reads.</summary>
     private static (IReadOnlyList<NotionPage> Hits, HashSet<string> Disappeared, string? MaxStamp) ReadRemoteDelta(
-        INotionClient client, string dataSourceId, string? cursor, bool census, BaseSnapshotStore store)
+        INotionClient client, string dataSourceId, string? cursor, bool census, BaseSnapshotStore store, DateTime nowUtc)
     {
+        var recencyThreshold = FormatMinute(nowUtc - BoundaryRecencyMargin);
+
         if (cursor != null && !census)
         {
             var filtered = client.QueryDataSourceSince(dataSourceId, cursor);
-            return (filtered, new HashSet<string>(StringComparer.Ordinal), MaxStamp(filtered));
+            return (BodyHits(filtered, cursor, recencyThreshold), new HashSet<string>(StringComparer.Ordinal), MaxStamp(filtered));
         }
 
         var alive = client.QueryDataSource(dataSourceId).Where(p => !p.Archived).ToList();
-        IReadOnlyList<NotionPage> hits = cursor == null
+        IReadOnlyList<NotionPage> candidates = cursor == null
             ? []
             : alive.Where(p => p.LastEditedTime != null && string.CompareOrdinal(p.LastEditedTime, cursor) >= 0).ToList();
+        var hits = cursor == null ? candidates : BodyHits(candidates, cursor, recencyThreshold);
 
         var disappeared = new HashSet<string>(StringComparer.Ordinal);
         if (census)
@@ -212,6 +225,17 @@ public static class NotionSpineDelta
         }
         return (hits, disappeared, MaxStamp(alive));
     }
+
+    /// <summary>The pages from a filter result that warrant a body re-read: strictly newer than the cursor (a genuine
+    /// new edit), or edited on or after the recency threshold (still inside the same-minute-re-edit window, F1). A
+    /// page sitting at the cursor stamp but edited long ago is dropped — no same-minute risk, no wasteful read.</summary>
+    private static List<NotionPage> BodyHits(IReadOnlyList<NotionPage> pages, string cursor, string recencyThreshold) =>
+        pages.Where(p =>
+            string.CompareOrdinal(p.LastEditedTime ?? "", cursor) > 0
+            || string.CompareOrdinal(p.LastEditedTime ?? "", recencyThreshold) >= 0).ToList();
+
+    private static string FormatMinute(DateTime utc) =>
+        utc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:00.000'Z'", System.Globalization.CultureInfo.InvariantCulture);
 
     private static string? MaxStamp(IReadOnlyList<NotionPage> pages) =>
         pages.Select(p => p.LastEditedTime).Where(s => s != null).DefaultIfEmpty(null).Max(StringComparer.Ordinal);

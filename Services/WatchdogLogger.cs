@@ -78,10 +78,10 @@ public static partial class WatchdogLogger
     /// fast-path count, so the log makes plain that 99%+ of ticks did no work — the cheap-tick contract, visible.</summary>
     public static void LogSyncTick(
         string dydoRoot, int reconciled, int created, int updated, int archived, int conflicts, int fuseTrips,
-        long durationMs, bool quiet, bool census) =>
+        int requests, long durationMs, bool quiet, bool census) =>
         Write(dydoRoot,
             new SyncTickEvent(Now(), "sync_tick", reconciled, created, updated, archived, conflicts, fuseTrips,
-                durationMs, quiet, census),
+                requests, durationMs, quiet, census),
             WatchdogLogJsonContext.Default.SyncTickEvent);
 
     /// <summary>A tick the single-flight guard skipped because the previous one was still running (ns-13) — logged
@@ -108,6 +108,7 @@ public static partial class WatchdogLogger
         [property: JsonPropertyName("archived")] int Archived,
         [property: JsonPropertyName("conflicts")] int Conflicts,
         [property: JsonPropertyName("fuse_trips")] int FuseTrips,
+        [property: JsonPropertyName("requests")] int Requests,
         [property: JsonPropertyName("duration_ms")] long DurationMs,
         [property: JsonPropertyName("quiet")] bool Quiet,
         [property: JsonPropertyName("census")] bool Census);

@@ -124,12 +124,12 @@ public static class NotionSyncService
     /// daemon can log it and retry next tick — it never dies on a sync error.</summary>
     public static NotionDeltaTickResult DeltaTick(
         string token, IConfigService config, Func<string, INotionClient> clientFactory,
-        bool census, bool validateProvisioning, bool allowMassDelete = false)
+        bool census, bool validateProvisioning, bool allowMassDelete = false, DateTime? nowUtc = null)
     {
         var client = clientFactory(token);
         var configuredParentPageId = config.LoadConfig()?.Notion?.ParentPageId;
         var state = NotionSpineState.Resolve(
             config.GetDydoRoot(), configuredParentPageId, parentPageOverride: null, dryRun: false, TextWriter.Null);
-        return NotionSpineDelta.Run(client, state, census, validateProvisioning, allowMassDelete);
+        return NotionSpineDelta.Run(client, state, census, validateProvisioning, allowMassDelete, nowUtc);
     }
 }

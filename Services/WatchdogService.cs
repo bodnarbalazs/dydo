@@ -220,7 +220,7 @@ public sealed class WatchdogService
                         revalidate = false;
                         var ms = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
                         WatchdogLogger.LogSyncTick(dydoRoot, result.Reconciled, result.Created, result.Updated,
-                            result.Archived, result.Conflicts, result.FuseTrips, ms, result.Quiet, result.Census);
+                            result.Archived, result.Conflicts, result.FuseTrips, result.Requests, ms, result.Quiet, result.Census);
                     }
                 }
                 catch (Exception e)

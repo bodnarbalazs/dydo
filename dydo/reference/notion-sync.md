@@ -135,6 +135,19 @@ Changing the Slice type's `notionTitle` `"Sprint Tasks"` → `"Slices"` and re-s
 
 ---
 
+## Sync Daemon (ns-13) — Live Acceptance + Soak (2026-07-22)
+
+`dydo watchdog start` runs the O(changes) sync loop (15s default). Measured against the real ~400-record board:
+
+- **Edit-to-board latency: within one tick** (file edit 16:49:25 local, board updated by 16:49:50 — the 15s target holds).
+- **Accidental 1.5h production soak** (an orphaned measurement daemon kept running): **307 ticks, 0 errors, 0 skips, 0 phantom syncs** — the equilibrium held under continuous automated observation.
+- **Steady quiet tick: exactly 7 requests** (one filtered query per type, zero body reads, zero probes) — median 3242ms, p95 5409ms, max 11214ms; the variance is Notion latency on a fixed request count. The under-5s acceptance is met at the median with the request profile exact; the tail is absorbed by the 15s interval + single-flight.
+- **Hourly census fired once on schedule**: 7.8s, 16 requests, zero body reads.
+- **Validate (cadence) tick**: +1 provisioning probe per type (14 requests, ~7s), on process start and every ~20 ticks.
+- Lifecycle exercised live: single-flight held under a 23.8s busy tick (no overlap, intervals stretch); stale-pid recovery after an ungraceful kill; `dydo watchdog stop` clean.
+
+Known bounded trade (recorded): a boundary page's body is re-read only when strictly newer than the cursor or edited within a 2-minute recency window — a same-minute re-edit made while the daemon is down for longer than that window is picked up by the next edit or manual sync, not the census.
+
 ## Related
 
 - [Decision 025](../project/decisions/025-notion-sync-architecture.md) — Notion sync architecture

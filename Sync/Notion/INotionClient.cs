@@ -10,6 +10,11 @@ using DynaDocs.Sync.Notion.Dtos;
 /// </summary>
 public interface INotionClient
 {
+    /// <summary>Cumulative count of HTTP requests this client has issued (each paying the ~3 req/s throttle). The
+    /// sync daemon snapshots it around a tick to record the tick's request count (ns-13) — so a steady quiet tick's
+    /// cost is visible in the log, no arithmetic needed.</summary>
+    int RequestCount { get; }
+
     NotionDatabase RetrieveDatabase(string databaseId);
 
     /// <summary>Retrieve a data source's live property schema (GET /v1/data_sources/{id}) — the input to

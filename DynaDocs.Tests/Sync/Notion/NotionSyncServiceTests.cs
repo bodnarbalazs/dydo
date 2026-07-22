@@ -446,6 +446,7 @@ public class NotionSyncServiceTests : IDisposable
     /// <summary>An <see cref="INotionClient"/> whose first provisioning call throws a Notion API error.</summary>
     private sealed class ThrowingNotionClient : INotionClient
     {
+        public int RequestCount => 0;
         public NotionDatabase RetrieveDatabase(string databaseId) => throw new NotionApiException(500, "boom");
         public NotionDataSource RetrieveDataSource(string dataSourceId) => throw new NotionApiException(500, "boom");
         public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request) => throw new NotionApiException(429, "rate limited");

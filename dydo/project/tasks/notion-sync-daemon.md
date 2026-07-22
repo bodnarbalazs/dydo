@@ -39,7 +39,7 @@ Runs parallel to balazs's Rail B prompt-file pass (balazs, 2026-07-16).
 
 - **FileSystemWatcher push path.** The tick stat-walks the corpus for changed files (O(corpus) stats, trivial constants — fine at 100×). A watcher-driven push would make even the stat-walk O(changes). Future optimization, not v1.
 - **Local-parse scaling seam.** Each tick still loads every type's base snapshot and stat-walks the whole corpus (both O(corpus)-local, trivial constants — well under a second warm at 100×). A push-based `FileSystemWatcher` and an incremental base-snapshot index would make even those O(changes). Future optimization, not v1.
-- **Same-minute bulk-push boundary re-reads.** Pages sharing the cursor's exact minute are re-read each tick until a strictly later edit appears (the F1 correctness guarantee). A bulk push landing many pages in one minute makes them all boundary hits for a few ticks — a cost, not a correctness issue; the serial reconcile degrades gracefully. A per-page seen-stamp ledger could trim it if ever hot.
+- **Recency-window boundary re-reads.** A page edited within the recency window (~2 min) is re-read each tick during that window — the F1 same-minute-safety. A bulk push landing many pages at once makes them all hits for a couple of minutes — a cost, not a correctness issue; the serial reconcile degrades gracefully. A per-page seen-stamp ledger (re-read once per distinct stamp) would trim it if ever hot, and would also let the recency check drop its dependence on the local clock.
 - **Delta-path promotion reads the whole board.** A human-resolved shadow's base alignment currently triggers a full `ReadExternalState` (rare — only when a resolved shadow exists). A targeted single-page read would keep it O(1).
 
 ## Files Changed

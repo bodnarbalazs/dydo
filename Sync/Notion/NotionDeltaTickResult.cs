@@ -11,6 +11,10 @@ public sealed record NotionDeltaTickResult(
     int Reconciled,
     bool Census)
 {
+    /// <summary>HTTP requests this tick issued (set by <see cref="NotionSpineDelta.Run"/> from the client's counter).
+    /// Logged per tick so a steady quiet tick's cost is visible without arithmetic (ns-13).</summary>
+    public int Requests { get; init; }
+
     public bool Quiet => Reconciled == 0 && Created == 0 && Updated == 0 && Archived == 0 && Conflicts == 0 && FuseTrips == 0;
 
     public static NotionDeltaTickResult Empty(bool census) => new(0, 0, 0, 0, 0, 0, census);

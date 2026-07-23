@@ -7,13 +7,21 @@ type: reference
 
 Own your project's knowledge — then put agents to work on it.
 
-DynaDocs (dydo) is the **policy and context layer** for AI coding agents. It gives native coding-agent runtimes structured, versioned project knowledge to work from, and a guard that enforces your rules of the road on every action they take. **The coding tool owns the engine - spawning, scheduling, isolation, fan-out. dydo owns the map and the rules.**
+DynaDocs (dydo) is a collection of tools and practices for working with AI coding systems better. It is four things: **AI-friendly documentation**, a **PM system** that lives in your repo (with an optional live Notion board), a **compilation engine** that gives Claude Code and Codex one source of truth for skills and agents, and a customizable set of **nudges** that keep every agent inside your rules.
 
-Your knowledge lives in your repo as human-readable, git-diffable docs — the single source of truth. Turn on the optional Notion sync and your team gets a live PM board as a *view*; the data never leaves your control.
-
-**Built for Claude Code and Codex.** dydo wires guard hooks for both runtimes and compiles roles into their native agents and skills.
+The coding tool owns the engine — spawning, scheduling, isolation, fan-out. dydo owns the knowledge and the process.
 
 <!-- VISUAL: demo video goes here. The old poem-orchestration video shows terminal-dispatch, which no longer exists in 2.0 — it needs re-recording. See "Demo video shot list" note handed to balazs. -->
+
+## The Project That Remembers
+
+The structure is the superpower. In a dydo project, decisions have records, bugs have issues, changes have a changelog — and all of it is markdown in your repo, human-readable, git-diffable, and written *for* AI consumption as much as for yours.
+
+That changes what an agent can do for you. Ask "why didn't we use Astro here?" and it digs up the decision record from months ago — the actual reasoning, from when it happened — and checks whether the reason still holds. A bug surfaces? The changelog says when the behavior changed. An issue was filed weeks ago? Any session can pick it up with full context, because the context was never in someone's head or a lost chat log — it's in the tree.
+
+AI coding tools have memory features, but that memory is unstructured, opaque, and not under your control. You can't organize it, version it, or review it in a pull request. dydo's split is deliberate: **CLAUDE.md or AGENTS.md is your rules, native memory is the agent's scratch notes, and dydo docs are curated, reviewed knowledge.** Agents onboard themselves each session by reading — progressive disclosure, not a context dump.
+
+Turn on the optional Notion sync and the PM records become a live team board — a *view*, kept current by a daemon within seconds of any edit. The repo stays canonical; the data never leaves your control.
 
 ## Stop Doing Agent Work Yourself
 
@@ -21,55 +29,62 @@ Your time is the most precious resource in the equation. You should focus on you
 
 Agents write code. Agents review code. Agents write tests. Agents write documentation. Agents coordinate other agents. The human is the last step, not the first reviewer. If it can be done by an agent, why waste your time on it?
 
-dydo makes this dependable. On its own, an AI agent starts every session cold and works without rails. dydo fixes both: it gives agents **persistent, structured memory** (your docs), **enforced guardrails** (a guard hook that fires on every action — including inside subagents and workflows), and a **compiler** that turns your roles and docs into the native agents and skills. You describe what you want. Agents figure out the rest — inside the lines you drew.
+There are two kinds of agents in a dydo project, and the difference is who you talk to:
+
+- **The ones you work with** — co-thinker, planner, orchestrator, chief-of-staff. Thinking partners and coordinators, largely interchangeable hats for the session in front of you. You hash out a design, they turn it into a plan, they run the plan.
+- **The ones you ideally never talk to** — code-writer, reviewer, test-writer, docs-writer. They don't improvise and they don't work from vibes: implementation only happens against a precise, reviewed plan, the code they produce is reviewed by fresh eyes that didn't write it, and only then does it merge.
 
 ```mermaid
 flowchart LR
-    H([You]) -->|"Hey Adele, fix the auth bug"| T1["Tier-1 agent<br/>(co-thinker / orchestrator)<br/>named, persistent, in a terminal"]
-    T1 -->|runs a workflow / spawns subagents| W1["code-writer<br/>(subagent)"]
-    T1 --> W2["reviewer<br/>(subagent, read-only)"]
+    H([You]) -->|"fix the auth bug"| S["Your session<br/>(co-thinker / planner /<br/>orchestrator)"]
+    S -->|"reviewed plan, then /run-sprint"| W1["code-writer"]
+    S --> W2["reviewer<br/>(read-only)"]
     W1 -.->|fresh eyes, enforced| W2
     G{{"dydo guard<br/>off-limits + nudges"}}
-    G -.->|fires on every tool call| T1
+    G -.->|fires on every tool call| S
     G -.-> W1
     G -.-> W2
     style G fill:#f6d,stroke:#a15,color:#000
 ```
 
-### The context problem
+## The Four Things
 
-AI coding tools have memory features — but that memory is unstructured, opaque, and not under your control. You can't organize it, version it, review it in a pull request, or decide what each role is allowed to see.
+### 1. AI-friendly docs + PM — the part nothing else gives you
 
-dydo gives you explicit, structured control over project context. Your documentation is the versioned, human-readable source of truth. Agents onboard themselves each session by reading it. You decide what's documented, how it's organized, and what each role needs to know. Runtime-native memory still works alongside it — the split is deliberate: **CLAUDE.md or AGENTS.md is your rules, native memory is the agent's scratch notes, and dydo docs are curated, reviewed knowledge.**
+A knowledge tree (`understand/`, `guides/`, `reference/`) and a PM spine (`project/`: decisions, issues, sprints, slices, tasks, changelog) with validation (`dydo check`), auto-fixing (`dydo fix`), and link/graph tooling. Records follow conventions agents know how to read and write. This is where the compounding value lives — everything else in dydo exists to serve it.
 
-### What you get
+### 2. The compiler — one source of truth for every runtime
 
-- **Documentation as memory** — Your docs are the source of truth; agents re-read them each session, and `dydo sync` preloads the right context into each role.
-- **Universal guardrails** — Off-limits paths (hard block) and custom nudges (regex → block or warn) enforced on *every* tool call, in the main thread **and** inside every subagent and workflow. This is the crown jewel.
-- **Compiles to native artifacts** - `dydo sync` turns your roles and docs into Claude `.claude/agents/` / `.claude/skills/` and Codex `.codex/agents/` / `.agents/skills/`. No hand-maintained agent files.
-- **Read-only roles, natively enforced** — The reviewer agent ships without Edit/Write tools. "Reviewers don't write code" isn't a policy, it's the tool profile.
-- **No self-review** — The agent that wrote the code doesn't review it. Fresh eyes, by construction.
-- **Native orchestration** — Fan out dozens of subagents through runtime-native workflows. Ships flagship workflows: `run-sprint` (sliced code→review→merge→audit) and `inquisition` (multi-lens QA gate).
-- **Model tiers** — Roles declare an abstract tier (`strong` / `standard` / `light`) and effort; the compiler binds the concrete model. Swap models without touching a workflow.
-- **Native isolation** — Parallel agents are isolated by the coding runtime (git worktrees, sandboxes); dydo no longer manages worktrees itself.
-- **Notion as a view (optional)** — Two-way sync to a team PM board. Repo files stay canonical; the token is stored locally (or in an opt-in encrypted vault) and never committed by default.
-- **Team support** — Share one repo; each member wires up their own local hooks.
-- **Your process, your rules** — Templates, roles, and nudges are all yours to modify.
+`dydo sync` compiles your role templates and docs into Claude Code's `.claude/agents/`, `.claude/skills/`, `.claude/workflows/` and Codex's `.codex/agents/`, `.agents/skills/`. A role is one markdown template — frontmatter for metadata, methodology as the body. Edit it once; both runtimes get it. No hand-maintained agent files, no drift between tools. Roles declare abstract model tiers (`strong` / `standard` / `light`); the compiler binds concrete models at sync time.
+
+### 3. Nudges — your rules, enforced on every action
+
+A guard hook fires on **every** tool call — the main thread and every subagent and workflow alike. Off-limits paths (secrets, system files) hard-block for everyone; your custom nudges (a regex plus your message) notice, warn-once, or block. You could build this with raw hooks yourself — dydo's way is cleaner, and it ships with sane defaults.
+
+### 4. Opinionated setup in one command
+
+`dydo init claude` (or `codex`) gives you the whole system — docs tree, PM records, role templates, guard hooks, entry files — in an opinionated shape that works out of the box. Then everything is yours to change: templates override, nudges are config, the docs are just markdown.
 
 ---
 
-## What Changed in 2.0.0
+## How Work Runs
 
-Almost everything. Earlier versions shipped dydo's *own* multi-agent runtime — orchestrators dispatching workers into terminal tabs, with inbox, messaging, queues, and worktree plumbing to coordinate them. Then Claude Code introduced dynamic workflows and governable subagents, and dydo's hand-rolled orchestration was suddenly *fighting* the native runtime instead of riding it. That's a bad place to be.
+1. **Think** — hash out the design with a co-thinker; conclusions land as decision records, not chat history.
+2. **Plan** — the planner turns a ripe design into a sprint: a specification with zero open questions, sliced into self-contained pieces. A fresh-eyes reviewer gates the plan before any code runs. *No plan, no code* — trivial edits excepted; if it needs a reviewer, it needs a plan.
+3. **Build** — `run-sprint` loops each slice through code-writer → reviewer until the review passes, merges slices back serially, then audits the merged whole with fresh eyes.
+4. **Verify** — at campaign ends, `inquisition` fans out read-only inquisitors across adversarial lenses (correctness, coverage gaps, security, dead code, doc drift) and verifies every finding before it reaches you.
 
-So 2.0 pivots: **the coding-agent runtime owns orchestration** (subagents, skills, workflows), and **dydo becomes the policy + context layer** that plugs into it — keeping and sharpening the parts with no native equivalent.
+The reviewer is the single quality gate throughout — one role with per-target rubrics (code, plans, docs, tests, merged sprints), shipped read-only so "reviewers don't write code" is the tool profile, not a polite request.
 
-- **Gone** — worker-tier dispatch, inbox/messaging/queues for workers, per-role RBAC path matrices, the audit-replay trail, and the `inquisitor`/`judge` roles.
-- **Now native** — subagents and workflows do the fan-out; worktree isolation handles parallel collisions; `run-sprint` and `inquisition` are workflows. (The inquisitor/judge *roles* are retired; the inquisitor is reborn as a dedicated read-only agent the `inquisition` workflow spawns, and per-sprint auditing is the `sprint-auditor`.)
-- **New** — `dydo sync` (the compiler), two-tier identity, model tiers, un-suppressed native memory, and optional two-way Notion sync.
-- **Kept & sharpened** — the guard (now universal off-limits + nudges, firing *inside* subagents and workflows too) and the whole documentation system.
+---
 
-See [Decision 024](https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/024-dydo-2-native-pivot.md) for the full rationale.
+## Where dydo Came From — and Why It Got Smaller
+
+dydo was born from a concrete pain: agents that assumed things, went ahead without structure, broke rules, and didn't read what mattered. The first versions answered with heavy machinery — identity, enforced onboarding, orchestrators dispatching workers into terminal tabs, messaging, queues, worktree plumbing.
+
+Then the runtimes grew up. Claude Code and OpenAI shipped skills, governable subagents, native worktree isolation, and dynamic workflows — better and more native than dydo's hand-rolled versions, backed by more resources than we will ever have. Competing with that is stupid, and building features they haven't shipped *yet* is a race we'd lose the day they ship them.
+
+So dydo simplified, deliberately, to the layer the runtimes won't build for you: **your project's knowledge, your process, your records** — and the thin compile-and-nudge machinery that plugs them into whatever runtime you use. The pivot itself is written down as decision records in the dydo repo, because dydo runs on its own system — the reasoning is there for anyone (human or agent) who asks "why did this get smaller?"
 
 ---
 
@@ -97,26 +112,17 @@ dydo init claude
 dydo init codex
 ```
 
-This creates the `dydo/` documentation tree, templates, and configures the selected runtime's guard hook automatically.
+This creates the `dydo/` documentation tree, the templates, the runtime's guard hook, and the entry file (`CLAUDE.md` for Claude Code, `AGENTS.md` for Codex) that points every session at your docs.
 
-### 2. Compile your roles into native agents
+### 2. Compile
 
 ```bash
 dydo sync
 ```
 
-This emits Claude `.claude/agents/` / `.claude/skills/` and Codex `.codex/agents/` / `.agents/skills/` from your role and doc definitions. Re-run it whenever you change a role or its context.
+Templates become native skills, agents, and workflows for your runtime. Re-run it whenever you change a template.
 
-### 3. Link your AI entry point
-
-Add this to your runtime entry point (`CLAUDE.md` for Claude Code, `AGENTS.md` for Codex):
-
-```markdown
-This project uses an agent orchestration framework (dydo).
-Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
-```
-
-### 4. Fill in your context and validate
+### 3. Fill in your context and validate
 
 ```bash
 dydo check    # Find documentation issues
@@ -127,81 +133,21 @@ Fill out `about.md` with your project context and adjust `coding-standards.md` t
 
 **Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it rewrites links when you move files. Run `dydo fix` afterward.
 
-### 5. Customize (optional)
+### 4. Customize (optional)
 
-- **Nudges** — project-specific guardrails: a regex that blocks or warns with your own message.
-- **Roles** — customize the shipped roles or scaffold new ones with `dydo roles create <name>`; re-run `dydo sync`.
+- **Nudges** — a regex that blocks or warns with your own message, in `dydo.json`.
+- **Roles** — edit a shipped role's template, or add `dydo/_system/templates/mode-<name>.template.md` for a new one; re-run `dydo sync`.
 - **Template additions** — drop markdown into `dydo/_system/template-additions/`; templates have `{{include:name}}` hooks that survive `dydo template update`.
 
-**Tip:** For anything advanced, don't hand-write the files. Talk it through with a co-thinker, point them at the [dydo repo](https://github.com/bodnarbalazs/dydo), lift the guard for them (`dydo guard lift <agent> 5`), and have them do it. Then `dydo validate`.
+**Tip:** For anything advanced, don't hand-write the files. Talk it through with a co-thinker, point them at the [dydo repo](https://github.com/bodnarbalazs/dydo), and have them do it. Then `dydo validate`.
 
 You're ready to go. Keep docs accurate to your intent — they're the memory your agents rely on.
 
 ---
 
-## How It Works
-
-**Example prompt:** `Hey Adele, help me fix this bug in the auth service`
-
-1. The named **Tier-1 agent** reads `CLAUDE.md` or `AGENTS.md`, gets redirected to `dydo/index.md`, and onboards through the doc funnel.
-2. It claims its identity (`dydo agent claim Adele`) and reads the project context it needs.
-3. It **plans the work and runs it as native subagents/workflows** — a code-writer to implement, a reviewer to check. Tier-1 manages; the workers execute. (Tier-1 agents are managers: the code writes happen in workers, not in the thread you're talking to.)
-4. On **every** tool call — the main thread and each subagent alike — the `dydo guard` hook enforces universal off-limits and your nudges.
-5. Review is separated by construction: the agent that wrote the code doesn't review it.
-
-Two tiers of identity make this work:
-
-| Tier | Who | Form |
-|------|-----|------|
-| **Tier 1** | co-thinker, orchestrator, chief-of-staff — the agents you talk to | Named, persistent identity; one per terminal; claims with `dydo agent claim` |
-| **Tier 2** | code-writer, reviewer, test-writer, docs-writer, sprint-auditor, inquisitor | Runtime-managed subagents; identity = agent type + instance; **no claim**, spawned on demand |
-
----
-
-## Multi-Agent Orchestration
-
-For real work, a Tier-1 agent fans work out across native subagents and workflows. Two flagship skills ship with dydo:
-
-```mermaid
-flowchart TB
-    S["/run-sprint"] --> SL{slice the work<br/>disjoint file sets}
-    SL --> A1["slice A<br/>code-writer ⇄ reviewer<br/>(loop until pass)"]
-    SL --> A2["slice B<br/>code-writer ⇄ reviewer<br/>(loop until pass)"]
-    A1 --> M[merge slices back<br/>sequentially]
-    A2 --> M
-    M --> AU["sprint-auditor<br/>final review over the<br/>whole merged diff"]
-```
-
-- **`run-sprint`** — Slice a sprint into disjoint work, run automated code→review loops per slice (escalating to a human when a worker raises its hand), merge passed slices back, then run a `sprint-auditor` over the entire merged diff.
-- **`inquisition`** — A campaign-end QA gate: fans out `inquisitor` subagents across five adversarial lenses (correctness, coverage gaps, security, dead code, doc drift), verifies each finding refute-by-default, and gates on confirmed high-severity issues. Its signature concern is test-coverage gaps — what a per-change review never checks.
-- **Worktree isolation** — Parallel workers run in separate git worktrees (`isolation: 'worktree'`) so they never collide.
-- **Nested orchestration** — Subagents can't spawn subagents; deeper fan-out is a nested workflow or another Tier-1 terminal.
-
----
-
-## Agent Roles
-
-dydo ships **seven base roles**. `dydo sync` compiles each into the native artifacts your coding runtime runs.
-
-| Role | Purpose | Compiles to |
-|------|---------|-------------|
-| **chief-of-staff** | The human's right hand — triages the backlog, routes work, reports status | Skill (Tier-1 manager) |
-| **co-thinker** | Collaborates on design decisions and architecture | Skill (Tier-1 manager) |
-| **orchestrator** | Coordinates multi-agent workflows and dispatch | Skill (Tier-1 manager) |
-| **code-writer** | Implements features and fixes bugs | Agent + skill (worker) |
-| **reviewer** | Reviews code for quality and correctness | Agent + skill (worker, read-only) |
-| **test-writer** | Writes and maintains test suites | Agent + skill (worker) |
-| **docs-writer** | Creates and maintains documentation | Agent + skill (worker) |
-
-Plus three that aren't claimable roles: **planner** (a planning-discipline skill a Tier-1 agent applies in its own thread), and **sprint-auditor** and **inquisitor** — read-only QA agents that workflows spawn, for whole-sprint audits and campaign-end QA sweeps respectively.
-
-Roles are data-driven — defined in `.role.json` files. Add custom roles with `dydo roles create <name>`, then `dydo sync`. Each role declares a **model tier** (`strong` / `standard` / `light`), which the compiler binds to a concrete model at sync time.
-
----
-
 ## Notion Sync (optional)
 
-Your repo files stay the single source of truth. Notion is a **swappable view** — a team-facing PM board that dydo provisions and keeps in two-way sync: tasks, issues, decisions, and progress, with a designed color language, priority scheme, and attention signals.
+Your repo files stay the single source of truth. Notion is a **swappable view** — a team-facing PM board that dydo provisions and keeps in two-way sync: releases, campaigns, sprints, slices, tasks, and issues, with a designed color language, priority scheme, and attention signals.
 
 <!-- VISUAL: Notion board screenshot goes here — balazs to provide. Drop the PNG in dydo/_assets/ and add an image tag on this line. -->
 
@@ -209,7 +155,10 @@ Your repo files stay the single source of truth. Notion is a **swappable view** 
 dydo notion connect          # store your integration token (local-only by default)
 dydo notion sync             # reconcile repo files ⇄ Notion
 dydo notion sync --dry-run   # preview the reconcile plan, change nothing
+dydo watchdog start          # the daemon: board stays current within ~15s
 ```
+
+The daemon's sync cost scales with **what changed, not how much exists** — a quiet tick is a handful of filtered queries whether your doc base holds four hundred records or forty thousand. Edits land on the board within one ~15-second tick; a body-free hourly census catches remote deletions; the full reconcile only runs when you ask for it.
 
 The token is read from stdin (never a CLI argument, never logged) and stored locally, or sealed into an opt-in, passphrase-encrypted vault (`--vault`) if you want it committed for CI. You own the data; Notion is just where your team looks at it.
 
@@ -219,12 +168,13 @@ The token is read from stdin (never a CLI argument, never logged) and stored loc
 
 ```
 project/
-|-- dydo.json                    # Configuration (paths, roles, model tiers, Notion)
-|-- CLAUDE.md                    # Claude Code entry point
-|-- AGENTS.md                    # Codex entry point
+|-- dydo.json                    # Configuration (paths, model tiers, nudges, Notion)
+|-- CLAUDE.md                    # Claude Code entry point <- dydo init
+|-- AGENTS.md                    # Codex entry point <- dydo init
 |-- .claude/
 |   |-- agents/                  # Compiled Claude subagents <- dydo sync
-|   `-- skills/                  # Compiled Claude role skills <- dydo sync
+|   |-- skills/                  # Compiled Claude role skills <- dydo sync
+|   `-- workflows/               # Compiled workflows <- dydo sync
 |-- .codex/agents/               # Compiled Codex agents <- dydo sync
 |-- .agents/skills/              # Compiled Codex skills <- dydo sync
 `-- dydo/
@@ -232,12 +182,11 @@ project/
     |-- understand/              # Domain concepts, architecture
     |-- guides/                  # How-to guides
     |-- reference/               # API docs, specs
-    |-- project/                 # Decisions, issues, tasks, backlog, changelog
-    |-- _system/templates/       # Customizable templates
+    |-- project/                 # Decisions, issues, sprints, slices, tasks, changelog
+    |-- _system/templates/       # Customizable templates (roles, workflows, docs)
     |-- _system/template-additions/  # Template extension points
-    |-- _system/roles/           # Role definitions (.role.json)
     |-- _assets/                 # Images, diagrams
-    `-- agents/                  # Tier-1 agent workspaces (gitignored)
+    `-- agents/                  # Shared agent scratch workspace (gitignored)
 ```
 
 ---
@@ -256,7 +205,7 @@ dydo init claude --join
 
 ## Self-Documentation
 
-dydo documents itself using its own system. Learn how it works by reading the `dydo/` folder in the [dydo GitHub repo](https://github.com/bodnarbalazs/dydo) — a living example of documentation-driven orchestration.
+dydo documents itself using its own system. Learn how it works by reading the `dydo/` folder in the [dydo GitHub repo](https://github.com/bodnarbalazs/dydo) — a living example of documentation-driven development.
 
 ---
 
@@ -269,8 +218,8 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 |---------|-------------|
 | **`dydo init <integration>`** | **Initialize project (`claude`, `codex`, `none`)** |
 | **`dydo init <integration> --join`** | **Join existing project as a new team member** |
-| **`dydo sync`** | **Compile roles to Claude and Codex agents + skills** |
-| `dydo validate` | Validate configuration and roles |
+| **`dydo sync`** | **Compile role templates to Claude and Codex agents, skills, and workflows** |
+| `dydo validate` | Validate configuration and nudges |
 
 ### Documentation
 | Command | Description |
@@ -297,13 +246,15 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | `dydo issue list [--area <area>] [--all]` | List issues |
 | `dydo issue resolve <id> --summary "..."` | Resolve an issue |
 
-### Notion
+### Notion & Daemon
 | Command | Description |
 |---------|-------------|
 | `dydo notion connect [--parent-page <id>] [--vault]` | Store the Notion token (local-only by default) |
-| `dydo notion sync [--dry-run] [--prune]` | Reconcile repo files ⇄ Notion |
-| `dydo notion reset [--dry-run] [--yes]` | Wipe the tracked databases and recreate them from the model |
+| `dydo notion sync [--dry-run] [--prune]` | Reconcile repo files ⇄ Notion (the full pass) |
+| `dydo notion reset [--dry-run] [--yes]` | Archive the tracked databases and recreate them from the model |
 | `dydo notion reveal-token [--yes]` | Print the stored token (guarded break-glass) |
+| **`dydo watchdog start [--interval <s>] [--census-interval <n>]`** | **Start the sync daemon (15s ticks by default)** |
+| **`dydo watchdog stop`** | **Stop the sync daemon** |
 
 ### Model
 | Command | Description |
@@ -312,20 +263,10 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | `dydo model uncap <model>` | Restore a capped model's tier bindings |
 | `dydo model status` | Show active model caps (target, fallback, reset time) |
 
-### Roles
-| Command | Description |
-|---------|-------------|
-| `dydo roles list` | List all role definitions |
-| `dydo roles create <name>` | Scaffold a custom role |
-| `dydo roles reset` | Regenerate base role files |
-
-### Workspace & Guard
+### Guard
 | Command | Description |
 |---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
-| **`dydo guard lift <agent> [minutes]`** | **Temporarily lift guard restrictions** |
-| `dydo guard restore <agent>` | Restore guard restrictions |
-| `dydo watchdog <...>` | Stub — reserved for the Notion-sync daemon (DR-041) |
 
 ### Template
 | Command | Description |

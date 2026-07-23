@@ -57,6 +57,6 @@ How we work on this project.
 
 ## For AI Agents
 
-This project uses [DynaDocs](./reference/about-dynadocs.md) for AI orchestration and documentation management.
+This project uses [DynaDocs](./reference/about-dynadocs.md) for agent context, guardrails, and documentation management.
 
 See [index.md](./index.md) for the AI agent entry point.

@@ -39,6 +39,13 @@ no data loss.
 doesn't match a real project. Add a regression test that runs the guard with cwd set to a subdir and
 asserts no nested `dydo/` tree is created.
 
+**Third instance (watchdog-autostart-lease, 2026-07-23).** `GuardCommand.AutoStartWatchdogIfDue` now
+uses the identical `Environment.CurrentDirectory + "dydo"` construction for its `watchdog-activity`
+stamp (deliberately matching the two sibling `IfDue` helpers, per that task's reviewer note — this
+issue owns the cleanup). So the phantom-tree fix must sweep three call sites now, not two:
+`last-validation`, `last-model-cap-restore`, and `watchdog-activity` (plus, from the same stale cwd,
+`watchdog.pid`/`watchdog.hold` written by an auto-started daemon under the resolved root).
+
 **Cleanup.** Delete the existing stray `dydo/project/dydo/` directory (untracked, gitignored content).
 
 ## Reproduction

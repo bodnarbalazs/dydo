@@ -35,20 +35,38 @@ public static class WatchdogCommand
         DefaultValueFactory = _ => WatchdogService.DefaultCensusInterval,
     };
 
+    private static Option<int> LeaseOption()
+    {
+        var option = new Option<int>("--lease")
+        {
+            Description = $"Minutes of guard inactivity before the daemon self-exits (default {WatchdogService.DefaultLeaseMinutes}; 0 disables).",
+            DefaultValueFactory = _ => WatchdogService.DefaultLeaseMinutes,
+        };
+        // A negative lease would silently mean "never expire" — reject it so `0` stays the one explicit way to disable.
+        option.Validators.Add(result =>
+        {
+            if (result.GetValue(option) < 0)
+                result.AddError("--lease must be >= 0 (0 disables lease expiry).");
+        });
+        return option;
+    }
+
     private static Command CreateStartCommand()
     {
         var command = new Command("start", "Start the Notion-sync daemon in the background");
         var interval = IntervalOption();
         var census = CensusOption();
+        var lease = LeaseOption();
         command.Options.Add(interval);
         command.Options.Add(census);
+        command.Options.Add(lease);
         command.SetAction(parse =>
         {
             var config = new ConfigService();
             var token = ResolveToken(config);
             return WatchdogService.Start(
                 config.GetDydoRoot(), parse.GetValue(interval), parse.GetValue(census),
-                NotionSyncService.DaemonConfigError(token, config), Console.Out);
+                NotionSyncService.DaemonConfigError(token, config), Console.Out, parse.GetValue(lease));
         });
         return command;
     }
@@ -65,8 +83,10 @@ public static class WatchdogCommand
         var command = new Command("run", "Run the Notion-sync loop in the foreground (used by `start`)") { Hidden = true };
         var interval = IntervalOption();
         var census = CensusOption();
+        var lease = LeaseOption();
         command.Options.Add(interval);
         command.Options.Add(census);
+        command.Options.Add(lease);
         command.SetAction(parse =>
         {
             var config = new ConfigService();
@@ -79,7 +99,8 @@ public static class WatchdogCommand
                 tick: (censusTick, validate) => NotionSyncService.DeltaTick(token!, config, _ => client!, censusTick, validate),
                 keepRunning: _ => true,
                 wait: Thread.Sleep,
-                output: Console.Out);
+                output: Console.Out,
+                leaseMinutes: parse.GetValue(lease));
         });
         return command;
     }

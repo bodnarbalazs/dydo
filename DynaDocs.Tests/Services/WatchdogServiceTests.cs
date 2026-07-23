@@ -24,6 +24,7 @@ public sealed class WatchdogServiceTests : IDisposable
         WatchdogService.IsProcessAliveOverride = null;
         WatchdogService.SpawnOverride = null;
         WatchdogService.KillOverride = null;
+        WatchdogService.ActivityStampReadOverride = null;
         WatchdogLogger.LogPathOverride = null;
         var parent = Directory.GetParent(_dydoRoot)!.FullName;
         if (Directory.Exists(parent)) Directory.Delete(parent, true);
@@ -48,7 +49,9 @@ public sealed class WatchdogServiceTests : IDisposable
 
         Assert.Equal(ExitCodes.Success, code);
         Assert.NotNull(spawned);
-        Assert.Equal(new[] { "watchdog", "run", "--interval", "5", "--census-interval", "240" }, spawned);
+        Assert.Equal(
+            new[] { "watchdog", "run", "--interval", "5", "--census-interval", "240", "--lease", "60" },
+            spawned);
         Assert.Contains("started", output.ToString());
     }
 
@@ -231,5 +234,170 @@ public sealed class WatchdogServiceTests : IDisposable
         worker.Join(TimeSpan.FromSeconds(5));
         Assert.NotNull(first);
         Assert.Contains("tick_skipped", File.ReadAllText(WatchdogLogger.LogPathOverride!));
+    }
+
+    // ── Suppress marker (watchdog-autostart-lease): stop means stop ──────────────────────────────
+
+    [Fact]
+    public void Stop_WritesHoldMarker_SuppressingAutoStart()
+    {
+        File.WriteAllText(WatchdogService.PidPath(_dydoRoot), "7777");
+        WatchdogService.KillOverride = _ => { };
+        var output = new StringWriter();
+
+        var code = WatchdogService.Stop(_dydoRoot, output);
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.True(File.Exists(WatchdogService.HoldPath(_dydoRoot)));
+        Assert.Contains("suppressed", output.ToString());
+    }
+
+    [Fact]
+    public void Stop_NotRunning_StillWritesHoldMarker()
+    {
+        // Invoking stop is always a deliberate "keep it off" signal, even when nothing is live.
+        var code = WatchdogService.Stop(_dydoRoot, new StringWriter());
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.True(File.Exists(WatchdogService.HoldPath(_dydoRoot)));
+    }
+
+    [Fact]
+    public void Stop_KillThrows_StillWritesHoldMarker()
+    {
+        // The marker is written BEFORE the kill, so a silently-failing kill (access-denied etc.) still leaves the
+        // suppression in place — the surviving daemon exits on its next per-tick hold check.
+        File.WriteAllText(WatchdogService.PidPath(_dydoRoot), "7777");
+        WatchdogService.KillOverride = _ => throw new UnauthorizedAccessException("denied");
+
+        var code = WatchdogService.Stop(_dydoRoot, new StringWriter());
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.True(File.Exists(WatchdogService.HoldPath(_dydoRoot)));
+    }
+
+    [Fact]
+    public void Run_HoldMarkerAppearsMidRun_ExitsCleanly_AndLogsIt()
+    {
+        var ticks = 0;
+        new WatchdogService().Run(
+            _dydoRoot, 15, 240, 20, configError: null,
+            tick: (_, _) =>
+            {
+                ticks++;
+                if (ticks == 2) // a `stop` lands mid-run
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(WatchdogService.HoldPath(_dydoRoot))!);
+                    File.WriteAllText(WatchdogService.HoldPath(_dydoRoot), "stop");
+                }
+                return NotionDeltaTickResult.Empty(false);
+            },
+            keepRunning: done => done < 10, wait: _ => { }, output: new StringWriter());
+
+        Assert.Equal(2, ticks); // honored the marker after tick 2 — never reached tick 3
+        Assert.Contains("hold_honored", File.ReadAllText(WatchdogLogger.LogPathOverride!));
+        Assert.False(File.Exists(WatchdogService.PidPath(_dydoRoot))); // pid cleaned on exit
+    }
+
+    [Fact]
+    public void Start_ClearsHoldMarker_BeforeSpawning()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(WatchdogService.HoldPath(_dydoRoot))!);
+        File.WriteAllText(WatchdogService.HoldPath(_dydoRoot), "held");
+        WatchdogService.SpawnOverride = _ => { };
+
+        WatchdogService.Start(_dydoRoot, 15, 240, configError: null, new StringWriter());
+
+        Assert.False(File.Exists(WatchdogService.HoldPath(_dydoRoot))); // a manual start lifts the suppression
+    }
+
+    [Fact]
+    public void Start_TouchesActivityStamp_SoFreshDaemonHasFullLease()
+    {
+        WatchdogService.SpawnOverride = _ => { };
+
+        WatchdogService.Start(_dydoRoot, 15, 240, configError: null, new StringWriter());
+
+        Assert.True(File.Exists(WatchdogService.ActivityStampPath(_dydoRoot)));
+    }
+
+    // ── Lease expiry (watchdog-autostart-lease) ─────────────────────────────────────────────────
+
+    [Fact]
+    public void Run_LeaseExpires_ExitsCleanly_AndLogsIt()
+    {
+        var baseTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var calls = 0;
+        // No stamp file → the lease measures from the process-start baseline (calls==0). The next clock
+        // read is 70 minutes on, past the 60-minute lease.
+        Func<DateTime> clock = () => baseTime.AddMinutes(70 * calls++);
+        var ticks = 0;
+
+        var code = new WatchdogService().Run(
+            _dydoRoot, 15, 240, 20, configError: null,
+            tick: (_, _) => { ticks++; return NotionDeltaTickResult.Empty(false); },
+            keepRunning: _ => true, wait: _ => { }, output: new StringWriter(),
+            leaseMinutes: 60, utcNow: clock);
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Equal(1, ticks); // exits after the first tick's lease check
+        Assert.False(File.Exists(WatchdogService.PidPath(_dydoRoot)));
+        Assert.Contains("lease_expired", File.ReadAllText(WatchdogLogger.LogPathOverride!));
+    }
+
+    [Fact]
+    public void Run_LeaseZero_NeverExpires()
+    {
+        var baseTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var calls = 0;
+        Func<DateTime> clock = () => baseTime.AddDays(calls++); // wildly advancing — irrelevant when lease is off
+        var ticks = 0;
+
+        new WatchdogService().Run(
+            _dydoRoot, 15, 240, 20, configError: null,
+            tick: (_, _) => { ticks++; return NotionDeltaTickResult.Empty(false); },
+            keepRunning: done => done < 3, wait: _ => { }, output: new StringWriter(),
+            leaseMinutes: 0, utcNow: clock);
+
+        Assert.Equal(3, ticks); // only keepRunning ends the loop — the lease is disabled
+        Assert.DoesNotContain("lease_expired", File.ReadAllText(WatchdogLogger.LogPathOverride!));
+    }
+
+    [Fact]
+    public void Run_FreshStamp_KeepsDaemonAlive_DespiteAdvancingClock()
+    {
+        // Wall-clock time leaps 1000 min between ticks — the process-start baseline goes stale immediately — yet the
+        // guard keeps refreshing the stamp to the current time, so lastActivity stays current and the lease never
+        // lapses. (The stamp read models that refresh: it advances the shared clock the check then reads.)
+        var now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        Func<DateTime> clock = () => now;
+        WatchdogService.ActivityStampReadOverride = _ => { now = now.AddMinutes(1000); return now; };
+        var ticks = 0;
+
+        new WatchdogService().Run(
+            _dydoRoot, 15, 240, 20, configError: null,
+            tick: (_, _) => { ticks++; return NotionDeltaTickResult.Empty(false); },
+            keepRunning: done => done < 3, wait: _ => { }, output: new StringWriter(),
+            leaseMinutes: 60, utcNow: clock);
+
+        Assert.Equal(3, ticks); // a fresh stamp holds the lease open; only keepRunning ends it
+    }
+
+    [Fact]
+    public void Run_MissingStamp_UsesProcessStartBaseline_NoInstaExit()
+    {
+        var baseTime = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var calls = 0;
+        Func<DateTime> clock = () => baseTime.AddSeconds(calls++); // barely advances — well within the lease
+        var ticks = 0;
+
+        new WatchdogService().Run(
+            _dydoRoot, 15, 240, 20, configError: null,
+            tick: (_, _) => { ticks++; return NotionDeltaTickResult.Empty(false); },
+            keepRunning: done => done < 2, wait: _ => { }, output: new StringWriter(),
+            leaseMinutes: 60, utcNow: clock);
+
+        Assert.Equal(2, ticks); // a missing stamp does not insta-kill a freshly started daemon
+        Assert.DoesNotContain("lease_expired", File.ReadAllText(WatchdogLogger.LogPathOverride!));
     }
 }

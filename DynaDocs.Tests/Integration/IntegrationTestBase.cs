@@ -22,6 +22,7 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
+    private readonly Action<IReadOnlyList<string>>? _originalSpawn;
 
     protected IntegrationTestBase()
     {
@@ -35,9 +36,16 @@ public abstract class IntegrationTestBase : IDisposable
         _originalOut = Console.Out;
         _originalErr = Console.Error;
         _originalIn = Console.In;
+        _originalSpawn = WatchdogService.SpawnOverride;
 
         // Clear env vars that leak into dispatch logic
         Environment.SetEnvironmentVariable("DYDO_WINDOW", null);
+
+        // These tests invoke the guard in-process (~dozens of times), and the guard's watchdog auto-start trigger
+        // could Process.Start a REAL detached daemon. Today that never fires only because temp projects lack
+        // provision evidence — hermeticity by coincidence. Neuter the spawn deliberately so no test can ever leak a
+        // background daemon (a hazard here: this machine's global Notion env would let one mint real databases).
+        WatchdogService.SpawnOverride = _ => { };
 
         // Set working directory to test dir
         Environment.CurrentDirectory = TestDir;
@@ -51,6 +59,7 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
+        WatchdogService.SpawnOverride = _originalSpawn;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))

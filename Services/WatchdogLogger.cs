@@ -93,6 +93,17 @@ public static partial class WatchdogLogger
     public static void LogTickError(string dydoRoot, string message) =>
         Write(dydoRoot, new TickErrorEvent(Now(), "tick_error", message), WatchdogLogJsonContext.Default.TickErrorEvent);
 
+    /// <summary>The daemon self-exited because its activity lease lapsed (watchdog-autostart-lease): the guard has
+    /// not refreshed the activity stamp for the lease window, so the session it was serving has gone quiet — a later
+    /// tool call's guard hook auto-starts a fresh daemon.</summary>
+    public static void LogLeaseExpired(string dydoRoot, int leaseMinutes) =>
+        Write(dydoRoot, new LeaseExpiredEvent(Now(), "lease_expired", leaseMinutes), WatchdogLogJsonContext.Default.LeaseExpiredEvent);
+
+    /// <summary>The daemon exited because a suppress marker appeared mid-run (watchdog-autostart-lease): a <c>stop</c>
+    /// raced the loop or its kill silently failed, and the per-tick hold check honored it — "stop means stop".</summary>
+    public static void LogHoldHonored(string dydoRoot) =>
+        Write(dydoRoot, new SimpleEvent(Now(), "hold_honored"), WatchdogLogJsonContext.Default.SimpleEvent);
+
     private sealed record ModelCapRestoreEvent(
         [property: JsonPropertyName("ts")] string Ts,
         [property: JsonPropertyName("event")] string Event,
@@ -118,6 +129,11 @@ public static partial class WatchdogLogger
         [property: JsonPropertyName("event")] string Event,
         [property: JsonPropertyName("message")] string Message);
 
+    private sealed record LeaseExpiredEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("lease_minutes")] int LeaseMinutes);
+
     private sealed record SimpleEvent(
         [property: JsonPropertyName("ts")] string Ts,
         [property: JsonPropertyName("event")] string Event);
@@ -125,6 +141,7 @@ public static partial class WatchdogLogger
     [JsonSerializable(typeof(ModelCapRestoreEvent))]
     [JsonSerializable(typeof(SyncTickEvent))]
     [JsonSerializable(typeof(TickErrorEvent))]
+    [JsonSerializable(typeof(LeaseExpiredEvent))]
     [JsonSerializable(typeof(SimpleEvent))]
     private partial class WatchdogLogJsonContext : JsonSerializerContext { }
 }

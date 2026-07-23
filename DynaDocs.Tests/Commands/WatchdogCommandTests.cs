@@ -27,7 +27,7 @@ public class WatchdogCommandTests
     }
 
     [Fact]
-    public void StartAndRun_ExposeIntervalAndCensusOptions()
+    public void StartAndRun_ExposeIntervalCensusAndLeaseOptions()
     {
         var command = WatchdogCommand.Create();
         foreach (var name in new[] { "start", "run" })
@@ -35,6 +35,28 @@ public class WatchdogCommandTests
             var sub = command.Subcommands.First(c => c.Name == name);
             Assert.Contains(sub.Options, o => o.Name == "--interval");
             Assert.Contains(sub.Options, o => o.Name == "--census-interval");
+            Assert.Contains(sub.Options, o => o.Name == "--lease");
         }
+    }
+
+    [Theory]
+    [InlineData("start")]
+    [InlineData("run")]
+    public void NegativeLease_IsRejectedAtParseTime(string sub)
+    {
+        var result = WatchdogCommand.Create().Parse(new[] { sub, "--lease=-5" });
+
+        Assert.NotEmpty(result.Errors);
+        Assert.Contains(result.Errors, e => e.Message.Contains("--lease must be >= 0"));
+    }
+
+    [Theory]
+    [InlineData("start")]
+    [InlineData("run")]
+    public void ZeroLease_IsAccepted(string sub)
+    {
+        var result = WatchdogCommand.Create().Parse(new[] { sub, "--lease=0" });
+
+        Assert.DoesNotContain(result.Errors, e => e.Message.Contains("--lease"));
     }
 }

@@ -5,7 +5,7 @@ due:
 needs-human: false
 priority: High
 sprint: v2-2-3-upgrade-compatibility
-status: in-progress
+status: done
 work-type: release
 area: project
 type: context
@@ -38,3 +38,11 @@ Close the completed records, prove release readiness, and publish v2.2.3 through
 - `git show v2.2.3:DynaDocs.csproj` and `git show v2.2.3:npm/package.json` both contain 2.2.3.
 - The tag is present on the remote and its release workflow reaches a terminal success state.
 - If a job fails without requiring source changes, diagnose and rerun it against the same immutable tag. If any source correction is required after publication begins, record the partial result and prepare v2.2.4; never move or replace v2.2.3.
+
+## Result
+
+Completed 2026-07-26. Full runner: 2,519 passed / 10 live-skipped. Coverage: 131/131
+modules at tier. Source-built `dydo check`: 0 errors / 0 warnings. Release build: 0
+warnings / 0 errors. Local package install reported 2.2.3. Commit `36c866e8` was pushed
+to `master` and tagged `v2.2.3`; GitHub Actions run 30207901585 completed successfully
+across all five native builds, GitHub Release creation, NuGet publication, and npm publication.

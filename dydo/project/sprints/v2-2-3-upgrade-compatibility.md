@@ -1,11 +1,11 @@
 ---
 title: v2.2.3 Upgrade Compatibility
 campaign: dydo-2-0
-end:
-gate-result: plan-review PASS (2026-07-26, 5 rounds)
+end: 2026-07-26
+gate-result: plan-review PASS (2026-07-26, 5 rounds) + slice reviews PASS + full ratchet PASS (2519 tests, 131/131 coverage, check 0/0) + release workflow PASS (run 30207901585)
 seq: 9
 start: 2026-07-26
-status: active
+status: done
 area: project
 type: context
 ---
@@ -89,3 +89,11 @@ Round 3 FAIL (2026-07-26): the combined implementation slice was too broad and s
 Round 4 FAIL (2026-07-26): staging allowlist still said two slices after the split. Corrected by enumerating all three slice paths.
 
 Round 5 PASS (2026-07-26): mechanically executable, file-disjoint, migration-safe, preserves unrelated changes, and defines complete validation, staging, publication, and immutable-release handling.
+
+## Closure
+
+Completed 2026-07-26. Issues 0300-0305 resolved; 0306 recorded as the recovered incident;
+0307 remains the explicit hardening follow-up. The release commit is `36c866e8`, immutable tag
+`v2.2.3`; all five native artifacts plus checksums were published to GitHub Release, and both
+registry publication jobs succeeded. LC was not touched and remains the next, separately
+coordinated template-update/sync/migration pass.

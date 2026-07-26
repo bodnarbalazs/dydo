@@ -43,8 +43,8 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("orchestrator", names);
         Assert.Contains("co-thinker", names);
         Assert.Contains("chief-of-staff", names);
+        Assert.Contains("inquisitor", names);
         // Retired roles stay retired.
-        Assert.DoesNotContain("inquisitor", names);
         Assert.DoesNotContain("judge", names);
         Assert.DoesNotContain("sprint-auditor", names);
     }
@@ -67,12 +67,15 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     [Fact]
-    public void DiscoverRoles_Reviewer_IsTheOnlyReadOnlyBaseRole()
+    public void DiscoverRoles_ReviewerAndInquisitor_AreReadOnlyBaseRoles()
     {
         var roles = RoleDefinitionService.DiscoverRoles(_testDir);
 
         Assert.True(roles.Single(r => r.Name == "reviewer").ReadOnly);
-        Assert.All(roles.Where(r => r.Name != "reviewer"), r => Assert.False(r.ReadOnly));
+        Assert.True(roles.Single(r => r.Name == "inquisitor").ReadOnly);
+        Assert.All(
+            roles.Where(r => r.Name is not ("reviewer" or "inquisitor")),
+            r => Assert.False(r.ReadOnly));
     }
 
     [Fact]

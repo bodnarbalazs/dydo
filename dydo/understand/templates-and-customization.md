@@ -86,7 +86,7 @@ If re-anchoring can't place a tag, the update warns you. Use `--force` to overwr
 
 ### Binary Assets
 
-Binary files like `_assets/dydo-diagram.svg` use byte-level hash comparison and are replaced when a new version is available.
+Binary framework assets use byte-level hash comparison and are replaced when a new version is available. Assets retired from the framework (e.g. the old pre-DR-041 `_assets/dydo-diagram.svg`, issue 0301) are deleted on update when hash-clean; a user-modified copy is kept and becomes a user-owned asset.
 
 ---
 

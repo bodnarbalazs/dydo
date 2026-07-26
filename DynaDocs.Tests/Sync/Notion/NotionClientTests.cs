@@ -246,7 +246,10 @@ public class NotionClientTests
         var req = handler.Requests.Single();
         Assert.Equal("PATCH", req.Method);
         Assert.Equal("/v1/pages/p1", req.Path);
-        Assert.Contains("\"archived\":true", req.Body);
+        // Wire shape, not object graph: Notion-Version 2026-03-11 rejects "archived" on a page
+        // PATCH — the soft-delete field is "in_trash" (issue 0305).
+        Assert.Contains("\"in_trash\":true", req.Body);
+        Assert.DoesNotContain("\"archived\"", req.Body);
     }
 
     [Fact]

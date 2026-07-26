@@ -24,6 +24,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/mode-docs-writer.template.md");
         AssertFileExists("dydo/_system/templates/mode-test-writer.template.md");
         AssertFileExists("dydo/_system/templates/mode-orchestrator.template.md");
+        AssertFileExists("dydo/_system/templates/mode-inquisitor.template.md");
     }
 
     [Fact]
@@ -64,11 +65,12 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("mode-reviewer.template.md", templateNames);
         Assert.Contains("mode-planner.template.md", templateNames);
         Assert.Contains("mode-chief-of-staff.template.md", templateNames);
+        Assert.Contains("mode-inquisitor.template.md", templateNames);
 
-        // 8 mode templates (the compiler's role sources) + the reviewer's 5 skill
+        // 9 mode templates (the compiler's role sources) + the reviewer's 5 skill
         // resource templates (<role>-resource-<name>.template.md).
         Assert.Contains("reviewer-resource-plan.template.md", templateNames);
-        Assert.Equal(13, templateNames.Count);
+        Assert.Equal(14, templateNames.Count);
     }
 
     [Fact]

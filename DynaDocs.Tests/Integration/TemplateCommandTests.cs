@@ -314,42 +314,45 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_MissingBinaryFile_Created()
+    public async Task TemplateUpdate_RetiredBinary_NotScaffoldedAndNotRecreated()
     {
+        // Issue 0301: the pre-DR-041 diagram is retired — a fresh init must not scaffold it,
+        // and template update must not resurrect it.
         await InitProjectAsync();
 
         var svgPath = Path.Combine(TestDir, "dydo/_assets/dydo-diagram.svg");
-        if (File.Exists(svgPath))
-        {
-            File.Delete(svgPath);
+        Assert.False(File.Exists(svgPath), "retired diagram must not be scaffolded by init");
 
-            var result = await RunTemplateUpdateAsync();
+        var result = await RunTemplateUpdateAsync();
 
-            result.AssertSuccess();
-            result.AssertStdoutContains("Created: _assets/dydo-diagram.svg");
-            Assert.True(File.Exists(svgPath));
-        }
+        result.AssertSuccess();
+        Assert.False(File.Exists(svgPath), "retired diagram must not be recreated by template update");
     }
 
     [Fact]
-    public async Task TemplateUpdate_UserEditedBinaryFile_Skipped()
+    public async Task TemplateUpdate_RetiredBinary_UserModifiedCopy_Kept()
     {
+        // A legacy project whose diagram was hand-modified: retirement must not destroy user
+        // data — the file stays (now user-owned) and only its stale hash entry is pruned.
         await InitProjectAsync();
 
         var relativePath = "_assets/dydo-diagram.svg";
         var svgPath = Path.Combine(TestDir, "dydo", relativePath);
-        if (!File.Exists(svgPath)) return;
+        File.WriteAllText(svgPath, "<svg>custom user content</svg>");
 
-        var originalBytes = File.ReadAllBytes(svgPath);
         var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHashBytes(originalBytes);
+        config.FrameworkHashes[relativePath] = "0000000000000000000000000000000000000000000000000000000000000000";
         new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        File.WriteAllText(svgPath, "<svg>custom content</svg>");
 
         var result = await RunTemplateUpdateAsync();
 
-        Assert.Contains("user-edited", result.Stderr);
+        result.AssertSuccess();
+        result.AssertStdoutContains("Kept: _assets/dydo-diagram.svg");
+        Assert.True(File.Exists(svgPath), "user-modified retired binary must be kept");
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(relativePath),
+            "stale hash entry must be pruned even when the file is kept");
     }
 
     [Fact]
@@ -390,14 +393,14 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_UpdatedBinaryFile_Replaced()
+    public async Task TemplateUpdate_RetiredBinary_HashCleanCopy_Deleted()
     {
+        // A legacy project carrying the untouched framework diagram (stored hash matches the
+        // on-disk bytes): retirement deletes the file and prunes its hash entry.
         await InitProjectAsync();
 
         var relativePath = "_assets/dydo-diagram.svg";
         var svgPath = Path.Combine(TestDir, "dydo", relativePath);
-        if (!File.Exists(svgPath)) return;
-
         var oldContent = "<svg>old framework version</svg>";
         File.WriteAllText(svgPath, oldContent);
 
@@ -409,7 +412,11 @@ public class TemplateCommandTests : IntegrationTestBase
         var result = await RunTemplateUpdateAsync();
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Updated: _assets/dydo-diagram.svg");
+        result.AssertStdoutContains("Removed retired: _assets/dydo-diagram.svg");
+        Assert.False(File.Exists(svgPath), "hash-clean retired binary must be deleted");
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(relativePath));
     }
 
     [Fact]

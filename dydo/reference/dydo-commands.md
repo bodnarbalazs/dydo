@@ -16,17 +16,18 @@ Complete reference for all `dydo` commands.
 Initialize DynaDocs in a project.
 
 ```bash
-dydo init <integration>              # Initialize with integration (claude, codex, none)
-dydo init <integration> --join       # Wire up this machine's integration for an existing project
-dydo init claude --name "Your Name"  # Non-interactive setup
-dydo init codex --name "Your Name"   # Non-interactive Codex setup
+dydo init <integration>              # Initialize with integration (claude, codex, all, none)
+dydo init all                        # Initialize with both Claude Code and Codex wired up
+dydo init <integration> --join       # Add an integration / wire up this machine for an existing project
 ```
 
 **Arguments:**
-- `integration` - Integration type: `claude` or `codex` (with hooks wired up), or `none` (for other systems, more setup needed)
+- `integration` - Integration type: `claude` or `codex` (with hooks wired up), `all` (both claude and codex), or `none` (for other systems, more setup needed)
 
 **Options:**
-- `--join` - Wire up this machine's hooks and entry files for an already-initialized project instead of creating a new one
+- `--join` - For an already-initialized project: wire up this machine's hooks and entry files, and record the integration in `dydo.json` if it's new. Use it to add a second integration (`dydo init codex --join`) or on a fresh clone.
+
+**Hook file scopes:** the Claude guard wiring lands in `.claude/settings.local.json` — personal scope, gitignored by init — so each machine runs `dydo init claude --join` once after cloning. The Codex wiring (`.codex/hooks.json`) is committed and works from a fresh clone.
 
 ### dydo sync
 
@@ -41,6 +42,7 @@ dydo sync   # emit Claude and Codex agents/skills from roles + docs
 - Custom role = drop a `mode-<name>.template.md` into `dydo/_system/templates/` and re-run `dydo sync`.
 - Skill resources (`<role>-resource-<name>.template.md`) compile into the skill's `resources/` folder; workflow harnesses (`workflow-<name>.js`) compile to `.claude/workflows/`.
 - Codex outputs are written to `.codex/agents/` and `.agents/skills/`.
+- Only integrations recorded in `dydo.json` (`integrations`) are emitted; a config recording neither claude nor codex emits everything for backward compatibility.
 - Model tiers declared per role are bound to concrete models at sync time (`models` in `dydo.json`).
 
 ---
@@ -299,7 +301,7 @@ dydo template update --force   # Overwrite even if re-anchoring fails (backs up 
 - Clean files (hash matches) are overwritten with the new version
 - User-edited files: extracts user-added `{{include:...}}` tags, writes new template, re-anchors tags
 - Non-include edits are lost on update (only include tags are preserved)
-- Binary files (`_assets/dydo-diagram.svg`) use byte-level hash comparison
+- Binary framework assets use byte-level hash comparison; retired framework files (e.g. the old `_assets/dydo-diagram.svg`) are deleted when hash-clean, kept as user assets when modified
 
 **Exit codes:** 0 = success, 1 = warnings (unplaceable tags without `--force`).
 

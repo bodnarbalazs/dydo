@@ -125,6 +125,8 @@ public class CompleteCommandTests : IDisposable
         var completions = CompleteCommand.GetCompletions(2, ["dydo", "init"]).ToList();
 
         Assert.Contains("claude", completions);
+        Assert.Contains("codex", completions);
+        Assert.Contains("all", completions);
         Assert.Contains("none", completions);
     }
 

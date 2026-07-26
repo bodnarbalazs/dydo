@@ -24,7 +24,8 @@
     "pathSets": null
   },
   "integrations": {
-    "claude": true
+    "claude": true,
+    "codex": true
   },
   "notion": {
     "parentPageId": null,
@@ -108,10 +109,9 @@
   ],
   "frameworkHashes": {
     "reference/about-dynadocs.md": "20b793ac842060987f33f3fbf02d67b698dd5e3352a27e60e872af35d3c7b0d9",
-    "reference/dydo-commands.md": "cb862bd8b07ff2686d205887b74236570c1a1bcb6015bb42d8d3557f779da039",
+    "reference/dydo-commands.md": "2d19dce3fc975b4a85c9d562ee8255744d623fbd554898e7d099bcffbf1884dc",
     "reference/dydo-glossary.md": "b61984d0dca6710b204265d95da03cad1890b5aace1d1a7c989bde4e2e6eff9b",
-    "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
-    "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
-    "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9"
+    "reference/writing-docs.md": "a049eb01c24ed4619d13fde30720b45b4a3a0a247990ccb85c0b8d35e0e62b9f",
+    "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f"
   }
 }

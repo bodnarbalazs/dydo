@@ -694,6 +694,44 @@ public class InitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Init All
+
+    [Fact]
+    public async Task Init_All_WiresBothIntegrations()
+    {
+        var result = await InitProjectAsync("all");
+
+        result.AssertSuccess();
+        AssertFileExists("CLAUDE.md");
+        AssertFileExists("AGENTS.md");
+        AssertFileExists(".claude/settings.local.json");
+        AssertFileExists(".codex/hooks.json");
+        AssertFileContains("dydo.json", "\"claude\": true");
+        AssertFileContains("dydo.json", "\"codex\": true");
+    }
+
+    [Fact]
+    public async Task Init_Claude_GitignoresClaudeSettings()
+    {
+        // The Claude guard wiring is personal scope (issue 0303): init must gitignore it so
+        // it never rides a commit, unlike the committed .codex/hooks.json.
+        var result = await InitProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileContains(".gitignore", ".claude/settings.local.json");
+    }
+
+    [Fact]
+    public async Task Init_Codex_DoesNotGitignoreClaudeSettings()
+    {
+        var result = await InitProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain(".claude/settings.local.json", ReadFile(".gitignore"));
+    }
+
+    #endregion
+
     #region Init Join
 
     [Fact]
@@ -718,6 +756,51 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertSuccess();
     }
 
+    [Fact]
+    public async Task Init_Join_Codex_RecordsIntegrationInConfig()
+    {
+        // Issue 0300: a claude-inited project joined with codex must end up recording BOTH —
+        // join used to wire hooks without ever touching dydo.json.
+        await InitProjectAsync("claude");
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        AssertFileContains("dydo.json", "\"claude\": true");
+        AssertFileContains("dydo.json", "\"codex\": true");
+        AssertFileExists(".codex/hooks.json");
+        AssertFileExists("AGENTS.md");
+    }
+
+    [Fact]
+    public async Task Init_Join_All_WiresBothAndRecordsBoth()
+    {
+        await InitProjectAsync("none");
+
+        var result = await JoinProjectAsync("all");
+
+        result.AssertSuccess();
+        AssertFileExists(".claude/settings.local.json");
+        AssertFileExists(".codex/hooks.json");
+        AssertFileExists("CLAUDE.md");
+        AssertFileExists("AGENTS.md");
+        AssertFileContains("dydo.json", "\"claude\": true");
+        AssertFileContains("dydo.json", "\"codex\": true");
+    }
+
+    [Fact]
+    public async Task Init_Join_Claude_AddsGitignoreEntry()
+    {
+        // A codex-inited project later joined from a Claude machine: the personal settings
+        // file must get gitignored at join time (issue 0303).
+        await InitProjectAsync("codex");
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileContains(".gitignore", ".claude/settings.local.json");
+    }
+
     #endregion
 
     #region Error Cases
@@ -730,7 +813,7 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("Unknown integration");
-        result.AssertStderrContains("Valid options: claude, codex, none");
+        result.AssertStderrContains("Valid options: claude, codex, all, none");
     }
 
     [Fact]

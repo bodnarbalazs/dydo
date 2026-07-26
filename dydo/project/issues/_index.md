@@ -76,6 +76,7 @@ Index of issues documentation.
 - [Dispatch preflight falsely reports the codex guard as trusted/active when codex has silently disabled it (dydo cannot compute codex's opaque hook hash)](./0296-dispatch-preflight-falsely-reports-the-codex-guard-as-trusted-active-when-codex.md) - Codex trusts hooks by an opaque per-entry hash dydo can't reproduce; any change to .
 - [Docs mirror CreatePage lost blind 5xx retry and has no adoption recovery](./0297-docs-mirror-createpage-lost-blind-5xx-retry-and-has-no-adoption-recovery.md) - An ambiguous create failure in the docs-mirror page adapter can orphan a child page that duplicates on the next tick.
 - [NotionBlockConverter: single-line paragraph past ~100 rich_text runs does not converge](./0298-notionblockconverter-single-line-paragraph-past-100-rich-text-runs-does-not-conv.md) - The per-block rich_text overflow (ns-7 item 1) splits a >200KB single logical line into sibling paragraph blocks; the join newline re-parses into t...
+- [Spine sync hardening after the stale-state duplicate-minting incident](./0307-spine-sync-hardening-after-the-stale-state-duplicate-minting-incident.md) - Four design gaps let issue 0306 happen: no mass-create fuse, no adopt-by-match for unmapped remote pages, silent re-provision when a tracked data s...
 
 ## Subfolders
 

@@ -137,11 +137,37 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // CLI --command option is accepted (though bash analysis requires hook mode)
         var cmd = GuardCommand.Create();
         var result = await RunAsync(cmd, "--command", "dotnet build");
 
         result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_CommandOption_AppliesShellAnalysis()
+    {
+        // Issue 0302: the documented manual-testing lane used to exit 0 for EVERYTHING —
+        // arg mode carried no tool name, so ShouldRouteToShellHandler never routed the
+        // command to the shell analyzer. A CLI --command is a shell command by definition.
+        await InitProjectAsync("none");
+
+        var cmd = GuardCommand.Create();
+        var result = await RunAsync(cmd, "--command", "npx dydo check");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("npx");
+    }
+
+    [Fact]
+    public async Task Guard_CommandOption_BlocksOffLimitsReference()
+    {
+        await InitProjectAsync("none");
+
+        var cmd = GuardCommand.Create();
+        var result = await RunAsync(cmd, "--command", "cat .env");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("off-limits");
     }
 
     #endregion

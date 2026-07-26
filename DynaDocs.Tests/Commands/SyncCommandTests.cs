@@ -32,6 +32,127 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md")));
     }
 
+    // Issue 0300: sync gates emission on the integrations recorded in dydo.json. A config
+    // recording neither hook-wired integration (legacy, or "none") emits everything.
+    [Fact]
+    public void Execute_ClaudeOnlyIntegration_SkipsCodexArtifacts()
+    {
+        SaveConfigWithIntegrations(claude: true, codex: false);
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".codex")));
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".agents")));
+    }
+
+    [Fact]
+    public void Execute_CodexOnlyIntegration_SkipsClaudeArtifacts()
+    {
+        SaveConfigWithIntegrations(claude: false, codex: true);
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude")));
+    }
+
+    [Fact]
+    public void Execute_NoRecordedIntegrations_EmitsEverything()
+    {
+        SaveConfigWithIntegrations(claude: false, codex: false);
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
+    }
+
+    [Fact]
+    public void Execute_FreshProject_EmitsInquisitorForBothRuntimes()
+    {
+        SyncCommand.Execute(_testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "inquisitor.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "inquisitor", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "inquisitor.toml")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "inquisitor", "SKILL.md")));
+        Assert.Contains(
+            "You are an **inquisitor**.",
+            File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "inquisitor.md")));
+        Assert.Contains(
+            "You are an **inquisitor**.",
+            File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "inquisitor.toml")));
+    }
+
+    [Fact]
+    public void Execute_RetiredSprintAuditor_RemovesGeneratedFilesButPreservesSiblings()
+    {
+        var generatedFiles = new[]
+        {
+            Path.Combine(_testDir, ".claude", "agents", "sprint-auditor.md"),
+            Path.Combine(_testDir, ".claude", "skills", "sprint-auditor", "SKILL.md"),
+            Path.Combine(_testDir, ".codex", "agents", "sprint-auditor.toml"),
+            Path.Combine(_testDir, ".agents", "skills", "sprint-auditor", "SKILL.md"),
+        };
+        foreach (var file in generatedFiles)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "legacy generated content");
+        }
+
+        var claudeSibling = Path.Combine(
+            _testDir, ".claude", "skills", "sprint-auditor", "project-notes.md");
+        var codexSibling = Path.Combine(
+            _testDir, ".agents", "skills", "sprint-auditor", "project-notes.md");
+        File.WriteAllText(claudeSibling, "project owned");
+        File.WriteAllText(codexSibling, "project owned");
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.All(generatedFiles, file => Assert.False(File.Exists(file), file));
+        Assert.True(File.Exists(claudeSibling));
+        Assert.True(File.Exists(codexSibling));
+    }
+
+    [Fact]
+    public void Execute_ProjectLocalSprintAuditorTemplate_PreservesAndCompilesRole()
+    {
+        var templatesDir = Path.Combine(_testDir, "dydo", "_system", "templates");
+        Directory.CreateDirectory(templatesDir);
+        File.WriteAllText(Path.Combine(templatesDir, "mode-sprint-auditor.template.md"),
+            """
+            ---
+            mode: sprint-auditor
+            description: Project-owned sprint audit role.
+            emit: agent
+            read-only: true
+            ---
+
+            # Sprint Auditor
+
+            ## Mindset
+
+            Audit the merged sprint.
+            """);
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "sprint-auditor.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "sprint-auditor", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "sprint-auditor.toml")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "sprint-auditor", "SKILL.md")));
+    }
+
+    private void SaveConfigWithIntegrations(bool claude, bool codex)
+    {
+        var config = ConfigFactory.CreateDefault();
+        if (claude) config.Integrations["claude"] = true;
+        if (codex) config.Integrations["codex"] = true;
+        new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
+    }
+
     [Fact]
     public void SyncCodexRole_WritesAgentAndRepoSkillFiles()
     {

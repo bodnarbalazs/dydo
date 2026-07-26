@@ -157,38 +157,23 @@ public class TemplateGeneratorTests
 
     #region Asset Tests
 
+    // The pre-DR-041 architecture diagram was retired (issue 0301): nothing ships, nothing is
+    // scaffolded, and no embedded Assets resource remains. The plumbing itself stays for
+    // future assets, so the empty/null behaviors are pinned here.
     [Fact]
-    public void GetAssetNames_ReturnsDydoDiagram()
+    public void GetAssetNames_IsEmpty_DiagramRetired()
     {
         var assets = TemplateGenerator.GetAssetNames();
 
-        Assert.Contains("dydo-diagram.svg", assets);
+        Assert.Empty(assets);
     }
 
     [Fact]
-    public void GetAssetNames_ReturnsAtLeastOneAsset()
-    {
-        var assets = TemplateGenerator.GetAssetNames();
-
-        Assert.NotEmpty(assets);
-    }
-
-    [Fact]
-    public void ReadEmbeddedAsset_ReturnsDydoDiagram()
+    public void ReadEmbeddedAsset_ReturnsNullForRetiredDiagram()
     {
         var content = TemplateGenerator.ReadEmbeddedAsset("dydo-diagram.svg");
 
-        Assert.NotNull(content);
-        Assert.True(content.Length > 0, "Diagram asset should have content");
-    }
-
-    [Fact]
-    public void ReadEmbeddedAsset_DiagramIsSvgFormat()
-    {
-        var content = TemplateGenerator.ReadEmbeddedAsset("dydo-diagram.svg");
-        var text = System.Text.Encoding.UTF8.GetString(content!);
-
-        Assert.Contains("<svg", text);
+        Assert.Null(content);
     }
 
     [Fact]
@@ -213,12 +198,12 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void Assembly_ContainsEmbeddedAssetResources()
+    public void Assembly_ContainsNoRetiredDiagramResource()
     {
         var assembly = typeof(TemplateGenerator).Assembly;
         var resourceNames = assembly.GetManifestResourceNames();
 
-        Assert.Contains(resourceNames, r => r.Contains("Assets") && r.Contains("dydo-diagram"));
+        Assert.DoesNotContain(resourceNames, r => r.Contains("dydo-diagram"));
     }
 
     #endregion
@@ -628,12 +613,16 @@ public class TemplateGeneratorTests
         Assert.Contains("type: reference", content);
         Assert.Contains("## The Problem", content);
         Assert.Contains("## The Solution", content);
-        Assert.Contains("dydo-diagram.svg", content);
-        Assert.Contains("## Workflow Flags", content);
         Assert.Contains("## Agent Roles", content);
         Assert.Contains("code-writer", content);
         Assert.Contains("reviewer", content);
         Assert.Contains("github.com/bodnarbalazs/dydo", content);
+
+        // Pre-DR-041 leftovers must not resurface (issue 0301): no retired diagram embed,
+        // no --inbox workflow flags.
+        Assert.DoesNotContain("dydo-diagram.svg", content);
+        Assert.DoesNotContain("Workflow Flags", content);
+        Assert.DoesNotContain("--inbox", content);
     }
 
     #endregion

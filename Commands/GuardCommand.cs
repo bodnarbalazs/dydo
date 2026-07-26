@@ -141,6 +141,12 @@ public static partial class GuardCommand
             }
         }
 
+        // A CLI-provided --command is a shell command by definition, but arg mode has no hook
+        // tool_name — without one, ShouldRouteToShellHandler never fires and the documented
+        // manual-testing lane silently allows everything (issue 0302). Route it as bash.
+        if (toolName == null && cliCommand != null)
+            toolName = "bash";
+
         return new GuardContext(
             filePath ?? cliPath,
             action ?? cliAction ?? "edit",

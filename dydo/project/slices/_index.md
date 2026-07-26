@@ -40,3 +40,6 @@ Index of slices documentation.
 - [ns-8 Canonical-Render Hashing](./ns-8-canonical-hash.md) - Kills the phantom-conflict class for spine bodies (issue 0236; root-caused for docs in 0235).
 - [ns-9 Live Smoke Harness](./ns-9-live-smoke-harness.md) - The root blocker behind every escaped Notion bug (0290/0291/0278/0220): all 27 Notion test files run against `FakeNotionClient`, which treats formu...
 - [Slim the Worker-Tier Runtime](./runtime-slim-worker-tier.md) - Remove queue/baton/dispatch-wait/worktree orchestration from the worker runtime, leaving a lean native-AOT binary (Decision 024).
+- [v223-1 Pending Patch Consolidation](./v223-1-pending-patch.md) - Review and finish the existing non-sync dirty-tree implementation for issues 0300-0305 as one patch unit.
+- [v223-2 Upgrade Compatibility](./v223-2-upgrade-compatibility.md) - Make integration-aware sync backward compatible, make inquisitor reproducible from shipped sources, retire stale sprint-auditor outputs without tou...
+- [v223-3 Release](./v223-3-release.md) - Close the completed records, prove release readiness, and publish v2.

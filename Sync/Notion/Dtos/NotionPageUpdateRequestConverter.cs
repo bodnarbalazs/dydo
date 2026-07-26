@@ -39,8 +39,11 @@ public sealed class NotionPageUpdateRequestConverter : JsonConverter<NotionPageU
             writer.WriteEndObject();
         }
 
+        // Notion-Version 2026-03-11 rejects "archived" on a page PATCH ("body.archived should be
+        // not present") — pages soft-delete with "in_trash", same as databases (issue 0305). The
+        // typed property keeps its Archived name; only the wire shape changed.
         if (value.Archived is { } archived)
-            writer.WriteBoolean("archived", archived);
+            writer.WriteBoolean("in_trash", archived);
 
         writer.WriteEndObject();
     }

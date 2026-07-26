@@ -22,7 +22,7 @@ public static class CompletionProvider
     {
         ["task"] = ["create", "done", "list", "ready-for-review"],
         ["review"] = ["complete"],
-        ["init"] = ["claude", "none"],
+        ["init"] = ["claude", "codex", "all", "none"],
         ["completions"] = ["bash", "zsh", "powershell"],
         ["graph"] = ["stats"],
         ["issue"] = ["create", "list", "resolve"],

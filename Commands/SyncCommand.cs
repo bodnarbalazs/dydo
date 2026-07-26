@@ -37,6 +37,11 @@ public static partial class SyncCommand
         "Read the Plan or Brief First",
     };
 
+    // Framework roles retired during the native-runtime pivot. Sync reconciles only these
+    // explicitly-owned filenames when the role is absent; this is deliberately not a generic
+    // output-directory cleaner.
+    private static readonly string[] RetiredManagedRoles = ["sprint-auditor"];
+
     // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
     // Codex target reads a different vendor key from the same tiers map; the role → tier
     // section never changes per vendor.
@@ -54,31 +59,131 @@ public static partial class SyncCommand
     {
         projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
         var roles = RoleDefinitionService.DiscoverRoles(projectRoot);
-        var models = new ConfigService().LoadConfig(projectRoot)?.Models;
+        CleanRetiredRoleArtifacts(projectRoot, roles);
+        var config = new ConfigService().LoadConfig(projectRoot);
+        var models = config?.Models;
+        var (emitClaude, emitCodex) = ResolveIntegrationTargets(config?.Integrations);
+        var (workerRoles, skillOnlyRoles) =
+            SyncDiscoveredRoles(roles, projectRoot, models, emitClaude, emitCodex);
 
-        var workerRoles = roles.Where(r => r.EmitAgent).ToList();
+        if (emitCodex)
+            WriteCodexHooks(projectRoot);
+
+        var workflows = emitClaude ? SyncWorkflows(projectRoot) : 0;
+        PrintSyncSummary(workerRoles, skillOnlyRoles, workflows, emitClaude, emitCodex);
+        return ExitCodes.Success;
+    }
+
+    /// <summary>
+    /// Emit only integrations recorded in dydo.json. A project with neither hook-wired
+    /// integration recorded (legacy config, or integration "none") keeps the old emit-everything
+    /// behavior rather than silently emitting nothing.
+    /// </summary>
+    internal static (bool EmitClaude, bool EmitCodex) ResolveIntegrationTargets(
+        Dictionary<string, bool>? integrations)
+    {
+        var anyRecorded = integrations != null
+            && (integrations.GetValueOrDefault("claude") || integrations.GetValueOrDefault("codex"));
+        return (
+            !anyRecorded || integrations!.GetValueOrDefault("claude"),
+            !anyRecorded || integrations!.GetValueOrDefault("codex"));
+    }
+
+    private static (List<RoleDefinition> WorkerRoles, List<RoleDefinition> SkillOnlyRoles)
+        SyncDiscoveredRoles(
+            IReadOnlyCollection<RoleDefinition> roles,
+            string projectRoot,
+            ModelsConfig? models,
+            bool emitClaude,
+            bool emitCodex)
+    {
+        var workerRoles = roles.Where(role => role.EmitAgent).ToList();
         foreach (var role in workerRoles)
         {
-            SyncRole(role, projectRoot, models);
-            SyncCodexRole(role, projectRoot, models);
+            if (emitClaude) SyncRole(role, projectRoot, models);
+            if (emitCodex) SyncCodexRole(role, projectRoot, models);
         }
 
-        var skillOnlyRoles = roles.Where(r => !r.EmitAgent).ToList();
+        var skillOnlyRoles = roles.Where(role => !role.EmitAgent).ToList();
         foreach (var role in skillOnlyRoles)
         {
-            SyncSkillOnlyRole(role, projectRoot);
-            SyncCodexSkill(role, projectRoot);
+            if (emitClaude) SyncSkillOnlyRole(role, projectRoot);
+            if (emitCodex) SyncCodexSkill(role, projectRoot);
         }
 
-        WriteCodexHooks(projectRoot);
+        return (workerRoles, skillOnlyRoles);
+    }
 
-        var workflows = SyncWorkflows(projectRoot);
+    private static void PrintSyncSummary(
+        IReadOnlyCollection<RoleDefinition> workerRoles,
+        IReadOnlyCollection<RoleDefinition> skillOnlyRoles,
+        int workflows,
+        bool emitClaude,
+        bool emitCodex)
+    {
+        if (emitClaude)
+        {
+            Console.WriteLine($"Synced {workerRoles.Count} worker role(s) to .claude/ (agents + skills): {string.Join(", ", workerRoles.Select(r => r.Name))}");
+            Console.WriteLine($"Synced {skillOnlyRoles.Count} skill-only role(s) to .claude/ (skills only): {string.Join(", ", skillOnlyRoles.Select(r => r.Name))}");
+            Console.WriteLine($"Synced {workflows} workflow(s) to .claude/workflows.");
+        }
+        if (emitCodex)
+            Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
+        if (!emitClaude || !emitCodex)
+            Console.WriteLine($"Skipped {(emitClaude ? "Codex" : "Claude")} artifacts — not recorded in dydo.json integrations (add it with 'dydo init <integration> --join').");
+    }
 
-        Console.WriteLine($"Synced {workerRoles.Count} worker role(s) to .claude/ (agents + skills): {string.Join(", ", workerRoles.Select(r => r.Name))}");
-        Console.WriteLine($"Synced {skillOnlyRoles.Count} skill-only role(s) to .claude/ (skills only): {string.Join(", ", skillOnlyRoles.Select(r => r.Name))}");
-        Console.WriteLine($"Synced {workflows} workflow(s) to .claude/workflows.");
-        Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
-        return ExitCodes.Success;
+    /// <summary>
+    /// Removes compiler-owned files for allowlisted retired roles. A project-local mode template
+    /// makes the role active again and suppresses cleanup. Skill folders are removed only when
+    /// empty so project-owned sibling resources survive.
+    /// </summary>
+    internal static int CleanRetiredRoleArtifacts(
+        string projectRoot,
+        IReadOnlyCollection<RoleDefinition> activeRoles)
+    {
+        var activeNames = activeRoles
+            .Select(role => role.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var removed = 0;
+
+        foreach (var roleName in RetiredManagedRoles)
+        {
+            if (activeNames.Contains(roleName))
+                continue;
+
+            var roleRemoved = 0;
+            var files = new[]
+            {
+                Path.Combine(projectRoot, ".claude", "agents", $"{roleName}.md"),
+                Path.Combine(projectRoot, ".claude", "skills", roleName, "SKILL.md"),
+                Path.Combine(projectRoot, ".codex", "agents", $"{roleName}.toml"),
+                Path.Combine(projectRoot, ".agents", "skills", roleName, "SKILL.md"),
+            };
+
+            foreach (var file in files)
+            {
+                if (!File.Exists(file))
+                    continue;
+
+                File.Delete(file);
+                removed++;
+                roleRemoved++;
+
+                var parent = Path.GetDirectoryName(file);
+                if (parent != null
+                    && Directory.Exists(parent)
+                    && !Directory.EnumerateFileSystemEntries(parent).Any())
+                {
+                    Directory.Delete(parent);
+                }
+            }
+
+            if (roleRemoved > 0)
+                Console.WriteLine($"Removed retired role artifacts for '{roleName}'.");
+        }
+
+        return removed;
     }
 
     /// <summary>
@@ -204,7 +309,7 @@ public static partial class SyncCommand
             model: {model ?? "inherit"}{effortLine}
             ---
 
-            You are a **{role.Name}**. {role.Description} {stance} Your methodology lives in
+            You are {Article(role.Name)} **{role.Name}**. {role.Description} {stance} Your methodology lives in
             the `{role.Name}` skill; follow it.
             {contextBlock}
             """;
@@ -251,7 +356,7 @@ public static partial class SyncCommand
             model = "{EscapeToml(model ?? "gpt-5.6-terra")}"
 
             developer_instructions = """
-            You are a **{role.Name}**. {role.Description} {stance} Your methodology lives in the `{role.Name}` skill; follow it.{contextBlock}
+            You are {Article(role.Name)} **{role.Name}**. {role.Description} {stance} Your methodology lives in the `{role.Name}` skill; follow it.{contextBlock}
             """
             """";
     }

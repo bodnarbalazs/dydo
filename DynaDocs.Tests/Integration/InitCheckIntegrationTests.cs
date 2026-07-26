@@ -57,8 +57,8 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         AssertFileExists("dydo/reference/writing-docs.md");
         AssertFileExists("dydo/reference/about-dynadocs.md");
 
-        // Assert - Assets exist
-        AssertFileExists("dydo/_assets/dydo-diagram.svg");
+        // Assert - _assets scaffolds empty: the pre-DR-041 diagram is retired (issue 0301)
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_assets/dydo-diagram.svg")));
     }
 
     [Fact]

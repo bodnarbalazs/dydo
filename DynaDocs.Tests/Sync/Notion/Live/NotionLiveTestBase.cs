@@ -1,6 +1,8 @@
 namespace DynaDocs.Tests.Sync.Notion.Live;
 
+using System.Globalization;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 
@@ -37,7 +39,39 @@ public abstract class NotionLiveTestBase : IDisposable
         TestParentId = parent;
         _http = new HttpClient();
         Client = new NotionClient(_http, token);
+        SweepStaleSmokePages();
         ChildPageId = CreateChildPage(TestParentId, ScratchName());
+    }
+
+    private static int _staleSweepDone;
+
+    /// <summary>Once per test run, trash <c>smoke-*</c> pages a previous run leaked under the test parent
+    /// (teardown is best-effort — a killed run, or the issue-0305 era when every teardown 400ed, leaves
+    /// them behind). Only pages whose embedded stamp is over an hour old are touched, so a concurrent
+    /// run's live scratch pages are never swept. Best-effort itself: a sweep failure never fails a test.</summary>
+    private void SweepStaleSmokePages()
+    {
+        if (Interlocked.Exchange(ref _staleSweepDone, 1) == 1)
+            return;
+        try
+        {
+            var cutoff = DateTime.UtcNow.AddHours(-1);
+            foreach (var child in Client.GetChildPages(TestParentId))
+            {
+                var match = Regex.Match(child.Title, @"^smoke-(\d{14})-[0-9a-f]{4}$");
+                if (!match.Success)
+                    continue;
+                if (!DateTime.TryParseExact(match.Groups[1].Value, "yyyyMMddHHmmss", CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var stamp)
+                    || stamp >= cutoff)
+                    continue;
+                Client.UpdatePage(child.Id, new NotionPageUpdateRequest { Archived = true });
+            }
+        }
+        catch
+        {
+            // Best-effort hygiene — never fail a live run over leftover-page cleanup.
+        }
     }
 
     /// <summary>A collision-resistant scratch name: <c>smoke-&lt;utcstamp&gt;-&lt;rand4&gt;</c> (ns-9 task 2).</summary>

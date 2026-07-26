@@ -25,9 +25,17 @@ public static class TemplateCommand
         "guides/how-to-use-docs.md"
     ];
 
-    public static readonly string[] FrameworkBinaryFiles =
+    public static readonly string[] FrameworkBinaryFiles = [];
+
+    // Binary assets retired from the framework, deleted from projects on update — but only
+    // when the on-disk copy is a known framework version (stored hash, or a shipped hash
+    // listed here). A user-modified copy is kept and becomes a user-owned asset once its
+    // stale hash entry is pruned. Currently: the pre-DR-041 architecture diagram, which
+    // depicted the removed claim/inbox/agent-workspace runtime (issue 0301).
+    internal static readonly (string RelativePath, string[] KnownHashes)[] RetiredBinaryFiles =
     [
-        "_assets/dydo-diagram.svg"
+        ("_assets/dydo-diagram.svg",
+            ["d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9"]),
     ];
 
     // Framework-owned files generated from a template whose LIVE name differs from the template name, so they
@@ -84,6 +92,7 @@ public static class TemplateCommand
         UpdateFrameworkFiles(dydoRoot, config, diff, force, tally);
 
         tally.Updated += CleanStaleTemplates(dydoRoot, config, diff);
+        tally.Updated += CleanRetiredBinaries(dydoRoot, config, diff);
         PruneStaleHashes(config, diff);
 
         tally.Updated += ApplyConfigDefaults(config, diff);
@@ -188,6 +197,34 @@ public static class TemplateCommand
             if (!diff)
                 File.Delete(file);
             Console.WriteLine($"  Removed stale: {relative}");
+            removed++;
+        }
+        return removed;
+    }
+
+    /// <summary>Deletes retired framework binaries from the project when the on-disk copy is a
+    /// known framework version; runs before <see cref="PruneStaleHashes"/> so the stored hash is
+    /// still available for the ownership check.</summary>
+    private static int CleanRetiredBinaries(string dydoRoot, DydoConfig config, bool diff)
+    {
+        var removed = 0;
+        foreach (var (relativePath, knownHashes) in RetiredBinaryFiles)
+        {
+            var fullPath = Path.Combine(dydoRoot, relativePath);
+            if (!File.Exists(fullPath))
+                continue;
+
+            var onDiskHash = ComputeHashBytes(File.ReadAllBytes(fullPath));
+            var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
+            if (onDiskHash != storedHash && !knownHashes.Contains(onDiskHash))
+            {
+                Console.WriteLine($"  Kept: {relativePath} — retired from the framework, but modified; now a user-owned asset");
+                continue;
+            }
+
+            if (!diff)
+                File.Delete(fullPath);
+            Console.WriteLine($"  Removed retired: {relativePath}");
             removed++;
         }
         return removed;

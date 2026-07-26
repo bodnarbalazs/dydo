@@ -33,12 +33,12 @@ type: guide
 |-------|---------------|--------|
 | `status` | type: decision | `proposed`, `accepted`, `deprecated`, `superseded` |
 | `date` | type: decision or changelog | `YYYY-MM-DD` format |
-| `must-read` | opt-in | `true` — enforces agent reads before writes |
 
-### Must-Read Enforcement
+### Role Context Reads
 
-Add `must-read: true` to a file's frontmatter to require agents to read it before performing
-other operations when linked from a mode file. Use sparingly — only for critical context documents.
+Role mode templates can include a `## Must-Reads` section whose markdown links are compiled into
+the generated agent definition by `dydo sync`. This selects role context; documentation
+frontmatter itself does not enforce reads.
 
 ---
 

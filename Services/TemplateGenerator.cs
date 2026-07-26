@@ -898,6 +898,8 @@ public static class TemplateGenerator
 
     internal static string GenerateFallbackAboutDynadocsMd()
     {
+        // Keep this aligned with Templates/about-dynadocs.template.md (the embedded template this
+        // falls back for): dydo authors and knows, the platform runs and coordinates (DR-041).
         return """
             ---
             area: reference
@@ -906,7 +908,7 @@ public static class TemplateGenerator
 
             # DynaDocs (dydo)
 
-            Documentation-driven context and agent orchestration for AI coding assistants.
+            Own your project's knowledge — then put agents to work on it.
 
             100% local, 100% under your control.
 
@@ -916,25 +918,24 @@ public static class TemplateGenerator
 
             ## The Solution
 
-            DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management.
+            DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management. It is four things: AI-friendly documentation, a PM system that lives in your repo (with an optional live Notion board), a compilation engine that gives Claude Code and Codex one source of truth for skills and agents, and a customizable set of nudges that keep every agent inside your rules.
 
-            ![DynaDocs Architecture](./../_assets/dydo-diagram.svg)
-
-            ## Workflow Flags
-
-            | Flag | Workflow |
-            |------|----------|
-            | `--inbox` | Process dispatched work |
+            The coding tool owns the engine — spawning, scheduling, isolation, fan-out. dydo owns the knowledge and the process.
 
             ## Agent Roles
 
-            | Role | Can Edit | Purpose |
-            |------|----------|---------|
-            | `co-thinker` | `decisions/**`, agent workspace | Explore ideas, scope requirements |
-            | `code-writer` | source + test directories | Implement features |
-            | `test-writer` | test directories, `pitfalls/**`, agent workspace | Write tests, report bugs |
-            | `reviewer` | agent workspace | Review code |
-            | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
+            Roles are compiled from mode templates by `dydo sync` into native Claude Code and Codex agents and skills:
+
+            | Role | Shape | Purpose |
+            |------|-------|---------|
+            | `co-thinker` | skill | Explore ideas, scope requirements |
+            | `planner` | skill | Turn intent into reviewed plans |
+            | `orchestrator` | skill | Coordinate workflows and dispatch |
+            | `chief-of-staff` | skill | Triage the backlog, route work |
+            | `code-writer` | agent + skill | Implement features |
+            | `test-writer` | agent + skill | Write tests, report bugs |
+            | `reviewer` | agent + skill (read-only) | Review code |
+            | `docs-writer` | agent + skill | Write documentation |
 
             ## More Information
 
@@ -948,14 +949,14 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Get all asset file names that should be copied to _assets/.
+    /// Get all asset file names that should be copied to _assets/. Currently empty: the
+    /// pre-DR-041 architecture diagram was retired (issue 0301) — it depicted the removed
+    /// claim/inbox/agent-workspace runtime. The scaffolded _assets/ folder remains for
+    /// project-owned assets, and the copy/hash/update plumbing stays for future assets.
     /// </summary>
     public static IReadOnlyList<string> GetAssetNames()
     {
-        return new[]
-        {
-            "dydo-diagram.svg"
-        };
+        return Array.Empty<string>();
     }
 
     /// <summary>

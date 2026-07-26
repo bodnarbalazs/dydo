@@ -145,16 +145,14 @@ public class FolderScaffolderTests : IDisposable
     }
 
     [Fact]
-    public void Scaffold_CopiesDydoDiagramToAssets()
+    public void Scaffold_DoesNotCopyRetiredDiagram()
     {
         _scaffolder.Scaffold(_testDir);
 
+        // The pre-DR-041 diagram was retired (issue 0301): the _assets folder scaffolds
+        // empty, ready for project-owned assets.
         var diagramPath = Path.Combine(_testDir, "_assets", "dydo-diagram.svg");
-        Assert.True(File.Exists(diagramPath), "dydo-diagram.svg should be copied to _assets/");
-
-        // Verify it has content (not empty)
-        var content = File.ReadAllBytes(diagramPath);
-        Assert.True(content.Length > 0, "Diagram file should not be empty");
+        Assert.False(File.Exists(diagramPath), "retired dydo-diagram.svg must not be scaffolded");
     }
 
     [Fact]

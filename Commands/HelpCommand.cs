@@ -20,7 +20,7 @@ public static class HelpCommand
         Console.WriteLine("DynaDocs (dydo) - Documentation-driven context and agent orchestration for AI coding assistants.");
         Console.WriteLine();
         Console.WriteLine("Setup Commands:");
-        Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, codex, none)");
+        Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, codex, all, none)");
         Console.WriteLine("  init <int> --join      Join existing project as new team member");
         Console.WriteLine();
         Console.WriteLine("Documentation Commands:");

@@ -23,7 +23,7 @@ public static class InitCommand
         var integrationArgument = new Argument<string>("integration")
         {
             Arity = ArgumentArity.ExactlyOne,
-            Description = "Integration to configure (claude, codex, none)"
+            Description = "Integration to configure (claude, codex, all, none)"
         };
 
         var joinOption = new Option<bool>("--join")
@@ -59,7 +59,7 @@ public static class InitCommand
         if (existingConfig != null)
         {
             ConsoleOutput.WriteError($"DynaDocs already initialized. Config found at: {existingConfig}");
-            Console.WriteLine("Use 'dydo init <integration> --join' to join as a new team member.");
+            Console.WriteLine("Use 'dydo init <integration> --join' to add an integration to this project or wire up this machine.");
             return ExitCodes.ToolError;
         }
 
@@ -73,14 +73,16 @@ public static class InitCommand
         {
             var projectRoot = Environment.CurrentDirectory;
             var config = ConfigFactory.CreateDefault();
-            config.Integrations[integration] = true;
+            var integrations = ExpandIntegrations(integration);
+            foreach (var name in integrations)
+                config.Integrations[name] = true;
 
             var configPath = Path.Combine(projectRoot, ConfigService.ConfigFileName);
             configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
-            ScaffoldProject(configService, config, configPath, projectRoot, integration);
-            PrintInitSummary(integration);
+            ScaffoldProject(configService, config, configPath, projectRoot, integrations);
+            PrintInitSummary(integrations);
 
             return ExitCodes.Success;
         }
@@ -91,8 +93,12 @@ public static class InitCommand
         }
     }
 
+    // "all" expands to every hook-wired integration; "claude"/"codex"/"none" stay themselves.
+    private static string[] ExpandIntegrations(string integration) =>
+        integration == "all" ? ["claude", "codex"] : [integration];
+
     private static void ScaffoldProject(ConfigService configService, DydoConfig config,
-        string configPath, string projectRoot, string integration)
+        string configPath, string projectRoot, string[] integrations)
     {
         var projectName = Path.GetFileName(projectRoot);
 
@@ -101,7 +107,7 @@ public static class InitCommand
             () => TemplateGenerator.GenerateEntryPointMd(projectName),
             "CLAUDE.md (entry point)");
 
-        if (integration == "codex")
+        if (integrations.Contains("codex"))
         {
             WriteIfNotExists(
                 Path.Combine(projectRoot, "AGENTS.md"),
@@ -123,28 +129,28 @@ public static class InitCommand
             TemplateGenerator.GenerateFilesOffLimitsMd,
             "files-off-limits.md (security config)");
 
-        UpdateGitignore(projectRoot, config.Structure.Root);
+        UpdateGitignore(projectRoot, config.Structure.Root, includeClaudeSettings: integrations.Contains("claude"));
         Console.WriteLine($"  ✓ Updated .gitignore (agents/, local state)");
 
-        if (integration == "claude")
+        if (integrations.Contains("claude"))
         {
             ConfigureClaudeHooks(projectRoot);
             Console.WriteLine("  ✓ Claude Code hooks configured");
         }
-        else if (integration == "codex")
+        if (integrations.Contains("codex"))
         {
             ConfigureCodexHooks(projectRoot);
             Console.WriteLine("  - Codex hooks configured");
         }
     }
 
-    private static void PrintInitSummary(string integration)
+    private static void PrintInitSummary(string[] integrations)
     {
         Console.WriteLine();
         Console.WriteLine("Documentation funnel created:");
-        if (integration == "codex")
+        if (integrations.Contains("codex"))
             Console.WriteLine("  AGENTS.md -> dydo/index.md (orientation) -> the docs");
-        else
+        if (!integrations.Contains("codex") || integrations.Contains("claude"))
         {
             Console.WriteLine("  CLAUDE.md → dydo/index.md (orientation) → the docs");
         }
@@ -191,14 +197,21 @@ public static class InitCommand
         try
         {
             var projectRoot = Path.GetDirectoryName(configPath)!;
+            var integrations = ExpandIntegrations(integration);
+            var config = configService.LoadConfig(projectRoot);
 
-            if (integration == "claude")
+            if (integrations.Contains("claude"))
             {
+                WriteIfNotExists(
+                    Path.Combine(projectRoot, "CLAUDE.md"),
+                    () => TemplateGenerator.GenerateEntryPointMd(Path.GetFileName(projectRoot)),
+                    "CLAUDE.md (entry point)");
                 ConfigureClaudeHooks(projectRoot);
+                UpdateGitignore(projectRoot, config?.Structure.Root ?? "dydo", includeClaudeSettings: true);
                 Console.WriteLine("  ✓ Claude Code hooks configured");
             }
 
-            if (integration == "codex")
+            if (integrations.Contains("codex"))
             {
                 WriteIfNotExists(
                     Path.Combine(projectRoot, "AGENTS.md"),
@@ -206,6 +219,16 @@ public static class InitCommand
                     "AGENTS.md (Codex entry point)");
                 ConfigureCodexHooks(projectRoot);
                 Console.WriteLine("  - Codex hooks configured");
+            }
+
+            // Joining wires this machine, but the integration set is project state: record it
+            // so dydo.json reflects every integration the project actually uses (issue 0300).
+            if (config != null && integrations.Any(name => !config.Integrations.GetValueOrDefault(name)))
+            {
+                foreach (var name in integrations)
+                    config.Integrations[name] = true;
+                configService.SaveConfig(config, configPath);
+                Console.WriteLine($"  ✓ Recorded integration(s) in {ConfigService.ConfigFileName}: {string.Join(", ", integrations)}");
             }
 
             var completionResult = ShellCompletionInstaller.Install();
@@ -227,7 +250,7 @@ public static class InitCommand
 
     private static int IntegrationError(string integration)
     {
-        ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, codex, none");
+        ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, codex, all, none");
         return ExitCodes.ToolError;
     }
 
@@ -237,6 +260,7 @@ public static class InitCommand
         {
             "claude" => true,
             "codex" => true,
+            "all" => true,
             "none" => true,
             _ => false
         };
@@ -414,44 +438,42 @@ public static class InitCommand
         }
     }
 
-    private static void UpdateGitignore(string projectRoot, string dydoRoot)
+    // The Claude guard wiring lives in .claude/settings.local.json — personal-scope by Claude
+    // Code convention, so each machine runs `dydo init claude --join` and the file never gets
+    // committed. Codex has no local-settings tier: its wiring (.codex/hooks.json) is committed
+    // and works from a fresh clone (issue 0303 records this deliberate asymmetry).
+    private const string ClaudeSettingsEntry = ".claude/settings.local.json";
+
+    private static void UpdateGitignore(string projectRoot, string dydoRoot, bool includeClaudeSettings = false)
     {
         var gitignorePath = Path.Combine(projectRoot, ".gitignore");
-        var agentsEntry = $"{dydoRoot}/agents/";
-        var localStateEntry = $"{dydoRoot}/_system/.local/";
-
-        if (File.Exists(gitignorePath))
+        var sections = new List<(string Comment, string Entry)>
         {
-            var content = File.ReadAllText(gitignorePath);
-            var modified = false;
+            ("# DynaDocs agent workspaces (local state)", $"{dydoRoot}/agents/"),
+            ("# DynaDocs runtime state", $"{dydoRoot}/_system/.local/"),
+        };
+        if (includeClaudeSettings)
+            sections.Add(("# Claude Code personal settings (machine-local, wired by 'dydo init claude --join')", ClaudeSettingsEntry));
 
-            if (!content.Contains(agentsEntry))
-            {
-                if (!content.EndsWith('\n'))
-                    content += '\n';
+        var content = File.Exists(gitignorePath) ? File.ReadAllText(gitignorePath) : "";
+        var modified = !File.Exists(gitignorePath);
 
-                content += $"\n# DynaDocs agent workspaces (local state)\n{agentsEntry}\n";
-                modified = true;
-            }
+        foreach (var (comment, entry) in sections)
+        {
+            if (content.Contains(entry))
+                continue;
 
-            if (!content.Contains(localStateEntry))
-            {
-                if (!content.EndsWith('\n'))
-                    content += '\n';
+            if (content.Length > 0 && !content.EndsWith('\n'))
+                content += '\n';
+            if (content.Length > 0)
+                content += '\n';
 
-                content += $"\n# DynaDocs runtime state\n{localStateEntry}\n";
-                modified = true;
-            }
-
-            if (modified)
-                File.WriteAllText(gitignorePath, content);
+            content += $"{comment}\n{entry}\n";
+            modified = true;
         }
-        else
-        {
-            var content = $"# DynaDocs agent workspaces (local state)\n{agentsEntry}\n"
-                        + $"\n# DynaDocs runtime state\n{localStateEntry}\n";
+
+        if (modified)
             File.WriteAllText(gitignorePath, content);
-        }
     }
 
     private static void WriteIfNotExists(string path, Func<string> contentFactory, string label)

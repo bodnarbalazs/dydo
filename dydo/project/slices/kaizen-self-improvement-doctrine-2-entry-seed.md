@@ -2,7 +2,7 @@
 title: Plant the Kaizen Entry Seed
 sprint: kaizen-self-improvement-doctrine
 seq: 2
-status: ready
+status: done
 area: general
 type: context
 ---

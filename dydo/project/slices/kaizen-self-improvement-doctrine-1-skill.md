@@ -2,7 +2,7 @@
 title: Ship the Self-Improvement Skill
 sprint: kaizen-self-improvement-doctrine
 seq: 1
-status: ready
+status: done
 area: general
 type: context
 ---

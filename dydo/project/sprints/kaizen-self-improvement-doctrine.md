@@ -1,8 +1,8 @@
 ---
 title: Kaizen Self-Improvement Doctrine
 seq: 11
-status: active
-gate-result: remediation staging amendment PASS (2026-08-08)
+status: done
+gate-result: audit PASS (2026-08-08; 2,526 tests; 131/131 coverage)
 area: project
 type: context
 ---

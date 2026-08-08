@@ -1,8 +1,8 @@
 ---
 title: Fix Explicit-File Scope
 seq: 10
-status: active
-gate-result: plan-review PASS (2026-08-08, 4 rounds)
+status: done
+gate-result: audit PASS (2026-08-08; commit e96001ca; 2,524 tests; 131/131 coverage)
 area: project
 type: context
 ---

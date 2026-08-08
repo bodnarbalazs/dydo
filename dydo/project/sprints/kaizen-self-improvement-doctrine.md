@@ -2,7 +2,7 @@
 title: Kaizen Self-Improvement Doctrine
 seq: 11
 status: active
-gate-result: boundary line-wrap amendment PASS (2026-08-08)
+gate-result: remediation staging amendment PASS (2026-08-08)
 area: project
 type: context
 ---
@@ -81,6 +81,10 @@ creating a trail of generic doctrine documents.
   the repository-wide sync command is never run against the dirty shared working tree.
 - A before/after manifest over the 16 protected generated artifacts named in Ordering & isolation
   proves their shared-tree SHA-256, scoped status, and staged state are unchanged.
+- The historical initial slice gate retains its eight changed/owned paths. The current
+  audit-remediation gate stages and compares exactly four changed paths — the mode template, both
+  generated skill outputs, and `SyncCommandTests.cs` — without fake edits to the four already
+  committed unchanged regression files.
 - Focused gates, the full isolated runner, forced coverage gap gate, and source-built
   `dydo check` pass.
 
@@ -210,9 +214,12 @@ Protected manifest paths:
 
 The implementation commands run only inside the **dedicated lane worktree**. Slice 1 performs
 sync only inside a further disposable project under the system temp directory and copies only the
-two new `self-improvement/SKILL.md` files into the lane. Each slice explicitly stages its exact
-allowlist, proves the complete lane index equals that allowlist, and then checks the cached diff;
-never use `git add -A` or `git add .`.
+two new `self-improvement/SKILL.md` files into the lane. The initial slice implementation stages
+its exact eight-file ownership allowlist. A later audit-remediation lane stages only the exact four
+owned files that remediation actually changes: the mode template, both generated skill outputs,
+and `SyncCommandTests.cs`. Each phase proves its complete lane index equals its phase-specific
+allowlist, then checks the cached diff; never use `git add -A` or `git add .`, and never create a
+fake edit merely to make an unchanged owned file stageable.
 
 After the lane commits merge, the orchestrator returns to the same absolute **shared dirty
 worktree** recorded in the manifest, takes the same five-field snapshot of the same 16 paths, and
@@ -387,6 +394,17 @@ records have zero `dydo check` errors. The unchanged implementation baseline rem
 2,526 isolated tests passed with 10 live tests skipped and forced coverage at 131/131 modules.
 The amendment is green-lit; status is `active`.
 
+**Audit-remediation staging blocker amendment** (2026-08-08): the current remediation lane base
+already commits four slice-owned regression files unchanged — `TemplateGeneratorTests.cs`,
+`RoleDefinitionServiceTests.cs`, `CodexSyncArtifactsE2ETests.cs`, and
+`TemplateOverrideTests.cs`. Git cannot stage those unchanged files, so applying the historical
+eight-file cached-index equality gate to this lane is impossible without fake edits. Slice 1 now
+retains that eight-file gate as the historical initial-implementation requirement and adds a
+current audit-remediation gate whose complete cached index must equal exactly the four genuinely
+changed owned paths: the mode template, both generated `SKILL.md` outputs, and
+`SyncCommandTests.cs`. Semantics, scope, tests, eight-file ownership, dirty-tree isolation, and
+slice 2 are unchanged. The sprint returns to `plan-review` pending amendment review.
+
 **Boundary line-wrap blocker amendment** (2026-08-08): the categorical product-exclusion bullet
 was physically wrapped across three template lines while the focused regression requires the full
 sentence as one contiguous literal. Slice 1 now locks that complete bullet to one physical line
@@ -409,3 +427,20 @@ dirty-tree isolation are unchanged; slice 2 has no diff. All three plan records 
 `dydo check` errors. With no implementation or test change in this amendment, the immediately
 preceding baseline remains green at 2,526 isolated tests passed with 10 live tests skipped and
 forced coverage at 131/131 modules. The amendment is green-lit; status is `active`.
+
+**Audit-remediation staging amendment review: PASS** (2026-08-08, fresh-eyes reviewer).
+
+The original skill commit changed exactly the eight files retained by the historical ownership
+and initial gate. Against the current remediation lane base, the complete staged index contains
+exactly the four genuinely changed owned paths: the mode template, both regenerated skill
+outputs, and `SyncCommandTests.cs`. The other four named owned regressions have an empty `HEAD`
+diff, are explicitly excluded from remediation staging, and require no fake edit. Those four
+changed paths are sufficient for the harness-scope wording, both compiled outputs, and their exact
+regression assertions; the generated outputs remain SHA-256 identical.
+
+The phase-specific cached-index comparison and scoped cached `diff --check` execute successfully
+against the live lane. Semantics, harness-only scope, eight-file ownership, regeneration,
+shared-tree manifest isolation, and slice 2 are unchanged. All three plan records have zero
+`dydo check` errors. The remediation lane passed 58/58 focused tests, 2,526/2,536 full isolated
+tests with 10 live tests skipped, and forced coverage for all 131 modules. The amendment is
+green-lit; status is `active`.

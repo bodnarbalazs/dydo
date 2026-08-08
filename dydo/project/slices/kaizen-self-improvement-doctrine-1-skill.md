@@ -274,10 +274,17 @@ outputs again.
   all existing generated roles.
 - Release/version work.
 
-## Gate
+## Gates
+
+### Initial implementation gate — historical
+
+This gate applied when the initial slice changed all eight owned files. Retain it as the initial
+implementation contract; do not apply its eight-path cached-index equality to a later remediation
+lane whose base already commits some owned files unchanged.
 
 Run in order and require every command/assertion to pass. The `$slicePaths` array contains exactly
-the eight files owned by this slice; stage all eight before inspecting the cached diff:
+the eight files owned and initially changed by this slice; stage all eight before inspecting the
+cached diff:
 
 ```powershell
 py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~TemplateGeneratorTests|FullyQualifiedName~RoleDefinitionServiceTests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~CodexSyncArtifactsE2ETests|FullyQualifiedName~TemplateOverrideTests"
@@ -296,3 +303,35 @@ if ($LASTEXITCODE -ne 0) { throw "cached diff check failed: $LASTEXITCODE" }
 
 Also require the isolated-generation assertions above. The orchestrator's post-merge shared-tree
 manifest comparison is a sprint completion gate, not a lane command.
+
+### Audit-remediation gate — current
+
+The current lane base already contains these four owned regression files unchanged:
+
+- `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`
+- `DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs`
+- `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`
+- `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`
+
+Do not edit or stage them merely to satisfy the historical gate. The harness-only remediation
+genuinely changes exactly four other files within the existing eight-file ownership. Run this
+current gate and require every assertion to pass:
+
+```powershell
+py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~SyncCommandTests"
+py DynaDocs.Tests/coverage/run_tests.py
+py DynaDocs.Tests/coverage/gap_check.py --force-run
+dotnet run --project DynaDocs.csproj -- check
+$remediationPaths = @('Templates/mode-self-improvement.template.md', '.claude/skills/self-improvement/SKILL.md', '.agents/skills/self-improvement/SKILL.md', 'DynaDocs.Tests/Commands/SyncCommandTests.cs')
+git add -- $remediationPaths
+if ($LASTEXITCODE -ne 0) { throw "exact remediation staging failed: $LASTEXITCODE" }
+$actual = @(git diff --cached --name-only)
+$difference = @(Compare-Object ($remediationPaths | Sort-Object) ($actual | Sort-Object))
+if ($difference.Count -ne 0) { throw "staged paths differ from remediation allowlist: $($difference | Out-String)" }
+git diff --cached --check -- $remediationPaths
+if ($LASTEXITCODE -ne 0) { throw "cached remediation diff check failed: $LASTEXITCODE" }
+```
+
+Also require regenerated Claude and Codex skill outputs to be byte-identical, both exact harness
+scope assertions to pass in `SyncCommandTests`, and the orchestrator's post-merge 16-path
+shared-tree manifest comparison to remain exact.

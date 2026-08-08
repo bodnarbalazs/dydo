@@ -99,9 +99,7 @@ These are harness classifications, not standing authorization. None routes produ
 
 - This skill grants no authority. The current role, user request, slice, and reviewed workflow
   still govern every edit, including record creation or modification.
-- Do not propose or perform product-feature or product-code changes, including benevolent or
-  otherwise authorized adjacent product work; kaizen here applies only to the agent harness and
-  its documentation and process surfaces.
+- Do not propose or perform product-feature or product-code changes, including benevolent or otherwise authorized adjacent product work; kaizen here applies only to the agent harness and its documentation and process surfaces.
 - Do not widen the current task, fix adjacent problems, create a generic doctrine record, or make
   more than one proposal for the same pattern.
 - Do not edit generated artifacts; edit their canonical template and compile normally.
@@ -118,7 +116,9 @@ These are harness classifications, not standing authorization. None routes produ
 Do not add a must-read section, external quotation, platform name, include/resource file, or any
 other prose. Do not reflow the `Choose one lever` item: its complete sentence, including `harness
 implementation code only when the earlier layers cannot express the behavior.`, must remain on
-one physical template line so the compiler preserves the exact assertion literal.
+one physical template line so the compiler preserves the exact assertion literal. Do not reflow
+the categorical product-exclusion Boundary bullet either: its complete sentence must remain on
+one physical template line for the same reason.
 
 ### Discovery and compiler regressions
 

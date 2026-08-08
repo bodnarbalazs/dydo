@@ -2,7 +2,7 @@
 title: Kaizen Self-Improvement Doctrine
 seq: 11
 status: active
-gate-result: line-wrap amendment PASS (2026-08-08)
+gate-result: boundary line-wrap amendment PASS (2026-08-08)
 area: project
 type: context
 ---
@@ -74,6 +74,9 @@ creating a trail of generic doctrine documents.
 - The canonical Method lever keeps `harness implementation code only when the earlier layers
   cannot express the behavior.` contiguous on one physical template line, so the compiled skill
   contains the exact literal required by the focused sync regression.
+- The canonical Boundary bullet keeps the complete categorical product-exclusion sentence on one
+  physical template line, so the compiled skill contains the full exact sentence required by the
+  same focused sync regression.
 - The two new committed generated outputs come from a source-built sync in a disposable project;
   the repository-wide sync command is never run against the dirty shared working tree.
 - A before/after manifest over the 16 protected generated artifacts named in Ordering & isolation
@@ -383,3 +386,26 @@ eight files and retains the same filter and staging allowlist; slice 2 has no di
 records have zero `dydo check` errors. The unchanged implementation baseline remains green at
 2,526 isolated tests passed with 10 live tests skipped and forced coverage at 131/131 modules.
 The amendment is green-lit; status is `active`.
+
+**Boundary line-wrap blocker amendment** (2026-08-08): the categorical product-exclusion bullet
+was physically wrapped across three template lines while the focused regression requires the full
+sentence as one contiguous literal. Slice 1 now locks that complete bullet to one physical line
+and explicitly forbids reflowing it. Wording, semantics, harness-only scope, test strategy,
+eight-file ownership, generated-output regeneration, and slice 2 are unchanged. The sprint
+returns to `plan-review` pending amendment review.
+
+**Boundary line-wrap amendment review: PASS** (2026-08-08, fresh-eyes reviewer).
+
+Slice 1 now locks the complete categorical product-exclusion bullet to exactly one physical
+template line. The single 226-character line contains the full mandated sentence contiguously.
+The compiler preserves it: include resolution and frontmatter/section extraction do not reflow
+prose, the ordered-list renumberer does not touch this unordered bullet, skill construction
+interpolates it unchanged, and the writer only normalizes line endings. The planned exact focused
+assertion is therefore satisfiable.
+
+The prior one-line lever remains intact and contiguous. Wording, harness-only semantics, test
+strategy, generated-output regeneration, the same eight owned files/filter/staging allowlist, and
+dirty-tree isolation are unchanged; slice 2 has no diff. All three plan records have zero
+`dydo check` errors. With no implementation or test change in this amendment, the immediately
+preceding baseline remains green at 2,526 isolated tests passed with 10 live tests skipped and
+forced coverage at 131/131 modules. The amendment is green-lit; status is `active`.

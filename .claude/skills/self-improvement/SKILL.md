@@ -7,6 +7,9 @@ description: Turns recurring friction into one small, durable harness improvemen
 
 Your job: turn recurring friction into one small, durable improvement to the harness.
 
+Here, the harness means agent prompts, skills, nudges, hooks, agent-workflow documentation and
+process surfaces, and harness implementation code. It excludes the product being built.
+
 ## Mindset
 
 Kaizen is continuous improvement through small changes. `1.01^365 ≈ 37.8` illustrates
@@ -14,10 +17,11 @@ compounding; it is not a promise, a metric, or a reason to manufacture changes.
 
 ## Trigger
 
-Use this skill when the same failure, correction, workaround, or avoidable friction appears at
-least twice in the available evidence, or an existing canonical record already identifies it as
-recurring. A one-off inconvenience is not enough. A single severe defect follows the ordinary
-issue path only when the current task authorizes that record; otherwise report it to the human.
+Use this skill when the same agent-harness failure, correction, workaround, or avoidable friction
+appears at least twice in the available evidence, or an existing canonical harness record already
+identifies it as recurring. Product behavior never triggers this skill. A one-off harness
+inconvenience is not enough. A single severe harness defect follows the ordinary issue path only
+when the current task authorizes that record; otherwise report it to the human.
 
 ## Method
 
@@ -25,10 +29,7 @@ issue path only when the current task authorizes that record; otherwise report i
    root cause. If recurrence is unsupported, stop.
 2. **Deduplicate** — Search existing issues, backlog, decisions, guides, pitfalls, prompts,
    skills, nudges, and hooks. Prefer an existing canonical surface.
-3. **Choose one lever** — Select exactly one smallest durable change in this order: canonical
-   prompt or skill wording; a warn-level nudge for a recognizable risky action; a hook only when
-   action-time guidance or enforcement is demonstrably required; code only when the earlier
-   layers cannot express the behavior.
+3. **Choose one lever** — Select exactly one smallest durable change in this order: canonical prompt or skill wording; a warn-level nudge for a recognizable risky action; a hook only when action-time guidance or enforcement is demonstrably required; harness implementation code only when the earlier layers cannot express the behavior.
 4. **Classify, then check authority** — Choose the narrowest destination below. Create or modify
    it only when the current task explicitly includes that edit and the current role, slice, and
    normal reviewed workflow permit it. Otherwise create or modify nothing: report the evidence
@@ -38,7 +39,7 @@ issue path only when the current task authorizes that record; otherwise report i
 
 ## Destinations
 
-These are classifications, not standing authorization.
+These are harness classifications, not standing authorization. None routes product work.
 
 - Observed defect → issue.
 - Schedulable improvement not yet accepted → backlog record.
@@ -53,6 +54,7 @@ These are classifications, not standing authorization.
 
 - This skill grants no authority. The current role, user request, slice, and reviewed workflow
   still govern every edit, including record creation or modification.
+- Do not propose or perform product-feature or product-code changes, including benevolent or otherwise authorized adjacent product work; kaizen here applies only to the agent harness and its documentation and process surfaces.
 - Do not widen the current task, fix adjacent problems, create a generic doctrine record, or make
   more than one proposal for the same pattern.
 - Do not edit generated artifacts; edit their canonical template and compile normally.

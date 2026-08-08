@@ -596,9 +596,12 @@ public class SyncCommandTests : IDisposable
         {
             "Kaizen is continuous improvement through small changes.",
             "1.01^365 ≈ 37.8",
-            "These are classifications, not standing authorization.",
+            "Product behavior never triggers this skill.",
+            "These are harness classifications, not standing authorization. None routes product work.",
             "Otherwise create or modify nothing",
             "including record creation or modification.",
+            "harness implementation code only when the earlier layers cannot express the behavior.",
+            "Do not propose or perform product-feature or product-code changes, including benevolent or otherwise authorized adjacent product work; kaizen here applies only to the agent harness and its documentation and process surfaces.",
             "Define verification and rollback",
             "never memory",
         })

@@ -2,7 +2,7 @@
 title: Kaizen Self-Improvement Doctrine
 seq: 11
 status: active
-gate-result: plan PASS (2026-08-08)
+gate-result: plan amendment PASS (2026-08-08)
 area: project
 type: context
 ---
@@ -151,7 +151,7 @@ of the three entry surfaces and focused tests. There is no schema, migration, or
 
 | # | slice file | files touched (disjoint) | deps | gate |
 |---|---|---|---|---|
-| 1 | `kaizen-self-improvement-doctrine-1-skill` | `Templates/mode-self-improvement.template.md`; `.claude/skills/self-improvement/SKILL.md`; `.agents/skills/self-improvement/SKILL.md`; `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`; `DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs`; `DynaDocs.Tests/Commands/SyncCommandTests.cs`; `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs` | — | skill-focused isolated runner + disposable-project sync smoke |
+| 1 | `kaizen-self-improvement-doctrine-1-skill` | `Templates/mode-self-improvement.template.md`; `.claude/skills/self-improvement/SKILL.md`; `.agents/skills/self-improvement/SKILL.md`; `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`; `DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs`; `DynaDocs.Tests/Commands/SyncCommandTests.cs`; `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`; `DynaDocs.Tests/Integration/TemplateOverrideTests.cs` | — | skill-focused isolated runner + disposable-project sync smoke |
 | 2 | `kaizen-self-improvement-doctrine-2-entry-seed` | `Templates/entry-point.template.md`; `CLAUDE.md`; `AGENTS.md`; `DynaDocs.Tests/Integration/InitCommandTests.cs` | 1 | entry-focused isolated runner + exact-content smoke |
 
 ## 5. Ordering & isolation
@@ -229,9 +229,9 @@ zero `dydo check` errors (only orphan warnings while the records are untracked).
   (`kaizen-self-improvement-doctrine-1-skill.md:28-30`), but its gate runs
   `git diff --check -- ...` before the stated pre-commit staging check (lines 163-172). An
   unstaged Git diff omits untracked files; after staging, the same non-`--cached` diff omits their
-  staged content. Stage the exact seven-path allowlist first, verify
+  staged content. Stage the exact owned-path allowlist first, verify
   `git diff --cached --name-only` equals that allowlist, then require
-  `git diff --cached --check -- <seven paths>` so the template and both generated outputs are
+  `git diff --cached --check -- <owned paths>` so the template and both generated outputs are
   actually checked.
 - **Finding: dirty-tree isolation is neither location-safe nor self-contained.** The root says to
   create a dedicated lane worktree and then capture status/hashes for dirty generated paths
@@ -282,3 +282,25 @@ Independent gates are green: all three records have zero `dydo check` errors (on
 orphan warnings while untracked), the isolated suite passed 2,524 tests with 10 live tests
 skipped, and forced coverage passed 131/131 modules. Implementation is green-lit; status is
 `active`.
+
+**Implementation raise-hand amendment** (2026-08-08): adding the required embedded mode template
+correctly increases `TemplateGenerator.GetAllTemplateNames()` from 14 to 15, exposing the existing
+exact inventory assertion in `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`. Slice 1 now
+owns that file and mechanically adds `mode-self-improvement.template.md`, changes the explanatory
+count from 9 mode templates plus 5 resources to 10 plus 5, and changes the expected total from 14
+to 15. Its focused filter and exact staging allowlist now contain all eight owned paths. Slice 2
+remains file-disjoint. The sprint returns to `plan-review` pending review of this amendment.
+
+**Implementation raise-hand amendment review: PASS** (2026-08-08, fresh-eyes reviewer).
+
+The amended ownership fully closes the inventory mismatch. Production currently yields nine mode
+templates plus five reviewer resources; adding the resource-less embedded self-improvement mode
+raises `GetAllTemplateNames()` from 14 to 15 exactly as specified. The root slice map, slice 1
+touch list, focused filter, staging allowlist, and cached diff check consistently cover the same
+eight paths, including `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`. Slice 2 remains
+exactly disjoint, and the unchanged 16-path shared-tree manifest and disposable-project sync
+isolation remain valid. No new implementation decision or scope ambiguity was introduced.
+
+All three records remain `dydo check`-clean with zero errors. The focused integration class
+passed 12/12 tests, the full isolated suite passed 2,524 tests with 10 live tests skipped, and
+forced coverage passed 131/131 modules. The amendment is green-lit; status is `active`.

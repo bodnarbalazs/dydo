@@ -32,6 +32,7 @@ Touch only:
 - `DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs`
 - `DynaDocs.Tests/Commands/SyncCommandTests.cs`
 - `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`
+- `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`
 
 ### Canonical template
 
@@ -129,6 +130,11 @@ other prose.
 - Extend `CodexSyncArtifactsE2ETests.Sync_Tier1Modes_EmitSkillOnly_NoCodexAgentRoleFiles` by
   renaming it to describe all shipped skill-only modes and adding `self-improvement` to its role
   array. Preserve the worker-role contrast.
+- In `TemplateOverrideTests.GetAllTemplateNames_ReturnsExpectedTemplates`, add
+  `Assert.Contains("mode-self-improvement.template.md", templateNames)`, update the adjacent
+  inventory comment from `9 mode templates` to `10 mode templates`, preserve the five reviewer
+  resource templates, and change `Assert.Equal(14, templateNames.Count)` to
+  `Assert.Equal(15, templateNames.Count)`. Make no other change in that file.
 
 ### Shared-tree protection manifest
 
@@ -258,14 +264,15 @@ outputs again.
 
 ## Gate
 
-Run in order and require every command/assertion to pass:
+Run in order and require every command/assertion to pass. The `$slicePaths` array contains exactly
+the eight files owned by this slice; stage all eight before inspecting the cached diff:
 
 ```powershell
-py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~TemplateGeneratorTests|FullyQualifiedName~RoleDefinitionServiceTests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~CodexSyncArtifactsE2ETests"
+py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~TemplateGeneratorTests|FullyQualifiedName~RoleDefinitionServiceTests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~CodexSyncArtifactsE2ETests|FullyQualifiedName~TemplateOverrideTests"
 py DynaDocs.Tests/coverage/run_tests.py
 py DynaDocs.Tests/coverage/gap_check.py --force-run
 dotnet run --project DynaDocs.csproj -- check
-$slicePaths = @('Templates/mode-self-improvement.template.md', '.claude/skills/self-improvement/SKILL.md', '.agents/skills/self-improvement/SKILL.md', 'DynaDocs.Tests/Services/TemplateGeneratorTests.cs', 'DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs', 'DynaDocs.Tests/Commands/SyncCommandTests.cs', 'DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs')
+$slicePaths = @('Templates/mode-self-improvement.template.md', '.claude/skills/self-improvement/SKILL.md', '.agents/skills/self-improvement/SKILL.md', 'DynaDocs.Tests/Services/TemplateGeneratorTests.cs', 'DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs', 'DynaDocs.Tests/Commands/SyncCommandTests.cs', 'DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs', 'DynaDocs.Tests/Integration/TemplateOverrideTests.cs')
 git add -- $slicePaths
 if ($LASTEXITCODE -ne 0) { throw "exact staging failed: $LASTEXITCODE" }
 $actual = @(git diff --cached --name-only)

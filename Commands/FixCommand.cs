@@ -1,6 +1,7 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -30,49 +31,56 @@ public static class FixCommand
     {
         try
         {
-            var basePath = ResolvePath(path);
-            if (basePath == null)
+            var scope = ResolveScope(path);
+            if (scope == null)
             {
                 ConsoleOutput.WriteError("Could not find docs folder.");
                 return ExitCodes.ToolError;
             }
 
-            Console.WriteLine($"Fixing {basePath}...");
+            Console.WriteLine($"Fixing {scope.FilePath ?? scope.CorpusRoot}...");
             Console.WriteLine();
 
-            var parser = new MarkdownParser();
             var configService = new ConfigService();
-            var scanner = new DocScanner(parser, configService);
-            var docs = scanner.ScanDirectory(basePath);
+            var scanner = new DocScanner(new MarkdownParser(), configService);
+            var resolutionCorpus = scanner.ScanDirectory(scope.CorpusRoot);
+            var docs = SelectDocs(scope, resolutionCorpus);
+            if (docs == null)
+                return ExitCodes.ToolError;
 
             Console.WriteLine("FIXED:");
 
-            // Restore dydo.json scan-exclude invariants
-            var configFixCount = RestoreScanExcludeInvariants(configService);
+            var configFixCount = RestoreScanExcludeInvariants(configService, scope.CorpusRoot);
+            var renamedFilePath = scope.FilePath == null ? null : GetKebabDestination(scope.FilePath);
+            var (renamed, nameConflicts) = FixFileHandler.FixNaming(docs);
+            var fixedCount = configFixCount + renamed;
 
-            // Fix naming issues
-            var (fixedCount, nameConflicts) = FixFileHandler.FixNaming(docs);
-            fixedCount += configFixCount;
+            if (renamedFilePath != null && renamed == 1)
+                scope = scope with { FilePath = renamedFilePath };
 
-            // Re-scan after renames
-            docs = scanner.ScanDirectory(basePath);
+            resolutionCorpus = scanner.ScanDirectory(scope.CorpusRoot);
+            docs = SelectDocs(scope, resolutionCorpus);
+            if (docs == null)
+                return ExitCodes.ToolError;
 
-            // Fix wikilinks
-            var (linksConverted, manualFixes) = FixFileHandler.FixWikilinks(docs);
+            var (linksConverted, manualFixes) = FixFileHandler.FixWikilinks(docs, resolutionCorpus);
             if (linksConverted > 0)
             {
                 ConsoleOutput.WriteSuccess($"  ✓ Converted {linksConverted} wikilinks to relative paths");
                 fixedCount += linksConverted;
             }
 
-            // Regenerate hub files
-            fixedCount += FixHubHandler.RegenerateHubs(basePath, scanner, docs);
+            if (scope.FilePath == null)
+            {
+                fixedCount += FixHubHandler.RegenerateHubs(scope.CorpusRoot, scanner, docs);
+                fixedCount += FixHubHandler.CreateMissingMetaFiles(scope.CorpusRoot, scanner, docs);
+            }
 
-            // Create missing meta files
-            fixedCount += FixHubHandler.CreateMissingMetaFiles(basePath, scanner, docs);
+            resolutionCorpus = scanner.ScanDirectory(scope.CorpusRoot);
+            docs = SelectDocs(scope, resolutionCorpus);
+            if (docs == null)
+                return ExitCodes.ToolError;
 
-            // Report manual fixes needed
-            docs = scanner.ScanDirectory(basePath);
             var manualFixNeeded = manualFixes;
             manualFixNeeded.AddRange(nameConflicts);
             manualFixNeeded.AddRange(FixFileHandler.FindManualFixes(docs));
@@ -101,24 +109,68 @@ public static class FixCommand
         }
     }
 
-    private static string? ResolvePath(string? path)
+    private static FixScope? ResolveScope(string? path)
     {
         if (!string.IsNullOrEmpty(path))
         {
-            if (File.Exists(path) || Directory.Exists(path))
-                return Path.GetFullPath(path);
+            if (Directory.Exists(path))
+                return new FixScope(Path.GetFullPath(path), null);
+            if (File.Exists(path))
+            {
+                var filePath = Path.GetFullPath(path);
+                return new FixScope(FindContainingCorpusRoot(filePath), filePath);
+            }
             return null;
         }
-        return PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+
+        var docsPath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+        return docsPath == null ? null : new FixScope(Path.GetFullPath(docsPath), null);
     }
 
-    private static int RestoreScanExcludeInvariants(IConfigService configService)
+    private static string FindContainingCorpusRoot(string filePath)
     {
-        var configPath = configService.FindConfigFile();
+        var parent = new FileInfo(filePath).Directory!;
+        var fallback = parent.FullName;
+
+        for (var cursor = parent; cursor != null; cursor = cursor.Parent)
+        {
+            var candidate = PathUtils.FindDocsFolder(cursor.FullName);
+            if (candidate != null && CheckDocValidator.IsUnderScope(filePath, candidate))
+                return candidate;
+        }
+
+        return fallback;
+    }
+
+    private static List<DocFile>? SelectDocs(FixScope scope, List<DocFile> resolutionCorpus)
+    {
+        if (scope.FilePath == null)
+            return resolutionCorpus;
+
+        var selected = resolutionCorpus.Where(doc =>
+            PathUtils.NormalizePath(Path.GetFullPath(doc.FilePath)).Equals(
+                PathUtils.NormalizePath(scope.FilePath), StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (selected.Count == 1)
+            return selected;
+
+        ConsoleOutput.WriteError($"Could not find exactly one selected file '{scope.FilePath}' in corpus '{scope.CorpusRoot}'.");
+        return null;
+    }
+
+    private static string GetKebabDestination(string filePath)
+    {
+        var fileName = PathUtils.ToKebabCase(Path.GetFileNameWithoutExtension(filePath)) + ".md";
+        return Path.Combine(Path.GetDirectoryName(filePath)!, fileName);
+    }
+
+    private static int RestoreScanExcludeInvariants(IConfigService configService, string startPath)
+    {
+        var configPath = configService.FindConfigFile(startPath);
         if (configPath == null)
             return 0;
 
-        var config = configService.LoadConfig();
+        var config = configService.LoadConfig(startPath);
         if (config == null)
             return 0;
 
@@ -130,4 +182,6 @@ public static class FixCommand
         ConsoleOutput.WriteSuccess($"  ✓ Restored {added} scanExclude invariant(s) in dydo.json");
         return added;
     }
+
+    private sealed record FixScope(string CorpusRoot, string? FilePath);
 }

@@ -46,13 +46,13 @@ internal static class FixFileHandler
         return (renamed, conflicts);
     }
 
-    public static (int converted, List<string> manualFixes) FixWikilinks(List<DocFile> docs)
+    public static (int converted, List<string> manualFixes) FixWikilinks(List<DocFile> docsToFix, List<DocFile> resolutionCorpus)
     {
         var linkResolver = new LinkResolver();
         var linksConverted = 0;
         var manualFixes = new List<string>();
 
-        foreach (var doc in docs)
+        foreach (var doc in docsToFix)
         {
             var wikilinks = doc.Links.Where(l => l.Type == LinkType.Wikilink).ToList();
             if (wikilinks.Count == 0) continue;
@@ -61,7 +61,7 @@ internal static class FixFileHandler
 
             foreach (var link in wikilinks)
             {
-                var resolvedPath = linkResolver.FindFileByName(link.Target + ".md", docs);
+                var resolvedPath = linkResolver.FindFileByName(link.Target + ".md", resolutionCorpus);
                 if (resolvedPath != null)
                 {
                     var relativePath = PathUtils.GetRelativePath(doc.RelativePath, resolvedPath);

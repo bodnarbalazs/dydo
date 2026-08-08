@@ -5,6 +5,93 @@ using DynaDocs.Commands;
 [Collection("Integration")]
 public class FixCommandIntegrationTests : IntegrationTestBase
 {
+    #region Explicit File Scope
+
+    [Fact]
+    public async Task Fix_ExplicitStandaloneFile_Succeeds()
+    {
+        var filePath = Path.Combine(TestDir, "standalone.md");
+        File.WriteAllText(filePath, "---\narea: test\ntype: context\n---\n\n# Standalone\n\nA standalone document.");
+
+        var result = await RunAsync(FixCommand.Create(), filePath);
+
+        result.AssertSuccess();
+        Assert.Contains($"Fixing {filePath}...", result.Stdout);
+        Assert.Contains("Fixed 0 issues automatically.", result.Stdout);
+        Assert.DoesNotContain("Error:", result.Stderr);
+    }
+
+    [Fact]
+    public async Task Fix_ExplicitFile_OnlyFixesSelectedFileAfterRename()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var selectedPath = Path.Combine(DydoDir, "guides", "Selected File.md");
+        var unrelatedPath = Path.Combine(DydoDir, "guides", "Unrelated File.md");
+        var targetPath = Path.Combine(DydoDir, "reference", "resolution-target.md");
+        var content = "---\narea: guides\ntype: guide\n---\n\n# Selected\n\nSee [[resolution-target]].";
+        WriteFile("dydo/guides/Selected File.md", content);
+        WriteFile("dydo/guides/Unrelated File.md", content);
+        WriteFile("dydo/reference/resolution-target.md", "---\narea: reference\ntype: context\n---\n\n# Resolution Target\n\nTarget document.");
+        var unrelatedBefore = File.ReadAllText(unrelatedPath);
+        var targetBefore = File.ReadAllText(targetPath);
+
+        var result = await RunAsync(FixCommand.Create(), selectedPath);
+
+        result.AssertSuccess();
+        AssertFileExists("dydo/guides/selected-file.md");
+        AssertFileNotExists("dydo/guides/Selected File.md");
+        var selected = ReadFile("dydo/guides/selected-file.md");
+        Assert.Contains("[resolution-target](../reference/resolution-target.md)", selected);
+        Assert.DoesNotContain("[[resolution-target]]", selected);
+        Assert.Equal(unrelatedBefore, File.ReadAllText(unrelatedPath));
+        Assert.Equal(targetBefore, File.ReadAllText(targetPath));
+        Assert.True(File.Exists(unrelatedPath));
+        Assert.False(File.Exists(Path.Combine(DydoDir, "guides", "unrelated-file.md")));
+        Assert.Contains("Renamed Selected File.md -> selected-file.md", result.Stdout);
+        Assert.DoesNotContain("Unrelated File.md", result.Stdout);
+        Assert.Equal(1, result.Stdout.Split("Converted 1 wikilinks to relative paths").Length - 1);
+    }
+
+    [Fact]
+    public async Task Fix_ExplicitFileBesideProjectConfig_UsesParentCorpus()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var notePath = Path.Combine(TestDir, "Project Note.md");
+        File.WriteAllText(notePath, "---\narea: test\ntype: context\n---\n\n# Project Note\n\nA project-level note.");
+
+        var result = await RunAsync(FixCommand.Create(), notePath);
+
+        result.AssertSuccess();
+        AssertFileExists("project-note.md");
+        AssertFileNotExists("Project Note.md");
+        Assert.Contains("Renamed Project Note.md -> project-note.md", result.Stdout);
+        Assert.DoesNotContain("Fixed 0 issues automatically.", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Fix_ExplicitFileInLegacyDocs_UsesContainingRoot()
+    {
+        WriteFile("docs/index.md", "---\narea: docs\ntype: hub\n---\n\n# Docs\n\nDocumentation root.");
+        var selectedPath = Path.Combine(TestDir, "docs", "guides", "Legacy Selected.md");
+        var targetPath = Path.Combine(TestDir, "docs", "reference", "legacy-target.md");
+        WriteFile("docs/guides/Legacy Selected.md", "---\narea: guides\ntype: guide\n---\n\n# Legacy Selected\n\nSee [[legacy-target]].");
+        WriteFile("docs/reference/legacy-target.md", "---\narea: reference\ntype: context\n---\n\n# Legacy Target\n\nTarget document.");
+        var targetBefore = File.ReadAllText(targetPath);
+
+        var result = await RunAsync(FixCommand.Create(), selectedPath);
+
+        result.AssertSuccess();
+        AssertFileExists("docs/guides/legacy-selected.md");
+        AssertFileNotExists("docs/guides/Legacy Selected.md");
+        var selected = ReadFile("docs/guides/legacy-selected.md");
+        Assert.Contains("[legacy-target](../reference/legacy-target.md)", selected);
+        Assert.DoesNotContain("[[legacy-target]]", selected);
+        Assert.Equal(1, result.Stdout.Split("Converted 1 wikilinks to relative paths").Length - 1);
+        Assert.Equal(targetBefore, File.ReadAllText(targetPath));
+    }
+
+    #endregion
+
     #region Hub File Generation
 
     [Fact]

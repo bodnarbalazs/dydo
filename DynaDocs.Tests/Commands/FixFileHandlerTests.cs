@@ -46,7 +46,7 @@ public class FixFileHandlerTests : IDisposable
             new LinkInfo("[[target]]", "target", "target", null, LinkType.Wikilink, 1)
         ]);
 
-        var (converted, manualFixes) = FixFileHandler.FixWikilinks([sourceDoc, targetDoc]);
+        var (converted, manualFixes) = FixFileHandler.FixWikilinks([sourceDoc, targetDoc], [sourceDoc, targetDoc]);
 
         Assert.Equal(1, converted);
         Assert.Empty(manualFixes);
@@ -62,7 +62,7 @@ public class FixFileHandlerTests : IDisposable
             new LinkInfo("[[nonexistent]]", "nonexistent", "nonexistent", null, LinkType.Wikilink, 1)
         ]);
 
-        var (converted, manualFixes) = FixFileHandler.FixWikilinks([sourceDoc]);
+        var (converted, manualFixes) = FixFileHandler.FixWikilinks([sourceDoc], [sourceDoc]);
 
         Assert.Equal(0, converted);
         Assert.Single(manualFixes);
@@ -76,7 +76,7 @@ public class FixFileHandlerTests : IDisposable
             new LinkInfo("[link](other.md)", "link", "other.md", null, LinkType.Markdown, 1)
         ]);
 
-        var (converted, manualFixes) = FixFileHandler.FixWikilinks([doc]);
+        var (converted, manualFixes) = FixFileHandler.FixWikilinks([doc], [doc]);
 
         Assert.Equal(0, converted);
         Assert.Empty(manualFixes);
@@ -92,10 +92,28 @@ public class FixFileHandlerTests : IDisposable
             new LinkInfo("[[missing]]", "missing", "missing", null, LinkType.Wikilink, 1)
         ]);
 
-        var (converted, manualFixes) = FixFileHandler.FixWikilinks([sourceDoc, targetDoc]);
+        var (converted, manualFixes) = FixFileHandler.FixWikilinks([sourceDoc, targetDoc], [sourceDoc, targetDoc]);
 
         Assert.Equal(1, converted);
         Assert.Single(manualFixes);
+    }
+
+    [Fact]
+    public void FixWikilinks_OnlyMutationTargetIsChangedWhileResolvingAgainstCorpus()
+    {
+        var resolutionDoc = CreateDocFile("reference/target.md", "# Target");
+        var sourceContent = "See [[target]].";
+        var sourceDoc = CreateDocFile("guides/source.md", sourceContent, [
+            new LinkInfo("[[target]]", "target", "target", null, LinkType.Wikilink, 1)
+        ]);
+        var resolutionBytes = File.ReadAllBytes(resolutionDoc.FilePath);
+
+        var (converted, manualFixes) = FixFileHandler.FixWikilinks([sourceDoc], [sourceDoc, resolutionDoc]);
+
+        Assert.Equal(1, converted);
+        Assert.Empty(manualFixes);
+        Assert.Contains("[target](../reference/target.md)", File.ReadAllText(sourceDoc.FilePath));
+        Assert.Equal(resolutionBytes, File.ReadAllBytes(resolutionDoc.FilePath));
     }
 
     #endregion

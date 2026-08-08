@@ -577,6 +577,42 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
+    public void SelfImprovementSkill_CompilesForBothSurfacesWithoutAgentDefinitions()
+    {
+        var role = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "self-improvement");
+
+        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+        SyncCommand.SyncCodexSkill(role, _testDir);
+
+        var claudeSkill = Path.Combine(_testDir, ".claude", "skills", "self-improvement", "SKILL.md");
+        var codexSkill = Path.Combine(_testDir, ".agents", "skills", "self-improvement", "SKILL.md");
+        Assert.True(File.Exists(claudeSkill));
+        Assert.True(File.Exists(codexSkill));
+
+        var claudeContent = File.ReadAllText(claudeSkill);
+        var codexContent = File.ReadAllText(codexSkill);
+        Assert.Equal(claudeContent, codexContent);
+        foreach (var required in new[]
+        {
+            "Kaizen is continuous improvement through small changes.",
+            "1.01^365 ≈ 37.8",
+            "These are classifications, not standing authorization.",
+            "Otherwise create or modify nothing",
+            "including record creation or modification.",
+            "Define verification and rollback",
+            "never memory",
+        })
+        {
+            Assert.Contains(required, claudeContent);
+        }
+
+        Assert.DoesNotContain('\r', claudeContent);
+        Assert.DoesNotContain('\r', codexContent);
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "self-improvement.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", "self-improvement.toml")));
+    }
+
+    [Fact]
     public void RenumberOrderedLists_FixesDuplicateNumbering()
     {
         // A list whose numbering was broken by an included continuation (…4. then 4./5.)

@@ -44,6 +44,7 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("co-thinker", names);
         Assert.Contains("chief-of-staff", names);
         Assert.Contains("inquisitor", names);
+        Assert.Contains("self-improvement", names);
         // Retired roles stay retired.
         Assert.DoesNotContain("judge", names);
         Assert.DoesNotContain("sprint-auditor", names);
@@ -64,6 +65,7 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.False(roles["orchestrator"].EmitAgent);
         Assert.False(roles["co-thinker"].EmitAgent);
         Assert.False(roles["chief-of-staff"].EmitAgent);
+        Assert.False(roles["self-improvement"].EmitAgent);
     }
 
     [Fact]

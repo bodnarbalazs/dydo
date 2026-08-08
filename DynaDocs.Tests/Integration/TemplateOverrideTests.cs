@@ -66,11 +66,12 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("mode-planner.template.md", templateNames);
         Assert.Contains("mode-chief-of-staff.template.md", templateNames);
         Assert.Contains("mode-inquisitor.template.md", templateNames);
+        Assert.Contains("mode-self-improvement.template.md", templateNames);
 
-        // 9 mode templates (the compiler's role sources) + the reviewer's 5 skill
+        // 10 mode templates (the compiler's role sources) + the reviewer's 5 skill
         // resource templates (<role>-resource-<name>.template.md).
         Assert.Contains("reviewer-resource-plan.template.md", templateNames);
-        Assert.Equal(14, templateNames.Count);
+        Assert.Equal(15, templateNames.Count);
     }
 
     [Fact]

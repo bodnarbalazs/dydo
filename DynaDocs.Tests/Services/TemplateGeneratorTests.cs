@@ -33,6 +33,7 @@ public class TemplateGeneratorTests
     [InlineData("mode-docs-writer.template.md")]
     [InlineData("mode-test-writer.template.md")]
     [InlineData("mode-orchestrator.template.md")]
+    [InlineData("mode-self-improvement.template.md")]
     public void ReadBuiltInTemplate_AllListedTemplates_AreAccessible(string templateName)
     {
         var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
@@ -50,6 +51,7 @@ public class TemplateGeneratorTests
 
         // Verify templates are embedded. The mode templates are the source `dydo sync` compiles.
         Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-code-writer"));
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-self-improvement"));
         Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("index.template"));
     }
 

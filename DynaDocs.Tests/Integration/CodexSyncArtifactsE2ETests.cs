@@ -3,27 +3,28 @@ namespace DynaDocs.Tests.Integration;
 using DynaDocs.Commands;
 
 /// <summary>
-/// c1-7 / issue 0233 (ask 4): `dydo sync` emits skill-only artifacts for the Tier-1 modes
-/// (planner + the three manager modes) without ever minting a codex AGENT role file for them.
+/// c1-7 / issue 0233 (ask 4): `dydo sync` emits skills for every shipped skill-only role
+/// (planner, the three manager modes, and self-improvement) without minting an agent definition.
 /// Existing sync tests pin the ABSENCE of a <c>.claude/agents/&lt;role&gt;.md</c>; this one closes the
-/// codex-side gap the issue named — a spawnable <c>.codex/agents/&lt;role&gt;.toml</c> for a Tier-1
-/// terminal identity would be artifact drift. Driven through the real sync command on an
-/// initialized project.
+/// codex-side gap: a spawnable <c>.codex/agents/&lt;role&gt;.toml</c> for any skill-only role would be
+/// artifact drift. Driven through the real sync command on an initialized project.
+/// Self-improvement is a generic harness method, not a Tier-1 identity.
 /// </summary>
 [Collection("Integration")]
 public class CodexSyncArtifactsE2ETests : IntegrationTestBase
 {
     [Fact]
-    public async Task Sync_Tier1Modes_EmitSkillOnly_NoCodexAgentRoleFiles()
+    public async Task Sync_AllShippedSkillOnlyRoles_EmitSkillsWithoutAgentDefinitions()
     {
         await InitProjectAsync("none");
 
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        foreach (var role in new[] { "planner", "orchestrator", "co-thinker", "chief-of-staff" })
+        // Self-improvement is included as a generic skill, not as a Tier-1 identity.
+        foreach (var role in new[] { "planner", "orchestrator", "co-thinker", "chief-of-staff", "self-improvement" })
         {
-            // Skill on both surfaces — the methodology the Tier-1 agent applies in its own thread.
+            // Skill on both surfaces: the methodology the skill-only role applies in its thread.
             AssertFileExists($".claude/skills/{role}/SKILL.md");
             AssertFileExists($".agents/skills/{role}/SKILL.md");
             // But NO spawnable agent definition on either host.
@@ -32,7 +33,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         }
 
         // Contrast: worker roles DO get a codex agent role file — sync is emitting codex artifacts,
-        // it just never mints a spawnable agent for a Tier-1 terminal identity.
+        // it just never mints a spawnable agent for a skill-only role.
         AssertFileExists(".codex/agents/code-writer.toml");
         AssertFileExists(".codex/agents/reviewer.toml");
     }

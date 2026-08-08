@@ -74,10 +74,7 @@ when the current task authorizes that record; otherwise report it to the human.
    root cause. If recurrence is unsupported, stop.
 2. **Deduplicate** — Search existing issues, backlog, decisions, guides, pitfalls, prompts,
    skills, nudges, and hooks. Prefer an existing canonical surface.
-3. **Choose one lever** — Select exactly one smallest durable change in this order: canonical
-   prompt or skill wording; a warn-level nudge for a recognizable risky action; a hook only when
-   action-time guidance or enforcement is demonstrably required; harness implementation code
-   only when the earlier layers cannot express the behavior.
+3. **Choose one lever** — Select exactly one smallest durable change in this order: canonical prompt or skill wording; a warn-level nudge for a recognizable risky action; a hook only when action-time guidance or enforcement is demonstrably required; harness implementation code only when the earlier layers cannot express the behavior.
 4. **Classify, then check authority** — Choose the narrowest destination below. Create or modify
    it only when the current task explicitly includes that edit and the current role, slice, and
    normal reviewed workflow permit it. Otherwise create or modify nothing: report the evidence
@@ -119,7 +116,9 @@ These are harness classifications, not standing authorization. None routes produ
 ```
 
 Do not add a must-read section, external quotation, platform name, include/resource file, or any
-other prose.
+other prose. Do not reflow the `Choose one lever` item: its complete sentence, including `harness
+implementation code only when the earlier layers cannot express the behavior.`, must remain on
+one physical template line so the compiler preserves the exact assertion literal.
 
 ### Discovery and compiler regressions
 

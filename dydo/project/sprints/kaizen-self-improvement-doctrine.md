@@ -2,7 +2,7 @@
 title: Kaizen Self-Improvement Doctrine
 seq: 11
 status: active
-gate-result: audit finding amendment PASS (2026-08-08)
+gate-result: line-wrap amendment PASS (2026-08-08)
 area: project
 type: context
 ---
@@ -71,6 +71,9 @@ creating a trail of generic doctrine documents.
   otherwise authorized adjacent product work; kaizen here applies only to the agent harness and
   its documentation and process surfaces.` The focused sync regression asserts this exclusion
   phrase.
+- The canonical Method lever keeps `harness implementation code only when the earlier layers
+  cannot express the behavior.` contiguous on one physical template line, so the compiled skill
+  contains the exact literal required by the focused sync regression.
 - The two new committed generated outputs come from a source-built sync in a disposable project;
   the repository-wide sync command is never run against the dirty shared working tree.
 - A before/after manifest over the 16 protected generated artifacts named in Ordering & isolation
@@ -356,3 +359,27 @@ still matches the protected dirty set.
 All three records have zero `dydo check` errors. The full isolated suite passed 2,526 tests with
 10 live tests skipped, and forced coverage passed 131/131 modules. The amendment is green-lit;
 status is `active`.
+
+**Implementation blocker amendment** (2026-08-08): the reviewed verbatim template wrapped
+`harness implementation code` and `only when...` across a physical newline, while the focused
+regression requires their exact contiguous literal and the compiler correctly preserves template
+newlines. Slice 1 now locks the complete `Choose one lever` list item onto one physical line and
+explicitly forbids reflowing it. Semantics, harness-only scope, eight-file ownership, generated
+output regeneration, and slice 2 remain unchanged. The sprint returns to `plan-review` pending
+amendment review.
+
+**Line-wrap amendment review: PASS** (2026-08-08, fresh-eyes reviewer).
+
+Slice 1 locks the complete `Choose one lever` item to exactly one physical template line; the
+single 337-character line contains and ends with the mandated contiguous literal. The compiler preserves it:
+include resolution does not reflow prose, frontmatter stripping takes an unchanged body
+substring, ordered-list renumbering replaces only the numeric prefix, skill construction
+interpolates the resulting methodology, and the write boundary only normalizes line endings.
+The planned exact focused assertion is therefore satisfiable.
+
+The amendment changes no semantics: harness-only triggers, levers, destinations, categorical
+product exclusion, and generated-output regeneration remain binding. Slice 1 still owns the same
+eight files and retains the same filter and staging allowlist; slice 2 has no diff. All three plan
+records have zero `dydo check` errors. The unchanged implementation baseline remains green at
+2,526 isolated tests passed with 10 live tests skipped and forced coverage at 131/131 modules.
+The amendment is green-lit; status is `active`.

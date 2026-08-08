@@ -708,6 +708,20 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileExists(".codex/hooks.json");
         AssertFileContains("dydo.json", "\"claude\": true");
         AssertFileContains("dydo.json", "\"codex\": true");
+
+        var claudeEntry = ReadFile("CLAUDE.md");
+        var codexEntry = ReadFile("AGENTS.md");
+        var expectedSeed = """
+            Practice kaizen: when a failure, correction, or workaround recurs, treat the pattern as evidence
+            that the harness may need one small, durable improvement. Invoke the `self-improvement` skill to
+            choose and route the smallest justified change without expanding the current task or silently
+            changing policy.
+            """;
+
+        Assert.Equal(claudeEntry, codexEntry);
+        Assert.Contains(expectedSeed, claudeEntry);
+        Assert.Equal(1, claudeEntry.Split("self-improvement", StringSplitOptions.None).Length - 1);
+        Assert.Equal(1, codexEntry.Split("self-improvement", StringSplitOptions.None).Length - 1);
     }
 
     [Fact]

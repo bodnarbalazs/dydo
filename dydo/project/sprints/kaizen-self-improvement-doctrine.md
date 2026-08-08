@@ -2,7 +2,7 @@
 title: Kaizen Self-Improvement Doctrine
 seq: 11
 status: active
-gate-result: plan amendment PASS (2026-08-08)
+gate-result: audit finding amendment PASS (2026-08-08)
 area: project
 type: context
 ---
@@ -14,10 +14,10 @@ Plant a tiny recurring-improvement cue and route its safe method through one por
 ## 1. Specification
 
 **Intent** — Plant a small, runtime-neutral kaizen seed in every new project's entry point and
-route the detail into one reusable `self-improvement` skill. When an agent sees recurring
-friction, failure, correction, or workaround, it should identify the pattern and propose one
-small durable harness improvement without gaining authority, widening its task, or creating a
-trail of generic doctrine documents.
+route the detail into one reusable `self-improvement` skill. When an agent sees recurring friction,
+failure, correction, or workaround in the agent harness, it should identify the pattern and
+propose one small durable harness improvement without gaining authority, widening its task, or
+creating a trail of generic doctrine documents.
 
 **In scope**
 
@@ -34,6 +34,8 @@ trail of generic doctrine documents.
 - Make the skill explain kaizen, use `1.01^365 ≈ 37.8` only as an illustration of compounding,
   define a repeat-signal trigger, select the least invasive improvement, route durable knowledge,
   and forbid autonomous overreach.
+- Scope kaizen exclusively to the agent harness and its documentation/process surfaces. Product
+  features and product code are never a self-improvement lever, proposal, or side effect.
 - Add focused discovery, compiler, sync, entry-point, and integration regressions.
 
 **Out of scope**
@@ -42,6 +44,8 @@ trail of generic doctrine documents.
   model binding, or workflow.
 - Automatic monitoring, scoring, telemetry, memory creation, recursive self-editing, or a literal
   one-percent-per-day performance promise.
+- Any product-feature or product-code proposal or change, even when benevolent, adjacent,
+  otherwise authorized, or plausibly useful to the product being built.
 - Changing the existing auto-memory decision or backlog, or adding its routing paragraph to the
   canonical entry template in this sprint.
 - Reformatting or fully regenerating this repository's divergent current entry files.
@@ -62,6 +66,11 @@ trail of generic doctrine documents.
   `.claude/agents/self-improvement.md` and `.codex/agents/self-improvement.toml` do not exist.
 - The compiled skill contains the verbatim trigger, least-invasive lever order, destination table,
   verification/rollback requirement, and every anti-overreach boundary specified in slice 1.
+- The canonical template and both regenerated compiled outputs contain exactly:
+  `Do not propose or perform product-feature or product-code changes, including benevolent or
+  otherwise authorized adjacent product work; kaizen here applies only to the agent harness and
+  its documentation and process surfaces.` The focused sync regression asserts this exclusion
+  phrase.
 - The two new committed generated outputs come from a source-built sync in a disposable project;
   the repository-wide sync command is never run against the dirty shared working tree.
 - A before/after manifest over the 16 protected generated artifacts named in Ordering & isolation
@@ -75,15 +84,20 @@ trail of generic doctrine documents.
   small changes. The compound expression `1.01^365 ≈ 37.8` is a useful illustration, not an
   empirical guarantee or a quota to manufacture changes.
 - **What counts as a trigger?** A repeated failure, correction, workaround, or avoidable friction
-  with concrete evidence. One weak or isolated inconvenience does not trigger framework work;
-  one severe systemic incident may still be routed through the normal issue path.
+  in the agent harness with concrete evidence. Product behavior never triggers this skill. One
+  weak or isolated harness inconvenience does not trigger framework work; one severe systemic
+  harness incident may still be routed through the normal issue path.
 - **Does invoking the skill authorize edits?** No. The current role, user request, slice, and
   reviewed workflow remain the authority boundary. Without pre-existing authority, the agent
   creates or modifies nothing: it reports the evidence and suggests one destination/change.
 - **What is the preferred intervention order?** Clarify a canonical prompt or skill first; use a
   warn-level nudge for a recognizable risky action; use a hook only when action-time guidance or
-  enforcement is demonstrably needed; change code only when the prior layers cannot express the
-  behavior. Existing records and mechanisms are reused before any new one is proposed.
+  enforcement is demonstrably needed; change harness implementation code only when the prior
+  layers cannot express the behavior. Product implementation is never in this order. Existing
+  harness records and mechanisms are reused before any new one is proposed.
+- **Can the doctrine improve the product itself?** No. It applies only to the agent harness and
+  its documentation/process surfaces. It never proposes or performs product features or product
+  code, even when that adjacent work would otherwise be authorized or beneficial.
 - **Where does durable knowledge go?** When record creation or editing is already in task scope
   and allowed by the current role/workflow, observed defects go to issues, schedulable
   improvements to backlog records, accepted non-obvious policy to decisions, and stable
@@ -129,12 +143,14 @@ preserved. A fresh init still produces identical entry files because both are ge
 canonical template.
 
 The new mode template is skill-only. Its verbatim body is locked in slice 1. Its bounded method
-establishes recurrence, searches for an existing route, chooses one least-invasive lever,
-classifies one destination, and names verification plus rollback. Classification is not
-authorization: unless the current task and role/workflow already authorize an edit, the only
-permitted output is a report of the evidence plus one suggested destination/change. Its
-boundaries also forbid hand-edited generated outputs, unauthorized global/user harness changes,
-unreviewed enforcement escalation, widened task scope, temporary-workaround memory, and recursive
+establishes recurrence in the agent harness, searches existing harness routes, chooses one
+least-invasive harness lever, classifies one harness destination, and names verification plus
+rollback. Classification is not authorization: unless the current task and role/workflow already
+authorize an edit, the only permitted output is a report of the harness evidence plus one
+suggested harness destination/change. Product features and product code are categorically outside
+the algorithm, even when adjacent product work has separate authorization. Its boundaries also
+forbid hand-edited generated outputs, unauthorized global/user harness changes, unreviewed
+enforcement escalation, widened task scope, temporary-workaround memory, and recursive
 self-improvement.
 
 No compiler source change is expected: enumeration plus `emit: skill` already handles the new
@@ -205,6 +221,9 @@ repair it with stash, reset, restore, or checkout.
 - A skill-only role is not a new agent identity. Never add either agent-definition output.
 - The self-improvement skill is subordinate to current authority; its wording must not invite
   unsolicited edits to global prompts, hooks, configuration, memory, or adjacent code.
+- Do not blur harness improvement into product improvement. Product features and product code are
+  excluded even if an agent believes they would help or sees separate authority for adjacent
+  product work.
 - Do not turn every hiccup into a record. Require recurrence evidence, deduplicate first, and
   produce at most one smallest justified proposal per pattern.
 - Do not edit generated `SKILL.md` files by hand. Generate both from the canonical template and
@@ -304,3 +323,36 @@ isolation remain valid. No new implementation decision or scope ambiguity was in
 All three records remain `dydo check`-clean with zero errors. The focused integration class
 passed 12/12 tests, the full isolated suite passed 2,524 tests with 10 live tests skipped, and
 forced coverage passed 131/131 modules. The amendment is green-lit; status is `active`.
+
+**Merged-sprint audit: FAIL — binding scope clarification** (2026-08-08).
+
+The human clarified that kaizen in this doctrine applies only to the agent harness and its
+documentation/process surfaces. The locked body said only `code`, which could be read as product
+implementation code, and it lacked an explicit product exclusion. That ambiguity is an audit
+finding even though the implementation matched the reviewed plan.
+
+**Audit-finding amendment** (2026-08-08): slice 1 now changes the final Method lever to `harness
+implementation code only when...`, adds the exact Boundary exclusion sentence, requires both
+compiled outputs to be regenerated, and adds an exact focused regression assertion. The eight
+owned files and all dirty-tree isolation rules are unchanged; slice 2 and its concise seed are
+unchanged. The sprint returns to `plan-review` pending amendment review.
+
+**Audit-finding amendment review: PASS** (2026-08-08, fresh-eyes reviewer).
+
+The locked body now binds kaizen to the agent harness at every routing point: it defines the
+harness and excludes the product, limits triggers to agent-harness evidence, limits the final
+lever to harness implementation code, labels every destination as a harness classification that
+routes no product work, and categorically forbids proposing or performing product features or
+product code even when benevolent or otherwise authorized adjacent work. The authority check
+therefore cannot reopen product scope.
+
+Slice 1 requires both compiled outputs to be regenerated from the canonical template, remain
+byte-identical, and pass exact focused assertions for the trigger, harness-code lever, destination
+scope, and complete product-exclusion sentence. Its root map, touch list, focused filter, staging
+allowlist, and cached diff gate remain consistent at the same eight files. Slice 2 has no diff,
+the slices remain disjoint, and the 16-path shared-tree protection contract is unchanged and
+still matches the protected dirty set.
+
+All three records have zero `dydo check` errors. The full isolated suite passed 2,526 tests with
+10 live tests skipped, and forced coverage passed 131/131 modules. The amendment is green-lit;
+status is `active`.

@@ -13,13 +13,15 @@ Author and compile the bounded kaizen method without touching unrelated generate
 
 ## Spec fragment
 
-Add one concise, generic, skill-only mode template that turns recurring friction into one small,
-durable, correctly routed harness improvement. Compile it for both skill surfaces without
-creating an agent definition and without touching any unrelated dirty generated skill.
+Add one concise, generic, skill-only mode template that turns recurring agent-harness friction
+into one small, durable, correctly routed harness improvement. Product features and product code
+are never eligible. Compile the template for both skill surfaces without creating an agent
+definition and without touching any unrelated dirty generated skill.
 
 Accepted means the role is discovered as `self-improvement` with `EmitAgent == false`; both new
 compiled skill files exist and are byte-identical; neither agent-definition file exists; the
 skill contains every locked trigger, method, routing, and boundary below; and every gate passes.
+Both regenerated outputs must contain the exact product-exclusion sentence locked below.
 
 ## Implementation detail
 
@@ -50,6 +52,9 @@ emit: skill
 
 Your job: turn recurring friction into one small, durable improvement to the harness.
 
+Here, the harness means agent prompts, skills, nudges, hooks, agent-workflow documentation and
+process surfaces, and harness implementation code. It excludes the product being built.
+
 ## Mindset
 
 Kaizen is continuous improvement through small changes. `1.01^365 ≈ 37.8` illustrates
@@ -57,10 +62,11 @@ compounding; it is not a promise, a metric, or a reason to manufacture changes.
 
 ## Trigger
 
-Use this skill when the same failure, correction, workaround, or avoidable friction appears at
-least twice in the available evidence, or an existing canonical record already identifies it as
-recurring. A one-off inconvenience is not enough. A single severe defect follows the ordinary
-issue path only when the current task authorizes that record; otherwise report it to the human.
+Use this skill when the same agent-harness failure, correction, workaround, or avoidable friction
+appears at least twice in the available evidence, or an existing canonical harness record already
+identifies it as recurring. Product behavior never triggers this skill. A one-off harness
+inconvenience is not enough. A single severe harness defect follows the ordinary issue path only
+when the current task authorizes that record; otherwise report it to the human.
 
 ## Method
 
@@ -70,8 +76,8 @@ issue path only when the current task authorizes that record; otherwise report i
    skills, nudges, and hooks. Prefer an existing canonical surface.
 3. **Choose one lever** — Select exactly one smallest durable change in this order: canonical
    prompt or skill wording; a warn-level nudge for a recognizable risky action; a hook only when
-   action-time guidance or enforcement is demonstrably required; code only when the earlier
-   layers cannot express the behavior.
+   action-time guidance or enforcement is demonstrably required; harness implementation code
+   only when the earlier layers cannot express the behavior.
 4. **Classify, then check authority** — Choose the narrowest destination below. Create or modify
    it only when the current task explicitly includes that edit and the current role, slice, and
    normal reviewed workflow permit it. Otherwise create or modify nothing: report the evidence
@@ -81,7 +87,7 @@ issue path only when the current task authorizes that record; otherwise report i
 
 ## Destinations
 
-These are classifications, not standing authorization.
+These are harness classifications, not standing authorization. None routes product work.
 
 - Observed defect → issue.
 - Schedulable improvement not yet accepted → backlog record.
@@ -96,6 +102,9 @@ These are classifications, not standing authorization.
 
 - This skill grants no authority. The current role, user request, slice, and reviewed workflow
   still govern every edit, including record creation or modification.
+- Do not propose or perform product-feature or product-code changes, including benevolent or
+  otherwise authorized adjacent product work; kaizen here applies only to the agent harness and
+  its documentation and process surfaces.
 - Do not widen the current task, fix adjacent problems, create a generic doctrine record, or make
   more than one proposal for the same pattern.
 - Do not edit generated artifacts; edit their canonical template and compile normally.
@@ -123,10 +132,14 @@ other prose.
 - Add a focused `SyncCommandTests` fact that discovers the role, calls both
   `SyncSkillOnlyRole` and `SyncCodexSkill` against `_testDir`, then asserts both skill files exist,
   have identical content, contain these exact strings from the locked body — `Kaizen is continuous
-  improvement through small changes.`, `1.01^365 ≈ 37.8`, `These are classifications, not
-  standing authorization.`, `Otherwise create or modify nothing`, `including record creation or
-  modification.`, `Define verification and rollback`, and `never memory` — and contain no
-  carriage returns. Assert both agent-definition paths are absent.
+  improvement through small changes.`, `1.01^365 ≈ 37.8`, `Product behavior never triggers this
+  skill.`, `These are harness classifications, not standing authorization. None routes product
+  work.`, `Otherwise create or modify nothing`, `including record creation or
+  modification.`, `harness implementation code only when the earlier layers cannot express the
+  behavior.`, `Do not propose or perform product-feature or product-code changes, including
+  benevolent or otherwise authorized adjacent product work; kaizen here applies only to the agent
+  harness and its documentation and process surfaces.`, `Define verification and rollback`, and
+  `never memory` — and contain no carriage returns. Assert both agent-definition paths are absent.
 - Extend `CodexSyncArtifactsE2ETests.Sync_Tier1Modes_EmitSkillOnly_NoCodexAgentRoleFiles` by
   renaming it to describe all shipped skill-only modes and adding `self-improvement` to its role
   array. Preserve the worker-role contrast.
@@ -244,8 +257,8 @@ Use a disposable project that cannot see or rewrite repository generated artifac
    it with `sync`. Always restore the original location.
 4. Assert the scratch project contains both `self-improvement/SKILL.md` files and neither agent
    definition. Assert the skill files are byte-identical.
-5. Create only the two new destination folders in the lane and copy those exact scratch files to
-   their matching repository paths. Do not copy any other generated artifact.
+5. Regenerate and replace both owned `self-improvement/SKILL.md` outputs by copying those exact
+   scratch files to their matching repository paths. Do not copy any other generated artifact.
 6. Before recursively deleting the scratch directory, resolve its absolute path and prove it is a
    strict descendant of the system temp directory. Then remove only that exact directory.
 7. Return to the lane root. Do not inspect, stage, or change any protected shared-tree path here;

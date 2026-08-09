@@ -77,6 +77,19 @@ public class MarkdownParserTests
     }
 
     [Fact]
+    public void ExtractLinks_HandlesBalancedBracketsInDisplayText()
+    {
+        var content = "- [Fix the [VERIFY] markers](./bracket-title.md)";
+
+        var links = _parser.ExtractLinks(content);
+
+        var link = Assert.Single(links);
+        Assert.Equal(LinkType.Markdown, link.Type);
+        Assert.Equal("Fix the [VERIFY] markers", link.DisplayText);
+        Assert.Equal("./bracket-title.md", link.Target);
+    }
+
+    [Fact]
     public void ExtractLinks_ParsesAnchors()
     {
         var content = "[Glossary term](../glossary.md#my-term)";

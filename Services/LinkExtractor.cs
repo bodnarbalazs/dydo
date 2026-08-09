@@ -102,7 +102,7 @@ internal static partial class LinkExtractor
         return backtickCount % 2 == 1;
     }
 
-    [GeneratedRegex(@"\[([^\]]+)\]\(([^)]+)\)")]
+    [GeneratedRegex(@"\[((?:[^\[\]]|\[[^\[\]]*\])+)\]\(([^)]+)\)")]
     private static partial Regex MarkdownLinkRegex();
 
     [GeneratedRegex(@"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")]

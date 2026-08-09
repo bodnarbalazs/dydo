@@ -137,6 +137,35 @@ public class FixCommandIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Fix_BracketedTitle_RemainsReachableAfterHubRegeneration()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        WriteFile("dydo/guides/bracket-title.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Fix the [VERIFY] markers
+
+            A guide whose title contains square brackets.
+            """);
+
+        var fixResult = await RunAsync(FixCommand.Create(), DydoDir);
+
+        fixResult.AssertSuccess();
+        Assert.Contains(
+            "[Fix the [VERIFY] markers](./bracket-title.md)",
+            ReadFile("dydo/guides/_index.md"));
+
+        var checkResult = await CheckAsync(DydoDir);
+
+        checkResult.AssertSuccess();
+        Assert.DoesNotContain("guides/bracket-title.md", checkResult.Stdout);
+        Assert.DoesNotContain("Orphan doc", checkResult.Stdout);
+    }
+
+    [Fact]
     public async Task Fix_GeneratesHubWithContents()
     {
         // Arrange

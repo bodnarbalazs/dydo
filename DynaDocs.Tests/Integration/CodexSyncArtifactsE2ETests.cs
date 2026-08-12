@@ -4,7 +4,8 @@ using DynaDocs.Commands;
 
 /// <summary>
 /// c1-7 / issue 0233 (ask 4): `dydo sync` emits skills for every shipped skill-only role
-/// (planner, the three manager modes, and self-improvement) without minting an agent definition.
+/// (planner, the three manager modes, self-improvement, and the three prompt-level skills) without
+/// minting an agent definition.
 /// Existing sync tests pin the ABSENCE of a <c>.claude/agents/&lt;role&gt;.md</c>; this one closes the
 /// codex-side gap: a spawnable <c>.codex/agents/&lt;role&gt;.toml</c> for any skill-only role would be
 /// artifact drift. Driven through the real sync command on an initialized project.
@@ -22,7 +23,11 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         sync.AssertSuccess();
 
         // Self-improvement is included as a generic skill, not as a Tier-1 identity.
-        foreach (var role in new[] { "planner", "orchestrator", "co-thinker", "chief-of-staff", "self-improvement" })
+        foreach (var role in new[]
+        {
+            "planner", "orchestrator", "co-thinker", "chief-of-staff", "self-improvement",
+            "wayfinder", "grilling", "bro",
+        })
         {
             // Skill on both surfaces: the methodology the skill-only role applies in its thread.
             AssertFileExists($".claude/skills/{role}/SKILL.md");
@@ -30,6 +35,15 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
             // But NO spawnable agent definition on either host.
             AssertFileNotExists($".claude/agents/{role}.md");
             AssertFileNotExists($".codex/agents/{role}.toml");
+        }
+
+        foreach (var role in new[] { "wayfinder", "grilling", "bro" })
+        {
+            var claude = ReadFile($".claude/skills/{role}/SKILL.md");
+            var codex = ReadFile($".agents/skills/{role}/SKILL.md");
+            Assert.Equal(claude, codex);
+            Assert.DoesNotContain('\r', claude);
+            Assert.DoesNotContain('\r', codex);
         }
 
         // Contrast: worker roles DO get a codex agent role file — sync is emitting codex artifacts,

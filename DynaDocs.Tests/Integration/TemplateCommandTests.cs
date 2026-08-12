@@ -62,6 +62,42 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task TemplateUpdate_OldProject_AddsNewSkillTemplatesAndTracksHashes()
+    {
+        await InitProjectAsync();
+
+        var configService = new ConfigService();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = configService.LoadConfig()!;
+        var templateNames = new[]
+        {
+            "mode-wayfinder.template.md",
+            "mode-grilling.template.md",
+            "mode-bro.template.md",
+        };
+
+        foreach (var templateName in templateNames)
+        {
+            var relativePath = $"_system/templates/{templateName}";
+            File.Delete(Path.Combine(TestDir, "dydo", relativePath));
+            config.FrameworkHashes.Remove(relativePath);
+        }
+        configService.SaveConfig(config, configPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        var updatedConfig = configService.LoadConfig()!;
+        foreach (var templateName in templateNames)
+        {
+            var relativePath = $"_system/templates/{templateName}";
+            var content = File.ReadAllText(Path.Combine(TestDir, "dydo", relativePath));
+            Assert.Equal(TemplateGenerator.ReadBuiltInTemplate(templateName), content);
+            Assert.Equal(TemplateCommand.ComputeHash(content), updatedConfig.FrameworkHashes[relativePath]);
+        }
+    }
+
+    [Fact]
     public async Task TemplateUpdate_UserAddedInclude_Reanchored()
     {
         await InitProjectAsync();

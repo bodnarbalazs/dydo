@@ -616,6 +616,70 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
+    public void PromptLevelSkills_CompileWithTheirSemanticBoundaries()
+    {
+        var expected = new Dictionary<string, string[]>
+        {
+            ["wayfinder"] =
+            [
+                "Use Wayfinding only for an active Campaign.",
+                "Skip it for FutureFeatures and clear one-Sprint work.",
+                "optional and low-resolution",
+                "not a Record or Slice",
+                "It may point to evidence",
+                "a Task, or a Sprint",
+                "Only that Sprint decomposes its work into Slices.",
+                "Derive or select the frontier",
+                "Work exactly one non-research Waypoint",
+                "Keep HITL work in the current",
+                "For AFK research, use only bounded native discovery subagents.",
+                "Record the outcome once",
+                "redraw the Fog and frontier",
+                "Do not spawn top-level agents",
+                "invent claims or runtime coordination",
+                "outside the planner and normal workflow",
+            ],
+            ["grilling"] =
+            [
+                "Find discoverable facts yourself.",
+                "Separate unknown facts from unresolved choices.",
+                "one decision frontier at a time",
+                "Recommend an option and state its material trade-off.",
+                "Do not reopen resolved branches",
+                "return a compact resolved intent",
+                "Do not plan or implement",
+            ],
+            ["bro"] =
+            [
+                "only your immediately previous response",
+                "Preserve its exact technical meaning",
+                "Expand unfamiliar abbreviations",
+                "local or unusually niche terms",
+                "Do not add beginner analogies",
+                "Stop after the re-pitch.",
+            ],
+        };
+
+        foreach (var (roleName, required) in expected)
+        {
+            var role = RoleDefinitionService.DiscoverRoles(_testDir).Single(r => r.Name == roleName);
+            SyncCommand.SyncSkillOnlyRole(role, _testDir);
+            SyncCommand.SyncCodexSkill(role, _testDir);
+
+            var claudeSkill = Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md");
+            var codexSkill = Path.Combine(_testDir, ".agents", "skills", roleName, "SKILL.md");
+            var claudeContent = File.ReadAllText(claudeSkill);
+            var codexContent = File.ReadAllText(codexSkill);
+
+            Assert.Equal(claudeContent, codexContent);
+            Assert.All(required, text => Assert.Contains(text, claudeContent));
+            Assert.DoesNotContain('\r', claudeContent);
+            Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md")));
+            Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml")));
+        }
+    }
+
+    [Fact]
     public void RenumberOrderedLists_FixesDuplicateNumbering()
     {
         // A list whose numbering was broken by an included continuation (…4. then 4./5.)

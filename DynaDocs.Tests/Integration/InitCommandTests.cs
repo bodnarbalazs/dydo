@@ -678,6 +678,10 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("mode-code-writer.template.md", modeTemplates);
         Assert.Contains("mode-reviewer.template.md", modeTemplates);
         Assert.Contains("mode-chief-of-staff.template.md", modeTemplates);
+        Assert.Contains("mode-wayfinder.template.md", modeTemplates);
+        Assert.Contains("mode-grilling.template.md", modeTemplates);
+        Assert.Contains("mode-bro.template.md", modeTemplates);
+        Assert.Equal(13, modeTemplates.Count);
         Assert.DoesNotContain("mode-sprint-auditor.template.md", modeTemplates);
     }
 

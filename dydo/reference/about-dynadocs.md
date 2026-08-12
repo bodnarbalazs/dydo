@@ -11,6 +11,13 @@ DynaDocs (dydo) is a collection of tools and practices for working with AI codin
 
 The coding tool owns the engine — spawning, scheduling, isolation, fan-out. dydo owns the knowledge and the process.
 
+This project is my attempt to maintain my agent-harness customizations, project-management
+primitives, and coding tools. It evolves constantly: I no longer treat it as a product, and I
+promise no backward compatibility beyond what my own projects need. It is customizable where I
+need it to be and opinionated by default. Some features were ahead of their time and were later
+retired out of wisdom; more recently I have taken inspiration from similar collections such as
+[Matt Pocock's skills](https://github.com/mattpocock/skills).
+
 <!-- VISUAL: demo video goes here. The old poem-orchestration video shows terminal-dispatch, which no longer exists in 2.0 — it needs re-recording. See "Demo video shot list" note handed to balazs. -->
 
 ## The Project That Remembers
@@ -283,8 +290,4 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 
 ## License
 
-AGPL-3.0 — [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
-
-**Free to use, always.** You can use dydo as a tool on any project, including commercial ones. The AGPL obligations apply only if you modify or embed dydo's source code in your own software — for example, shipping dydo as part of a product you distribute or offer as a service.
-
-For commercial licensing without AGPL obligations, [open a GitHub issue](https://github.com/bodnarbalazs/dydo/issues).
+MIT — see LICENSE.

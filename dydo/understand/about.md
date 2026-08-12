@@ -5,9 +5,14 @@ type: context
 
 # About This Project
 
-DynaDocs (dydo) is a documentation-driven agent orchestration framework for AI coding assistants. AI tools have memory features, but that memory is unstructured, opaque, and not under your control. DyDo gives you explicit, structured control over project context — your documentation is the versioned source of truth, with a CLI that enforces identity, roles, and permissions so agents stay on track.
+DynaDocs (dydo) is a documentation-driven context, project-management, skill-authoring, and
+guardrail framework for AI coding assistants. AI tools have memory features, but that memory is
+unstructured, opaque, and not under your control. dydo makes project context explicit and
+versioned, then compiles its durable guidance for native coding-agent runtimes.
 
-This is the DyDo project itself. If you're an agent, this is the framework that orchestrates you — and this documentation tree is both the project's knowledge base and a living example of the system.
+This is the dydo project itself. This documentation tree is both the project's knowledge base
+and a living example of the system. dydo authors and synchronizes context and skills; Claude Code
+and Codex own runtime identity, permissions, process lifecycle, and native subagent coordination.
 
 ---
 
@@ -15,7 +20,8 @@ This is the DyDo project itself. If you're an agent, this is the framework that 
 
 - **Documentation as memory** — agents onboard themselves each session by reading structured docs
 - **Guard enforcement** — a `PreToolUse` hook checks every tool call (main thread *and* subagents) against universal off-limits and custom nudges
-- **Native orchestration** — `dydo sync` compiles roles and docs into Claude Code's native agents, skills, and workflows; light Tier-1 messaging coordinates the agents you talk to
+- **Native-runtime compilation** — `dydo sync` compiles shared role and skill sources into native
+  Claude Code and Codex artifacts; the host runtime coordinates execution
 - **Data-driven roles** — seven base roles (code-writer, reviewer, docs-writer, etc.) with customizable permissions; add your own
 - **Optional Notion sync** — a two-way team PM board view over your canonical repo files
 

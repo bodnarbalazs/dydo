@@ -445,6 +445,22 @@ public class CommandDocConsistencyTests
             $"License section inconsistencies (README.md is source of truth):\n\n{string.Join("\n\n", mismatches)}");
     }
 
+    [Fact]
+    public void LicenseMetadata_UsesMitConsistently()
+    {
+        var rootLicense = File.ReadAllText(FindRepoFile("LICENSE"));
+        var npmLicense = File.ReadAllText(FindRepoFile(Path.Combine("npm", "LICENSE")));
+        var project = File.ReadAllText(FindRepoFile("DynaDocs.csproj"));
+        var npmPackage = File.ReadAllText(FindRepoFile(Path.Combine("npm", "package.json")));
+
+        Assert.StartsWith("MIT License", rootLicense);
+        Assert.StartsWith("MIT License", npmLicense);
+        Assert.Contains("<PackageLicenseExpression>MIT</PackageLicenseExpression>", project);
+        Assert.Matches("\\\"license\\\"\\s*:\\s*\\\"MIT\\\"", npmPackage);
+        Assert.False(File.Exists(Path.Combine(Path.GetDirectoryName(FindRepoFile("LICENSE"))!, "CLA.md")),
+            "CLA.md must remain absent after retiring the AGPL/commercial dual-license model");
+    }
+
     // ──────────────────────────────────────────────
     // Test 9: ExtractFlags handles --flag <value> patterns
     // ──────────────────────────────────────────────

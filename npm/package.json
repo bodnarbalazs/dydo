@@ -1,6 +1,6 @@
 {
   "name": "dydo",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "Documentation-driven context and agent orchestration for AI coding assistants.",
   "keywords": [
     "documentation",
@@ -18,7 +18,7 @@
     "type": "git",
     "url": "git+https://github.com/bodnarbalazs/dydo.git"
   },
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "author": "Balazs Bodnar",
   "bin": {
     "dydo": "bin/dydo"

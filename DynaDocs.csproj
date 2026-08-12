@@ -7,10 +7,10 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>2.2.5</Version>
+        <Version>2.2.6</Version>
         <Description>An AI orchestration and context-management framework for Claude Code.</Description>
         <Authors>Balazs Bodnar</Authors>
-        <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/bodnarbalazs/dydo</PackageProjectUrl>
         <RepositoryUrl>https://github.com/bodnarbalazs/dydo</RepositoryUrl>
         <RepositoryType>git</RepositoryType>

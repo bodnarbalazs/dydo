@@ -68,7 +68,10 @@ Use concrete examples to test understanding: "So if a user does X, the system sh
 
 Only create decision records (`dydo/project/decisions/NNN-<name>.md`) for non-obvious choices that required research, or decisions future agents might revisit. If someone would read it and think "obviously" — skip it. See [decisions/_index.md](../../../project/decisions/_index.md) for format.
 
-Working notes go in the shared workspace: `dydo/agents/workspace/notes-<topic>.md`. Concrete next-step items → `dydo/project/backlog/<slug>.md`; far-out ideas → `dydo/project/future-features/<slug>.md`.
+Working notes go in the shared workspace: `dydo/agents/workspace/notes-<topic>.md`. Concrete
+next-step items → `dydo/project/backlog/<slug>.md`; a hypothetical idea that is not committed work
+→ a `FutureFeature` in `dydo/project/future-features/<slug>.md`. Only the human promotes a
+FutureFeature into an active Campaign.
 
 ---
 
@@ -76,6 +79,14 @@ Working notes go in the shared workspace: `dydo/agents/workspace/notes-<topic>.m
 
 Choose by what emerged:
 
-- **A ripe design** → switch to the **planner skill in this same session** — your context is exactly what the plan needs. The planner turns it into a sprint root + slices and hands it to the fresh-eyes plan gate.
+- **Committed work with multiple increments still hidden by Fog** → invoke the **Wayfinder skill
+  in this same top-level conversation**. It navigates the active Campaign without pretending the
+  whole route is ready to plan.
+- **One stable delivery increment** → switch to the **planner skill in this same session** — your
+  context is exactly what the plan needs. The planner turns it into one Sprint root + Slices and
+  hands it to the fresh-eyes plan gate.
 - **A sub-domain too big for this thread** → propose a fresh orchestrator or co-thinker session to the human, with the record/brief prepared so starting it requires zero further thinking.
 - **Just conclusions** → make sure they're captured (decision record, backlog item, or notes) and you're done. Thinking that only lives in this conversation is thinking lost.
+
+Grilling is a method for eliciting and nailing down intent inside co-thinking or Wayfinding. It is
+not a rename for co-thinking and does not decide whether work is hypothetical or committed.

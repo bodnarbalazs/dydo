@@ -18,9 +18,15 @@ into this tree. From there:
 - **Know the conventions** → [guides/coding-standards.md](guides/coding-standards.md)
 - **Find a command** → [reference/dydo-commands.md](reference/dydo-commands.md)
 - **Navigate the docs** → [guides/how-to-use-docs.md](guides/how-to-use-docs.md)
+- **Use dydo's locked terms when relevant** → [reference/dydo-glossary.md](reference/dydo-glossary.md)
+- **Use project-domain terms when relevant** → [glossary.md](glossary.md)
 
 There is no identity to claim: sessions are assigned their identity by the platform, and
 work runs as native subagents and workflows, not a dydo-managed roster.
+
+An active Campaign may use an optional, low-resolution Wayfinding map when its route cannot yet be
+planned responsibly. Waypoints are navigation nodes, not project Records; delivery still enters
+the hierarchy through one Sprint and that Sprint's Slices.
 
 ---
 

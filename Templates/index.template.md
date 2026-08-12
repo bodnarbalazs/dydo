@@ -23,6 +23,9 @@ Codex) runs and coordinates the work. Behavior rules live in the root entry file
   [dydo glossary](reference/dydo-glossary.md) — the system's terms, locked.
 - [glossary.md](glossary.md) — the project's terms.
 
+When work touches dydo records, planning, roles, skills, or workflows, use the locked dydo
+glossary. Use the project glossary only for project-domain terms.
+
 Conventions for writing any of it: [reference/writing-docs.md](reference/writing-docs.md).
 `dydo check` validates the tree; `dydo fix` repairs what it can.
 
@@ -30,6 +33,8 @@ Conventions for writing any of it: [reference/writing-docs.md](reference/writing
 
 Everything in flight lives under [project/](project/_index.md) as markdown records:
 
+- **Campaigns** (`project/campaigns/`) — one committed goal pursued across one or more Sprints.
+  A Campaign may use an optional Wayfinding map when its route remains uncertain.
 - **Sprints** (`project/sprints/`) — a plan's root: specification + slice map.
   Statuses: `planning → plan-review → active → audit → done`.
 - **Slices** (`project/slices/`) — one file per slice: the implementer's contract.
@@ -39,6 +44,9 @@ Everything in flight lives under [project/](project/_index.md) as markdown recor
 - **Issues** (`project/issues/`) — discovered problems (`dydo issue create`).
 - **Decisions** (`project/decisions/`) — why things are the way they are. Read before
   re-deciding something.
+
+A **Waypoint** is not a Record. It is an orthogonal navigation node in an active Campaign's
+optional Wayfinding map; delivery still enters the work hierarchy through a Sprint and its Slices.
 
 ## Skills and roles
 

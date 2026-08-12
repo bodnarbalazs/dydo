@@ -73,6 +73,7 @@ This shows what links to and from a document - useful for finding related contex
 
 | Document | Purpose |
 |----------|---------|
+| `reference/dydo-glossary.md` | Locked dydo records, planning, roles, skills, and workflow terms |
 | `glossary.md` | Domain-specific terms |
 | `project/decisions/` | Why architectural choices were made |
 | `project/changelog/` | What changed and when |

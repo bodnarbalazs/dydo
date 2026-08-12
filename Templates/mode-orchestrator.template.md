@@ -61,6 +61,9 @@ The root's **Ordering & isolation** section is your instruction sheet: which lan
 - **You commit a slice exactly when its review passes** — one slice, one commit, message names the slice. Anything uncommitted is by definition un-reviewed; git is the drift-catcher.
 - **Merge passed slices back serially**, per the plan's lane order. Never parallel merges.
 - After the last merge, the **audit** runs: the reviewer with its merge-sprint resource over the whole merged diff, verifying the seams and the root's acceptance criteria. A failed audit routes findings back through you — it does not loop by itself.
+- Return the audited delivery result and its evidence to the invoking top-level manager. Never
+  choose the next Waypoint or spawn or coordinate top-level sessions; the human and current manager
+  retain Campaign navigation authority.
 
 ### 4. Monitor
 

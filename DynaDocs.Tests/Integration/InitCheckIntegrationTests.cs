@@ -62,6 +62,22 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task FreshInit_IndexRoutesRelevantWorkToBothGlossaries()
+    {
+        // Arrange & Act
+        var initResult = await InitProjectAsync("none");
+        initResult.AssertSuccess();
+
+        // Assert - framework and project vocabulary are linked separately, and the
+        // optional Campaign overlay cannot be mistaken for another Record hierarchy.
+        var index = ReadFile("dydo/index.md");
+        Assert.Contains("reference/dydo-glossary.md", index);
+        Assert.Contains("[glossary.md](glossary.md)", index);
+        Assert.Contains("A **Waypoint** is not a Record", index);
+        Assert.Contains("delivery still enters the work hierarchy through a Sprint and its Slices", index);
+    }
+
+    [Fact]
     public async Task FreshInit_CreatesMainFolderMetaFiles()
     {
         // Arrange & Act

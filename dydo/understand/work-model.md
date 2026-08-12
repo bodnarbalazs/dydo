@@ -5,7 +5,7 @@ type: concept
 
 # Work Model
 
-dydo tracks work at four nested levels — **Slice → Sprint → Campaign → Release**. The levels are defined by their **exit gate**, not their size: what has to be true for the work to be *done and sound* is the invariant; span (minutes to weeks) merely follows. This is the ontology behind the records under `dydo/project/` and the shape the Notion view mirrors. (A **task** sits outside this chain: day-to-day tracked work in `project/tasks/`, with its own lifecycle.)
+dydo tracks work at four nested levels — **Slice → Sprint → Campaign → Release**. The levels are defined by their **exit gate**, not their size: what has to be true for the work to be *done and sound* is the invariant; span (minutes to weeks) merely follows. This is the ontology behind the records under `dydo/project/` and the shape the Notion view mirrors. (A **Task** sits outside this chain: day-to-day tracked work in `project/tasks/`, with its own lifecycle.) An active Campaign may also carry an optional Wayfinding map, which navigates uncertainty without adding another level to the hierarchy.
 
 Two concepts are kept strictly orthogonal:
 
@@ -45,7 +45,7 @@ Each level is a gate. Work crosses it exactly when the gate's condition is met �
 |---|---|---|---|
 | **Slice** | The atom of implementation: one disjoint piece of a sprint | reviewer **PASS** (code resource) | minutes–hours |
 | **Sprint** | One plan's execution: root record + slices, `planning → plan-review → active → audit → done` | the **audit** (reviewer, merge-sprint resource) over the merged diff | hours–a day |
-| **Campaign** | One goal, many sprints; the unit of "actually done and sound" | **inquisition QA gate** | days |
+| **Campaign** | One committed goal, one or more sprints; the unit of "actually done and sound" | **inquisition QA gate** | days |
 | **Release** | One ship vehicle; a set of campaigns | **ship checklist** | weeks+ |
 
 ### Slice
@@ -58,7 +58,20 @@ A sprint is one plan: the root record (specification + slice map) plus its slice
 
 ### Campaign
 
-A campaign is one goal pursued across many sprints — the unit at which we claim work is genuinely finished and trustworthy. Its gate is the **inquisition** (multi-lens sweep, adversarially verified findings). Per-sprint inquisitions are overkill; the QA gate lives at campaign end (on-demand for critical work in between).
+A campaign is one committed goal pursued across one or more sprints — the unit at which we claim work is genuinely finished and trustworthy. Its gate is the **inquisition** (multi-lens sweep, adversarially verified findings). Per-sprint inquisitions are overkill; the QA gate lives at campaign end (on-demand for critical work in between).
+
+When the committed goal is clear but its route cannot responsibly be planned all at once, the
+Campaign may own an optional, low-resolution **Wayfinding map**. A **Waypoint** is an orthogonal
+navigation node, not a Record, Task, Sprint, or Slice. It may point to a Decision, evidence
+artifact, Task, or Sprint; a delivery Waypoint points to one Sprint, and that Sprint alone
+decomposes into Slices. The **Frontier** contains currently actionable Waypoints, while **Fog** is
+relevant Campaign uncertainty not yet sharp enough to become one.
+
+Wayfinding does not change execution topology. HITL work stays with the human in the current
+top-level conversation. AFK research may use bounded native subagents that return evidence to that
+manager. The manager can then plan the visible Sprint and send its Slices through the ordinary
+workflow and audit. A FutureFeature remains an unscheduled hypothetical outside this process until
+the human promotes it into an active Campaign.
 
 ### Release
 

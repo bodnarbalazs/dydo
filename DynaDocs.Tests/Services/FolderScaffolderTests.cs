@@ -120,7 +120,13 @@ public class FolderScaffolderTests : IDisposable
 
         var content = File.ReadAllText(glossaryPath);
         Assert.Contains("# dydo Glossary", content);
-        Assert.Contains("Slice", content);
+        Assert.Contains("one committed goal pursued across one or more Sprints", content);
+        Assert.Contains("an optional, low-resolution navigation overlay in an active Campaign", content);
+        Assert.Contains("not a Record, Task, Sprint, or Slice", content);
+        Assert.Contains("A delivery Waypoint points to one Sprint", content);
+        Assert.Contains("It is neither\n  backlog nor out of scope", content.Replace("\r\n", "\n"));
+        Assert.Contains("participation modes, not work types", content);
+        Assert.Contains("an unscheduled hypothetical, not committed work", content);
     }
 
     [Fact]

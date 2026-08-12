@@ -48,7 +48,10 @@ Ideas, findings, and requests land in `dydo/project/backlog/` and `dydo/project/
 
 - **Classify** — an issue (observed problem), a backlog item (schedulable work), or noise?
 - **Route** — every item goes where it can be acted on: prepare the record with enough context to act, and propose the destination to the human — "this is ripe for planning", "this belongs to the [X] orchestrator's next session". Sessions are the human's to start; your job is that starting one requires zero further thinking.
-- **Promote or demote** — flag items ready for a sprint and items gone stale. The human decides; you propose.
+- **Promote or demote** — flag items ready for a Sprint and items gone stale. The human decides;
+  you propose. Only the human promotes a FutureFeature into an active Campaign. When that Campaign
+  contains committed work whose route is still Foggy across multiple increments, route the current
+  top-level manager to Wayfinder; do not start another top-level session or choose its Waypoints.
 
 ### 2. Status reports
 

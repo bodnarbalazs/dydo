@@ -1,8 +1,8 @@
 ---
 title: Lean Wayfinder Adoption and v2.2.6 Release
 seq: 13
-status: audit
-gate-result: implementation gates PASS (2026-08-12; 2,538 tests; 131/131 coverage; packed 2.2.6 smoke PASS)
+status: done
+gate-result: PASS — audited 6d7688a0065105d728a32909b305544854d67315
 area: project
 type: context
 ---

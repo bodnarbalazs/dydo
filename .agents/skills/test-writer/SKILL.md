@@ -1,6 +1,6 @@
 ---
 name: test-writer
-description: Writes and maintains test suites. The methodology, standards, and checklist for working as a test-writer.
+description: Writes tests that prove things — coverage, hypotheses, evidence. The methodology, standards, and checklist for working as a test-writer.
 ---
 
 # Test Writer

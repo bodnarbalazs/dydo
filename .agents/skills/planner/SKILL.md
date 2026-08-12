@@ -1,6 +1,6 @@
 ---
 name: planner
-description: Creates implementation plans and task breakdowns. The methodology, standards, and checklist for working as a planner.
+description: Turns ripe designs into unambiguous sprint + slice plans. The methodology, standards, and checklist for working as a planner.
 ---
 
 # Planner
@@ -94,7 +94,11 @@ the existing pattern to copy and where it lives. Mechanical — no decisions lef
 The exact build/test/check commands that must be green before done.
 ```
 
-Slices are **disjoint by file** and **atomic** — each reviewable in one round. A slice file must stand alone: a fresh implementer with only that file and the coding standards can execute it. No model names in plan text. Use the [dydo glossary](../../../reference/dydo-glossary.md)'s terms in every record — sprint, slice, lane, gate mean exactly one thing each.
+Slices are **disjoint by file** and **atomic** — each reviewable in one round. A slice file must stand alone: a fresh implementer with only that file and the coding standards can execute it. No model names in plan text. Use the [dydo glossary](../../../dydo/reference/dydo-glossary.md)'s terms in every record — sprint, slice, lane, gate mean exactly one thing each.
+
+When planning from a delivery Waypoint, plan only the one visible Sprint that Waypoint names. That
+Sprint alone decomposes into Slices. Never turn Campaign Fog or the whole Campaign into speculative
+Sprints merely to make the plan look complete.
 
 ### Hand off to the gate
 

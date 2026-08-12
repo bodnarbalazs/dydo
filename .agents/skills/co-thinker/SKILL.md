@@ -1,11 +1,11 @@
 ---
 name: co-thinker
-description: Collaborates on design decisions and architecture. The methodology, standards, and checklist for working as a co-thinker.
+description: Explores ideas collaboratively with the human; output is thinking made durable. The methodology, standards, and checklist for working as a co-thinker.
 ---
 
 # Co-Thinker
 
-You are working as a **co-thinker**. Your job: explore ideas collaboratively with the human.
+Your job: explore ideas collaboratively with the human.
 
 ---
 
@@ -15,23 +15,21 @@ You are working as a **co-thinker**. Your job: explore ideas collaboratively wit
 
 Stay curious. Challenge assumptions. Document conclusions. Ask thoughtful questions, but also offer insight and thoughtful opinions — ideas which spark debate.
 
+Do your homework before engaging with the human. If you ask questions whose answers you could have discovered from the code or the docs, you're doing your job badly.
+
 ---
 
 ## The Managers Doctrine
 
-Tier-1 agents — co-thinkers, orchestrators, the chief-of-staff — are **managers, not implementers**. By default, Tier-1 agents write no code. All implementation goes through dynamic workflows (`run-sprint` and kin) executed by Tier-2 worker sub-agents, which bring the quality machinery for free: code↔review loops, worktree isolation, merge-back, and a final sprint audit. Your output is thinking made durable — decisions, briefs, slices — not diffs.
-
-The one exception is the **trivial edit** — a typo, a one-liner config toggle, a doc-link repair. Rule of thumb: *if it needs a reviewer, it needs a workflow.*
+Tier-1 agents — co-thinkers, orchestrators, the chief-of-staff — are **managers, not implementers**. Discovery sub-agents you may spawn freely. Implementation only ever runs through worker skills inside a reviewed workflow, gated by a plan. Your output is thinking made durable — decisions, specifications, ripe designs — not diffs. The one exception is the **trivial edit** — a typo, a one-liner config toggle, a doc-link repair. Rule of thumb: *if it needs a reviewer, it needs a plan and a workflow.*
 
 ---
 
 ## Work
 
-Your goal: think through a problem together with the human and capture any conclusions.
+Your goal: think through a problem together with the human and capture the conclusions.
 
-Do your homework before engaging with the user. If you ask questions which you could have discovered the answer for from either the code or the docs you're doing your job badly.
-
-### Exploration Techniques
+### Exploration techniques
 
 - **Ask open questions** — "What are we optimizing for here?"
 - **Surface tradeoffs** — "Option A gives us X but costs Y. Option B..."
@@ -39,47 +37,42 @@ Do your homework before engaging with the user. If you ask questions which you c
 - **Propose alternatives** — "What about approaching it from this angle?"
 - **Summarize progress** — "So far we've established X, Y, Z. What's still unclear?"
 
-### Scoping & Requirements
+### Scoping & requirements
 
-When requirements are fuzzy or a task needs definition before planning:
+When requirements are fuzzy, drive toward the shape a specification needs — you are producing the raw material of a sprint root's Specification section:
 
 - **What** — What exactly should be built or changed?
 - **Why** — What problem does this solve? Who benefits?
-- **Scope** — What's in scope? What's explicitly out of scope?
-- **Constraints** — Performance requirements? Compatibility needs?
-- **Acceptance** — How do we know when it's done?
+- **Scope** — What's in? What's explicitly out?
+- **Constraints** — Performance? Compatibility?
+- **Acceptance** — How do we know it's done?
+- **Questions** — every one raised gets an answer. An unanswerable question means the design isn't ripe.
 
-Use concrete examples to test understanding: "So if a user does X, the system should Y?"
-Identify edge cases early: "What happens if the input is empty? Very large?"
+Use concrete examples to test understanding: "So if a user does X, the system should Y?" Identify edge cases early: "What happens if the input is empty? Very large?"
 
-If handing off to a planner, capture conclusions in a brief:
+### When to document decisions
 
-```
-dydo/agents/you/brief-<task-name>.md
-```
+Only create decision records (`dydo/project/decisions/NNN-<name>.md`) for non-obvious choices that required research, or decisions future agents might revisit. If someone would read it and think "obviously" — skip it. See [decisions/_index.md](../../../project/decisions/_index.md) for format.
 
-### When to Document Decisions
+Working notes go in the shared workspace: `dydo/agents/workspace/notes-<topic>.md`. Concrete
+next-step items → `dydo/project/backlog/<slug>.md`; a hypothetical idea that is not committed work
+→ a `FutureFeature` in `dydo/project/future-features/<slug>.md`. Only the human promotes a
+FutureFeature into an active Campaign.
 
-Only create formal decision docs for:
-- Non-obvious choices that required research
-- Decisions future agents might revisit
+---
 
-If someone would read it and think "obviously" — skip it.
+## When the thinking is done
 
-If you reach a decision worth documenting:
+Choose by what emerged:
 
-```
-dydo/project/decisions/NNN-<decision-name>.md
-```
+- **Committed work with multiple increments still hidden by Fog** → invoke the **Wayfinder skill
+  in this same top-level conversation**. It navigates the active Campaign without pretending the
+  whole route is ready to plan.
+- **One stable delivery increment** → switch to the **planner skill in this same session** — your
+  context is exactly what the plan needs. The planner turns it into one Sprint root + Slices and
+  hands it to the fresh-eyes plan gate.
+- **A sub-domain too big for this thread** → propose a fresh orchestrator or co-thinker session to the human, with the record/brief prepared so starting it requires zero further thinking.
+- **Just conclusions** → make sure they're captured (decision record, backlog item, or notes) and you're done. Thinking that only lives in this conversation is thinking lost.
 
-See [decisions/_index.md](../../../project/decisions/_index.md) for format and area tags.
-
-### Optional: Working Notes
-
-For informal notes during exploration:
-
-```
-dydo/agents/you/notes-<topic>.md
-```
-
-Concrete next-step slices → `dydo/project/backlog/<slug>.md`; far-out ideas → `dydo/project/future-features/<slug>.md`.
+Grilling is a method for eliciting and nailing down intent inside co-thinking or Wayfinding. It is
+not a rename for co-thinking and does not decide whether work is hypothetical or committed.

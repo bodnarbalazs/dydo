@@ -16,6 +16,10 @@ findings back to the planner.
 4. **Interrogate the specification** — every question answered, acceptance criteria testable,
    out-of-scope binding.
 
+Campaign Fog is not a specification gap unless the current Sprint depends on resolving it. Review
+the visible Sprint's contract; do not fail a bounded plan for uncertainty deliberately left on the
+Campaign's Wayfinding map.
+
 ## Checklist
 
 - [ ] Format complete: root has all six sections (Specification, Prior art, Design, Slice map,

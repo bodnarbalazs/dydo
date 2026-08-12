@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews code changes for quality and correctness. The methodology, standards, and checklist for working as a reviewer.
+description: Reviews code, plans, docs, tests, and merged sprints for quality and correctness. The methodology, standards, and checklist for working as a reviewer.
 ---
 
 # Reviewer

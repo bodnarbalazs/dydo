@@ -119,14 +119,16 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(File.Exists(glossaryPath), "dydo-glossary.md should be created in reference/");
 
         var content = File.ReadAllText(glossaryPath);
+        var normalizedProse = string.Join(" ", content.Split((char[]?)null,
+            StringSplitOptions.RemoveEmptyEntries));
         Assert.Contains("# dydo Glossary", content);
-        Assert.Contains("one committed goal pursued across one or more Sprints", content);
-        Assert.Contains("an optional, low-resolution navigation overlay in an active Campaign", content);
-        Assert.Contains("not a Record, Task, Sprint, or Slice", content);
-        Assert.Contains("A delivery Waypoint points to one Sprint", content);
-        Assert.Contains("It is neither\n  backlog nor out of scope", content.Replace("\r\n", "\n"));
-        Assert.Contains("participation modes, not work types", content);
-        Assert.Contains("an unscheduled hypothetical, not committed work", content);
+        Assert.Contains("one committed goal pursued across one or more Sprints", normalizedProse);
+        Assert.Contains("an optional, low-resolution navigation overlay in an active Campaign", normalizedProse);
+        Assert.Contains("not a Record, Task, Sprint, or Slice", normalizedProse);
+        Assert.Contains("A delivery Waypoint points to one Sprint", normalizedProse);
+        Assert.Contains("It is neither backlog nor out of scope", normalizedProse);
+        Assert.Contains("participation modes, not work types", normalizedProse);
+        Assert.Contains("an unscheduled hypothetical, not committed work", normalizedProse);
     }
 
     [Fact]

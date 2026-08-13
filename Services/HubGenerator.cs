@@ -66,7 +66,7 @@ public static class HubGenerator
             sb.AppendLine(ProjectTasksProse);
         }
 
-        return sb.ToString().TrimEnd() + "\n";
+        return sb.ToString().TrimEnd() + Environment.NewLine;
     }
 
     /// <summary>

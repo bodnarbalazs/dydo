@@ -119,6 +119,7 @@ public static class NotionSpineSync
                 // live-Notion verification.
                 BaseSnapshotStore.DeleteSnapshot(state.SnapshotPath(type.Type));
                 var record = provisioner.Create(type, state.ParentPageId, dataSourceIds);
+                provisioner.VerifyReservedWriteId(type, record.DataSourceId);
                 output.WriteLine($"  provision  {type.Type,-9} created database {record.DatabaseId} (data source {record.DataSourceId})");
                 dataSourceIds[type.Type] = record.DataSourceId;
                 minted.Add(type.Type);
@@ -262,7 +263,8 @@ public static class NotionSpineSync
 
             if (dryRun)
             {
-                var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor);
+                var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor,
+                    useProjectedBodies: true);
                 foreach (var result in runner.Plan(docs))
                     output.WriteLine($"  sync       {type.Type,-9} {result.Action,-14} {result.LocalId}");
             }
@@ -281,7 +283,7 @@ public static class NotionSpineSync
                 // is never re-read as a repo doc and can never cascade back through the sync.
                 var runner = new SyncRunner(
                     adapter, store, RepoFolderLayout.For(type, docsDir).PathFor,
-                    localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete);
+                    localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete, useProjectedBodies: true);
 
                 var run = runner.Run(docs);
                 if (run.FuseTripped)

@@ -59,6 +59,7 @@ public static class NotionSchemaDrift
     private static HashSet<string> KnownNames(SyncModel model, SyncObjectType type)
     {
         var known = new HashSet<string>(type.Properties.Keys);
+        known.Add(NotionSyncAdapter.WriteIdProperty);
         foreach (var other in model.Objects)
             foreach (var prop in other.Properties.Values)
                 if (prop.Type == "relation" && prop.To == type.Type && prop.Reverse != null)

@@ -14,4 +14,7 @@ public sealed class SyncRecord
     public required List<SyncField> Fields { get; init; }
     public required string Body { get; init; }
     public SyncBodyReadStatus BodyReadStatus { get; init; } = SyncBodyReadStatus.Complete;
+
+    /// <summary>Engine-reserved body-write identity. It is transport metadata, never a canonical field.</summary>
+    public string? OperationId { get; init; }
 }

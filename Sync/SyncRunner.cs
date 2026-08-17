@@ -67,8 +67,8 @@ public sealed class SyncRunner
     public IReadOnlyList<ReconcileResult> Plan(IReadOnlyList<SyncDoc> repoDocs)
     {
         var records = _adapter.ReadExternalState();
-        var externalByLocalId = MapExternalToLocalId(records);
-        var statuses = MapBodyReadStatuses(records);
+        var externalByLocalId = MapExternalToLocalId(records, out _);
+        var statuses = MapBodyReadStatuses(records, externalByLocalId);
         var repoByLocalId = IndexByLocalId(repoDocs);
 
         var localIds = new HashSet<string>(_base.LocalIds);
@@ -124,10 +124,10 @@ public sealed class SyncRunner
         IReadOnlyList<SyncDoc> repoDocs, IReadOnlyList<SyncRecord> externalRecords,
         IReadOnlySet<string>? onlyLocalIds, bool saveWhenClean)
     {
-        var externalByLocalId = MapExternalToLocalId(externalRecords);
-        var bodyReadStatuses = MapBodyReadStatuses(externalRecords);
+        var externalByLocalId = MapExternalToLocalId(externalRecords, out var ambiguousPendingCreates);
+        var bodyReadStatuses = MapBodyReadStatuses(externalRecords, externalByLocalId);
         var repoByLocalId = IndexByLocalId(repoDocs);
-        var pending = RecoverPendingWrites(repoByLocalId, externalByLocalId);
+        var pending = RecoverPendingWrites(repoByLocalId, externalByLocalId, ambiguousPendingCreates, out var retryCreates);
 
         IEnumerable<string> localIds;
         if (onlyLocalIds != null)
@@ -147,7 +147,8 @@ public sealed class SyncRunner
         var trackedCount = _base.LocalIds.Count;
 
         var representable = _adapter.RepresentableScalarKeys;
-        var (results, shadowed) = ReconcileAll(localIds, pending, repoByLocalId, externalByLocalId, bodyReadStatuses);
+        var (results, shadowed) = ReconcileAll(localIds, pending, retryCreates, ambiguousPendingCreates,
+            repoByLocalId, externalByLocalId, bodyReadStatuses);
 
         // Mass-delete fuse (slice ns-2): count the LOCAL file deletions this reconcile would materialize — a Delete
         // that removes a repo file (RepoDelete), not an external-only archive of an already-removed doc — and abort
@@ -172,20 +173,34 @@ public sealed class SyncRunner
     }
 
     private (List<ReconcileResult> Results, HashSet<string> Shadowed) ReconcileAll(IEnumerable<string> localIds,
-        IReadOnlySet<string> pending, IReadOnlyDictionary<string, SyncDoc> repo,
+        IReadOnlySet<string> pending, IReadOnlySet<string> retryCreates, IReadOnlySet<string> ambiguousPendingCreates,
+        IReadOnlyDictionary<string, SyncDoc> repo,
         IReadOnlyDictionary<string, SyncDoc> external, IReadOnlyDictionary<string, SyncBodyReadStatus> bodyReadStatuses)
     {
         var results = new List<ReconcileResult>();
         var shadowed = new HashSet<string>();
         foreach (var localId in localIds.OrderBy(x => x))
         {
+            if (ambiguousPendingCreates.Contains(localId))
+            {
+                results.Add(new ReconcileResult
+                {
+                    LocalId = localId,
+                    Action = ReconcileAction.Conflict,
+                    StructuredConflictReason = "external create identity is ambiguous",
+                    UnhandledProjection = true,
+                });
+                shadowed.Add(localId);
+                continue;
+            }
             if (pending.Contains(localId))
                 continue;
             repo.TryGetValue(localId, out var currentRepo);
             external.TryGetValue(localId, out var currentExternal);
+            var baseDoc = retryCreates.Contains(localId) ? null : _base.Get(localId);
             var result = bodyReadStatuses.TryGetValue(localId, out var status) && status == SyncBodyReadStatus.Truncated
-                ? TruncatedResult(localId, _base.Get(localId), currentRepo, currentExternal)
-                : ReconcileOne(_base.Get(localId), currentRepo, currentExternal);
+                ? TruncatedResult(localId, baseDoc, currentRepo, currentExternal)
+                : ReconcileOne(baseDoc, currentRepo, currentExternal);
             results.Add(result);
             RecordActivity(result, currentRepo);
             RouteConflictToShadow(result, shadowed);
@@ -193,7 +208,7 @@ public sealed class SyncRunner
         return (results, shadowed);
     }
 
-    private void ApplyAndCommit(List<ReconcileResult> results, IReadOnlySet<string> shadowed,
+    private void ApplyAndCommit(List<ReconcileResult> results, HashSet<string> shadowed,
         IReadOnlyDictionary<string, SyncDoc> repo, IReadOnlyDictionary<string, SyncDoc> external, bool saveWhenClean)
     {
         var changes = new SyncChangeSet();
@@ -220,6 +235,11 @@ public sealed class SyncRunner
             applyResult = _adapter.ApplyWithReceipts(changes, assigned, deleted, emptyBodied);
             applied = true;
         }
+        catch (AmbiguousCreateIdentityException ambiguity)
+        {
+            if (!ConvertAmbiguousCreateToUnhandled(results, shadowed, operations, repo, ambiguity))
+                throw;
+        }
         finally
         {
             CommitBase(results, shadowed, assigned, deleted, emptyBodied, applyResult.BodyWriteReceipts, operations, applied);
@@ -230,14 +250,69 @@ public sealed class SyncRunner
         }
     }
 
+    private bool ConvertAmbiguousCreateToUnhandled(List<ReconcileResult> results, HashSet<string> shadowed,
+        IReadOnlyDictionary<string, string> operations, IReadOnlyDictionary<string, SyncDoc> repo,
+        AmbiguousCreateIdentityException ambiguity)
+    {
+        var index = results.FindIndex(result => operations.TryGetValue(result.LocalId, out var operationId)
+            && operationId == ambiguity.OperationId);
+        if (index < 0)
+            return false;
+
+        var localId = results[index].LocalId;
+        var intent = _base.GetPendingBodyWrite(localId);
+        if (intent == null)
+            return false;
+        repo.TryGetValue(localId, out var currentRepo);
+        ShadowAmbiguousPendingCreate(intent, currentRepo);
+        shadowed.Add(localId);
+        results[index] = new ReconcileResult
+        {
+            LocalId = localId,
+            Action = ReconcileAction.Conflict,
+            StructuredConflictReason = "external create identity is ambiguous",
+            UnhandledProjection = true,
+        };
+        return true;
+    }
+
     private ReconcileResult ReconcileOne(SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external)
     {
         var bodyBase = baseDoc == null ? null : _base.GetDualBodyBase(baseDoc.LocalId);
+        // A human resolving a shadow by making the canonical document exactly match the observed external
+        // projection is decisive for the BODY only. Reconcile fields against the newly aligned body bases so a
+        // property edit still flows; marker safety remains at the shadow-routing boundary.
+        if (_useProjectedBodies && bodyBase != null && repo != null && external != null
+            && repo.Body == external.Body
+            && repo.Body != bodyBase.LocalBody
+            && external.Body != bodyBase.ExternalBody)
+            return ReconcileAlignedProjectedBodies(baseDoc!, repo, external);
         return _useProjectedBodies && (bodyBase != null || baseDoc == null)
             ? ReconcileEngine.ReconcileProjected(baseDoc, bodyBase, repo, external,
                 _adapter.NormalizeFields, _adapter.RepresentableScalarKeys)
             : ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields,
                 _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho, _adapter.RepresentableScalarKeys);
+    }
+
+    private ReconcileResult ReconcileAlignedProjectedBodies(SyncDoc baseDoc, SyncDoc repo, SyncDoc external)
+    {
+        var aligned = new DynaDocs.Sync.Projection.DualBodyBase(repo.Body, external.Body);
+        var result = ReconcileEngine.ReconcileProjected(baseDoc, aligned, repo, external,
+            _adapter.NormalizeFields, _adapter.RepresentableScalarKeys);
+        if (result.NewBodyBase != null)
+            return result;
+        var normalized = _adapter.NormalizeFields(repo);
+        return new ReconcileResult
+        {
+            LocalId = repo.LocalId,
+            Action = ReconcileAction.None,
+            NewBase = new SyncDoc
+            {
+                LocalId = repo.LocalId, ExternalId = external.ExternalId, Fields = normalized.Fields,
+                Body = repo.Body, SourcePath = repo.SourcePath,
+            },
+            NewBodyBase = aligned,
+        };
     }
 
     /// <summary>
@@ -246,16 +321,23 @@ public sealed class SyncRunner
     /// and resolutions may be recovered only when their journaled page now exposes the intended bytes exactly.
     /// </summary>
     private HashSet<string> RecoverPendingWrites(IReadOnlyDictionary<string, SyncDoc> repo,
-        IReadOnlyDictionary<string, SyncDoc> external)
+        IReadOnlyDictionary<string, SyncDoc> external, IReadOnlySet<string> ambiguousPendingCreates,
+        out HashSet<string> retryCreates)
     {
         var fenced = new HashSet<string>();
+        retryCreates = [];
         foreach (var localId in _base.LocalIds)
         {
             var intent = _base.GetPendingBodyWrite(localId);
             if (intent == null)
                 continue;
             fenced.Add(localId);
-            if (intent.Kind == BodyWriteOperationKind.Create || intent.ExternalId == null
+            if (intent.Kind == BodyWriteOperationKind.Create)
+            {
+                RecoverPendingCreate(intent, repo, external, ambiguousPendingCreates, fenced, retryCreates);
+                continue;
+            }
+            if (intent.ExternalId == null
                 || !external.TryGetValue(localId, out var observed) || observed.ExternalId != intent.ExternalId)
                 continue;
             repo.TryGetValue(localId, out var currentRepo);
@@ -281,6 +363,50 @@ public sealed class SyncRunner
             }
         }
         return fenced;
+    }
+
+    private void RecoverPendingCreate(BodyWriteIntent intent, IReadOnlyDictionary<string, SyncDoc> repo,
+        IReadOnlyDictionary<string, SyncDoc> external, IReadOnlySet<string> ambiguousCreates,
+        HashSet<string> fenced, HashSet<string> retryCreates)
+    {
+        repo.TryGetValue(intent.LocalId, out var createdRepo);
+        if (ambiguousCreates.Contains(intent.LocalId))
+        {
+            ShadowAmbiguousPendingCreate(intent, createdRepo);
+            return;
+        }
+        if (!external.TryGetValue(intent.LocalId, out var created))
+        {
+            fenced.Remove(intent.LocalId); // Exact id has no live page: retry the same durable operation.
+            retryCreates.Add(intent.LocalId);
+            return;
+        }
+        _base.SetDualBodyBase(new SyncDoc
+        {
+            LocalId = intent.LocalId, ExternalId = created.ExternalId,
+            Fields = created.Fields,
+            Body = createdRepo?.Body ?? intent.IntendedLocalBody,
+            SourcePath = createdRepo?.SourcePath ?? _repoPathFor(intent.LocalId, created.Fields, null),
+        }, new DynaDocs.Sync.Projection.DualBodyBase(intent.IntendedLocalBody, created.Body));
+        _base.RemovePendingBodyWrite(intent.LocalId);
+        // Binding establishes the observed remote baseline, but this tick must not also treat a post-crash
+        // local property/relation edit as synced. Leave it fenced until the next tick reconciles those deltas.
+    }
+
+    private void ShadowAmbiguousPendingCreate(BodyWriteIntent intent, SyncDoc? repo)
+    {
+        if (_conflictShadowPathFor == null)
+            return;
+        var path = _conflictShadowPathFor(intent.LocalId);
+        if (File.Exists(path))
+            return;
+        SyncDocFile.Write(path, new SyncDoc
+        {
+            LocalId = intent.LocalId,
+            Fields = repo?.Fields ?? [],
+            Body = $"<<<<<<< repo\n{repo?.Body ?? intent.IntendedLocalBody}\n=======\nexternal create identity is ambiguous: dydo-write-id '{intent.OperationId}' matched multiple pages\n>>>>>>> external",
+            SourcePath = path,
+        });
     }
 
     private void RecoverUpdate(BodyWriteIntent intent, SyncDoc? repo, SyncDoc external, string localId) =>
@@ -328,19 +454,15 @@ public sealed class SyncRunner
         }
     }
 
-    private Dictionary<string, SyncBodyReadStatus> MapBodyReadStatuses(IReadOnlyList<SyncRecord> records)
+    private static Dictionary<string, SyncBodyReadStatus> MapBodyReadStatuses(IReadOnlyList<SyncRecord> records,
+        IReadOnlyDictionary<string, SyncDoc> external)
     {
-        var externalIdToLocalId = _base.LocalIds
-            .Select(id => _base.Get(id)!)
-            .Where(snapshot => snapshot.ExternalId != null)
-            .ToDictionary(snapshot => snapshot.ExternalId!, snapshot => snapshot.LocalId);
+        var externalIdToLocalId = external.Values.ToDictionary(doc => doc.ExternalId!, doc => doc.LocalId);
         var statuses = new Dictionary<string, SyncBodyReadStatus>();
         foreach (var record in records)
         {
-            var localId = externalIdToLocalId.TryGetValue(record.ExternalId, out var known)
-                ? known
-                : SanitizeLocalId(record.Fields.FirstOrDefault(f => f.Key == LocalIdField)?.Value ?? record.ExternalId);
-            statuses[localId] = record.BodyReadStatus;
+            if (externalIdToLocalId.TryGetValue(record.ExternalId, out var localId))
+                statuses[localId] = record.BodyReadStatus;
         }
         return statuses;
     }
@@ -669,7 +791,8 @@ public sealed class SyncRunner
     /// known, else by the record's reserved <see cref="LocalIdField"/> for objects created
     /// externally, else the external id itself as a last-resort stable key.
     /// </summary>
-    private Dictionary<string, SyncDoc> MapExternalToLocalId(IReadOnlyList<SyncRecord> records)
+    private Dictionary<string, SyncDoc> MapExternalToLocalId(IReadOnlyList<SyncRecord> records,
+        out HashSet<string> ambiguousPendingCreates)
     {
         var externalIdToLocalId = new Dictionary<string, string>();
         foreach (var localId in _base.LocalIds)
@@ -679,14 +802,25 @@ public sealed class SyncRunner
                 externalIdToLocalId[snap.ExternalId] = localId;
         }
 
+        var claimedByOperation = FindPendingCreateClaims(records, out ambiguousPendingCreates,
+            out var excluded, out var pendingCreateLocalIds);
+
         var result = new Dictionary<string, SyncDoc>();
         foreach (var record in records)
         {
+            if (excluded.Contains(record.ExternalId))
+                continue;
             // The base mapping is our own trusted id; a record's carried local-id (or its external id
             // fallback) is external input and becomes a repo file path, so sanitize it first (§6).
-            var localId = externalIdToLocalId.TryGetValue(record.ExternalId, out var known)
+            var localId = claimedByOperation.TryGetValue(record.ExternalId, out var claimed) ? claimed
+                : externalIdToLocalId.TryGetValue(record.ExternalId, out var known)
                 ? known
                 : SanitizeLocalId(record.Fields.FirstOrDefault(f => f.Key == LocalIdField)?.Value ?? record.ExternalId);
+
+            // A pending create owns no trusted external id yet. Its ordinary local-id field cannot bind it:
+            // only the durable operation id may do that, otherwise an unrelated page could be adopted.
+            if (!claimedByOperation.ContainsKey(record.ExternalId) && pendingCreateLocalIds.Contains(localId))
+                continue;
 
             result[localId] = new SyncDoc
             {
@@ -699,6 +833,32 @@ public sealed class SyncRunner
         }
 
         return result;
+    }
+
+    private Dictionary<string, string> FindPendingCreateClaims(IReadOnlyList<SyncRecord> records,
+        out HashSet<string> ambiguousPendingCreates, out HashSet<string> excluded,
+        out HashSet<string> pendingCreateLocalIds)
+    {
+        ambiguousPendingCreates = [];
+        excluded = [];
+        pendingCreateLocalIds = [];
+        var claimedByOperation = new Dictionary<string, string>();
+        foreach (var localId in _base.LocalIds)
+        {
+            var intent = _base.GetPendingBodyWrite(localId);
+            if (intent?.Kind != BodyWriteOperationKind.Create)
+                continue;
+            pendingCreateLocalIds.Add(localId);
+            var matches = records.Where(record => record.OperationId == intent.OperationId).ToList();
+            if (matches.Count == 1)
+                claimedByOperation[matches[0].ExternalId] = localId;
+            else if (matches.Count > 1)
+            {
+                ambiguousPendingCreates.Add(localId);
+                excluded.UnionWith(matches.Select(match => match.ExternalId));
+            }
+        }
+        return claimedByOperation;
     }
 
     /// <summary>

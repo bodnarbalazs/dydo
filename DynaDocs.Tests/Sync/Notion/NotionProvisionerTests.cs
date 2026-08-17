@@ -845,7 +845,7 @@ public class NotionProvisionerTests : IDisposable
 
         // The new title is recorded, so a second pass is a no-op — exactly one UpdateDataSource title call.
         provisioner.ApplyModelAdditions(renamed, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
-        Assert.Single(client.DataSourceUpdates);
+        Assert.Single(client.DataSourceUpdates); // the second pass is a no-op
     }
 
     [Fact]
@@ -906,6 +906,39 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
+    public void ApplyModelAdditions_AddsAndReadsBackReservedWriteId()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        var evolved = AdditiveBaseType();
+        evolved.Properties[NotionSyncAdapter.WriteIdProperty] = new SyncPropertyDef { Type = "rich_text", Hidden = true };
+        client.DataSourceUpdates.Clear();
+
+        provisioner.ApplyModelAdditions(evolved, client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter());
+
+        Assert.NotNull(client.DataSourceSchema(record.DataSourceId).Properties[NotionSyncAdapter.WriteIdProperty].RichText);
+        Assert.Empty(client.DataSourceUpdates); // Fresh provisioning injects the protocol column before this additive pass.
+    }
+
+    [Fact]
+    public void ApplyModelAdditions_WrongReservedWriteIdTypeFailsBeforeMutation()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(AdditiveBaseType(), "parent-page", new Dictionary<string, string>());
+        var evolved = AdditiveBaseType();
+        evolved.Properties[NotionSyncAdapter.WriteIdProperty] = new SyncPropertyDef { Type = "rich_text", Hidden = true };
+        client.DataSourceSchema(record.DataSourceId).Properties[NotionSyncAdapter.WriteIdProperty] = new NotionPropertySchema { Checkbox = new NotionEmptyConfig() };
+        client.DataSourceUpdates.Clear();
+
+        var error = Assert.Throws<InvalidOperationException>(() => provisioner.ApplyModelAdditions(evolved,
+            client.RetrieveDataSource(record.DataSourceId), new Dictionary<string, string>(), new StringWriter()));
+
+        Assert.Contains(record.DataSourceId, error.Message); Assert.Contains("rich_text", error.Message); Assert.Empty(client.DataSourceUpdates);
+    }
+
+    [Fact]
     public void ApplyModelAdditions_LegacyRecordWithoutTitle_LiveTitleAbsent_SeedsFromModelWithoutRenaming()
     {
         // A record written before ns-11 carries no notionTitle. When the live retrieve response has NO title on the
@@ -926,7 +959,9 @@ public class NotionProvisionerTests : IDisposable
         };
         provisioner.ApplyModelAdditions(type, client.RetrieveDataSource("ds-x"), new Dictionary<string, string>(), new StringWriter());
 
-        Assert.Empty(client.DataSourceUpdates);  // no rename PATCH on the degrade-safe seed tick
+        var patch = Assert.Single(client.DataSourceUpdates);
+        Assert.Null(patch.Request.Title);  // no rename PATCH on the degrade-safe seed tick
+        Assert.NotNull(patch.Request.Properties[NotionSyncAdapter.WriteIdProperty].RichText);
         Assert.Equal("Things", NotionProvisioner.LoadTracked(_statePath).Single().NotionTitle);  // seed persisted
     }
 

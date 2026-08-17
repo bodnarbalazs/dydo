@@ -135,6 +135,52 @@ public class NotionSpineSyncTests : IDisposable
     }
 
     [Fact]
+    public void Run_V2NativeMarkdownReceipt_PersistsDistinctDualBasesWithoutBlockConversion()
+    {
+        var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
+        File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "__authored__"));
+        var client = new FakeNotionClient
+        {
+            MarkdownReadTransform = body => body.Replace("__", "**", StringComparison.Ordinal),
+        };
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var store = new BaseSnapshotStore(St().SnapshotPath("Sprint"));
+        Assert.Equal(new DynaDocs.Sync.Projection.DualBodyBase("__authored__", "**authored**"), store.GetDualBodyBase("notion-sync"));
+        Assert.True(client.MarkdownReadCalls > 0);
+        Assert.Equal(0, client.GetBlockChildrenCalls);
+        Assert.Equal(0, client.StructuralChildCalls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Run_FreshWriteIdReadbackMissingOrWrong_FailsBeforeAnyPageOrRepoMutation(bool wrongType)
+    {
+        WriteModel("""
+            { "objects": [ { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
+                "properties": { "title": { "type": "title" }, "dydo-write-id": { "type": "rich_text", "hidden": true } } } ] }
+            """);
+        var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
+        var before = File.ReadAllText(sprintPath);
+        void Corrupt(string _, NotionDataSource source)
+        {
+            if (wrongType)
+                source.Properties[NotionSyncAdapter.WriteIdProperty] = new NotionPropertySchema { Checkbox = new NotionEmptyConfig() };
+            else
+                source.Properties.Remove(NotionSyncAdapter.WriteIdProperty);
+        }
+        var client = new FakeNotionClient { AfterCreateDataSource = Corrupt, AfterUpdateDataSource = Corrupt };
+
+        Assert.Throws<InvalidOperationException>(() => NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()));
+
+        Assert.Empty(client.QueryDataSource("ds-1"));
+        Assert.Equal(before, File.ReadAllText(sprintPath));
+        Assert.False(File.Exists(St().SnapshotPath("Sprint")));
+    }
+
+    [Fact]
     public void Run_ReadDirection_MapsRelationPageIdBackToParentLocalId()
     {
         // First pass creates the spine. A Notion-side edit to the sprint's title is read back on the
@@ -224,7 +270,7 @@ public class NotionSpineSyncTests : IDisposable
         File.WriteAllText(sprintPath, repoEdit);
 
         var sprintPage = client.QueryDataSource("ds-2").Single();
-        client.SetBlockChildren(sprintPage.Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+        client.SetPageMarkdown(sprintPage.Id, "Sync work EXTERNAL.");
 
         var output = new StringWriter();
         NotionSpineSync.Run(client, St(), dryRun: false, output);
@@ -253,6 +299,43 @@ public class NotionSpineSyncTests : IDisposable
     }
 
     [Fact]
+    public void Run_AlignedConflict_WithUnresolvableRelation_PushesWhenRelationLaterResolves()
+    {
+        WriteModel("""
+            { "objects": [
+              { "type": "Task", "dir": "project/tasks", "notionTitle": "Tasks", "properties": {
+                "title": { "type": "title" }, "blocked-by": { "type": "relation", "to": "Task" }
+              } }
+            ] }
+            """);
+        Seed("project/tasks/task-x", "---\ntitle: Task X\nblocked-by: task-later\n---\n\nBase body.");
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        var taskPath = Path.Combine(_dydoRoot, "project", "tasks", "task-x.md");
+        var page = Assert.Single(client.QueryDataSource("ds-1"));
+
+        File.WriteAllText(taskPath, File.ReadAllText(taskPath).Replace("Base body.", "Repo body."));
+        client.SetPageMarkdown(page.Id, "External body.");
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        File.Delete(SpineShadowPath("Task", "task-x"));
+        File.WriteAllText(taskPath, "---\ntitle: Task X\nblocked-by: task-later\n---\n\nExternal body.");
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        Assert.Contains("blocked-by: task-later", File.ReadAllText(taskPath));
+        var baseAfterAlignment = new BaseSnapshotStore(St().SnapshotPath("Task")).Get("task-x")!;
+        Assert.Null(baseAfterAlignment.GetField("blocked-by"));
+
+        Seed("project/tasks/task-later", "---\ntitle: Later\n---\n\nLater.");
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var later = client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == "Later");
+        page = client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == "Task X");
+        Assert.Equal(later.Id, page.Properties["blocked-by"].Relation!.Single().Id);
+        Assert.Contains("blocked-by: task-later", File.ReadAllText(taskPath));
+    }
+
+    [Fact]
     public void Run_UnresolvedShadow_ReDetectsConflict_NextTick_NeverMarkersInCanonical()
     {
         var client = new FakeNotionClient();
@@ -260,7 +343,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
         File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
-        client.SetBlockChildren(client.QueryDataSource("ds-2").Single().Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+        client.SetPageMarkdown(client.QueryDataSource("ds-2").Single().Id, "Sync work EXTERNAL.");
 
         NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick: divert
         var shadowPath = SpineShadowPath("Sprint", "notion-sync");
@@ -285,7 +368,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
         File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
-        client.SetBlockChildren(client.QueryDataSource("ds-2").Single().Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+        client.SetPageMarkdown(client.QueryDataSource("ds-2").Single().Id, "Sync work EXTERNAL.");
         NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick: divert to shadow
 
         // The human resolves the shadow file (removes markers, keeps their own line), then resyncs.
@@ -299,7 +382,7 @@ public class NotionSpineSyncTests : IDisposable
         Assert.False(File.Exists(shadowPath));
         Assert.Contains("Sync work RESOLVED.", File.ReadAllText(sprintPath));
         Assert.DoesNotContain("<<<<<<< repo", File.ReadAllText(sprintPath));
-        var pushed = NotionBlockConverter.FromBlocks(client.GetBlockChildren(client.QueryDataSource("ds-2").Single().Id));
+        var pushed = client.StoredMarkdown(client.QueryDataSource("ds-2").Single().Id);
         Assert.Contains("Sync work RESOLVED.", pushed);
 
         // Idempotent: a further tick with the two sides now aligned reconciles clean — no new conflict, no shadow.
@@ -320,7 +403,7 @@ public class NotionSpineSyncTests : IDisposable
 
         var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
         File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
-        client.SetBlockChildren(client.QueryDataSource("ds-2").Single().Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+        client.SetPageMarkdown(client.QueryDataSource("ds-2").Single().Id, "Sync work EXTERNAL.");
         NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter()); // tick: divert to shadow
 
         var shadowPath = SpineShadowPath("Sprint", "notion-sync");
@@ -565,6 +648,48 @@ public class NotionSpineSyncTests : IDisposable
 
         Assert.Contains("WARN rogue property \"Rogue\"", output.ToString());
         Assert.True(client.DataSourceSchema("ds-1").Properties.ContainsKey("Rogue")); // untouched
+    }
+
+    [Fact]
+    public void Run_ReusedCustomModelWithoutWriteId_AddsReservedRichTextBeforeReconciling()
+    {
+        WriteModel("""
+            { "objects": [
+              { "type": "Note", "dir": "project/notes", "notionTitle": "Notes",
+                "properties": { "title": { "type": "title" } } }
+            ] }
+            """);
+        Seed("project/notes/note", "---\ntitle: Note\n---\n\nFirst.");
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        client.DataSourceSchema("ds-1").Properties.Remove(NotionSyncAdapter.WriteIdProperty);
+        client.DataSourceUpdates.Clear();
+        Seed("project/notes/note", "---\ntitle: Note\n---\n\nReconciled.");
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter());
+
+        var patch = Assert.Single(client.DataSourceUpdates);
+        Assert.NotNull(patch.Request.Properties[NotionSyncAdapter.WriteIdProperty].RichText);
+        Assert.Contains("Reconciled.", client.StoredMarkdown(Assert.Single(client.QueryDataSource("ds-1")).Id));
+    }
+
+    [Fact]
+    public void Run_FreshCustomModelWithoutWriteId_PruneKeepsReservedPropertyAndWritesProjectedBody()
+    {
+        WriteModel("""
+            { "objects": [
+              { "type": "Note", "dir": "project/notes", "notionTitle": "Notes",
+                "properties": { "title": { "type": "title" } } }
+            ] }
+            """);
+        Seed("project/notes/note", "---\ntitle: Note\n---\n\nProjected body.");
+        var client = new FakeNotionClient();
+
+        NotionSpineSync.Run(client, St(), dryRun: false, new StringWriter(), prune: true);
+
+        Assert.NotNull(client.DataSourceSchema("ds-1").Properties[NotionSyncAdapter.WriteIdProperty].RichText);
+        Assert.Equal("Projected body.", client.StoredMarkdown(Assert.Single(client.QueryDataSource("ds-1")).Id));
     }
 
     [Fact]

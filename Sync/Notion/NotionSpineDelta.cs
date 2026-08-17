@@ -124,7 +124,7 @@ public static class NotionSpineDelta
         var external = BuildExternal(hitRecords, changed, hitLocalIds, disappeared, store);
         var runner = new SyncRunner(
             adapter, store, RepoFolderLayout.For(type, docsDir).PathFor,
-            localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete);
+            localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete, useProjectedBodies: true);
         var run = runner.RunDelta(repoDocs, external, changed);
 
         // Persist state only when something actually moved (minor 1): in steady state the newest page is ALWAYS a

@@ -33,6 +33,9 @@ public sealed class FakeNotionClient : INotionClient
     public int RequestCount => _requestCount;
     public int RetrieveDatabaseCalls { get; private set; }
     public int RetrieveDataSourceCalls { get; private set; }
+    public int MarkdownReadCalls { get; private set; }
+    public int MarkdownWriteCalls { get; private set; }
+    public int StructuralChildCalls { get; private set; }
 
     public List<NotionSearchResult> DiscoverableDataSources { get; } = [];
     public Dictionary<string, NotionDatabase> Databases { get; } = new();
@@ -92,6 +95,12 @@ public sealed class FakeNotionClient : INotionClient
     /// ~20k-block export ceiling (DR 035 caveat), driving the truncation-guard test.</summary>
     public HashSet<string> TruncatedReadFor { get; } = [];
 
+    /// <summary>Optional test-only native Markdown read behavior. The normal echo is intentionally exact;
+    /// callers opt into a transform, failure, or truncation when testing fidelity/error handling.</summary>
+    public Func<string, string>? MarkdownReadTransform { get; set; }
+    public Func<string, Exception?>? MarkdownReadFailure { get; set; }
+    public Func<string, bool>? MarkdownReadTruncation { get; set; }
+
     /// <summary>Page ids that received an engine-computed <c>last-activity</c> property write via
     /// <see cref="UpdatePage"/> — one entry per write, so a test can assert the value lands AND that a
     /// no-op tick issues no repeated write (DR 030 §3, finding 1).</summary>
@@ -113,6 +122,9 @@ public sealed class FakeNotionClient : INotionClient
     /// <summary>One-shot: the next <see cref="CreateDatabase"/> throws an AMBIGUOUS 500 BEFORE creating anything —
     /// modelling a create that truly failed. Drives the recovery's re-create-fresh branch (search finds nothing).</summary>
     public bool CreateDatabaseFailsAmbiguously { get; set; }
+    /// <summary>Test seam for a freshly-created data source whose first live readback is missing or corrupt.</summary>
+    public Action<string, NotionDataSource>? AfterCreateDataSource { get; set; }
+    public Action<string, NotionDataSource>? AfterUpdateDataSource { get; set; }
 
     /// <summary>One-shot: the next <see cref="CreatePage"/> stores the page but then throws an AMBIGUOUS 500 —
     /// modelling a page create that landed server-side before its response was lost. Drives the adapter's
@@ -208,12 +220,20 @@ public sealed class FakeNotionClient : INotionClient
     public void SetBlockChildren(string pageId, List<NotionBlock> blocks)
     {
         _blocks[pageId] = blocks;
+        // Legacy test setup still seeds a body through blocks. The spine never reads these blocks: this only
+        // gives an older fixture an equivalent native Markdown export while Slice 5 retires that setup.
+        _pageMarkdown[pageId] = NotionBlockConverter.FromBlocks(blocks);
         if (_pages.TryGetValue(pageId, out var page)) page.LastEditedTime = CurrentStamp();
     }
 
     /// <summary>Replace a page's native markdown body outright — simulates an external body edit in Notion for
     /// the docs mirror's markdown-API path (DR 035), the counterpart to <see cref="SetBlockChildren"/>.</summary>
-    public void SetPageMarkdown(string pageId, string markdown) => _pageMarkdown[pageId] = markdown;
+    public void SetPageMarkdown(string pageId, string markdown)
+    {
+        _pageMarkdown[pageId] = markdown;
+        if (_pages.TryGetValue(pageId, out var page))
+            page.LastEditedTime = CurrentStamp();
+    }
 
     /// <summary>A page's default server stamp when one is created/seeded without an explicit edit — old enough that
     /// every page shares it, so the daemon's first-tick cursor is this value and no page is a filter hit until a
@@ -241,6 +261,8 @@ public sealed class FakeNotionClient : INotionClient
         _pages[id] = page;
         _pageDataSource[id] = dataSourceId;
         _blocks[id] = blocks ?? [];
+        if (blocks != null)
+            _pageMarkdown[id] = NotionBlockConverter.FromBlocks(blocks);
         return page;
     }
 
@@ -308,6 +330,7 @@ public sealed class FakeNotionClient : INotionClient
         // by using the property name as its id so RetrieveDataSource yields a usable name→id map in tests.
         foreach (var (name, schema) in _dataSources[dataSourceId].Properties)
             schema.Id ??= name;
+        AfterCreateDataSource?.Invoke(dataSourceId, _dataSources[dataSourceId]);
         if (CreateDatabaseSucceedsThenAmbiguous5xx)
         {
             CreateDatabaseSucceedsThenAmbiguous5xx = false;
@@ -321,7 +344,10 @@ public sealed class FakeNotionClient : INotionClient
         if (FailUpdateDataSourceAfter is { } limit && DataSourceUpdates.Count >= limit)
             throw new NotionApiException(429, "simulated data source update failure");
         DataSourceUpdates.Add((dataSourceId, request));
-        var schema = DataSourceSchema(dataSourceId).Properties;
+        var dataSource = DataSourceSchema(dataSourceId);
+        if (request.Title != null)
+            dataSource.Title = request.Title;
+        var schema = dataSource.Properties;
         foreach (var (name, body) in request.Properties)
         {
             if (body == null)
@@ -332,6 +358,7 @@ public sealed class FakeNotionClient : INotionClient
             {
                 body.Id ??= name; // mirror Notion assigning an id, so views can resolve it (see CreateDatabase)
                 schema[name] = body;
+        AfterUpdateDataSource?.Invoke(dataSourceId, DataSourceSchema(dataSourceId));
             }
         }
     }
@@ -476,12 +503,16 @@ public sealed class FakeNotionClient : INotionClient
         return page;
     }
 
-    public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) =>
-        _pages.Values
+    public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId)
+    {
+        _requestCount++;
+        StructuralChildCalls++;
+        return _pages.Values
             .Where(p => !p.Archived && !HiddenFromListing.Contains(p.Id)
                 && _pageParent.TryGetValue(p.Id, out var parent) && parent == parentPageId)
             .Select(p => new NotionChildPage { Id = p.Id, Title = _pageTitle.GetValueOrDefault(p.Id, "") })
             .ToList();
+    }
 
     public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request)
     {
@@ -571,6 +602,8 @@ public sealed class FakeNotionClient : INotionClient
     // treating this structure as body. A leaf page (no children) reads back its stored body verbatim.
     public NotionMarkdownResponse GetPageMarkdown(string pageId)
     {
+        _requestCount++;
+        MarkdownReadCalls++;
         if (_throwMarkdownReadAfterBodyCreate)
         {
             _throwMarkdownReadAfterBodyCreate = false;
@@ -578,27 +611,38 @@ public sealed class FakeNotionClient : INotionClient
         }
         if (FailMarkdownReadFor.Contains(pageId))
             throw new NotionApiException(404, $"{{\"code\":\"object_not_found\",\"message\":\"page {pageId} not found\"}}");
+        if (MarkdownReadFailure?.Invoke(pageId) is { } failure)
+            throw failure;
         var body = _pageMarkdown.GetValueOrDefault(pageId, "");
-        var childTags = string.Join("\n", GetChildPages(pageId)
+        var childTags = string.Join("\n", _pages.Values
+            .Where(p => !p.Archived && !HiddenFromListing.Contains(p.Id)
+                && _pageParent.TryGetValue(p.Id, out var parent) && parent == pageId)
+            .Select(p => new NotionChildPage { Id = p.Id, Title = _pageTitle.GetValueOrDefault(p.Id, "") })
             .Select(c => $"<page url=\"https://app.notion.com/p/{c.Id}\">{c.Title}</page>"));
         var markdown = childTags.Length == 0 ? body
             : body.Length == 0 ? childTags
             : body + "\n\n" + childTags;
+        markdown = MarkdownReadTransform?.Invoke(markdown) ?? markdown;
         return new NotionMarkdownResponse
         {
             Object = "page_markdown",
             Markdown = markdown,
-            Truncated = TruncatedReadFor.Contains(pageId),
+            Truncated = TruncatedReadFor.Contains(pageId) || MarkdownReadTruncation?.Invoke(pageId) == true,
         };
     }
 
     public void UpdatePageMarkdown(string pageId, string markdown, bool allowDeletingContent)
     {
+        _requestCount++;
+        MarkdownWriteCalls++;
         if (FailMarkdownUpdate)
             throw new NotionApiException(500, "simulated markdown update failure");
         MarkdownUpdates.Add(pageId);
         MarkdownUpdateCalls.Add((pageId, allowDeletingContent));
         _pageMarkdown[pageId] = markdown;
+        // Keep the legacy fixture store coherent for non-spine tests that inspect seeded block state. The
+        // adapter never reads this projection on its native Markdown path.
+        _blocks[pageId] = NotionBlockConverter.ToBlocks(markdown);
         if (_pages.TryGetValue(pageId, out var mdPage)) mdPage.LastEditedTime = CurrentStamp();
         // Model the Notion child-page-trash bug (makenotion/notion-mcp-server#171, DR 035 §3): a destructive
         // replace_content (allow_deleting_content:true) TRASHES the page's child pages. A child-safe update

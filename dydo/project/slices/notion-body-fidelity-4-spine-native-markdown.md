@@ -2,7 +2,7 @@
 title: Spine Native Markdown Transport
 sprint: notion-body-fidelity
 seq: 4
-status: ready
+status: done
 area: backend
 type: context
 ---
@@ -56,7 +56,26 @@ sync first adds an absent property, reads the live data-source schema back, and 
 property of the wrong type fails closed with a diagnostic naming the data source/property/expected and
 actual types; never retype or delete it automatically. On rollback, leave a correctly added inert column
 in place. Test fresh provisioning, additive existing-database provisioning, correct pre-existing type,
-and wrong-type collision proving zero page/file mutations.
+and wrong-type collision proving zero page/file mutations. The engine-reserved column is injected and
+verified even when a custom/legacy sync model omits it; schema drift always treats it as known, and
+`--prune` must never delete it. This Slice therefore owns the narrow `NotionSchemaDrift` protocol-key
+change plus reused-custom-model and fresh-custom-model-with-prune regressions.
+
+Extend the neutral record/runner seam narrowly for restart recovery: `SyncRecord` carries the reserved
+operation UUID separately from canonical `Fields`; `SyncRunner.MapExternalToLocalId` first uses the
+snapshot's trusted external id, then pairs exactly one record UUID to a pending `Create` UUID. Zero matches
+leaves the same create intent retryable; one binds the Notion page id; duplicate matching UUIDs produce an
+explicit unhandled identity-ambiguity result and complete marker-bearing shadow, with canonical/pages/base/
+intent untouched. Do not issue an extra per-intent query on restart and never expose `dydo-write-id` in
+frontmatter. This Slice therefore owns the narrow `SyncRecord`/`SyncRunner`/`ReconcileResult` extension and
+must rerun all Slice 2/3 projected and identity regressions.
+
+Wire every PM-spine `SyncRunner` construction (manual run, dry-run, and delta) with projected bodies
+enabled. The runner's per-object v1 guard retains legacy behavior until Slice 5 classifies/migrates it;
+v2/new objects must never run native Markdown through converter-era comparison. Freshly minted as well as
+reused data sources must perform the reserved-property live readback/type preflight before any page/file
+reconcile. This Slice owns these narrow production wiring/preflight changes in `NotionSpineSync` and
+`NotionSpineDelta`; Slice 5 revisits the same files serially for migration and watchdog integration.
 
 Remove `NormalizeBody`/`IsStaleConverterEcho` from current spine comparison use; keep legacy converter
 helpers reachable only by Slice 5 migration. In `FakeNotionClient`, make native Markdown reads/writes and
@@ -78,6 +97,6 @@ Snapshot-v1 migration, full/delta orchestration, and live API calls.
 ```powershell
 $listed = dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --list-tests --filter "FullyQualifiedName~NativeMarkdownSpine"
 if (($listed | Select-String 'NativeMarkdownSpine').Count -lt 14) { throw 'Adapter gate matched fewer than 14 new tests.' }
-dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter "FullyQualifiedName~NativeMarkdownSpine|FullyQualifiedName~NotionSyncAdapterTests|FullyQualifiedName~NotionClientTests|FullyQualifiedName~NotionProvisionerTests|FullyQualifiedName~SyncModelLoaderTests"
+dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter "FullyQualifiedName~NativeMarkdownSpine|FullyQualifiedName~NotionSyncAdapterTests|FullyQualifiedName~NotionClientTests|FullyQualifiedName~NotionProvisionerTests|FullyQualifiedName~SyncModelLoaderTests|FullyQualifiedName~ProjectedReconcileTests|FullyQualifiedName~SyncRunnerTests|FullyQualifiedName~BodyWriteReceiptTests|FullyQualifiedName~NotionSpineSyncTests|FullyQualifiedName~NotionSpineDeltaTests"
 dotnet build DynaDocs.csproj --no-restore
 ```

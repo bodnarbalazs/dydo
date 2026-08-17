@@ -38,7 +38,7 @@ public sealed class NotionSpineDeltaTests : IDisposable
             DeltaTick(client, census: false); // warm
             var req = client.RequestCount;
             var retrieves = client.RetrieveDatabaseCalls;
-            var bodies = client.GetBlockChildrenCalls;
+            var bodies = client.MarkdownReadCalls;
 
             var result = DeltaTick(client, census: false); // non-cadence
 
@@ -46,7 +46,7 @@ public sealed class NotionSpineDeltaTests : IDisposable
             Assert.Equal(1, result.Requests);                        // one filtered query, nothing else
             Assert.Equal(req + 1, client.RequestCount);
             Assert.Equal(retrieves, client.RetrieveDatabaseCalls);   // ZERO provisioning probes off-cadence
-            Assert.Equal(bodies, client.GetBlockChildrenCalls);      // ZERO body reads (idle boundary skipped)
+            Assert.Equal(bodies, client.MarkdownReadCalls);      // ZERO body reads (idle boundary skipped)
         });
     }
 
@@ -75,11 +75,11 @@ public sealed class NotionSpineDeltaTests : IDisposable
         WithProject(count: 3, (project, client) =>
         {
             DeltaTick(client, census: false); // warm
-            var bodies = client.GetBlockChildrenCalls;
+            var bodies = client.MarkdownReadCalls;
 
             var result = DeltaTickAt(client, BoundaryTime(client));
 
-            Assert.Equal(bodies + 1, client.GetBlockChildrenCalls); // the recent boundary page was re-read
+            Assert.Equal(bodies + 1, client.MarkdownReadCalls); // the recent boundary page was re-read
             Assert.True(result.Quiet);                              // and reconciled to None
         });
     }
@@ -106,15 +106,37 @@ public sealed class NotionSpineDeltaTests : IDisposable
             // The newest page is the cursor boundary; a genuine later edit to it (stamp bumped past the cursor) is
             // read and written back regardless of the recency window.
             var pageId = BoundaryPageId(client);
-            client.SetBlockChildren(pageId, [Paragraph("edited remotely")]); // F6 bumps its stamp past the cursor
+            client.SetPageMarkdown(pageId, "edited remotely");
             var localId = LocalIdOf(client, pageId);
 
-            var bodyBefore = client.GetBlockChildrenCalls;
+            var bodyBefore = client.MarkdownReadCalls;
             var result = DeltaTick(client, census: false);
 
-            Assert.Equal(bodyBefore + 1, client.GetBlockChildrenCalls); // exactly the one page
+            Assert.Equal(bodyBefore + 1, client.MarkdownReadCalls); // exactly the one page
             Assert.True(result.Updated >= 1);
             Assert.Contains("edited remotely", File.ReadAllText(Path.Combine(project, "dydo", "project", "notes", localId + ".md")));
+        });
+    }
+
+    [Fact]
+    public void DeltaTick_V2NativeMarkdownReceipt_PersistsDistinctDualBasesAndUsesNativeRequests()
+    {
+        WithProject(count: 1, (project, client) =>
+        {
+            var path = Path.Combine(project, "dydo", "project", "notes", "n00.md");
+            File.WriteAllText(path, File.ReadAllText(path).Replace("Body 0.", "__authored__"));
+            client.MarkdownReadTransform = body => body.Replace("__", "**", StringComparison.Ordinal);
+            var blocks = client.GetBlockChildrenCalls;
+            var writes = client.MarkdownWriteCalls;
+
+            DeltaTick(client, census: false);
+
+            var state = NotionSpineState.Resolve(Path.Combine(project, "dydo"), "page-root", null, false, TextWriter.Null);
+            var store = new BaseSnapshotStore(state.SnapshotPath("Note"));
+            Assert.Equal(new DynaDocs.Sync.Projection.DualBodyBase("__authored__", "**authored**"), store.GetDualBodyBase("n00"));
+            Assert.True(client.MarkdownWriteCalls > writes);
+            Assert.True(client.MarkdownReadCalls > 0);
+            Assert.Equal(blocks, client.GetBlockChildrenCalls);
         });
     }
 
@@ -131,7 +153,7 @@ public sealed class NotionSpineDeltaTests : IDisposable
             var localId = LocalIdOf(client, pageId);
             var now = BoundaryTime(client);                                                            // "now" ≈ the edit minute
             client.PinnedStamp = client.QueryDataSource("ds-1").First(p => p.Id == pageId).LastEditedTime; // pin = cursor
-            client.SetBlockChildren(pageId, [Paragraph("same minute edit")]); // stamp stays == cursor
+            client.SetPageMarkdown(pageId, "same minute edit");
 
             var result = DeltaTickAt(client, now);
 
@@ -232,7 +254,7 @@ public sealed class NotionSpineDeltaTests : IDisposable
             var deltaPath = FirstTypeDeltaPath(project);
             var stateBefore = File.ReadAllText(deltaPath);
             var pageId = BoundaryPageId(client);
-            client.SetBlockChildren(pageId, [Paragraph("new remote body")]); // makes the page a filtered body hit
+            client.SetPageMarkdown(pageId, "new remote body");
             var state = NotionSpineState.Resolve(Path.Combine(project, "dydo"), "page-root", null, dryRun: false, TextWriter.Null);
 
             var result = NotionSpineDelta.RunForTest(client, state, census: false, validateProvisioning: false,

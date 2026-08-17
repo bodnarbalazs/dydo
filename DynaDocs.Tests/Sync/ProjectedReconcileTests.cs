@@ -325,7 +325,7 @@ public sealed class ProjectedReconcileTests
     }
 
     [Fact]
-    public void ProjectedRunner_PendingCreate_IsFencedWithoutAnOperationIdentityMatch()
+    public void ProjectedRunner_PendingCreate_WithoutOperationIdentityMatch_RetriesSameIntent()
     {
         Directory.CreateDirectory(_directory);
         var repo = Doc("t", "body", "open");
@@ -338,9 +338,107 @@ public sealed class ProjectedReconcileTests
 
         Runner(adapter, store, id => Path.Combine(_directory, id + ".md"), _ => Path.Combine(_directory, "shadow.md")).Run([repo]);
 
+        Assert.Equal(1, adapter.UpsertCount);
+        Assert.Null(store.GetPendingBodyWrite("t"));
+        Assert.Equal("created", store.Get("t")!.ExternalId);
+    }
+
+    [Fact]
+    public void ProjectedRunner_ExactCreateRestart_UsesObservedFieldsThenPushesPostCrashPropertyAndRelation()
+    {
+        Directory.CreateDirectory(_directory);
+        var prior = Doc("t", "body", "open");
+        var store = Store(prior, "body", "**body**");
+        var intent = new BodyWriteIntent
+        {
+            OperationId = Guid.NewGuid().ToString(), Kind = BodyWriteOperationKind.Create, LocalId = "t",
+            PriorLocalBody = "body", PriorExternalBody = "**body**", IntendedLocalBody = "body",
+        };
+        store.WritePendingBodyWrite(intent);
+        var repo = new SyncDoc
+        {
+            LocalId = "t", ExternalId = null,
+            Fields = [new SyncField { Key = "status", Value = "done" }, new SyncField { Key = "blocked-by", Value = "later" }],
+            Body = "body", SourcePath = "",
+        };
+        var adapter = new ReceiptAdapter(new SyncRecord
+        {
+            ExternalId = "page", OperationId = intent.OperationId,
+            Fields = [new SyncField { Key = "status", Value = "open" }], Body = "**body**",
+        });
+        var runner = Runner(adapter, store, id => Path.Combine(_directory, id + ".md"), _ => Path.Combine(_directory, "shadow.md"));
+
+        var bound = runner.Run([repo]);
+
+        Assert.Empty(bound.Results);
+        Assert.Null(store.GetPendingBodyWrite("t"));
+        Assert.Equal("page", store.Get("t")!.ExternalId);
+        Assert.Equal("open", store.Get("t")!.GetField("status"));
+        Assert.Null(store.Get("t")!.GetField("blocked-by"));
+        Assert.Equal(new DualBodyBase("body", "**body**"), store.GetDualBodyBase("t"));
         Assert.Equal(0, adapter.UpsertCount);
+
+        var pushed = runner.Run([repo]);
+
+        Assert.Equal(ReconcileAction.PushToExternal, Assert.Single(pushed.Results).Action);
+        var upsert = Assert.Single(adapter.Upserts);
+        Assert.Equal("page", upsert.ExternalId);
+        Assert.False(upsert.WriteBody);
+        Assert.Null(upsert.OperationId);
+        Assert.Equal("done", upsert.Fields.Single(field => field.Key == "status").Value);
+        Assert.Equal("later", upsert.Fields.Single(field => field.Key == "blocked-by").Value);
+        Assert.Equal("done", store.Get("t")!.GetField("status"));
+        Assert.Equal("later", store.Get("t")!.GetField("blocked-by"));
+    }
+
+    [Fact]
+    public void ProjectedRunner_PendingCreate_DuplicateOperationIdentity_ShadowedAsUnhandledWithoutMutation()
+    {
+        Directory.CreateDirectory(_directory);
+        var baseDoc = Doc("t", "prior local", "open");
+        var store = Store(baseDoc, "prior local", "prior external");
+        var intent = Intent(BodyWriteOperationKind.Create, null, "t");
+        store.WritePendingBodyWrite(intent);
+        var repo = Doc("t", "body", "open");
+        var adapter = new ReceiptAdapter(
+            new SyncRecord { ExternalId = "one", Fields = [new SyncField { Key = SyncRunner.LocalIdField, Value = "t" }], Body = "one", OperationId = intent.OperationId },
+            new SyncRecord { ExternalId = "two", Fields = [new SyncField { Key = SyncRunner.LocalIdField, Value = "t" }], Body = "two", OperationId = intent.OperationId });
+        var canonical = Path.Combine(_directory, "t.md");
+        var shadow = Path.Combine(_directory, "shadow", "t.md");
+
+        var run = Runner(adapter, store, _ => canonical, _ => shadow).Run([repo]);
+
+        var result = Assert.Single(run.Results);
+        Assert.True(result.UnhandledProjection);
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.Equal(["t"], run.ShadowedLocalIds);
+        var shadowBody = File.ReadAllText(shadow);
+        Assert.Contains("<<<<<<< repo", shadowBody);
+        Assert.Contains("external create identity is ambiguous", shadowBody);
+        Assert.False(File.Exists(canonical));
+        Assert.Equal(intent, store.GetPendingBodyWrite("t"));
+        Assert.Equal(new DualBodyBase("prior local", "prior external"), store.GetDualBodyBase("t"));
+        Assert.Equal(0, adapter.UpsertCount);
+    }
+
+    [Fact]
+    public void ProjectedRunner_SameRunAmbiguousCreateIdentity_BecomesUnhandledShadowWithoutThrowing()
+    {
+        Directory.CreateDirectory(_directory);
+        var store = new BaseSnapshotStore(Path.Combine(_directory, "snapshot.json"));
+        var repo = Doc("t", "body", "open");
+        var adapter = new ReceiptAdapter { ThrowAmbiguousCreate = true };
+        var shadow = Path.Combine(_directory, "shadow", "t.md");
+
+        var run = Runner(adapter, store, id => Path.Combine(_directory, id + ".md"), _ => shadow).Run([repo]);
+
+        var result = Assert.Single(run.Results);
+        Assert.True(result.UnhandledProjection);
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.Equal(["t"], run.ShadowedLocalIds);
+        Assert.Contains("<<<<<<< repo", File.ReadAllText(shadow));
         Assert.NotNull(store.GetPendingBodyWrite("t"));
-        Assert.Null(store.Get("t")!.ExternalId);
+        Assert.Equal(new DualBodyBase("", ""), store.GetDualBodyBase("t"));
     }
 
     [Fact]
@@ -640,10 +738,12 @@ public sealed class ProjectedReconcileTests
         public int ApplyCalls { get; private set; }
         public int UpsertCount { get; private set; }
         public List<string> BodyOperationIds { get; } = [];
+        public List<SyncUpsert> Upserts { get; } = [];
         public Action? BeforeApply { get; init; }
         public int ThrowBeforeApplyCount { get; set; }
         public int ThrowAfterApplyCount { get; set; }
         public bool SuppressReceipts { get; init; }
+        public bool ThrowAmbiguousCreate { get; init; }
         public Func<string, string>? LossyBody { get; init; }
         public IReadOnlyList<SyncRecord> ReadExternalState() => _records.Values.ToList();
         public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
@@ -651,9 +751,12 @@ public sealed class ProjectedReconcileTests
         {
             ApplyCalls++;
             UpsertCount += changes.Upserts.Count;
+            Upserts.AddRange(changes.Upserts);
             BeforeApply?.Invoke();
             BodyOperationIds.AddRange(changes.Upserts.Where(upsert => upsert.WriteBody && upsert.OperationId != null)
                 .Select(upsert => upsert.OperationId!));
+            if (ThrowAmbiguousCreate)
+                throw new AmbiguousCreateIdentityException(BodyOperationIds.Single(), 2);
             if (ThrowBeforeApplyCount-- > 0)
                 throw new InvalidOperationException("before mutation");
             foreach (var upsert in changes.Upserts)

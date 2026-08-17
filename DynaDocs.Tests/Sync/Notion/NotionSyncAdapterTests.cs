@@ -67,7 +67,7 @@ public class NotionSyncAdapterTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Replaced by NativeMarkdownSpineAdapterTests exact operation-id recovery coverage.")]
     public void CreatePage_AmbiguousServerError_AdoptsExistingPageByTitle_NoDuplicate()
     {
         // A create that 500s may have landed server-side (CreatePage no longer blind-retries a 5xx). The adapter
@@ -143,7 +143,7 @@ public class NotionSyncAdapterTests
         Assert.Equal(2, client.QueryDataSource("ds1").Count); // P plus the fresh page
     }
 
-    [Fact]
+    [Fact(Skip = "Replaced by NativeMarkdownSpineAdapterTests exact operation-id recovery coverage.")]
     public void CreatePage_AmbiguousServerError_AdoptsLostCreate_NotSameTitledMappedPage()
     {
         // Two pages end up titled "T": one long-mapped to another record, and the orphan the lost create just
@@ -392,7 +392,7 @@ public class NotionSyncAdapterTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown replaces the retired append/delete transport.")]
     public void ReplaceBody_AppendFails_LeavesExistingBodyIntact()
     {
         // Append-before-delete: if the append throws, the previously-existing blocks must NOT be deleted,
@@ -480,7 +480,7 @@ public class NotionSyncAdapterTests
         Assert.DoesNotContain(record.Fields, f => f.Key == "Rogue");  // rogue column, not in schema
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown reads replace the retired block-body fixture.")]
     public void ReadExternalState_MapsPagesToRecords_WithFieldsAndBody()
     {
         var client = new FakeNotionClient();
@@ -507,7 +507,7 @@ public class NotionSyncAdapterTests
         Assert.Empty(new NotionSyncAdapter(client, "ds1").ReadExternalState());
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown create coverage lives in NativeMarkdownSpineAdapterTests.")]
     public void Apply_Create_PostsNewPage_AndReturnsIdKeyedByLocalId()
     {
         var client = new FakeNotionClient();
@@ -533,7 +533,7 @@ public class NotionSyncAdapterTests
         Assert.NotEmpty(client.GetBlockChildren(assigned["task-a"]));
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown create has no block chunk transport.")]
     public void Apply_Create_BodyOver100Blocks_ChunksCreateAndAppends()
     {
         var client = new FakeNotionClient();
@@ -556,7 +556,7 @@ public class NotionSyncAdapterTests
             NotionBlockConverter.FromBlocks(client.GetBlockChildren(assigned["large"])));
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown reads replace recursive body block fetches.")]
     public void ReadExternalState_FlatBody_ReadsOncePerPage_NoRecursiveChildFetch()
     {
         // The has_children gate must keep a flat body cheap: exactly one GetBlockChildren per page, no recursion.
@@ -658,7 +658,7 @@ public class NotionSyncAdapterTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown receipt coverage replaces converter dialect normalization.")]
     public void BodyDialectOnlyDifference_NoDriftNoConflict_AcrossTwoPasses()
     {
         // ns-8 (issue 0236): the phantom-conflict class for spine bodies. A body whose Notion round-trip differs
@@ -754,7 +754,7 @@ public class NotionSyncAdapterTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown create has no block chunk transport.")]
     public void Apply_Create_BodyExactly100Blocks_SingleCreateNoAppend()
     {
         var client = new FakeNotionClient();
@@ -772,7 +772,7 @@ public class NotionSyncAdapterTests
         Assert.Empty(client.AppendedTo);
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown create has no append phase.")]
     public void Apply_Create_Over100_AppendFails_LeavesEmptyBodiedForRepush()
     {
         var client = new FakeNotionClient { FailAppend = true };
@@ -792,7 +792,7 @@ public class NotionSyncAdapterTests
         Assert.Contains("partial", emptyBodied);
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown create has no append phase.")]
     public void SyncRunner_CreateAppendFailure_RetryWritesVisibleConflictMarkers()
     {
         var client = new FakeNotionClient { FailAppend = true };
@@ -825,7 +825,7 @@ public class NotionSyncAdapterTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Native Markdown update coverage lives in NativeMarkdownSpineAdapterTests.")]
     public void Apply_Update_PatchesProperties_AndReplacesBody()
     {
         var client = new FakeNotionClient();

@@ -69,7 +69,8 @@ public static class NotionPropertyMapper
         IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null)
     {
         var ordered = properties
-            .Where(p => p.Value.Type == null || !ComputedTypes.Contains(p.Value.Type))
+            .Where(p => p.Key != NotionSyncAdapter.WriteIdProperty
+                && (p.Value.Type == null || !ComputedTypes.Contains(p.Value.Type)))
             .OrderBy(p => p.Value.Type == "title" ? 0 : 1)
             .ThenBy(p => p.Key, StringComparer.Ordinal);
 
@@ -107,6 +108,8 @@ public static class NotionPropertyMapper
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var field in fields)
         {
+            if (field.Key == NotionSyncAdapter.WriteIdProperty)
+                continue;
             // First-wins on a duplicate frontmatter key (finding 7): the first occurrence is authoritative,
             // matching FieldMerge.ToMap, the FirstWins overlay lookup, and UpsertField's first-line rewrite.
             if (!seen.Add(field.Key))

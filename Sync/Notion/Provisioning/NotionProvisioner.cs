@@ -67,12 +67,14 @@ public sealed class NotionProvisioner
         var firstPass = type.Properties.Where(p =>
             !selfRelations.Contains(p) && !rollups.Contains(p) && !deferredFormulas.Contains(p.Key));
 
+        var initialSchema = BuildSchema(firstPass, resolvedDataSourceIds);
+        initialSchema.TryAdd(NotionSyncAdapter.WriteIdProperty, new NotionPropertySchema { RichText = new NotionEmptyConfig() });
         var request = new NotionDatabaseCreateRequest
         {
             Parent = new NotionDatabaseParent { PageId = parentPageId },
             Title = NotionRichText.Of(type.NotionTitle),
             Icon = NotionIcon.Of(type.Icon),
-            InitialDataSource = new NotionInitialDataSource { Properties = BuildSchema(firstPass, resolvedDataSourceIds) },
+            InitialDataSource = new NotionInitialDataSource { Properties = initialSchema },
         };
         var db = CreateDatabaseWithRecovery(type, request);
 
@@ -91,6 +93,27 @@ public sealed class NotionProvisioner
         // post-pass with the same idempotent PATCH semantics as rollups/deferred formulas.
         Save();
         return record;
+    }
+
+    /// <summary>Verify the engine-reserved operation identity before reconciliation can mutate pages or files.</summary>
+    public void VerifyReservedWriteId(SyncObjectType type, string dataSourceId)
+    {
+        var live = _client.RetrieveDataSource(dataSourceId);
+        if (!live.Properties.ContainsKey(NotionSyncAdapter.WriteIdProperty))
+        {
+            _client.UpdateDataSource(dataSourceId, new NotionDataSourceUpdateRequest
+            {
+                Properties = new Dictionary<string, NotionPropertySchema>
+                {
+                    [NotionSyncAdapter.WriteIdProperty] = new() { RichText = new NotionEmptyConfig() },
+                },
+            });
+            live = _client.RetrieveDataSource(dataSourceId);
+        }
+        var actual = live.Properties.TryGetValue(NotionSyncAdapter.WriteIdProperty, out var property)
+            ? PropertyType(property) : "absent";
+        if (actual != "rich_text")
+            throw new InvalidOperationException($"Notion data source '{dataSourceId}' property '{NotionSyncAdapter.WriteIdProperty}' must be rich_text; actual type is '{actual}'.");
     }
 
     /// <summary>Create the database, recovering from an ambiguous failure (ns-5). CreateDatabase no longer
@@ -272,6 +295,11 @@ public sealed class NotionProvisioner
         var record = _state[type.Type];
         var patch = new Dictionary<string, NotionPropertySchema>();
 
+        if (live.Properties.ContainsKey(NotionSyncAdapter.WriteIdProperty))
+            VerifyWriteId(record.DataSourceId, live);
+        else
+            patch[NotionSyncAdapter.WriteIdProperty] = new NotionPropertySchema { RichText = new NotionEmptyConfig() };
+
         foreach (var (name, def) in type.Properties)
         {
             if (!live.Properties.TryGetValue(name, out var liveProp))
@@ -317,6 +345,10 @@ public sealed class NotionProvisioner
 
         Push($"provisioning {type.Type} model additions", () => _client.UpdateDataSource(record.DataSourceId, request));
 
+        // A newly added operation-id column is inert until a live read confirms the type. Do not start a
+        // reconcile against a guessed schema: a malformed/rewritten response must stop before page writes.
+        VerifyWriteId(record.DataSourceId, _client.RetrieveDataSource(record.DataSourceId));
+
         // Record the new title ONLY after the PATCH succeeds: a failed rename must leave the OLD title recorded
         // so the next tick retries it (UpdateDataSource is idempotent-classified and the payload is identical) —
         // recording before the push would lose the rename forever on a throw.
@@ -326,6 +358,20 @@ public sealed class NotionProvisioner
             Save();
         }
     }
+
+    private static void VerifyWriteId(string dataSourceId, NotionDataSource live)
+    {
+        if (!live.Properties.TryGetValue(NotionSyncAdapter.WriteIdProperty, out var property))
+            throw new InvalidOperationException($"Notion data source '{dataSourceId}' is missing required property '{NotionSyncAdapter.WriteIdProperty}' (expected rich_text).");
+        var actual = PropertyType(property);
+        if (actual != "rich_text")
+            throw new InvalidOperationException($"Notion data source '{dataSourceId}' property '{NotionSyncAdapter.WriteIdProperty}' must be rich_text; actual type is '{actual}'.");
+    }
+
+    private static string PropertyType(NotionPropertySchema property) =>
+        property.RichText != null ? "rich_text" : property.Title != null ? "title" : property.Select != null ? "select"
+        : property.Number != null ? "number" : property.Date != null ? "date" : property.Checkbox != null ? "checkbox"
+        : property.Relation != null ? "relation" : property.Formula != null ? "formula" : property.Rollup != null ? "rollup" : "unknown";
 
     /// <summary>The select schema to PATCH when the model declares options the live select lacks, plus the
     /// names of just those new options; null when none are missing. Existing live options are echoed back

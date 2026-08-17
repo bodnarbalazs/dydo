@@ -7,8 +7,7 @@ using DynaDocs.Utils;
 /// <summary>
 /// The real Notion <see cref="ISyncAdapter"/> (Decision 025, slice brief §2). Maps Notion pages of
 /// one data source to/from neutral <see cref="SyncRecord"/>s: page id ↔ external id, properties ↔
-/// fields (by name, via <see cref="NotionPropertyMapper"/>), block children ↔ markdown body (via
-/// <see cref="NotionBlockConverter"/>). Apply creates pages for new upserts (returning the assigned
+/// fields (by name, via <see cref="NotionPropertyMapper"/>), native Markdown bodies, and page identity. Apply creates pages for new upserts (returning the assigned
 /// id keyed by local id), updates properties and replaces the body for existing ones, and archives
 /// pages for deletes. All Notion knowledge stays here and in the client — delete this file and the
 /// engine still runs against any other adapter.
@@ -19,6 +18,7 @@ using DynaDocs.Utils;
 /// </summary>
 public sealed class NotionSyncAdapter : ISyncAdapter
 {
+    public const string WriteIdProperty = "dydo-write-id";
     private readonly INotionClient _client;
     private readonly string _dataSourceId;
     private readonly IReadOnlyDictionary<string, string>? _explicitSchema;
@@ -116,7 +116,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 _externalEngineComputed[page.Id] = allFields
                     .Where(f => _engineComputedSchema.ContainsKey(f.Key) && !string.IsNullOrEmpty(f.Value))
                     .ToDictionary(f => f.Key, f => f.Value);
-            var blocks = ReadBlockTree(page.Id);
+            var markdown = _client.GetPageMarkdown(page.Id);
             records.Add(new SyncRecord
             {
                 ExternalId = page.Id,
@@ -127,8 +127,12 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 // it one-way, so reading it back into frontmatter would provoke an edit loop (DR 030 §3).
                 // With an inferred schema every page property is a key, so this is a no-op.
                 Fields = allFields
-                    .Where(f => _schema.ContainsKey(f.Key) && _engineComputedSchema?.ContainsKey(f.Key) != true).ToList(),
-                Body = NotionBlockConverter.FromBlocks(blocks),
+                    .Where(f => _schema.ContainsKey(f.Key) && _engineComputedSchema?.ContainsKey(f.Key) != true
+                        && f.Key != WriteIdProperty).ToList(),
+                Body = markdown.Truncated ? "" : DocsMarkdownNormalizer.CleanForPersist(markdown.Markdown),
+                BodyReadStatus = markdown.Truncated ? SyncBodyReadStatus.Truncated : SyncBodyReadStatus.Complete,
+                OperationId = page.Properties.TryGetValue(WriteIdProperty, out var writeId)
+                    ? NotionRichText.Flatten(writeId.RichText) : null,
             });
         }
         return records;
@@ -142,53 +146,42 @@ public sealed class NotionSyncAdapter : ISyncAdapter
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
         ICollection<string> emptyBodied)
+        => ApplyCore(changes, assigned, deleted, emptyBodied, readReceipts: false);
+
+    public SyncApplyResult ApplyWithReceipts(SyncChangeSet changes, IDictionary<string, string> assigned,
+        ICollection<string> deleted, ICollection<string> emptyBodied) =>
+        ApplyCore(changes, assigned, deleted, emptyBodied, readReceipts: true);
+
+    private SyncApplyResult ApplyCore(SyncChangeSet changes, IDictionary<string, string> assigned,
+        ICollection<string> deleted, ICollection<string> emptyBodied, bool readReceipts)
     {
         var schema = EnsureSchema();
+        var receipts = new List<BodyWriteReceipt>();
 
         foreach (var upsert in changes.Upserts)
         {
             var properties = NotionPropertyMapper.ToProperties(upsert.Fields, schema, _relationLocalToPageIdByField);
             EnsureTitle(properties, schema, upsert);
             AddEngineComputed(upsert.LocalId, properties);
-            var blocks = NotionBlockConverter.ToBlocks(upsert.Body);
+            if (upsert.WriteBody && upsert.OperationId != null)
+                properties[WriteIdProperty] = new NotionPropertyValue { Type = "rich_text", RichText = NotionRichText.Of(upsert.OperationId) };
 
             if (upsert.ExternalId == null)
             {
-                // The create carries the leading run of top-level blocks whose whole subtree fits one depth-≤2,
-                // ≤100-child payload; anything deeper or past 100 is appended after, keeping the emptyBodied
-                // classification (ns-5) — a create with only the create-carried body succeeds, and any deferred
-                // body-append failure surfaces as a body-sync error that leaves the record's snapshot un-advanced.
-                var head = new List<NotionBlock>();
-                var index = 0;
-                var headElements = 0;
-                while (index < blocks.Count && head.Count < NotionBlockAppender.MaxChildrenPerRequest
-                    && headElements + NotionBlockAppender.TotalElements(blocks[index]) <= NotionBlockAppender.MaxElementsPerRequest
-                    && NotionBlockAppender.IsShallow(blocks[index]))
-                {
-                    headElements += NotionBlockAppender.TotalElements(blocks[index]);
-                    head.Add(blocks[index++]);
-                }
-                var createChildren = NotionBlockAppender.Cut(head).Payload;
-                var tail = blocks.Skip(index).ToList();
-
                 var request = new NotionPageCreateRequest
                 {
                     Parent = new NotionParent { Type = "data_source_id", DataSourceId = _dataSourceId },
                     Properties = properties,
                     Icon = NotionIcon.Of(_icon),
-                    Children = createChildren.Count > 0 ? createChildren : null,
+                    Markdown = upsert.WriteBody ? upsert.Body : null,
                 };
-                var page = CreatePageWithRecovery(request, TitleText(properties, schema), assigned);
+                var page = CreatePageWithRecovery(request, upsert.OperationId, assigned);
                 TrackStamp(page.LastEditedTime);
                 // Record the id the instant the page exists, so a later create in this batch throwing
                 // does not lose it (the caller persists the base in a finally) — no duplicate on retry.
                 assigned[upsert.LocalId] = page.Id;
-                if (tail.Count > 0)
-                {
-                    emptyBodied.Add(upsert.LocalId);
-                    NotionBlockAppender.AppendForest(_client, page.Id, tail);
-                    emptyBodied.Remove(upsert.LocalId);
-                }
+                if (readReceipts && upsert.WriteBody)
+                    AddReceipt(upsert, page.Id, receipts);
             }
             else
             {
@@ -200,7 +193,14 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                     Properties = properties,
                     PropertyClears = BuildClears(upsert.ClearedKeys, schema),
                 }).LastEditedTime);
-                ReplaceBody(upsert.ExternalId, blocks);
+                if (upsert.WriteBody)
+                {
+                    var children = _client.GetChildPages(upsert.ExternalId);
+                    var markdown = children.Count == 0 ? upsert.Body : AppendChildTags(upsert.Body, children);
+                    _client.UpdatePageMarkdown(upsert.ExternalId, markdown, children.Count == 0);
+                    if (readReceipts)
+                        AddReceipt(upsert, upsert.ExternalId, receipts);
+                }
             }
         }
 
@@ -225,6 +225,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
             // make the caller drop this one's base entry (it advances only confirmed archives — issue 0221).
             deleted.Add(externalId);
         }
+        return new SyncApplyResult { BodyWriteReceipts = receipts };
     }
 
     /// <summary>Whether a page already carries the engine's current engine-computed value for every
@@ -440,15 +441,10 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         return resolved.Length > 0 ? resolved : null;
     }
 
-    /// <summary>Create a page, recovering from an ambiguous failure (ns-5). A create that dies on a 5xx or a
-    /// transport throw may have succeeded server-side — CreatePage no longer blind-retries those — so re-query
-    /// the data source for a page carrying the record's title: found (and NOT already claimed by another record
-    /// — neither mapped in the base snapshot nor assigned earlier this batch) ⇒ adopt it, avoiding a duplicate
-    /// row; not found ⇒ the create truly failed, so re-create. Excluding already-claimed pages is what keeps a
-    /// second record sharing a legal duplicate title from stealing an existing page (review major 1). A rate
-    /// response (429/529) or a hard 4xx is unambiguous and propagates unchanged.</summary>
+    /// <summary>Recover an ambiguous create by its engine-owned operation id. Titles are deliberately not an
+    /// identity: duplicate titles are legal and must never cause one record to adopt another's page.</summary>
     private NotionPage CreatePageWithRecovery(
-        NotionPageCreateRequest request, string title, IDictionary<string, string> assigned)
+        NotionPageCreateRequest request, string? operationId, IDictionary<string, string> assigned)
     {
         try
         {
@@ -456,60 +452,51 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         }
         catch (NotionApiException e) when (e.AmbiguousOutcome)
         {
-            var adopted = _client.QueryDataSource(_dataSourceId).FirstOrDefault(p =>
-                !p.Archived && !_mappedExternalIds.Contains(p.Id) && !assigned.Values.Contains(p.Id)
-                && PageTitle(p) == title);
-            return adopted ?? _client.CreatePage(request);
+            if (operationId != null)
+            {
+                var matches = FindPagesByWriteId(operationId, assigned);
+                if (matches.Count == 1)
+                    return matches[0];
+                if (matches.Count > 1)
+                    throw new AmbiguousCreateIdentityException(operationId, matches.Count);
+            }
+            return _client.CreatePage(request);
         }
     }
 
-    /// <summary>The title text a create is (or was) writing — flattened from the title-typed property in the
-    /// mapped payload, so recovery matches an adopted page against exactly what would have been stored.</summary>
-    private static string TitleText(
-        IReadOnlyDictionary<string, NotionPropertyValue> properties, IReadOnlyDictionary<string, string> schema)
-    {
-        var titleProperty = schema.FirstOrDefault(entry => entry.Value == "title").Key;
-        return titleProperty != null && properties.TryGetValue(titleProperty, out var value)
-            ? NotionRichText.Flatten(value.Title)
-            : "";
-    }
+    /// <summary>Expose exact operation-id lookup for pending-create recovery. The runner can bind an orphaned
+    /// create only when this returns exactly one live page; zero and duplicates remain safely unresolved.</summary>
+    public IReadOnlyList<NotionPage> FindPagesByWriteId(string operationId) =>
+        FindPagesByWriteId(operationId, new Dictionary<string, string>());
 
-    /// <summary>A page's title text — flattened from its title-typed property, whichever name it carries.</summary>
-    private static string PageTitle(NotionPage page) =>
-        NotionRichText.Flatten(page.Properties.Values.FirstOrDefault(v => v.Type == "title")?.Title);
-
-    /// <summary>Replace a page's body by appending the new blocks FIRST, then deleting the previously
-    /// existing ones (their ids snapshotted before the append). Notion has no atomic body replace, so
-    /// ordering the append before the delete means a failed append leaves the original body intact — at
-    /// worst temporarily duplicated, never empty (slice brief §5).</summary>
-    private void ReplaceBody(string pageId, List<NotionBlock> blocks)
-    {
-        // Snapshot the existing TOP-LEVEL block ids before appending; archiving a top-level block trashes its
-        // descendants too, so deleting the old roots clears the whole prior body.
-        var existingIds = _client.GetBlockChildren(pageId)
-            .Select(b => b.Id)
-            .Where(id => id != null)
+    private IReadOnlyList<NotionPage> FindPagesByWriteId(string operationId, IDictionary<string, string> assigned) =>
+        _client.QueryDataSource(_dataSourceId)
+            .Where(page => !page.Archived && !_mappedExternalIds.Contains(page.Id) && !assigned.Values.Contains(page.Id)
+                && page.Properties.TryGetValue(WriteIdProperty, out var value)
+                && NotionRichText.Flatten(value.RichText) == operationId)
             .ToList();
 
-        NotionBlockAppender.AppendForest(_client, pageId, blocks);
-
-        foreach (var id in existingIds)
-            _client.DeleteBlock(id!);
+    private static string AppendChildTags(string body, IReadOnlyList<NotionChildPage> children)
+    {
+        var tags = string.Join("\n", children.Select(child =>
+            $"<page url=\"https://app.notion.com/p/{child.Id}\">{System.Security.SecurityElement.Escape(child.Title)}</page>"));
+        return body.Length == 0 ? tags : body + "\n\n" + tags;
     }
 
-    /// <summary>Read a page's body as a nested block tree. Notion returns one level of children per request and
-    /// flags a block that has more via <c>has_children</c>, so recurse only into flagged blocks — a flat body then
-    /// costs no extra reads, while a nested list is reconstructed so the round-trip matches what was written and an
-    /// untouched doc stays idempotent across ticks.</summary>
-    private IReadOnlyList<NotionBlock> ReadBlockTree(string blockId)
+    private void AddReceipt(SyncUpsert upsert, string externalId, List<BodyWriteReceipt> receipts)
     {
-        var blocks = _client.GetBlockChildren(blockId);
-        foreach (var block in blocks)
-            // A child_page is a nested sub-page (DR 033), not body — FromBlocks drops it, so never descend into
-            // one and pull a whole sub-page's content in as if it were this page's body.
-            if (block.HasChildren == true && block.Id != null && block.Type != "child_page")
-                block.Children = ReadBlockTree(block.Id).ToList();
-        return blocks;
+        if (upsert.OperationId == null)
+            return;
+        var read = _client.GetPageMarkdown(externalId);
+        if (read.Truncated)
+            return;
+        receipts.Add(new BodyWriteReceipt
+        {
+            OperationId = upsert.OperationId,
+            LocalId = upsert.LocalId,
+            ExternalId = externalId,
+            ObservedExternalBody = DocsMarkdownNormalizer.CleanForPersist(read.Markdown),
+        });
     }
 
     /// <summary>Apply may run before a read in principle; resolve the schema once if so.</summary>

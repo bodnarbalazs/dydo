@@ -7,6 +7,7 @@
       "icon": "🏷️",
       "properties": {
         "title": { "type": "title" },
+        "dydo-write-id": { "type": "rich_text", "hidden": true },
         "specRef": { "type": "rich_text" },
         "status": { "type": "select", "options": ["planned", "active", "shipped", "abandoned"],
           "colors": { "planned": "gray", "active": "blue", "shipped": "green", "abandoned": "brown" } },
@@ -35,6 +36,7 @@
       "icon": "🚀",
       "properties": {
         "title": { "type": "title" },
+        "dydo-write-id": { "type": "rich_text", "hidden": true },
         "goal": { "type": "rich_text" },
         "status": { "type": "select", "options": ["proposed", "active", "done", "abandoned"],
           "colors": { "proposed": "gray", "active": "blue", "done": "green", "abandoned": "brown" } },
@@ -70,6 +72,7 @@
       "icon": "🏃",
       "properties": {
         "title": { "type": "title" },
+        "dydo-write-id": { "type": "rich_text", "hidden": true },
         "seq": { "type": "number" },
         "status": { "type": "select", "options": ["planning", "plan-review", "planned", "active", "in-review", "audit", "done", "escalated"],
           "colors": { "planning": "gray", "plan-review": "yellow", "planned": "gray", "active": "blue", "in-review": "yellow", "audit": "purple", "done": "green", "escalated": "red" } },
@@ -101,6 +104,7 @@
       "icon": "📋",
       "properties": {
         "title": { "type": "title" },
+        "dydo-write-id": { "type": "rich_text", "hidden": true },
         "status": { "type": "select", "options": ["backlog", "ready", "in-progress", "in-review", "blocked", "done"],
           "colors": { "backlog": "gray", "ready": "purple", "in-progress": "blue", "in-review": "yellow", "blocked": "red", "done": "green" } },
         "priority": { "type": "select", "options": ["Urgent", "High", "Normal", "Low"],
@@ -133,6 +137,7 @@
       "icon": "🪲",
       "properties": {
         "title": { "type": "title" },
+        "dydo-write-id": { "type": "rich_text", "hidden": true },
         "status": { "type": "select", "options": ["triage", "open", "resolved"], "folders": { "resolved": "resolved" },
           "colors": { "triage": "gray", "open": "blue", "resolved": "green" } },
         "severity": { "type": "select", "options": ["critical", "high", "medium", "low"],
@@ -165,6 +170,7 @@
       "icon": "✅",
       "properties": {
         "title": { "type": "title" },
+        "dydo-write-id": { "type": "rich_text", "hidden": true },
         "status": { "type": "select", "options": ["backlog", "in-progress", "in-review", "done"], "folders": { "backlog": "backlog" },
           "colors": { "backlog": "gray", "in-progress": "blue", "in-review": "yellow", "done": "green" } },
         "priority": { "type": "select", "options": ["Urgent", "High", "Normal", "Low"],
@@ -193,6 +199,7 @@
       "icon": "💡",
       "properties": {
         "title": { "type": "title" },
+        "dydo-write-id": { "type": "rich_text", "hidden": true },
         "status": { "type": "select", "options": ["raw", "shaping", "promoted", "dropped"],
           "colors": { "raw": "gray", "shaping": "blue", "promoted": "green", "dropped": "brown" } },
         "area": { "type": "select", "options": ["backend", "general", "project", "reference", "understand"] }

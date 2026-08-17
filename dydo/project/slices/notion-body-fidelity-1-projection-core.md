@@ -2,7 +2,7 @@
 title: Projection Core
 sprint: notion-body-fidelity
 seq: 1
-status: ready
+status: done
 area: backend
 type: context
 ---

@@ -17,3 +17,4 @@ Index of sprints documentation.
 - [Notion Sync](./notion-sync.md) - Build the Notion-agnostic sync engine (3-way reconcile + base snapshot), the real Notion adapter, and the PM spine provisioning that creates and ow...
 - [Runtime Slim](./runtime-slim.md) - Strip the queue, baton, dispatch-wait, and worktree-orchestration machinery from the worker-tier runtime (Sprint 6, Decision 024).
 - [v2.2.3 Upgrade Compatibility](./v2-2-3-upgrade-compatibility.md) - Land the focused fixes accumulated after v2.
+- [Notion Body Fidelity](./notion-body-fidelity.md) - Implement dual-projection, format-preserving, uniformly bidirectional PM-spine body sync and prove the watchdog path against real Notion.

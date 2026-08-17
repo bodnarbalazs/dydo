@@ -43,3 +43,9 @@ Index of slices documentation.
 - [v223-1 Pending Patch Consolidation](./v223-1-pending-patch.md) - Review and finish the existing non-sync dirty-tree implementation for issues 0300-0305 as one patch unit.
 - [v223-2 Upgrade Compatibility](./v223-2-upgrade-compatibility.md) - Make integration-aware sync backward compatible, make inquisitor reproducible from shipped sources, retire stale sprint-auditor outputs without tou...
 - [v223-3 Release](./v223-3-release.md) - Close the completed records, prove release readiness, and publish v2.
+- [Projection Core](./notion-body-fidelity-1-projection-core.md) - Source-preserving Markdown alignment and patching across local and external projections.
+- [Snapshot V2 and Write Receipts](./notion-body-fidelity-2-snapshot-receipts.md) - Dual body bases, pending intents, and observed external receipts.
+- [Projected Reconcile and Surgical File Patch](./notion-body-fidelity-3-engine-and-file-patch.md) - Representation-local reconciliation and byte-preserving repo application.
+- [Spine Native Markdown Transport](./notion-body-fidelity-4-spine-native-markdown.md) - Move PM-spine bodies to native Markdown reads/writes with exact receipts.
+- [Legacy Migration and Watchdog Integration](./notion-body-fidelity-5-migration-and-watchdog.md) - Safe snapshot migration and shared full/delta behavior.
+- [Fidelity Corpus and Live Proof](./notion-body-fidelity-6-fidelity-and-live-proof.md) - Mutation coverage and isolated real-Notion watchdog acceptance.

@@ -104,6 +104,7 @@ public sealed class BaseSnapshotStore
             LocalBody = bodyBase.LocalBody,
             ExternalBody = bodyBase.ExternalBody,
             PendingBodyWrite = previous?.PendingBodyWrite,
+            ResolutionCleanupReceipt = previous?.ResolutionCleanupReceipt,
         };
         Dirty = true;
     }
@@ -134,6 +135,27 @@ public sealed class BaseSnapshotStore
         if (_byLocalId.TryGetValue(localId, out var snapshot) && snapshot.PendingBodyWrite != null)
         {
             snapshot.PendingBodyWrite = null;
+            Dirty = true;
+        }
+    }
+
+    public ResolutionCleanupReceipt? GetResolutionCleanupReceipt(string localId) =>
+        _byLocalId.TryGetValue(localId, out var snapshot) ? snapshot.ResolutionCleanupReceipt : null;
+
+    public IEnumerable<string> ResolutionCleanupLocalIds => _byLocalId
+        .Where(pair => pair.Value.ResolutionCleanupReceipt != null).Select(pair => pair.Key);
+
+    public void SetResolutionCleanupReceipt(ResolutionCleanupReceipt receipt)
+    {
+        _byLocalId[receipt.LocalId].ResolutionCleanupReceipt = receipt;
+        Dirty = true;
+    }
+
+    public void RemoveResolutionCleanupReceipt(string localId)
+    {
+        if (_byLocalId.TryGetValue(localId, out var snapshot) && snapshot.ResolutionCleanupReceipt != null)
+        {
+            snapshot.ResolutionCleanupReceipt = null;
             Dirty = true;
         }
     }

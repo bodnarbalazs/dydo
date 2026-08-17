@@ -97,6 +97,25 @@ public sealed class BodyWriteReceiptTests : IDisposable
     }
 
     [Fact]
+    public void ResolutionCleanupReceipt_RoundTripsAndLegacySnapshotsRemainCompatible()
+    {
+        var path = Path.Combine(_directory, "snapshot.json");
+        var store = new BaseSnapshotStore(path);
+        store.SetDualBodyBase(Doc("task", "page"), new DualBodyBase("body", "echo"));
+        store.SetResolutionCleanupReceipt(new ResolutionCleanupReceipt
+        {
+            LocalId = "task", OperationId = "receipt-operation", ResolvedBody = "body",
+        });
+        store.Save();
+
+        var reloaded = new BaseSnapshotStore(path);
+        var cleanup = Assert.IsType<ResolutionCleanupReceipt>(reloaded.GetResolutionCleanupReceipt("task"));
+        Assert.Equal("receipt-operation", cleanup.OperationId);
+        Assert.Equal("body", cleanup.ResolvedBody);
+        Assert.Contains("resolutionCleanupReceipt", File.ReadAllText(path));
+    }
+
+    [Fact]
     public void IdentityAdapterApplyWithReceipts_ReportsOnlyObservedBodyUpserts()
     {
         ISyncAdapter adapter = new FakeSyncAdapter();

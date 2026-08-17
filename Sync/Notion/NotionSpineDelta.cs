@@ -25,20 +25,21 @@ public static class NotionSpineDelta
 
     public static NotionDeltaTickResult Run(
         INotionClient client, NotionSpineState state, bool census, bool validateProvisioning,
-        bool allowMassDelete = false, DateTime? nowUtc = null)
-        => RunCore(client, state, census, validateProvisioning, allowMassDelete, nowUtc, null);
+        bool allowMassDelete = false, DateTime? nowUtc = null, TextWriter? diagnostics = null)
+        => RunCore(client, state, census, validateProvisioning, allowMassDelete, nowUtc, null, diagnostics ?? TextWriter.Null);
 
     /// <summary>Exercises the production delta path with a reader that can model transport outcomes the block
     /// endpoint cannot otherwise express, such as a truncated body export.</summary>
     internal static NotionDeltaTickResult RunForTest(
         INotionClient client, NotionSpineState state, bool census, bool validateProvisioning,
         Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>> reader, bool allowMassDelete = false,
-        DateTime? nowUtc = null) =>
-        RunCore(client, state, census, validateProvisioning, allowMassDelete, nowUtc, reader);
+        DateTime? nowUtc = null, TextWriter? diagnostics = null) =>
+        RunCore(client, state, census, validateProvisioning, allowMassDelete, nowUtc, reader, diagnostics ?? TextWriter.Null);
 
     private static NotionDeltaTickResult RunCore(
         INotionClient client, NotionSpineState state, bool census, bool validateProvisioning,
-        bool allowMassDelete, DateTime? nowUtc, Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>>? reader)
+        bool allowMassDelete, DateTime? nowUtc, Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>>? reader,
+        TextWriter diagnostics)
     {
         var now = nowUtc ?? DateTime.UtcNow;
         var requestsBefore = client.RequestCount;
@@ -59,7 +60,7 @@ public static class NotionSpineDelta
             if (!dataSourceIds.TryGetValue(type.Type, out var dataSourceId))
                 continue; // not provisioned (or a validation probe dropped it) — the manual sync must provision first
             summary = summary.Add(RunType(client, state, type, dataSourceId, localToPageByType, stores[type.Type], census,
-                allowMassDelete, now, reader));
+                allowMassDelete, now, reader, diagnostics));
         }
         return summary with { Requests = client.RequestCount - requestsBefore };
     }
@@ -67,31 +68,13 @@ public static class NotionSpineDelta
     private static NotionDeltaTickResult RunType(
         INotionClient client, NotionSpineState state, SyncObjectType type, string dataSourceId,
         IReadOnlyDictionary<string, Dictionary<string, string>> localToPageByType, BaseSnapshotStore store,
-        bool census, bool allowMassDelete, DateTime nowUtc, Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>>? reader)
+        bool census, bool allowMassDelete, DateTime nowUtc, Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>>? reader,
+        TextWriter diagnostics)
     {
         var docsDir = Path.Combine(state.DydoRoot, type.Dir);
         var shadowDir = SpineShadowDir(state.DydoRoot, type.Type);
-        var files = EnumerateDocFiles(docsDir); // path -> localId, honouring the same _-prefix skip as LoadDocs
-
-        // Promote any conflict shadow a human has resolved BEFORE reconciling (F3), so its content wins over the
-        // still-diverged board this tick and the reconcile does not re-detect the same conflict and overwrite the
-        // resolution. Cheap: the shadow dir is tiny, and PromoteResolvedShadows reads the network only when a resolved
-        // shadow actually needs its base aligned — so a tick with no shadows makes no query. The doc stubs carry each
-        // existing file's REAL canonical path (F9), so a resolved shadow for a folder-routed doc promotes back to its
-        // routed subfolder — never to the type-dir root, which would duplicate the stem and wedge the tick. A promoted
-        // file's new mtime is picked up by a re-scan, so it reconciles this same tick.
-        if (Directory.Exists(shadowDir))
-        {
-            var canonicalStubs = files.Select(kv =>
-                new SyncDoc { LocalId = kv.Value, SourcePath = kv.Key, Fields = [], Body = "" }).ToList();
-            if (NotionSpineSync.PromoteResolvedShadows(
-                    shadowDir, BuildAdapter(client, dataSourceId, type, localToPageByType, store, null), store, docsDir, canonicalStubs))
-                files = EnumerateDocFiles(docsDir);
-        }
-
-        var currentMtimes = files.Keys.ToDictionary(p => p, p => File.GetLastWriteTimeUtc(p).Ticks);
+        var files = EnumerateDocFiles(docsDir);
         var delta = new NotionDeltaState(NotionDeltaState.PathFor(state.DydoRoot, state.SnapshotAdapterName(type.Type)));
-        var (localChanged, filesChanged) = LocalChanges(files, currentMtimes, delta.Files);
 
         // Remote changes. A null cursor (first/degraded tick) or a census reads the full page list for ids+stamps
         // ONLY; otherwise one filtered query returns the pages edited on or after the cursor. Of those, only pages
@@ -105,7 +88,33 @@ public static class NotionSpineDelta
         // Read bodies for the filter hits ONLY (none on a cold-start tick). The same adapter drives the reconcile.
         var adapter = BuildAdapter(client, dataSourceId, type, localToPageByType, store, hits);
         var hitRecords = hits.Count > 0 ? reader?.Invoke(adapter) ?? adapter.ReadExternalState() : [];
+        var promotion = PromoteResolvedShadows(client, dataSourceId, type, localToPageByType, store, docsDir, shadowDir, hitRecords);
+        files = promotion.Files;
+        var currentMtimes = files.Keys.ToDictionary(p => p, p => File.GetLastWriteTimeUtc(p).Ticks);
+        var (localChanged, filesChanged) = LocalChanges(files, currentMtimes, delta.Files);
         var (changed, hitLocalIds) = ChangedUnion(localChanged, hitRecords, disappeared, ExternalIdToLocalId(store));
+
+        // A v1 snapshot and every durable body intent are correctness work even while mtimes and page stamps are
+        // quiet. Read the complete native projection only for those exceptional entries: pending creates need their
+        // exact operation id before ordinary local-id pairing, and migration cannot safely classify from a stale
+        // synthetic. The usual quiet tick remains one filtered query and zero body reads.
+        var preObserved = hitRecords.Concat(promotion.Observed)
+            .GroupBy(record => record.ExternalId, StringComparer.Ordinal)
+            .Select(group => group.Last())
+            .ToList();
+        var (specialIds, specialRecords) = ReadMigrationAndPendingRecords(
+            client, dataSourceId, type, localToPageByType, store, preObserved);
+        // The exceptional read deliberately contains just the snapshot/intent pages.  Merge it with the normal
+        // filtered hits (the latter may already contain one of those pages) before building the delta external
+        // view; a full corpus body read here would turn one stuck journal entry into an O(board) watchdog tick.
+        var observed = preObserved.Concat(specialRecords)
+            .GroupBy(record => record.ExternalId, StringComparer.Ordinal)
+            .Select(group => group.Last())
+            .ToList();
+        foreach (var localId in specialIds)
+            changed.Add(localId);
+        var observedLocalIds = observed.Select(record => LocalIdFor(record, ExternalIdToLocalId(store)))
+            .ToHashSet(StringComparer.Ordinal);
 
         var cursorAdvanced = cursorToSave != null && (delta.Cursor == null || string.CompareOrdinal(cursorToSave, delta.Cursor) > 0);
         if (changed.Count == 0)
@@ -121,11 +130,15 @@ public static class NotionSpineDelta
         // (missing/corrupt state) where degrading to a full local reconcile is the safe choice (F2a). It reads no
         // remote bodies (hits is empty), so it never becomes an O(corpus) body storm.
         var repoDocs = BuildRepoDocs(files, changed);
-        var external = BuildExternal(hitRecords, changed, hitLocalIds, disappeared, store);
+        var external = BuildExternal(observed, changed, observedLocalIds, disappeared, store);
+        var migration = NotionSnapshotMigration.Classify(
+            store, repoDocs, observed, adapter, shadowDir, docsDir, diagnostics);
+        NotionSnapshotMigration.ApplyShadows(migration, shadowDir);
+        var migrationBodies = migration.Adoptions.ToDictionary(pair => pair.Key, pair => pair.Value.Bodies);
         var runner = new SyncRunner(
             adapter, store, RepoFolderLayout.For(type, docsDir).PathFor,
-            localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete, useProjectedBodies: true);
-        var run = runner.RunDelta(repoDocs, external, changed);
+            localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete, useProjectedBodies: true, migrationBodies: migrationBodies);
+        var run = runner.RunDelta(repoDocs, external, changed, migration.Shadows.Keys.ToHashSet());
 
         // Persist state only when something actually moved (minor 1): in steady state the newest page is ALWAYS a
         // boundary hit that reconciles to None, so an unconditional save would rewrite delta.json every tick — a
@@ -135,10 +148,105 @@ public static class NotionSpineDelta
         // unhandled: retaining the prior state makes the same remote page a filter hit next tick instead of
         // advancing past unavailable content.
         var reconciledSomething = run.Results.Any(r => r.Action != ReconcileAction.None);
-        var unhandledProjection = run.Results.Any(r => r.UnhandledProjection);
-        if (!run.FuseTripped && !unhandledProjection && (filesChanged || cursorAdvanced || reconciledSomething))
-            SaveDeltaState(delta, currentMtimes, cursorToSave);
-        return Summarize(run, census);
+        var unhandledProjection = migration.Shadows.Count > 0 || run.Results.Any(r => r.UnhandledProjection);
+        var needsFollowUp = run.PendingRecoveryLocalIds.Count > 0;
+        var postRunMtimes = NotionDeltaState.ScanMtimes(docsDir);
+        var canonicalChanged = postRunMtimes.Count != currentMtimes.Count
+            || postRunMtimes.Any(pair => !currentMtimes.TryGetValue(pair.Key, out var before) || before != pair.Value);
+        if (ShouldSaveDeltaState(run, unhandledProjection, needsFollowUp, filesChanged || canonicalChanged, cursorAdvanced, reconciledSomething))
+            SaveDeltaState(delta, postRunMtimes, cursorToSave);
+        ReportUnhandled(diagnostics, type, files, docsDir, shadowDir, run);
+        return Summarize(run, census) with { Conflicts = Summarize(run, census).Conflicts + migration.Shadows.Count };
+    }
+
+    private static bool ShouldSaveDeltaState(
+        SyncRunResult run, bool unhandledProjection, bool needsFollowUp,
+        bool filesChanged, bool cursorAdvanced, bool reconciledSomething) =>
+        !run.FuseTripped && !unhandledProjection && !needsFollowUp
+        && (filesChanged || cursorAdvanced || reconciledSomething);
+
+    private static (Dictionary<string, string> Files, IReadOnlyList<SyncRecord> Observed) PromoteResolvedShadows(INotionClient client, string dataSourceId,
+        SyncObjectType type, IReadOnlyDictionary<string, Dictionary<string, string>> localToPageByType,
+        BaseSnapshotStore store, string docsDir, string shadowDir, IReadOnlyList<SyncRecord> hitRecords)
+    {
+        var files = EnumerateDocFiles(docsDir);
+        if (!Directory.Exists(shadowDir))
+            return (files, []);
+        var canonicalStubs = files.Select(kv =>
+            new SyncDoc { LocalId = kv.Value, SourcePath = kv.Key, Fields = [], Body = "" }).ToList();
+        var targetPageIds = Directory.EnumerateFiles(shadowDir, "*.md")
+            .Where(path => !ThreeWayTextMerge.ContainsConflictMarkers(File.ReadAllText(path)))
+            .Select(path => Path.GetFileNameWithoutExtension(path))
+            .Where(localId => localId != null)
+            .Cast<string>()
+            .Select(localId => store.Get(localId)?.ExternalId)
+            .Where(pageId => pageId != null)
+            .Cast<string>()
+            .ToHashSet(StringComparer.Ordinal);
+        if (targetPageIds.Count == 0)
+            return (files, []);
+        var observedIds = hitRecords.Select(record => record.ExternalId).ToHashSet(StringComparer.Ordinal);
+        var pages = client.QueryDataSource(dataSourceId).Where(page => targetPageIds.Contains(page.Id) && !observedIds.Contains(page.Id)).ToList();
+        var adapter = BuildAdapter(client, dataSourceId, type, localToPageByType, store, pages);
+        var targeted = pages.Count == 0 ? [] : adapter.ReadExternalState();
+        var observed = hitRecords.Concat(targeted).ToList();
+        return (NotionSpineSync.PromoteResolvedShadows(shadowDir, adapter, store, docsDir, canonicalStubs, observed)
+            ? EnumerateDocFiles(docsDir) : files, targeted);
+    }
+
+    private static void ReportUnhandled(TextWriter diagnostics, SyncObjectType type,
+        IReadOnlyDictionary<string, string> files, string docsDir, string shadowDir, SyncRunResult run)
+    {
+        foreach (var result in run.Results.Where(result => result.UnhandledProjection))
+        {
+            var canonical = PathForLocalId(files, result.LocalId) ?? Path.Combine(docsDir, result.LocalId + ".md");
+            var shadow = Path.Combine(shadowDir, result.LocalId + ".md");
+            diagnostics.WriteLine($"  sync       {type.Type,-9} unhandled {result.LocalId}: "
+                + $"{result.StructuredConflictReason ?? "pending body-write recovery"}; canonical {Path.GetFullPath(canonical)}; shadow {Path.GetFullPath(shadow)}");
+        }
+    }
+
+    private static (HashSet<string> SpecialIds, IReadOnlyList<SyncRecord> Observed) ReadMigrationAndPendingRecords(
+        INotionClient client, string dataSourceId, SyncObjectType type,
+        IReadOnlyDictionary<string, Dictionary<string, string>> localToPageByType, BaseSnapshotStore store,
+        IReadOnlyList<SyncRecord> hits)
+    {
+        var specialIds = store.LocalIds.Where(localId => !store.IsV2(localId)
+            || store.GetPendingBodyWrite(localId) != null).ToHashSet(StringComparer.Ordinal);
+        if (specialIds.Count == 0)
+            return (specialIds, hits);
+        var externalIds = new HashSet<string>(StringComparer.Ordinal);
+        var operationIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var localId in specialIds)
+        {
+            var snapshot = store.Get(localId);
+            if (snapshot?.ExternalId is { } externalId)
+                externalIds.Add(externalId);
+            if (store.GetPendingBodyWrite(localId) is { Kind: BodyWriteOperationKind.Create } intent)
+                operationIds.Add(intent.OperationId);
+        }
+
+        var alreadyRead = hits.Select(record => record.ExternalId).ToHashSet(StringComparer.Ordinal);
+        var hitOperations = hits.Select(record => record.OperationId)
+            .Where(operationId => operationId != null)
+            .Cast<string>()
+            .ToHashSet(StringComparer.Ordinal);
+        if (externalIds.All(alreadyRead.Contains) && operationIds.All(hitOperations.Contains))
+            return (specialIds, []);
+
+        // Notion exposes no retrieve-page-by-id endpoint in the deliberately small client surface.  One metadata
+        // query is therefore the least request-costly way to locate an unbound Create by its exact write id; bodies
+        // are read only for the exceptional pages selected below, never every page returned by the query.
+        var exceptionalPages = client.QueryDataSource(dataSourceId)
+            .Where(page => externalIds.Contains(page.Id)
+                || (page.Properties.TryGetValue(NotionSyncAdapter.WriteIdProperty, out var writeId)
+                    && operationIds.Contains(NotionRichText.Flatten(writeId.RichText))))
+            .Where(page => !alreadyRead.Contains(page.Id))
+            .ToList();
+        if (exceptionalPages.Count == 0)
+            return (specialIds, []);
+        var adapter = BuildAdapter(client, dataSourceId, type, localToPageByType, store, exceptionalPages);
+        return (specialIds, adapter.ReadExternalState());
     }
 
     /// <summary>Diff this tick's file scan against the last: a file whose mtime moved or is new, and a recorded file

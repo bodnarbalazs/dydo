@@ -11,6 +11,8 @@ using DynaDocs.Models;
 /// </summary>
 public sealed class SyncRunner
 {
+    // Internal test seam for the final durability boundary: state is durable before a resolution shadow disappears.
+    internal static Action<string>? ResolutionReceiptFailpoint { get; set; }
     /// <summary>Reserved frontmatter/record key carrying an object's stable local id across the
     /// external boundary, so an externally-created object can be filed under the right repo name.</summary>
     public const string LocalIdField = "local-id";
@@ -21,6 +23,7 @@ public sealed class SyncRunner
     private readonly Func<string, string>? _conflictShadowPathFor;
     private readonly bool _allowMassDelete;
     private readonly bool _useProjectedBodies;
+    private readonly IReadOnlyDictionary<string, DynaDocs.Sync.Projection.DualBodyBase> _migrationBodies;
 
     /// <param name="repoPathFor">The canonical repo path for a doc, given its local id, fields, and current
     /// on-disk path (null when the doc has none yet). Fields are passed so folder placement can derive from
@@ -41,7 +44,8 @@ public sealed class SyncRunner
         Func<string, IReadOnlyList<SyncField>, string?, string> repoPathFor,
         Func<string, string>? conflictShadowPathFor = null,
         bool allowMassDelete = false,
-        bool useProjectedBodies = false)
+        bool useProjectedBodies = false,
+        IReadOnlyDictionary<string, DynaDocs.Sync.Projection.DualBodyBase>? migrationBodies = null)
     {
         _adapter = adapter;
         _base = baseStore;
@@ -49,6 +53,7 @@ public sealed class SyncRunner
         _conflictShadowPathFor = conflictShadowPathFor;
         _allowMassDelete = allowMassDelete;
         _useProjectedBodies = useProjectedBodies;
+        _migrationBodies = migrationBodies ?? new Dictionary<string, DynaDocs.Sync.Projection.DualBodyBase>();
     }
 
     private static SyncDoc WithBody(SyncDoc doc, string body) => new()
@@ -106,7 +111,13 @@ public sealed class SyncRunner
     }
 
     public SyncRunResult Run(IReadOnlyList<SyncDoc> repoDocs) =>
-        Run(repoDocs, _adapter.ReadExternalState(), onlyLocalIds: null, saveWhenClean: true);
+        Run(repoDocs, _adapter.ReadExternalState(), onlyLocalIds: null, saveWhenClean: true, excludedLocalIds: null);
+
+    /// <summary>Runs the same full reconciliation against an already-observed external view. The Notion spine uses
+    /// this for v1 migration so classification and reconciliation cannot race between independent reads.</summary>
+    internal SyncRunResult RunWithExternal(IReadOnlyList<SyncDoc> repoDocs, IReadOnlyList<SyncRecord> external,
+        IReadOnlySet<string> excludedLocalIds) =>
+        Run(repoDocs, external, onlyLocalIds: null, saveWhenClean: true, excludedLocalIds);
 
     /// <summary>Reconcile ONLY the changed-id union (ns-13 delta tick): <paramref name="repoDocs"/> is just the
     /// files that changed on disk, <paramref name="external"/> only the pages the daemon's filtered query surfaced
@@ -118,16 +129,21 @@ public sealed class SyncRunner
     /// same union: the reconcile engine is unchanged.</summary>
     public SyncRunResult RunDelta(
         IReadOnlyList<SyncDoc> repoDocs, IReadOnlyList<SyncRecord> external, IReadOnlySet<string> changedLocalIds) =>
-        Run(repoDocs, external, changedLocalIds, saveWhenClean: false);
+        Run(repoDocs, external, changedLocalIds, saveWhenClean: false, excludedLocalIds: null);
+
+    internal SyncRunResult RunDelta(IReadOnlyList<SyncDoc> repoDocs, IReadOnlyList<SyncRecord> external,
+        IReadOnlySet<string> changedLocalIds, IReadOnlySet<string> excludedLocalIds) =>
+        Run(repoDocs, external, changedLocalIds, saveWhenClean: false, excludedLocalIds);
 
     private SyncRunResult Run(
         IReadOnlyList<SyncDoc> repoDocs, IReadOnlyList<SyncRecord> externalRecords,
-        IReadOnlySet<string>? onlyLocalIds, bool saveWhenClean)
+        IReadOnlySet<string>? onlyLocalIds, bool saveWhenClean, IReadOnlySet<string>? excludedLocalIds)
     {
         var externalByLocalId = MapExternalToLocalId(externalRecords, out var ambiguousPendingCreates);
         var bodyReadStatuses = MapBodyReadStatuses(externalRecords, externalByLocalId);
         var repoByLocalId = IndexByLocalId(repoDocs);
-        var pending = RecoverPendingWrites(repoByLocalId, externalByLocalId, ambiguousPendingCreates, out var retryCreates);
+        var pending = RecoverPendingWrites(repoByLocalId, externalByLocalId, bodyReadStatuses, ambiguousPendingCreates,
+            out var retryCreates, out var retryResolutions, out var truncatedPending);
 
         IEnumerable<string> localIds;
         if (onlyLocalIds != null)
@@ -141,13 +157,15 @@ public sealed class SyncRunner
             union.UnionWith(externalByLocalId.Keys);
             localIds = union;
         }
+        if (excludedLocalIds != null && excludedLocalIds.Count > 0)
+            localIds = localIds.Where(localId => !excludedLocalIds.Contains(localId));
 
         // Tracked-record count for the mass-delete fuse, captured before reconcile: base entries are only
         // removed later in CommitBase, so this is the type's tracked-base size going into the run.
         var trackedCount = _base.LocalIds.Count;
 
         var representable = _adapter.RepresentableScalarKeys;
-        var (results, shadowed) = ReconcileAll(localIds, pending, retryCreates, ambiguousPendingCreates,
+        var (results, shadowed) = ReconcileAll(localIds, pending, truncatedPending, retryCreates, retryResolutions, ambiguousPendingCreates,
             repoByLocalId, externalByLocalId, bodyReadStatuses);
 
         // Mass-delete fuse (slice ns-2): count the LOCAL file deletions this reconcile would materialize — a Delete
@@ -163,17 +181,24 @@ public sealed class SyncRunner
             {
                 Results = results,
                 ShadowedLocalIds = shadowed.ToList(),
+                PendingRecoveryLocalIds = pending.ToList(),
                 FuseTripped = true,
                 WouldDeletePaths = wouldDelete,
             };
 
         ApplyAndCommit(results, shadowed, repoByLocalId, externalByLocalId, saveWhenClean);
 
-        return new SyncRunResult { Results = results, ShadowedLocalIds = shadowed.ToList() };
+        return new SyncRunResult
+        {
+            Results = results,
+            ShadowedLocalIds = shadowed.ToList(),
+            PendingRecoveryLocalIds = pending.ToList(),
+        };
     }
 
     private (List<ReconcileResult> Results, HashSet<string> Shadowed) ReconcileAll(IEnumerable<string> localIds,
-        IReadOnlySet<string> pending, IReadOnlySet<string> retryCreates, IReadOnlySet<string> ambiguousPendingCreates,
+        IReadOnlySet<string> pending, IReadOnlySet<string> truncatedPending, IReadOnlySet<string> retryCreates, IReadOnlySet<string> retryResolutions,
+        IReadOnlySet<string> ambiguousPendingCreates,
         IReadOnlyDictionary<string, SyncDoc> repo,
         IReadOnlyDictionary<string, SyncDoc> external, IReadOnlyDictionary<string, SyncBodyReadStatus> bodyReadStatuses)
     {
@@ -193,12 +218,21 @@ public sealed class SyncRunner
                 shadowed.Add(localId);
                 continue;
             }
-            if (pending.Contains(localId))
-                continue;
             repo.TryGetValue(localId, out var currentRepo);
             external.TryGetValue(localId, out var currentExternal);
+            if (truncatedPending.Contains(localId))
+            {
+                var pendingResult = TruncatedResult(localId, _base.Get(localId), currentRepo, currentExternal);
+                results.Add(pendingResult);
+                RouteConflictToShadow(pendingResult, shadowed);
+                continue;
+            }
+            if (pending.Contains(localId))
+                continue;
             var baseDoc = retryCreates.Contains(localId) ? null : _base.Get(localId);
-            var result = bodyReadStatuses.TryGetValue(localId, out var status) && status == SyncBodyReadStatus.Truncated
+            var result = retryResolutions.Contains(localId)
+                ? ResolutionResult(baseDoc!, currentRepo!, currentExternal!)
+                : bodyReadStatuses.TryGetValue(localId, out var status) && status == SyncBodyReadStatus.Truncated
                 ? TruncatedResult(localId, baseDoc, currentRepo, currentExternal)
                 : ReconcileOne(baseDoc, currentRepo, currentExternal);
             results.Add(result);
@@ -278,7 +312,17 @@ public sealed class SyncRunner
 
     private ReconcileResult ReconcileOne(SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external)
     {
-        var bodyBase = baseDoc == null ? null : _base.GetDualBodyBase(baseDoc.LocalId);
+        var migrationBody = baseDoc == null ? null : _migrationBodies.GetValueOrDefault(baseDoc.LocalId);
+        var bodyBase = migrationBody ?? (baseDoc == null ? null : _base.GetDualBodyBase(baseDoc.LocalId));
+        if (TryReconcileAlignedProjectedBody(baseDoc, repo, external, bodyBase, out var aligned))
+            return aligned;
+        var result = ReconcileWithBodyBase(baseDoc, repo, external, bodyBase);
+        return MigrationAdoptionResult(migrationBody, result, repo, external) ?? result;
+    }
+
+    private bool TryReconcileAlignedProjectedBody(SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external,
+        DynaDocs.Sync.Projection.DualBodyBase? bodyBase, out ReconcileResult result)
+    {
         // A human resolving a shadow by making the canonical document exactly match the observed external
         // projection is decisive for the BODY only. Reconcile fields against the newly aligned body bases so a
         // property edit still flows; marker safety remains at the shadow-routing boundary.
@@ -286,12 +330,36 @@ public sealed class SyncRunner
             && repo.Body == external.Body
             && repo.Body != bodyBase.LocalBody
             && external.Body != bodyBase.ExternalBody)
-            return ReconcileAlignedProjectedBodies(baseDoc!, repo, external);
-        return _useProjectedBodies && (bodyBase != null || baseDoc == null)
+        {
+            result = ReconcileAlignedProjectedBodies(baseDoc!, repo, external);
+            return true;
+        }
+        result = null!;
+        return false;
+    }
+
+    private ReconcileResult ReconcileWithBodyBase(SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external,
+        DynaDocs.Sync.Projection.DualBodyBase? bodyBase) =>
+        _useProjectedBodies && (bodyBase != null || baseDoc == null)
             ? ReconcileEngine.ReconcileProjected(baseDoc, bodyBase, repo, external,
                 _adapter.NormalizeFields, _adapter.RepresentableScalarKeys)
             : ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields,
                 _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho, _adapter.RepresentableScalarKeys);
+
+    private ReconcileResult? MigrationAdoptionResult(DynaDocs.Sync.Projection.DualBodyBase? migrationBody,
+        ReconcileResult result, SyncDoc? repo, SyncDoc? external)
+    {
+        if (migrationBody != null && result.Action == ReconcileAction.None && result.NewBodyBase == null
+            && repo != null && external != null)
+            return new ReconcileResult
+            {
+                LocalId = repo.LocalId,
+                Action = ReconcileAction.None,
+                NewBase = new SyncDoc { LocalId = repo.LocalId, ExternalId = external.ExternalId,
+                    Fields = _adapter.NormalizeFields(repo).Fields, Body = repo.Body, SourcePath = repo.SourcePath },
+                NewBodyBase = migrationBody,
+            };
+        return null;
     }
 
     private ReconcileResult ReconcileAlignedProjectedBodies(SyncDoc baseDoc, SyncDoc repo, SyncDoc external)
@@ -321,48 +389,105 @@ public sealed class SyncRunner
     /// and resolutions may be recovered only when their journaled page now exposes the intended bytes exactly.
     /// </summary>
     private HashSet<string> RecoverPendingWrites(IReadOnlyDictionary<string, SyncDoc> repo,
-        IReadOnlyDictionary<string, SyncDoc> external, IReadOnlySet<string> ambiguousPendingCreates,
-        out HashSet<string> retryCreates)
+        IReadOnlyDictionary<string, SyncDoc> external, IReadOnlyDictionary<string, SyncBodyReadStatus> bodyReadStatuses,
+        IReadOnlySet<string> ambiguousPendingCreates, out HashSet<string> retryCreates,
+        out HashSet<string> retryResolutions, out HashSet<string> truncatedPending)
     {
         var fenced = new HashSet<string>();
         retryCreates = [];
+        retryResolutions = [];
+        truncatedPending = [];
         foreach (var localId in _base.LocalIds)
         {
             var intent = _base.GetPendingBodyWrite(localId);
             if (intent == null)
                 continue;
             fenced.Add(localId);
+            if (bodyReadStatuses.TryGetValue(localId, out var status) && status == SyncBodyReadStatus.Truncated)
+            {
+                truncatedPending.Add(localId);
+                continue;
+            }
             if (intent.Kind == BodyWriteOperationKind.Create)
             {
                 RecoverPendingCreate(intent, repo, external, ambiguousPendingCreates, fenced, retryCreates);
                 continue;
             }
-            if (intent.ExternalId == null
-                || !external.TryGetValue(localId, out var observed) || observed.ExternalId != intent.ExternalId)
-                continue;
-            repo.TryGetValue(localId, out var currentRepo);
-            if (intent.Kind == BodyWriteOperationKind.Resolution && currentRepo != null
-                && ThreeWayTextMerge.ContainsConflictMarkers(currentRepo.Body))
-            {
-                ShadowPendingProjection(currentRepo.Body, currentRepo, observed, localId);
-                continue;
-            }
-            if (currentRepo?.Body == intent.IntendedLocalBody && observed.Body == intent.PriorExternalBody)
-            {
-                fenced.Remove(localId); // proved not to have landed: re-send the SAME journaled operation.
-                continue;
-            }
-            switch (intent.Kind)
-            {
-                case BodyWriteOperationKind.Update:
-                    RecoverUpdate(intent, currentRepo, observed, localId);
-                    break;
-                case BodyWriteOperationKind.Resolution:
-                    RecoverResolution(intent, currentRepo, observed, localId);
-                    break;
-            }
+            RecoverPendingNonCreate(intent, repo, external, fenced, retryResolutions);
         }
         return fenced;
+    }
+
+    private void RecoverPendingNonCreate(BodyWriteIntent intent, IReadOnlyDictionary<string, SyncDoc> repo,
+        IReadOnlyDictionary<string, SyncDoc> external, HashSet<string> fenced, HashSet<string> retryResolutions)
+    {
+        if (intent.ExternalId == null
+            || !external.TryGetValue(intent.LocalId, out var observed) || observed.ExternalId != intent.ExternalId)
+            return;
+        repo.TryGetValue(intent.LocalId, out var currentRepo);
+        if (intent.Kind == BodyWriteOperationKind.Resolution && currentRepo != null
+            && ThreeWayTextMerge.ContainsConflictMarkers(currentRepo.Body))
+        {
+            ShadowPendingProjection(currentRepo.Body, currentRepo, observed, intent.LocalId);
+            return;
+        }
+        if (currentRepo?.Body == intent.IntendedLocalBody && observed.Body == intent.PriorExternalBody)
+        {
+            fenced.Remove(intent.LocalId); // proved not to have landed: re-send the SAME journaled operation.
+            if (intent.Kind == BodyWriteOperationKind.Resolution)
+                retryResolutions.Add(intent.LocalId);
+            return;
+        }
+        if (intent.Kind == BodyWriteOperationKind.Update)
+            RecoverUpdate(intent, currentRepo, observed, intent.LocalId);
+        else if (intent.Kind == BodyWriteOperationKind.Resolution)
+            RecoverResolution(intent, currentRepo, observed, intent.LocalId);
+    }
+
+    private ReconcileResult ResolutionResult(SyncDoc baseDoc, SyncDoc repo, SyncDoc external)
+    {
+        var bodyBase = _base.GetDualBodyBase(repo.LocalId)!;
+        var fieldsOnlyRepo = WithBody(repo, external.Body);
+        var fields = ReconcileEngine.ReconcileProjected(baseDoc,
+            new DynaDocs.Sync.Projection.DualBodyBase(bodyBase.LocalBody, external.Body), fieldsOnlyRepo, external,
+            _adapter.NormalizeFields, _adapter.RepresentableScalarKeys);
+        var repoWrite = fields.RepoWrite == null ? null : WithBody(fields.RepoWrite, repo.Body);
+        var externalFields = fields.ExternalWrite?.Fields ?? external.Fields;
+        var normalizedBase = fields.NewBase ?? _adapter.NormalizeFields(new SyncDoc
+        {
+            LocalId = repo.LocalId, ExternalId = external.ExternalId, Fields = external.Fields,
+            Body = repo.Body, SourcePath = repo.SourcePath,
+        });
+        return new ReconcileResult
+        {
+        LocalId = repo.LocalId,
+        // Resolution always pushes the human-selected body. A generic external field import must therefore become
+        // a merge (repo fields + body push), while a pure/local field decision remains a normal external push.
+        Action = repoWrite == null ? ReconcileAction.PushToExternal : ReconcileAction.Merged,
+        RepoWrite = repoWrite,
+        ExternalWrite = new SyncDoc
+        {
+            LocalId = repo.LocalId,
+            ExternalId = external.ExternalId,
+            Fields = externalFields,
+            Body = repo.Body,
+            SourcePath = repo.SourcePath,
+        },
+        NewBase = new SyncDoc
+        {
+            LocalId = repo.LocalId,
+            ExternalId = external.ExternalId,
+            Fields = normalizedBase.Fields,
+            Body = repo.Body,
+            SourcePath = repo.SourcePath,
+        },
+        NewBodyBase = new DynaDocs.Sync.Projection.DualBodyBase(repo.Body, external.Body),
+        WriteBody = true,
+        BodyWriteKind = BodyWriteOperationKind.Resolution,
+        ClearedKeys = fields.ClearedKeys,
+        PatchFields = fields.PatchFields,
+        RepoChanged = fields.RepoChanged,
+        };
     }
 
     private void RecoverPendingCreate(BodyWriteIntent intent, IReadOnlyDictionary<string, SyncDoc> repo,
@@ -603,7 +728,26 @@ public sealed class SyncRunner
         baseDoc.ExternalId = receipt.ExternalId;
         _base.SetDualBodyBase(baseDoc, new DynaDocs.Sync.Projection.DualBodyBase(
             result.NewBodyBase.LocalBody, receipt.ObservedExternalBody));
+        var pending = _base.GetPendingBodyWrite(result.LocalId);
         _base.RemovePendingBodyWrite(result.LocalId);
+        if (pending?.Kind == BodyWriteOperationKind.Resolution && _conflictShadowPathFor != null)
+        {
+            // The receipt-derived dual base and cleared intent must survive before the only recoverable copy of a
+            // human resolution is removed. A later batch failure cannot reopen this crash window.
+            _base.SetResolutionCleanupReceipt(new ResolutionCleanupReceipt
+            {
+                LocalId = result.LocalId,
+                OperationId = pending.OperationId,
+                ResolvedBody = result.NewBodyBase.LocalBody,
+            });
+            _base.Save();
+            ResolutionReceiptFailpoint?.Invoke("after-receipt-save");
+            var shadow = _conflictShadowPathFor(result.LocalId);
+            if (File.Exists(shadow))
+                File.Delete(shadow);
+            _base.RemoveResolutionCleanupReceipt(result.LocalId);
+            _base.Save();
+        }
         return true;
     }
 

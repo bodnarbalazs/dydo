@@ -59,6 +59,7 @@ internal partial class TypesJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(SyncSnapshotFile))]
 [JsonSerializable(typeof(SyncSnapshot))]
 [JsonSerializable(typeof(BodyWriteIntent))]
+[JsonSerializable(typeof(ResolutionCleanupReceipt))]
 [JsonSerializable(typeof(BodyWriteReceipt))]
 [JsonSerializable(typeof(BodyWriteOperationKind))]
 [JsonSerializable(typeof(SyncBodyReadStatus))]

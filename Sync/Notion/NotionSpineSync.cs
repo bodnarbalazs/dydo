@@ -15,6 +15,8 @@ using DynaDocs.Sync.Notion.Provisioning;
 /// </summary>
 public static class NotionSpineSync
 {
+    // Internal test seam for restart-boundary proofs; production never assigns it.
+    internal static Action<string>? ResolutionPromotionFailpoint { get; set; }
     public static NotionSpineSyncResult Run(INotionClient client, NotionSpineState state, bool dryRun, TextWriter output, bool prune = false, bool allowMassDelete = false)
     {
         var dydoRoot = state.DydoRoot;
@@ -285,7 +287,14 @@ public static class NotionSpineSync
                     adapter, store, RepoFolderLayout.For(type, docsDir).PathFor,
                     localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete, useProjectedBodies: true);
 
-                var run = runner.Run(docs);
+                var external = adapter.ReadExternalState();
+                var migration = NotionSnapshotMigration.Classify(
+                    store, docs, external, adapter, shadowDir, docsDir, output);
+                NotionSnapshotMigration.ApplyShadows(migration, shadowDir);
+                var migrationBodies = migration.Adoptions.ToDictionary(pair => pair.Key, pair => pair.Value.Bodies);
+                runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor,
+                    localId => Path.Combine(shadowDir, localId + ".md"), allowMassDelete, useProjectedBodies: true, migrationBodies: migrationBodies);
+                var run = runner.RunWithExternal(docs, external, migration.Shadows.Keys.ToHashSet());
                 if (run.FuseTripped)
                 {
                     fuseTripped.Add(type.Type);
@@ -366,66 +375,133 @@ public static class NotionSpineSync
             output.WriteLine($"             {unshadowed.Count} conflict(s): {string.Join(", ", unshadowed)}");
     }
 
-    /// <summary>Promote every shadow file a human has resolved — one no longer carrying merge sentinels — onto its
-    /// canonical PM doc, then delete it (DR 035 §4 resolution flow; the spine sibling of
-    /// <see cref="DocsTreeSync"/>'s PromoteResolvedShadows). A shadow still bearing markers is left untouched: the
-    /// human has not finished, and the reconcile re-derives the same conflict deterministically.
-    /// <para>The resolution must WIN over the still-diverged Notion side (else the reconcile re-detects the two-
-    /// sided edit and re-diverts): the base body is aligned to the CURRENT external body, so the reconcile reads
-    /// Notion as unchanged and pushes the resolved repo body over it (repo-wins) rather than merging a fresh
-    /// conflict. That external read is GUARDED — a page archived/trashed while the conflict sat unresolved is simply
-    /// skipped (base left as-is) rather than throwing at the same point every tick and wedging the whole type's
-    /// sync; the reconcile then resurrects the doc from the surviving repo edit. Returns whether anything was
-    /// promoted, so the caller re-reads the type's docs.</para></summary>
+    /// <summary>Stages each marker-free shadow as a durable resolution write. The shadow survives until the normal
+    /// runner obtains its native-Markdown receipt and commits the observed dual base; a crash cannot turn a human
+    /// resolution into an ordinary two-sided edit or silently discard their shadow.</summary>
     internal static bool PromoteResolvedShadows(
-        string shadowDir, NotionSyncAdapter adapter, BaseSnapshotStore store, string docsDir, IReadOnlyList<SyncDoc> docs)
+        string shadowDir, NotionSyncAdapter adapter, BaseSnapshotStore store, string docsDir, IReadOnlyList<SyncDoc> docs,
+        IReadOnlyList<SyncRecord>? observedExternal = null)
     {
         if (!Directory.Exists(shadowDir))
             return false;
+
+        var cleaned = false;
+        foreach (var localId in store.ResolutionCleanupLocalIds.ToList())
+            if (!File.Exists(Path.Combine(shadowDir, localId + ".md")))
+            {
+                store.RemoveResolutionCleanupReceipt(localId);
+                cleaned = true;
+            }
 
         // Build tolerantly (first-wins): two repo files sharing a stem is SyncRunner.IndexByLocalId's deliberate
         // both-paths error to raise, not ours to pre-empt with ToDictionary's bare ArgumentException (finding 2).
         var canonicalByLocalId = new Dictionary<string, string>();
         foreach (var d in docs)
             canonicalByLocalId.TryAdd(d.LocalId, d.SourcePath);
-        // Read the external side lazily and once: only when a resolved shadow actually needs its base aligned, and
-        // reused across every promotion this tick so a batch of resolutions costs one data-source read, not N.
-        IReadOnlyList<SyncRecord>? external = null;
+        // Read the external side lazily and once. It supplies the exact prior external projection for each durable
+        // resolution intent; no base is pre-seeded from a guessed value.
+        IReadOnlyList<SyncRecord>? external = observedExternal;
 
         var promoted = false;
         foreach (var shadowFile in Directory.EnumerateFiles(shadowDir, "*.md"))
-        {
-            var content = File.ReadAllText(shadowFile);
-            if (ThreeWayTextMerge.ContainsConflictMarkers(content))
-                continue; // still unresolved — leave it for the human
-
-            var localId = Path.GetFileNameWithoutExtension(shadowFile);
-            var canonical = canonicalByLocalId.TryGetValue(localId, out var path) && !string.IsNullOrEmpty(path)
-                ? path
-                : Path.Combine(docsDir, localId + ".md");
-
-            Directory.CreateDirectory(Path.GetDirectoryName(canonical)!);
-            File.WriteAllText(canonical, content);
-            File.Delete(shadowFile);
-            promoted = true;
-
-            if (store.Get(localId) is { ExternalId: { } pageId } snap)
-            {
-                external ??= adapter.ReadExternalState();
-                if (external.FirstOrDefault(r => r.ExternalId == pageId) is { } record)
-                    store.Set(new SyncDoc
-                    {
-                        LocalId = snap.LocalId,
-                        ExternalId = snap.ExternalId,
-                        Fields = snap.Fields,
-                        Body = record.Body,
-                        SourcePath = "",
-                    });
-            }
-        }
-        if (promoted)
+            promoted |= TryPromoteResolvedShadow(shadowFile, canonicalByLocalId, adapter, store, docsDir, ref external);
+        if (promoted || cleaned)
             store.Save();
         return promoted;
+    }
+
+    private static bool TryPromoteResolvedShadow(string shadowFile, IReadOnlyDictionary<string, string> canonicalByLocalId,
+        NotionSyncAdapter adapter, BaseSnapshotStore store, string docsDir, ref IReadOnlyList<SyncRecord>? external)
+    {
+        var content = File.ReadAllText(shadowFile);
+        if (ThreeWayTextMerge.ContainsConflictMarkers(content))
+            return false; // still unresolved — leave it for the human
+
+        var localId = Path.GetFileNameWithoutExtension(shadowFile);
+        var canonical = CanonicalPath(canonicalByLocalId, docsDir, localId);
+        if (store.Get(localId) is not { ExternalId: { } pageId } snapshot)
+            return false;
+        if (ReplayPendingResolution(store, localId, canonical, content))
+            return true;
+        if (store.GetPendingBodyWrite(localId) != null)
+            return false; // a non-resolution intent owns this record; preserve its shadow and journal
+
+        var resolved = SyncDocFile.Read(shadowFile, localId, shadowFile);
+        if (store.GetResolutionCleanupReceipt(localId) is { } cleanup
+            && cleanup.LocalId == localId && cleanup.ResolvedBody == resolved.Body)
+        {
+            File.Delete(shadowFile);
+            store.RemoveResolutionCleanupReceipt(localId);
+            store.Save();
+            return false;
+        }
+
+        external ??= adapter.ReadExternalState();
+        var observed = external.FirstOrDefault(record => record.ExternalId == pageId);
+        if (observed == null || observed.BodyReadStatus == SyncBodyReadStatus.Truncated)
+            return false;
+
+        StageResolutionIntent(store, shadowFile, localId, pageId, snapshot, observed);
+        // Persist the recovery journal before the canonical promotion. A process loss after this point leaves a
+        // fenced intent plus the still-present shadow; the next tick can replay the atomic replacement safely.
+        store.Save();
+        ResolutionPromotionFailpoint?.Invoke("after-intent-save");
+        WriteAtomically(canonical, content);
+        ResolutionPromotionFailpoint?.Invoke("after-canonical-replace");
+        return true;
+    }
+
+    private static string CanonicalPath(IReadOnlyDictionary<string, string> canonicalByLocalId, string docsDir, string localId) =>
+        canonicalByLocalId.TryGetValue(localId, out var path) && !string.IsNullOrEmpty(path)
+            ? path
+            : Path.Combine(docsDir, localId + ".md");
+
+    private static bool ReplayPendingResolution(BaseSnapshotStore store, string localId, string canonical, string content)
+    {
+        if (store.GetPendingBodyWrite(localId) is not { Kind: BodyWriteOperationKind.Resolution })
+            return false;
+        // Journal-first promotion has one intentional crash window: the journal can be durable before the atomic
+        // canonical replacement. Replaying that replacement is safe; receipt commit remains the only path that
+        // clears either the intent or this shadow.
+        if (File.Exists(canonical) && string.Equals(File.ReadAllText(canonical), content, StringComparison.Ordinal))
+            return false;
+        WriteAtomically(canonical, content);
+        return true;
+    }
+
+    private static void StageResolutionIntent(BaseSnapshotStore store, string shadowFile, string localId, string pageId,
+        SyncDoc snapshot, SyncRecord observed)
+    {
+        var resolved = SyncDocFile.Read(shadowFile, localId, shadowFile);
+        if (!store.IsV2(localId))
+            store.SetDualBodyBase(snapshot, new DynaDocs.Sync.Projection.DualBodyBase(snapshot.Body, observed.Body));
+        var bodyBase = store.GetDualBodyBase(localId)!;
+        store.WritePendingBodyWrite(new BodyWriteIntent
+        {
+            OperationId = Guid.NewGuid().ToString(),
+            Kind = BodyWriteOperationKind.Resolution,
+            LocalId = localId,
+            ExternalId = pageId,
+            PriorLocalBody = bodyBase.LocalBody,
+            PriorExternalBody = observed.Body,
+            IntendedLocalBody = resolved.Body,
+        });
+    }
+
+    private static void WriteAtomically(string path, string content)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var temporary = path + ".tmp" + Guid.NewGuid().ToString("N")[..8];
+        try
+        {
+            File.WriteAllText(temporary, content);
+            File.Move(temporary, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+                File.Delete(temporary);
+        }
     }
 
     /// <summary>Build this type's relation id maps. On write each relation FIELD maps to its own declared

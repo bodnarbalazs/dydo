@@ -96,7 +96,7 @@ public static class WatchdogCommand
             return new WatchdogService().Run(
                 config.GetDydoRoot(), parse.GetValue(interval), parse.GetValue(census),
                 WatchdogService.ProvisionProbeInterval, configError,
-                tick: (censusTick, validate) => NotionSyncService.DeltaTick(token!, config, _ => client!, censusTick, validate),
+                tick: (censusTick, validate) => RunNotionDeltaTick(token!, config, client!, censusTick, validate, Console.Out),
                 keepRunning: _ => true,
                 wait: Thread.Sleep,
                 output: Console.Out,
@@ -104,6 +104,10 @@ public static class WatchdogCommand
         });
         return command;
     }
+
+    internal static NotionDeltaTickResult RunNotionDeltaTick(
+        string token, IConfigService config, INotionClient client, bool census, bool validateProvisioning, TextWriter output) =>
+        NotionSyncService.DeltaTick(token, config, _ => client, census, validateProvisioning, diagnostics: output);
 
     /// <summary>Resolve the Notion token the same three-source way the manual sync does (local store → namespaced env
     /// → generic env). A daemon has no interactive TTY, so a passphrase-locked vault is not unlocked here — such a

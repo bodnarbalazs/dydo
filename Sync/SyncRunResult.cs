@@ -16,6 +16,11 @@ public sealed class SyncRunResult
     /// resolves the shadow file, promoted on the next sync.</summary>
     public List<string> ShadowedLocalIds { get; init; } = [];
 
+    /// <summary>Records fenced by durable body-write recovery during this run. A delta must retain its cursor and
+    /// file mtimes when this is non-empty: recovery may have bound an exact Create id but intentionally leaves
+    /// current property/relation edits for the following reconciliation tick.</summary>
+    public List<string> PendingRecoveryLocalIds { get; init; } = [];
+
     /// <summary>Whether the mass-delete fuse aborted this run before applying anything (slice ns-2). When true the
     /// adapter's Apply was NOT called, no repo file was deleted, no external change pushed, and the base was not
     /// advanced or saved — the reconcile would have locally deleted a large share of the type's tracked records, so

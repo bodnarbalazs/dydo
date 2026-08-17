@@ -34,4 +34,7 @@ public sealed class SyncSnapshot
 
     [JsonPropertyName("pendingBodyWrite")]
     public BodyWriteIntent? PendingBodyWrite { get; set; }
+
+    [JsonPropertyName("resolutionCleanupReceipt")]
+    public ResolutionCleanupReceipt? ResolutionCleanupReceipt { get; set; }
 }

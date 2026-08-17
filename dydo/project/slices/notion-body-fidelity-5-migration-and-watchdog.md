@@ -2,7 +2,7 @@
 title: Legacy Migration and Watchdog Integration
 sprint: notion-body-fidelity
 seq: 5
-status: ready
+status: done
 area: backend
 type: context
 ---

@@ -28,6 +28,7 @@ public sealed class DualProjectionSnapshotTests : IDisposable
 
         Assert.False(store.IsV2("old"));
         Assert.Null(store.GetDualBodyBase("old"));
+        Assert.Null(store.GetResolutionCleanupReceipt("old"));
         Assert.Equal("legacy", store.Get("old")!.Body);
         store.Save();
         Assert.Equal(json, File.ReadAllText(path));

@@ -75,6 +75,46 @@ A shadow that still carries markers is treated as unresolved and left alone — 
 
 ---
 
+## Dual-projection body contract (DR-043)
+
+The PM spine uses Notion's native Markdown read/create/update endpoints for every body mutation. A v2 snapshot keeps
+two exact body bases per object: `localBody` is the authored repo spelling and `externalBody` is the complete,
+stable-cleaned Markdown receipt read after Notion accepts a body write. The runner compares each side only with its own
+base. It never persists a normalizer output as canonical content, so a leading-H1 omission, escaping, blank-gap
+change, or list indentation echo cannot become an external author.
+
+Real external edits are aligned structurally against the two bases. A uniquely mapped edit changes only the affected
+canonical body span; all untouched body bytes and the complete frontmatter remain exact. Ambiguous/repeated/overlap
+edits and truncated exports fail closed into the spine shadow. `dydo-write-id` is engine protocol state, not a
+canonical field: it identifies every body mutation and supports restart recovery without title matching.
+
+### v1 migration and diagnostics
+
+Legacy v1 entries are classified per object without writing a snapshot or shadow during classification. Equivalent
+pairs adopt a v2 dual base; a uniquely provable one-sided change is reconciled through the projection engine; an
+ambiguous or truncated pair retains v1 and creates a complete, resolvable shadow. Pending create/update/resolution
+records also retain their old base and intent until a complete native-Markdown receipt is durably saved.
+
+Full sync and watchdog delta report an unhandled projection with the local id, reason, canonical path, and shadow
+path. Delta keeps its cursor fenced for any pending or v1 item that needs another reconcile, while ordinary quiet
+ticks still remain O(changes). A resolved shadow is deleted only after its receipt-derived dual base and cleared intent
+are durable.
+
+### Fidelity evidence (2026-08-18)
+
+The offline `NotionBodyFidelityMutationTests` corpus covers H1 omission, blank gaps, escapes, inline markup/links,
+nested lists, tables, quotes, code, repeated regions, and insert/delete/modify/reorder/disjoint/overlap edits. Its
+named `slice-11-sanitized.md` regression proves the fixture remains part of the corpus.
+
+`NotionSpineBodyFidelityLiveTests` contains exactly three isolated scratch-parent proofs: existing-v2 local edit →
+native echo → quiet delta with byte-identical file; a real external native-Markdown span edit → one surgical import →
+quiet delta; and a Notion-originated create control. They archive the test's `NotionLiveTestBase.ChildPageId` parent
+in fixture teardown and never address the configured board. As of 2026-08-18, the required
+`DYDO_NOTION_TEST_TOKEN` and `DYDO_NOTION_TEST_PARENT` variables were absent, so all three are discovered but skipped;
+no live acceptance claim is made and issue 0309 remains open pending an executed 3/3 run.
+
+---
+
 ## Live-API Validation Constraints
 
 The PM-board sync's first live run (2026-07-06) and the docs-body live smoke (2026-07-09) surfaced the constraints below against real Notion resources. **None are catchable by `FakeNotionClient`** — it treats expressions and bodies as opaque strings — so changes in these areas need a live smoke test, not just the fake-backed suite. The **token-gated live suite** (below) makes each constraint testable on demand.

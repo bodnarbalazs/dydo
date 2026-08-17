@@ -52,7 +52,8 @@ public sealed class NotionDualProjectionDeltaTests : IDisposable
 
         Assert.Equal(fixture[..at], imported[..at]);
         Assert.Equal(fixture[(at + original.Length)..], imported[(at + replacement.Length)..]);
-        Assert.Equal("---\ntitle: Slice 11\nstatus: active\n---\n\n", imported[..(imported.IndexOf("\n---\n\n", StringComparison.Ordinal) + 6)]);
+        var frontmatterEnd = fixture.IndexOf("The native Markdown watchdog fixture.", StringComparison.Ordinal);
+        Assert.Equal(fixture[..frontmatterEnd], imported[..frontmatterEnd]);
         Assert.Equal(writes, client.MarkdownWriteCalls);
         Assert.True(next.Quiet);
     }

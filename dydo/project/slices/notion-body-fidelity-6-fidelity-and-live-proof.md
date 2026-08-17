@@ -2,7 +2,7 @@
 title: Fidelity Corpus and Live Proof
 sprint: notion-body-fidelity
 seq: 6
-status: ready
+status: blocked
 area: backend
 type: context
 ---

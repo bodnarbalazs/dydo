@@ -13,4 +13,5 @@ public sealed class SyncRecord
     public required string ExternalId { get; init; }
     public required List<SyncField> Fields { get; init; }
     public required string Body { get; init; }
+    public SyncBodyReadStatus BodyReadStatus { get; init; } = SyncBodyReadStatus.Complete;
 }

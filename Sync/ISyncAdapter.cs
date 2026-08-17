@@ -33,6 +33,37 @@ public interface ISyncAdapter
     void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
         ICollection<string> emptyBodied);
 
+    /// <summary>Whether submitted body bytes are the external representation exactly. Only these adapters may
+    /// use the default body receipt; projected adapters must override <see cref="ApplyWithReceipts"/> and observe
+    /// the body after their mutation.</summary>
+    bool HasIdentityBodyProjection => false;
+
+    /// <summary>
+    /// Apply changes and return body receipts. The compatibility path is identity-only: its observed body is
+    /// exactly the submitted body. A projected adapter must override this method with an actual read-back.
+    /// </summary>
+    SyncApplyResult ApplyWithReceipts(SyncChangeSet changes, IDictionary<string, string> assigned,
+        ICollection<string> deleted, ICollection<string> emptyBodied)
+    {
+        Apply(changes, assigned, deleted, emptyBodied);
+        if (!HasIdentityBodyProjection)
+            return new SyncApplyResult();
+        var receipts = changes.Upserts
+            .Where(upsert => upsert.WriteBody && upsert.OperationId != null)
+            .Select(upsert => (Upsert: upsert,
+                ExternalId: upsert.ExternalId ?? (assigned.TryGetValue(upsert.LocalId, out var id) ? id : null)))
+            .Where(entry => entry.ExternalId != null)
+            .Select(entry => new BodyWriteReceipt
+            {
+                OperationId = entry.Upsert.OperationId!,
+                LocalId = entry.Upsert.LocalId,
+                ExternalId = entry.ExternalId!,
+                ObservedExternalBody = entry.Upsert.Body,
+            })
+            .ToList();
+        return new SyncApplyResult { BodyWriteReceipts = receipts };
+    }
+
     /// <summary>
     /// The body this view echoes back when the given body is written and re-read. Views that convert
     /// bodies lossily (e.g. Notion block conversion drops blank lines) override this so the engine

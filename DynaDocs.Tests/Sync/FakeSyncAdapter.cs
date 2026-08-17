@@ -36,6 +36,8 @@ public sealed class FakeSyncAdapter : ISyncAdapter
     /// the mass-delete fuse can never trip (F3 pin). Default false keeps the spine's bidirectional delete semantics.</summary>
     public bool RepoOwnedStructure { get; set; }
 
+    public bool HasIdentityBodyProjection { get; set; } = true;
+
     public IReadOnlyList<SyncRecord> ReadExternalState() => _records.Values.ToList();
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned) =>

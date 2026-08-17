@@ -2,6 +2,7 @@ namespace DynaDocs.Sync;
 
 using System.Text.Json;
 using DynaDocs.Models;
+using DynaDocs.Sync.Projection;
 using DynaDocs.Serialization;
 
 /// <summary>
@@ -19,8 +20,8 @@ public sealed class BaseSnapshotStore
 
     /// <summary>Whether any base/last-activity entry was mutated since load or the last <see cref="Save"/>. The
     /// daemon's delta tick skips <see cref="Save"/> when a tick changed nothing (ns-13): at 40k entries a no-op
-    /// tick must not rewrite the whole snapshot file every 15s. The full sync path saves unconditionally as
-    /// before.</summary>
+    /// tick must not rewrite the whole snapshot file every 15s. A clean store also keeps a v1 file byte-for-byte
+    /// until a real migration or intent mutation occurs.</summary>
     public bool Dirty { get; private set; }
 
     public BaseSnapshotStore(string filePath)
@@ -68,11 +69,73 @@ public sealed class BaseSnapshotStore
 
     public IReadOnlyCollection<string> LocalIds => _byLocalId.Keys;
 
+    /// <summary>Gets a v2 base without guessing at unresolved legacy state.</summary>
+    public DualBodyBase? GetDualBodyBase(string localId)
+    {
+        if (!_byLocalId.TryGetValue(localId, out var snapshot) || snapshot.BodyVersion < 2
+            || snapshot.LocalBody == null || snapshot.ExternalBody == null)
+            return null;
+        return new DualBodyBase(snapshot.LocalBody!, snapshot.ExternalBody!);
+    }
+
+    public bool IsV2(string localId) =>
+        _byLocalId.TryGetValue(localId, out var snapshot) && snapshot.BodyVersion >= 2;
+
+    public BodyWriteIntent? GetPendingBodyWrite(string localId) =>
+        _byLocalId.TryGetValue(localId, out var snapshot) ? snapshot.PendingBodyWrite : null;
+
     /// <summary>Advance the base for an object to its newly-synced state.</summary>
     public void Set(SyncDoc doc)
     {
         _byLocalId[doc.LocalId] = ToSnapshot(doc);
         Dirty = true;
+    }
+
+    /// <summary>Advance a projected body's distinct local and external bases.</summary>
+    public void SetDualBodyBase(SyncDoc doc, DualBodyBase bodyBase)
+    {
+        _byLocalId.TryGetValue(doc.LocalId, out var previous);
+        _byLocalId[doc.LocalId] = new SyncSnapshot
+        {
+            LocalId = doc.LocalId,
+            ExternalId = doc.ExternalId,
+            Fields = doc.Fields.Select(f => new SyncFieldEntry { Key = f.Key, Value = f.Value }).ToList(),
+            BodyVersion = 2,
+            LocalBody = bodyBase.LocalBody,
+            ExternalBody = bodyBase.ExternalBody,
+            PendingBodyWrite = previous?.PendingBodyWrite,
+        };
+        Dirty = true;
+    }
+
+    /// <summary>Durably journal a body write before the adapter performs the mutation.</summary>
+    public void WritePendingBodyWrite(BodyWriteIntent intent)
+    {
+        if (!_byLocalId.TryGetValue(intent.LocalId, out var snapshot))
+        {
+            snapshot = new SyncSnapshot
+            {
+                LocalId = intent.LocalId,
+                ExternalId = intent.ExternalId,
+                Fields = [],
+                BodyVersion = 2,
+                LocalBody = intent.PriorLocalBody,
+                ExternalBody = intent.PriorExternalBody,
+            };
+            _byLocalId.Add(intent.LocalId, snapshot);
+        }
+
+        snapshot.PendingBodyWrite = intent;
+        Dirty = true;
+    }
+
+    public void RemovePendingBodyWrite(string localId)
+    {
+        if (_byLocalId.TryGetValue(localId, out var snapshot) && snapshot.PendingBodyWrite != null)
+        {
+            snapshot.PendingBodyWrite = null;
+            Dirty = true;
+        }
     }
 
     public void Remove(string localId)
@@ -123,7 +186,8 @@ public sealed class BaseSnapshotStore
 
     public void Save()
     {
-        Dirty = false;
+        if (!Dirty)
+            return;
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         var file = new SyncSnapshotFile
         {
@@ -131,7 +195,18 @@ public sealed class BaseSnapshotStore
             LastActivity = _lastActivity.OrderBy(e => e.Key).ToDictionary(e => e.Key, e => e.Value),
         };
         var json = JsonSerializer.Serialize(file, SyncSnapshotJsonContext.Default.SyncSnapshotFile);
-        File.WriteAllText(_path, json);
+        var tempPath = _path + ".tmp" + Guid.NewGuid().ToString("N")[..8];
+        try
+        {
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, _path, overwrite: true);
+            Dirty = false;
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
     }
 
     private static SyncSnapshotFile Load(string path)
@@ -148,7 +223,7 @@ public sealed class BaseSnapshotStore
         LocalId = s.LocalId,
         ExternalId = s.ExternalId,
         Fields = s.Fields.Select(f => new SyncField { Key = f.Key, Value = f.Value }).ToList(),
-        Body = s.Body,
+        Body = s.BodyVersion >= 2 ? s.LocalBody ?? s.Body ?? "" : s.Body ?? "",
         SourcePath = "",
     };
 
@@ -157,6 +232,8 @@ public sealed class BaseSnapshotStore
         LocalId = d.LocalId,
         ExternalId = d.ExternalId,
         Fields = d.Fields.Select(f => new SyncFieldEntry { Key = f.Key, Value = f.Value }).ToList(),
-        Body = d.Body,
+        BodyVersion = 2,
+        LocalBody = d.Body,
+        ExternalBody = d.Body,
     };
 }

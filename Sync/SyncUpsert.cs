@@ -13,6 +13,12 @@ public sealed class SyncUpsert
     public required List<SyncField> Fields { get; init; }
     public required string Body { get; init; }
 
+    /// <summary>False applies only properties; true writes the body, including an intentional empty body.</summary>
+    public bool WriteBody { get; init; } = true;
+
+    /// <summary>The pre-persisted body-write identity supplied to receipt-capable adapters.</summary>
+    public string? OperationId { get; init; }
+
     /// <summary>Keys a prior sync recorded that this UPDATE now clears — a scalar the base held non-empty and the
     /// repo now carries empty-or-absent (issue 0299, F5). The adapter emits an explicit clear payload for these on
     /// an update so the board value is removed (a blank scalar is otherwise omitted and the board keeps the old

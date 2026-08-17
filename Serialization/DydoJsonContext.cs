@@ -57,5 +57,11 @@ internal partial class TypesJsonContext : JsonSerializerContext { }
     WriteIndented = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(SyncSnapshotFile))]
+[JsonSerializable(typeof(SyncSnapshot))]
+[JsonSerializable(typeof(BodyWriteIntent))]
+[JsonSerializable(typeof(BodyWriteReceipt))]
+[JsonSerializable(typeof(BodyWriteOperationKind))]
+[JsonSerializable(typeof(SyncBodyReadStatus))]
+[JsonSerializable(typeof(SyncApplyResult))]
 [JsonSerializable(typeof(DynaDocs.Sync.Notion.NotionDeltaStateFile))]
 internal partial class SyncSnapshotJsonContext : JsonSerializerContext { }

@@ -2,7 +2,7 @@
 title: Snapshot V2 and Write Receipts
 sprint: notion-body-fidelity
 seq: 2
-status: ready
+status: done
 area: backend
 type: context
 ---

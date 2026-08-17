@@ -26,6 +26,19 @@ public static class NotionSpineDelta
     public static NotionDeltaTickResult Run(
         INotionClient client, NotionSpineState state, bool census, bool validateProvisioning,
         bool allowMassDelete = false, DateTime? nowUtc = null)
+        => RunCore(client, state, census, validateProvisioning, allowMassDelete, nowUtc, null);
+
+    /// <summary>Exercises the production delta path with a reader that can model transport outcomes the block
+    /// endpoint cannot otherwise express, such as a truncated body export.</summary>
+    internal static NotionDeltaTickResult RunForTest(
+        INotionClient client, NotionSpineState state, bool census, bool validateProvisioning,
+        Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>> reader, bool allowMassDelete = false,
+        DateTime? nowUtc = null) =>
+        RunCore(client, state, census, validateProvisioning, allowMassDelete, nowUtc, reader);
+
+    private static NotionDeltaTickResult RunCore(
+        INotionClient client, NotionSpineState state, bool census, bool validateProvisioning,
+        bool allowMassDelete, DateTime? nowUtc, Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>>? reader)
     {
         var now = nowUtc ?? DateTime.UtcNow;
         var requestsBefore = client.RequestCount;
@@ -45,7 +58,8 @@ public static class NotionSpineDelta
         {
             if (!dataSourceIds.TryGetValue(type.Type, out var dataSourceId))
                 continue; // not provisioned (or a validation probe dropped it) — the manual sync must provision first
-            summary = summary.Add(RunType(client, state, type, dataSourceId, localToPageByType, stores[type.Type], census, allowMassDelete, now));
+            summary = summary.Add(RunType(client, state, type, dataSourceId, localToPageByType, stores[type.Type], census,
+                allowMassDelete, now, reader));
         }
         return summary with { Requests = client.RequestCount - requestsBefore };
     }
@@ -53,7 +67,7 @@ public static class NotionSpineDelta
     private static NotionDeltaTickResult RunType(
         INotionClient client, NotionSpineState state, SyncObjectType type, string dataSourceId,
         IReadOnlyDictionary<string, Dictionary<string, string>> localToPageByType, BaseSnapshotStore store,
-        bool census, bool allowMassDelete, DateTime nowUtc)
+        bool census, bool allowMassDelete, DateTime nowUtc, Func<NotionSyncAdapter, IReadOnlyList<SyncRecord>>? reader)
     {
         var docsDir = Path.Combine(state.DydoRoot, type.Dir);
         var shadowDir = SpineShadowDir(state.DydoRoot, type.Type);
@@ -90,7 +104,7 @@ public static class NotionSpineDelta
 
         // Read bodies for the filter hits ONLY (none on a cold-start tick). The same adapter drives the reconcile.
         var adapter = BuildAdapter(client, dataSourceId, type, localToPageByType, store, hits);
-        var hitRecords = hits.Count > 0 ? adapter.ReadExternalState() : [];
+        var hitRecords = hits.Count > 0 ? reader?.Invoke(adapter) ?? adapter.ReadExternalState() : [];
         var (changed, hitLocalIds) = ChangedUnion(localChanged, hitRecords, disappeared, ExternalIdToLocalId(store));
 
         var cursorAdvanced = cursorToSave != null && (delta.Cursor == null || string.CompareOrdinal(cursorToSave, delta.Cursor) > 0);
@@ -117,9 +131,12 @@ public static class NotionSpineDelta
         // boundary hit that reconciles to None, so an unconditional save would rewrite delta.json every tick — a
         // multi-MB write every 15s at 100x. A tripped mass-delete fuse also must NOT advance the cursor past the
         // remote edits it declined to apply (F4). So save iff a file's mtime moved, the cursor advanced, or the
-        // reconcile produced a real (non-None) result — and never on a fuse trip.
+        // reconcile produced a real (non-None) result — and never on a fuse trip. A truncated body is explicitly
+        // unhandled: retaining the prior state makes the same remote page a filter hit next tick instead of
+        // advancing past unavailable content.
         var reconciledSomething = run.Results.Any(r => r.Action != ReconcileAction.None);
-        if (!run.FuseTripped && (filesChanged || cursorAdvanced || reconciledSomething))
+        var unhandledProjection = run.Results.Any(r => r.UnhandledProjection);
+        if (!run.FuseTripped && !unhandledProjection && (filesChanged || cursorAdvanced || reconciledSomething))
             SaveDeltaState(delta, currentMtimes, cursorToSave);
         return Summarize(run, census);
     }

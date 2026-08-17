@@ -20,6 +20,7 @@ public sealed class SyncRunner
     private readonly Func<string, IReadOnlyList<SyncField>, string?, string> _repoPathFor;
     private readonly Func<string, string>? _conflictShadowPathFor;
     private readonly bool _allowMassDelete;
+    private readonly bool _useProjectedBodies;
 
     /// <param name="repoPathFor">The canonical repo path for a doc, given its local id, fields, and current
     /// on-disk path (null when the doc has none yet). Fields are passed so folder placement can derive from
@@ -39,13 +40,15 @@ public sealed class SyncRunner
         ISyncAdapter adapter, BaseSnapshotStore baseStore,
         Func<string, IReadOnlyList<SyncField>, string?, string> repoPathFor,
         Func<string, string>? conflictShadowPathFor = null,
-        bool allowMassDelete = false)
+        bool allowMassDelete = false,
+        bool useProjectedBodies = false)
     {
         _adapter = adapter;
         _base = baseStore;
         _repoPathFor = repoPathFor;
         _conflictShadowPathFor = conflictShadowPathFor;
         _allowMassDelete = allowMassDelete;
+        _useProjectedBodies = useProjectedBodies;
     }
 
     private static SyncDoc WithBody(SyncDoc doc, string body) => new()
@@ -63,7 +66,9 @@ public sealed class SyncRunner
     /// </summary>
     public IReadOnlyList<ReconcileResult> Plan(IReadOnlyList<SyncDoc> repoDocs)
     {
-        var externalByLocalId = MapExternalToLocalId(_adapter.ReadExternalState());
+        var records = _adapter.ReadExternalState();
+        var externalByLocalId = MapExternalToLocalId(records);
+        var statuses = MapBodyReadStatuses(records);
         var repoByLocalId = IndexByLocalId(repoDocs);
 
         var localIds = new HashSet<string>(_base.LocalIds);
@@ -77,7 +82,8 @@ public sealed class SyncRunner
             var baseDoc = _base.Get(localId);
             repoByLocalId.TryGetValue(localId, out var repo);
             externalByLocalId.TryGetValue(localId, out var external);
-            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho, representable));
+            results.Add(statuses.TryGetValue(localId, out var status) && status == SyncBodyReadStatus.Truncated
+                ? TruncatedResult(localId, baseDoc, repo, external) : ReconcileOne(baseDoc, repo, external));
         }
         return results;
     }
@@ -119,7 +125,9 @@ public sealed class SyncRunner
         IReadOnlySet<string>? onlyLocalIds, bool saveWhenClean)
     {
         var externalByLocalId = MapExternalToLocalId(externalRecords);
+        var bodyReadStatuses = MapBodyReadStatuses(externalRecords);
         var repoByLocalId = IndexByLocalId(repoDocs);
+        var pending = RecoverPendingWrites(repoByLocalId, externalByLocalId);
 
         IEnumerable<string> localIds;
         if (onlyLocalIds != null)
@@ -139,20 +147,7 @@ public sealed class SyncRunner
         var trackedCount = _base.LocalIds.Count;
 
         var representable = _adapter.RepresentableScalarKeys;
-        var results = new List<ReconcileResult>();
-        var shadowed = new HashSet<string>();
-
-        foreach (var localId in localIds.OrderBy(x => x))
-        {
-            var baseDoc = _base.Get(localId);
-            repoByLocalId.TryGetValue(localId, out var repo);
-            externalByLocalId.TryGetValue(localId, out var external);
-
-            var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho, representable);
-            results.Add(result);
-            RecordActivity(result, repo);
-            RouteConflictToShadow(result, shadowed);
-        }
+        var (results, shadowed) = ReconcileAll(localIds, pending, repoByLocalId, externalByLocalId, bodyReadStatuses);
 
         // Mass-delete fuse (slice ns-2): count the LOCAL file deletions this reconcile would materialize — a Delete
         // that removes a repo file (RepoDelete), not an external-only archive of an already-removed doc — and abort
@@ -171,46 +166,235 @@ public sealed class SyncRunner
                 WouldDeletePaths = wouldDelete,
             };
 
+        ApplyAndCommit(results, shadowed, repoByLocalId, externalByLocalId, saveWhenClean);
+
+        return new SyncRunResult { Results = results, ShadowedLocalIds = shadowed.ToList() };
+    }
+
+    private (List<ReconcileResult> Results, HashSet<string> Shadowed) ReconcileAll(IEnumerable<string> localIds,
+        IReadOnlySet<string> pending, IReadOnlyDictionary<string, SyncDoc> repo,
+        IReadOnlyDictionary<string, SyncDoc> external, IReadOnlyDictionary<string, SyncBodyReadStatus> bodyReadStatuses)
+    {
+        var results = new List<ReconcileResult>();
+        var shadowed = new HashSet<string>();
+        foreach (var localId in localIds.OrderBy(x => x))
+        {
+            if (pending.Contains(localId))
+                continue;
+            repo.TryGetValue(localId, out var currentRepo);
+            external.TryGetValue(localId, out var currentExternal);
+            var result = bodyReadStatuses.TryGetValue(localId, out var status) && status == SyncBodyReadStatus.Truncated
+                ? TruncatedResult(localId, _base.Get(localId), currentRepo, currentExternal)
+                : ReconcileOne(_base.Get(localId), currentRepo, currentExternal);
+            results.Add(result);
+            RecordActivity(result, currentRepo);
+            RouteConflictToShadow(result, shadowed);
+        }
+        return (results, shadowed);
+    }
+
+    private void ApplyAndCommit(List<ReconcileResult> results, IReadOnlySet<string> shadowed,
+        IReadOnlyDictionary<string, SyncDoc> repo, IReadOnlyDictionary<string, SyncDoc> external, bool saveWhenClean)
+    {
         var changes = new SyncChangeSet();
+        var operations = PrepareBodyWriteIntents(results, shadowed);
+        if (operations.Count > 0)
+            _base.Save();
         foreach (var result in results)
         {
             if (shadowed.Contains(result.LocalId))
                 continue;
-            repoByLocalId.TryGetValue(result.LocalId, out var repo);
-            externalByLocalId.TryGetValue(result.LocalId, out var external);
-            ApplyResult(result.LocalId, result, repo, changes);
-            EnqueueEngineComputedRefresh(result.LocalId, result, external, changes);
+            repo.TryGetValue(result.LocalId, out var currentRepo);
+            external.TryGetValue(result.LocalId, out var currentExternal);
+            ApplyResult(result.LocalId, result, currentRepo, changes, operations.GetValueOrDefault(result.LocalId));
+            EnqueueEngineComputedRefresh(result.LocalId, result, currentExternal, changes);
         }
 
-        // Apply is non-atomic; the base advance is deferred until Apply reports back so a mid-batch
-        // throw never leaves the base claiming un-pushed work is synced (slice brief §3). The finally
-        // still records the ids of pages already created and persists the base, so a crashed tick that
-        // created some pages does not re-create them (duplicate them) on retry.
         var assigned = new Dictionary<string, string>();
         var deleted = new HashSet<string>();
         var emptyBodied = new HashSet<string>();
         var applied = false;
+        SyncApplyResult applyResult = new();
         try
         {
-            _adapter.Apply(changes, assigned, deleted, emptyBodied);
+            applyResult = _adapter.ApplyWithReceipts(changes, assigned, deleted, emptyBodied);
             applied = true;
         }
         finally
         {
-            CommitBase(results, shadowed, assigned, deleted, emptyBodied, applied);
-            // A completed tick has confirmed every create's external id, so any last-activity with no base
-            // entry is a genuine orphan (a crashed create's seed, or a doc whose base never existed) that
-            // Retire can never reach — sweep it before saving (finding 7). A partial tick leaves it for the
-            // retry, when the pending create either confirms (base entry appears) or is swept then.
+            CommitBase(results, shadowed, assigned, deleted, emptyBodied, applyResult.BodyWriteReceipts, operations, applied);
             if (applied)
                 _base.PruneOrphanLastActivity();
-            // A delta tick that mutated nothing (filter false positives that normalize to None) must not rewrite
-            // the whole snapshot file — skip the Save when clean (ns-13). The full path always saves as before.
             if (saveWhenClean || _base.Dirty)
                 _base.Save();
         }
+    }
 
-        return new SyncRunResult { Results = results, ShadowedLocalIds = shadowed.ToList() };
+    private ReconcileResult ReconcileOne(SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external)
+    {
+        var bodyBase = baseDoc == null ? null : _base.GetDualBodyBase(baseDoc.LocalId);
+        return _useProjectedBodies && (bodyBase != null || baseDoc == null)
+            ? ReconcileEngine.ReconcileProjected(baseDoc, bodyBase, repo, external,
+                _adapter.NormalizeFields, _adapter.RepresentableScalarKeys)
+            : ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields,
+                _adapter.RepoOwnedStructure, _adapter.IsStaleConverterEcho, _adapter.RepresentableScalarKeys);
+    }
+
+    /// <summary>
+    /// Pending body writes fence ordinary reconciliation until their outcome is provable. Creates deliberately
+    /// stay fenced: binding an id requires Slice 4's exact operation identity, never a title/body guess. Updates
+    /// and resolutions may be recovered only when their journaled page now exposes the intended bytes exactly.
+    /// </summary>
+    private HashSet<string> RecoverPendingWrites(IReadOnlyDictionary<string, SyncDoc> repo,
+        IReadOnlyDictionary<string, SyncDoc> external)
+    {
+        var fenced = new HashSet<string>();
+        foreach (var localId in _base.LocalIds)
+        {
+            var intent = _base.GetPendingBodyWrite(localId);
+            if (intent == null)
+                continue;
+            fenced.Add(localId);
+            if (intent.Kind == BodyWriteOperationKind.Create || intent.ExternalId == null
+                || !external.TryGetValue(localId, out var observed) || observed.ExternalId != intent.ExternalId)
+                continue;
+            repo.TryGetValue(localId, out var currentRepo);
+            if (intent.Kind == BodyWriteOperationKind.Resolution && currentRepo != null
+                && ThreeWayTextMerge.ContainsConflictMarkers(currentRepo.Body))
+            {
+                ShadowPendingProjection(currentRepo.Body, currentRepo, observed, localId);
+                continue;
+            }
+            if (currentRepo?.Body == intent.IntendedLocalBody && observed.Body == intent.PriorExternalBody)
+            {
+                fenced.Remove(localId); // proved not to have landed: re-send the SAME journaled operation.
+                continue;
+            }
+            switch (intent.Kind)
+            {
+                case BodyWriteOperationKind.Update:
+                    RecoverUpdate(intent, currentRepo, observed, localId);
+                    break;
+                case BodyWriteOperationKind.Resolution:
+                    RecoverResolution(intent, currentRepo, observed, localId);
+                    break;
+            }
+        }
+        return fenced;
+    }
+
+    private void RecoverUpdate(BodyWriteIntent intent, SyncDoc? repo, SyncDoc external, string localId) =>
+        RecoverProvenProjectedWrite(intent, repo, external, localId);
+
+    private void RecoverResolution(BodyWriteIntent intent, SyncDoc? repo, SyncDoc external, string localId)
+    {
+        RecoverProvenProjectedWrite(intent, repo, external, localId);
+    }
+
+    private void RecoverProvenProjectedWrite(BodyWriteIntent intent, SyncDoc? repo, SyncDoc external, string localId)
+    {
+        var current = repo?.Body ?? intent.IntendedLocalBody;
+        var merged = DynaDocs.Sync.Projection.ProjectedMarkdownMerge.Merge(
+            new DynaDocs.Sync.Projection.DualBodyBase(intent.PriorLocalBody, intent.PriorExternalBody),
+            intent.PriorLocalBody, external.Body);
+        if (repo?.Body == intent.IntendedLocalBody && merged.IsSuccess && merged.Body == intent.IntendedLocalBody)
+        {
+            var baseDoc = _base.Get(localId)!;
+            _base.SetDualBodyBase(new SyncDoc
+            {
+                LocalId = localId, ExternalId = external.ExternalId, Fields = baseDoc.Fields,
+                Body = repo.Body, SourcePath = repo.SourcePath,
+            }, new DynaDocs.Sync.Projection.DualBodyBase(intent.IntendedLocalBody, external.Body));
+            _base.RemovePendingBodyWrite(localId);
+            return;
+        }
+        ShadowPendingProjection(current, repo, external, localId);
+    }
+
+    private void ShadowPendingProjection(string localBody, SyncDoc? repo, SyncDoc external, string localId)
+    {
+        if (_conflictShadowPathFor == null)
+            return;
+        var path = _conflictShadowPathFor(localId);
+        if (!File.Exists(path))
+        {
+            var fields = repo?.Fields ?? external.Fields;
+            SyncDocFile.Write(path, new SyncDoc
+            {
+                LocalId = localId, ExternalId = external.ExternalId, Fields = fields,
+                Body = $"<<<<<<< repo\n{localBody}\n=======\n{external.Body}\n>>>>>>> external",
+                SourcePath = path,
+            });
+        }
+    }
+
+    private Dictionary<string, SyncBodyReadStatus> MapBodyReadStatuses(IReadOnlyList<SyncRecord> records)
+    {
+        var externalIdToLocalId = _base.LocalIds
+            .Select(id => _base.Get(id)!)
+            .Where(snapshot => snapshot.ExternalId != null)
+            .ToDictionary(snapshot => snapshot.ExternalId!, snapshot => snapshot.LocalId);
+        var statuses = new Dictionary<string, SyncBodyReadStatus>();
+        foreach (var record in records)
+        {
+            var localId = externalIdToLocalId.TryGetValue(record.ExternalId, out var known)
+                ? known
+                : SanitizeLocalId(record.Fields.FirstOrDefault(f => f.Key == LocalIdField)?.Value ?? record.ExternalId);
+            statuses[localId] = record.BodyReadStatus;
+        }
+        return statuses;
+    }
+
+    private static ReconcileResult TruncatedResult(string localId, SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external)
+    {
+        var localCandidate = repo?.Body ?? "(no canonical file)";
+        var fields = repo?.Fields ?? external?.Fields ?? [];
+        var source = repo?.SourcePath ?? external?.SourcePath ?? "";
+        return new ReconcileResult
+        {
+            LocalId = localId,
+            Action = ReconcileAction.Conflict,
+            RepoWrite = new SyncDoc
+            {
+                LocalId = localId,
+                ExternalId = baseDoc?.ExternalId ?? external?.ExternalId,
+                Fields = fields,
+                Body = $"<<<<<<< repo\n{localCandidate}\n=======\nexternal body unavailable: truncated export\n>>>>>>> external",
+                SourcePath = source,
+            },
+            StructuredConflictReason = "external body unavailable: truncated export",
+            UnhandledProjection = true,
+        };
+    }
+
+    private Dictionary<string, string> PrepareBodyWriteIntents(IEnumerable<ReconcileResult> results,
+        IReadOnlySet<string> shadowed)
+    {
+        var operations = new Dictionary<string, string>();
+        foreach (var result in results)
+        {
+            if (shadowed.Contains(result.LocalId) || !result.WriteBody || result.ExternalWrite == null
+                || result.NewBodyBase == null)
+                continue;
+            var prior = _base.GetDualBodyBase(result.LocalId)
+                ?? new DynaDocs.Sync.Projection.DualBodyBase("", "");
+            var existing = _base.GetPendingBodyWrite(result.LocalId);
+            var operationId = existing?.OperationId ?? Guid.NewGuid().ToString();
+            if (existing == null)
+                _base.WritePendingBodyWrite(new BodyWriteIntent
+            {
+                OperationId = operationId,
+                Kind = result.BodyWriteKind ?? (result.ExternalWrite.ExternalId == null
+                    ? BodyWriteOperationKind.Create : BodyWriteOperationKind.Update),
+                LocalId = result.LocalId,
+                ExternalId = result.ExternalWrite.ExternalId,
+                PriorLocalBody = prior.LocalBody,
+                PriorExternalBody = prior.ExternalBody,
+                IntendedLocalBody = result.NewBodyBase.LocalBody,
+            });
+            operations[result.LocalId] = operationId;
+        }
+        return operations;
     }
 
     /// <summary>The mass-delete fuse predicate (sprint decision, ns-2): trip when a reconcile would locally delete
@@ -234,7 +418,7 @@ public sealed class SyncRunner
     {
         if (_conflictShadowPathFor == null || result.RepoWrite is not { } repoWrite)
             return false;
-        if (!ThreeWayTextMerge.ContainsConflictMarkers(repoWrite.Body))
+        if (result.StructuredConflictReason == null && !ThreeWayTextMerge.ContainsConflictMarkers(repoWrite.Body))
             return false;
 
         var shadowPath = _conflictShadowPathFor(result.LocalId);
@@ -260,8 +444,10 @@ public sealed class SyncRunner
     /// self-heals on retry.</summary>
     private void CommitBase(List<ReconcileResult> results, IReadOnlySet<string> shadowed,
         IReadOnlyDictionary<string, string> assigned, IReadOnlySet<string> deleted,
-        IReadOnlySet<string> emptyBodied, bool applied)
+        IReadOnlySet<string> emptyBodied, IReadOnlyList<BodyWriteReceipt> receipts,
+        IReadOnlyDictionary<string, string> operations, bool applied)
     {
+        var receiptByOperation = receipts.ToDictionary(receipt => receipt.OperationId);
         foreach (var result in results)
         {
             // A shadowed conflict (DR 035 §4) was neither written to the canonical file nor pushed, so its base
@@ -269,46 +455,73 @@ public sealed class SyncRunner
             // the shadow file. Advancing here would record the un-persisted conflict body as synced and lose it.
             if (shadowed.Contains(result.LocalId))
                 continue;
-            switch (result.Action)
-            {
-                case ReconcileAction.None:
-                    break;
-
-                case ReconcileAction.Retire:
-                    // Both sides are gone, so nothing was pushed for this object — dropping its stale base entry
-                    // is safe regardless of whether the batch applied (slice brief §2).
-                    _base.Remove(result.LocalId);
-                    break;
-
-                case ReconcileAction.Delete:
-                    // A delete that archived an external page drops its base only if THAT archive landed
-                    // (issue 0221): a swallowed archived-ancestor skip or a propagated transient/auth failure
-                    // leaves the entry for retry, never orphaning a live page. A delete with only a repo-file
-                    // removal and no external archive still gates on the batch applying.
-                    if (result.ExternalDelete != null ? deleted.Contains(result.ExternalDelete) : applied)
-                        _base.Remove(result.LocalId);
-                    break;
-
-                default:
-                    // An upsert with no external id is a create: record its base only with the assigned id.
-                    if (result.ExternalWrite is { ExternalId: null })
-                    {
-                        if (assigned.TryGetValue(result.LocalId, out var externalId))
-                        {
-                            var newBase = result.NewBase!;
-                            newBase.ExternalId = externalId;
-                            _base.Set(emptyBodied.Contains(result.LocalId)
-                                ? WithBody(newBase, "")
-                                : newBase);
-                        }
-                    }
-                    else if (applied)
-                    {
-                        _base.Set(result.NewBase!);
-                    }
-                    break;
-            }
+            if (CommitProjectedBase(result, receiptByOperation, operations, applied))
+                continue;
+            CommitLegacyBase(result, assigned, deleted, emptyBodied, applied);
         }
+    }
+
+    private bool CommitProjectedBase(ReconcileResult result,
+        IReadOnlyDictionary<string, BodyWriteReceipt> receiptByOperation,
+        IReadOnlyDictionary<string, string> operations, bool applied)
+    {
+        if (result.NewBodyBase == null)
+            return false;
+        if (!result.WriteBody || result.ExternalWrite == null)
+        {
+            if (applied)
+                _base.SetDualBodyBase(result.NewBase!, result.NewBodyBase);
+            return true;
+        }
+        if (!operations.TryGetValue(result.LocalId, out var operationId)
+            || !receiptByOperation.TryGetValue(operationId, out var receipt))
+            return true;
+
+        var baseDoc = result.NewBase!;
+        baseDoc.ExternalId = receipt.ExternalId;
+        _base.SetDualBodyBase(baseDoc, new DynaDocs.Sync.Projection.DualBodyBase(
+            result.NewBodyBase.LocalBody, receipt.ObservedExternalBody));
+        _base.RemovePendingBodyWrite(result.LocalId);
+        return true;
+    }
+
+    private void CommitLegacyBase(ReconcileResult result, IReadOnlyDictionary<string, string> assigned,
+        IReadOnlySet<string> deleted, IReadOnlySet<string> emptyBodied, bool applied)
+    {
+        switch (result.Action)
+        {
+            case ReconcileAction.None:
+                return;
+
+            case ReconcileAction.Retire:
+                // Both sides are gone, so nothing was pushed for this object — dropping its stale base entry
+                // is safe regardless of whether the batch applied (slice brief §2).
+                _base.Remove(result.LocalId);
+                return;
+
+            case ReconcileAction.Delete:
+                // A delete that archived an external page drops its base only if THAT archive landed
+                // (issue 0221): a swallowed archived-ancestor skip or a propagated transient/auth failure
+                // leaves the entry for retry, never orphaning a live page. A delete with only a repo-file
+                // removal and no external archive still gates on the batch applying.
+                if (result.ExternalDelete != null ? deleted.Contains(result.ExternalDelete) : applied)
+                    _base.Remove(result.LocalId);
+                return;
+        }
+
+        // An upsert with no external id is a create: record its base only with the assigned id.
+        if (result.ExternalWrite is { ExternalId: null })
+        {
+            if (assigned.TryGetValue(result.LocalId, out var externalId))
+            {
+                var newBase = result.NewBase!;
+                newBase.ExternalId = externalId;
+                _base.Set(emptyBodied.Contains(result.LocalId) ? WithBody(newBase, "") : newBase);
+            }
+            return;
+        }
+        if (applied)
+            _base.Set(result.NewBase!);
     }
 
     /// <summary>Maintain the base snapshot's last-activity for a repo-backed object (DR 030 §3), timestamped
@@ -360,7 +573,7 @@ public sealed class SyncRunner
         changes.EngineComputedRefreshes.Add(new SyncEngineComputedRefresh { LocalId = localId, ExternalId = externalId });
     }
 
-    private void ApplyResult(string localId, ReconcileResult result, SyncDoc? repo, SyncChangeSet changes)
+    private void ApplyResult(string localId, ReconcileResult result, SyncDoc? repo, SyncChangeSet changes, string? operationId)
     {
         switch (result.Action)
         {
@@ -373,14 +586,18 @@ public sealed class SyncRunner
             case ReconcileAction.Conflict:
             case ReconcileAction.Create:
                 if (result.ExternalWrite != null)
-                    changes.Upserts.Add(ToUpsert(result.ExternalWrite, result.ClearedKeys));
+                    changes.Upserts.Add(ToUpsert(result.ExternalWrite, result.ClearedKeys,
+                        result.NewBodyBase == null || result.WriteBody, operationId));
                 // RepoWrite rewrites the file; else (a pure push, or a create-to-external) the repo doc is
                 // unchanged and only its folder may need to move to match a status change.
-                PlaceRepoFile(localId, result.RepoWrite ?? repo, rewrite: result.RepoWrite != null);
+                var docToPlace = result.RepoWrite ?? repo;
+                if (docToPlace != null)
+                    PlaceRepoFile(localId, docToPlace, rewrite: result.RepoWrite != null,
+                        result.PatchFields, result.PatchBody, repo);
                 break;
 
             case ReconcileAction.WriteToRepo:
-                PlaceRepoFile(localId, result.RepoWrite!, rewrite: true);
+                PlaceRepoFile(localId, result.RepoWrite!, rewrite: true, result.PatchFields, result.PatchBody, repo);
                 break;
 
             case ReconcileAction.Delete:
@@ -399,22 +616,32 @@ public sealed class SyncRunner
     /// (filename stem) is unchanged, so the base still keys the same object and a move is never seen as
     /// delete+create. When <paramref name="rewrite"/> the merged content is written to the new path and the
     /// old file removed; otherwise the on-disk content is already current and the file is only moved if its
-    /// folder changed. A no-op when the doc is null or already at its canonical path.
+    /// folder changed. A no-op when it is already at its canonical path.
     /// </summary>
-    private void PlaceRepoFile(string localId, SyncDoc? doc, bool rewrite)
+    private void PlaceRepoFile(string localId, SyncDoc doc, bool rewrite, bool patchFields = false, bool patchBody = false,
+        SyncDoc? current = null)
     {
-        if (doc == null)
-            return;
-
         var oldPath = doc.SourcePath;
         var newPath = _repoPathFor(localId, doc.Fields, string.IsNullOrEmpty(oldPath) ? null : oldPath);
         var moved = !string.IsNullOrEmpty(oldPath) && !SamePath(oldPath, newPath) && File.Exists(oldPath);
 
         if (rewrite)
         {
-            SyncDocFile.Write(newPath, doc);
-            if (moved)
-                File.Delete(oldPath);
+            if (current != null && File.Exists(oldPath) && (patchFields || patchBody))
+            {
+                SyncDocFile.PatchExisting(oldPath, current, doc, patchFields, patchBody);
+                if (moved)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
+                    File.Move(oldPath, newPath, overwrite: true);
+                }
+            }
+            else
+            {
+                SyncDocFile.Write(newPath, doc);
+                if (moved)
+                    File.Delete(oldPath);
+            }
         }
         else if (moved)
         {
@@ -426,12 +653,14 @@ public sealed class SyncRunner
     private static bool SamePath(string a, string b) =>
         string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
 
-    private static SyncUpsert ToUpsert(SyncDoc doc, IReadOnlyList<string> clearedKeys) => new()
+    private static SyncUpsert ToUpsert(SyncDoc doc, IReadOnlyList<string> clearedKeys, bool writeBody, string? operationId) => new()
     {
         LocalId = doc.LocalId,
         ExternalId = doc.ExternalId,
         Fields = doc.Fields,
         Body = doc.Body,
+        WriteBody = writeBody,
+        OperationId = operationId,
         ClearedKeys = clearedKeys,
     };
 

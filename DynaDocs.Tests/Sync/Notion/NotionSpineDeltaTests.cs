@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Sync.Notion;
 
 using DynaDocs.Services;
+using DynaDocs.Sync;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 using DynaDocs.Utils;
@@ -220,6 +221,32 @@ public sealed class NotionSpineDeltaTests : IDisposable
             Assert.Equal(10, Directory.GetFiles(Path.Combine(project, "dydo", "project", "notes")).Length);
             // ...and the cheap-tick state was NOT advanced (F4), so the next tick re-detects the same edits.
             Assert.Equal(stateBefore, File.ReadAllText(FirstTypeDeltaPath(project)));
+        });
+    }
+
+    [Fact]
+    public void DeltaTick_TruncatedProjectedBody_RetainsCursorAndSnapshot()
+    {
+        WithProject(count: 1, (project, client) =>
+        {
+            var deltaPath = FirstTypeDeltaPath(project);
+            var stateBefore = File.ReadAllText(deltaPath);
+            var pageId = BoundaryPageId(client);
+            client.SetBlockChildren(pageId, [Paragraph("new remote body")]); // makes the page a filtered body hit
+            var state = NotionSpineState.Resolve(Path.Combine(project, "dydo"), "page-root", null, dryRun: false, TextWriter.Null);
+
+            var result = NotionSpineDelta.RunForTest(client, state, census: false, validateProvisioning: false,
+                adapter => adapter.ReadExternalState().Select(record => new SyncRecord
+                {
+                    ExternalId = record.ExternalId,
+                    Fields = record.Fields,
+                    Body = "partial transport body",
+                    BodyReadStatus = SyncBodyReadStatus.Truncated,
+                }).ToList());
+
+            Assert.True(result.Conflicts >= 1);
+            Assert.Equal(stateBefore, File.ReadAllText(deltaPath));
+            Assert.True(File.Exists(Path.Combine(project, "dydo", "_system", "notion_sync_spine", "Note", "n00.md")));
         });
     }
 

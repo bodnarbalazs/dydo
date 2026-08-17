@@ -1,6 +1,7 @@
 namespace DynaDocs.Sync;
 
 using DynaDocs.Models;
+using DynaDocs.Sync.Projection;
 
 /// <summary>
 /// The Notion-agnostic reconcile core (Decision 025 §3). Given the per-object base snapshot, the
@@ -52,6 +53,285 @@ public static class ReconcileEngine
 
         return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm, staleConverterEcho, representable);
     }
+
+    /// <summary>
+    /// Reconcile a body whose local and external representations have separate bases. Fields retain the
+    /// established generic merge; only body decisions use the projection merge.
+    /// </summary>
+    public static ReconcileResult ReconcileProjected(
+        SyncDoc? baseDoc, DualBodyBase? bodyBase, SyncDoc? repo, SyncDoc? external,
+        Func<SyncDoc, SyncDoc>? fieldNormalizer = null, IReadOnlySet<string>? representableScalarKeys = null)
+    {
+        var fieldNorm = fieldNormalizer ?? (static d => d);
+        var representable = NonNull(representableScalarKeys);
+
+        // New objects have no prior projection to align. Their body is the authored/external body on both sides
+        // until a receipt establishes the independent pair.
+        if (bodyBase == null || baseDoc == null)
+            return ReconcileProjectedNew(baseDoc, repo, external, fieldNorm, representable);
+
+        if (repo == null || external == null)
+            return ReconcileProjectedMissing(baseDoc, bodyBase, repo, external, fieldNorm, representable);
+
+        return ReconcileProjectedPresent(baseDoc, bodyBase, repo, external, fieldNorm, representable);
+    }
+
+    private static ReconcileResult ReconcileProjectedNew(SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external,
+        Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable)
+    {
+        var legacy = Reconcile(baseDoc, repo, external, fieldNormalizer: fieldNorm,
+            representableScalarKeys: representable);
+        return DecorateProjectedNew(legacy, repo, external);
+    }
+
+    private static ReconcileResult DecorateProjectedNew(ReconcileResult legacy, SyncDoc? repo, SyncDoc? external)
+    {
+        var bodyBase = NewObjectBodyBase(legacy, repo, external);
+        var writesBody = legacy.ExternalWrite != null;
+        return Copy(legacy,
+            patchBody: NeedsNewBodyPatch(legacy, repo),
+            patchFields: NeedsNewFieldPatch(legacy, repo),
+            writeBody: writesBody,
+            newBodyBase: bodyBase,
+            bodyWriteKind: NewObjectBodyWriteKind(legacy.ExternalWrite));
+    }
+
+    private static DualBodyBase? NewObjectBodyBase(ReconcileResult legacy, SyncDoc? repo, SyncDoc? external) =>
+        legacy.NewBase == null ? null : new DualBodyBase(repo?.Body ?? external?.Body ?? "", external?.Body ?? "");
+
+    private static bool NeedsNewBodyPatch(ReconcileResult legacy, SyncDoc? repo) =>
+        legacy.RepoWrite != null && repo != null && legacy.RepoWrite.Body != repo.Body;
+
+    private static bool NeedsNewFieldPatch(ReconcileResult legacy, SyncDoc? repo) =>
+        legacy.RepoWrite != null && repo != null && !SameFields(repo.Fields, legacy.RepoWrite.Fields);
+
+    private static BodyWriteOperationKind? NewObjectBodyWriteKind(SyncDoc? externalWrite) =>
+        externalWrite == null ? null
+        : externalWrite.ExternalId == null ? BodyWriteOperationKind.Create : BodyWriteOperationKind.Update;
+
+    private static ReconcileResult ReconcileProjectedPresent(SyncDoc baseDoc, DualBodyBase bodyBase, SyncDoc repo,
+        SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable)
+    {
+        // Retain all of the mature field semantics by running the existing engine over body-neutral documents.
+        // Its text merge therefore cannot participate in a projected body decision.
+        var field = Reconcile(WithBody(baseDoc, ""), WithBody(repo, ""), WithBody(external, ""),
+            fieldNormalizer: fieldNorm, representableScalarKeys: representable);
+        var body = ResolveProjectedBody(bodyBase, repo, external);
+        return body.ConflictReason == null
+            ? CombineProjectedChanges(field, body, baseDoc, repo, external, fieldNorm)
+            : ProjectedBodyConflict(field, body, repo);
+    }
+
+    private sealed record ProjectedBody(string Local, string External, bool NeedsRepo, bool NeedsExternal,
+        bool LocalChanged, string? ConflictReason = null);
+
+    private static ProjectedBody ResolveProjectedBody(DualBodyBase bodyBase, SyncDoc repo, SyncDoc external)
+    {
+        var localChanged = repo.Body != bodyBase.LocalBody;
+        if (external.Body == bodyBase.ExternalBody)
+            return localChanged
+                ? new ProjectedBody(repo.Body, repo.Body, false, true, true)
+                : new ProjectedBody(repo.Body, external.Body, false, false, false);
+
+        var projected = ProjectedMarkdownMerge.Merge(bodyBase, repo.Body, external.Body, repo.GetField("title"));
+        if (!projected.IsSuccess)
+            return new ProjectedBody(repo.Body, external.Body, false, false, localChanged, projected.Conflict!.Reason);
+
+        var local = projected.Body!;
+        return localChanged
+            ? new ProjectedBody(local, local, local != repo.Body, true, true)
+            : new ProjectedBody(local, external.Body, local != repo.Body, false, false);
+    }
+
+    private static ReconcileResult ProjectedBodyConflict(ReconcileResult field, ProjectedBody body, SyncDoc repo) => new()
+    {
+        LocalId = repo.LocalId,
+        Action = ReconcileAction.Conflict,
+        RepoWrite = WithBody(repo, ConflictBody(repo.Body, body.External)),
+        RepoChanged = body.LocalChanged || field.RepoChanged,
+        ClearedKeys = field.ClearedKeys,
+        PatchBody = true,
+        StructuredConflictReason = body.ConflictReason,
+    };
+
+    private static ReconcileResult CombineProjectedChanges(ReconcileResult field, ProjectedBody body, SyncDoc baseDoc,
+        SyncDoc repo, SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        var changes = ProjectedChanges.From(field, body, baseDoc, repo, external);
+        return BuildProjectedResult(field, body, repo, fieldNorm, changes);
+    }
+
+    private sealed record ProjectedChanges(List<SyncField> Fields, bool NeedsRepo, bool NeedsExternal,
+        ReconcileAction Action, string? ExternalId)
+    {
+        public static ProjectedChanges From(ReconcileResult field, ProjectedBody body, SyncDoc baseDoc,
+            SyncDoc repo, SyncDoc external) => new(
+                FieldResultFields(field, repo),
+                NeedsProjectedRepoWrite(field, body),
+                NeedsProjectedExternalWrite(field, body),
+                ProjectedAction(field.Conflicted, NeedsProjectedRepoWrite(field, body), NeedsProjectedExternalWrite(field, body)),
+                KnownExternalId(baseDoc, external, repo));
+    }
+
+    private static ReconcileResult BuildProjectedResult(ReconcileResult field, ProjectedBody body, SyncDoc repo,
+        Func<SyncDoc, SyncDoc> fieldNorm, ProjectedChanges changes)
+    {
+        return Copy(field, action: changes.Action,
+            repoWrite: ProjectedWrite(changes.NeedsRepo, repo, changes.Fields, body.Local, changes.ExternalId),
+            externalWrite: ProjectedWrite(changes.NeedsExternal, repo, changes.Fields, body.External, changes.ExternalId),
+            newBase: ProjectedNewBase(changes.Action, repo, changes.Fields, body.Local, changes.ExternalId, fieldNorm),
+            repoChanged: body.LocalChanged || field.RepoChanged,
+            patchBody: body.NeedsRepo,
+            patchFields: changes.NeedsRepo && !SameFields(repo.Fields, changes.Fields),
+            writeBody: body.NeedsExternal,
+            newBodyBase: changes.Action == ReconcileAction.None ? null : new DualBodyBase(body.Local, body.External),
+            bodyWriteKind: ProjectedWriteKind(body.NeedsExternal, changes.ExternalId));
+    }
+
+    private static List<SyncField> FieldResultFields(ReconcileResult field, SyncDoc repo) => field.RepoWrite?.Fields ?? repo.Fields;
+
+    private static bool NeedsProjectedRepoWrite(ReconcileResult field, ProjectedBody body) => body.NeedsRepo || field.RepoWrite != null;
+
+    private static bool NeedsProjectedExternalWrite(ReconcileResult field, ProjectedBody body) => body.NeedsExternal || field.ExternalWrite != null;
+
+    private static string? KnownExternalId(SyncDoc baseDoc, SyncDoc external, SyncDoc repo) =>
+        baseDoc.ExternalId ?? external.ExternalId ?? repo.ExternalId;
+
+    private static ReconcileAction ProjectedAction(bool conflicted, bool needsRepo, bool needsExternal) =>
+        conflicted ? ReconcileAction.Conflict
+        : needsRepo && needsExternal ? ReconcileAction.Merged
+        : needsRepo ? ReconcileAction.WriteToRepo
+        : needsExternal ? ReconcileAction.PushToExternal
+        : ReconcileAction.None;
+
+    private static SyncDoc? ProjectedWrite(bool needed, SyncDoc repo, List<SyncField> fields, string body,
+        string? externalId) => needed ? NewDoc(repo, fields, body, externalId) : null;
+
+    private static SyncDoc? ProjectedNewBase(ReconcileAction action, SyncDoc repo, List<SyncField> fields,
+        string body, string? externalId, Func<SyncDoc, SyncDoc> fieldNorm) =>
+        action == ReconcileAction.None ? null : fieldNorm(NewDoc(repo, fields, body, externalId));
+
+    private static BodyWriteOperationKind? ProjectedWriteKind(bool needed, string? externalId) =>
+        !needed ? null : externalId == null ? BodyWriteOperationKind.Create : BodyWriteOperationKind.Update;
+
+    private static SyncDoc NewDoc(SyncDoc source, List<SyncField> fields, string body, string? externalId) => new()
+    {
+        LocalId = source.LocalId,
+        ExternalId = externalId,
+        Fields = fields,
+        Body = body,
+        SourcePath = source.SourcePath,
+    };
+
+    private static string ConflictBody(string local, string external) =>
+        $"<<<<<<< repo\n{local}\n=======\n{external}\n>>>>>>> external";
+
+    private static ReconcileResult ReconcileProjectedMissing(SyncDoc baseDoc, DualBodyBase bodyBase, SyncDoc? repo,
+        SyncDoc? external, Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable)
+    {
+        if (repo == null && external == null)
+            return BothGone(baseDoc);
+
+        var field = ReconcileProjectedMissingFields(baseDoc, repo, external, fieldNorm, representable);
+        // A missing representation does not by itself make a body conflict. When the survivor's
+        // projection is unchanged, keep the generic field delete/modify decision: an unchanged
+        // survivor propagates its deletion, while a field edit resurrects the missing side. Restore
+        // the survivor's real body because the generic pass deliberately used body-neutral docs.
+        if (!SurvivingProjectedBodyChanged(bodyBase, repo, external))
+            return RestoreSurvivingBody(field, bodyBase, repo, external);
+
+        return MissingProjectedBodyConflict(baseDoc, repo, external);
+    }
+
+    private static ReconcileResult ReconcileProjectedMissingFields(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external,
+        Func<SyncDoc, SyncDoc> fieldNorm, IReadOnlySet<string> representable) =>
+        Reconcile(WithBody(baseDoc, ""), WithoutBody(repo), WithoutBody(external), fieldNormalizer: fieldNorm,
+            representableScalarKeys: representable);
+
+    private static SyncDoc? WithoutBody(SyncDoc? doc) => doc == null ? null : WithBody(doc, "");
+
+    private static bool SurvivingProjectedBodyChanged(DualBodyBase bodyBase, SyncDoc? repo, SyncDoc? external) =>
+        repo == null ? external!.Body != bodyBase.ExternalBody : repo.Body != bodyBase.LocalBody;
+
+    private static ReconcileResult MissingProjectedBodyConflict(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external)
+    {
+        var survivor = repo ?? external!;
+        return new ReconcileResult
+        {
+            LocalId = baseDoc.LocalId,
+            Action = ReconcileAction.Conflict,
+            RepoWrite = new SyncDoc
+            {
+                LocalId = baseDoc.LocalId,
+                ExternalId = baseDoc.ExternalId ?? survivor.ExternalId,
+                Fields = survivor.Fields,
+                Body = ConflictBody(MissingLocalBody(repo), MissingExternalBody(external)),
+                SourcePath = survivor.SourcePath,
+            },
+            StructuredConflictReason = MissingConflictReason(repo),
+            RepoChanged = repo != null,
+        };
+    }
+
+    private static string MissingLocalBody(SyncDoc? repo) => repo?.Body ?? "(canonical file deleted)";
+
+    private static string MissingExternalBody(SyncDoc? external) => external?.Body ?? "(external record deleted)";
+
+    private static string MissingConflictReason(SyncDoc? repo) => repo == null
+        ? "local deletion conflicts with an external projected change"
+        : "external deletion conflicts with a local projected change";
+
+    private static ReconcileResult RestoreSurvivingBody(ReconcileResult field, DualBodyBase bodyBase,
+        SyncDoc? repo, SyncDoc? external)
+    {
+        if (repo == null && field.RepoWrite != null)
+            return RestoreCanonicalFieldEdit(field, bodyBase);
+
+        if (external == null && field.ExternalWrite != null)
+            return RestoreExternalFieldEdit(field, bodyBase);
+
+        return field;
+    }
+
+    private static ReconcileResult RestoreCanonicalFieldEdit(ReconcileResult field, DualBodyBase bodyBase) =>
+        // The external representation is not canonical source text. The field-only resurrection must restore
+        // the exact authored local base while retaining the independent external base.
+        Copy(field, repoWrite: WithBody(field.RepoWrite!, bodyBase.LocalBody),
+            newBase: WithBody(field.NewBase!, bodyBase.LocalBody), newBodyBase: bodyBase);
+
+    private static ReconcileResult RestoreExternalFieldEdit(ReconcileResult field, DualBodyBase bodyBase) =>
+        // Recreating the remote record is a projected body write, even though only fields changed: it must be
+        // journaled, carry an operation id, and advance the remote base from its receipt.
+        Copy(field, externalWrite: WithBody(field.ExternalWrite!, bodyBase.LocalBody),
+            newBase: WithBody(field.NewBase!, bodyBase.LocalBody), writeBody: true,
+            newBodyBase: bodyBase, bodyWriteKind: BodyWriteOperationKind.Create);
+
+    private static bool SameFields(IReadOnlyList<SyncField> left, IReadOnlyList<SyncField> right) =>
+        left.Count == right.Count && left.Zip(right).All(pair =>
+            string.Equals(pair.First.Key, pair.Second.Key, StringComparison.Ordinal)
+            && string.Equals(pair.First.Value, pair.Second.Value, StringComparison.Ordinal));
+
+    private static ReconcileResult Copy(ReconcileResult source, ReconcileAction? action = null,
+        SyncDoc? repoWrite = null, SyncDoc? externalWrite = null, SyncDoc? newBase = null, bool? repoChanged = null,
+        bool patchBody = false, bool patchFields = false, bool writeBody = false, DualBodyBase? newBodyBase = null,
+        BodyWriteOperationKind? bodyWriteKind = null, string? structuredConflictReason = null) => new()
+    {
+        LocalId = source.LocalId,
+        Action = action ?? source.Action,
+        RepoWrite = repoWrite ?? source.RepoWrite,
+        ExternalWrite = externalWrite ?? source.ExternalWrite,
+        NewBase = newBase ?? source.NewBase,
+        ExternalDelete = source.ExternalDelete,
+        RepoDelete = source.RepoDelete,
+        RepoChanged = repoChanged ?? source.RepoChanged,
+        ClearedKeys = source.ClearedKeys,
+        PatchBody = patchBody,
+        PatchFields = patchFields,
+        WriteBody = writeBody,
+        NewBodyBase = newBodyBase,
+        BodyWriteKind = bodyWriteKind,
+        StructuredConflictReason = structuredConflictReason,
+    };
 
     private static readonly IReadOnlySet<string> EmptyKeys = new HashSet<string>();
 

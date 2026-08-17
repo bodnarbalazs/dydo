@@ -1,6 +1,7 @@
 namespace DynaDocs.Sync;
 
 using DynaDocs.Models;
+using DynaDocs.Sync.Projection;
 
 /// <summary>
 /// The per-object outcome of reconciliation. Carries the decided action and, where relevant,
@@ -37,6 +38,27 @@ public sealed class ReconcileResult
     /// recorded non-empty that the repo now carries empty-or-absent, on an UPDATE (not a create). Carried through
     /// to the upsert so the adapter emits the wire clear shape instead of omitting the property and reverting.</summary>
     public IReadOnlyList<string> ClearedKeys { get; init; } = [];
+
+    /// <summary>Whether the canonical file needs its body span replaced.</summary>
+    public bool PatchBody { get; init; }
+
+    /// <summary>Whether the canonical file needs scalar frontmatter lines patched.</summary>
+    public bool PatchFields { get; init; }
+
+    /// <summary>Whether the external upsert must write its body rather than properties only.</summary>
+    public bool WriteBody { get; init; }
+
+    /// <summary>The independent local/external body base to persist after a projected decision.</summary>
+    public DualBodyBase? NewBodyBase { get; init; }
+
+    /// <summary>The durable mutation kind used when <see cref="WriteBody"/> is true.</summary>
+    public BodyWriteOperationKind? BodyWriteKind { get; init; }
+
+    /// <summary>A projection failure that must be reported in a shadow, never embedded outside its sentinels.</summary>
+    public string? StructuredConflictReason { get; init; }
+
+    /// <summary>True when a delta caller must retain its cursor because the record was not safely reconciled.</summary>
+    public bool UnhandledProjection { get; init; }
 
     public bool Conflicted => Action == ReconcileAction.Conflict;
 }

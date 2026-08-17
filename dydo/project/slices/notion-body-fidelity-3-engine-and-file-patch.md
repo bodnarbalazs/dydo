@@ -2,7 +2,7 @@
 title: Projected Reconcile and Surgical File Patch
 sprint: notion-body-fidelity
 seq: 3
-status: ready
+status: done
 area: backend
 type: context
 ---
@@ -47,7 +47,9 @@ If `SyncRecord.BodyReadStatus` is `Truncated`, do not call the projection merge.
 record, emit a marker-bearing structured shadow containing the full local candidate and an explicit
 `external body unavailable: truncated export` candidate/diagnostic; leave canonical, remote, and base
 unchanged. For an unmapped externally-created record, do not create a canonical file; emit the same loud
-conflict artifact under the sanitized prospective local id. Delta cursors must not classify this as handled.
+conflict artifact under the sanitized prospective local id. `NotionSpineDelta` consumes the explicit
+unhandled-projection result and retains its prior cursor/state rather than classifying the tick as handled;
+add a real `RunDelta`/cursor regression. This file intentionally overlaps serial Slice 5 ownership.
 
 Add `SyncDocFile.PatchExisting` using `FrontmatterParser.Bounds` and source line spans. Replace only the
 body span for body-only results. For field deltas, replace/delete the matching one-line scalar or insert a
@@ -56,18 +58,23 @@ body byte. Compose field/body edits in memory and perform one existing atomic si
 using `Render` for new files/shadows.
 
 Add exact test classes `ProjectedReconcileTests` and `SyncDocFilePatchTests`. Exercise no-op, repo-only, external-only, disjoint/overlap, body-only, field-only, combined,
-shadow/base behavior, apply/readback failure, restart recovery, and byte-level preservation. Run the
-existing generic sync/reconcile/file suites as regression.
+shadow/base behavior, apply/readback failure, restart recovery, and byte-level preservation. Add the
+real cursor-retention regression named
+`DeltaTick_TruncatedProjectedBody_RetainsCursorAndSnapshot` to
+`DynaDocs.Tests/Sync/Notion/NotionSpineDeltaTests.cs`. Run the existing generic
+sync/reconcile/file/delta suites as regression.
 
 ## Out of scope for this slice
 
-Notion-specific transport and legacy snapshot classification.
+Notion-specific body transport and legacy snapshot classification. The narrow `NotionSpineDelta`
+unhandled-projection/cursor-retention seam is explicitly in scope; native Markdown remains Slice 4.
 
 ## Gate
 
 ```powershell
-$listed = dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --list-tests --filter "FullyQualifiedName~ProjectedReconcile|FullyQualifiedName~SyncDocFilePatch"
+$listed = dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --list-tests --filter "FullyQualifiedName~ProjectedReconcile|FullyQualifiedName~SyncDocFilePatch|FullyQualifiedName~NotionSpineDeltaTests"
 if (($listed | Select-String 'ProjectedReconcile|SyncDocFilePatch').Count -lt 12) { throw 'Engine gate matched fewer than 12 new tests.' }
-dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter "FullyQualifiedName~ProjectedReconcile|FullyQualifiedName~SyncDocFilePatch|FullyQualifiedName~SyncRunnerTests|FullyQualifiedName~ReconcileEngineTests|FullyQualifiedName~SyncDocFileTests"
+if (($listed | Select-String 'DeltaTick_TruncatedProjectedBody_RetainsCursorAndSnapshot').Count -ne 1) { throw 'Exact delta cursor regression missing.' }
+dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter "FullyQualifiedName~ProjectedReconcile|FullyQualifiedName~SyncDocFilePatch|FullyQualifiedName~SyncRunnerTests|FullyQualifiedName~ReconcileEngineTests|FullyQualifiedName~SyncDocFileTests|FullyQualifiedName~NotionSpineDeltaTests"
 dotnet build DynaDocs.csproj --no-restore
 ```

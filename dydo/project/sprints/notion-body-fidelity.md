@@ -178,20 +178,23 @@ teardown, never the configured production board.
 
 ## 4. Slice map
 
-| # | slice file | files touched (disjoint) | deps | gate |
+| # | slice file | files touched / owned seam | deps | gate |
 |---|---|---|---|---|
 | 1 | `notion-body-fidelity-1-projection-core` | new `Sync/Projection/*.cs`; new `DynaDocs.Tests/Sync/Projection/*.cs` | — | projection focused tests |
 | 2 | `notion-body-fidelity-2-snapshot-receipts` | `Sync/SyncSnapshot.cs`; `Sync/SyncSnapshotFile.cs`; `Sync/BaseSnapshotStore.cs`; `Sync/ISyncAdapter.cs`; `Sync/SyncRecord.cs`; `Sync/SyncUpsert.cs`; `Sync/SyncChangeSet.cs`; `Serialization/DydoJsonContext.cs`; new read-status/receipt/typed-intent types; new snapshot tests | 1 | snapshot/receipt focused tests |
-| 3 | `notion-body-fidelity-3-engine-and-file-patch` | `Sync/ReconcileEngine.cs`; `Sync/ReconcileResult.cs`; `Sync/SyncRunner.cs`; `Sync/SyncDocFile.cs`; new projected-reconcile/file-patch tests | 1,2 | engine/file focused tests + existing sync tests |
+| 3 | `notion-body-fidelity-3-engine-and-file-patch` | `Sync/ReconcileEngine.cs`; `Sync/ReconcileResult.cs`; `Sync/SyncRunner.cs`; `Sync/SyncDocFile.cs`; `Sync/Notion/NotionSpineDelta.cs`; `DynaDocs.Tests/Sync/Notion/NotionSpineDeltaTests.cs`; projected-reconcile/file-patch tests | 1,2 | engine/file/delta safety tests + existing sync tests |
 | 4 | `notion-body-fidelity-4-spine-native-markdown` | `Sync/Notion/NotionSyncAdapter.cs`; `Sync/Notion/NotionPropertyMapper.cs`; `Sync/Notion/Provisioning/NotionProvisioner.cs`; `Templates/sync-model.template.json`; `dydo/_system/sync-model.json`; `DynaDocs.Tests/Sync/Notion/FakeNotionClient.cs`; model/provisioner/adapter tests | 2,3 | adapter + schema + client wire tests |
 | 5 | `notion-body-fidelity-5-migration-and-watchdog` | `Sync/Notion/NotionSpineSync.cs`; `Sync/Notion/NotionSpineDelta.cs`; new sanitized fixture; new full/delta/migration tests | 3,4 | full/delta/migration focused tests |
 | 6 | `notion-body-fidelity-6-fidelity-and-live-proof` | new fidelity/mutation/live tests; `dydo/reference/notion-sync.md`; issue 0309 resolution | 5 | live test executes + full suite/coverage/check |
 
 ## 5. Ordering & isolation
 
-Run all six Slices serially. They are file-disjoint, but each consumes contracts from the previous
-Slice and every gate compiles the same solution. Do not use parallel worktrees: a red shared build would
-strand later lanes, and the current tree already contains unrelated dirty work that must remain untouched.
+Run all six Slices serially. Each consumes contracts from the previous Slice and every gate compiles the
+same solution. Slices 3 and 5 intentionally overlap `NotionSpineDelta.cs`: Slice 3 makes the unhandled
+projection/cursor-retention contract end-to-end safe; Slice 5 later enables projected mode and adds
+migration/watchdog integration on that reviewed base. Do not use parallel worktrees: a red shared build
+would strand later lanes, and the current tree already contains unrelated dirty work that must remain
+untouched.
 
 Each Slice receives one code-writer pass, then a fresh reviewer using the code target; findings return to
 the same Slice until PASS. Commit only that Slice's declared paths with explicit path literals. After

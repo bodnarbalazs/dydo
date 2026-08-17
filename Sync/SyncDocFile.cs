@@ -41,6 +41,33 @@ public static class SyncDocFile
         File.Move(temp, filePath, overwrite: true);
     }
 
+    /// <summary>Patch an existing canonical file without re-rendering its untouched frontmatter or body.</summary>
+    public static void PatchExisting(string filePath, SyncDoc current, SyncDoc desired, bool patchFields, bool patchBody)
+    {
+        var bytes = File.ReadAllBytes(filePath);
+        var bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+        var content = File.ReadAllText(filePath);
+        var patched = content;
+        if (patchFields)
+            patched = PatchFields(patched, current.Fields, desired.Fields);
+        if (patchBody)
+            patched = PatchBody(patched, desired.Body);
+        if (patched == content)
+            return;
+        var temp = filePath + ".tmp" + Guid.NewGuid().ToString("N")[..8];
+        try
+        {
+            File.WriteAllText(temp, patched, new UTF8Encoding(bom));
+            File.Move(temp, filePath, overwrite: true);
+        }
+        finally
+        {
+            // File.Delete is intentionally idempotent, so cleanup does not need a racy existence
+            // probe after a successful same-directory move.
+            File.Delete(temp);
+        }
+    }
+
     public static string Render(SyncDoc doc)
     {
         var lines = new List<string> { "---" };
@@ -142,6 +169,105 @@ public static class SyncDocFile
             default: result = '\0'; return false;
         }
     }
+
+    private static string PatchBody(string content, string body)
+    {
+        var bounds = FrontmatterParser.Bounds(content);
+        if (bounds == null)
+            return body;
+        var bodyStart = bounds.Value.BodyStart;
+        while (bodyStart < content.Length && (content[bodyStart] == '\r' || content[bodyStart] == '\n'))
+            bodyStart++;
+        return content[..bodyStart] + body;
+    }
+
+    private static string PatchFields(string content, IReadOnlyList<SyncField> current, IReadOnlyList<SyncField> desired)
+    {
+        var bounds = FrontmatterParser.Bounds(content);
+        if (bounds == null)
+            return content;
+
+        var desiredByKey = FirstWins(desired);
+        var currentByKey = FirstWins(current);
+        var edits = new List<(int Start, int Length, string Text)>();
+        var firstLineByKey = FrontmatterFieldLines(content, bounds.Value);
+        AddChangedFieldEdits(edits, desiredByKey, currentByKey, firstLineByKey, bounds.Value.CloserStart, Newline(content));
+        AddRemovedFieldEdits(edits, desiredByKey, currentByKey, firstLineByKey);
+
+        foreach (var edit in edits.OrderByDescending(e => e.Start))
+            content = content[..edit.Start] + edit.Text + content[(edit.Start + edit.Length)..];
+        return content;
+    }
+
+    private static Dictionary<string, (int Start, int Length, string Text)> FrontmatterFieldLines(string content,
+        (int YamlStart, int CloserStart, int BodyStart) bounds)
+    {
+        var byKey = new Dictionary<string, (int Start, int Length, string Text)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in FrontmatterLines(content, bounds.YamlStart, bounds.CloserStart))
+            AddFieldLine(byKey, line);
+        return byKey;
+    }
+
+    private static void AddFieldLine(Dictionary<string, (int Start, int Length, string Text)> byKey,
+        (int Start, int Length, string Text) line)
+    {
+        var colon = SeparatorColon(line.Text);
+        if (colon < 0)
+            return;
+        var key = Decode(line.Text[..colon].Trim(), isKey: true);
+        if (key.Length > 0)
+            byKey.TryAdd(key, line);
+    }
+
+    private static void AddChangedFieldEdits(List<(int Start, int Length, string Text)> edits,
+        IReadOnlyDictionary<string, string> desired, IReadOnlyDictionary<string, string> current,
+        IReadOnlyDictionary<string, (int Start, int Length, string Text)> lines, int closerStart, string newline)
+    {
+        foreach (var (key, value) in desired)
+        {
+            if (current.TryGetValue(key, out var old) && old == value)
+                continue;
+            if (lines.TryGetValue(key, out var line))
+                edits.Add((line.Start, line.Text.Length, $"{Encode(key, true)}: {Encode(value, false)}"));
+            else
+                edits.Add((closerStart, 0, $"{Encode(key, true)}: {Encode(value, false)}{newline}"));
+        }
+    }
+
+    private static void AddRemovedFieldEdits(List<(int Start, int Length, string Text)> edits,
+        IReadOnlyDictionary<string, string> desired, IReadOnlyDictionary<string, string> current,
+        IReadOnlyDictionary<string, (int Start, int Length, string Text)> lines)
+    {
+        foreach (var (key, _) in current)
+            if (!desired.ContainsKey(key) && lines.TryGetValue(key, out var line))
+                edits.Add((line.Start, line.Length, ""));
+    }
+
+    private static string Newline(string content) => content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+
+    private static Dictionary<string, string> FirstWins(IEnumerable<SyncField> fields)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var field in fields)
+            values.TryAdd(field.Key, field.Value);
+        return values;
+    }
+
+    private static List<(int Start, int Length, string Text)> FrontmatterLines(string content, int start, int end)
+    {
+        var lines = new List<(int Start, int Length, string Text)>();
+        for (var position = start; position < end;)
+        {
+            var newline = content.IndexOf('\n', position);
+            var lineEnd = newline < 0 || newline >= end ? end : newline;
+            var textEnd = lineEnd > position && content[lineEnd - 1] == '\r' ? lineEnd - 1 : lineEnd;
+            var length = (newline < 0 || newline >= end) ? end - position : newline - position + 1;
+            lines.Add((position, length, content[position..textEnd]));
+            position += length;
+        }
+        return lines;
+    }
+
 
     /// <summary>
     /// Splits content into ordered frontmatter fields and the trailing body. A file without a

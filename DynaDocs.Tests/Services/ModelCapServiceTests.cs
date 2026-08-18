@@ -56,7 +56,7 @@ public class ModelCapServiceTests : IDisposable
 
         var tiers = LoadConfig().Models!.Tiers["anthropic"];
         Assert.Equal("claude-sonnet-5", tiers["strong"]);   // rebound to the declared fallback
-        Assert.Equal("claude-opus-4-8", tiers["standard"]); // untouched
+        Assert.Equal("claude-opus-5", tiers["standard"]); // untouched
 
         var marker = ReadMarker("claude-fable-5");
         Assert.Equal("claude-fable-5", marker.Model);
@@ -68,10 +68,10 @@ public class ModelCapServiceTests : IDisposable
     [Fact]
     public void Cap_ExplicitFallback_OverridesDeclaredDefault()
     {
-        ModelCapService.Cap("claude-fable-5", Future, "claude-opus-4-8", TextWriter.Null, TextWriter.Null, _projectRoot);
+        ModelCapService.Cap("claude-fable-5", Future, "claude-opus-5", TextWriter.Null, TextWriter.Null, _projectRoot);
 
-        Assert.Equal("claude-opus-4-8", LoadConfig().Models!.Tiers["anthropic"]["strong"]);
-        Assert.Equal("claude-opus-4-8", ReadMarker("claude-fable-5").Fallback);
+        Assert.Equal("claude-opus-5", LoadConfig().Models!.Tiers["anthropic"]["strong"]);
+        Assert.Equal("claude-opus-5", ReadMarker("claude-fable-5").Fallback);
     }
 
     [Fact]
@@ -123,9 +123,9 @@ public class ModelCapServiceTests : IDisposable
     {
         ModelCapService.Cap("claude-fable-5", Future, null, TextWriter.Null, TextWriter.Null, _projectRoot);
         // Second cap: the tiers already point at the first fallback, so only the marker knows what to restore.
-        ModelCapService.Cap("claude-fable-5", Future, "claude-opus-4-8", TextWriter.Null, TextWriter.Null, _projectRoot);
+        ModelCapService.Cap("claude-fable-5", Future, "claude-opus-5", TextWriter.Null, TextWriter.Null, _projectRoot);
 
-        Assert.Equal("claude-opus-4-8", LoadConfig().Models!.Tiers["anthropic"]["strong"]);
+        Assert.Equal("claude-opus-5", LoadConfig().Models!.Tiers["anthropic"]["strong"]);
         var marker = ReadMarker("claude-fable-5");
         Assert.Contains(marker.ReboundTiers, b => b.Vendor == "anthropic" && b.Tier == "strong");
 

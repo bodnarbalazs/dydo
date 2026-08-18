@@ -19,6 +19,7 @@ Index of slices documentation.
 - [c1-6 Exact-Model Provenance + whoami Host/Model](./c1-6-model-provenance.md) - `backlog/exact-model-provenance-display.
 - [c1-7 Codex Paths E2E Regression Coverage](./c1-7-codex-e2e-coverage.md) - Issue 0233 (in-flight): green tests currently miss codex host/model regressions and workflow artifact drift.
 - [c1-8 Codex Dispatch Live Smoke Re-Run](./c1-8-live-smoke.md) - Human-gated ground truth before v2.
+- [Refresh Anthropic Standard Tier](./anthropic-standard-tier-refresh-1-refresh.md) - Align the shipped standard tier, local configuration, generated agents, and focused tests.
 - [m0-1 Template Model Completion](./m0-1-template-model-completion.md) - Add the three missing object types to `Templates/sync-model.
 - [m0-2 Decision Title Backfill](./m0-2-decision-title-backfill.md) - Give every decision record a `title:` frontmatter key so the Decision DB's Notion titles are not blank (live constraint #4 in reference/notion-sync.
 - [m0-3 Changelog Conformance (Stems + Titles)](./m0-3-changelog-conformance.md) - Make the 670-record `project/changelog/` tree poolable as the `Changelog` type: the spine loader keys rows by filename stem and crashes on duplicat...

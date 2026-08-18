@@ -92,7 +92,7 @@ public static class ConfigFactory
             ["anthropic"] = new()
             {
                 ["strong"] = "claude-fable-5",
-                ["standard"] = "claude-opus-4-8",
+                ["standard"] = "claude-opus-5",
                 ["light"] = "claude-haiku-4-5"
             },
             ["openai"] = new()

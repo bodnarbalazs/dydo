@@ -49,3 +49,4 @@ Index of slices documentation.
 - [Spine Native Markdown Transport](./notion-body-fidelity-4-spine-native-markdown.md) - Move PM-spine bodies to native Markdown reads/writes with exact receipts.
 - [Legacy Migration and Watchdog Integration](./notion-body-fidelity-5-migration-and-watchdog.md) - Safe snapshot migration and shared full/delta behavior.
 - [Fidelity Corpus and Live Proof](./notion-body-fidelity-6-fidelity-and-live-proof.md) - Mutation coverage and isolated real-Notion watchdog acceptance.
+- [Newline Ownership and Hermetic Projection Fixtures](./notion-crlf-fidelity-hotfix-1-newline-ownership.md) - Preserve LF and CRLF source-span ownership through projected body changes.

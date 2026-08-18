@@ -4,6 +4,140 @@ using DynaDocs.Sync.Projection;
 
 public sealed class ProjectedMarkdownPatchTests
 {
+    public static IEnumerable<object[]> FrozenStructuralSpanOwnershipCases()
+    {
+        var cases = new[]
+        {
+            ("update", "before\nspan\nafter\n", "before\nREMOTE\nafter\n", "before\nREMOTE\nafter\n", "before\r\nREMOTE\r\nafter\r\n"),
+            ("start insertion", "before\nspan\nafter\n", "INSERT\n\nbefore\nspan\nafter\n", "INSERT\n\nbefore\nspan\nafter\n", "INSERT\n\nbefore\r\nspan\r\nafter\r\n"),
+            ("middle insertion", "before\nspan\n\nafter\n", "before\nspan\n\nINSERT\n\nafter\n", "before\nspan\n\nINSERT\n\nafter\n", "before\r\nspan\r\n\r\nINSERT\n\nafter\r\n"),
+            ("end insertion", "before\nspan\nafter\n", "before\nspan\nafter\n\nINSERT\n", "before\nspan\nafter\n\nINSERT\n", "before\r\nspan\r\nafter\r\n\r\nINSERT\n"),
+            ("middle deletion", "before\n\nDELETE\n\nafter\n", "before\n\nafter\n", "before\n\n\n\nafter\n", "before\r\n\r\n\r\n\r\nafter\r\n"),
+            ("terminal deletion", "before\n\nDELETE\n", "before\n", "before\n\n", "before\r\n\r\n"),
+            ("terminal newline", "before\nspan\n", "before\nREMOTE\n", "before\nREMOTE\n", "before\r\nREMOTE\r\n"),
+        };
+
+        foreach (var (name, localLf, external, expectedLf, expectedCrlf) in cases)
+        {
+            yield return [$"{name} LF", localLf, localLf, external, expectedLf];
+            yield return [$"{name} CRLF", localLf.Replace("\n", "\r\n", StringComparison.Ordinal), localLf, external, expectedCrlf];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FrozenStructuralSpanOwnershipCases))]
+    public void FrozenStructuralSpanOwnershipMatrix_PreservesLocalSeparatorsAndTerminators(string name, string localBase,
+        string externalBase, string currentExternal, string expected)
+    {
+        var result = ProjectedMarkdownMerge.Merge(localBase, externalBase, localBase, currentExternal);
+
+        Assert.True(result.IsSuccess, $"{name}: {result.Conflict?.Reason}");
+        Assert.Equal(expected, result.Body);
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void NestedListLastChildInsertion_StaysBeforeFollowingRootParagraph(string newline)
+    {
+        const string externalBase = "- parent\n  - child\n\nafter\n";
+        const string externalCurrent = "- parent\n  - child\n  - inserted\n\nafter\n";
+        var local = Local(externalBase, newline);
+        var expected = newline == "\n" ? "- parent\n  - child\n  - inserted\n\n\nafter\n"
+            : "- parent\r\n  - child\n  - inserted\n\r\n\r\nafter\r\n";
+
+        var result = ProjectedMarkdownMerge.Merge(local, externalBase, local, externalCurrent);
+
+        Assert.True(result.IsSuccess, result.Conflict?.Reason);
+        Assert.Equal(expected, result.Body);
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void NestedListLastChildDeletion_PreservesContainerAndRootSeparators(string newline)
+    {
+        const string externalBase = "- parent\n  - DELETE\n\nafter\n";
+        const string externalCurrent = "- parent\n\nafter\n";
+        var local = Local(externalBase, newline);
+        var expected = newline == "\n" ? "- parent\n\nafter\n" : "- parent\r\n\r\nafter\r\n";
+
+        var result = ProjectedMarkdownMerge.Merge(local, externalBase, local, externalCurrent);
+
+        Assert.True(result.IsSuccess, result.Conflict?.Reason);
+        Assert.Equal(expected, result.Body);
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void NestedQuoteLastChildInsertion_StaysBeforeFollowingRootParagraph(string newline)
+    {
+        const string externalBase = "> parent\n>\n> child\n\nafter\n";
+        const string externalCurrent = "> parent\n>\n> child\n>\n> inserted\n\nafter\n";
+        var local = Local(externalBase, newline);
+        var expected = newline == "\n" ? externalCurrent : "> parent\r\n>\r\n> child\n>\n> inserted\r\n\r\nafter\r\n";
+
+        var result = ProjectedMarkdownMerge.Merge(local, externalBase, local, externalCurrent);
+
+        Assert.True(result.IsSuccess, result.Conflict?.Reason);
+        Assert.Equal(expected, result.Body);
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void NestedListLastChildInsertion_AtDocumentEof_DoesNotEnterPrecedingChild(string newline)
+    {
+        const string externalBase = "- parent\n  - child\n";
+        const string externalCurrent = "- parent\n  - child\n  - inserted\n";
+        var local = Local(externalBase, newline);
+        var expected = newline == "\n" ? externalCurrent : "- parent\r\n  - child\n  - inserted\r\n";
+
+        var result = ProjectedMarkdownMerge.Merge(local, externalBase, local, externalCurrent);
+
+        Assert.True(result.IsSuccess, result.Conflict?.Reason);
+        Assert.Equal(expected, result.Body);
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void NestedQuoteLastChildInsertion_AtDocumentEof_DoesNotEnterPrecedingChild(string newline)
+    {
+        const string externalBase = "> parent\n>\n> child\n";
+        const string externalCurrent = "> parent\n>\n> child\n>\n> inserted\n";
+        var local = Local(externalBase, newline);
+        var expected = newline == "\n" ? externalCurrent : "> parent\r\n>\r\n> child\n>\n> inserted\r\n";
+
+        var result = ProjectedMarkdownMerge.Merge(local, externalBase, local, externalCurrent);
+
+        Assert.True(result.IsSuccess, result.Conflict?.Reason);
+        Assert.Equal(expected, result.Body);
+    }
+
+    [Fact]
+    public void RootEndInsertion_WithoutTerminalNewline_UsesExternalBoundary()
+    {
+        var result = ProjectedMarkdownMerge.Merge("before", "before", "before", "before\n\nINSERT");
+
+        Assert.True(result.IsSuccess, result.Conflict?.Reason);
+        Assert.Equal("before\n\nINSERT", result.Body);
+    }
+
+    [Fact]
+    public void RootTerminalDeletion_WithoutTerminalNewline_RetainsItsPrecedingGap()
+    {
+        var result = ProjectedMarkdownMerge.Merge("before\n\nDELETE", "before\n\nDELETE", "before\n\nDELETE", "before");
+
+        Assert.True(result.IsSuccess, result.Conflict?.Reason);
+        Assert.Equal("before\n\n", result.Body);
+    }
+
+    private static string Local(string source, string newline) => newline == "\n"
+        ? source
+        : source.Replace("\n", "\r\n", StringComparison.Ordinal);
+
     [Fact]
     public void DualBodyBase_UsesTheSameProjectionPipeline()
     {

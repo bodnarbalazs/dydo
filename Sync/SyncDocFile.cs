@@ -277,14 +277,13 @@ public static class SyncDocFile
     /// </summary>
     private static (List<SyncField> Fields, string Body) SplitFrontmatter(string content)
     {
-        var normalized = content.Replace("\r\n", "\n");
-        var bounds = FrontmatterParser.Bounds(normalized);
+        var bounds = FrontmatterParser.Bounds(content);
         if (bounds == null)
-            return ([], normalized.TrimStart('\n'));
+            return ([], content.TrimStart('\r', '\n'));
 
         var (yamlStart, closerStart, bodyStart) = bounds.Value;
-        var yaml = normalized[yamlStart..closerStart];
-        var body = normalized[bodyStart..].TrimStart('\n');
+        var yaml = content[yamlStart..closerStart];
+        var body = content[bodyStart..].TrimStart('\r', '\n');
         return (ParseYamlFields(yaml), body);
     }
 

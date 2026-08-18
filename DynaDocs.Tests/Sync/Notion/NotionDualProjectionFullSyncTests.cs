@@ -13,10 +13,12 @@ public sealed class NotionDualProjectionFullSyncTests : IDisposable
         if (Directory.Exists(_root)) Directory.Delete(_root, true);
     }
 
-    [Fact]
-    public void Slice11Fixture_LocalEdit_ThenLossyNativeEcho_LeavesNextFullTickByteIdentical()
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void Slice11Fixture_LocalEdit_ThenLossyNativeEcho_LeavesNextFullTickByteIdentical(string newline)
     {
-        var fixture = Slice11Fixture();
+        var fixture = Slice11Fixture(newline);
         var (client, state, page) = Setup(fixture);
         File.WriteAllText(NotePath, fixture.Replace("watchdog fixture", "__watchdog fixture__", StringComparison.Ordinal));
         client.MarkdownReadTransform = markdown => markdown.Replace("__", "**", StringComparison.Ordinal);
@@ -31,10 +33,12 @@ public sealed class NotionDualProjectionFullSyncTests : IDisposable
         Assert.Contains("__watchdog fixture__", expected);
     }
 
-    [Fact]
-    public void Slice11Fixture_GenuineExternalEdit_ImportsOnceWithFrontmatterAndBodyExact()
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void Slice11Fixture_GenuineExternalEdit_ImportsOnceWithFrontmatterAndBodyExact(string newline)
     {
-        var fixture = Slice11Fixture();
+        var fixture = Slice11Fixture(newline);
         var (client, state, page) = Setup(fixture);
         client.SetPageMarkdown(page.Id, "External edit.");
 
@@ -43,13 +47,18 @@ public sealed class NotionDualProjectionFullSyncTests : IDisposable
         NotionSpineSync.Run(client, state, false, TextWriter.Null);
 
         Assert.Equal(expected, File.ReadAllText(NotePath));
-        Assert.Equal("---\ntitle: Slice 11\nstatus: active\n---\n\nExternal edit.\n", expected);
+        var bodyStart = fixture.IndexOf("The native Markdown watchdog fixture.", StringComparison.Ordinal);
+        var terminalNewline = fixture.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n"
+            : fixture.EndsWith('\n') ? "\n" : "";
+        Assert.Equal(fixture[..bodyStart] + "External edit." + terminalNewline, expected);
     }
 
-    [Fact]
-    public void Slice11Fixture_ExternalOneSpanMutation_PreservesEveryOtherCanonicalByte()
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void Slice11Fixture_ExternalOneSpanMutation_PreservesEveryOtherCanonicalByte(string newline)
     {
-        var fixture = Slice11Fixture();
+        var fixture = Slice11Fixture(newline);
         var (client, state, page) = Setup(fixture);
         var external = client.StoredMarkdown(page.Id).Replace("watchdog fixture", "remote watchdog fixture", StringComparison.Ordinal);
         var writes = client.MarkdownWriteCalls;
@@ -248,13 +257,15 @@ public sealed class NotionDualProjectionFullSyncTests : IDisposable
 
     private string NotePath => Path.Combine(_root, "dydo", "project", "notes", "note.md");
 
-    private static string Slice11Fixture() => File.ReadAllText(Path.Combine(
-        AppContext.BaseDirectory, "Fixtures", "slice-11-sanitized.md"));
+    private static string Slice11Fixture(string newline) => File.ReadAllText(Path.Combine(
+        AppContext.BaseDirectory, "Fixtures", "slice-11-sanitized.md"))
+        .Replace("\r\n", "\n", StringComparison.Ordinal)
+        .Replace("\n", newline, StringComparison.Ordinal);
 
     private (FakeNotionClient Client, NotionSpineState State, NotionPage Page) Setup(string body)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(NotePath)!);
-        File.WriteAllText(NotePath, body.StartsWith("---\n", StringComparison.Ordinal)
+        File.WriteAllText(NotePath, body.StartsWith("---", StringComparison.Ordinal)
             ? body
             : $"---\ntitle: Note\nstatus: active\n---\n\n{body}");
         var model = Path.Combine(_root, "dydo", "_system", "sync-model.json");

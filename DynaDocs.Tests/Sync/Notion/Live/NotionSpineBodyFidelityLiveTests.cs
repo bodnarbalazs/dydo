@@ -4,6 +4,7 @@ using DynaDocs.Sync;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 using DynaDocs.Sync.Notion.Provisioning;
+using DynaDocs.Utils;
 
 /// <summary>Live proof for DR-043.  Every test provisions below its own <see cref="NotionLiveTestBase.ChildPageId"/>;
 /// it never reads the configured board parent.</summary>
@@ -38,7 +39,7 @@ public sealed class NotionSpineBodyFidelityLiveTests : NotionLiveTestBase
     [NotionLiveFact]
     public void ExternalNativeMarkdownEdit_ImportsOneSurgicalSpan_ThenDeltaIsQuiet()
     {
-        var scope = SetUpTrackedFixture();
+        var scope = SetUpTrackedFixture(crlf: true);
         try
         {
             const string original = "watchdog fixture.";
@@ -55,8 +56,7 @@ public sealed class NotionSpineBodyFidelityLiveTests : NotionLiveTestBase
             Assert.Equal(before[..position], imported[..position]);
             Assert.Equal(before[(position + original.Length)..], imported[(position + replacement.Length)..]);
             Assert.Equal(replacement, imported.Substring(position, replacement.Length));
-            Assert.Equal(before[..(before.IndexOf("---\n\n", StringComparison.Ordinal) + 5)],
-                imported[..(imported.IndexOf("---\n\n", StringComparison.Ordinal) + 5)]);
+            Assert.Equal(before[..scope.BodyStart], imported[..scope.BodyStart]);
             Assert.False(import.Quiet);
             Assert.Equal(1, import.Reconciled);
             Assert.True(next.Quiet);
@@ -97,18 +97,26 @@ public sealed class NotionSpineBodyFidelityLiveTests : NotionLiveTestBase
         finally { DeleteScope(root); }
     }
 
-    private (string Root, NotionSpineState State, string NotePath, string Fixture, string Body, string PageId) SetUpTrackedFixture()
+    private (string Root, NotionSpineState State, string NotePath, string Fixture, string Body, int BodyStart, string PageId)
+        SetUpTrackedFixture(bool crlf = false)
     {
         var root = Path.Combine(Path.GetTempPath(), "dydo-live-fidelity-" + Guid.NewGuid().ToString("N"));
         var dydoRoot = CreateProject(root, includeFixture: true);
+        var fixturePath = Path.Combine(dydoRoot, "project", "notes", "slice-11.md");
+        var fixture = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "slice-11-sanitized.md"))
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        if (crlf)
+            fixture = fixture.Replace("\n", "\r\n", StringComparison.Ordinal);
+        File.WriteAllText(fixturePath, fixture);
         var state = NotionSpineState.Resolve(dydoRoot, configuredParentPageId: null, ChildPageId, dryRun: false, TextWriter.Null);
         NotionSpineSync.Run(Client, state, dryRun: false, TextWriter.Null);
         NotionSpineDelta.Run(Client, state, census: false, validateProvisioning: false);
         var dataSource = Assert.Single(NotionProvisioner.LoadTracked(state.ProvisionPath));
         var page = Assert.Single(Client.QueryDataSource(dataSource.DataSourceId));
-        var fixture = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "slice-11-sanitized.md"));
-        return (root, state, Path.Combine(dydoRoot, "project", "notes", "slice-11.md"), fixture,
-            fixture[(fixture.IndexOf("---\n\n", StringComparison.Ordinal) + 5)..], page.Id);
+        var bodyStart = FrontmatterParser.Bounds(fixture)!.Value.BodyStart;
+        while (bodyStart < fixture.Length && (fixture[bodyStart] == '\r' || fixture[bodyStart] == '\n'))
+            bodyStart++;
+        return (root, state, fixturePath, fixture, fixture[bodyStart..], bodyStart, page.Id);
     }
 
     private static string CreateProject(string root, bool includeFixture)

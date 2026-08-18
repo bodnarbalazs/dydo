@@ -10,7 +10,36 @@ permissions:
   id-token: write  # Required for NuGet trusted publishing
 
 jobs:
+  newline-fidelity:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            autocrlf: "false"
+          - os: windows-latest
+            autocrlf: "true"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore DynaDocs.Tests/DynaDocs.Tests.csproj
+      - name: Re-checkout fixture with configured line endings
+        shell: pwsh
+        run: |
+          $expectedCrLf = '${{ matrix.autocrlf }}' -eq 'true'
+          git config core.autocrlf '${{ matrix.autocrlf }}'
+          Remove-Item -LiteralPath 'DynaDocs.Tests/Sync/Notion/Fixtures/slice-11-sanitized.md' -Force
+          git checkout-index -f -- 'DynaDocs.Tests/Sync/Notion/Fixtures/slice-11-sanitized.md'
+          $bytes = [IO.File]::ReadAllBytes('DynaDocs.Tests/Sync/Notion/Fixtures/slice-11-sanitized.md')
+          $hasCrLf = ([Text.Encoding]::UTF8.GetString($bytes)).Contains("`r`n")
+          if ($expectedCrLf -and -not $hasCrLf) { throw 'Expected CRLF fixture checkout.' }
+          if (-not $expectedCrLf -and $hasCrLf) { throw 'Expected LF fixture checkout.' }
+      - run: dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter "FullyQualifiedName~NotionDualProjectionFullSyncTests|FullyQualifiedName~NotionDualProjectionDeltaTests|FullyQualifiedName~ProjectedMarkdownPatchTests|FullyQualifiedName~ReleaseWorkflowTests"
+
   build:
+    needs: newline-fidelity
     strategy:
       matrix:
         include:

@@ -18,3 +18,4 @@ Index of sprints documentation.
 - [Runtime Slim](./runtime-slim.md) - Strip the queue, baton, dispatch-wait, and worktree-orchestration machinery from the worker-tier runtime (Sprint 6, Decision 024).
 - [v2.2.3 Upgrade Compatibility](./v2-2-3-upgrade-compatibility.md) - Land the focused fixes accumulated after v2.
 - [Notion Body Fidelity](./notion-body-fidelity.md) - Implement dual-projection, format-preserving, uniformly bidirectional PM-spine body sync and prove the watchdog path against real Notion.
+- [Notion CRLF Fidelity Hotfix](./notion-crlf-fidelity-hotfix.md) - Preserve local LF and CRLF source spans through projected native Markdown imports.

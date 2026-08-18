@@ -102,10 +102,31 @@ internal static class MarkdownPatchPlanner
         }
         if (change.BaseStart != change.BaseEnd)
         {
-            replacements.Add(new(localStart, localEnd, CurrentRaw(state.ExternalCurrent, externalCurrent, change.CurrentStart, change.CurrentEnd)));
+            AddStructuralReplacement(state, externalBase, localCurrent, externalCurrent, change, root, replacements, localStart, localEnd);
             return true;
         }
-        if (!TryInsertionPosition(change, alignment, localDiff, localCurrent, state, out var position, out reason))
+        return TryApplyInsertion(state, externalBase, localCurrent, externalCurrent, alignment, localDiff, change, root, replacements,
+            out reason);
+    }
+
+    private static void AddStructuralReplacement(MergeState state, IReadOnlyList<MarkdownSyntaxNode> externalBase,
+        IReadOnlyList<MarkdownSyntaxNode> localCurrent, IReadOnlyList<MarkdownSyntaxNode> externalCurrent,
+        MarkdownAlignment.SequenceChange change, bool root, List<Replacement> replacements, int localStart, int localEnd)
+    {
+        if (root && change.BaseEnd == externalBase.Count && change.CurrentStart == externalCurrent.Count
+            && localCurrent.Count > 0 && localEnd == localCurrent[^1].End)
+            localEnd = MarkdownTerminalOwnership.ConsumeTerminalNewline(state.LocalCurrent, localEnd);
+        if (!root && change.BaseEnd == externalBase.Count && change.CurrentStart == externalCurrent.Count)
+            localStart = MarkdownTerminalOwnership.StartOfLineIndentation(state.LocalCurrent, localStart);
+        replacements.Add(new(localStart, localEnd, CurrentRaw(state.ExternalCurrent, externalCurrent, change.CurrentStart, change.CurrentEnd)));
+    }
+
+    private static bool TryApplyInsertion(MergeState state, IReadOnlyList<MarkdownSyntaxNode> externalBase,
+        IReadOnlyList<MarkdownSyntaxNode> localCurrent, IReadOnlyList<MarkdownSyntaxNode> externalCurrent, MarkdownAlignment alignment,
+        MarkdownAlignment.SequenceDiff localDiff, MarkdownAlignment.SequenceChange change, bool root, List<Replacement> replacements,
+        out string? reason)
+    {
+        if (!TryInsertionPosition(change, alignment, localDiff, localCurrent, externalBase.Count, root, state, out var position, out reason))
             return false;
         if (root && change.BaseStart > 0 && change.BaseStart < externalBase.Count
             && TryRootGap(change, alignment, localDiff, localCurrent, out var gapStart, out var gapEnd))
@@ -116,6 +137,8 @@ internal static class MarkdownPatchPlanner
         }
         var text = root ? BoundaryInsert(CurrentRaw(state.ExternalCurrent, externalCurrent, change.CurrentStart, change.CurrentEnd),
             state.LocalCurrent, position) : NestedInsert(state.ExternalCurrent, externalCurrent, change, position);
+        if (!root && change.BaseStart == externalBase.Count)
+            text = MarkdownTerminalOwnership.RemoveDuplicateNestedSeparator(text);
         replacements.Add(new(position, position, text));
         return true;
     }
@@ -314,35 +337,73 @@ internal static class MarkdownPatchPlanner
             || localBase.Syntax != localCurrent.Syntax || externalBase.Syntax != externalCurrent.Syntax;
 
     private static bool TryInsertionPosition(MarkdownAlignment.SequenceChange change, MarkdownAlignment alignment,
-        MarkdownAlignment.SequenceDiff localDiff, IReadOnlyList<MarkdownSyntaxNode> localCurrent, MergeState state,
+        MarkdownAlignment.SequenceDiff localDiff, IReadOnlyList<MarkdownSyntaxNode> localCurrent, int externalBaseCount, bool root,
+        MergeState state,
         out int position, out string? reason)
     {
         position = 0;
         reason = null;
-        if (change.BaseStart == 0 && localCurrent.Count == 0)
-        {
-            position = state.LocalTitleOnly ? state.LocalCurrent.Length : 0;
+        if (TryEmptyDocumentInsertion(change, localCurrent, state, out position))
             return true;
-        }
-        foreach (var externalIndex in new[] { change.BaseStart - 1, change.BaseStart })
-            if (externalIndex >= 0 && externalIndex < localCurrent.Count + 1 && alignment.Multiplicity(externalIndex) > 1)
-            {
-                reason = "external insertion touches a repeated ambiguous Markdown region";
-                return false;
-            }
-        if (change.BaseStart > 0 && alignment.TryMap(change.BaseStart - 1, out var leftBase)
-            && TryCurrentIndex(localDiff, leftBase, out var leftCurrent))
+        if (HasAmbiguousInsertionAnchor(change, alignment, localCurrent.Count))
         {
-            position = localCurrent[leftCurrent].End;
-            return true;
+            reason = "external insertion touches a repeated ambiguous Markdown region";
+            return false;
         }
-        if (alignment.TryMap(change.BaseStart, out var rightBase) && TryCurrentIndex(localDiff, rightBase, out var rightCurrent))
-        {
-            position = localCurrent[rightCurrent].Start;
+        if (TryLeftInsertionPosition(change, alignment, localDiff, localCurrent, externalBaseCount, root, state, out position))
             return true;
-        }
+        if (TryRightInsertionPosition(change, alignment, localDiff, localCurrent, out position))
+            return true;
         reason = "external insertion has no unique neighboring base node";
         return false;
+    }
+
+    private static bool TryEmptyDocumentInsertion(MarkdownAlignment.SequenceChange change,
+        IReadOnlyList<MarkdownSyntaxNode> localCurrent, MergeState state, out int position)
+    {
+        position = 0;
+        if (change.BaseStart != 0 || localCurrent.Count != 0)
+            return false;
+        position = state.LocalTitleOnly ? state.LocalCurrent.Length : 0;
+        return true;
+    }
+
+    private static bool HasAmbiguousInsertionAnchor(MarkdownAlignment.SequenceChange change, MarkdownAlignment alignment,
+        int localCurrentCount) => new[] { change.BaseStart - 1, change.BaseStart }
+            .Any(externalIndex => externalIndex >= 0 && externalIndex < localCurrentCount + 1 && alignment.Multiplicity(externalIndex) > 1);
+
+    private static bool TryLeftInsertionPosition(MarkdownAlignment.SequenceChange change, MarkdownAlignment alignment,
+        MarkdownAlignment.SequenceDiff localDiff, IReadOnlyList<MarkdownSyntaxNode> localCurrent, int externalBaseCount, bool root,
+        MergeState state, out int position)
+    {
+        position = 0;
+        if (change.BaseStart <= 0 || !alignment.TryMap(change.BaseStart - 1, out var leftBase)
+            || !TryCurrentIndex(localDiff, leftBase, out var leftCurrent))
+            return false;
+        position = EndInsertionPosition(change, externalBaseCount, root, state, localCurrent, leftCurrent);
+        return true;
+    }
+
+    private static int EndInsertionPosition(MarkdownAlignment.SequenceChange change, int externalBaseCount, bool root,
+        MergeState state, IReadOnlyList<MarkdownSyntaxNode> localCurrent, int leftCurrent)
+    {
+        if (change.BaseStart != externalBaseCount || leftCurrent != localCurrent.Count - 1)
+            return localCurrent[leftCurrent].End;
+        if (root)
+            return state.LocalCurrent.Length;
+        return localCurrent[leftCurrent].Kind == "ListItemBlock"
+            ? MarkdownTerminalOwnership.BeforeTerminalNewline(state.LocalCurrent, localCurrent[leftCurrent].End)
+            : localCurrent[leftCurrent].End;
+    }
+
+    private static bool TryRightInsertionPosition(MarkdownAlignment.SequenceChange change, MarkdownAlignment alignment,
+        MarkdownAlignment.SequenceDiff localDiff, IReadOnlyList<MarkdownSyntaxNode> localCurrent, out int position)
+    {
+        position = 0;
+        if (!alignment.TryMap(change.BaseStart, out var rightBase) || !TryCurrentIndex(localDiff, rightBase, out var rightCurrent))
+            return false;
+        position = localCurrent[rightCurrent].Start;
+        return true;
     }
 
     private static bool TryCurrentIndex(MarkdownAlignment.SequenceDiff diff, int baseIndex, out int currentIndex)
@@ -398,7 +459,7 @@ internal static class MarkdownPatchPlanner
         if (position == 0)
             return local.Length == 0 ? content : content + "\n\n";
         if (position == local.Length)
-            return "\n\n" + content;
+            return MarkdownTerminalOwnership.TerminalNewline(local) is { Length: > 0 } newline ? newline + content + "\n" : "\n\n" + content;
         return "\n\n" + content + "\n\n";
     }
 

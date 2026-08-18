@@ -15,10 +15,12 @@ public sealed class NotionDualProjectionDeltaTests : IDisposable
         if (Directory.Exists(_root)) Directory.Delete(_root, true);
     }
 
-    [Fact]
-    public void Slice11Fixture_LocalEdit_LossyNativeEcho_NextDeltaIsQuietAndByteIdentical()
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void Slice11Fixture_LocalEdit_LossyNativeEcho_NextDeltaIsQuietAndByteIdentical(string newline)
     {
-        var fixture = Slice11Fixture();
+        var fixture = Slice11Fixture(newline);
         var (client, state, page) = Setup(fixture);
         NotionSpineDelta.Run(client, state, false, false); // establish a warm cursor
         File.WriteAllText(NotePath, fixture.Replace("watchdog fixture", "__watchdog fixture__", StringComparison.Ordinal));
@@ -33,10 +35,12 @@ public sealed class NotionDualProjectionDeltaTests : IDisposable
         Assert.Contains("__watchdog fixture__", expected);
     }
 
-    [Fact]
-    public void Slice11Fixture_ExternalOneSpanEdit_ImportsOnceWithExactUntouchedBytes()
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void Slice11Fixture_ExternalOneSpanEdit_ImportsOnceWithExactUntouchedBytes(string newline)
     {
-        var fixture = Slice11Fixture();
+        var fixture = Slice11Fixture(newline);
         var (client, state, page) = Setup(fixture);
         NotionSpineDelta.Run(client, state, false, false);
         const string original = "watchdog fixture";
@@ -220,8 +224,10 @@ public sealed class NotionDualProjectionDeltaTests : IDisposable
 
     private string NotePath => Path.Combine(_root, "dydo", "project", "notes", "note.md");
 
-    private static string Slice11Fixture() => File.ReadAllText(Path.Combine(
-        AppContext.BaseDirectory, "Fixtures", "slice-11-sanitized.md"));
+    private static string Slice11Fixture(string newline) => File.ReadAllText(Path.Combine(
+        AppContext.BaseDirectory, "Fixtures", "slice-11-sanitized.md"))
+        .Replace("\r\n", "\n", StringComparison.Ordinal)
+        .Replace("\n", newline, StringComparison.Ordinal);
 
     private (FakeNotionClient Client, NotionSpineState State, NotionPage Page) Setup(string body = "---\ntitle: Note\n---\n\nBody.")
     {

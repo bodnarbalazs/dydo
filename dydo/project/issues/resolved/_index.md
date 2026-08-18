@@ -12,6 +12,7 @@ Index of resolved documentation.
 ## Contents
 
 - [Notion watchdog round-trip corrupts existing PM record bodies](./0309-notion-watchdog-round-trip-corrupts-existing-pm-record-bodies.md) - DR 043 restored format-preserving PM-spine watchdog synchronization with offline and isolated live proof.
+- [Projected Notion import loses CRLF checkout bytes](./0310-projected-notion-import-loses-crlf-checkout-bytes.md) - Source-span newline ownership restored exact LF and CRLF projected imports, with release-gate and live proof.
 
 - [Code-writers don't get nudges on release attempts if they haven't dispatched to a code-reviewer](./0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md) - Resolved low-severity gap: code-writers attempting to release without first dispatching a code-reviewer received no guidance about the missing hand...
 - [Agents default to creating decision docs unnecessarily](./0002-agents-default-to-creating-decision-docs-unnecessarily.md) - Resolved low-severity prompt-engineering bug: agents were creating decision docs for changes that didn't actually warrant a decision record, pollut...

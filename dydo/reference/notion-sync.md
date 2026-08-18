@@ -30,8 +30,8 @@ Verified against live docs (2026-06-17). **Exception:** the DR-035 native-markdo
 | Update page properties | `PATCH /v1/pages/{page_id}` |
 | Read page body as markdown **†** | `GET /v1/pages/{page_id}/markdown` → `{ "object": "page_markdown", "id", "markdown", "truncated", "unknown_block_ids" }` (Notion maps blocks→markdown server-side, DR 035 — the **docs mirror** body-read path). `truncated: true` means the body exceeded Notion's ~20k-block export ceiling and was cut short — reuse the last-synced body, never persist a truncated read. The export also emits each **child page** as a `<page url="…">title</page>` tag; those are structure (repo-owned via the filesystem tree, DR 035 §3), stripped on read so they never enter a body compare or a canonical file (issue 0235). |
 | Replace page body from markdown **†** | `PATCH /v1/pages/{page_id}/markdown` — a **discriminated command**, NOT a flat object: `{ "type": "replace_content", "replace_content": { "new_str": "…", "allow_deleting_content": <bool> } }` (the markdown is `new_str`; a bare `{ markdown }` is rejected with `body.type should be defined`). For a folder page, `allow_deleting_content: false` is child-safe **only when** `new_str` re-appends its existing child items as `<page url="…">title</page>` tags; otherwise Notion rejects the write with 400. Alternatively, `allow_deleting_content: true` permits the write but can delete the child pages. Use `true` only for a leaf page. Notion maps markdown→blocks server-side, DR 035 — the **docs mirror** body-write path. |
-| Read body content — **spine only** | `GET /v1/blocks/{block_id}/children` (block-children API; the docs mirror uses the markdown endpoints above, DR 035 — the converter stays for the spine, issue 0236) |
-| Append body content — **spine only** | `PATCH /v1/blocks/{block_id}/children` (block-children API unchanged; docs-mirror bodies go through the markdown endpoints, DR 035) |
+| Read block children — structural child-page discovery and legacy API support | `GET /v1/blocks/{block_id}/children` — not PM-spine body transport; current spine bodies use native Markdown (DR 043). |
+| Append block children — legacy block-body transport compatibility | `PATCH /v1/blocks/{block_id}/children` — not current PM-spine body transport; current spine body writes use native Markdown. |
 | Search | filter accepts `value: "page" \| "data_source"` (no longer `"database"`) |
 
 ### Provisioning
@@ -132,7 +132,7 @@ The PM-board sync's first live run (2026-07-06) and the docs-body live smoke (20
 
 ## Live Smoke Harness
 
-A token-gated live test suite (ns-9) exercises the spine's live constraints above against real Notion, from inside the normal test project (`DynaDocs.Tests/Sync/Notion/Live/`) but wired into **nothing in CI**. Constraints 5 (folder-body child-tag rule) and 6 (native-markdown round-trip losses) are **docs-mirror** behavior, out of this sprint's spine-first scope, and are not covered by this suite. Each test carries `[Trait("Category", "notion-live")]` and provisions into its own uniquely named child page (`smoke-<utcstamp>-<rand4>`) under the test parent, archiving it in teardown (best-effort — a leaked page is visible in the scratch parent).
+A token-gated live test suite (ns-9) exercises the spine's live constraints above against real Notion, from inside the normal test project (`DynaDocs.Tests/Sync/Notion/Live/`) but wired into **nothing in CI**. Slice 6 adds exactly three DR-043 PM-spine proofs: lossy native echo after an existing-document watchdog push, one surgical native-Markdown external import followed by a quiet tick, and a Notion-originated create control. Each test carries `[Trait("Category", "notion-live")]` and provisions into its own uniquely named child page (`smoke-<utcstamp>-<rand4>`) under the test parent, archiving it in teardown (best-effort — a leaked page is visible in the scratch parent).
 
 **Gating (the `[NotionLiveFact]` contract).** Fixtures read two env vars:
 

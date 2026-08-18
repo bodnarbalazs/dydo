@@ -32,8 +32,9 @@ public sealed class SyncRunner
     /// <param name="conflictShadowPathFor">Where to divert a conflicted body instead of the canonical repo file
     /// (DR 035 §4/§5 — the docs mirror). When set, a body about to be persisted that carries this run's merge
     /// sentinels is written to the returned shadow path and the canonical file is left at its last-good state,
-    /// so the sync can NEVER corrupt a canonical doc with conflict markers (root cause of issue 0235). Null
-    /// (the default, and the spine) keeps the historical behavior of writing the merged body — markers and all —
+    /// so the sync can NEVER corrupt a canonical doc with conflict markers (root cause of issue 0235). The production
+    /// PM spine supplies its shadow resolver/path; null is only the generic, non-spine fallback and keeps the
+    /// historical behavior of writing the merged body — markers and all —
     /// to the canonical file.</param>
     /// <param name="allowMassDelete">Disables the mass-delete fuse (slice ns-2) for this run. Off by default: a
     /// reconcile that would locally delete more than 5 records AND more than 20% of the type's tracked base

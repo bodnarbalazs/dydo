@@ -110,8 +110,10 @@ named `slice-11-sanitized.md` regression proves the fixture remains part of the 
 native echo → quiet delta with byte-identical file; a real external native-Markdown span edit → one surgical import →
 quiet delta; and a Notion-originated create control. They archive the test's `NotionLiveTestBase.ChildPageId` parent
 in fixture teardown and never address the configured board. As of 2026-08-18, the required
-`DYDO_NOTION_TEST_TOKEN` and `DYDO_NOTION_TEST_PARENT` variables were absent, so all three are discovered but skipped;
-no live acceptance claim is made and issue 0309 remains open pending an executed 3/3 run.
+`DYDO_NOTION_TEST_TOKEN` and `DYDO_NOTION_TEST_PARENT` were supplied for the 2026-08-18 isolated run: exactly
+three executed and passed, none skipped, in 24 seconds. Scratch children were archived in teardown. The first
+attempt exposed a title-versus-external-id assertion in the create control (2/3); its reviewed correction produced
+the final 3/3 pass. This is live evidence, not a configured-board mutation.
 
 ---
 

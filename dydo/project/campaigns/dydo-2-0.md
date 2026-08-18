@@ -20,7 +20,7 @@ or board-derived collateral rewrites, and deleting the Notion adapter still leav
 **Settled outcomes**
 
 - **W1 — Full-fidelity posture (settled 2026-08-17).** Issue
-  [0309](../issues/0309-notion-watchdog-round-trip-corrupts-existing-pm-record-bodies.md) and the
+  [0309](../issues/resolved/0309-notion-watchdog-round-trip-corrupts-existing-pm-record-bodies.md) and the
   ns-8 audit prove that the prior fixed-point/corpus acceptance boundary was too narrow. The human
   explicitly rejected temporary quarantine, one-way bodies, and quick endpoint swaps. The route
   remains uniformly bidirectional under DR 025 and must address DR 035's recorded native-Markdown
@@ -33,13 +33,11 @@ or board-derived collateral rewrites, and deleting the Notion adapter still leav
 
 **Waypoints**
 
-- **W3 — Fidelity delivery Sprint (Frontier).** Point to one reviewed Sprint implementing the
-  settled contract across snapshot state, reconciliation, the spine adapter, migration, diagnostics,
-  and offline/live regression coverage.
-- **W4 — Production proof and issue closure (blocked by W3).** Accept only after a real-Notion
-  existing-record push→echo→watchdog tick is byte-identical and plans `None`, a genuine Notion body
-  edit imports exactly once without collateral formatting/frontmatter changes, the Notion-originated
-  create control remains pristine, and the full safety/coverage gates pass.
+- **W3 — Fidelity delivery Sprint (settled 2026-08-18).** [Notion Body Fidelity](../sprints/notion-body-fidelity.md)
+  implemented the settled contract and passed its offline and live regression evidence.
+- **W4 — Production proof and issue closure (complete 2026-08-18).** The isolated live suite passed 3/3:
+  byte-identical existing-record watchdog echo, one surgical external import, and a pristine create control;
+  issue 0309 is resolved.
 
 **Fog**
 
@@ -47,10 +45,9 @@ or board-derived collateral rewrites, and deleting the Notion adapter still leav
   are not present in this checkout, so the exact historical production branch (`WriteToRepo` versus a
   clean `Merged` result, possibly under a stale process) may remain unknowable and is not a delivery
   dependency; the sanitized record plus the exact full/delta route is the reproducible regression.
-- DR 043's source-spanned mapping still needs implementation proof against seeded ambiguous/repeated
-  structures and real Notion echoes; ambiguity must shadow rather than reopen the settled contract.
-- Existing single-body snapshots, already-provisioned board pages, and interrupted first upgraded runs
-  need migration/recovery proof that cannot manufacture an edit, duplicate a row, or choose a winner.
+- DR 043's source-spanned mapping, ambiguity shadowing, and v1 migration/recovery were settled by the
+  [Notion Body Fidelity](../sprints/notion-body-fidelity.md) Sprint's seeded offline corpus and isolated
+  3/3 live proof; the historical incident fingerprint remains the only retained fog.
 
 **Out of scope:** temporary/quarantine behavior, one-way authored bodies, treating normalization as
 canonical content, broad docs-mirror redesign unrelated to the PM spine, and Notion presentation

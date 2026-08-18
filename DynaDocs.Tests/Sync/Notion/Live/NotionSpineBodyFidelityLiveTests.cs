@@ -81,15 +81,18 @@ public sealed class NotionSpineBodyFidelityLiveTests : NotionLiveTestBase
                 Markdown = "Created natively.\n",
             });
 
-            NotionSpineDelta.Run(Client, state, census: false, validateProvisioning: false);
-            var path = Path.Combine(dydoRoot, "project", "notes", "native-create.md");
+            var import = NotionSpineDelta.Run(Client, state, census: false, validateProvisioning: false);
+            var localId = SyncRunner.SanitizeLocalId(page.Id);
+            var path = Path.Combine(dydoRoot, "project", "notes", localId + ".md");
             var imported = File.ReadAllBytes(path);
             var next = NotionSpineDelta.Run(Client, state, census: false, validateProvisioning: false);
 
+            Assert.False(import.Quiet);
+            Assert.Equal(1, import.Reconciled);
             Assert.Contains("Created natively.", File.ReadAllText(path));
             Assert.True(next.Quiet);
             Assert.Equal(imported, File.ReadAllBytes(path));
-            Assert.Equal(page.Id, new BaseSnapshotStore(state.SnapshotPath("Note")).Get("native-create")!.ExternalId);
+            Assert.Equal(page.Id, new BaseSnapshotStore(state.SnapshotPath("Note")).Get(localId)!.ExternalId);
         }
         finally { DeleteScope(root); }
     }

@@ -2,7 +2,7 @@
 title: Fidelity Corpus and Live Proof
 sprint: notion-body-fidelity
 seq: 6
-status: blocked
+status: done
 area: backend
 type: context
 ---
@@ -42,6 +42,10 @@ after every acceptance assertion and gate passes; otherwise leave it open with t
 ## Out of scope for this slice
 
 Production-board mutation, release publication, and unrelated docs-mirror activation.
+
+## Live evidence (2026-08-18)
+
+The isolated scratch-parent run executed exactly three tests: three passed, none skipped, in 24 seconds. Scratch children beneath the configured dydo test parent were archived in teardown. The first attempt passed two of three and exposed a title-versus-external-id test assumption; after the reviewed correction, the final run passed 3/3.
 
 ## Gate
 

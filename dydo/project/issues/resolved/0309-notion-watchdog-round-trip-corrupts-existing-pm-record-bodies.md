@@ -4,7 +4,7 @@ id: 309
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 date: 2026-08-17
 ---
@@ -44,4 +44,9 @@ Until fixed, the safe operational rule is: keep PM records tracked before allowi
 
 ## Resolution
 
-(Filled when resolved)
+DR 043 replaced the spine converter transport with native Markdown, records distinct exact local/external body bases,
+and applies observable external edits through source-spanned projection while shadowing uncertainty. The offline suite
+proved the sanitized slice-11 full/delta path and 30 fidelity mutations; the merged gate recorded 2,726 offline tests,
+25 skips, and 140/140 coverage. On 2026-08-18 the isolated scratch-parent live suite executed exactly three tests in
+24 seconds (3 passed, 0 skipped): existing-document push→echo→quiet watchdog, one surgical external import, and the
+Notion-originated create control. Scratch children were archived; no configured board was mutated.

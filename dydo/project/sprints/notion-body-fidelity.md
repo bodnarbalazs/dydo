@@ -1,8 +1,8 @@
 ---
 title: Notion Body Fidelity
 seq: 16
-status: active
-gate-result: PASS 2026-08-17
+status: done
+gate-result: strict merged audit PASS (2026-08-18; live 3/3 executed, full offline 2726/25, coverage 140/140, Release 0 warnings)
 campaign: dydo-2-0
 area: backend
 type: context

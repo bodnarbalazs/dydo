@@ -14,7 +14,7 @@ public class RuleSkipPathsTests
     [InlineData("_system/audit/x.json", false)]
     [InlineData("_system/audit/2026/foo.md", false)]
     [InlineData("_system/.local/worktrees/foo/bar.md", false)]
-    [InlineData("project/tasks/foo.md", false)]
+    [InlineData("project/decisions/foo.md", false)]
     [InlineData("", false)]
     public void IsTemplateOrAddition_ClassifiesPaths(string path, bool expected)
     {

@@ -97,8 +97,10 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
 
-        // Tasks folder — D4: no auto-generated _index.md; meta file still present.
-        AssertFileExists("dydo/project/tasks/_tasks.md");
+        foreach (var retired in new[] { "tasks", "issues", "campaigns", "sprints", "slices", "backlog" })
+            Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo", "project", retired)));
+
+        AssertFileExists("dydo/project/future-features/_future-features.md");
 
         // Decisions folder - hub and meta
         AssertFileExists("dydo/project/decisions/_index.md");
@@ -119,11 +121,6 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
-
-        // Tasks meta should describe task lifecycle
-        AssertFileContains("dydo/project/tasks/_tasks.md", "Task Lifecycle");
-        AssertFileContains("dydo/project/tasks/_tasks.md", "backlog");
-        AssertFileContains("dydo/project/tasks/_tasks.md", "in-review");
 
         // Decisions meta should describe decision record format
         AssertFileContains("dydo/project/decisions/_decisions.md", "Decision Records");

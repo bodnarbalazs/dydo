@@ -11,12 +11,9 @@ public class CompletionProviderTests
     [InlineData("init")]
     [InlineData("graph")]
     [InlineData("guard")]
-    [InlineData("task")]
-    [InlineData("review")]
     [InlineData("version")]
     [InlineData("help")]
     [InlineData("completions")]
-    [InlineData("issue")]
     [InlineData("complete")]
     [InlineData("template")]
     [InlineData("validate")]
@@ -30,8 +27,6 @@ public class CompletionProviderTests
 
 
     [Theory]
-    [InlineData("task", new[] { "create", "done", "list", "ready-for-review" })]
-    [InlineData("issue", new[] { "create", "list", "resolve" })]
     [InlineData("template", new[] { "update" })]
     [InlineData("watchdog", new[] { "start", "stop", "run" })]
     public void Subcommands_ContainsExpectedEntries(string command, string[] expectedSubcommands)
@@ -42,9 +37,12 @@ public class CompletionProviderTests
     }
 
     [Fact]
-    public void OptionValueHandlers_SubjectReturnsTaskNames()
+    public void TopLevelCommands_ExcludesRetiredWorkCommands()
     {
-        var completions = CompletionProvider.GetOptionValueCompletions("--subject");
-        Assert.NotNull(completions);
+        var completions = CompletionProvider.GetCompletions(1, ["dydo"]).ToList();
+
+        Assert.DoesNotContain("task", completions);
+        Assert.DoesNotContain("issue", completions);
+        Assert.DoesNotContain("review", completions);
     }
 }

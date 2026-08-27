@@ -2,9 +2,7 @@
   "version": 1,
   "name": null,
   "structure": {
-    "root": "dydo",
-    "tasks": "project/tasks",
-    "issues": "project/issues"
+    "root": "dydo"
   },
   "paths": {
     "source": [
@@ -72,7 +70,7 @@
       "severity": "block"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|task|review|template|init|check|fix|index|graph|completions|complete|version|help|validate|issue|inquisition|watchdog)\\b.*)",
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|template|init|check|fix|index|graph|completions|complete|version|help|validate|inquisition|watchdog)\\b.*)",
       "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
       "severity": "block"
     },

@@ -10,9 +10,4 @@ public class StructureConfig
     [JsonPropertyName("root")]
     public string Root { get; set; } = "dydo";
 
-    [JsonPropertyName("tasks")]
-    public string Tasks { get; set; } = "project/tasks";
-
-    [JsonPropertyName("issues")]
-    public string Issues { get; set; } = "project/issues";
 }

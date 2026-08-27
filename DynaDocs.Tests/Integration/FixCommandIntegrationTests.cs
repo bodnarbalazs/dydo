@@ -523,9 +523,9 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         var initResult = await InitProjectAsync();
         initResult.AssertSuccess();
 
-        // Create nested folder (project/tasks/subtask is NOT a direct child of a main folder)
-        WriteFile("dydo/project/tasks/subtask/task1.md",
-            "---\narea: project\ntype: guide\n---\n\n# Task 1\n\nA task.");
+        // Create a nested project folder; it is not a direct child of a main folder.
+        WriteFile("dydo/project/decisions/archive/example.md",
+            "---\narea: project\ntype: guide\n---\n\n# Example\n\nAn archived example.");
 
         // Act
         var fixCommand = FixCommand.Create();
@@ -533,7 +533,7 @@ public class FixCommandIntegrationTests : IntegrationTestBase
 
         // Assert - Should NOT create meta file for nested folder
         fixResult.AssertSuccess();
-        AssertFileNotExists("dydo/project/tasks/subtask/_subtask.md");
+        AssertFileNotExists("dydo/project/decisions/archive/_archive.md");
     }
 
     [Fact]
@@ -567,7 +567,6 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         initResult.AssertSuccess();
 
         // Capture meta file content before fix
-        var tasksMetaBefore = ReadFile("dydo/project/tasks/_tasks.md");
         var decisionsMetaBefore = ReadFile("dydo/project/decisions/_decisions.md");
         var changelogMetaBefore = ReadFile("dydo/project/changelog/_changelog.md");
         var pitfallsMetaBefore = ReadFile("dydo/project/pitfalls/_pitfalls.md");
@@ -580,14 +579,12 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         fixResult.AssertSuccess();
 
         // Meta files should be unchanged (not recreated by fix)
-        Assert.Equal(tasksMetaBefore, ReadFile("dydo/project/tasks/_tasks.md"));
         Assert.Equal(decisionsMetaBefore, ReadFile("dydo/project/decisions/_decisions.md"));
         Assert.Equal(changelogMetaBefore, ReadFile("dydo/project/changelog/_changelog.md"));
         Assert.Equal(pitfallsMetaBefore, ReadFile("dydo/project/pitfalls/_pitfalls.md"));
 
         // Fix should not report creating new meta files for project subfolders
         // (they already exist from init)
-        Assert.DoesNotContain("Created project/tasks/_tasks.md", fixResult.Stdout);
         Assert.DoesNotContain("Created project/decisions/_decisions.md", fixResult.Stdout);
         Assert.DoesNotContain("Created project/changelog/_changelog.md", fixResult.Stdout);
         Assert.DoesNotContain("Created project/pitfalls/_pitfalls.md", fixResult.Stdout);

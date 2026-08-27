@@ -26,25 +26,25 @@ public class HelpCommandTests
         Assert.Contains("index", output);
         Assert.Contains("graph", output);
         Assert.Contains("guard", output);
-        Assert.Contains("task", output);
-        Assert.Contains("review", output);
+        var lines = output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+        Assert.DoesNotContain(lines, line => line.StartsWith("  task "));
+        Assert.DoesNotContain(lines, line => line.StartsWith("  review "));
         Assert.Contains("completions", output);
         Assert.Contains("template", output);
         Assert.Contains("validate", output);
-        Assert.Contains("issue", output);
+        Assert.DoesNotContain(lines, line => line.StartsWith("  issue "));
         Assert.Contains("version", output);
         Assert.Contains("help", output);
     }
 
     [Fact]
-    public void Help_ListsAllTaskSubcommands()
+    public void Help_DoesNotListRetiredWorkCommands()
     {
         var output = CaptureHelpOutput();
 
-        Assert.Contains("task create", output);
-        Assert.Contains("task ready-for-review", output);
-        Assert.Contains("task done", output);
-        Assert.Contains("task list", output);
+        Assert.DoesNotContain("task create", output);
+        Assert.DoesNotContain("review complete", output);
+        Assert.DoesNotContain("issue create", output);
     }
 
     [Fact]
@@ -77,8 +77,8 @@ public class HelpCommandTests
         Assert.Contains("Role Commands:", output);
         Assert.Contains("Validation Commands:", output);
         Assert.Contains("Template Commands:", output);
-        Assert.Contains("Task Commands:", output);
-        Assert.Contains("Issue Commands:", output);
+        Assert.DoesNotContain("Task Commands:", output);
+        Assert.DoesNotContain("Issue Commands:", output);
         Assert.Contains("Utility:", output);
     }
 }

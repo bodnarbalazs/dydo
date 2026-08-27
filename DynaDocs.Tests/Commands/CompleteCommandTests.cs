@@ -1,7 +1,6 @@
 namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
-using DynaDocs.Services;
 
 [Collection("Integration")]
 public class CompleteCommandTests : IDisposable
@@ -43,53 +42,17 @@ public class CompleteCommandTests : IDisposable
     {
         var completions = CompleteCommand.GetCompletions(1, ["dydo"]).ToList();
 
-        Assert.Contains("task", completions);
         Assert.Contains("init", completions);
-        Assert.Contains("review", completions);
+        Assert.DoesNotContain("task", completions);
+        Assert.DoesNotContain("issue", completions);
+        Assert.DoesNotContain("review", completions);
         Assert.DoesNotContain("clean", completions);
         Assert.Contains("completions", completions);
-    }
-
-    [Fact]
-    public void TaskSubcommand_ReturnsTaskSubcommands()
-    {
-        var completions = CompleteCommand.GetCompletions(2, ["dydo", "task"]).ToList();
-
-        Assert.Contains("create", completions);
-        Assert.Contains("done", completions);
-        Assert.Contains("list", completions);
-        Assert.Contains("ready-for-review", completions);
-    }
-
-    [Fact]
-    public void TaskDone_ReturnsTaskNames()
-    {
-        SetupProjectWithTasks("fix-login", "add-search");
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "done"]).ToList();
-
-        Assert.Contains("fix-login", completions);
-        Assert.Contains("add-search", completions);
-    }
-
-    [Fact]
-    public void TaskDone_SkipsUnderscorePrefixed()
-    {
-        SetupProjectWithTasks("fix-login");
-        var tasksPath = new ConfigService().GetTasksPath();
-        File.WriteAllText(Path.Combine(tasksPath, "_template.md"), "template");
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "done"]).ToList();
-
-        Assert.Contains("fix-login", completions);
-        Assert.DoesNotContain("_template", completions);
     }
 
     [Theory]
     [InlineData("--area", "frontend")]
     [InlineData("--area", "backend")]
-    [InlineData("--status", "pass")]
-    [InlineData("--status", "fail")]
     [InlineData("--action", "edit")]
     [InlineData("--action", "write")]
     public void OptionValue_ReturnsCorrectCompletions(string option, string expectedValue)
@@ -97,26 +60,6 @@ public class CompleteCommandTests : IDisposable
         var completions = CompleteCommand.GetCompletions(3, ["dydo", "dispatch", option]).ToList();
 
         Assert.Contains(expectedValue, completions);
-    }
-
-    [Fact]
-    public void TaskOption_ReturnsTaskNames()
-    {
-        SetupProjectWithTasks("my-task");
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "dispatch", "--task"]).ToList();
-
-        Assert.Contains("my-task", completions);
-    }
-
-    [Fact]
-    public void ReviewComplete_ReturnsTaskNames()
-    {
-        SetupProjectWithTasks("fix-bug");
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "review", "complete"]).ToList();
-
-        Assert.Contains("fix-bug", completions);
     }
 
     [Fact]
@@ -149,38 +92,6 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
-    public void TaskUnknownSubcommand_ReturnsEmpty()
-    {
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "list"]).ToList();
-
-        Assert.Empty(completions);
-    }
-
-    [Fact]
-    public void TaskPosition4_ReturnsEmpty()
-    {
-        var completions = CompleteCommand.GetCompletions(4, ["dydo", "task", "approve", "my-task"]).ToList();
-
-        Assert.Empty(completions);
-    }
-
-    [Fact]
-    public void ReviewUnknownSubcommand_ReturnsEmpty()
-    {
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "review", "unknown"]).ToList();
-
-        Assert.Empty(completions);
-    }
-
-    [Fact]
-    public void ReviewPosition4_ReturnsEmpty()
-    {
-        var completions = CompleteCommand.GetCompletions(4, ["dydo", "review", "complete", "task"]).ToList();
-
-        Assert.Empty(completions);
-    }
-
-    [Fact]
     public void UnknownTopCommand_ReturnsEmpty()
     {
         var completions = CompleteCommand.GetCompletions(2, ["dydo", "nonexistent"]).ToList();
@@ -205,32 +116,9 @@ public class CompleteCommandTests : IDisposable
             return command.Parse("1 dydo").Invoke();
         });
         Assert.Equal(0, exitCode);
-        Assert.Contains("task", output);
-    }
-
-    private void SetupProject()
-    {
-        var config = new
-        {
-            version = 1,
-            structure = new { root = "dydo", tasks = "project/tasks" }
-        };
-
-        File.WriteAllText(
-            Path.Combine(_testDir, "dydo.json"),
-            System.Text.Json.JsonSerializer.Serialize(config));
-    }
-
-    private void SetupProjectWithTasks(params string[] taskNames)
-    {
-        SetupProject();
-
-        var tasksPath = Path.Combine(_testDir, "dydo", "project", "tasks");
-        Directory.CreateDirectory(tasksPath);
-
-        foreach (var name in taskNames)
-        {
-            File.WriteAllText(Path.Combine(tasksPath, $"{name}.md"), $"---\nname: {name}\n---\n");
-        }
+        Assert.Contains("check", output);
+        Assert.DoesNotContain("task", output);
+        Assert.DoesNotContain("issue", output);
+        Assert.DoesNotContain("review", output);
     }
 }

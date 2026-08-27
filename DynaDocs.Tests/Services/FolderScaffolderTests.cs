@@ -1,7 +1,6 @@
 namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Services;
-using DynaDocs.Sync.Model;
 
 public class FolderScaffolderTests : IDisposable
 {
@@ -30,32 +29,14 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(Directory.Exists(Path.Combine(_testDir, "guides")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "reference")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project")));
-        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "tasks")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "decisions")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "changelog")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "pitfalls")));
-        // The Notion PM sync spine (DR 025) — each object type maps to one of these project subfolders, so
-        // init must scaffold them or e.g. the "dydo Releases" board has no source folder.
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "releases")));
-        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "campaigns")));
-        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "sprints")));
-        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "slices")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "future-features")));
+        foreach (var retired in new[] { "tasks", "issues", "campaigns", "sprints", "slices", "backlog" })
+            Assert.False(Directory.Exists(Path.Combine(_testDir, "project", retired)));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "agents")));
-    }
-
-    [Fact]
-    public void Scaffold_CreatesEverySyncModelSpineFolder()
-    {
-        // Drift guard: every object type in the default sync-model.json maps to a project subfolder, and init
-        // must scaffold each — else a shipped project can't sync that type (a "Releases" board with no source
-        // folder, the gap this fixed). Adding a spine object type without its scaffold folder fails here. The
-        // folder counterpart of the skills/agents "project uses only what ships with dydo" consistency checks.
-        _scaffolder.Scaffold(_testDir);
-
-        var model = SyncModelLoader.Load(_testDir);
-        foreach (var obj in model.Objects)
-            Assert.True(Directory.Exists(Path.Combine(_testDir, obj.Dir)),
-                $"scaffold is missing sync-model dir: {obj.Dir}");
     }
 
     [Fact]
@@ -122,13 +103,11 @@ public class FolderScaffolderTests : IDisposable
         var normalizedProse = string.Join(" ", content.Split((char[]?)null,
             StringSplitOptions.RemoveEmptyEntries));
         Assert.Contains("# dydo Glossary", content);
-        Assert.Contains("one committed goal pursued across one or more Sprints", normalizedProse);
-        Assert.Contains("an optional, low-resolution navigation overlay in an active Campaign", normalizedProse);
-        Assert.Contains("not a Record, Task, Sprint, or Slice", normalizedProse);
-        Assert.Contains("A delivery Waypoint points to one Sprint", normalizedProse);
-        Assert.Contains("It is neither backlog nor out of scope", normalizedProse);
-        Assert.Contains("participation modes, not work types", normalizedProse);
-        Assert.Contains("an unscheduled hypothetical, not committed work", normalizedProse);
+        Assert.Contains("Linear-native work model", normalizedProse);
+        Assert.Contains("the only actionable tracked work item", normalizedProse);
+        Assert.Contains("an unscheduled repo-native idea", normalizedProse);
+        Assert.Contains("a navigation node, not a work object", normalizedProse);
+        Assert.Contains("an independent examination of one implementation Issue", normalizedProse);
     }
 
     [Fact]

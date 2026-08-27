@@ -202,16 +202,6 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetTasksPath_ReturnsConfiguredPath()
-    {
-        var service = new ConfigService();
-        var result = service.GetTasksPath(_testDir);
-
-        Assert.Contains("project", result);
-        Assert.Contains("tasks", result);
-    }
-
-    [Fact]
     public void GetAuditPath_ReturnsSystemAuditSubfolder()
     {
         var service = new ConfigService();
@@ -222,13 +212,36 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetIssuesPath_ReturnsConfiguredPath()
+    public void LoadConfig_LegacyWorkPaths_AreIgnored()
     {
-        var service = new ConfigService();
-        var result = service.GetIssuesPath(_testDir);
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+            {
+                "version": 1,
+                "structure": {
+                    "root": "docs",
+                    "tasks": "custom/tasks",
+                    "issues": "custom/issues"
+                }
+            }
+            """);
 
-        Assert.Contains("project", result);
-        Assert.Contains("issues", result);
+        var config = new ConfigService().LoadConfig(_testDir);
+
+        Assert.NotNull(config);
+        Assert.Equal("docs", config!.Structure.Root);
+        Assert.DoesNotContain("Tasks", typeof(StructureConfig).GetProperties().Select(p => p.Name));
+        Assert.DoesNotContain("Issues", typeof(StructureConfig).GetProperties().Select(p => p.Name));
+    }
+
+    [Fact]
+    public void SaveConfig_DoesNotWriteLegacyWorkPaths()
+    {
+        var path = Path.Combine(_testDir, "saved.json");
+        new ConfigService().SaveConfig(new DydoConfig(), path);
+
+        var json = File.ReadAllText(path);
+        Assert.DoesNotContain("\"tasks\"", json);
+        Assert.DoesNotContain("\"issues\"", json);
     }
 
     [Fact]

@@ -27,12 +27,12 @@ public class HubGeneratorTests
     public void GenerateHub_TitleWithLinkLiteral_SwapsBracketsSoEntryLinkParses()
     {
         var doc = MakeDoc(
-            relativePath: "project/issues/anchor-bug.md",
+            relativePath: "project/decisions/anchor-bug.md",
             fileName: "anchor-bug.md",
             title: "Anchor-only links [label](#section) produce broken-link errors");
 
         var hub = HubGenerator.GenerateHub(
-            relativeFolderPath: "project/issues",
+            relativeFolderPath: "project/decisions",
             docsInFolder: [doc],
             subfolderHubs: [],
             allDocs: [doc]);
@@ -139,7 +139,7 @@ public class HubGeneratorTests
     }
 
     [Fact]
-    public void GenerateHub_ProjectFolder_AppendsTasksProse()
+    public void GenerateHub_ProjectFolder_HasNoRetiredWorkProse()
     {
         var hub = HubGenerator.GenerateHub(
             relativeFolderPath: "project",
@@ -147,13 +147,12 @@ public class HubGeneratorTests
             subfolderHubs: [],
             allDocs: []);
 
-        Assert.Contains("## Tasks", hub);
-        Assert.Contains("transient", hub);
-        Assert.DoesNotContain("[Tasks](./tasks/_index.md)", hub);
+        Assert.DoesNotContain("## Tasks", hub);
+        Assert.DoesNotContain("transient", hub);
     }
 
     [Fact]
-    public void GenerateHub_NonProjectFolder_DoesNotIncludeTasksProse()
+    public void GenerateHub_NonProjectFolder_DoesNotIncludeRetiredWorkProse()
     {
         var hub = HubGenerator.GenerateHub(
             relativeFolderPath: "guides",
@@ -165,16 +164,16 @@ public class HubGeneratorTests
     }
 
     [Fact]
-    public void GenerateAllHubs_DoesNotProduceProjectTasksIndex()
+    public void GenerateAllHubs_ProducesGenericProjectSubfolderHub()
     {
-        var taskDoc = MakeDoc(
-            relativePath: "project/tasks/some-task.md",
-            fileName: "some-task.md",
-            title: "Some Task");
+        var decision = MakeDoc(
+            relativePath: "project/decisions/example.md",
+            fileName: "example.md",
+            title: "Example");
 
-        var hubs = HubGenerator.GenerateAllHubs("/base", [taskDoc]);
+        var hubs = HubGenerator.GenerateAllHubs("/base", [decision]);
 
-        Assert.False(hubs.ContainsKey("project/tasks/_index.md"));
+        Assert.True(hubs.ContainsKey("project/decisions/_index.md"));
     }
 
     private static DocFile MakeDoc(string relativePath, string fileName, string? title, string? summary = null)

@@ -15,7 +15,7 @@ public class OffLimitsRuleTests : IDisposable
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-offlimitsrule-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
-            """{"version":1,"structure":{"root":"dydo","tasks":"project/tasks"}}""");
+            """{"version":1,"structure":{"root":"dydo"}}""");
 
         _originalDir = Environment.CurrentDirectory;
         Environment.CurrentDirectory = _testDir;

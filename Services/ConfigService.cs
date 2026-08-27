@@ -86,34 +86,11 @@ public class ConfigService : IConfigService
     }
 
     /// <summary>
-    /// Get the tasks folder path
-    /// </summary>
-    public string GetTasksPath(string? startPath = null)
-    {
-        var dydoRoot = GetDydoRoot(startPath);
-        var config = LoadConfig(startPath);
-        var tasksPath = config?.Structure.Tasks ?? "project/tasks";
-
-        return Path.Combine(dydoRoot, tasksPath);
-    }
-
-    /// <summary>
     /// Get the audit folder path (dydo/_system/audit/)
     /// </summary>
     public string GetAuditPath(string? startPath = null)
     {
         return Path.Combine(GetDydoRoot(startPath), "_system", "audit");
-    }
-
-    /// <summary>
-    /// Get the issues folder path
-    /// </summary>
-    public string GetIssuesPath(string? startPath = null)
-    {
-        var dydoRoot = GetDydoRoot(startPath);
-        var config = LoadConfig(startPath);
-        var issuesPath = config?.Structure.Issues ?? "project/issues";
-        return Path.Combine(dydoRoot, issuesPath);
     }
 
     /// <summary>

@@ -125,25 +125,24 @@ public class CliEndToEndTests : IDisposable
     }
 
     /// <summary>
-    /// The full agent-free happy path after the roster removal (DR-041): init a project with no
-    /// agent pool, then create and list a task. Proves init → task create/list works without any
-    /// claimed identity or roster scaffolding.
+    /// The agent-free CLI exposes documentation commands after initialization without restoring
+    /// the retired repository work commands.
     /// </summary>
     [Fact]
-    public async Task Init_ThenTaskCreateAndList_WorkAgentFree()
+    public async Task Init_ThenHelp_OmitsRetiredWorkCommands()
     {
         var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
-        var createResult = await RunDydoAsync("task create my-first-task --area general");
-        Assert.True(createResult.ExitCode == 0,
-            $"task create failed:\nStderr: {createResult.Stderr}\nStdout: {createResult.Stdout}");
-        Assert.True(File.Exists(Path.Combine(_testDir, "dydo", "project", "tasks", "my-first-task.md")),
-            "task file was not created");
-
-        var listResult = await RunDydoAsync("task list");
-        Assert.True(listResult.ExitCode == 0, $"task list failed: {listResult.Stderr}");
-        Assert.Contains("my-first-task", listResult.Stdout);
+        var helpResult = await RunDydoAsync("--help");
+        Assert.True(helpResult.ExitCode == 0, $"help failed: {helpResult.Stderr}");
+        var commandLines = helpResult.Stdout.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith("  "))
+            .ToList();
+        Assert.DoesNotContain(commandLines, line => line.TrimStart().StartsWith("task "));
+        Assert.DoesNotContain(commandLines, line => line.TrimStart().StartsWith("issue "));
+        Assert.DoesNotContain(commandLines, line => line.TrimStart().StartsWith("review "));
+        Assert.Contains(commandLines, line => line.TrimStart().StartsWith("check "));
     }
 
     [Fact]

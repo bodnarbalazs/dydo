@@ -34,7 +34,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:guard|task|review|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:guard|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|inquisition|watchdog)\b.*)",
             Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
@@ -144,11 +144,7 @@ public static class ConfigFactory
         return new DydoConfig
         {
             Version = 1,
-            Structure = new StructureConfig
-            {
-                Root = ConfigService.DefaultRoot,
-                Tasks = "project/tasks"
-            },
+            Structure = new StructureConfig { Root = ConfigService.DefaultRoot },
             Integrations = new Dictionary<string, bool>(),
             Nudges = DefaultNudges.Select(n => new NudgeConfig
             {

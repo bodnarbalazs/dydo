@@ -143,10 +143,8 @@ public class DocScannerTests : IDisposable
         public string? GetProjectRoot(string? startPath = null) => null;
         public string GetDydoRoot(string? startPath = null) => "";
         public string GetDocsPath(string? startPath = null) => "";
-        public string GetTasksPath(string? startPath = null) => "";
         public string GetAuditPath(string? startPath = null) => "";
         public string GetChangelogPath(string? startPath = null) => "";
-        public string GetIssuesPath(string? startPath = null) => "";
         public (bool CanClaim, string? Error) ValidateAgentClaim(string agentName, string? humanName, DydoConfig? config)
             => (true, null);
     }

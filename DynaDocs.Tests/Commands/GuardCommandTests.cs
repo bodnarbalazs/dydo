@@ -468,7 +468,7 @@ public class GuardCommandTests : IDisposable
     [InlineData("npx dydo agent claim auto", "agent claim auto")]
     [InlineData("npx --yes dydo whoami", "whoami")]
     [InlineData("dotnet dydo agent status", "agent status")]
-    [InlineData("dotnet run -- task list", "task list")]
+    [InlineData("dotnet run -- validate", "validate")]
     public void DefaultNudges_CaptureGroupExtractsArgs(string command, string expectedArgs)
     {
         foreach (var nudge in ConfigFactory.DefaultNudges)

@@ -68,13 +68,10 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         var initResult = await InitProjectAsync("none");
         initResult.AssertSuccess();
 
-        // Assert - framework and project vocabulary are linked separately, and the
-        // optional Campaign overlay cannot be mistaken for another Record hierarchy.
+        // Assert - framework and project vocabulary are linked separately.
         var index = ReadFile("dydo/index.md");
         Assert.Contains("reference/dydo-glossary.md", index);
         Assert.Contains("[glossary.md](glossary.md)", index);
-        Assert.Contains("A **Waypoint** is not a Record", index);
-        Assert.Contains("delivery still enters the work hierarchy through a Sprint and its Slices", index);
     }
 
     [Fact]
@@ -90,11 +87,13 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         AssertFileExists("dydo/reference/_reference.md");
         AssertFileExists("dydo/project/_project.md");
 
-        // Assert - Project subfolder meta files exist
-        AssertFileExists("dydo/project/tasks/_tasks.md");
+        // Assert - durable Project subfolder meta files exist
         AssertFileExists("dydo/project/decisions/_decisions.md");
         AssertFileExists("dydo/project/changelog/_changelog.md");
         AssertFileExists("dydo/project/pitfalls/_pitfalls.md");
+        AssertFileExists("dydo/project/future-features/_future-features.md");
+        foreach (var retired in new[] { "tasks", "issues", "campaigns", "sprints", "slices", "backlog" })
+            Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo", "project", retired)));
     }
 
     [Fact]

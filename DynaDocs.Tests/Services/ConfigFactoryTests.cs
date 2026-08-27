@@ -22,6 +22,25 @@ public class ConfigFactoryTests
     }
 
     [Fact]
+    public void CreateDefault_HasNoLocalWorkPathConfiguration()
+    {
+        var properties = typeof(StructureConfig).GetProperties().Select(p => p.Name).ToList();
+
+        Assert.Equal(["Root"], properties);
+    }
+
+    [Fact]
+    public void DefaultNudges_DotnetRunPatternExcludesRetiredWorkCommands()
+    {
+        var nudge = ConfigFactory.DefaultNudges.Single(n => n.Pattern.Contains("dotnet\\s+run"));
+
+        Assert.DoesNotContain("task", nudge.Pattern);
+        Assert.DoesNotContain("issue", nudge.Pattern);
+        Assert.DoesNotContain("review", nudge.Pattern);
+        Assert.Contains("roles", nudge.Pattern);
+    }
+
+    [Fact]
     public void CreateDefaultModels_UsesDistinctOpenAiTiers()
     {
         var openAi = ConfigFactory.CreateDefaultModels().Tiers["openai"];
@@ -163,7 +182,7 @@ public class ConfigFactoryTests
     [InlineData("for i in {1..30}; do test -f x; sleep 1; done")]
     [InlineData("gh run watch 12345")]
     [InlineData("dydo wait")]
-    [InlineData("dydo wait --task foo")]
+    [InlineData("dydo wait --work foo")]
     [InlineData("while [ ! -f x ]; do sleep 1; done")]
     public void DefaultNudges_DoesNotMatchValidPollingPatterns(string command)
     {

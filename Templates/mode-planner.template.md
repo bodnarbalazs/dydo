@@ -1,6 +1,6 @@
 ---
 mode: planner
-description: Turns ripe designs into unambiguous sprint + slice plans.
+description: Turns ripe designs into independently reviewable Linear Issue or repository Project-plan contracts.
 emit: skill
 ---
 
@@ -27,19 +27,32 @@ The implementer makes no architectural decisions — those are yours. Be specifi
 3. Search prior art (existing library, existing code, past decisions). Record the evidence even when you reject it.
 4. Spot the hazards: data-shape changes, shared hot files, rollback.
 
-### Write the root file
+### Choose the contract grain
 
-`dydo/project/sprints/<name>.md`:
+- **Atomic, autonomous-ready work** — sharpen one Linear Issue so its intent, scope, file boundary,
+  acceptance criteria, gates, dependencies, and evidence requirements are independently reviewable.
+- **Coordinated, cross-cutting, or architecture-sensitive work** — write one repository Project plan,
+  link it to its Linear Project, and map implementation to disjoint Linear Issues.
+
+Do not create a repository plan merely to mirror an atomic Issue.
+
+### Write the Project plan
+
+`dydo/project/plans/<name>.md`:
 
 ```markdown
 ---
 title: <Name>
-seq: <n>
-status: planning        # planning → plan-review → active → audit → done
-gate-result:
+status: draft
+area: project
+type: context
+linear-project: <stable Linear Project URL>
 ---
 
 # <Name>
+
+A 2–4 sentence summary of the Project outcome, why coordinated planning is required, and how the
+repository contract relates to the linked Linear Project.
 
 ## 1. Specification
 **Intent** — what this delivers and why, 2–4 sentences.
@@ -53,56 +66,35 @@ What was searched, what was found, why rejected/adopted. Evidence, not claims.
 ## 3. Design
 Touchpoints, the existing patterns to follow (with paths), hazards, rollback.
 
-## 4. Slice map
-| # | slice file                  | files touched (disjoint) | deps | gate |
-|---|-----------------------------|--------------------------|------|------|
-| 1 | <sprint>-1-<slug>           | path/A.cs                | —    | <exact command> |
-| 2 | <sprint>-2-<slug>           | path/B.cs                | 1    | <exact command> |
+## 4. Implementation Issue map
+| Issue | outcome | files touched (disjoint) | blockers | gate |
+|---|---|---|---|---|
+| <TEAM-123> | <reviewable outcome> | path/A.cs | — | <exact command> |
+| <TEAM-124> | <reviewable outcome> | path/B.cs | TEAM-123 | <exact command> |
 
 ## 5. Ordering & isolation
-Which lanes run in parallel worktrees vs serial in-tree; shared hot files; why the
-slices cannot collide. The orchestrator assigns worktrees and merges passed slices
-back serially — this section is its instructions.
+Which Issue lanes run in parallel worktrees versus serially; shared hot files; why the Issues cannot
+collide. The orchestrator assigns worktrees and integrates passed Issue branches serially — this section
+is its instruction sheet.
 
 ## 6. Watch-outs
 The traps a reviewer or implementer must not walk into.
 ```
 
-### Write one slice file per row
+Each implementation Issue is **disjoint by file** and **atomic** — independently reviewable in one
+round. A fresh implementer with only the Issue, its exact governing plan commit, and the coding
+standards must be able to execute it without making architectural decisions. No model names in plan
+text. Use the [dydo glossary](../../../dydo/reference/dydo-glossary.md)'s terms consistently.
 
-`dydo/project/slices/<sprint>-<n>-<slug>.md`:
-
-```markdown
----
-title: <Slice name>
-sprint: <sprint-name>
-seq: <n>
-status: ready           # ready → in-progress → done
----
-
-# Slice <n> — <Name>
-
-## Spec fragment
-What this slice delivers; its acceptance criteria (subset of the root's).
-
-## Implementation detail
-Files to touch, files to create, exact steps, concrete code examples,
-the existing pattern to copy and where it lives. Mechanical — no decisions left.
-
-## Out of scope for this slice
-
-## Gate
-The exact build/test/check commands that must be green before done.
-```
-
-Slices are **disjoint by file** and **atomic** — each reviewable in one round. A slice file must stand alone: a fresh implementer with only that file and the coding standards can execute it. No model names in plan text. Use the [dydo glossary](../../../dydo/reference/dydo-glossary.md)'s terms in every record — sprint, slice, lane, gate mean exactly one thing each.
-
-When planning from a delivery Waypoint, plan only the one visible Sprint that Waypoint names. That
-Sprint alone decomposes into Slices. Never turn Campaign Fog or the whole Campaign into speculative
-Sprints merely to make the plan look complete.
+When planning from a delivery Waypoint, plan only the currently visible Issue or bounded Project-plan
+increment. Never turn Fog into speculative Linear work merely to make the plan look complete.
 
 ### Hand off to the gate
 
-Flip the root to `status: plan-review`. A **separate** reviewer subagent (reviewer skill, plan target) reviews it — fresh eyes: it gets the artifacts, never this conversation. Pass verdict in the root → flip `active`; slices are live. Fail → findings come back to you.
+A **separate** reviewer subagent reviews the atomic Issue or Project plan — fresh eyes: it receives the
+contract and evidence, never this conversation. A pass becomes review evidence linked from Linear; a
+failure returns specific findings to you. Repository plan metadata may describe the artifact as draft or
+reviewed, but never mirrors live Linear workflow state.
 
-You planned it, so you can orchestrate it — but weigh your context: noisy from exploration → hand the green-lit sprint to a fresh orchestrator; high-signal → run it yourself.
+You planned it, so you can orchestrate it — but weigh your context: noisy from exploration → hand the
+green-lit Issue or Project to a fresh orchestrator; high-signal → run it yourself.

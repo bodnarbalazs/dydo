@@ -46,10 +46,11 @@ commands hard-block; project nudges add configurable notices, warnings, and bloc
 
 ### An opinionated scaffold
 
-`dydo init claude`, `dydo init codex`, `dydo init all`, or `dydo init none` creates the knowledge tree,
-role templates, guard wiring, and runtime entry files. A new project contains durable Decisions,
-changelog, pitfalls, and FutureFeature idea documentation. It creates no repository-backed live-work
-hierarchy: use Linear for work management.
+Every `dydo init` mode creates the knowledge tree, source role templates, and `CLAUDE.md`. The `claude`,
+`codex`, and `all` modes wire guard hooks only for the selected runtimes; Codex selections also add
+`AGENTS.md`. The `none` mode installs no guard hooks and no `AGENTS.md`. A new project contains durable
+Decisions, changelog, pitfalls, and FutureFeature idea documentation. It creates no repository-backed
+live-work hierarchy: use Linear for work management.
 
 ## How Work Runs
 

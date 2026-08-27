@@ -29,9 +29,11 @@ dydo init codex
 # or: dydo init claude / dydo init all / dydo init none
 ```
 
-Initialization creates the documentation tree, source templates, guard hooks, and runtime entry files.
-It creates durable Decisions, changelog, pitfalls, and FutureFeature idea documentation. It does not
-scaffold repository folders for live work; create and manage actionable work in Linear.
+Every mode creates the documentation tree, source templates, and `CLAUDE.md`. The `claude`, `codex`, and
+`all` modes wire guard hooks only for the selected runtimes; Codex selections also add `AGENTS.md`. The
+`none` mode installs no guard hooks and no `AGENTS.md`. Initialization creates durable Decisions,
+changelog, pitfalls, and FutureFeature idea documentation. It does not scaffold repository folders for
+live work; create and manage actionable work in Linear.
 
 ## 3. Compile native methods
 

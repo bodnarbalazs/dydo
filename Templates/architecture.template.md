@@ -5,63 +5,75 @@ type: concept
 
 # Architecture Overview
 
-> **Fill this in.** This document helps AI agents understand your codebase structure.
-> Keep things brief, provide a birds eye view, an overview of the key technologies used, and how they interact.
-> Link to details which not all agents need to know, example: Knowledge of a UI library which is used in one component is not useful for an agent working on a backend task unrelated to that frontend component. 
+This page maps the project's structure, component boundaries, and important data flows.
+
+> **Fill this in.** Give agents a brief bird's-eye view of the technologies, boundaries, and data flow
+> they need to change this project safely. Link to narrow details instead of copying them here.
 
 ---
 
 ## Project Structure
 
-<!-- Show your actual folder structure -->
+<!-- Show the real source, test, and durable-knowledge locations. Live work belongs in Linear. -->
 
 ```
 project/
 ├── src/                  # Source code
 ├── tests/                # Test files
-├── dydo/                 # Documentation
-└── ...
+└── dydo/                 # Durable documentation and project knowledge
 ```
 
 ---
 
 ## Key Components
 
-<!-- List the major components/modules and what they do -->
+<!-- List the major components/modules and their responsibilities. -->
 
 ### Component A
 
-*What this component does and its responsibilities.*
+*What this component does and which boundaries it owns.*
 
 ---
 
 ## Data Flow
 
-<!-- Describe how data flows through the system -->
+<!-- Describe how data crosses components and external systems. -->
 
 ```
-Input → Processing → Output
+Input → Processing → Durable output
 ```
+
+---
+
+## Knowledge and Work Boundary
+
+- **Linear** owns Initiatives, Projects, Issues, optional Milestones and Cycles, plus live status,
+  priority, assignment, dependencies, updates, and review state.
+- **Git/dydo** owns architecture, Decisions, reviewed Project plans, guides, audits, assimilation
+  evidence, changelog, and repo-native FutureFeatures.
+- Link between the two; do not mirror volatile Linear state into repository documents.
 
 ---
 
 ## Where to Find Things
 
-<!-- Quick lookup table for common tasks -->
-
 | Looking for... | Location |
 |----------------|----------|
 | *[Type of code]* | `path/` |
+| Live work and current execution state | Linear |
+| Durable design rationale | `dydo/project/decisions/` |
+| Reviewed coordinated-work contracts | `dydo/project/plans/` |
 
 ---
 
 ## Key Decisions
 
-*Link to decision records in `project/decisions/` for architectural choices.*
+*Link to relevant Decision records in `project/decisions/` instead of re-deciding them here.*
 
 ---
 
 ## Related
 
+- [dydo Glossary](../reference/dydo-glossary.md) — Work and knowledge vocabulary
 - [Coding Standards](../guides/coding-standards.md) — Code conventions
-- [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating the documentation
+- [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating documentation

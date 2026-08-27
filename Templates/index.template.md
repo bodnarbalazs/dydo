@@ -5,64 +5,57 @@ type: hub
 
 # DynaDocs — Orientation
 
-dydo authors and knows: it holds this project's knowledge, policy, and work records, and
-compiles its roles into your platform's native skills and agents. Your platform (Claude Code,
-Codex) runs and coordinates the work. Behavior rules live in the root entry file
-(`CLAUDE.md` / `AGENTS.md`); this page is the map.
+dydo authors and knows: it keeps this project's durable knowledge and policy in Git, then compiles
+shared roles into native skills and agents. Linear owns the live work graph. Claude Code or Codex owns
+runtime identity, permissions, isolation, and agent coordination.
 
 ---
 
-## The knowledge tree
+## The Knowledge Tree
 
-- [understand/](understand/_index.md) — what this project is and how it's built. Read-first
-  material: [about](understand/about.md), [architecture](understand/architecture.md).
-- [guides/](guides/_index.md) — how to do things here, including
-  [coding-standards](guides/coding-standards.md).
-- [reference/](reference/_index.md) — exact rules and specs:
-  [dydo commands](reference/dydo-commands.md), [writing docs](reference/writing-docs.md),
-  [dydo glossary](reference/dydo-glossary.md) — the system's terms, locked.
-- [glossary.md](glossary.md) — the project's terms.
+- [understand/](understand/_index.md) — what this project is and how it is built. Start with
+  [about](understand/about.md) and [architecture](understand/architecture.md).
+- [guides/](guides/_index.md) — how to work here, including
+  [coding standards](guides/coding-standards.md).
+- [reference/](reference/_index.md) — exact rules and specifications:
+  [dydo commands](reference/dydo-commands.md), [writing docs](reference/writing-docs.md), and the
+  locked [dydo glossary](reference/dydo-glossary.md).
+- [glossary.md](glossary.md) — this project's domain vocabulary.
+- [project/](project/_index.md) — durable Decisions, plans, evidence, release history, pitfalls, and
+  repo-native FutureFeatures.
 
-When work touches dydo records, planning, roles, skills, or workflows, use the locked dydo
-glossary. Use the project glossary only for project-domain terms.
+Use the locked dydo glossary when work touches plans, roles, skills, reviews, or execution evidence.
+Use the project glossary for project-domain terms. `dydo check` validates the tree; `dydo fix` repairs
+what it can.
 
-Conventions for writing any of it: [reference/writing-docs.md](reference/writing-docs.md).
-`dydo check` validates the tree; `dydo fix` repairs what it can.
+## Work and Knowledge
 
-## The work records
+Use Linear Initiatives, Projects, Issues, optional Milestones, and Cycles for live work. An Issue is the
+only actionable tracked work item; Sub-issues are optional when children need independent tracking.
+Status, priority, assignment, dependencies, updates, and current review state stay in Linear.
 
-Everything in flight lives under [project/](project/_index.md) as markdown records:
+Use Git for durable knowledge and proof: Decisions, reviewed Project plans, guides, audits,
+inquisitions, assimilation briefs, changelog, and release tags. Current navigation may use a
+branch-following GitHub URL; governing contracts and historical evidence use exact commit permalinks.
+Branches, worktrees, sessions, subagents, commits, and reviews are evidence linked to an Issue, not extra
+levels in the work graph.
 
-- **Campaigns** (`project/campaigns/`) — one committed goal pursued across one or more Sprints.
-  A Campaign may use an optional Wayfinding map when its route remains uncertain.
-- **Sprints** (`project/sprints/`) — a plan's root: specification + slice map.
-  Statuses: `planning → plan-review → active → audit → done`.
-- **Slices** (`project/slices/`) — one file per slice: the implementer's contract.
-  `ready → in-progress → done`.
-- **Tasks** (`project/tasks/`) — day-to-day tracked work: `backlog → in-progress →
-  in-review → done` (`dydo task create/list/done`).
-- **Issues** (`project/issues/`) — discovered problems (`dydo issue create`).
-- **Decisions** (`project/decisions/`) — why things are the way they are. Read before
-  re-deciding something.
+A FutureFeature remains an unscheduled repo-native idea. Only the human may promote it to exactly one
+Linear Initiative, Project, or Issue. The stable Linear URL is recorded once; later delivery state stays
+only in Linear.
 
-A **Waypoint** is not a Record. It is an orthogonal navigation node in an active Campaign's
-optional Wayfinding map; delivery still enters the work hierarchy through a Sprint and its Slices.
+## Skills and Roles
 
-## Skills and roles
+Role methodologies are authored once in dydo and compiled into platform-native skills and agents.
+Compiled output is never hand-edited; change the source template and run `dydo sync`.
 
-Role methodologies are authored once in dydo and compiled into your platform's skills and
-agents (a skill is a folder: `SKILL.md` plus its `resources/`). Compiled output is never
-hand-edited — if a skill needs changing, that's a template change for whoever maintains
-dydo here.
+## The Guard
 
-## The guard
+Every tool call passes through `dydo guard`, which enforces universal rules:
 
-Every tool call passes through `dydo guard` (a PreToolUse hook), enforcing universal rules:
+- **Off-limits paths** ([files-off-limits.md](files-off-limits.md)) — secrets and system files
+- **Dangerous commands** — destructive patterns that are always blocked
+- **Nudges** — configurable project reminders and blocks from `dydo.json`
 
-- **Off-limits paths** ([files-off-limits.md](files-off-limits.md)) — secrets and system
-  files, blocked for all agents.
-- **Dangerous commands** — destructive patterns, always blocked.
-- **Nudges** — configurable regex rules (`dydo.json`) that warn or block with guidance.
-
-A block is guidance. Re-read the relevant doc; if you still believe it's wrong, tell the
-human — never work around it.
+A block is guidance. Re-read the relevant documentation; if it still looks wrong, tell the human rather
+than working around it.

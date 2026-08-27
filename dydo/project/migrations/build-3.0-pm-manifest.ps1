@@ -250,6 +250,21 @@ function Get-ReviewSurface([object]$manifest) {
     foreach ($line in $prefix) { $lines.Add($line) }
     if ($manifest.excludedCandidates.Count -eq 0) { $lines.Add('No excluded candidates.') } else { foreach ($candidate in $manifest.excludedCandidates) { $lines.Add("- excluded: $($candidate.path) — $($candidate.exclusionReason)") } }
     if ($manifest.unresolvedCandidates.Count -eq 0) { $lines.Add('No unresolved candidates.') } else { foreach ($candidate in $manifest.unresolvedCandidates) { $lines.Add("- unresolved: $($candidate.path) — $($candidate.matchedSignature)") } }
+    $freezeCommitUrl = Get-FreezeCommitUrl
+    if (-not [string]::IsNullOrWhiteSpace($freezeCommitUrl)) {
+        $freezeRows = @($manifest.records | Where-Object { @($_.evidence | Where-Object kind -eq 'freeze-commit').Count -eq 1 } | Sort-Object { $_.path })
+        $ratifiedFreezeRows = @($freezeRows | Where-Object humanRatified)
+        $freezeSha = $freezeCommitUrl.Split('/') | Select-Object -Last 1
+        $lines.Add(''); $lines.Add('## Freeze evidence'); $lines.Add('')
+        $lines.Add('- protected tag: `pm-v2-final`'); $lines.Add(('- peeled SHA: `' + $freezeSha + '`')); $lines.Add("- permalink: $freezeCommitUrl")
+        $lines.Add("- rows carrying freeze-commit evidence: **$($freezeRows.Count)**"); $lines.Add("- human-ratified subset: **$($ratifiedFreezeRows.Count)** (no ratification implied)"); $lines.Add('')
+        $lines.Add('| ID | Path |'); $lines.Add('|---|---|')
+        foreach ($record in $freezeRows) {
+            $name = [IO.Path]::GetFileName($record.path)
+            $id = if ($name -match '^(\d{4})-') { $Matches[1] } else { '—' }
+            $lines.Add("| $id | $($record.path) |")
+        }
+    }
     foreach ($line in @('', '## Human review checklist', '', '- [ ] Ratify every final disposition and record the human ruling evidence.', '- [ ] Keep every FutureFeature unpromoted.', '- [ ] Replace migration preview keys with Linear URLs and read-back evidence only after approved creation.', '- [ ] Record the exact pm-v2-final commit permalink before any historical removal.', '- [ ] Rewrite every incoming reference according to its effective final disposition.', '- [ ] Run the RequireRatified verification only after every row is ratified.', '', '## Gate and provenance transcript', '', "- source: $($manifest.provenance.source)", "- write: $writeTranscript", "- verify: $verifyTranscript", "- dydo check exit: $($check.exitCode)", "- dydo check summary: $($check.output)", '- command: pwsh -NoProfile -File dydo/project/migrations/build-3.0-pm-manifest.ps1 -RepoRoot . -Write', '- verification command: pwsh -NoProfile -File dydo/project/migrations/build-3.0-pm-manifest.ps1 -RepoRoot . -Verify')) { $lines.Add($line) }
     ($lines -join "`n") + "`n"
 }

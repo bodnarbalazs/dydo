@@ -12,6 +12,34 @@ public class DocumentationTests : IntegrationTestBase
     #region Check
 
     [Fact]
+    public async Task Check_FreshLinearNativeScaffold_PassesWithoutRepositoryWorkHierarchy()
+    {
+        var init = await InitProjectAsync("none");
+        init.AssertSuccess();
+
+        var check = await RunAsync(CheckCommand.Create());
+        check.AssertSuccess();
+
+        var projectRoot = Path.Combine(TestDir, "dydo", "project");
+        foreach (var retired in new[] { "tasks", "issues", "campaigns", "sprints", "slices", "backlog" })
+            Assert.False(Directory.Exists(Path.Combine(projectRoot, retired)));
+
+        var futureFeaturesRoot = Path.Combine(projectRoot, "future-features");
+        var futureFeatureFiles = Directory.GetFiles(futureFeaturesRoot, "*.md")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name)
+            .ToArray();
+        Assert.Equal(new[] { "_future-features.md", "_index.md" }, futureFeatureFiles);
+
+        var futureFeatureContract = File.ReadAllText(
+            Path.Combine(futureFeaturesRoot, "_future-features.md"));
+        Assert.Contains("repo-native ideas, not scheduled work", futureFeatureContract);
+        Assert.Contains("Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or Issue",
+            futureFeatureContract);
+        Assert.Contains("only in Linear; the FutureFeature remains provenance", futureFeatureContract);
+    }
+
+    [Fact]
     public async Task Check_ValidDocs_Passes()
     {
         // Create a minimal valid doc structure (don't use init which creates docs with known issues)

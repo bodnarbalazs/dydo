@@ -2,42 +2,60 @@
 area: general
 type: hub
 ---
-# DynaDocs - AI Agent Entry Point
 
-Documentation-driven context for AI coding assistants. dydo authors and knows; the
-platform (Claude Code, Codex) runs and coordinates ([Decision 041](project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)).
+# DynaDocs — Orientation
 
----
-
-## Start Here
-
-Your platform entry file — `CLAUDE.md` (Claude Code) or `AGENTS.md` (Codex) — points you
-into this tree. From there:
-
-- **Understand the project** → [understand/about.md](understand/about.md), [understand/architecture.md](understand/architecture.md)
-- **Know the conventions** → [guides/coding-standards.md](guides/coding-standards.md)
-- **Find a command** → [reference/dydo-commands.md](reference/dydo-commands.md)
-- **Navigate the docs** → [guides/how-to-use-docs.md](guides/how-to-use-docs.md)
-- **Use dydo's locked terms when relevant** → [reference/dydo-glossary.md](reference/dydo-glossary.md)
-- **Use project-domain terms when relevant** → [glossary.md](glossary.md)
-
-There is no identity to claim: sessions are assigned their identity by the platform, and
-work runs as native subagents and workflows, not a dydo-managed roster.
-
-An active Campaign may use an optional, low-resolution Wayfinding map when its route cannot yet be
-planned responsibly. Waypoints are navigation nodes, not project Records; delivery still enters
-the hierarchy through one Sprint and that Sprint's Slices.
+dydo authors and knows: it keeps this project's durable knowledge and policy in Git, then compiles
+shared roles into native skills and agents. Linear owns the live work graph. Claude Code or Codex owns
+runtime identity, permissions, isolation, and agent coordination.
 
 ---
+
+## The Knowledge Tree
+
+- [understand/](understand/_index.md) — what this project is and how it is built. Start with
+  [about](understand/about.md) and [architecture](understand/architecture.md).
+- [guides/](guides/_index.md) — how to work here, including
+  [coding standards](guides/coding-standards.md).
+- [reference/](reference/_index.md) — exact rules and specifications:
+  [dydo commands](reference/dydo-commands.md), [writing docs](reference/writing-docs.md), and the
+  locked [dydo glossary](reference/dydo-glossary.md).
+- [glossary.md](glossary.md) — this project's domain vocabulary.
+- [project/](project/_index.md) — durable Decisions, plans, evidence, release history, pitfalls, and
+  repo-native FutureFeatures.
+
+Use the locked dydo glossary when work touches plans, roles, skills, reviews, or execution evidence.
+Use the project glossary for project-domain terms. `dydo check` validates the tree; `dydo fix` repairs
+what it can.
+
+## Work and Knowledge
+
+Use Linear Initiatives, Projects, Issues, optional Milestones, and Cycles for live work. An Issue is the
+only actionable tracked work item; Sub-issues are optional when children need independent tracking.
+Status, priority, assignment, dependencies, updates, and current review state stay in Linear.
+
+Use Git for durable knowledge and proof: Decisions, reviewed Project plans, guides, audits,
+inquisitions, assimilation briefs, changelog, and release tags. Current navigation may use a
+branch-following GitHub URL; governing contracts and historical evidence use exact commit permalinks.
+Branches, worktrees, sessions, subagents, commits, and reviews are evidence linked to an Issue, not extra
+levels in the work graph.
+
+A FutureFeature remains an unscheduled repo-native idea. Only the human may promote it to exactly one
+Linear Initiative, Project, or Issue. The stable Linear URL is recorded once; later delivery state stays
+only in Linear.
+
+## Skills and Roles
+
+Role methodologies are authored once in dydo and compiled into platform-native skills and agents.
+Compiled output is never hand-edited; change the source template and run `dydo sync`.
 
 ## The Guard
 
-Every tool call passes through `dydo guard` (a `PreToolUse` hook). It enforces only
-universal rules — no per-agent identity gates:
+Every tool call passes through `dydo guard`, which enforces universal rules:
 
-- **Off-limits paths** (`files-off-limits.md`) — secrets and system files are blocked for everyone.
-- **Dangerous-bash patterns** — destructive commands (e.g. `rm -rf /`, fork bombs) are always blocked.
-- **Nudges** — configurable regex reminders that warn or block (see [understand/guard-system.md](understand/guard-system.md)).
+- **Off-limits paths** ([files-off-limits.md](files-off-limits.md)) — secrets and system files
+- **Dangerous commands** — destructive patterns that are always blocked
+- **Nudges** — configurable project reminders and blocks from `dydo.json`
 
-If the guard blocks you, re-read the relevant docs first — most blocks are a misuse, not a
-wall. If you're still blocked, tell the human. Don't work around it.
+A block is guidance. Re-read the relevant documentation; if it still looks wrong, tell the human rather
+than working around it.

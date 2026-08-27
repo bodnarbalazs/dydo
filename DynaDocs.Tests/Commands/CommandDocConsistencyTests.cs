@@ -328,6 +328,72 @@ public class CommandDocConsistencyTests
         }
     }
 
+    [Fact]
+    public void RegisteredCommands_ExcludeRetiredRepositoryWorkCommands()
+    {
+        var commandPaths = GetAllCommands().Select(command => command.Path).ToList();
+
+        Assert.DoesNotContain(commandPaths, path =>
+            path.Equals("task", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("task ", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("issue", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("issue ", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("review", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("review ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ActiveProductDocs_ExcludeRetiredCommandsAndRepositoryWorkPaths()
+    {
+        var files = new[]
+        {
+            "README.md",
+            Path.Combine("dydo", "index.md"),
+            Path.Combine("dydo", "project", "_index.md"),
+            Path.Combine("dydo", "reference", "_index.md"),
+            Path.Combine("dydo", "reference", "about-dynadocs.md"),
+            Path.Combine("dydo", "reference", "configuration.md"),
+            Path.Combine("dydo", "reference", "dydo-commands.md"),
+            Path.Combine("dydo", "understand", "about.md"),
+            Path.Combine("dydo", "understand", "architecture.md"),
+            Path.Combine("dydo", "understand", "documentation-model.md"),
+            Path.Combine("dydo", "understand", "templates-and-customization.md"),
+            Path.Combine("dydo", "guides", "getting-started.md"),
+            Path.Combine("dydo", "guides", "customizing-roles.md"),
+            Path.Combine("dydo", "guides", "testing-strategy.md"),
+            Path.Combine("dydo", "guides", "troubleshooting.md"),
+            Path.Combine("dydo", "guides", "adding-a-command.md"),
+            Path.Combine("dydo", "guides", "how-to-use-docs.md"),
+        };
+        var forbidden = new Regex(
+            @"\bdydo\s+(task|issue|review)\b|project[\\/](tasks|issues|campaigns|sprints|slices|backlog)\b",
+            RegexOptions.IgnoreCase);
+        var hits = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = File.ReadAllText(FindRepoFile(file));
+            foreach (Match match in forbidden.Matches(content))
+                hits.Add($"{file}: {match.Value}");
+        }
+
+        Assert.True(hits.Count == 0,
+            $"Retired repository-work command or path remains in active product docs:\n  {string.Join("\n  ", hits)}");
+
+        foreach (var file in new[]
+        {
+            "README.md",
+            Path.Combine("dydo", "index.md"),
+            Path.Combine("dydo", "reference", "about-dynadocs.md"),
+            Path.Combine("dydo", "understand", "architecture.md"),
+        })
+        {
+            var content = File.ReadAllText(FindRepoFile(file));
+            Assert.Contains("Linear", content);
+            Assert.Contains("FutureFeature", content);
+        }
+    }
+
     // ──────────────────────────────────────────────
     // Test 7: Template/mode examples use required flags
     // ──────────────────────────────────────────────

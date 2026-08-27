@@ -5,7 +5,9 @@ type: guide
 
 # Customizing Roles
 
-The mode template **is** the role. There is no separate role registry: `dydo sync` discovers roles by enumerating `mode-<name>.template.md` files — the built-in set plus anything you drop into `dydo/_system/templates/` — and compiles each into your platform's skill (and agent, for workers).
+The mode template is the role: `dydo sync` discovers `mode-<name>.template.md` sources and compiles
+their methodology into native skills and, for worker roles, spawnable agent definitions. Role methods
+receive Linear Issue/Project context from the host; they do not create a repository work hierarchy.
 
 ---
 
@@ -32,7 +34,8 @@ The mode template **is** the role. There is no separate role registry: `dydo syn
    ...
    ```
 
-2. Run `dydo sync`. The role compiles into `.claude/skills/<name>/` (and `.claude/agents/<name>.md` if `emit: agent`), plus the Codex mirrors.
+2. Run `dydo sync`. The role compiles into `.claude/skills/<name>/` (and
+   `.claude/agents/<name>.md` if `emit: agent`), plus the Codex agent and shared-skill surfaces.
 
 ## Overriding a built-in role
 
@@ -40,7 +43,10 @@ Copy the shipped template into `dydo/_system/templates/` and edit it — project
 
 ## Skill resources
 
-Per-domain reference files ride the same convention: `<role>-resource-<name>.template.md` in `dydo/_system/templates/` compiles to the skill's `resources/<name>.md`. The reviewer's per-target rubrics (code, plan, merge-sprint, docs, tests) are the shipped example — add your own targets the same way.
+Per-domain reference files use `<role>-resource-<name>.template.md` and compile to the skill's
+`resources/<name>.md`. The reviewer ships rubrics for code, plans, integrated Project delivery, docs,
+and tests. Some compatibility filenames retain older wording; the compiled content and current method
+are authoritative.
 
 ## What the compiler reads
 
@@ -51,7 +57,8 @@ Per-domain reference files ride the same convention: `<role>-resource-<name>.tem
 | `emit` | `agent` → worker (agent + skill); `skill` → in-session methodology only |
 | `read-only` | `true` → compiled agent gets no Edit/Write tools |
 
-The body compiles into the skill's methodology; `## Must-Reads` links become the compiled agent's read-first list. Model tiers are bound separately in `dydo.json` (`models.roles`).
+The body compiles into the skill's methodology. Model tiers are bound separately in `dydo.json`
+(`models.roles`). Change the source and re-run `dydo sync`; never edit compiled artifacts directly.
 
 ## Related
 

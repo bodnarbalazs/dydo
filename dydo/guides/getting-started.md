@@ -5,85 +5,84 @@ type: guide
 
 # Getting Started
 
-First-time setup walkthrough: install dydo, initialize a project, compile the skills, and run your first work session.
-
----
+Install dydo, initialize the durable knowledge tree, compile native skills, and connect the resulting
+project context to work managed in Linear.
 
 ## Prerequisites
 
-- A git repository (dydo's records and docs live in it; git is the safety net)
-- Claude Code or Codex as your coding agent runtime
+- a Git repository for durable knowledge and reviewable proof;
+- Claude Code or Codex for agent execution;
+- Linear access when the project tracks live work.
 
-## Step 1: Install dydo
+## 1. Install
 
 ```bash
-# npm (recommended)
 npm install -g dydo
-
-# or, if you have .NET
+# or
 dotnet tool install -g dydo
 ```
 
-## Step 2: Initialize your project
-
-Run from your project's root:
+## 2. Initialize
 
 ```bash
-dydo init claude    # or: dydo init codex
+dydo init codex
+# or: dydo init claude / dydo init all / dydo init none
 ```
 
-This creates the `dydo/` knowledge tree, the templates, the guard hooks for your runtime, and the entry-point file (`CLAUDE.md` for Claude Code, `AGENTS.md` for Codex) that points every session at [dydo/index.md](../index.md).
+Initialization creates the documentation tree, source templates, guard hooks, and runtime entry files.
+It creates durable Decisions, changelog, pitfalls, and FutureFeature idea documentation. It does not
+scaffold repository folders for live work; create and manage actionable work in Linear.
 
-## Step 3: Compile the skills
+## 3. Compile native methods
 
 ```bash
 dydo sync
 ```
 
-The mode templates compile into your platform's skills and agents (planner, code-writer, reviewer with its per-target resources, …), plus the shipped workflows (`run-sprint`, `inquisition`). Re-run after any template change.
+The product compiles role templates and resources into platform-native skills and worker agents, plus
+supported workflows. Re-run this command after changing a source template.
 
-## Step 4: Fill in your context
+## 4. Fill in durable context
 
-The docs are the source of truth agents work from — the more real they are, the better the work:
+Start with:
 
-- `dydo/understand/about.md` — what this project is
-- `dydo/understand/architecture.md` — how it's built
-- `dydo/guides/coding-standards.md` — your conventions
+- `dydo/understand/about.md` — purpose and domain;
+- `dydo/understand/architecture.md` — components and boundaries;
+- `dydo/guides/coding-standards.md` — repository conventions.
 
 Then validate:
 
 ```bash
-dydo check          # Report issues (frontmatter, links, naming)
-dydo fix            # Auto-fix what's possible
+dydo check
+dydo fix
 ```
 
-## Step 5: Your first work session
+## 5. Run work through Linear
 
-Open your coding agent in the repo and just talk. The entry file routes it: docs first, skills for the work.
+1. Shape intent and record any durable Decision.
+2. Create an appropriately sized Linear Issue. For coordinated or architecture-sensitive work, link the
+   Linear Project and Issues to a reviewed repository Project plan.
+3. Execute the Issue through the host runtime in an isolated branch or worktree.
+4. Attach governing commit, test, review, and delivery evidence to the Issue.
+5. Independently review each implementation Issue; audit the integrated Project against its plan.
+6. Flow durable knowledge back into Git rather than leaving it only in comments or sessions.
 
-The full loop for a real feature:
-
-1. **Think it through** — the co-thinker skill hashes out the design with you; conclusions land as decision records.
-2. **Plan it** — the planner skill turns the ripe design into a sprint root + slice files.
-3. **Gate it** — a fresh-eyes reviewer (plan resource) passes the plan; the sprint flips `active`.
-4. **Run it** — the orchestrator skill drives `run-sprint`: each slice implemented and reviewed, merged serially, audited as a whole.
-
-For a trivial edit — a typo, a one-liner — skip the machinery: if it needs a reviewer, it needs a plan.
+An atomic, autonomous-ready Issue can be its own reviewed contract. Complexity, not a repository record
+hierarchy, determines when a separate Project plan is necessary.
 
 ## Joining an existing project
 
 ```bash
+dydo init codex --join
+# or
 dydo init claude --join
 ```
 
-Wires up this machine's hooks and entry files without touching the existing `dydo/` tree.
-
----
-
-**Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier. If Obsidian converts links when you move files, run `dydo fix` afterward.
+Join wires the local runtime without replacing the existing documentation tree.
 
 ## Related
 
-- [About DynaDocs](../reference/about-dynadocs.md) — What dydo is and how it works
-- [Customizing Roles](./customizing-roles.md) — Make the skills yours
-- [Configuration Reference](../reference/configuration.md) — dydo.json
+- [DynaDocs](../reference/about-dynadocs.md)
+- [Customizing Roles](./customizing-roles.md)
+- [Configuration](../reference/configuration.md)
+- [Work Model](../understand/work-model.md)

@@ -91,7 +91,7 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Init_None_CreatesProjectSubfolderDocs()
+    public async Task Init_None_CreatesDurableProjectKnowledgeWithoutLegacyWorkHierarchy()
     {
         var result = await InitProjectAsync("none");
 
@@ -101,6 +101,19 @@ public class InitCommandTests : IntegrationTestBase
             Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo", "project", retired)));
 
         AssertFileExists("dydo/project/future-features/_future-features.md");
+        AssertFileContains("dydo/project/future-features/_future-features.md",
+            "repo-native ideas, not scheduled work");
+        AssertFileContains("dydo/project/future-features/_future-features.md",
+            "Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or Issue");
+        AssertFileContains("dydo/project/future-features/_future-features.md",
+            "only in Linear; the FutureFeature remains provenance");
+
+        var futureFeatureFiles = Directory.GetFiles(
+                Path.Combine(TestDir, "dydo", "project", "future-features"), "*.md")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name)
+            .ToArray();
+        Assert.Equal(new[] { "_future-features.md", "_index.md" }, futureFeatureFiles);
 
         // Decisions folder - hub and meta
         AssertFileExists("dydo/project/decisions/_index.md");

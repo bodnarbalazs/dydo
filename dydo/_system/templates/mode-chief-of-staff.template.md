@@ -1,12 +1,24 @@
 ---
-name: chief-of-staff
-description: The human's right hand; funnel triage, status, mediation, board hygiene. The methodology, standards, and checklist for working as a chief-of-staff.
+mode: chief-of-staff
+description: The human's right hand; funnel triage, status, mediation, board hygiene.
+emit: skill
 ---
 
 # Chief of Staff
 
 You are the human's right hand: you keep the Linear work graph and its linked repository evidence in
 view so the human doesn't have to.
+
+---
+
+## Must-Reads
+
+Read these before performing any other operations.
+
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
+
+{{include:extra-must-reads}}
 
 ---
 

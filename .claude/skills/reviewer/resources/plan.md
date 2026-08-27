@@ -1,39 +1,47 @@
 # Reviewing a Plan
 
-Target: a sprint in `plan-review` — a root record (specification + slice map) plus one slice
-file per row. Fresh eyes are the point: you receive only the artifacts, never the planning
-conversation. Your verdict block goes into the sprint root; pass flips it `active`, fail sends
-findings back to the planner.
+Target: one Git Project plan proposed as the reviewed intent for coordinated, cross-cutting, or
+architecture-sensitive work. Fresh eyes are the point: review the committed artifact, not the planning
+conversation. The verdict is recorded in the plan's Linear Project; implementation Issues are not ready
+until the plan passes and the exact governing commit is linked.
+
+An atomic Linear Issue may be reviewed intent without a Project plan. Do not require Project-plan
+ceremony when one autonomous Issue fully closes its own decisions, ownership, acceptance criteria, and
+gates.
 
 ## Method
 
-1. **Check the structure first** — a plan missing root sections or slice files FAILS before
-   content review begins.
-2. **Verify claims against the codebase** — read the cited files and patterns. A plan that
-   misdescribes the code it plans to change is the highest-value catch this review makes.
-3. **Read every slice as its implementer** — with only that file and the standards, could you
-   execute it without a single decision or question? Any interpretive latitude is a finding.
-4. **Interrogate the specification** — every question answered, acceptance criteria testable,
-   out-of-scope binding.
+1. **Check the contract shape first** — the plan must identify its Linear Project, intended outcome,
+   binding scope, implementation Issue map, ordering and isolation, exact gates, acceptance criteria,
+   risks, and assimilation expectations. A missing contract element FAILS before content review.
+2. **Verify claims against the codebase** — read the cited files and patterns at the proposed governing
+   commit. A plan that misdescribes the code it intends to change is the highest-value catch this review
+   makes.
+3. **Read every planned Issue as its implementer** — can each Issue become a self-contained Linear
+   contract with one owner, exclusive paths, explicit dependencies, and exact gates, without requiring
+   another architectural decision? Any interpretive latitude is a finding.
+4. **Interrogate the specification** — every question answered, acceptance criteria testable, and
+   out-of-scope binding. Verify that independent Issue review, Project-level integrated audit, and a
+   proportionate durable assimilation brief are required before completion.
+5. **Return a strict verdict** — PASS only when the committed plan can govern execution unchanged.
+   Record the review against the Linear Project and link the exact passing commit before Issues start.
 
-Campaign Fog is not a specification gap unless the current Sprint depends on resolving it. Review
-the visible Sprint's contract; do not fail a bounded plan for uncertainty deliberately left on the
-Campaign's Wayfinding map.
+Wayfinding Fog is not a specification gap unless the current Project depends on resolving it. Review
+the bounded Project contract; do not fail it for uncertainty deliberately left outside its frontier.
 
 ## Checklist
 
-- [ ] Format complete: root has all six sections (Specification, Prior art, Design, Slice map,
-      Ordering & isolation, Watch-outs); every slice-map row has its slice file
-- [ ] Specification closed: intent, binding in/out of scope, testable acceptance criteria,
-      **zero open questions** — one unanswered question is an automatic FAIL
-- [ ] Mechanical: implementation needs no architectural decisions; concrete examples included
-- [ ] Patterns named with paths — verified to exist and say what the plan claims
-- [ ] Prior art evidenced: search performed and recorded, even where rejected — verify the
-      evidence, don't repeat the search
-- [ ] Slices disjoint by file and atomic — each reviewable in one round; oversized slices FAIL
-- [ ] Ordering and gates explicit: dependency order, exact per-slice test/check commands
-- [ ] Isolation holds: parallel-worktree vs serial lanes declared, shared hot files identified,
-      slices genuinely cannot collide
-- [ ] Hazards handled: data-shape/migration risks named, rollback story stated
-- [ ] Each slice self-contained: a fresh implementer with only that file and the standards
-      could execute it — no interpretive latitude, no model names in plan text
+- [ ] One `linear-project` provenance URL identifies the owning Linear Project
+- [ ] Intent, binding in/out of scope, Issue map, ordering/isolation, gates, acceptance, risks, and
+      assimilation expectations are complete
+- [ ] Specification is closed: zero open questions — one unanswered execution question is an automatic FAIL
+- [ ] Implementation requires no new architectural decisions; concrete examples are included where needed
+- [ ] Named code patterns and paths verified at the proposed governing commit
+- [ ] Prior art and governing Decisions are evidenced; rejected alternatives have a stated reason
+- [ ] Planned Issues are atomic, independently reviewable, and disjoint by owned path, or explicitly serial
+- [ ] Dependencies and exact per-Issue test/check commands are explicit
+- [ ] Native worktree isolation and merge order prevent parallel workers from colliding
+- [ ] Data-shape, migration, compatibility, and rollback hazards are handled
+- [ ] Each Issue can stand alone in Linear without copying the entire Project plan
+- [ ] Every Issue requires independent review; Project completion requires integrated audit and assimilation
+- [ ] Passing commit and branch-following plan links are ready to attach in Linear

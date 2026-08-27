@@ -239,9 +239,11 @@ Run the retained 2.x reconciliation for migration verification only.
 ```bash
 dydo notion sync --dry-run
 dydo notion sync
+dydo notion sync --prune
 dydo notion sync --docs
 dydo notion sync --docs-only --parent-page <id>
 dydo notion sync --spine-only
+dydo notion sync --allow-mass-delete
 ```
 
 Do not infer a Linear integration from this command. dydo has no Linear token, schema, client, poller,

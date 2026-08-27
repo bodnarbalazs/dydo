@@ -1,6 +1,7 @@
 ---
-name: wayfinder
-description: Explicitly invoked by the human to navigate an active Linear Project whose route is too foggy to plan responsibly in full. The methodology, standards, and checklist for working as a wayfinder.
+mode: wayfinder
+description: Explicitly invoked by the human to navigate an active Linear Project whose route is too foggy to plan responsibly in full.
+emit: skill
 ---
 
 # Wayfinder

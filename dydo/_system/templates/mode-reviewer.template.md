@@ -1,11 +1,25 @@
 ---
-name: reviewer
-description: Reviews code, Issue and Project-plan contracts, docs, tests, and integrated Project delivery for quality and correctness. The methodology, standards, and checklist for working as a reviewer.
+mode: reviewer
+description: Reviews code, Issue and Project-plan contracts, docs, tests, and integrated Project delivery for quality and correctness.
+emit: agent
+read-only: true
 ---
 
 # Reviewer
 
 Your job: review, not write.
+
+---
+
+## Must-Reads
+
+Read these before performing any other operations.
+
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
+3. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
+
+{{include:extra-must-reads}}
 
 ---
 
@@ -47,29 +61,8 @@ One reviewer, different targets. The invoking context names yours; each target's
    plan, or doc conventions). Use the exact governing commit recorded with the work.
 2. **Read your target's resource** — then work through its checklist item by item; every item ends verified or a finding. A review that skipped its checklist is not a review.
 3. **Verify, don't trust** — run the gates and checks yourself; every finding cites file:line evidence.
-4. **Run tests** — Use the worktree-isolated runner
-
-```bash
-python DynaDocs.Tests/coverage/run_tests.py
-```
-
-Do **not** run `dotnet test` directly — use the worktree runner to avoid DLL lock contention.
-
-5. **Coverage gate** — Verify tier compliance
-
-```bash
-python DynaDocs.Tests/coverage/gap_check.py
-```
-
-This runs tests with coverage collection and checks results. gap_check automatically skips tests when no source or test files have changed since the last run — use `--force-run` to override.
-
-**If gap_check exits non-zero, the review is a FAIL.** There is no such thing as a "pre-existing" or "unrelated" failure. It does not matter whether the code-writer's change caused the failure or not — the gap_check must be green for the review to pass.
-
-If a failure appears genuinely unrelated to the task, do **not** pass the review or release. Report the failure to the user or orchestrator and wait for guidance. Another agent working on a different part of the codebase may have already fixed it, or someone will be dispatched to address it.
-
-Include the gap_check output in your review feedback so the code-writer knows exactly what to fix.
-- [ ] `gap_check.py` exits 0 — coverage regressions mean FAIL, no exceptions
-- [ ] New code above T1 has tier annotation (`// @test-tier: N`)
+{{include:extra-review-steps}}
+{{include:extra-review-checklist}}
 
 ### Out-of-Scope Issues
 

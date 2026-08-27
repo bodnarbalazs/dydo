@@ -1,11 +1,27 @@
 ---
-name: code-writer
-description: Implements features and fixes bugs in source code. The methodology, standards, and checklist for working as a code-writer.
+mode: code-writer
+description: Implements features and fixes bugs in source code.
+emit: agent
 ---
 
 # Code Writer
 
 Your job: implement one Linear Issue exactly as its reviewed intent requires.
+
+---
+
+## Must-Reads
+
+Read these before performing any other operations.
+
+1. **Your Linear Issue** — read its description, acceptance criteria, links, blockers, and current
+   execution evidence. It is the actionable contract.
+2. **Its governing repository Project plan, when linked** — use the exact commit recorded on the Issue.
+3. [about.md](../../../understand/about.md) — What this project is
+4. [architecture.md](../../../understand/architecture.md) — Codebase structure
+5. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
+
+{{include:extra-must-reads}}
 
 ---
 
@@ -39,36 +55,11 @@ and integration.
 
 **The loop:**
 
-6. **Understand** — Read relevant code before changing it
-7. **Implement** — Write the minimal code that solves the problem
-8. **Test** — Add or update tests for your changes
-9. **Verify** — Run the Issue's gates and ensure they pass
-10. **Run tests** — Use the worktree-isolated runner
-
-```bash
-python DynaDocs.Tests/coverage/run_tests.py
-```
-
-This runs `dotnet test` in a temporary git worktree, avoiding DLL lock contention when multiple agents test concurrently. Do **not** run `dotnet test` directly.
-
-Pass extra args after `--`: `python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~MyTest`
-
-11. **Coverage gate** — Verify tier compliance
-
-```bash
-python DynaDocs.Tests/coverage/gap_check.py
-```
-
-This runs tests with coverage collection and checks results against tier thresholds. gap_check automatically skips tests when no source or test files have changed since the last run. Use `--force-run` to override this and always run tests.
-
-Exit code 0: you're clear.
-Non-zero: you have coverage regressions. Use `--inspect <pattern>` to see what's failing, then add or improve tests until it passes. If a tier assignment seems wrong, ask the human — don't adjust tiers yourself.
-
-**Do not proceed to Complete until gap_check passes with zero failures.**
-
-There is no such thing as a "pre-existing" or "unrelated" failure. If gap_check fails, the review fails — full stop. It does not matter whether the code-writer's change caused the failure or not. The gap_check must be green before you move on.
-
-If a failure appears genuinely unrelated to the task, do **not** release or work around it. Report the failure to the user or orchestrator and wait for guidance. Another agent working on a different part of the codebase may have already fixed it, or someone will be dispatched to address it.
+1. **Understand** — Read relevant code before changing it
+2. **Implement** — Write the minimal code that solves the problem
+3. **Test** — Add or update tests for your changes
+4. **Verify** — Run the Issue's gates and ensure they pass
+{{include:extra-verify}}
 
 **Important:** When fixing known issues, bugs, always start with writing a test to catch the problem whenever possible.
 After the test fails, implement the fix and if the test passes you have the best indicator that you've actually solved the issue. And we get a high quality test for free!

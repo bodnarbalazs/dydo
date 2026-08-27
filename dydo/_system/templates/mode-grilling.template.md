@@ -1,6 +1,7 @@
 ---
-name: grilling
-description: Deliberately invoked by a manager when human intent or decisions must be elicited before work can proceed. The methodology, standards, and checklist for working as a grilling.
+mode: grilling
+description: Deliberately invoked by a manager when human intent or decisions must be elicited before work can proceed.
+emit: skill
 ---
 
 # Grilling

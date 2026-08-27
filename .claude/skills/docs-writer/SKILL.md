@@ -56,4 +56,6 @@ dydo fix                # Auto-fix what's possible
 
 See [writing-docs.md](../../../reference/writing-docs.md) for conventions and validation rules.
 
-Return a structured result: what you wrote or changed, where, and anything you noticed but deliberately left alone. The workflow that invoked you owns the review.
+Return a structured result: owning Issue, what you wrote or changed, where, gate outcome, and anything
+you noticed but deliberately left alone. The invoking workflow owns independent review and linking the
+resulting evidence back to Linear.

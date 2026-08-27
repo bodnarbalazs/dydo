@@ -1,11 +1,23 @@
 ---
-name: orchestrator
-description: Runs implementation Issues; lanes, native workflows, commits, merges, and integrated audit. The methodology, standards, and checklist for working as an orchestrator.
+mode: orchestrator
+description: Runs implementation Issues; lanes, native workflows, commits, merges, and integrated audit.
+emit: skill
 ---
 
 # Orchestrator
 
 You own a domain of work and you're responsible for delivering it through the workers you coordinate.
+
+---
+
+## Must-Reads
+
+Read these before performing any other operations.
+
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
+
+{{include:extra-must-reads}}
 
 ---
 

@@ -304,46 +304,28 @@ public class CommandDocConsistencyTests
     }
 
     // ──────────────────────────────────────────────
-    // Test 6: About-dynadocs quick reference includes all commands
+    // Test 6: About-dynadocs states the product boundary and links the full command reference
     // ──────────────────────────────────────────────
 
     [Fact]
-    public void AboutQuickReference_IncludesAllCommands()
+    public void AboutReference_DefinesLinearBoundaryAndLinksCommandReference()
     {
-        var commands = GetDocumentedCommands();
         var filesToCheck = new[]
         {
             Path.Combine("dydo", "reference", "about-dynadocs.md"),
             Path.Combine("Templates", "about-dynadocs.template.md")
         };
 
-        var missing = new List<string>();
         foreach (var file in filesToCheck)
         {
             var content = File.ReadAllText(FindRepoFile(file));
-            var refIdx = content.IndexOf("## Command Reference");
-            if (refIdx < 0)
-            {
-                missing.Add($"{file}: '## Command Reference' section not found");
-                continue;
-            }
-            var refSection = content[refIdx..];
-
-            foreach (var (path, cmd) in commands)
-            {
-                // Only check leaf commands (commands without subcommands)
-                // Parent commands match as substrings of their children
-                if (cmd.Subcommands.Any()) continue;
-
-                var names = new HashSet<string>(cmd.Aliases) { cmd.Name };
-                var prefix = path.Length > cmd.Name.Length ? path[..^cmd.Name.Length] : "";
-                if (!names.Any(name => refSection.Contains($"dydo {prefix}{name}")))
-                    missing.Add($"{file}: missing 'dydo {path}'");
-            }
+            Assert.Contains("Linear owns the live Initiative/Project/Issue graph", content);
+            Assert.Contains("## Command Reference", content);
+            Assert.Contains("[dydo Commands Reference](./dydo-commands.md)", content);
+            Assert.DoesNotContain("dydo task", content, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("dydo issue", content, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("dydo review", content, StringComparison.OrdinalIgnoreCase);
         }
-
-        Assert.True(missing.Count == 0,
-            $"Commands missing from quick reference:\n  {string.Join("\n  ", missing)}");
     }
 
     // ──────────────────────────────────────────────
@@ -479,13 +461,12 @@ public class CommandDocConsistencyTests
     }
 
     // ──────────────────────────────────────────────
-    // Test 10: README clones stay in sync with their sources
+    // Test 10: The installed framework doc stays aligned with its source template
     // ──────────────────────────────────────────────
 
     [Fact]
-    public void ReadmeClones_ContentInSync()
+    public void InstalledAboutDoc_MatchesTemplate()
     {
-        var readme = File.ReadAllText(FindRepoFile("README.md")).ReplaceLineEndings("\n").TrimEnd();
         var aboutDynadocs = File.ReadAllText(
                 FindRepoFile(Path.Combine("dydo", "reference", "about-dynadocs.md")))
             .ReplaceLineEndings("\n").TrimEnd();
@@ -493,71 +474,7 @@ public class CommandDocConsistencyTests
                 FindRepoFile(Path.Combine("Templates", "about-dynadocs.template.md")))
             .ReplaceLineEndings("\n").TrimEnd();
 
-        var mismatches = new List<string>();
-
-        // about-dynadocs.md and template should be identical
-        if (aboutDynadocs != aboutTemplate)
-            mismatches.Add(
-                $"Templates/about-dynadocs.template.md differs from dydo/reference/about-dynadocs.md:\n" +
-                FirstDiff(aboutDynadocs, aboutTemplate));
-
-        // README.md and about-dynadocs.md should have the same ## section headings
-        var readmeHeadings = ExtractLevel2Headings(readme);
-        var aboutHeadings = ExtractLevel2Headings(StripFrontmatter(aboutDynadocs));
-        var missingFromAbout = readmeHeadings.Except(aboutHeadings).ToList();
-        var extraInAbout = aboutHeadings.Except(readmeHeadings).ToList();
-        foreach (var h in missingFromAbout)
-            mismatches.Add($"about-dynadocs.md missing section: '{h}'");
-        foreach (var h in extraInAbout)
-            mismatches.Add($"about-dynadocs.md has extra section: '{h}'");
-
-        // Sections that must be identical after image path normalization
-        string[] sharedSections = ["## Agent Roles", "## For Teams", "## Self-Documentation"];
-        var normalizedReadme = NormalizeImagePaths(readme);
-        var normalizedAbout = NormalizeImagePaths(StripFrontmatter(aboutDynadocs));
-        foreach (var heading in sharedSections)
-        {
-            var fromReadme = ExtractSection(normalizedReadme, heading);
-            var fromAbout = ExtractSection(normalizedAbout, heading);
-            if (fromReadme != fromAbout)
-                mismatches.Add(
-                    $"'{heading}' differs between README.md and about-dynadocs.md:\n" +
-                    FirstDiff(fromReadme, fromAbout));
-        }
-
-        Assert.True(mismatches.Count == 0,
-            $"README clone sync issues:\n\n{string.Join("\n\n", mismatches)}");
-    }
-
-    private static string StripFrontmatter(string content)
-    {
-        if (!content.StartsWith("---\n")) return content;
-        var endIdx = content.IndexOf("\n---\n", 4);
-        return endIdx < 0 ? content : content[(endIdx + 5)..];
-    }
-
-    private static string NormalizeImagePaths(string content) =>
-        content
-            .Replace("https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/", "_ASSETS_/")
-            .Replace("../_assets/", "_ASSETS_/");
-
-    private static List<string> ExtractLevel2Headings(string content) =>
-        Regex.Matches(content, @"^## .+$", RegexOptions.Multiline)
-            .Select(m => m.Value.Trim())
-            .ToList();
-
-    private static string FirstDiff(string a, string b)
-    {
-        var linesA = a.Split('\n');
-        var linesB = b.Split('\n');
-        for (var i = 0; i < Math.Max(linesA.Length, linesB.Length); i++)
-        {
-            var la = i < linesA.Length ? linesA[i] : "<EOF>";
-            var lb = i < linesB.Length ? linesB[i] : "<EOF>";
-            if (la != lb)
-                return $"  Line {i + 1}:\n    Expected: {la}\n    Actual:   {lb}";
-        }
-        return "  (no visible difference)";
+        Assert.Equal(aboutTemplate, aboutDynadocs);
     }
 
     /// <summary>

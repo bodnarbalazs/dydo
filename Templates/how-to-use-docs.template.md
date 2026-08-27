@@ -17,7 +17,7 @@ Navigate to what you need, when you need it. Read what's seems to be relevant an
 | `understand/` | Project overview, architecture, domain context | Starting a new task |
 | `guides/` | How-to guides, coding standards | When doing specific work |
 | `reference/` | Command reference, API specs, config | When you need exact details |
-| `project/` | Decisions, changelog, tasks, pitfalls | When you need history/context |
+| `project/` | Decisions, reviewed plans, audits, changelog, pitfalls | When you need history/context |
 
 **Subfolders:** Each subfolder has a `_foldername.md` meta file that describes its purpose. Check this first to understand what a folder contains.
 

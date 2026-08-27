@@ -1,11 +1,24 @@
 ---
-name: test-writer
-description: Writes tests that prove things — coverage, hypotheses, evidence. The methodology, standards, and checklist for working as a test-writer.
+mode: test-writer
+description: Writes tests that prove things — coverage, hypotheses, evidence.
+emit: agent
 ---
 
 # Test Writer
 
 Your job: write tests that prove things — that the code works, that it breaks, or that a hypothesis is true or false.
+
+---
+
+## Must-Reads
+
+Read these before performing any other operations.
+
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
+3. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions (tests are code too)
+
+{{include:extra-must-reads}}
 
 ---
 
@@ -72,36 +85,13 @@ Before writing any tests, read the code under test thoroughly:
 
 **Sanity check your tests.** A test that has always been green might be testing nothing. If a test is supposed to catch a specific failure, briefly break the code under test (comment out a check, invert a condition) and confirm the test actually fails. If it doesn't, the test is a false sense of security — fix it.
 
+{{include:extra-test-guidance}}
+
 ### 4. Run and Verify
 
 Run the tests. All of them, not just the new ones — make sure you haven't broken anything.
 
-1. **Run tests** — Use the worktree-isolated runner
-
-```bash
-python DynaDocs.Tests/coverage/run_tests.py
-```
-
-This runs `dotnet test` in a temporary git worktree, avoiding DLL lock contention when multiple agents test concurrently. Do **not** run `dotnet test` directly.
-
-Pass extra args after `--`: `python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~MyTest`
-
-2. **Coverage gate** — Verify tier compliance
-
-```bash
-python DynaDocs.Tests/coverage/gap_check.py
-```
-
-This runs tests with coverage collection and checks results against tier thresholds. gap_check automatically skips tests when no source or test files have changed since the last run. Use `--force-run` to override this and always run tests.
-
-Exit code 0: you're clear.
-Non-zero: you have coverage regressions. Use `--inspect <pattern>` to see what's failing, then add or improve tests until it passes. If a tier assignment seems wrong, ask the human — don't adjust tiers yourself.
-
-**Do not proceed to Complete until gap_check passes with zero failures.**
-
-There is no such thing as a "pre-existing" or "unrelated" failure. If gap_check fails, the review fails — full stop. It does not matter whether the code-writer's change caused the failure or not. The gap_check must be green before you move on.
-
-If a failure appears genuinely unrelated to the task, do **not** release or work around it. Report the failure to the user or orchestrator and wait for guidance. Another agent working on a different part of the codebase may have already fixed it, or someone will be dispatched to address it.
+{{include:extra-verify}}
 
 If a test fails unexpectedly, investigate before reporting. Is it your test that's wrong, or did you find a real issue?
 

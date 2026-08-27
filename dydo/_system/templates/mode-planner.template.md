@@ -1,6 +1,7 @@
 ---
-name: planner
-description: Turns ripe designs into independently reviewable Linear Issue or repository Project-plan contracts. The methodology, standards, and checklist for working as a planner.
+mode: planner
+description: Turns ripe designs into independently reviewable Linear Issue or repository Project-plan contracts.
+emit: skill
 ---
 
 # Planner

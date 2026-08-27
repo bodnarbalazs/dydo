@@ -31,14 +31,21 @@ public class TemplateOverrideTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Init_SystemTemplatesMatchBuiltIn()
+    public async Task Init_SystemTemplatesMatchEveryBuiltInTemplate()
     {
         await InitProjectAsync();
 
-        var copiedContent = ReadFile("dydo/_system/templates/mode-code-writer.template.md");
-        var builtInContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
+        {
+            var copiedContent = ReadFile($"dydo/_system/templates/{templateName}");
+            var builtInContent = TemplateGenerator.ReadBuiltInTemplate(templateName);
 
-        Assert.Equal(builtInContent, copiedContent);
+            Assert.Equal(builtInContent, copiedContent);
+        }
+
+        AssertFileNotExists("dydo/_system/templates/_tasks.template.md");
+        AssertFileNotExists("dydo/_system/templates/_issues.template.md");
+        AssertFileNotExists("dydo/_system/templates/_backlog.template.md");
     }
 
     [Fact]

@@ -82,4 +82,23 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
             Assert.Contains("developer_instructions = \"\"\"", content);
         }
     }
+
+    [Fact]
+    public async Task Sync_OrchestratorSkill_PreservesVisibleTaskCallbackContract()
+    {
+        await InitProjectAsync("none");
+
+        var sync = await RunAsync(SyncCommand.Create());
+        sync.AssertSuccess();
+
+        var orchestrator = ReadFile(".agents/skills/orchestrator/SKILL.md");
+        Assert.Contains("visible Codex task or thread", orchestrator);
+        Assert.Contains("coordinator task or thread ID", orchestrator);
+        Assert.Contains("blocked-or-completed callback", orchestrator);
+        Assert.Contains("status, any blocker, branch, exact commit, review verdict", orchestrator);
+        Assert.Contains("gate evidence", orchestrator);
+        Assert.Contains("Register every created task ID and wait on it while active", orchestrator);
+        Assert.Contains("Linear remains canonical", orchestrator);
+        Assert.Contains("native subagent delegation keeps its native return path", orchestrator);
+    }
 }

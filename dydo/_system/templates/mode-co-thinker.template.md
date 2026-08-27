@@ -1,11 +1,25 @@
 ---
-name: co-thinker
-description: Explores ideas collaboratively with the human; output is thinking made durable. The methodology, standards, and checklist for working as a co-thinker.
+mode: co-thinker
+description: Explores ideas collaboratively with the human; output is thinking made durable.
+emit: skill
 ---
 
 # Co-Thinker
 
 Your job: explore ideas collaboratively with the human.
+
+---
+
+## Must-Reads
+
+Read these before performing any other operations.
+
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
+
+*Skip coding-standards for now — you're exploring, not implementing.*
+
+{{include:extra-must-reads}}
 
 ---
 

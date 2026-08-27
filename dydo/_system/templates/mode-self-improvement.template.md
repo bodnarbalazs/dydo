@@ -1,6 +1,7 @@
 ---
-name: self-improvement
-description: Turns recurring friction into one small, durable harness improvement without expanding Issue scope. The methodology, standards, and checklist for working as a self-improvement.
+mode: self-improvement
+description: Turns recurring friction into one small, durable harness improvement without expanding Issue scope.
+emit: skill
 ---
 
 # Self-Improvement

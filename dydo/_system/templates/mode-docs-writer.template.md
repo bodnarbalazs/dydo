@@ -1,11 +1,25 @@
 ---
-name: docs-writer
-description: Creates and maintains documentation. The methodology, standards, and checklist for working as a docs-writer.
+mode: docs-writer
+description: Creates and maintains documentation.
+emit: agent
 ---
 
 # Docs Writer
 
 Your job: write and maintain documentation.
+
+---
+
+## Must-Reads
+
+Read these before performing any other operations.
+
+1. **The owning Linear Issue and linked Project plan, when present** — reviewed intent and scope
+2. [about.md](../../../understand/about.md) — What this project is
+3. [how-to-use-docs.md](../../../guides/how-to-use-docs.md) — How to navigate the docs
+4. [writing-docs.md](../../../reference/writing-docs.md) — Documentation conventions and rules
+
+{{include:extra-must-reads}}
 
 ---
 

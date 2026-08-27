@@ -148,7 +148,7 @@ guard, validation, template, model, and utility commands.
 
 ## License
 
-See the repository license.
+MIT — see LICENSE.
 
 ## Related
 

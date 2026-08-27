@@ -1,0 +1,16 @@
+{
+  "name": "protect-pm-v2-final",
+  "target": "tag",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/tags/pm-v2-final"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    { "type": "update" },
+    { "type": "deletion" }
+  ]
+}

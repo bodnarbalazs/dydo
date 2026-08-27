@@ -3,7 +3,6 @@ title: dydo 3.0 Linear PM Migration
 status: plan-review
 area: project
 type: context
-linear-initiative:
 linear-project:
 ---
 
@@ -17,8 +16,8 @@ and preparing the bounded implementation Projects that deliver dydo 3.0.
 ### Intent
 
 Move dydo's live project management into the existing Linear `Dydo` team without recreating the
-Notion mirror. Establish one low-resolution `dydo 3.0` Initiative with bounded Projects, fully plan
-only the first Project, and use it to prepare a lossless Notion freeze, a complete v2 record
+Notion mirror. Establish five bounded, team-scoped `dydo 3.0 / …` Projects, fully plan only the first
+Project, and use it to prepare a lossless Notion freeze, a complete v2 record
 disposition, and the reference contract every later implementation Issue follows.
 
 The migration must leave the human with one coherent work graph, preserve durable knowledge and
@@ -27,7 +26,8 @@ release work independently reviewable and assimilable.
 
 ### In scope
 
-- Create the reviewed Linear Initiative/Project graph described below in workspace `LC`, team `Dydo`.
+- Create the reviewed five-Project graph described below in workspace `LC`, team `Dydo`, without a
+  workspace Initiative.
 - Keep Linear canonical for volatile PM and the repository canonical for durable knowledge and proof.
 - Define exact two-way references without content synchronization.
 - Inventory every legacy PM record and every incoming retained-doc reference to it.
@@ -52,8 +52,8 @@ release work independently reviewable and assimilable.
 
 ### Acceptance criteria
 
-1. Linear contains one `dydo 3.0 — Linear-native PM pivot` Initiative and exactly the five bounded
-   Projects specified below, all assigned to the `Dydo` team and ordered by the declared dependencies.
+1. Linear contains exactly the five bounded `dydo 3.0 / …` Projects specified below, all assigned only
+   to the `Dydo` team and ordered by the declared dependencies. No workspace Initiative is created.
 2. Only Project 1 has detailed execution Issues at creation time; Projects 2–5 use the
    low-resolution scope, acceptance, dependency, and resource contracts in this plan without a
    speculative issue breakdown.
@@ -85,10 +85,10 @@ release work independently reviewable and assimilable.
 - **Do repo PM records mirror Linear?** No. Cross-references are stable links only.
 - **Does FutureFeature migrate?** No. It remains an unscheduled repo idea until human promotion creates
   a new Linear Initiative, Project, or Issue.
-- **Is this one oversized implementation unit?** No. It is one Initiative with five Projects. Only the
-  current Project receives detailed Issues.
+- **Is this one oversized implementation unit?** No. It is a Git-governed portfolio of five Linear
+  Projects. Only the current Project receives detailed Issues.
 - **Do we create everything in Linear before planning?** No. After this plan passes, publish its
-  governing commit, then bootstrap the Initiative, five Project shells, and only the reviewed Project
+  governing commit, then bootstrap the five Project shells and only the reviewed Project
   1 Issues as one plan-provisioning action. Execution begins only after exact IDs/URLs are written back
   and read back successfully.
 - **Where do specifications live?** An atomic Issue may contain its whole reviewed contract. A
@@ -130,36 +130,28 @@ release work independently reviewable and assimilable.
 
 ## 3. Linear graph
 
-### Initiative
+### Portfolio boundary
 
-**dydo 3.0 — Linear-native PM pivot**
-
-Summary: Replace dydo's Notion-backed duplicate PM system with a Linear-native work graph while
-preserving durable knowledge, reviewed contracts, and delivery evidence in Git.
-
-Status: `Active`. Lead team: `Dydo`. Owner: current human user. Priority: High.
-
-Resources:
-
-- DR 044 on the repository's default branch.
-- Linear PM Pivot Campaign on the repository's default branch.
-- This plan on the repository's default branch.
+This dogfood deliberately does not create a workspace Initiative. On the Basic plan, the available
+Initiative is workspace-scoped and would mix dydo strategy into the main project's workspace layer.
+The reviewed Git plan is the durable portfolio umbrella; the `Dydo` team and the common
+`dydo 3.0 / …` prefix provide the live Linear grouping.
 
 ### Project map
 
 | Order | Linear Project | Outcome | Depends on |
 |---|---|---|---|
-| 1 | 3.0 PM foundation and migration contract | Linear graph, link contract, complete disposition manifest, safe Notion freeze | — |
-| 2 | Adopt Linear-native work model | Glossary, docs, templates, skills, workflows, planner/reviewer/orchestrator contracts use DR 044 | 1 |
-| 3 | Migrate the v2 work corpus | Live work imported by ratified disposition; legacy runtime records removed; retained knowledge and links clean | 1, 2 |
-| 4 | Dogfood and accept Linear PM | Real work completes through the new Linear/repo boundary and the human accepts the operating model | 2, 3 |
-| 5 | Remove Notion runtime and release dydo 3.0 | Frozen Notion/generic sync/watchdog/token code and tests are deleted only after pilot acceptance; full gates pass; 3.0 ships with the main-project playbook | 1, 2, 3, 4 |
+| 1 | dydo 3.0 / PM foundation and migration contract | Linear graph, link contract, complete disposition manifest, safe Notion freeze | — |
+| 2 | dydo 3.0 / Adopt Linear-native work model | Glossary, docs, templates, skills, workflows, planner/reviewer/orchestrator contracts use DR 044 | 1 |
+| 3 | dydo 3.0 / Migrate the v2 work corpus | Live work imported by ratified disposition; legacy runtime records removed; retained knowledge and links clean | 1, 2 |
+| 4 | dydo 3.0 / Dogfood and accept Linear PM | Real work completes through the new Linear/repo boundary and the human accepts the operating model | 2, 3 |
+| 5 | dydo 3.0 / Remove Notion runtime and release | Frozen Notion/generic sync/watchdog/token code and tests are deleted only after pilot acceptance; full gates pass; 3.0 ships with the main-project playbook | 1, 2, 3, 4 |
 
 Project 2 establishes the target artifact shape before Project 3 rewrites or removes the old corpus.
 Project 4 is the live acceptance boundary. Project 5 alone may delete the frozen Notion runtime and is
 the release integration boundary.
 
-Bootstrap status contract: the Initiative is `Active`; all five Projects are `Planned`. Bootstrap first
+Bootstrap status contract: all five Projects are `Planned`. Bootstrap first
 reads and records the exact workspace Project status IDs/names for `Planned`, `In Progress`, `Completed`,
 and `Canceled`. After verification passes and the human starts execution, Project 1 alone moves to
 `In Progress` using the recorded ID. A later Project moves to `In Progress` only when its dependencies
@@ -232,37 +224,37 @@ PASS, the human first approves publishing the governing artifacts. The operator 
 1. pushes the exact governing commit and records its SHA/permalink;
 2. resolves workspace `LC` and team `Dydo` and asserts team ID
    `caa6ccbf-4f9b-477e-826c-a51ed43b0687` through the official Linear connector;
-3. searches/lists exact Initiative, Project, Issue, and label names and stops on every pre-existing
+3. searches/lists exact Project, Issue, and label names and stops on every pre-existing
    exact-name match unless that exact object ID is already recorded by this bootstrap's evidence from a
    prior interrupted attempt; an unrecorded singleton match is not adoption authority;
-4. calls the official Linear connector's `save_initiative`, `save_project`, `create_issue_label`, and
-   `save_issue` operations, always using returned IDs for parentage and `blockedBy` dependencies;
+4. calls the official Linear connector's `save_project`, `create_issue_label`, and `save_issue`
+   operations, always using returned IDs for Project membership and Issue `blockedBy` dependencies.
+   Each initial Project description includes its exact incoming dependency set: Project 2 names Project
+   1; Project 3 names Projects 1 and 2; Project 4 names Projects 2 and 3; Project 5 names Projects 1–4;
 5. writes every request summary, returned ID/URL, and governing SHA to
    `dydo/project/migrations/3.0-linear-bootstrap.json` as each call succeeds;
-6. calls `get_initiative(includeProjects: true)`, `get_project(includeResources: true)`,
-   `list_issue_labels`, and `get_issue(includeRelations: true)` by returned identity; verifies only the
+6. calls `get_project(includeResources: true)`, `list_issue_labels`, and
+   `get_issue(includeRelations: true)` by returned identity; verifies the
    connector-managed fields at this stage—team, recorded status ID/name, descriptions, Project links,
    labels, Issue Project membership, and Issue dependencies—and records the partial result;
-7. uses Linear's native UI for the two connector gaps: on the Initiative Resources panel, adds the three
-   branch-following governing links from §3; on each Project Dependencies panel, records exactly the
-   nine edges from the Project map (`1 blocks 2`; `1 and 2 block 3`; `2 and 3 block 4`; `1–4 block 5`).
-   The human reads the panels back, records every displayed label/URL/edge and the Initiative/Project
-   URLs in the bootstrap Markdown, and attaches screenshots or exported UI evidence there;
-8. writes the exact URLs to plan/campaign frontmatter, pushes that change, repeats connector Project
-   resource read-back, and repeats the human Initiative-resource/Project-dependency panel read-back so
-   every branch-following link resolves and all nine native edges are visible. This is the sole
-   comprehensive bootstrap PASS/FAIL comparison and checklist.
+7. compares the read-back `Depends on` sections to the expected incoming counts `1 + 2 + 2 + 4`, records
+   all nine exact name/URL edges in the bootstrap evidence, and fails on a missing or extra edge. The
+   current MCP surface cannot write native Project dependencies; native edges may be added manually
+   later, but they are not bootstrap authority;
+8. writes the Project 1 URL to plan frontmatter, pushes that change, and repeats connector Project
+   resource read-back so every branch-following link resolves. This is the comprehensive bootstrap
+   PASS/FAIL comparison and checklist.
 
-Expected observable result: one Active Initiative, five Planned Projects, three labels, six Project 1
-Issues, no Cycles/Releases, exact native Project and Issue dependency relations, and
+Expected observable result: five Planned Dydo-only Projects, three labels, six Project 1 Issues, no
+Initiative/Cycles/Releases, exact description-level Project dependencies and native Issue relations, and
 `bootstrapVerification: "pass"` in the JSON plus a human-readable PASS checklist. Saved views are not
 available through the connector: Issue 1 creates `Factory ready` and `Needs me` in the Linear UI and
 records their URLs/checklist in the Markdown evidence.
 
 On the first failed or mismatched mutation, stop and do not retry by title. Record the failure and all
-returned IDs. Roll back by ID in reverse order: set created Issues to `Canceled`, Projects to `Canceled`,
-and the Initiative to `Canceled` through the corresponding `save_*` operations; delete only the three
-new labels through the Linear UI after matching their recorded IDs. Read back every rollback state and
+returned IDs. Roll back by ID in reverse order: set created Issues and Projects to `Canceled` through
+the corresponding `save_*` operations; delete only the three new labels through the Linear UI after
+matching their recorded IDs. Read back every rollback state and
 record `rollbackVerification: "pass"`. Never touch a pre-existing object or remote Notion data.
 
 The plan bootstrap creates these six Issues only after PASS and after the governing artifacts are
@@ -286,7 +278,7 @@ metadata:
 | 2 | Issue 1 accepted | `dydo/project/migrations/3.0-pm-records.json`; `dydo/project/migrations/3.0-pm-records.md`; optional temporary `dydo/project/migrations/build-3.0-pm-manifest.ps1` | `dydo.json`, current folder/schema model, DR 034, DR 040 |
 | 3 | Issue 2 accepted | `dydo/project/migrations/3.0-pm-records.json`; `dydo/project/migrations/3.0-pm-records.md` | the generated manifest and its review checklist |
 | 4 | Issue 2 accepted; human approves live sync | `dydo/project/migrations/3.0-notion-freeze.md`; manifest commit/tag fields only | DR 025, DR 043, `dydo/reference/notion-sync.md` |
-| 5 | Issues 1, 3, and 4 accepted | `dydo/project/migrations/3.0-linear-bootstrap.json`; serial finalization of `dydo/project/migrations/3.0-linear-bootstrap.md` after Issue 1; URL frontmatter in `dydo/project/plans/dydo-3-linear-migration.md` and `dydo/project/campaigns/linear-pm-pivot.md` | Linear read-back of the bootstrapped Initiative, Projects, labels, Issues, and links |
+| 5 | Issues 1, 3, and 4 accepted | `dydo/project/migrations/3.0-linear-bootstrap.json`; serial finalization of `dydo/project/migrations/3.0-linear-bootstrap.md` after Issue 1; Project 1 URL frontmatter in `dydo/project/plans/dydo-3-linear-migration.md` | Linear read-back of the bootstrapped Projects, labels, Issues, and links |
 | 6 | Issue 5 accepted | `dydo/project/plans/dydo-3-linear-native-work-model.md` | DR 041, DR 042, ratified manifest, `pm-v2-final` freeze evidence |
 
 #### Issue 1 — Establish the Linear reference and team convention contract
@@ -440,7 +432,7 @@ Participation: AFK. Initial state: blocked by Issues 1, 3, and 4.
 
 Deliverable:
 
-- Verify the bootstrapped Initiative and five Projects exactly match §3 and correct only differences
+- Verify the five bootstrapped Projects exactly match §3 and correct only differences
   against this plan using their recorded IDs, never title matching.
 - Verify the three approved labels, Project 1 Issues, dependency relations, governing commits, and link
   resources.
@@ -450,7 +442,7 @@ Deliverable:
 
 Gate procedure: repeat bootstrap steps 6–8 entirely by recorded ID; require all JSON comparison booleans
 true, `bootstrapVerification: "pass"`, resolvable plan/campaign frontmatter URLs, and a Markdown PASS
-checklist signed by the human for saved views, Initiative resources, and Project dependencies. Correct a
+checklist signed by the human for saved views and Project dependencies. Correct a
 safe field mismatch only by recorded ID and read it back again. If correction is ambiguous, unsupported,
 or fails, set Issue 5 to `Needs human`, record the exact mismatch, and stop. Because accepted Project 1
 work now exists, Issue 5 must never invoke whole-graph bootstrap rollback, cancel accepted objects, or
@@ -477,14 +469,13 @@ starts before all three observables exist.
 
 - Every multi-Issue Project owns one repo plan at `dydo/project/plans/<slug>.md`.
 - Accepted DR filenames and numbers remain stable.
-- A repo Project plan carries `linear-project: <url>` and, where relevant,
-  `linear-initiative: <url>` in frontmatter after creation.
+- A repo Project plan carries `linear-project: <url>` in frontmatter after creation.
 - FutureFeature promotion adds one stable Linear URL/identifier and terminal `promoted` status; no later
   delivery properties are copied back.
 
 ### Linear → durable artifact
 
-- Initiative and Project Resources attach branch-following GitHub URLs for current DRs, plans, and
+- Project Resources attach branch-following GitHub URLs for current DRs, plans, and
   governing docs.
 - Each Issue description has a `Governing context` section listing only documents that actually govern
   that contract. Use labels like `DR-044 — Linear-canonical PM boundary`, never naked URLs.
@@ -530,7 +521,7 @@ the gate.
 ## 6. Ordering and isolation
 
 1. Review and ratify this plan.
-2. Publish the PASS plan commit, then bootstrap only the Initiative/Project shells and Project 1 Issues;
+2. Publish the PASS plan commit, then bootstrap only the five Project shells and Project 1 Issues;
    write back and read back their exact IDs/URLs before execution.
 3. Issue 1 settles conventions; Issue 2 follows it so the inventory uses the ratified contract.
 4. Issue 3 is the human disposition gate. Issue 4 may prepare offline evidence in parallel but performs
@@ -576,3 +567,12 @@ Evidence: `dydo check` exits 0 with 0 errors; targeted `git diff --check` is cle
 test run passed 2,758/2,758 tests with 25 skipped; coverage gap verification passed 141/141 modules.
 
 Human ratification and approval to publish the governing commit and mutate Linear remain pending.
+
+### Human amendment — 2026-08-27
+
+Ratified after the PASS review: the DynaDocs dogfood creates no workspace Initiative. The Basic-plan
+workspace is shared with the human's main project, so dydo is confined to five `Dydo`-owned Projects;
+the Git plan is their durable umbrella. The bootstrap remains MCP-only. Because the current MCP surface
+cannot write native Project dependencies, their nine edges are authoritative in this plan and repeated
+in the initial Project-description payloads and read back before PASS; native UI edges are optional
+convenience only. Browser/UI fallback is prohibited during provisioning.

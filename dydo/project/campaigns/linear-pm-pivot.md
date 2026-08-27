@@ -6,13 +6,16 @@ release: 3.0.0
 status: active
 area: project
 type: context
-linear-initiative:
 ---
 
 # Linear PM Pivot
 
 Active Campaign for replacing the Notion-backed duplicate PM system with a Linear-native work graph and
 shipping the simplified boundary as dydo 3.0.
+
+For the DynaDocs dogfood, the reviewed plan intentionally uses only Projects owned by the `Dydo` team.
+It does not create a workspace Initiative, keeping dydo strategy out of the main project's workspace
+layer on the Basic plan.
 
 ## Destination
 

@@ -353,6 +353,7 @@ Issue's focused gate after its edit:
 | `DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs` | Issue 2 removes deleted command expectations | Issue 5 proves final generated command docs |
 | `DynaDocs.Tests/Services/TemplateGeneratorTests.cs` | Issue 3 removes sync-model/Notion expectations | Issue 5 updates final product-prose expectations |
 | `DynaDocs.Tests/Services/TemplateUpdateTests.cs` | Issue 3 removes sync-model generation/hash cases | Issue 5 proves final source/generated template parity |
+| `DynaDocs.Tests/Integration/GuardIntegrationTests.cs` | Project 2 removes only retired task/issue command-nudge assertions while preserving generic guard coverage | Issue 2 removes only the watchdog command case while preserving the Project-2 result and generic shell/guard coverage |
 | `dydo/reference/_index.md` | Project 2 lands Linear-native index wording | Issue 5 removes the deleted Notion reference entries |
 | `DynaDocs.Tests/Utils/FrontmatterParserTests.cs` | Project 2 preserves the parser and updates only repository-PM expectations if needed | Issue 4 retains it, proves its native-compiler consumers, and cleans only stale sync-specific commentary |
 | `dydo/guides/migrating-dydo-2x-to-3x.md` | Issue 5 creates the migration guide | Issue 6 adds final 3.0.0 release/tag/package observables |

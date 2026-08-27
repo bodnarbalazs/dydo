@@ -192,7 +192,7 @@ public class SyncCommandTests : IDisposable
     // Workflow harnesses are dydo-authored (Templates/workflow-<name>.js) and compiled to
     // .claude/workflows — hand-editing the emitted scripts is the drift the compiler ends.
     [Fact]
-    public void SyncWorkflows_EmitsRunSprintAndInquisition()
+    public void SyncWorkflows_EmitsLinearIssueAndProjectAuditContracts()
     {
         var count = SyncCommand.SyncWorkflows(_testDir);
 
@@ -202,7 +202,18 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "workflows", "inquisition.js")));
         var content = File.ReadAllText(runSprint);
         Assert.Contains("export const meta", content);
+        Assert.Contains("reviewed Linear Issues", content);
+        Assert.Contains("independent reviewer until PASS", content);
+        Assert.Contains("reviewed Git Project plan", content);
+        Assert.DoesNotContain("record root", content, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\r", content); // LF-normalized for Claude Code
+
+        var inquisition = File.ReadAllText(
+            Path.Combine(_testDir, ".claude", "workflows", "inquisition.js"));
+        Assert.Contains("Project-level integrated QA gate", inquisition);
+        Assert.Contains("independent Linear Issue review evidence", inquisition);
+        Assert.Contains("durable assimilation input", inquisition);
+        Assert.DoesNotContain("record root", inquisition, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -622,13 +633,13 @@ public class SyncCommandTests : IDisposable
         {
             ["wayfinder"] =
             [
-                "Use Wayfinding only for an active Campaign.",
-                "Skip it for FutureFeatures and clear one-Sprint work.",
+                "Use Wayfinding only for a committed Linear Project.",
+                "Skip it for FutureFeatures and clear atomic-Issue",
                 "optional and low-resolution",
-                "not a Record or Slice",
+                "not a work object",
                 "It may point to evidence",
-                "a Task, or a Sprint",
-                "Only that Sprint decomposes its work into Slices.",
+                "Linear Issue, or a bounded increment",
+                "Point actionable delivery Waypoints to Linear Issues.",
                 "Derive or select the frontier",
                 "Work exactly one non-research Waypoint",
                 "Keep HITL work in the current",
@@ -939,15 +950,16 @@ public class SyncCommandTests : IDisposable
     [InlineData("chief-of-staff")]
     public void Tier1ManagerSkills_StateTheManagersDoctrine(string roleName)
     {
-        // Decision 026 §1–2: every Tier-1 mode skill states the doctrine — managers
-        // write no code, implementation goes through workflows, trivial-edit exception.
+        // Every Tier-1 mode skill states the doctrine: managers write no code,
+        // implementation follows independently reviewed intent, with a trivial-edit exception.
         var role = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == roleName);
         SyncCommand.SyncSkillOnlyRole(role, _testDir);
 
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md"));
         Assert.Contains("Managers Doctrine", skill);
-        Assert.Contains("reviewed workflow", skill);
-        Assert.Contains("if it needs a reviewer, it needs a plan and a workflow", skill);
+        Assert.Contains("reviewed intent", skill);
+        Assert.Contains("workflow", skill);
+        Assert.Contains("if it needs a reviewer", skill);
     }
 
     [Fact]
@@ -981,8 +993,11 @@ public class SyncCommandTests : IDisposable
         Assert.DoesNotContain("dydo worktree merge", methodology);
         Assert.DoesNotContain("--role inquisitor", methodology);
         Assert.DoesNotContain("--role code-writer", methodology);
-        // The 2.0 reality is stated instead
-        Assert.Contains("run-sprint", methodology);
+        // The Linear-native reality is stated instead.
+        Assert.DoesNotContain("run-sprint", methodology);
+        Assert.Contains("Linear Issues", methodology);
+        Assert.Contains("native platform delegation", methodology);
+        Assert.Contains("integrated audit", methodology);
     }
 
     [Fact]

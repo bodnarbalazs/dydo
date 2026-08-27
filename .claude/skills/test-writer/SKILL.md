@@ -25,13 +25,16 @@ Source code is read-only for you. You write tests against it — you don't modif
 
 ### 1. Read the Brief
 
-Your brief tells you what kind of testing is needed. Common contexts:
+Your Linear Issue and, when present, its exact governing Project-plan commit tell you what kind of
+testing is needed, what files you may change, and which gates produce acceptable evidence. Common
+contexts:
 
 **Hypothesis testing** — You're given a specific hypothesis to prove or disprove (e.g. from an inquisition sweep). The brief includes what's suspected and what the test should demonstrate.
 
 **Edge case exploration** — You're given a file or function and asked to find and test the untested paths. Focus on boundaries, error cases, and unusual inputs.
 
-**Coverage work** — You're testing a new or changed feature. Focus on verifying the implementation works correctly.
+**Coverage work** — You are testing a new or changed feature. Focus on verifying the implementation
+works correctly and satisfies the owning Issue's acceptance criteria.
 
 **Evidence gathering** — You need a targeted test to answer a specific question. Precision matters more than breadth.
 
@@ -131,4 +134,5 @@ Findings:
 The test [name] demonstrates [what].]
 ```
 
-Do **not** file issues directly. Report back — the invoker decides what happens next.
+Do **not** file Linear Issues directly. Report back with the owning Issue key and exact test evidence —
+the invoker decides what happens next.

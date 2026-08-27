@@ -103,13 +103,47 @@
         "Write",
         "NotebookEdit"
       ]
+    },
+    {
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|inquisition|watchdog)\\b.*)",
+      "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
+      "severity": "block"
+    },
+    {
+      "pattern": "\\btail\\b(?=[^;|\u0026\\r\\n]*(?:\\s-\\S*f\\S*|\\s--follow(?:=\\S\u002B)?)(?:\\s|$))",
+      "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes (issue 0177).",
+      "severity": "warn"
+    },
+    {
+      "pattern": "\\bwhile\\s\u002B(?:true|:)\\s*;\\s*do\\b(?:(?!\\bdone\\b)[\\s\\S])*\\bsleep\\b",
+      "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes (issue 0177).",
+      "severity": "warn"
     }
   ],
   "frameworkHashes": {
-    "reference/about-dynadocs.md": "20b793ac842060987f33f3fbf02d67b698dd5e3352a27e60e872af35d3c7b0d9",
-    "reference/dydo-commands.md": "2d19dce3fc975b4a85c9d562ee8255744d623fbd554898e7d099bcffbf1884dc",
-    "reference/dydo-glossary.md": "b61984d0dca6710b204265d95da03cad1890b5aace1d1a7c989bde4e2e6eff9b",
+    "reference/about-dynadocs.md": "96c16bdf9af8290acfeba4d1e23e9dc1fd5909719e182c81502d1d0b584fa99d",
+    "reference/dydo-commands.md": "cd34bfbb7608dd4776c600e6f408386e59a5511df60bd8ec287005d9662d1548",
+    "reference/dydo-glossary.md": "4d6aa84aeb329f01b972e74025830003b56e0957d9c5d5ccb2f70a1468d3ec97",
     "reference/writing-docs.md": "a049eb01c24ed4619d13fde30720b45b4a3a0a247990ccb85c0b8d35e0e62b9f",
-    "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f"
+    "guides/how-to-use-docs.md": "44d52c652f3b3213eddf5e264c01b45606760b29ceb615408e1c8fd561bca51e",
+    "_system/templates/mode-bro.template.md": "91d96d1dfb4e2a29045a262e8c41381b4ad7d85d4ded3d28e86783a23e8e5c1a",
+    "_system/templates/mode-chief-of-staff.template.md": "32e4cc72f75800e5895a82a64a8dfc1a263dd24097a5fbc6cc7f14b792232704",
+    "_system/templates/mode-co-thinker.template.md": "0e98c2c00bd10ba038dd19f41d21ae87d1a8da925813aad89790b413328d73c8",
+    "_system/templates/mode-code-writer.template.md": "e6954891235e3a4bc1736e5edb64150700506cd6536d7f29f03e0325690d2834",
+    "_system/templates/mode-docs-writer.template.md": "26baa498a34ab3fa774fa33ccc22ddf2242226c5a50b621bce1e13736fbcb93e",
+    "_system/templates/mode-grilling.template.md": "0ff9f149898133dd13315b0bdc2eca740f1fc9622084a728c12ed4d838ab350a",
+    "_system/templates/mode-inquisitor.template.md": "271dccb42025f1ef52e7bcfc98c2af577fd3422c3c0fc3ccd112f75c2fdc7c99",
+    "_system/templates/mode-orchestrator.template.md": "e24289161bd57978643e4ac5da6b9dfdffdff31e0eb9eb5f52d22d89e9810c27",
+    "_system/templates/mode-planner.template.md": "dcd8985ac4fe9935b129ae84fc2a90b01956328e9521899077b8ecf462129a0b",
+    "_system/templates/mode-reviewer.template.md": "86231ddd892ed4873e9cc9988cce99cb1b3432f806c107e5f016585bb3786c7a",
+    "_system/templates/reviewer-resource-code.template.md": "79052868afd455b9253fd8d45a058eaa255d5f33a01139f9ebbcb0f7dc0f3058",
+    "_system/templates/reviewer-resource-docs.template.md": "c9be7e3ec5f0b4643755ef435b51281d6c0a3afb21be5ddd9e11acee3c4b6e9e",
+    "_system/templates/reviewer-resource-merge-sprint.template.md": "7571c3eb53cccc8e14d86feef0dc1645e7789681e39b6c1d17672f8d83052616",
+    "_system/templates/reviewer-resource-plan.template.md": "cc1b8a23b8fb56ddfc8a39c7e0a60450519f2d2a53cb81509e27bd43256e6423",
+    "_system/templates/reviewer-resource-tests.template.md": "8d830390c0f0e0d207d78398824a692468c47d1b789744ebdbf2b8487b1827e8",
+    "_system/templates/mode-self-improvement.template.md": "6f511a09b8e133c209169de84fcc204430db7c8e2df5bee0c01cf0e53983c171",
+    "_system/templates/mode-test-writer.template.md": "62076aad9bd304c89e62e57b3f46d3c552dfb3ea76e320da3fd434cb24f7fd0d",
+    "_system/templates/mode-wayfinder.template.md": "3c6527d9b5971f68b3747cfe801143cd74d9328d505b9b55f55e8630eb704095",
+    "_system/sync-model.json": "d1626c0c71390bf0163b83fff25825c541c87c5b0380e6bbb39ca456d5f28356"
   }
 }

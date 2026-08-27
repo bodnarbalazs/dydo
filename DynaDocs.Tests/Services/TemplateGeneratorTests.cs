@@ -79,7 +79,18 @@ public class TemplateGeneratorTests
         // Verify specific content to ensure templates aren't empty or corrupted
         var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
         Assert.Contains("mode: code-writer", codeWriterTemplate);
-        Assert.Contains("slice", codeWriterTemplate);
+        Assert.Contains("Linear Issue", codeWriterTemplate);
+        Assert.Contains("independent review", codeWriterTemplate);
+    }
+
+    [Theory]
+    [InlineData("_tasks.template.md")]
+    [InlineData("_issues.template.md")]
+    [InlineData("_backlog.template.md")]
+    public void RetiredProductTemplates_AreNotBuiltIn(string templateName)
+    {
+        Assert.DoesNotContain(templateName, TemplateGenerator.GetAllTemplateNames());
+        Assert.Throws<FileNotFoundException>(() => TemplateGenerator.ReadBuiltInTemplate(templateName));
     }
 
     #endregion
@@ -237,30 +248,34 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_ReferencesVisualPlaceholder()
+    public void GenerateAboutDynadocsMd_DefinesLinearAndGitBoundary()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
 
-        // The diagram was replaced by a deliberate placeholder pointing at the _assets folder.
-        Assert.Contains("<!-- VISUAL:", content);
-        Assert.Contains("dydo/_assets/", content);
+        Assert.Contains("Linear owns the live Initiative/Project/Issue graph", content);
+        Assert.Contains("Decisions, architecture, guides, reviewed Project plans", content);
+        Assert.Contains("dydo does not copy that graph into\nMarkdown", content.Replace("\r\n", "\n"));
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_ContainsAgentRoles()
+    public void GenerateAboutDynadocsMd_ContainsReviewAndAuditContract()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
 
-        Assert.Contains("code-writer", content);
-        Assert.Contains("reviewer", content);
+        Assert.Contains("independently reviews each implementation Issue", content);
+        Assert.Contains("integrated audit against its linked plan", content);
+        Assert.Contains("assimilation brief", content);
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_LinksToGitHub()
+    public void GenerateAboutDynadocsMd_DoesNotRestoreRetiredWorkModel()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
 
-        Assert.Contains("github.com/bodnarbalazs/dydo", content);
+        Assert.DoesNotContain("dydo task", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dydo issue", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("project/tasks", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("project/issues", content, StringComparison.OrdinalIgnoreCase);
     }
 
     #endregion
@@ -406,11 +421,11 @@ public class TemplateGeneratorTests
         Assert.Contains("../guides/_index.md", referenceContent);
         Assert.Contains("../project/_index.md", referenceContent);
 
-        // _project.md should link to understand, guides, reference (but not project)
+        // _project.md links to the durable knowledge references used from this folder.
         var projectContent = TemplateGenerator.GenerateProjectMetaMd();
-        Assert.Contains("../understand/_index.md", projectContent);
-        Assert.Contains("../guides/_index.md", projectContent);
-        Assert.Contains("../reference/_index.md", projectContent);
+        Assert.Contains("../reference/dydo-glossary.md", projectContent);
+        Assert.Contains("../reference/about-dynadocs.md", projectContent);
+        Assert.Contains("../guides/how-to-use-docs.md", projectContent);
     }
 
     #endregion
@@ -508,6 +523,8 @@ public class TemplateGeneratorTests
         Assert.Contains("guides/", content);
         Assert.Contains("reference/", content);
         Assert.Contains("project/", content);
+        Assert.Contains("Decisions, reviewed plans, audits, changelog, pitfalls", content);
+        Assert.DoesNotContain("tasks", content, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("## Document Types", content);
         Assert.Contains("## Navigation", content);
         Assert.Contains("dydo graph", content);
@@ -526,20 +543,6 @@ public class TemplateGeneratorTests
         Assert.Contains("*.pem", content);
         Assert.Contains("*.key", content);
         Assert.Contains(".aws", content);
-    }
-
-    [Fact]
-    public void GenerateIssuesMetaMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateIssuesMetaMd();
-        Assert.NotEmpty(content);
-    }
-
-    [Fact]
-    public void GenerateBacklogMetaMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateBacklogMetaMd();
-        Assert.NotEmpty(content);
     }
 
     [Fact]
@@ -570,12 +573,16 @@ public class TemplateGeneratorTests
         Assert.Contains("type: reference", content);
         Assert.Contains("## Setup Commands", content);
         Assert.Contains("## Documentation Commands", content);
-        Assert.Contains("## Project Commands", content);
+        Assert.Contains("## Work Boundary", content);
         Assert.Contains("dydo init", content);
         Assert.Contains("dydo sync", content);
         Assert.Contains("dydo check", content);
         Assert.Contains("dydo guard", content);
         Assert.Contains("dydo model", content);
+        Assert.Contains("Live work is managed in Linear", content);
+        Assert.DoesNotContain("dydo task", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dydo issue", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dydo review", content, StringComparison.OrdinalIgnoreCase);
         // The fallback must track the current command surface, not the retired 1.0 table.
         Assert.DoesNotContain("dydo dispatch", content);
         Assert.DoesNotContain("dydo whoami", content);
@@ -622,9 +629,12 @@ public class TemplateGeneratorTests
         Assert.Contains("## The Problem", content);
         Assert.Contains("## The Solution", content);
         Assert.Contains("## Agent Roles", content);
+        Assert.Contains("Linear owns the live", content);
         Assert.Contains("code-writer", content);
         Assert.Contains("reviewer", content);
         Assert.Contains("github.com/bodnarbalazs/dydo", content);
+        Assert.DoesNotContain("PM system that lives in your repo", content);
+        Assert.DoesNotContain("backlog", content, StringComparison.OrdinalIgnoreCase);
 
         // Pre-DR-041 leftovers must not resurface (issue 0301): no retired diagram embed,
         // no --inbox workflow flags.

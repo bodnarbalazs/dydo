@@ -21,16 +21,15 @@ public class WayfinderHarmonyTests : IDisposable
     }
 
     [Fact]
-    public void PlannerSkill_ResolvesGlossaryLink_AndPlansOnlyTheVisibleSprint()
+    public void PlannerSkill_ResolvesGlossaryLink_AndPlansOnlyTheVisibleIncrement()
     {
         var skillPath = CompileSkill("planner");
         var skill = File.ReadAllText(skillPath);
 
         const string glossaryTarget = "../../../dydo/reference/dydo-glossary.md";
         Assert.Contains($"[dydo glossary]({glossaryTarget})", skill);
-        Assert.Contains("plan only the one visible Sprint that Waypoint names", skill);
-        Assert.Contains("That\nSprint alone decomposes into Slices", skill.Replace("\r\n", "\n"));
-        Assert.Contains("Never turn Campaign Fog or the whole Campaign into speculative", skill);
+        Assert.Contains("plan only the currently visible Issue or bounded Project-plan", skill);
+        Assert.Contains("Never turn Fog into speculative Linear work", skill);
 
         var resolvedGlossary = Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(skillPath)!,
@@ -39,7 +38,7 @@ public class WayfinderHarmonyTests : IDisposable
     }
 
     [Fact]
-    public void ReviewerPlanResource_TreatsOnlySprintBlockingFogAsASpecGap()
+    public void ReviewerPlanResource_TreatsOnlyProjectBlockingFogAsASpecGap()
     {
         var reviewer = RoleDefinitionService.DiscoverRoles(_testDir)
             .Single(role => role.Name == "reviewer");
@@ -47,21 +46,21 @@ public class WayfinderHarmonyTests : IDisposable
 
         var resource = File.ReadAllText(Path.Combine(
             _testDir, ".claude", "skills", "reviewer", "resources", "plan.md"));
-        Assert.Contains("Campaign Fog is not a specification gap unless the current Sprint depends on resolving it", resource);
-        Assert.Contains("do not fail a bounded plan for uncertainty deliberately left on the", resource);
+        Assert.Contains("Wayfinding Fog is not a specification gap unless the current Project depends on resolving it", resource);
+        Assert.Contains("do not fail it for uncertainty deliberately left outside its frontier", resource);
     }
 
     [Fact]
-    public void ManagerSkills_KeepCampaignNavigationInTheCurrentTopLevelConversation()
+    public void ManagerSkills_KeepProjectNavigationInTheCurrentTopLevelConversation()
     {
         var coThinker = File.ReadAllText(CompileSkill("co-thinker"));
-        Assert.Contains("Only the human promotes a\nFutureFeature into an active Campaign", coThinker.Replace("\r\n", "\n"));
-        Assert.Contains("Wayfinder skill\n  in this same top-level conversation", coThinker.Replace("\r\n", "\n"));
+        Assert.Contains("Only the human\npromotes a FutureFeature into exactly one Linear Initiative, Project, or Issue", coThinker.Replace("\r\n", "\n"));
+        Assert.Contains("skill in this same top-level conversation", coThinker);
         Assert.Contains("Grilling is a method for eliciting and nailing down intent", coThinker);
 
         var chiefOfStaff = File.ReadAllText(CompileSkill("chief-of-staff"));
-        Assert.Contains("Only the human promotes a FutureFeature into an active Campaign", chiefOfStaff);
-        Assert.Contains("route the current\n  top-level manager to Wayfinder", chiefOfStaff.Replace("\r\n", "\n"));
+        Assert.Contains("only authority that\n  promotes a FutureFeature into exactly one Linear Initiative, Project, or Issue", chiefOfStaff.Replace("\r\n", "\n"));
+        Assert.Contains("top-level manager to\n  Wayfinder", chiefOfStaff.Replace("\r\n", "\n"));
         Assert.Contains("do not start another top-level session or choose its Waypoints", chiefOfStaff);
 
         var orchestrator = File.ReadAllText(CompileSkill("orchestrator"));

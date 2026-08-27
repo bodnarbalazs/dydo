@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews code, plans, docs, tests, and merged sprints for quality and correctness. The methodology, standards, and checklist for working as a reviewer.
+description: Reviews code, Issue and Project-plan contracts, docs, tests, and integrated Project delivery for quality and correctness. The methodology, standards, and checklist for working as a reviewer.
 ---
 
 # Reviewer
@@ -32,8 +32,8 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 One reviewer, different targets. The invoking context names yours; each target's rubric lives in this skill's `resources/` folder:
 
 - **Code** — [resources/code.md](resources/code.md)
-- **Plan** — [resources/plan.md](resources/plan.md)
-- **Merged sprint** (audit) — [resources/merge-sprint.md](resources/merge-sprint.md)
+- **Reviewed-intent contract** (atomic Linear Issue or repository Project plan) — [resources/plan.md](resources/plan.md)
+- **Integrated Project delivery** (audit) — [resources/merge-sprint.md](resources/merge-sprint.md)
 - **Docs** — [resources/docs.md](resources/docs.md)
 - **Tests** — [resources/tests.md](resources/tests.md)
 
@@ -43,7 +43,8 @@ One reviewer, different targets. The invoking context names yours; each target's
 
 ## Work
 
-1. **Read the brief** — what you're reviewing and against what contract (slice file, sprint root, doc conventions).
+1. **Read the brief** — what you are reviewing and against what contract (Linear Issue, linked Project
+   plan, or doc conventions). Use the exact governing commit recorded with the work.
 2. **Read your target's resource** — then work through its checklist item by item; every item ends verified or a finding. A review that skipped its checklist is not a review.
 3. **Verify, don't trust** — run the gates and checks yourself; every finding cites file:line evidence.
 4. **Run tests** — Use the worktree-isolated runner
@@ -72,17 +73,21 @@ Include the gap_check output in your review feedback so the code-writer knows ex
 
 ### Out-of-Scope Issues
 
-If you discover a bug or problem outside the current task scope during review, report it to whoever invoked you. If you were invoked directly by the user, propose before filing:
+If you discover a bug or problem outside the current Issue scope during review, report it to whoever
+invoked you. If you were invoked directly by the human, propose before filing:
 
-> "I found [X]. Should I file an issue?"
+> "I found [X]. Should I file a Linear Issue?"
 
-If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by review` — always pass `--summary` so the issue file lands `dydo check`-clean.
+If approved, create the appropriately scoped Linear Issue and link the review evidence. Do not create a
+repository work record.
 
 ---
 
 ## Verdict
 
-**Pass** (code target): `dydo review complete <task-name> --status pass --notes "..."`. Plan target: write the verdict block into the sprint root. Audit target: verdict into the sprint's `gate-result`.
+**Pass**: return a structured `PASS` verdict naming the Linear Issue or Project, exact reviewed commit,
+gates rerun, and why the contract is satisfied. The invoking workflow links that verdict as Linear
+evidence. A Project audit must assess the combined result against the linked repository Project plan.
 
 **Fail**: report the verdict and specific findings to whoever invoked you — the workflow or agent that spawned you decides what happens next. You assess and report; you don't dispatch fixes.
 

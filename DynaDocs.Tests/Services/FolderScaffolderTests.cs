@@ -152,8 +152,8 @@ public class FolderScaffolderTests : IDisposable
 
         var content = File.ReadAllText(aboutDynadocsPath);
         Assert.Contains("DynaDocs (dydo)", content);
-        // The diagram was replaced by a deliberate visual placeholder (screenshot pending from balazs).
-        Assert.Contains("<!-- VISUAL:", content);
+        Assert.Contains("Linear owns the live Initiative/Project/Issue graph", content);
+        Assert.Contains("dydo does not copy that graph into", content);
     }
 
     [Fact]

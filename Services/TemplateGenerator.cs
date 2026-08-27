@@ -463,7 +463,7 @@ public static class TemplateGenerator
             | `understand/` | Project overview, architecture, domain context | Starting a new task |
             | `guides/` | How-to guides, coding standards | When doing specific work |
             | `reference/` | Command reference, API specs, config | When you need exact details |
-            | `project/` | Decisions, changelog, tasks, pitfalls | When you need history/context |
+            | `project/` | Decisions, reviewed plans, audits, changelog, pitfalls | When you need history/context |
 
             ---
 
@@ -677,7 +677,8 @@ public static class TemplateGenerator
 
             # CLI Commands Reference
 
-            Complete reference for all `dydo` commands.
+            Reference for dydo's local documentation, compilation, guard, and configuration commands.
+            Live work is managed in Linear; dydo does not provide a second work-record command surface.
 
             Run `dydo help` for a quick overview of available commands.
 
@@ -700,13 +701,11 @@ public static class TemplateGenerator
             | `dydo index [path]` | Regenerate index |
             | `dydo graph <file>` | Show link graph |
 
-            ## Project Commands
+            ## Work Boundary
 
-            | Command | Description |
-            |---------|-------------|
-            | `dydo task create\|list\|ready-for-review\|done <name>` | Manage tasks |
-            | `dydo issue create\|list\|resolve` | Manage issues |
-            | `dydo review complete <task>` | Complete a code review |
+            Linear owns live Initiatives, Projects, Issues, status, assignment, dependencies, and review
+            state. dydo keeps durable Decisions, reviewed Project plans, audits, and assimilation evidence
+            in Git; no dydo command reads, writes, caches, polls, or mirrors Linear.
 
             ## Enforcement & Config
 
@@ -908,9 +907,7 @@ public static class TemplateGenerator
 
             # DynaDocs (dydo)
 
-            Own your project's knowledge — then put agents to work on it.
-
-            100% local, 100% under your control.
+            Own your project's knowledge, use Linear for live work, and let native coding agents execute.
 
             ## The Problem
 
@@ -918,9 +915,10 @@ public static class TemplateGenerator
 
             ## The Solution
 
-            DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management. It is four things: AI-friendly documentation, a PM system that lives in your repo (with an optional live Notion board), a compilation engine that gives Claude Code and Codex one source of truth for skills and agents, and a customizable set of nudges that keep every agent inside your rules.
-
-            The coding tool owns the engine — spawning, scheduling, isolation, fan-out. dydo owns the knowledge and the process.
+            DynaDocs keeps durable project knowledge explicit and versioned, compiles shared role methods
+            for Claude Code and Codex, and enforces project rules through hooks. Linear owns the live
+            Initiative/Project/Issue graph; the coding platform owns sessions, worktrees, delegation, and
+            scheduling.
 
             ## Agent Roles
 
@@ -931,7 +929,7 @@ public static class TemplateGenerator
             | `co-thinker` | skill | Explore ideas, scope requirements |
             | `planner` | skill | Turn intent into reviewed plans |
             | `orchestrator` | skill | Coordinate workflows and dispatch |
-            | `chief-of-staff` | skill | Triage the backlog, route work |
+            | `chief-of-staff` | skill | Triage Linear and route work |
             | `code-writer` | agent + skill | Implement features |
             | `test-writer` | agent + skill | Write tests, report bugs |
             | `reviewer` | agent + skill (read-only) | Review code |
@@ -999,14 +997,6 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Generate the _tasks.md meta file describing the tasks folder.
-    /// </summary>
-    public static string GenerateTasksMetaMd()
-    {
-        return ReadTemplateOrThrow("_tasks.template.md");
-    }
-
-    /// <summary>
     /// Generate the _decisions.md meta file describing the decisions folder.
     /// </summary>
     public static string GenerateDecisionsMetaMd()
@@ -1028,22 +1018,6 @@ public static class TemplateGenerator
     public static string GeneratePitfallsMetaMd()
     {
         return ReadTemplateOrThrow("_pitfalls.template.md");
-    }
-
-    /// <summary>
-    /// Generate the _issues.md meta file describing the issues folder.
-    /// </summary>
-    public static string GenerateIssuesMetaMd()
-    {
-        return ReadTemplateOrThrow("_issues.template.md");
-    }
-
-    /// <summary>
-    /// Generate the _backlog.md meta file describing the backlog folder.
-    /// </summary>
-    public static string GenerateBacklogMetaMd()
-    {
-        return ReadTemplateOrThrow("_backlog.template.md");
     }
 
     /// <summary>

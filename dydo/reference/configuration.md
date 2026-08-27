@@ -5,23 +5,22 @@ type: reference
 
 # Configuration Reference
 
-Complete reference for `dydo.json`, environment variables, hook configuration, and project customization points.
-
----
+Complete reference for the active `dydo.json` configuration, runtime hooks, models, documentation
+scanning, and customization. The configuration has no Linear client or schema: live work is managed
+through Linear's official surfaces.
 
 ## dydo.json
 
-Located at the project root. Created by `dydo init`. This is the primary configuration file.
+`dydo.json` lives at the project root and is created by `dydo init`.
 
-### Schema
+### Active schema
 
 ```json
 {
   "version": 1,
+  "name": "optional-project-slug",
   "structure": {
-    "root": "dydo",
-    "tasks": "project/tasks",
-    "issues": "project/issues"
+    "root": "dydo"
   },
   "paths": {
     "source": ["src/**"],
@@ -30,179 +29,112 @@ Located at the project root. Created by `dydo init`. This is the primary configu
   },
   "integrations": {
     "claude": true,
-    "codex": false
+    "codex": true
   },
   "models": {
-    "tiers": { "anthropic": { "strong": "claude-fable-5" } },
-    "roles": { "code-writer": "standard" }
+    "tiers": {
+      "anthropic": { "strong": "claude-fable-5" },
+      "openai": { "strong": "gpt-5.6-sol" }
+    },
+    "roles": {
+      "reviewer": "strong",
+      "code-writer": "standard"
+    },
+    "efforts": {},
+    "fallback": null
   },
-  "frameworkHashes": { }
+  "scanExclude": [
+    "_system/.local/",
+    "_system/audit/",
+    "agents/"
+  ],
+  "nudges": [],
+  "frameworkHashes": {}
 }
 ```
 
 ### Fields
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `version` | int | `1` | Schema version |
-| `structure.root` | string | `"dydo"` | Root folder for documentation |
-| `structure.tasks` | string | `"project/tasks"` | Task files location (relative to root) |
-| `structure.issues` | string | `"project/issues"` | Issue files location (relative to root) |
-| `paths.source` | string[] | `["src/**"]` | Source code glob patterns — used by roles via `{source}` |
-| `paths.tests` | string[] | `["tests/**"]` | Test code glob patterns — used by roles via `{tests}` |
-| `paths.pathSets` | dict | `null` | Custom named path groupings for role definitions |
-| `integrations.claude` | bool | `true` | Whether Claude Code integration is active |
-| `integrations.codex` | bool | `false` | Whether Codex integration is active |
-| `models.tiers` | dict | — | Per-vendor tier → model bindings ([Decision 028](../project/decisions/028-model-tier-abstraction.md)) |
-| `models.roles` | dict | — | Role → tier map; `dydo sync` resolves each to a concrete model |
-| `frameworkHashes` | dict | — | SHA256 hashes of framework-owned files for `dydo template update` |
+| Field | Type | Purpose |
+|---|---|---|
+| `version` | integer | Configuration schema version. |
+| `name` | string or null | Optional project slug used by temporary migration compatibility where documented. |
+| `structure.root` | string | Documentation root; defaults to `dydo`. |
+| `paths.source` | string[] | Source globs exposed to role compilation and project guidance. |
+| `paths.tests` | string[] | Test globs exposed to role compilation and project guidance. |
+| `paths.pathSets` | object or null | Custom named path groups for roles. |
+| `integrations.claude` | boolean | Whether Claude Code integration is wired. |
+| `integrations.codex` | boolean | Whether Codex integration is wired. |
+| `models.tiers` | object | Vendor-specific model bindings for abstract tiers. |
+| `models.roles` | object | Role-to-tier bindings resolved by `dydo sync`. |
+| `models.efforts` | object | Optional reasoning-effort overrides. |
+| `models.fallback` | string or null | Optional fallback model for temporary caps. |
+| `scanExclude` | string[] | Paths excluded from documentation scanning. |
+| `nudges` | object[] | Project guard rules. |
+| `frameworkHashes` | object | Product-managed hashes used by `dydo template update`. |
 
----
+Older 2.x configuration may still contain repository work-path fields. The 3.x runtime ignores those
+unknown properties safely and does not migrate them into another local work model. A fresh
+initialization emits only `structure.root`.
 
-## Environment Variables
+## Work-management boundary
 
-| Variable | Required | Description |
-|----------|----------|-------------|
+There is no Linear token, object schema, cache path, poll interval, webhook, or synchronization field in
+the active configuration. Linear owns Initiatives, Projects, Issues, optional Milestones and Cycles,
+along with live workflow state. Git owns Decisions, reviewed Project plans, guides, audits, assimilation
+briefs, changelog, and FutureFeature ideas.
 
----
+Some upgraded 2.x installations temporarily retain a `notion` block for final export, rollback, and
+freeze verification. That block belongs to the frozen compatibility runtime and must not be repurposed
+to mirror Linear. Its removal belongs to the separately reviewed runtime-removal Project.
 
-## Hook Configuration
+## Hook configuration
 
-`dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically. Claude Code stores its hook configuration in `.claude/settings.local.json`; Codex stores it in `.codex/hooks.json`.
+`dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically.
+Claude Code uses `.claude/settings.local.json`; Codex uses `.codex/hooks.json`.
 
-Claude Code example:
+The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` allows the action and exit
+`2` blocks it. Codex includes `apply_patch` in its matcher because file edits use that tool. The
+retained `Stop` hook calls `dydo guard --stop`, a compatibility no-op after dydo ceded lifecycle
+orchestration to the host runtime.
 
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(dydo check:*)",
-      "Bash(dydo fix:*)",
-      "Bash(dydo task:*)",
-      "Bash(dydo sync:*)",
-      "..."
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "dydo guard"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "dydo guard --stop"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+## Model tiers
 
-Codex example:
+Roles bind to abstract tiers such as `strong`, `standard`, and `light`; vendor blocks bind those
+tiers to concrete models. `dydo sync` resolves the current bindings when it compiles native artifacts.
+Use `dydo model cap`, `dydo model status`, and `dydo model uncap` for temporary availability caps
+instead of editing compiled agents.
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion|apply_patch",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "dydo guard"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "dydo guard --stop"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+## Nudges
 
-The `PreToolUse` hook intercepts each matched tool call and sends it to `dydo guard`; Codex additionally includes `apply_patch` because Codex exposes file edits through that tool. The guard receives JSON via stdin and returns exit code `0` (allow) or `2` (block). The `Stop` hook calls `dydo guard --stop`, which is a retained no-op — the agent-identity needs-human machinery it once drove was removed with the claim ceremony ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)); the wiring stays so existing installs keep resolving.
+Each nudge has a regular-expression `pattern`, a `message`, a `severity` (`notice`, `warn`, or
+`block`), and optionally a `tools` allow-set. Notices inform, warnings require a deliberate retry,
+and blocks reject the action. Nudges enforce project process; they do not create or update work records.
 
-For Claude Code, the `permissions.allow` list also pre-approves common dydo commands so the human doesn't get prompted for every call.
+## Customization points
 
----
+- `dydo/_system/templates/` — project-local role, resource, workflow, and framework template overrides.
+- `dydo/_system/template-additions/` — durable `{{include:name}}` fragments.
+- `dydo/files-off-limits.md` — universal protected path patterns and narrow whitelist entries.
+- `paths.pathSets` — named source/test groupings available to compiled methods.
 
-## Customization Points
+Change source templates and run `dydo sync`; never hand-edit compiled `.claude/`, `.codex/`, or
+`.agents/skills/` artifacts.
 
-### Template Overrides
+## Documentation exclusion layers
 
-`dydo/_system/templates/` contains the role mode templates `dydo sync` compiles into native agents and skills. Edit these directly to change agent behavior, then re-run `dydo sync`.
+| Layer | Owner | Question |
+|---|---|---|
+| Scan boundary | `Services/DocScanner.cs` and `scanExclude` | Should the path enter the documentation set? |
+| Hub generation | `Services/HubGenerator.cs` | Should a documentation hub be generated here? |
+| Hub fix-up | `Commands/FixHubHandler.cs` | Should `dydo fix` create or rewrite a hub here? |
 
-Files: `mode-code-writer.template.md`, `mode-reviewer.template.md`, `mode-planner.template.md`, etc.
-
-### Template Additions
-
-`dydo/_system/template-additions/` contains markdown files injected into templates via `{{include:name}}` tags. This lets you extend agent workflows without editing templates directly.
-
-Shipped hook points:
-
-| Tag | Template | Position |
-|-----|----------|----------|
-| `{{include:extra-must-reads}}` | All modes | After must-reads list |
-| `{{include:extra-verify}}` | code-writer | After verify step |
-| `{{include:extra-review-steps}}` | reviewer | After "Run tests" step |
-| `{{include:extra-review-checklist}}` | reviewer | End of review checklist |
-
-Custom tags: add any `{{include:whatever}}` to a template, create `whatever.md` in `template-additions/`. On `dydo template update`, user-added tags are detected, re-anchored into the updated template.
-
-### Custom Roles
-
-The mode template is the role: drop a `mode-<name>.template.md` into `dydo/_system/templates/` and run `dydo sync`. Frontmatter (`mode`, `description`, `emit`, `read-only`) declares the metadata; the body is the methodology.
-
-See [Customizing Roles](../guides/customizing-roles.md) for the full guide.
-
-### Off-Limits Patterns
-
-`dydo/files-off-limits.md` defines glob patterns that block ALL agents from accessing files — secrets, credentials, system state files. A whitelist section can carve exceptions (e.g., `.env.example`).
-
----
-
-## Exclusion Layers
-
-Path exclusions are enforced at three independent layers. They are intentionally not unified — each runs in a different stage of the pipeline and answers a different question. Editing one does not affect the others.
-
-| Layer | Where | Question |
-|-------|-------|----------|
-| 1. Scan boundary | `Services/DocScanner.cs` (`GetScanExcludes`) | "Should this file enter the doc set at all?" Merges `dydo.json` `scanExclude` with the `ConfigFactory.DydoInternalScanExclude` invariants. |
-| 2. Hub generation | `Services/HubGenerator.cs` `IsExcludedPath` (lines 310-320) | "Should hub files be generated for this path?" Skips `_system/`, `agents/`, and any hidden (`/.`) paths. |
-| 3. Hub fix-up | `Commands/FixHubHandler.cs` `IsExcludedFolder` (lines 152-164), plus the `project/tasks` skip in `DeleteStaleTasksIndex` | "Should `dydo fix` create or rewrite a hub here?" Skips `_system`, `agents`, `_assets`, and refuses to clobber the manually-managed `project/tasks/_index.md`. |
-
-If you need a path hidden from agents, use the off-limits patterns above. If you need a path scanned but not hubbed (or vice versa), pick the matching layer — don't try to unify them.
-
-## Project Hub Tasks Prose
-
-`HubGenerator` injects a hardcoded `## Tasks` section into `dydo/project/_index.md` whenever it (re)generates that hub. The prose lives in `HubGenerator.ProjectTasksProse` and is appended after the subfolder links (D4 lock: tasks are no longer auto-indexed as a subfolder, so the prose section is what tells agents how to find tasks). Edits to that section in `_index.md` will be overwritten by `dydo fix` — change the constant in `HubGenerator.cs` instead.
-
-`HubGenerator.AutoGenComment` (the `<!-- Auto-generated by 'dydo fix' -->` banner emitted at the top of every generated hub) is now `public` so other commands — notably `FixHubHandler.DeleteStaleTasksIndex` — can detect generated files without redeclaring the literal.
-
----
+These layers answer different questions and are intentionally separate. Use off-limits rules for secret
+or protected paths, not scan exclusions.
 
 ## Related
 
 - [Getting Started](../guides/getting-started.md)
-- [CLI Commands Reference](./dydo-commands.md)
+- [CLI Commands](./dydo-commands.md)
 - [Templates and Customization](../understand/templates-and-customization.md)
 - [Guard System](../understand/guard-system.md)

@@ -3,47 +3,63 @@ area: guides
 type: guide
 ---
 
-# Adding a dydo Command: The Doc-Consistency Surfaces
+# Adding a dydo Command
 
-Adding a new top-level `dydo` command (or a new required flag) is never a one-file change: `DynaDocs.Tests/Commands/CommandDocConsistencyTests` discovers commands from the System.CommandLine tree and asserts they are documented everywhere, so the gate stays red until a fixed set of surfaces all move together. This guide lists those surfaces, plus the README clone-sync family the same test class enforces.
+A new command or required option changes a closed set of code, test, help, and reference surfaces.
+`CommandDocConsistencyTests` discovers the System.CommandLine tree and keeps those surfaces aligned.
 
----
+## Required surfaces
 
-## The Six Surfaces
+| Surface | Required change |
+|---|---|
+| `Program.cs` | Register the top-level command. |
+| `Commands/<Name>Command.cs` | Define the command and handler behavior. |
+| `Commands/HelpCommand.cs` | Include the command path in agent-facing help when appropriate. |
+| `DynaDocs.Tests/Commands/CommandSmokeTests.cs` | Exercise the command factory. |
+| `dydo/reference/dydo-commands.md` | Document each option and show required flags in examples. |
+| `Templates/dydo-commands.template.md` | Keep the framework source aligned with the installed reference. |
 
-`CommandDocConsistencyTests` (and with it `gap_check`) fails until **all** of these are updated:
+Update focused behavior tests as required by the command's risk. The consistency suite checks command
+discovery, help presence, option coverage, required example flags, template/reference parity, and factory
+smoke coverage.
 
-| Surface | Kind | What the test asserts |
-|---------|------|-----------------------|
-| `Commands/HelpCommand.cs` | Code | The command path appears in the help text (`AllCommands_AppearInHelpText`) |
-| `DynaDocs.Tests/Commands/CommandSmokeTests.cs` | Test | `XCommand.Create` is in the factory array (`AllCommandFactories_InSmokeTests`) |
-| `dydo/reference/dydo-commands.md` | Docs | A `### dydo <path>` section naming every option, with a code example using each **required** flag (Tests 2 + 4) |
-| `Templates/dydo-commands.template.md` | Docs | Same sections and flags — reference must equal template (Test 3) |
-| `dydo/reference/about-dynadocs.md` | Docs | The leaf command listed under `## Command Reference` (Test 6) |
-| `Templates/about-dynadocs.template.md` | Docs | Byte-identical to `about-dynadocs.md` (Test 10) |
+## Product-boundary check
 
-**Work split for multi-writer trees:** the two code/test surfaces belong to the code-writer's slice; the four markdown surfaces are "command docs" and can be owned by a separate docs pass. Whichever way it's split, the surfaces must land together — a command merged without its docs reddens *every* agent's gate run (see [Orchestration Pitfalls](./orchestration-pitfalls.md), pitfall 3).
+Before adding a command, confirm the capability belongs inside dydo. Local documentation, validation,
+template compilation, guard, configuration, model, and utility operations fit the product boundary.
+Linear work management does not: do not add commands that create, update, poll, cache, provision, or
+mirror Linear objects.
 
----
+Transition-only commands must be labeled as historical migration compatibility in active docs and must
+not be presented as the current work model.
 
-## The README Clone-Sync Family
+## Generated and installed copies
 
-Editing the dydo README is really editing a coupled four-file set, enforced by the same test class:
+Edit authoritative sources, then use product commands:
 
-- **Test 6** — every CLI command (dynamically discovered) must appear in `dydo/reference/about-dynadocs.md` **and** `Templates/about-dynadocs.template.md`. It checks *inclusion, not existence*: removing a command from the docs is safe; forgetting to add a new one fails the build. It checks about-dynadocs, not the root README.
-- **Test 10** — `README.md` and `about-dynadocs.md` must share the exact same `##` heading set; `## Agent Roles`, `## For Teams`, and `## Self-Documentation` must be byte-identical (modulo image-path normalization); and `about-dynadocs.md` must equal `Templates/about-dynadocs.template.md` byte-for-byte.
-- **Test 8** — `## License` must be identical across `README.md`, `npm/README.md`, `about-dynadocs.md`, and the template.
-- **Tests 2/3/4** — `dydo/reference/dydo-commands.md` (+ its template) must document every command's options, and the two must match.
+```bash
+dydo template update --diff
+dydo sync
+dydo check
+```
 
-So: rewrite `README.md` ↔ `about-dynadocs.md` ↔ `about-dynadocs.template.md` in lockstep (matching headings, identical shared sections, complete command list). `npm/README.md` only has to match the License section — it can be trimmed and should avoid Mermaid (npmjs.com doesn't render it; GitHub does).
+Do not hand-edit compiled skills or agent artifacts. When a framework source and installed document are
+required to match byte-for-byte, update them through the product workflow and let the consistency tests
+prove parity.
 
-**Who may write which copy:** per-role path RBAC was deliberately removed in [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) §2, so the "Read-only paths" list that `dydo agent status` prints (`Templates/**`, root and npm READMEs) is advisory display, not enforcement — a docs-writer *can* write `Templates/**` directly. Actual write enforcement is the universal off-limits list, nudges, and the no-cross-agent-workspace rule. Don't request a guard lift for role-path reasons; that won't be the blocker. Coordination of who edits which copy is a scheduling concern (avoid racing an in-flight sprint that owns those files), not a permissions one.
+## Verification
 
----
+Run the command's focused tests through the worktree-isolated runner, then the coverage gate:
+
+```bash
+py DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~CommandDocConsistencyTests
+py DynaDocs.Tests/coverage/gap_check.py
+```
+
+Finish with `dydo check` and `git diff --check`.
 
 ## Related
 
-- [Testing Strategy](./testing-strategy.md) — The tiers and gates these tests run under
-- [Orchestration Pitfalls](./orchestration-pitfalls.md) — Why a half-landed command reddens other agents' gates
-- [Coding Standards](./coding-standards.md) — Code conventions
-- [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) — dydo 2.0 native pivot (RBAC removal)
+- [Testing Strategy](./testing-strategy.md)
+- [CLI Commands](../reference/dydo-commands.md)
+- [Architecture](../understand/architecture.md)

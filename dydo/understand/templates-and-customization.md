@@ -5,93 +5,71 @@ type: concept
 
 # Templates and Customization
 
-How dydo's template system works: overridable templates, include tags, and the update mechanism. Templates define agent behavior — workflow steps, mode-specific instructions, and must-read lists. You customize them to match your project's process.
+dydo authors role methodologies, skill resources, workflows, and framework documents as templates, then
+uses product commands to compile or install their outputs. Templates contain durable process guidance;
+they do not define a repository work hierarchy or a Linear schema.
 
----
+## Template sources
 
-## What Templates Are
+Shipped sources live in `Templates/`. Installed project copies and overrides live in
+`dydo/_system/templates/`.
 
-Templates generate the files agents follow: the workflow file (`workflow.md`) and mode files (`modes/code-writer.md`, `modes/reviewer.md`, etc.). When an agent is created or workspaces are initialized, templates are rendered into the agent's workspace.
+| Pattern | Purpose |
+|---|---|
+| `mode-<name>.template.md` | Role methodology and emission metadata |
+| `<role>-resource-<name>.template.md` | Skill-specific reference resource |
+| `workflow-*.js` | Host-native workflow source |
+| framework `*.template.md` files | Installed orientation, reference, and folder documents |
 
-Templates are not documentation — they're the scaffolding that tells agents how to behave in each role.
+The mode template's frontmatter selects whether the role emits only an in-session skill or also a
+spawnable worker-agent definition. The body becomes the compiled methodology.
 
----
-
-## Template Location
-
-Templates live in `dydo/_system/templates/`:
-
-| Template | Generates |
-|----------|-----------|
-| `agent-workflow.template.md` | `agents/<name>/workflow.md` |
-| `mode-code-writer.template.md` | `agents/<name>/modes/code-writer.md` |
-| `mode-reviewer.template.md` | `agents/<name>/modes/reviewer.md` |
-| ... | One per role |
-
-These are the local copies. Dydo ships embedded defaults — your local copies override them. Edit freely.
-
----
-
-## Include Tags
-
-Templates use `{{include:name}}` tags to pull in content from separate files. This lets you extend agent workflows without editing the templates directly.
-
-### How It Works
-
-1. Create a markdown file in `dydo/_system/template-additions/` (e.g., `extra-verify.md`)
-2. Any template containing `{{include:extra-verify}}` will inline that file's content
-3. When templates are rendered, the tag is replaced with the file contents
-
-### Shipped Hooks
-
-These tags are pre-placed at natural extension points:
-
-| Tag | Template | Position |
-|-----|----------|----------|
-| `{{include:extra-must-reads}}` | All mode templates | After the must-reads list |
-| `{{include:extra-verify}}` | code-writer, test-writer | After the verify step |
-| `{{include:extra-review-steps}}` | reviewer | After "Run tests" step |
-| `{{include:extra-review-checklist}}` | reviewer | End of review checklist |
-| `{{include:extra-complete-gate}}` | code-writer, reviewer | End of complete section |
-| `{{include:extra-test-guidance}}` | test-writer | After test guidance section |
-
-You can also add `{{include:whatever}}` anywhere in a template — the system isn't limited to shipped hooks.
-
-### The Two Paths
-
-**The proper path:** Create files in `template-additions/` and use shipped hooks. Templates stay stock. Updates apply cleanly.
-
-**The quick path:** Edit templates directly, adding your own `{{include:...}}` tags. On `dydo template update`, user-added tags are detected and re-anchored into the new template version.
-
----
-
-## Template Updates
-
-When dydo releases new template versions, update your local copies:
+## Compilation
 
 ```bash
-dydo template update          # Apply updates, preserve your include tags
-dydo template update --diff   # Preview changes without writing
-dydo template update --force  # Overwrite even if re-anchoring fails (creates .backup)
+dydo sync
 ```
 
-### How Updates Work
+`dydo sync` reads shipped templates plus project overrides and emits the supported native artifacts:
 
-1. **Hash comparison** — Each template's SHA256 hash is compared against the embedded version
-2. **Clean files** (hash matches embedded) — Overwritten with the new version directly
-3. **User-edited files** — The system extracts user-added `{{include:...}}` tags, writes the new template, then re-anchors the tags by matching surrounding content
-4. **Non-include edits are lost** — Only include tags are preserved across updates. Direct text edits to templates will be overwritten.
+- Claude skills and worker agents under `.claude/`;
+- Codex worker agents under `.codex/agents/`;
+- shared Codex skills under `.agents/skills/`;
+- supported native workflows.
 
-If re-anchoring can't place a tag, the update warns you. Use `--force` to overwrite anyway (the original is backed up to `.backup`).
+Compiled outputs are generated artifacts. Never edit them directly; change the source template and sync.
 
-### Binary Assets
+## Include tags
 
-Binary framework assets use byte-level hash comparison and are replaced when a new version is available. Assets retired from the framework (e.g. the old pre-DR-041 `_assets/dydo-diagram.svg`, issue 0301) are deleted on update when hash-clean; a user-modified copy is kept and becomes a user-owned asset.
+`{{include:name}}` inserts `dydo/_system/template-additions/name.md` at a supported hook. Additions keep
+project-specific guidance separate from framework-owned text and survive product updates more reliably.
 
----
+Common hooks include extra must-reads, verification steps, review checks, completion gates, and testing
+guidance. A custom template may define additional include names.
+
+## Template updates
+
+```bash
+dydo template update --diff
+dydo template update
+dydo template update --force
+```
+
+The diff form previews framework-owned changes. The normal update uses stored hashes to refresh clean
+files and re-anchor supported include hooks in customized files. `--force` is a deliberate fallback
+that overwrites when re-anchoring cannot succeed and creates backups where applicable.
+
+Review the diff after an update, run `dydo sync`, and finish with `dydo check`. Framework documents and
+compiled artifacts must agree with their sources.
+
+## Work-model boundary
+
+Role methods receive Linear Issue/Project context from the host or coordinator. Coordinated work may
+link to a reviewed repository Project plan, but templates do not create a second PM schema, client,
+cache, or Markdown mirror.
 
 ## Related
 
-- [Documentation Model](./documentation-model.md)
-- [CLI Commands Reference](../reference/dydo-commands.md)
-- [Configuration Reference](../reference/configuration.md)
+- [Customizing Roles](../guides/customizing-roles.md)
+- [CLI Commands](../reference/dydo-commands.md)
+- [Configuration](../reference/configuration.md)

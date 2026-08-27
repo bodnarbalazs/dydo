@@ -146,8 +146,44 @@ After all of Lanes 1–4 have landed, run the following predicate with the froze
 $retired = 'TaskCommand|TaskCreateHandler|TaskDoneHandler|TaskListHandler|TaskReviewHandler|IssueCommand|IssueCreateHandler|IssueListHandler|IssueResolveHandler|ReviewCommand|TaskFile|TaskStatus|IssueStatus|IssueSeverity|IssueFoundBy|GetTasksPath|GetIssuesPath|project/(tasks|issues|sprints|slices|campaigns|backlog)'
 $roots = @('Program.cs','Commands','Models','Services','Utils','Rules','Serialization','Templates','dydo/_system/templates','.agents/skills','DynaDocs.Tests','README.md','dydo/index.md','dydo/reference','dydo/understand','dydo/guides','dydo.json') | Where-Object { Test-Path $_ }
 $hits = @(& rg -n -i $retired $roots --glob '!Templates/sync-model.template.json' --glob '!DynaDocs.Tests/Sync/**' --glob '!DynaDocs.Tests/Rules/FrontmatterRuleTests.cs' --glob '!DynaDocs.Tests/Fixtures/**' --glob '!dydo/guides/migrating-dydo-1x-to-2x.md' --glob '!notion-sync.md' --glob '!notion-oss-survey.md')
-if ($LASTEXITCODE -eq 0) { throw "Retired repo-PM consumer remains:`n$($hits -join "`n")" }
-if ($LASTEXITCODE -ne 1) { throw "Retired-PM scan failed with exit $LASTEXITCODE" }
+if ($LASTEXITCODE -notin 0, 1) { throw "Retired-PM scan failed with exit $LASTEXITCODE" }
+$allowedRetiredMatches = @(
+    @{ Path = 'DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs'; Text = '[InlineData("{\"path\":\"dydo/project/tasks/one.md\"}")]' }
+    @{ Path = 'DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs'; Text = '[InlineData("{\"path\":\"dydo/project/tasks/one.md\",\"executionState\":1}")]' }
+    @{ Path = 'DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs'; Text = '[InlineData("{\"path\":\"dydo/project/tasks/one.md\",\"executionState\":\"unknown\"}")]' }
+    @{ Path = 'DynaDocs.Tests/Services/TemplateGeneratorTests.cs'; Text = 'Assert.DoesNotContain("project/tasks", content, StringComparison.OrdinalIgnoreCase);' }
+    @{ Path = 'DynaDocs.Tests/Services/TemplateGeneratorTests.cs'; Text = 'Assert.DoesNotContain("project/issues", content, StringComparison.OrdinalIgnoreCase);' }
+)
+$allowedKeys = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($allowed in $allowedRetiredMatches) {
+    $key = "$($allowed.Path)`0$($allowed.Text)"
+    if (-not $allowedKeys.Add($key)) { throw "Duplicate retired-PM allow tuple: $($allowed.Path): $($allowed.Text)" }
+}
+$allowedCounts = @{}
+$unexpectedHits = [Collections.Generic.List[string]]::new()
+foreach ($hit in $hits) {
+    if ($hit -notmatch '^(?<path>.*?):(?<line>\d+):(?<text>.*)$') { throw "Unparseable retired-PM scan hit: $hit" }
+    $path = $Matches.path.Replace('\', '/')
+    $text = $Matches.text.Trim()
+    $key = "$path`0$text"
+    if ($allowedKeys.Contains($key)) {
+        $allowedCounts[$key] = 1 + ($allowedCounts[$key] ?? 0)
+    } else {
+        $unexpectedHits.Add($hit)
+    }
+}
+$invalidAllowed = @($allowedRetiredMatches | Where-Object {
+    $key = "$($_.Path)`0$($_.Text)"
+    ($allowedCounts[$key] ?? 0) -ne 1
+})
+if ($invalidAllowed.Count -gt 0) {
+    throw "Retired-PM proof tuples missing or duplicated:`n$($invalidAllowed | ForEach-Object { "$($_.Path): $($_.Text)" } | Out-String)"
+}
+$allowedCount = @($allowedCounts.Values | Measure-Object -Sum).Sum
+if ($allowedCount -ne 5 -or $unexpectedHits.Count -ne 0) {
+    throw "Retired repo-PM consumer remains (allowed=$allowedCount; unexpected=$($unexpectedHits.Count)):`n$($unexpectedHits -join "`n")"
+}
+Write-Output "Retired-PM scan: allowed=5; unexpected=0."
 ```
 
 `DynaDocs.Tests/Rules/FrontmatterRuleTests.cs` is excluded because Project 3 alone removes the task-file

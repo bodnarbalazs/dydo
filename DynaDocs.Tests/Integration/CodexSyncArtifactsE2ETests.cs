@@ -101,4 +101,42 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         Assert.Contains("Linear remains canonical", orchestrator);
         Assert.Contains("native subagent delegation keeps its native return path", orchestrator);
     }
+
+    [Fact]
+    public async Task Sync_CompiledSkills_UseLinearIssuesWithoutRepositoryWorkCommands()
+    {
+        await InitProjectAsync("none");
+
+        var sync = await RunAsync(SyncCommand.Create());
+        sync.AssertSuccess();
+
+        var skillRoot = Path.Combine(TestDir, ".agents", "skills");
+        var forbidden = new[]
+        {
+            "dydo task",
+            "dydo issue",
+            "dydo review",
+            "run-sprint",
+            string.Join('/', "project", "tasks"),
+            string.Join('/', "project", "issues"),
+        };
+        var hits = new List<string>();
+
+        foreach (var file in Directory.GetFiles(skillRoot, "*.md", SearchOption.AllDirectories))
+        {
+            var content = File.ReadAllText(file);
+            foreach (var phrase in forbidden)
+            {
+                if (content.Contains(phrase, StringComparison.OrdinalIgnoreCase))
+                    hits.Add($"{Path.GetRelativePath(TestDir, file)}: {phrase}");
+            }
+        }
+
+        Assert.True(hits.Count == 0,
+            $"Compiled skill still instructs repository work management:\n  {string.Join("\n  ", hits)}");
+
+        var codeWriter = ReadFile(".agents/skills/code-writer/SKILL.md");
+        Assert.Contains("Linear Issue", codeWriter);
+        Assert.Contains("Project-plan", codeWriter);
+    }
 }

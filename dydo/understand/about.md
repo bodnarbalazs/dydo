@@ -5,35 +5,35 @@ type: context
 
 # About This Project
 
-DynaDocs (dydo) is a documentation-driven context, project-management, skill-authoring, and
-guardrail framework for AI coding assistants. AI tools have memory features, but that memory is
-unstructured, opaque, and not under your control. dydo makes project context explicit and
-versioned, then compiles its durable guidance for native coding-agent runtimes.
+DynaDocs (dydo) is a documentation, skill-authoring, and guardrail framework for AI coding assistants.
+It makes durable project context explicit and versioned, then compiles shared methods for native coding
+agent runtimes. Linear owns live project management; dydo/Git owns knowledge and reviewed proof.
 
-This is the dydo project itself. This documentation tree is both the project's knowledge base
-and a living example of the system. dydo authors and synchronizes context and skills; Claude Code
-and Codex own runtime identity, permissions, process lifecycle, and native subagent coordination.
+This repository is both the dydo implementation and a living example of its documentation model. Claude
+Code and Codex own runtime identity, permissions, process lifecycle, worktree isolation, and native
+agent coordination.
 
----
+## What dydo does
 
-## What DyDo Does
+- **Documentation as memory** — agents onboard from structured, reviewable project knowledge.
+- **Native-runtime compilation** — `dydo sync` compiles shared roles, skills, resources, and workflows.
+- **Guard enforcement** — `dydo guard` applies universal off-limits rules and project nudges.
+- **Documentation tooling** — `dydo check`, `dydo fix`, indexes, and graph commands keep knowledge usable.
+- **Reviewed delivery knowledge** — Decisions, Project plans, audits, and assimilation evidence remain in Git.
 
-- **Documentation as memory** — agents onboard themselves each session by reading structured docs
-- **Guard enforcement** — a `PreToolUse` hook checks every tool call (main thread *and* subagents) against universal off-limits and custom nudges
-- **Native-runtime compilation** — `dydo sync` compiles shared role and skill sources into native
-  Claude Code and Codex artifacts; the host runtime coordinates execution
-- **Data-driven roles** — seven base roles (code-writer, reviewer, docs-writer, etc.) with customizable permissions; add your own
-- **Optional Notion sync** — a two-way team PM board view over your canonical repo files
+dydo does not manage Linear objects or mirror their state. A fresh project scaffolds durable knowledge
+folders and FutureFeature idea documentation, not a repository-backed work hierarchy.
 
----
+## Technology
 
-## Tech Stack
+The product is a .NET 10 CLI with Native AOT, System.CommandLine, Markdig, and source-generated JSON.
+Markdown and JSON are durable local state; Linear remains the external system of record for current work.
 
-.NET 10 CLI with Native AOT (self-contained binary). Filesystem as state store — no database. Everything (docs, PM records, config) is Markdown or JSON files, human-readable and git-diffable.
-
----
+The retained Notion adapter and watchdog are frozen dydo 2.x migration compatibility until the separate
+runtime-removal Project lands. They are not the active work model and must not be extended.
 
 ## Related
 
-- [Architecture](./architecture.md) — Technical structure and design choices
-- [About DynaDocs](../reference/about-dynadocs.md) — Full feature overview and installation
+- [Architecture](./architecture.md) — Component and boundary overview
+- [DynaDocs](../reference/about-dynadocs.md) — Product overview and setup
+- [Work Model](./work-model.md) — Linear/Git operating contract

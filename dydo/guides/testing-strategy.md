@@ -114,6 +114,18 @@ Everything else — services, command handlers, validators, utilities — needs 
 
 ---
 
+## Worktree-isolated execution
+
+Run tests through the repository's isolated runner so concurrent agents cannot contend for build output:
+
+```bash
+py DynaDocs.Tests/coverage/run_tests.py
+py DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~MyTests
+```
+
+Do not invoke `dotnet test` directly during agent work. The runner creates a temporary Git worktree,
+executes the suite there, and preserves the current implementation worktree for review.
+
 ## Tooling
 
 `gap_check.py` in `DynaDocs.Tests/coverage/` enforces these tiers:
@@ -129,7 +141,8 @@ See [Coverage Tools](../reference/coverage-tools.md) for full usage reference.
 
 ### Enforcement status
 
-Tier thresholds are enforced by agents during code review (via `gap_check.py`). CI enforcement will be added once the test suite matures.
+Tier thresholds are a completion gate for implementation Issues and independent review. A non-zero
+`gap_check.py` result blocks completion even when focused tests pass.
 
 ---
 
@@ -155,4 +168,4 @@ Without burning CI cycles: `git archive HEAD` → overlay your dirty files → r
 - [Coverage Tools](../reference/coverage-tools.md) — Tool usage reference (gap_check.py)
 - [CRAP Per-Method Metric](../project/decisions/009-crap-per-method-metric.md) — Why per-method max CC, not class-level sum
 - [Coding Standards](./coding-standards.md) — Code conventions
-- [Orchestration Pitfalls](./orchestration-pitfalls.md) — How parallel agents collide through these global gates
+- [Orchestration Pitfalls](./orchestration-pitfalls.md) — How concurrent work can collide through global gates

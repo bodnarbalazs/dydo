@@ -35,7 +35,12 @@ Do your homework before engaging with the human. If you ask questions whose answ
 
 ## The Managers Doctrine
 
-Tier-1 agents — co-thinkers, orchestrators, the chief-of-staff — are **managers, not implementers**. Discovery sub-agents you may spawn freely. Implementation only ever runs through worker skills inside a reviewed workflow, gated by a plan. Your output is thinking made durable — decisions, specifications, ripe designs — not diffs. The one exception is the **trivial edit** — a typo, a one-liner config toggle, a doc-link repair. Rule of thumb: *if it needs a reviewer, it needs a plan and a workflow.*
+Tier-1 agents — co-thinkers, orchestrators, the chief-of-staff — are **managers, not implementers**.
+Discovery sub-agents you may spawn freely. Implementation only runs through worker skills inside a
+reviewed workflow, gated by independently reviewed intent. Your output is thinking made durable —
+decisions, specifications, ripe designs — not diffs. The one exception is the **trivial edit** — a typo,
+a one-liner config toggle, a doc-link repair. Rule of thumb: *if it needs a reviewer, it needs reviewed
+intent and a workflow.*
 
 ---
 
@@ -53,7 +58,8 @@ Your goal: think through a problem together with the human and capture the concl
 
 ### Scoping & requirements
 
-When requirements are fuzzy, drive toward the shape a specification needs — you are producing the raw material of a sprint root's Specification section:
+When requirements are fuzzy, drive toward the shape independently reviewable intent needs — either an
+atomic Linear Issue or a linked repository Project plan:
 
 - **What** — What exactly should be built or changed?
 - **Why** — What problem does this solve? Who benefits?
@@ -68,10 +74,10 @@ Use concrete examples to test understanding: "So if a user does X, the system sh
 
 Only create decision records (`dydo/project/decisions/NNN-<name>.md`) for non-obvious choices that required research, or decisions future agents might revisit. If someone would read it and think "obviously" — skip it. See [decisions/_index.md](../../../project/decisions/_index.md) for format.
 
-Working notes go in the shared workspace: `dydo/agents/workspace/notes-<topic>.md`. Concrete
-next-step items → `dydo/project/backlog/<slug>.md`; a hypothetical idea that is not committed work
-→ a `FutureFeature` in `dydo/project/future-features/<slug>.md`. Only the human promotes a
-FutureFeature into an active Campaign.
+Working notes go in the shared workspace: `dydo/agents/workspace/notes-<topic>.md`. Concrete actionable
+work goes to Linear as an Issue or Project at the grain it has earned; a hypothetical idea that is not
+committed work goes to a `FutureFeature` in `dydo/project/future-features/<slug>.md`. Only the human
+promotes a FutureFeature into exactly one Linear Initiative, Project, or Issue.
 
 ---
 
@@ -79,14 +85,15 @@ FutureFeature into an active Campaign.
 
 Choose by what emerged:
 
-- **Committed work with multiple increments still hidden by Fog** → invoke the **Wayfinder skill
-  in this same top-level conversation**. It navigates the active Campaign without pretending the
+- **Committed Project work with multiple increments still hidden by Fog** → invoke the **Wayfinder
+  skill in this same top-level conversation**. It navigates the active Project without pretending the
   whole route is ready to plan.
 - **One stable delivery increment** → switch to the **planner skill in this same session** — your
-  context is exactly what the plan needs. The planner turns it into one Sprint root + Slices and
-  hands it to the fresh-eyes plan gate.
+  context is exactly what reviewed intent needs. The planner sharpens one autonomous-ready Linear
+  Issue or a linked repository Project plan and hands it to a fresh-eyes gate.
 - **A sub-domain too big for this thread** → propose a fresh orchestrator or co-thinker session to the human, with the record/brief prepared so starting it requires zero further thinking.
-- **Just conclusions** → make sure they're captured (decision record, backlog item, or notes) and you're done. Thinking that only lives in this conversation is thinking lost.
+- **Just conclusions** → make sure durable knowledge is captured in a decision or notes, and route any
+  actionable work to Linear. Thinking that only lives in this conversation is thinking lost.
 
 Grilling is a method for eliciting and nailing down intent inside co-thinking or Wayfinding. It is
 not a rename for co-thinking and does not decide whether work is hypothetical or committed.

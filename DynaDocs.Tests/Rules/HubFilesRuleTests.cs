@@ -132,16 +132,17 @@ public class HubFilesRuleTests
     }
 
     [Fact]
-    public void ValidateFolder_SkipsProjectTasksFolder()
+    public void ValidateFolder_PreservesFrozenV2TaskCompatibilityException()
     {
-        // D4: project/tasks no longer requires _index.md — task files are transient.
+        var basePath = Path.Combine(Path.GetTempPath(), $"hub-rule-{Guid.NewGuid():N}");
+        var folder = Path.Combine(basePath, "project", "tasks");
         var docs = new List<DocFile>
         {
-            CreateDoc("project/tasks/_tasks.md"),
-            CreateDoc("project/tasks/some-task.md")
+            CreateDoc(ProjectPath("tasks", "_tasks.md")),
+            CreateDoc(ProjectPath("tasks", "some-task.md"))
         };
 
-        var violations = _rule.ValidateFolder("/base/project/tasks", docs, "/base").ToList();
+        var violations = _rule.ValidateFolder(folder, docs, basePath).ToList();
 
         Assert.Empty(violations);
     }
@@ -158,5 +159,10 @@ public class HubFilesRuleTests
             FileName = fileName,
             Content = "# Test"
         };
+    }
+
+    private static string ProjectPath(string folder, string fileName)
+    {
+        return string.Join('/', "project", folder, fileName);
     }
 }

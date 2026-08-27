@@ -1,6 +1,7 @@
 namespace DynaDocs.Rules;
 
 using DynaDocs.Models;
+using DynaDocs.Services;
 using DynaDocs.Utils;
 
 public class HubFilesRule : RuleBase
@@ -24,8 +25,8 @@ public class HubFilesRule : RuleBase
             yield break;
         }
 
-        // Skip project/tasks - task files are transient and not indexed (D4).
-        if (relativeFolderPath.Equals("project/tasks", StringComparison.OrdinalIgnoreCase))
+        // Project 3 removes this frozen-v2 compatibility exception with the corpus.
+        if (LegacyPmManifestService.IsLegacyTaskPath(relativeFolderPath))
         {
             yield break;
         }

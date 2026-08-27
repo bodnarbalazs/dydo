@@ -1,11 +1,12 @@
 namespace DynaDocs.Rules;
 
-using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
 public class SummaryRule : RuleBase
 {
+    internal const string SummaryPlaceholder = "(One-line summary)";
+
     public override string Name => "Summary";
     public override string Description => "First paragraph after title must be a 1-3 sentence summary";
 
@@ -26,9 +27,9 @@ public class SummaryRule : RuleBase
             yield break;
         }
 
-        if (doc.SummaryParagraph!.Trim() == IssueCreateHandler.SummaryPlaceholder)
+        if (doc.SummaryParagraph!.Trim() == SummaryPlaceholder)
         {
-            yield return CreateWarning(doc, $"Summary is the '{IssueCreateHandler.SummaryPlaceholder}' placeholder — replace with a real one-line summary");
+            yield return CreateWarning(doc, $"Summary is the '{SummaryPlaceholder}' placeholder — replace with a real one-line summary");
         }
     }
 }

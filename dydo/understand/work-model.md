@@ -5,130 +5,80 @@ type: concept
 
 # Work Model
 
-dydo tracks work at four nested levels — **Slice → Sprint → Campaign → Release**. The levels are defined by their **exit gate**, not their size: what has to be true for the work to be *done and sound* is the invariant; span (minutes to weeks) merely follows. This is the ontology behind the records under `dydo/project/` and the shape the Notion view mirrors. (A **Task** sits outside this chain: day-to-day tracked work in `project/tasks/`, with its own lifecycle.) An active Campaign may also carry an optional Wayfinding map, which navigates uncertainty without adding another level to the hierarchy.
+Linear owns dydo's live work graph; Git owns durable knowledge and proof. The boundary is deliberately
+one-way linking, not synchronization: Linear points to repository plans and evidence, while dydo never
+mirrors workflow status, assignments, or issue bodies.
 
-Two concepts are kept strictly orthogonal:
+## Canonical ownership
 
-- **Container** — where a unit of work sits in the hierarchy (which sprint, which campaign).
-- **Status** — where it is in its lifecycle (`backlog`, `active`, `done`…).
+| Concern | Canonical home |
+|---|---|
+| Initiatives, Projects, Issues, optional Milestones and Cycles | Linear |
+| Status, priority, assignee, dependencies, updates, review state | Linear |
+| Decisions, doctrine, reviewed Project plans, guides | dydo/Git |
+| Audit, inquisition, migration, and assimilation evidence | dydo/Git |
+| Release tags and changelog | Git |
+| FutureFeatures before and after human promotion | dydo/Git |
 
-Confusing the two is the classic PM tangle. "Backlog" is a **status**, not a container.
+An Initiative is an optional workspace-level goal. A Project is one bounded outcome owned by a Linear
+team. An Issue is the only actionable work item; use Sub-issues only when children need independent
+tracking. Milestones are optional checkpoints inside a Project, and Cycles are optional capacity
+timeboxes orthogonal to Projects. Labels provide restrained cross-cutting routing, not a second type
+system.
 
----
+## Reviewed intent
 
-## How work runs
+No implementation begins without a contract another agent can review independently.
 
-```mermaid
-flowchart TD
-    Y([you]) <-->|"hash out the issue,<br/>decisions recorded"| CT["co-thinker (skill)"]
-    CT --> PL["planner (skill)<br/>writes sprint root + slice files"]
-    PL --> PR{{"plan-review<br/>reviewer agent, plan resource — fresh eyes"}}
-    PR -->|"findings"| PL
-    PR -->|"no ambiguity left ⇒ active"| OR["orchestrator (skill)<br/>run-sprint workflow"]
-    OR -->|"per slice, parallel lanes"| CW["code-writer agent"]
-    CW --> RC["reviewer agent, code resource"]
-    RC -->|"loop until pass"| CW
-    RC -->|"slices merged serially"| AU["reviewer agent, merge-sprint resource<br/>(the audit)"]
-    AU -->|"verdict"| Y
-    Y -.->|"at larger milestones"| INQ["inquisition workflow<br/>(multi-lens sweep + verify)"]
-```
+- One atomic, autonomous-ready Issue can be its own reviewed contract.
+- Coordinated, cross-cutting, or architecture-sensitive work gets one reviewed repository Project plan.
+- The plan carries one `linear-project` URL, and its Linear Project links back to the published plan.
+- Each implementation Issue records the exact governing commit before execution and receives
+  independent review before human harmonization.
+- A Project closes only after an integrated audit against its linked plan and an assimilation brief
+  proportionate to the semantic change.
 
-Skills are the Tier-1 methodologies you invoke in-session (co-thinker, planner, orchestrator, chief-of-staff); agents are the spawned workers with tool profiles (code-writer, reviewer, test-writer, docs-writer); the reviewer's per-target rubrics are its skill resources.
+Branches, worktrees, sessions, workers, commits, PRs, and reviewer passes are execution evidence linked
+to an Issue. They are not extra levels in the work graph.
 
----
+## References and evidence
 
-## The Four Levels
+Use a branch-following GitHub URL for current human navigation and an exact commit permalink for the
+governing contract or historical proof. A PR or commit includes its Linear Issue key so Linear's GitHub
+integration can attach native execution evidence. Durable knowledge discovered during work is extracted
+to a Decision, guide, Project plan, audit, or assimilation brief instead of remaining only in comments
+or a session transcript.
 
-Each level is a gate. Work crosses it exactly when the gate's condition is met — nothing about elapsed time or line count.
+dydo has no Linear client, token, schema, poller, webhook receiver, cache, or Markdown mirror. Agents use
+Linear's official MCP, UI, API, and integrations outside the dydo runtime.
 
-| Level | One-liner | Exit gate | Typical span |
-|---|---|---|---|
-| **Slice** | The atom of implementation: one disjoint piece of a sprint | reviewer **PASS** (code resource) | minutes–hours |
-| **Sprint** | One plan's execution: root record + slices, `planning → plan-review → active → audit → done` | the **audit** (reviewer, merge-sprint resource) over the merged diff | hours–a day |
-| **Campaign** | One committed goal, one or more sprints; the unit of "actually done and sound" | **inquisition QA gate** | days |
-| **Release** | One ship vehicle; a set of campaigns | **ship checklist** | weeks+ |
+## FutureFeatures
 
-### Slice
+A FutureFeature is an unscheduled, non-actionable repo-native idea. It has `area: project`,
+`type: concept`, and `status: idea` until the human promotes it. Promotion creates exactly one Linear
+Initiative, Project, or Issue, adds its stable URL as `linear-reference`, and changes the status to the
+terminal `promoted`. Subsequent delivery state exists only in Linear. Every idea includes a non-empty
+`## Rationale` and a `## Related` section with at least one resolving, non-Linear durable-knowledge link.
+It carries no assignment, priority, blocker, dependency, Project, Initiative, Cycle, Milestone, due-date,
+estimate, label, parent, Sub-issue, team, workflow, or delivery-state fields.
 
-The smallest scheduled unit: one code → review → pass cycle inside a workflow, executed against its slice file — the self-contained contract the plan gate certified. Its gate is a reviewer verdict.
+## Navigating uncertainty
 
-### Sprint
+A committed Project may use a low-resolution Wayfinding map when the route cannot yet be planned
+responsibly. Waypoints capture navigation, the Frontier identifies what is actionable, and Fog records
+relevant uncertainty. None is a live work type: when delivery becomes actionable, it enters Linear as
+an Issue or Project.
 
-A sprint is one plan: the root record (specification + slice map) plus its slices. It enters implementation only through the **plan gate** (`plan-review`, fresh eyes), and exits through the **audit** — the whole merged diff reviewed as one unit against the root's acceptance criteria. The human re-engages at the audit verdict to shape what's next.
+## Retired repository PM model
 
-### Campaign
-
-A campaign is one committed goal pursued across one or more sprints — the unit at which we claim work is genuinely finished and trustworthy. Its gate is the **inquisition** (multi-lens sweep, adversarially verified findings). Per-sprint inquisitions are overkill; the QA gate lives at campaign end (on-demand for critical work in between).
-
-When the committed goal is clear but its route cannot responsibly be planned all at once, the
-Campaign may own an optional, low-resolution **Wayfinding map**. A **Waypoint** is an orthogonal
-navigation node, not a Record, Task, Sprint, or Slice. It may point to a Decision, evidence
-artifact, Task, or Sprint; a delivery Waypoint points to one Sprint, and that Sprint alone
-decomposes into Slices. The **Frontier** contains currently actionable Waypoints, while **Fog** is
-relevant Campaign uncertainty not yet sharp enough to become one.
-
-Wayfinding does not change execution topology. HITL work stays with the human in the current
-top-level conversation. AFK research may use bounded native subagents that return evidence to that
-manager. The manager can then plan the visible Sprint and send its Slices through the ordinary
-workflow and audit. A FutureFeature remains an unscheduled hypothetical outside this process until
-the human promotes it into an active Campaign.
-
-### Release
-
-A release is different in kind. Campaigns, sprints, and slices are **work** — they burn down through workflows. A release is a **goal state**: a title, a spec reference, its set of campaigns, and a status, gated by a ship checklist. No workflow machinery runs a release.
-
----
-
-## Backlog Is a Status, Not a Container
-
-A backlog item is simply a task (or campaign) with `status: backlog` and no sprint attached — a floating unit awaiting scheduling. Floating tasks are explicitly allowed: a backlog task may exist with no sprint container. Nothing needs a dedicated "backlog folder" for this to be true; the status field carries the meaning.
-
-The **idea funnel** rides this: a thought dropped anywhere (a Notion row, an Obsidian file, the `dydo` CLI) lands as a domain-tagged `status: backlog` task file, which a domain orchestrator later pulls from its queue.
-
----
-
-## Promotion and Demotion Are Cheap
-
-The ontology is fluid; the gates are fixed. A task discovered to be larger than one agent-loop is **promoted** to a sprint or a campaign — a frontmatter edit or a file move, nothing heavier. Work over-scoped can be **demoted** the same way. Because a level *is* its gate, re-leveling a unit just changes which gate it must eventually clear; no work is lost in the move. Treat promotion/demotion as normal and routine, not exceptional.
-
----
-
-## Issue ≠ Task
-
-An **issue** is an *observed problem* — a bug report, a smell, a gap someone noticed. A **task** is *scheduled work*. They are different objects:
-
-- An issue records that something is wrong; it does not, by itself, schedule a fix.
-- A task is a committed unit of work with a gate.
-- An issue **spawns** a task when the fix is scheduled.
-
-Keeping them distinct prevents the "every observation becomes an obligation" pile-up and lets triage decide what actually gets scheduled.
-
----
-
-## Frontmatter Is Canonical, Folders Are Derived
-
-The canonical truth of a work object is its **frontmatter** — `status`, `priority`, `sprint`, `campaign`, `blocked-by`, and so on. Folder placement is **derived presentation**: an ergonomic view (Obsidian-friendly open/closed folders, hub grouping) that dydo regenerates from the frontmatter (the `dydo fix` / hub-regen pattern).
-
-Encoding status in the *path* (e.g. `issues/open/` vs `issues/closed/`) is deliberately avoided: a path encoding fares worse under 3-way merge and Notion sync than a single frontmatter line. Code pools objects from all folders into one list and works from that; folders are for humans, frontmatter is for the machine. Notion mirrors this — one database with a default filter is presentation, not synced structure (Decision 025 §2).
-
----
-
-## The Gates-Are-Global Lesson
-
-Slicing a sprint into parallel units assumes the slices are **independent**. They are only independent if *nothing they share* can fail for all of them at once.
-
-**Disjoint files do not make disjoint slices.** When repo-wide gates couple all in-tree work — a `dydo check` that validates the whole tree, a test suite that compiles the entire solution, a coverage gate over the full assembly — a slice that trips a shared gate blocks *every* sibling, even ones editing entirely separate files. The seam is the gate, not the file set.
-
-The rule that follows: **sequence tree-shared work.** Parallelize only slices whose gates are genuinely disjoint; when slices share a repo-wide gate, order them so a red gate never strands unrelated work. This is why a docs-only slice (whose gate is `dydo check` plus the doc-consistency tests) is sequenced against source slices that recompile the same tree, rather than run blind against them.
-
----
+Campaign, Sprint, Slice, Task, backlog item, and the separate observed-problem Issue are retired as
+canonical work objects. “Slice” may remain an informal verb for making implementation reviewable; it
+creates no repo record, state machine, command, or Linear type. The frozen v2 corpus remains temporarily
+tracked only under the manifest-backed 3.0 migration boundary and cannot grow.
 
 ## Related
 
-- [Architecture Overview](./architecture.md) — Technical structure of the framework
-- [Coding Standards](../guides/coding-standards.md) — How code is written here
-- [dydo 2.0 Campaign Roadmap](../project/backlog/dydo-2-campaign-roadmap.md) — A campaign modeled sprint-by-sprint
-- [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) — Native pivot: two-tier identity, workflows own orchestration
-- [Decision 025](../project/decisions/025-notion-sync-architecture.md) — Canonical files, swappable view adapter (frontmatter-canonical basis)
-- [Decision 026](../project/decisions/026-tier1-managers-doctrine.md) — Tier-1 managers; code-writing happens in workflows
-- [Decision 028](../project/decisions/028-model-tier-abstraction.md) — Model tiers bound per role/stage by the compiler
+- [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
+- [Linear Issue Lifecycle](./task-lifecycle.md)
+- [dydo Glossary](../reference/dydo-glossary.md)
+- [Writing Good Briefs](../guides/writing-good-briefs.md)

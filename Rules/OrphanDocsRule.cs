@@ -1,6 +1,7 @@
 namespace DynaDocs.Rules;
 
 using DynaDocs.Models;
+using DynaDocs.Services;
 using DynaDocs.Utils;
 
 public class OrphanDocsRule : RuleBase
@@ -23,11 +24,8 @@ public class OrphanDocsRule : RuleBase
         // Skip folder meta files (_foldername.md)
         if (IsFolderMetaFile(doc)) return [];
 
-        // Skip task files - they are transient (one per agent role-assignment) and not indexed.
-        // Meta files (_tasks.md, _index.md) still go through normal validation.
         var normalized = PathUtils.NormalizePath(doc.RelativePath);
-        if (normalized.StartsWith("project/tasks/", StringComparison.OrdinalIgnoreCase) &&
-            !doc.FileName.StartsWith("_"))
+        if (LegacyPmManifestService.IsLegacyTaskPath(normalized))
         {
             return [];
         }

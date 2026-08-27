@@ -16,6 +16,7 @@ internal static class CheckDocValidator
         var scanner = new DocScanner(parser);
         var linkResolver = new LinkResolver();
         var typesService = new FrontmatterTypesService(basePath);
+        var legacyPmManifestService = new LegacyPmManifestService(basePath);
 
         // agents/ (and the other machine-local dirs) are excluded by the scanner's
         // scanExclude invariants — files and folders share that one mechanism.
@@ -29,7 +30,7 @@ internal static class CheckDocValidator
             ? allFolders
             : allFolders.Where(f => IsUnderScope(f, reportScope)).ToList();
 
-        var rules = CreateRules(linkResolver, typesService);
+        var rules = CreateRules(linkResolver, typesService, legacyPmManifestService);
         var result = new ValidationResult { TotalFilesChecked = docsToValidate.Count };
 
         foreach (var doc in docsToValidate)
@@ -60,13 +61,17 @@ internal static class CheckDocValidator
         return normPath == normScope || normPath.StartsWith(normScope + "/", StringComparison.Ordinal);
     }
 
-    private static List<IRule> CreateRules(ILinkResolver linkResolver, IFrontmatterTypesService typesService)
+    private static List<IRule> CreateRules(
+        ILinkResolver linkResolver,
+        IFrontmatterTypesService typesService,
+        LegacyPmManifestService legacyPmManifestService)
     {
         return
         [
             new NamingRule(),
             new RelativeLinksRule(),
             new FrontmatterRule(typesService),
+            new LegacyPmRecordRule(legacyPmManifestService),
             new SummaryRule(),
             new BrokenLinksRule(linkResolver),
             new HubFilesRule(),

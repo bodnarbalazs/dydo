@@ -184,53 +184,49 @@ public class OrphanDocsRuleTests
     [Fact]
     public void Validate_ChecksSubfolderFromMainHub()
     {
-        // project/tasks/task-1.md should be reachable from project/_index.md
-        var hub = CreateDoc("project/_index.md", linksTo: ["./tasks/task-1.md"]);
-        var task = CreateDoc("project/tasks/task-1.md");
-        var allDocs = new List<DocFile> { hub, task };
+        var hub = CreateDoc("project/_index.md", linksTo: ["./records/record-1.md"]);
+        var record = CreateDoc("project/records/record-1.md");
+        var allDocs = new List<DocFile> { hub, record };
 
-        var violations = _rule.Validate(task, allDocs, BasePath).ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
-    public void Validate_TaskFile_NotFlaggedAsOrphan()
-    {
-        // D4: task files are transient — never flagged as orphans, even when not linked.
-        var hub = CreateDoc("project/_index.md", linksTo: []);
-        var task = CreateDoc("project/tasks/some-task.md");
-        var allDocs = new List<DocFile> { hub, task };
-
-        var violations = _rule.Validate(task, allDocs, BasePath).ToList();
+        var violations = _rule.Validate(record, allDocs, BasePath).ToList();
 
         Assert.Empty(violations);
     }
 
     [Fact]
-    public void Validate_TasksMetaFile_StillValidatedAsPermanentDoc()
+    public void Validate_PreservesFrozenV2TaskCompatibilityException()
     {
-        // _tasks.md is folder-meta — exempted by IsFolderMetaFile, not by the task skip.
         var hub = CreateDoc("project/_index.md", linksTo: []);
-        var meta = CreateDoc("project/tasks/_tasks.md");
-        var allDocs = new List<DocFile> { hub, meta };
+        var doc = CreateDoc(ProjectPath("tasks", "some-record.md"));
+        var allDocs = new List<DocFile> { hub, doc };
 
-        var violations = _rule.Validate(meta, allDocs, BasePath).ToList();
+        var violations = _rule.Validate(doc, allDocs, BasePath).ToList();
 
-        // Folder meta — already exempted; no orphan warning.
         Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_NonTaskLegacyRecord_StillUsesOrdinaryReachability()
+    {
+        var hub = CreateDoc("project/_index.md", linksTo: []);
+        var record = CreateDoc(ProjectPath("sprints", "some-record.md"));
+        var allDocs = new List<DocFile> { hub, record };
+
+        var violations = _rule.Validate(record, allDocs, BasePath).ToList();
+
+        Assert.Single(violations);
     }
 
     [Fact]
     public void Validate_TransitiveReachabilityThroughSubfolder()
     {
         // Hub -> subfolder index -> doc in subfolder
-        var hub = CreateDoc("project/_index.md", linksTo: ["./tasks/_index.md"]);
-        var subfolderHub = CreateDoc("project/tasks/_index.md", linksTo: ["./task-1.md"]);
-        var task = CreateDoc("project/tasks/task-1.md");
-        var allDocs = new List<DocFile> { hub, subfolderHub, task };
+        var hub = CreateDoc("project/_index.md", linksTo: ["./records/_index.md"]);
+        var subfolderHub = CreateDoc("project/records/_index.md", linksTo: ["./record-1.md"]);
+        var record = CreateDoc("project/records/record-1.md");
+        var allDocs = new List<DocFile> { hub, subfolderHub, record };
 
-        var violations = _rule.Validate(task, allDocs, BasePath).ToList();
+        var violations = _rule.Validate(record, allDocs, BasePath).ToList();
 
         Assert.Empty(violations);
     }
@@ -336,5 +332,10 @@ public class OrphanDocsRuleTests
             Content = "# Test",
             Links = links
         };
+    }
+
+    private static string ProjectPath(string folder, string fileName)
+    {
+        return string.Join('/', "project", folder, fileName);
     }
 }

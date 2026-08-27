@@ -68,13 +68,12 @@ public class FolderMetaFilesRuleTests
     [Fact]
     public void ValidateFolder_SkipsNestedFolders()
     {
-        // project/tasks/subtask/ should not require a meta file (not a direct child of main folder)
         var docs = new List<DocFile>
         {
-            CreateDoc("project/tasks/subtask/task1.md")
+            CreateDoc("project/records/nested/record-1.md")
         };
 
-        var violations = _rule.ValidateFolder("/base/project/tasks/subtask", docs, "/base").ToList();
+        var violations = _rule.ValidateFolder("/base/project/records/nested", docs, "/base").ToList();
 
         Assert.Empty(violations);
     }

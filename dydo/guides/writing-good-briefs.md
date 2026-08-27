@@ -5,39 +5,52 @@ type: guide
 
 # Writing Good Briefs
 
-The self-containment bar for anything handed to a fresh agent — a slice file's implementation detail, a discovery sub-agent's prompt, a workflow stage's instructions. The plan gate reviews slice files against exactly this bar.
+The self-containment bar for a Linear Issue, Project-plan lane, or prompt handed to a fresh agent. A
+brief is good when another agent can execute and review it without reconstructing the author's private
+conversation.
 
----
+## Choose the right contract
 
-## What makes a good brief
-
-- **Self-contained** — The receiving agent can work without asking follow-up questions. It starts fresh: no memory of your conversation, your reasoning, or the files you looked at. Everything it needs must be in the brief.
-- **Actionable** — Clear about what needs to be done, not just what happened.
-- **Scoped** — One deliverable, not a laundry list. If it needs two reviewers, it's two briefs.
-
-**Never write model choices into a brief.** Which model a worker runs on comes from the dydo config, bound at `dydo sync` time (and rebound by `dydo model cap`/`uncap` during an outage) — it is config's job, not prose. A brief that says "run the reviewer on model X" bypasses the single source of truth and outlives the conditions that motivated it (balazs, 2026-07-08). If the bound model is unavailable, that's a `dydo model cap` decision — escalate, don't route around it in text.
-
----
+One atomic, autonomous-ready Issue can be the reviewed contract. Coordinated, cross-cutting, or
+architecture-sensitive work first receives a reviewed repository Project plan, then Issues that link its
+exact governing commit. A mechanical checklist belongs inside an Issue; create Sub-issues only when the
+children need independent ownership, status, dependencies, or evidence.
 
 ## Brief anatomy
 
-Four parts — the same skeleton a slice file's sections carry:
+1. **Outcome and context** — what must become true and why it matters.
+2. **Scope and ownership** — exact files, systems, or responsibilities in bounds, plus explicit
+   exclusions.
+3. **Dependencies and references** — blockers, governing Decision, reviewed plan, and exact commit.
+4. **Acceptance evidence** — observable behavior, test commands, review expectations, and artifacts to
+   link back to the Issue.
 
-1. **Context — what and why.** One or two sentences of background. Why is this work needed?
-2. **Task — what needs doing.** Specific, concrete actions. Not "fix the auth" but "add input validation to the login endpoint in `Services/AuthService.cs`."
-3. **File references — where to look.** List the files the agent should read, and the existing pattern to copy with its path. Agents waste time searching when you could just tell them.
-4. **Success criteria — how to know it's done.** The exact gate commands that must be green, the behavior that must be observable.
+The receiving agent starts with no memory of the shaping conversation. Avoid “as discussed,” implicit
+file ownership, vague success such as “make it work,” or acceptance that exists only in someone's head.
 
-**The test:** could a fresh agent with only this text and the coding standards deliver the work without a single decision or question? Any interpretive latitude is a gap — and in a slice file, a plan-review finding.
+## Keep runtime choices out of prose
 
-## Common mistakes
+Do not hard-code a model choice in a durable brief. Runtime configuration and the host platform own
+model availability, permissions, and agent spawning. State the capability, independence, and evidence
+the work requires; escalate a runtime limitation instead of preserving a temporary workaround in the
+Issue.
 
-- **Referencing the conversation** — "as we discussed" means nothing to a fresh context.
-- **Describing the problem without the ask** — a bug report is not a brief; say what to do about it.
-- **Vague success** — "make it work" forces the agent to guess when to stop.
-- **Hidden dependencies** — if the work needs something merged first, say so; the agent can't see your board.
+## Link work without mirroring it
+
+A Linear Issue links the relevant durable repository knowledge and its governing commit. Commits and PRs
+reference the Issue key. New reusable knowledge flows back into a Decision, guide, plan, audit, or
+assimilation brief. Do not create a Markdown copy of the Issue or copy Linear workflow fields into
+frontmatter.
+
+## Review check
+
+Before execution, ask: could a fresh agent deliver this without making a product decision, and could an
+independent reviewer determine pass or fail from the same text? If either answer is no, the brief is not
+ready.
 
 ## Related
 
-- [Coding Standards](./coding-standards.md) — the bar the delivered work is held to
-- [dydo-glossary.md](../reference/dydo-glossary.md) — slice, lane, gate — the terms briefs are written in
+- [Work Model](../understand/work-model.md)
+- [Linear Issue Lifecycle](../understand/task-lifecycle.md)
+- [Coding Standards](./coding-standards.md)
+- [dydo Glossary](../reference/dydo-glossary.md)

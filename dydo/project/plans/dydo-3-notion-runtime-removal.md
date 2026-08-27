@@ -169,8 +169,8 @@ Edit surviving hot files:
   decision path; retain `RestoreExpiredModelCapsIfDue`.
 - `Commands/ModelCommand.cs`: replace watchdog-specific status/help wording with guard-driven expiry
   wording; retain cap/status/uncap behavior.
-- `Commands/TaskCommand.cs`: remove the obsolete distinction from the Notion-synced Slice board. Its
-  surviving 3.0 command disposition comes from Project 2; this lane makes no independent ontology choice.
+- `Commands/TaskCommand.cs` is deleted by Project 2 before this Project begins; this plan must not recreate
+  or edit it. The Project-2 removal is the complete 3.0 command disposition.
 - `Services/ModelCapService.cs`: remove watchdog terminology and replace the logging dependency with the
   smallest command-neutral behavior (no new daemon/logger subsystem). Preserve expiry, config save,
   marker cleanup, and one recompile.
@@ -193,13 +193,16 @@ reference, delete:
 - `Serialization/SyncModelJsonContext.cs`;
 - the sync-snapshot registrations/context block in `Serialization/DydoJsonContext.cs`.
 
-Do not delete `Commands/SyncCommand.cs`; it is the native artifact compiler. `Utils/FrontmatterParser.cs`
-survives; the generic-engine lane owns its comment cleanup and the matching
-`DynaDocs.Tests/Utils/FrontmatterParserTests.cs` comment cleanup so deleted `SyncDocFile`/merge behavior is
-no longer named as an authority. The same lane edits `DynaDocs.Tests/coverage/tier_registry.json` to
-remove the five deleted Sync module entries while preserving the surviving FrontmatterParser and
-TitlePrettifier tiers. Local search found no other tracked coverage registry/cache companion naming those
-paths.
+`Utils/FrontmatterParser.cs` and `DynaDocs.Tests/Utils/FrontmatterParserTests.cs` survive Project 2 and
+Project 5. `Commands/SyncCommand.cs`, `Services/RoleDefinitionService.cs`, and
+`Services/FrontmatterExtractor.cs` remain native-compiler consumers, so the generic-engine lane keeps the
+parser, runs its tests, and removes only sync-specific commentary if its consumer scan names stale links.
+
+Do not delete `Commands/SyncCommand.cs`; it is the native artifact compiler. The generic-engine lane
+retains `Utils/FrontmatterParser.cs`, `DynaDocs.Tests/Utils/FrontmatterParserTests.cs`, and their coverage
+entry, and proves the three named native-compiler consumers remain after Sync deletion. It removes only
+their stale sync-specific comments if present. `TitlePrettifier` remains a surviving tier. Local search
+found no other tracked coverage registry/cache companion naming those paths.
 
 ### Templates, config, and packaging
 
@@ -219,9 +222,9 @@ Edit:
 - `dydo.json`: remove only the `notion` object, watchdog-only nudge alternatives, and the
   `_system/sync-model.json` framework hash. This is a dirty serial-integration file; preserve all
   unrelated current changes byte-for-byte.
-- `Services/FolderScaffolder.cs`: remove Notion-spine descriptions and its sync-model dependency before
-  `Sync/Model/**` is deleted. Apply the Project-2-approved 3.0 folder contract rather than inventing an
-  ontology in this lane.
+- `Services/FolderScaffolder.cs`: Project 2 first removes task/issue/backlog scaffolding; this Project's
+  later lane removes only Notion-spine descriptions and its sync-model dependency before `Sync/Model/**`
+  is deleted. Apply the Project-2-approved 3.0 folder contract rather than inventing an ontology here.
 
 ### Test deletion and retained contract coverage
 
@@ -247,15 +250,16 @@ Edit, do not delete, cross-cutting tests that still guard surviving behavior:
 - `DynaDocs.Tests/Integration/IntegrationTestBase.cs` removes the watchdog spawn override and its remote
   mutation warning after the start path is gone.
 - `DynaDocs.Tests/Integration/GuardIntegrationTests.cs` removes the watchdog command case while retaining
-  shell/guard coverage. `DynaDocs.Tests/Integration/IssueTests.cs` and
-  `DynaDocs.Tests/Integration/TaskTests.cs` retain their title/frontmatter assertions but rename them and
-  remove Notion-specific rationale.
+  shell/guard coverage. Project 2 deletes `DynaDocs.Tests/Integration/IssueTests.cs`,
+  `DynaDocs.Tests/Integration/TaskTests.cs`, and `DynaDocs.Tests/Integration/WorkflowTests.cs`; this
+  Project does not retain, rename, or recreate them.
 - `DynaDocs.Tests/Services/TemplateUpdateTests.cs`, `FolderScaffolderTests.cs`,
   `CompletionProviderTests.cs`, and config/template generator/integration tests prove the removed
   sync-model/config/command entries do not regenerate.
 - `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs` proves a valid workflow graph without the
   Notion newline/fidelity gate.
-- `DynaDocs.Tests/Utils/FrontmatterParserTests.cs` remains; only stale explanatory coupling is removed.
+- `DynaDocs.Tests/Utils/FrontmatterParserTests.cs` survives Project 2 and Project 5; the generic-engine
+  lane retains it as native-compiler coverage and removes only stale sync-specific commentary.
 
 ### Documentation and release surface
 
@@ -315,9 +319,9 @@ commit and never stage unowned files.
 | # | Issue / lane | Exact ownership | Depends on | Gate |
 |---|---|---|---|---|
 | 1 | Freeze and seal the pre-deletion baseline | `dydo/project/migrations/3.0-notion-freeze.md`; `dydo/project/migrations/3.0-pm-records.json` record-row `target`/`evidence` freeze values only; `dydo/project/migrations/3.0-pm-records.md` `Freeze evidence` section only; `dydo/project/migrations/3.0-pm-v2-final-ruleset.request.json`; `dydo/project/migrations/3.0-pm-v2-final-ruleset.readback.json` | published reviewed plan | read-only dry-run boundary, stopped daemon, bounded/no live mutation, clean/excluded-path ledger, pushed exact SHA, protected `pm-v2-final` match |
-| 2 | Remove provider, daemon, config, and command seams | `Sync/Notion/**`; `DynaDocs.Tests/Sync/Notion/**`; `Commands/NotionCommand.cs`; `Commands/WatchdogCommand.cs`; `Services/WatchdogService.cs`; `Services/WatchdogLogger.cs`; `Models/NotionConfig.cs`; `Models/DydoConfig.cs`; first serial edit of `Serialization/DydoJsonContext.cs`; `Serialization/NotionJsonContext.cs`; `DynaDocs.csproj`; `Program.cs`; `Commands/GuardCommand.cs`; `Commands/HelpCommand.cs`; `Commands/ModelCommand.cs`; `Commands/TaskCommand.cs`; `Services/ModelCapService.cs`; `Services/CompletionProvider.cs`; `Services/ConfigFactory.cs`; `Utils/PathUtils.Discovery.cs`; `Services/OffLimitsService.cs`; `DynaDocs.Tests/DynaDocs.Tests.csproj`; `DynaDocs.Tests/Commands/NotionCommandTests.cs`; `DynaDocs.Tests/Commands/WatchdogCommandTests.cs`; `DynaDocs.Tests/Commands/CommandSmokeTests.cs`; `DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs`; `DynaDocs.Tests/Services/WatchdogServiceTests.cs`; `DynaDocs.Tests/Services/WatchdogLoggerTests.cs`; `DynaDocs.Tests/Services/WatchdogAutoStartTests.cs`; `DynaDocs.Tests/Services/CompletionProviderTests.cs`; `DynaDocs.Tests/Services/ConfigFactoryTests.cs`; `DynaDocs.Tests/Services/ModelCapServiceTests.cs`; `DynaDocs.Tests/Commands/ModelCommandTests.cs`; `DynaDocs.Tests/Integration/IntegrationTestBase.cs`; `DynaDocs.Tests/Integration/GuardIntegrationTests.cs`; `DynaDocs.Tests/Integration/IssueTests.cs`; `DynaDocs.Tests/Integration/TaskTests.cs` | 1 | exact lane-2 build/filter and no executable start/config route |
+| 2 | Remove provider, daemon, config, and command seams | `Sync/Notion/**`; `DynaDocs.Tests/Sync/Notion/**`; `Commands/NotionCommand.cs`; `Commands/WatchdogCommand.cs`; `Services/WatchdogService.cs`; `Services/WatchdogLogger.cs`; `Models/NotionConfig.cs`; `Models/DydoConfig.cs`; first serial edit of `Serialization/DydoJsonContext.cs`; `Serialization/NotionJsonContext.cs`; `DynaDocs.csproj`; `Program.cs`; `Commands/GuardCommand.cs`; `Commands/HelpCommand.cs`; `Commands/ModelCommand.cs`; `Services/ModelCapService.cs`; `Services/CompletionProvider.cs`; `Services/ConfigFactory.cs`; `Utils/PathUtils.Discovery.cs`; `Services/OffLimitsService.cs`; `DynaDocs.Tests/DynaDocs.Tests.csproj`; `DynaDocs.Tests/Commands/NotionCommandTests.cs`; `DynaDocs.Tests/Commands/WatchdogCommandTests.cs`; `DynaDocs.Tests/Commands/CommandSmokeTests.cs`; `DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs`; `DynaDocs.Tests/Services/WatchdogServiceTests.cs`; `DynaDocs.Tests/Services/WatchdogLoggerTests.cs`; `DynaDocs.Tests/Services/WatchdogAutoStartTests.cs`; `DynaDocs.Tests/Services/CompletionProviderTests.cs`; `DynaDocs.Tests/Services/ConfigFactoryTests.cs`; `DynaDocs.Tests/Services/ModelCapServiceTests.cs`; `DynaDocs.Tests/Commands/ModelCommandTests.cs`; `DynaDocs.Tests/Integration/IntegrationTestBase.cs`; `DynaDocs.Tests/Integration/GuardIntegrationTests.cs` | 1; Project 2 landed | exact lane-2 build/filter and no executable start/config route |
 | 3 | Decouple template, scaffold, config file, and sync model | `Commands/TemplateCommand.cs`; first serial edit of `Services/TemplateGenerator.cs`; `Services/FolderScaffolder.cs`; `Templates/sync-model.template.json`; `dydo/_system/sync-model.json`; serial `dydo.json` merge; `DynaDocs.Tests/Services/TemplateUpdateTests.cs`; `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`; `DynaDocs.Tests/Services/FolderScaffolderTests.cs`; `DynaDocs.Tests/Integration/TemplateCommandTests.cs`; `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`; `DynaDocs.Tests/Services/ConfigServiceTests.cs` | 2; reviewed `dydo/project/plans/dydo-3-linear-native-work-model.md` at its published PASS commit and [Linear Project 2](https://linear.app/bodnar-balazs/project/dydo-30-adopt-linear-native-work-model-8145ca3f78ad) resource | exact lane-3 build/filter, `dydo template update --diff`, no sync-model regeneration |
-| 4 | Remove consumerless generic engine and its tests | non-Notion `Sync/**`; all `DynaDocs.Tests/Sync/**`; `Models/SyncDoc.cs`; `Models/SyncField.cs`; `DynaDocs.Tests/Models/SyncDocTests.cs`; `Serialization/SyncModelJsonContext.cs`; second serial edit of `Serialization/DydoJsonContext.cs`; `Utils/FrontmatterParser.cs`; `DynaDocs.Tests/Utils/FrontmatterParserTests.cs`; `DynaDocs.Tests/coverage/tier_registry.json` | 3 consumer scan | exact lane-4 build/filter, zero generic-engine production/test/coverage consumers |
+| 4 | Remove consumerless generic engine and its tests | non-Notion `Sync/**`; all `DynaDocs.Tests/Sync/**`; `Models/SyncDoc.cs`; `Models/SyncField.cs`; `DynaDocs.Tests/Models/SyncDocTests.cs`; `Serialization/SyncModelJsonContext.cs`; second serial edit of `Serialization/DydoJsonContext.cs`; `DynaDocs.Tests/coverage/tier_registry.json` | 3 consumer scan | exact lane-4 build/filter, zero generic-engine production/test/coverage consumers; `Utils/FrontmatterParser.cs` and `DynaDocs.Tests/Utils/FrontmatterParserTests.cs` remain and their three native-compiler consumers are asserted |
 | 5 | Rewrite active docs and built-in templates | `README.md`; `npm/README.md`; `dydo/reference/_index.md`; `dydo/reference/about-dynadocs.md`; `dydo/reference/dydo-commands.md`; deletion of `dydo/reference/notion-sync.md`; deletion of `dydo/reference/notion-oss-survey.md`; `dydo/understand/about.md`; `dydo/understand/architecture.md`; `dydo/understand/work-model.md`; `dydo/guides/orchestration-pitfalls.md`; `dydo/guides/migrating-dydo-1x-to-2x.md`; new `dydo/guides/migrating-dydo-2x-to-3x.md`; new `dydo/project/migrations/dydo-3-main-project-adoption.md`; `Templates/about-dynadocs.template.md`; `Templates/dydo-commands.template.md`; second serial edit of `Services/TemplateGenerator.cs`; `DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs`; `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`; `DynaDocs.Tests/Services/TemplateUpdateTests.cs` | 3; reviewed `dydo/project/plans/dydo-3-linear-native-work-model.md` at its published PASS commit and [Linear Project 2](https://linear.app/bodnar-balazs/project/dydo-30-adopt-linear-native-work-model-8145ca3f78ad) resource | exact lane-5 docs/template checks, links, `dydo check`, executable active-surface scan |
 | 6 | Repair release gates and integrate 3.0.0 | `.github/workflows/release.yml`; `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`; final version/`PackageReleaseNotes` edit of `DynaDocs.csproj`; `npm/package.json`; new `dydo/project/changelog/2026/2026-08-27/dydo-3-0-0-linear-pm-and-notion-runtime-removal.md`; final release section in `dydo/guides/migrating-dydo-2x-to-3x.md`; final release section in `dydo/project/migrations/dydo-3-main-project-adoption.md`; new `dydo/project/migrations/3.0-v3-release-ruleset.request.json`; new post-tag `dydo/project/migrations/3.0-v3-release-ruleset.readback.json` | 2–5; Projects 2–3 integrated; Project 4 explicit human acceptance before ruleset/tag/publication | exact lane-6 filter, full/AOT/pack/docs/audit gates, protected exact `v3.0.0` tag |
 
@@ -349,11 +353,13 @@ Issue's focused gate after its edit:
 | `DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs` | Issue 2 removes deleted command expectations | Issue 5 proves final generated command docs |
 | `DynaDocs.Tests/Services/TemplateGeneratorTests.cs` | Issue 3 removes sync-model/Notion expectations | Issue 5 updates final product-prose expectations |
 | `DynaDocs.Tests/Services/TemplateUpdateTests.cs` | Issue 3 removes sync-model generation/hash cases | Issue 5 proves final source/generated template parity |
+| `dydo/reference/_index.md` | Project 2 lands Linear-native index wording | Issue 5 removes the deleted Notion reference entries |
+| `DynaDocs.Tests/Utils/FrontmatterParserTests.cs` | Project 2 preserves the parser and updates only repository-PM expectations if needed | Issue 4 retains it, proves its native-compiler consumers, and cleans only stale sync-specific commentary |
 | `dydo/guides/migrating-dydo-2x-to-3x.md` | Issue 5 creates the migration guide | Issue 6 adds final 3.0.0 release/tag/package observables |
 | `dydo/project/migrations/dydo-3-main-project-adoption.md` | Issue 5 creates the adoption playbook | Issue 6 adds final released-version observables |
-| `dydo.json` | its current dirty-tree owner lands or records the existing edit | Issue 3 removes only `notion`, watchdog nudge alternatives, and the sync-model hash |
-| `dydo/project/migrations/3.0-pm-records.json` | Project 1 disposition owner lands the ratified manifest | Issue 1 adds only exact freeze targets/evidence after tagging |
-| `dydo/project/migrations/3.0-pm-records.md` | Project 1 disposition owner lands the ratified review surface | Issue 1 adds only `Freeze evidence` after tagging |
+| `dydo.json` | its current dirty-tree owner lands or records the existing edit; Project 2 removes only task/issue structure and command vocabulary | Issue 3 removes only `notion`, watchdog nudge alternatives, and the sync-model hash |
+| `dydo/project/migrations/3.0-pm-records.json` | Project 1 disposition owner lands the unratified inventory/manifest; Project 3 alone records human ratification and applies dispositions | Issue 1 adds only exact freeze targets/evidence after tagging |
+| `dydo/project/migrations/3.0-pm-records.md` | Project 1 disposition owner lands the unratified review surface; Project 3 alone records human ratification | Issue 1 adds only `Freeze evidence` after tagging |
 
 Project 2 must land before Issues 3 and 5. Its reviewed plan must contain an `Owned path overlap with
 Project 5` table. Every overlap with this plan's exact Issue-3/5 paths must say `Project 2 first, Project
@@ -494,12 +500,46 @@ enters `Todo`.
    result. In `3.0-pm-records.json`, update exactly the rows whose effective disposition is
    `extract-then-remove`, `remove-historical`, `cancel-remove`, or `drop-duplicate`, where effective means
    `finalDisposition` for a human-ratified row and `proposedDisposition` otherwise. Set their existing
-   commit target to the exact SHA permalink where required and append
-   `{ "kind": "freeze-commit", "value": "<exact-sha>" }` to `evidence`; do not add a top-level schema
-   field. This records immutable recovery evidence only; it does not ratify a disposition. Mirror all row
-   IDs/counts and the separately counted human-ratified subset in the `Freeze evidence` section of
-   `3.0-pm-records.md`. Commit these three post-freeze evidence updates plus the read-back JSON without
-   moving `pm-v2-final`. Fail the gate on any mismatch. No bypass actor is permitted.
+   commit target to the exact commit permalink where required and append
+   `{ "kind": "freeze-commit", "value": "https://github.com/bodnarbalazs/dydo/commit/<freeze-sha>" }` to
+   `evidence`; do not add a top-level schema field. This records immutable recovery evidence only; it does
+   not ratify a disposition. Mirror all selected row IDs/counts and the separately counted human-ratified
+   subset in the `Freeze evidence` section of `3.0-pm-records.md`. The section must contain the literal
+   lines `- rows carrying freeze-commit evidence: **374**` and
+   `- human-ratified subset: **0** (no ratification implied)`, plus the exact freeze-commit permalink.
+   Immediately after updating the JSON and Markdown, before the post-freeze evidence commit,
+   run this complete gate (it deliberately uses `-Verify`, never `-RequireRatified`):
+
+   ```powershell
+   $freezePermalink = "https://github.com/bodnarbalazs/dydo/commit/$freezeSha"
+   $manifest = Get-Content -Raw 'dydo/project/migrations/3.0-pm-records.json' | ConvertFrom-Json
+   $freezeDispositions = @('extract-then-remove', 'remove-historical', 'cancel-remove', 'drop-duplicate')
+   $selected = @($manifest.records | Where-Object {
+     $effectiveDisposition = if ($_.humanRatified) { $_.finalDisposition } else { $_.proposedDisposition }
+     $effectiveDisposition -in $freezeDispositions
+   })
+   if ($selected.Count -ne 374) { throw "Expected 374 selected freeze rows, found $($selected.Count)" }
+   $ratifiedSelected = @($selected | Where-Object { $_.humanRatified })
+   if ($ratifiedSelected.Count -ne 0) { throw "Expected zero human-ratified selected rows, found $($ratifiedSelected.Count)" }
+   foreach ($row in $selected) {
+     $freezeEvidence = @($row.evidence | Where-Object { $_.kind -eq 'freeze-commit' })
+     if ($freezeEvidence.Count -ne 1 -or $freezeEvidence[0].value -ne $freezePermalink) {
+       throw "Freeze evidence mismatch for $($row.path)"
+     }
+     if ($row.target.kind -eq 'commit-permalink' -and $row.target.value -ne $freezePermalink) {
+       throw "Commit target mismatch for $($row.path)"
+     }
+   }
+   $freezeMarkdown = Get-Content -Raw 'dydo/project/migrations/3.0-pm-records.md'
+   foreach ($requiredLine in @('- rows carrying freeze-commit evidence: **374**', '- human-ratified subset: **0** (no ratification implied)', $freezePermalink)) {
+     if (-not $freezeMarkdown.Contains($requiredLine)) { throw "Freeze evidence Markdown is missing: $requiredLine" }
+   }
+   & pwsh -NoProfile -File dydo/project/migrations/build-3.0-pm-manifest.ps1 -RepoRoot . -Verify
+   if ($LASTEXITCODE -ne 0) { throw "PM-record manifest verification failed with exit $LASTEXITCODE" }
+   ```
+
+   Commit these four post-freeze evidence updates (freeze document, JSON, Markdown, and ruleset read-back)
+   without moving `pm-v2-final`. Fail the gate on any mismatch. No bypass actor is permitted.
 
 ### Exact per-lane implementation gates
 
@@ -507,12 +547,24 @@ Every lane first runs `dotnet build DynaDocs.Tests/DynaDocs.Tests.csproj -c Rele
 compiles both product and tests); then its exact test command is:
 
 - **Issue 2:** `dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter
-  "FullyQualifiedName~CommandSmokeTests|FullyQualifiedName~CommandDocConsistencyTests|FullyQualifiedName~CompletionProviderTests|FullyQualifiedName~ConfigFactoryTests|FullyQualifiedName~ModelCommandTests|FullyQualifiedName~ModelCapServiceTests|FullyQualifiedName~GuardIntegrationTests|FullyQualifiedName~IssueTests|FullyQualifiedName~TaskTests"`.
+  "FullyQualifiedName~CommandSmokeTests|FullyQualifiedName~CommandDocConsistencyTests|FullyQualifiedName~CompletionProviderTests|FullyQualifiedName~ConfigFactoryTests|FullyQualifiedName~ModelCommandTests|FullyQualifiedName~ModelCapServiceTests|FullyQualifiedName~GuardIntegrationTests"`.
 - **Issue 3:** `dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter
   "FullyQualifiedName~TemplateUpdateTests|FullyQualifiedName~TemplateGeneratorTests|FullyQualifiedName~FolderScaffolderTests|FullyQualifiedName~TemplateCommandTests|FullyQualifiedName~TemplateOverrideTests|FullyQualifiedName~ConfigServiceTests"`, then `dydo template update --diff`; the diff must not propose `sync-model.json`, Notion, or watchdog content.
 - **Issue 4:** `dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter
   "FullyQualifiedName~FrontmatterParserTests"`, then run `py DynaDocs.Tests/coverage/gap_check.py --force-run`
   to prove `tier_registry.json` contains no deleted module/test pair and every surviving tier is valid.
+  The lane also requires this non-vacuous parser-retention assertion:
+
+  ```powershell
+  $parserPaths = @('Utils/FrontmatterParser.cs', 'DynaDocs.Tests/Utils/FrontmatterParserTests.cs')
+  foreach ($parserPath in $parserPaths) {
+    if (-not (Test-Path -LiteralPath $parserPath)) { throw "Native compiler parser path missing: $parserPath" }
+  }
+  $parserConsumers = @(& rg -l 'FrontmatterParser' Commands/SyncCommand.cs Services/RoleDefinitionService.cs Services/FrontmatterExtractor.cs)
+  if ($LASTEXITCODE -ne 0) { throw 'Could not verify native FrontmatterParser consumers' }
+  $expectedConsumers = @('Commands/SyncCommand.cs', 'Services/RoleDefinitionService.cs', 'Services/FrontmatterExtractor.cs')
+  if ((@($parserConsumers | Sort-Object) -join "`n") -ne (@($expectedConsumers | Sort-Object) -join "`n")) { throw 'Unexpected native FrontmatterParser consumer set' }
+  ```
 - **Issue 5:** `dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter
   "FullyQualifiedName~CommandDocConsistencyTests|FullyQualifiedName~TemplateGeneratorTests|FullyQualifiedName~TemplateUpdateTests"`, then `dydo check` and `dydo template update --diff`.
 - **Issue 6:** `dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --filter

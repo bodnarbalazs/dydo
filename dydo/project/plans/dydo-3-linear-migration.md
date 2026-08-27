@@ -329,8 +329,22 @@ allowed only if its deletion is part of Project 3.
 
 The JSON contract is closed:
 
-- top level: `schemaVersion: 1`, `generatedFromCommit`, `records`, `excludedCandidates`, and
-  `unresolvedCandidates`;
+- top level: `schemaVersion: 1`, `generatedFromCommit`, `provenance`, `records`,
+  `excludedCandidates`, and `unresolvedCandidates`;
+- `provenance` is the actual execution-gate evidence for this generated manifest, not a narrative
+  assertion or a substitute for row-level disposition evidence. It contains exactly `source`, `counts`,
+  `write`, `verify`, and `dydoCheck`. `source` is the non-empty string exactly
+  `git archive HEAD <generatedFromCommit>`, where `<generatedFromCommit>` is the manifest's full
+  40-hex `generatedFromCommit`. `counts` contains exactly `records`, `incomingReferences`,
+  `excludedCandidates`, and `unresolvedCandidates`, whose values are the actual respective collection
+  counts. Each non-null gate object (`write`, `verify`, and `dydoCheck`) contains exactly `command`,
+  `output`, and `exitCode`. `write.output` and `verify.output` are the exact deterministic success line
+  emitted by the respective successful command, not a complete transcript. `dydoCheck.output` is the
+  actually observed normalized `Found N errors, M warnings` summary line and `dydoCheck.exitCode` is its
+  actual command exit code. Immediately after `-Write`, `write` and `dydoCheck` are non-null with
+  actual evidence and `verify` is null; the first successful `-Verify` validates that unsealed artifact
+  and then seals its own non-null `verify` object. Final DYD-2 PASS requires a subsequent successful
+  `-Verify` that validates the sealed `verify` object and JSON/Markdown parity;
 - one `excludedCandidates` item: `path`, `matchedSignature`, non-empty `exclusionReason`, and
   `humanRatified: true`;
 - one `unresolvedCandidates` item: `path` and `matchedSignature`; verification requires this collection
@@ -371,7 +385,11 @@ Gate procedure:
 2. Run the same script with `-Verify`; require exit 0 and `manifest verified: <N> records; 0 missing;
    0 duplicates; 0 invalid references; 0 unresolved candidates`.
 3. Run `dydo check`; require exit 0 and record counts/output in the Markdown review surface.
-4. Store the exact governing commit and command transcript/counts in both manifest artifacts.
+4. `-Write` records the source, counts, actual write and `dydo check` evidence, and `verify: null` in
+   JSON and the Markdown review surface. The first successful `-Verify` validates that unsealed pair,
+   seals its own actual deterministic `verify.output` into both, and validates their parity. Run
+   `-Verify` once more; it must validate the sealed non-null `verify` object and JSON/Markdown parity
+   before the Issue 2 gate can pass.
 
 #### Issue 3 — Human-ratify live-work dispositions
 
@@ -578,3 +596,10 @@ the Git plan is their durable umbrella. The bootstrap remains MCP-only. Because 
 cannot write native Project dependencies, their nine edges are authoritative in this plan and repeated
 in the initial Project-description payloads and read back before PASS; native UI edges are optional
 convenience only. Browser/UI fallback is prohibited during provisioning.
+
+### Contract reconciliation — 2026-08-27
+
+In-progress DYD-2 review found that the closed top-level manifest schema omitted the evidence object
+already required by its gate. `provenance` now makes the archive source, counts, and actual write,
+verify, and normalized `dydo check` evidence machine-reviewable in both manifest artifacts. This amends
+the contract only; it does not assert that DYD-2 has passed.

@@ -491,13 +491,15 @@ enters `Todo`.
 
    After the assertions and push pass, create
    `3.0-notion-freeze.md` with the exact SHA, dry-run transcript, inclusion ledger, tag, and ruleset
-   result. In `3.0-pm-records.json`, update exactly the rows whose ratified `finalDisposition` is
-   `extract-then-remove`, `remove-historical`, `cancel-remove`, or `drop-duplicate`: set their existing
+   result. In `3.0-pm-records.json`, update exactly the rows whose effective disposition is
+   `extract-then-remove`, `remove-historical`, `cancel-remove`, or `drop-duplicate`, where effective means
+   `finalDisposition` for a human-ratified row and `proposedDisposition` otherwise. Set their existing
    commit target to the exact SHA permalink where required and append
    `{ "kind": "freeze-commit", "value": "<exact-sha>" }` to `evidence`; do not add a top-level schema
-   field. Mirror row IDs/counts in the `Freeze evidence` section of `3.0-pm-records.md`. Commit these
-   three post-freeze evidence updates plus the read-back JSON without moving `pm-v2-final`. Fail the gate
-   on any mismatch. No bypass actor is permitted.
+   field. This records immutable recovery evidence only; it does not ratify a disposition. Mirror all row
+   IDs/counts and the separately counted human-ratified subset in the `Freeze evidence` section of
+   `3.0-pm-records.md`. Commit these three post-freeze evidence updates plus the read-back JSON without
+   moving `pm-v2-final`. Fail the gate on any mismatch. No bypass actor is permitted.
 
 ### Exact per-lane implementation gates
 

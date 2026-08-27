@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "status": "complete",
+  "governingCommit": "868eae47fb39540ce0a9f1e14d6ae694a08e94a9",
+  "workspace": {
+    "id": "50cc15aa-75c0-4507-bc80-fa9515903c49",
+    "name": "LC",
+    "url": "https://linear.app/bodnar-balazs"
+  },
+  "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "name": "Dydo",
+    "key": "DYD"
+  },
+  "preflight": {
+    "projectCount": 0,
+    "issueCount": 0,
+    "labelExactNameCollisions": []
+  },
+  "connectorDiagnostics": {
+    "workspaceRead": "pass",
+    "teamRead": "pass",
+    "search": "pass",
+    "initiativeCreateBeforeTeamIsolationAmendment": "failed-without-id-or-mutation",
+    "initiativeExactNameSearchAfterFailure": "no-results",
+    "initiativeDisposition": "not-created-by-human-ratified-team-isolation-amendment"
+  },
+  "createdObjects": {
+    "projects": [
+      {
+        "order": 1,
+        "id": "82243b25-9699-473f-9efb-69746732473c",
+        "name": "dydo 3.0 / PM foundation and migration contract",
+        "url": "https://linear.app/bodnar-balazs/project/dydo-30-pm-foundation-and-migration-contract-4cca89aae65f",
+        "status": { "id": "61589802-5bdf-4a17-9d67-962137cba2c0", "name": "Planned" },
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      },
+      {
+        "order": 2,
+        "id": "44eba9ff-0242-4179-b94b-932339b364fd",
+        "name": "dydo 3.0 / Adopt Linear-native work model",
+        "url": "https://linear.app/bodnar-balazs/project/dydo-30-adopt-linear-native-work-model-8145ca3f78ad",
+        "status": { "id": "61589802-5bdf-4a17-9d67-962137cba2c0", "name": "Planned" },
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      },
+      {
+        "order": 3,
+        "id": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
+        "name": "dydo 3.0 / Migrate the v2 work corpus",
+        "url": "https://linear.app/bodnar-balazs/project/dydo-30-migrate-the-v2-work-corpus-51b02b121391",
+        "status": { "id": "61589802-5bdf-4a17-9d67-962137cba2c0", "name": "Planned" },
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      },
+      {
+        "order": 4,
+        "id": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
+        "name": "dydo 3.0 / Dogfood and accept Linear PM",
+        "url": "https://linear.app/bodnar-balazs/project/dydo-30-dogfood-and-accept-linear-pm-0a31eceeb1c2",
+        "status": { "id": "61589802-5bdf-4a17-9d67-962137cba2c0", "name": "Planned" },
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      },
+      {
+        "order": 5,
+        "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+        "name": "dydo 3.0 / Remove Notion runtime and release",
+        "url": "https://linear.app/bodnar-balazs/project/dydo-30-remove-notion-runtime-and-release-54b8939d748e",
+        "status": { "id": "61589802-5bdf-4a17-9d67-962137cba2c0", "name": "Planned" },
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      }
+    ],
+    "labels": [
+      {
+        "id": "d9c62ab5-2420-4bdf-a66f-3e45aa267e58",
+        "name": "HITL",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      },
+      {
+        "id": "d5453847-38eb-43fb-97e7-c5152ef139b2",
+        "name": "AFK",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      },
+      {
+        "id": "a1604e47-3e58-4aee-81c4-ef0e51c63638",
+        "name": "Needs human",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687"
+      }
+    ],
+    "issues": [
+      {
+        "order": 1,
+        "id": "DYD-1",
+        "title": "Establish the Linear reference and team convention contract",
+        "url": "https://linear.app/bodnar-balazs/issue/DYD-1/establish-the-linear-reference-and-team-convention-contract",
+        "projectId": "82243b25-9699-473f-9efb-69746732473c",
+        "status": "Todo",
+        "labels": ["HITL"]
+      },
+      {
+        "order": 2,
+        "id": "DYD-2",
+        "title": "Inventory legacy PM records and incoming references",
+        "url": "https://linear.app/bodnar-balazs/issue/DYD-2/inventory-legacy-pm-records-and-incoming-references",
+        "projectId": "82243b25-9699-473f-9efb-69746732473c",
+        "status": "Todo",
+        "labels": ["AFK"],
+        "blockedBy": ["DYD-1"]
+      },
+      {
+        "order": 3,
+        "id": "DYD-3",
+        "title": "Human-ratify live-work dispositions",
+        "url": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions",
+        "projectId": "82243b25-9699-473f-9efb-69746732473c",
+        "status": "Todo",
+        "labels": ["HITL"],
+        "blockedBy": ["DYD-2"]
+      },
+      {
+        "order": 4,
+        "id": "DYD-4",
+        "title": "Freeze Notion and seal the v2 PM baseline",
+        "url": "https://linear.app/bodnar-balazs/issue/DYD-4/freeze-notion-and-seal-the-v2-pm-baseline",
+        "projectId": "82243b25-9699-473f-9efb-69746732473c",
+        "status": "Todo",
+        "labels": ["AFK"],
+        "blockedBy": ["DYD-2"]
+      },
+      {
+        "order": 5,
+        "id": "DYD-5",
+        "title": "Verify and seal the reviewed Linear 3.0 graph",
+        "url": "https://linear.app/bodnar-balazs/issue/DYD-5/verify-and-seal-the-reviewed-linear-30-graph",
+        "projectId": "82243b25-9699-473f-9efb-69746732473c",
+        "status": "Todo",
+        "labels": ["AFK"],
+        "blockedBy": ["DYD-1", "DYD-3", "DYD-4"]
+      },
+      {
+        "order": 6,
+        "id": "DYD-6",
+        "title": "Prepare and review the next delivery Project",
+        "url": "https://linear.app/bodnar-balazs/issue/DYD-6/prepare-and-review-the-next-delivery-project",
+        "projectId": "82243b25-9699-473f-9efb-69746732473c",
+        "status": "Todo",
+        "labels": ["HITL"],
+        "blockedBy": ["DYD-5"]
+      }
+    ]
+  },
+  "uiOnly": {
+    "projectDependencies": "authoritative-in-plan-and-project-descriptions",
+    "savedViews": "deferred-to-issue-1"
+  },
+  "verification": {
+    "verifiedBy": "Linear MCP read-back by recorded identity",
+    "projects": {
+      "count": 5,
+      "allPlanned": true,
+      "allDydoOnly": true,
+      "allHaveNoInitiative": true,
+      "allHaveThreeGitHubResources": true,
+      "incomingDependencyLinkCounts": [0, 1, 2, 2, 4],
+      "totalDependencyLinks": 9
+    },
+    "issues": {
+      "count": 6,
+      "allTodo": true,
+      "allInProject1": true,
+      "allLabelsExact": true,
+      "allBlockingRelationsExact": true,
+      "allContainGoverningSha": true
+    },
+    "labels": {
+      "count": 3,
+      "names": ["HITL", "AFK", "Needs human"]
+    }
+  },
+  "bootstrapVerification": "pass",
+  "rollbackVerification": "not-required"
+}

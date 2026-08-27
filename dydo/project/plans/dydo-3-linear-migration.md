@@ -1,9 +1,9 @@
 ---
 title: dydo 3.0 Linear PM Migration
-status: plan-review
+status: active
 area: project
 type: context
-linear-project:
+linear-project: https://linear.app/bodnar-balazs/project/dydo-30-pm-foundation-and-migration-contract-4cca89aae65f
 ---
 
 # dydo 3.0 Linear PM Migration
@@ -566,7 +566,9 @@ authority, and serial artifact ownership.
 Evidence: `dydo check` exits 0 with 0 errors; targeted `git diff --check` is clean; the full repository
 test run passed 2,758/2,758 tests with 25 skipped; coverage gap verification passed 141/141 modules.
 
-Human ratification and approval to publish the governing commit and mutate Linear remain pending.
+Human ratification, publication of governing commit `868eae47fb39540ce0a9f1e14d6ae694a08e94a9`,
+and the MCP-only Linear bootstrap are complete. Durable read-back evidence lives in
+`dydo/project/migrations/3.0-linear-bootstrap.{json,md}`.
 
 ### Human amendment — 2026-08-27
 

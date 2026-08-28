@@ -103,9 +103,10 @@ release work independently reviewable and assimilable.
   historical artifact remains evidentially relevant.
 - **Do we use Cycles now?** No. Add them only after observed accepted-increment throughput makes the
   timebox meaningful.
-- **What statuses mean ready for autonomous pickup?** `Todo` + `AFK` + no blocking relation. `Backlog`
-  is unreviewed or unscheduled; `In Review` means independent agent review; `Done` requires the Issue's
-  acceptance, while Project completion additionally requires integrated audit and assimilation.
+- **What statuses mean ready for autonomous pickup?** `Todo` + no blocking relation, with participation
+  stated in the Issue contract. `Backlog` is unreviewed or unscheduled; `In Review` means independent
+  agent review; `Done` requires the Issue's acceptance, while Project completion additionally requires
+  integrated audit and assimilation.
 
 ## 2. Prior art and evidence
 
@@ -134,8 +135,8 @@ release work independently reviewable and assimilable.
 
 This dogfood deliberately does not create a workspace Initiative. On the Basic plan, the available
 Initiative is workspace-scoped and would mix dydo strategy into the main project's workspace layer.
-The reviewed Git plan is the durable portfolio umbrella; the `Dydo` team and the common
-`dydo 3.0 / …` prefix provide the live Linear grouping.
+The reviewed Git plan is the durable portfolio umbrella. The `Dydo` team and the common
+`dydo 3.0 / …` prefix are visible Linear grouping only; neither selects an execution repository.
 
 ### Project map
 
@@ -170,8 +171,8 @@ docs, templates, skills, and planner/reviewer/orchestrator workflows; retain Fut
 Project audit receives the linked Project plan.
 
 Acceptance: generated and installed framework surfaces agree with DR 044; no active workflow requires a
-repo PM mirror; plan/review/audit gates and HITL/AFK conventions are executable; focused tests plus the
-full documentation/template consistency gates pass.
+repo PM mirror; plan/review/audit gates and the default Dydo workflow are executable; focused tests plus
+the full documentation/template consistency gates pass.
 
 Dependencies: Project 1. Resources: DR 044, this plan, and the Project 1 disposition manifest.
 
@@ -190,8 +191,8 @@ Dependencies: Projects 1 and 2. Resources: DR 044, this plan, both manifest arti
 #### Project 4 — Dogfood and accept Linear PM
 
 Scope: execute at least one representative multi-Issue delivery through Linear using reviewed repo
-context, dependencies, AFK/HITL routing, independent Issue reviews, integrated Project audit, and an
-assimilation brief. The frozen Notion runtime remains present but stopped throughout the pilot.
+context, dependencies, explicit Issue participation, independent Issue reviews, integrated Project audit,
+and an assimilation brief. The frozen Notion runtime remains present but stopped throughout the pilot.
 
 Acceptance: the work reaches Project completion without a repo/Linear mirror or watchdog; references and
 governing commits support implementation and audit; observed friction is dispositioned; the human
@@ -224,19 +225,19 @@ PASS, the human first approves publishing the governing artifacts. The operator 
 1. pushes the exact governing commit and records its SHA/permalink;
 2. resolves workspace `LC` and team `Dydo` and asserts team ID
    `caa6ccbf-4f9b-477e-826c-a51ed43b0687` through the official Linear connector;
-3. searches/lists exact Project, Issue, and label names and stops on every pre-existing
+3. searches/lists exact Project and Issue names and stops on every pre-existing
    exact-name match unless that exact object ID is already recorded by this bootstrap's evidence from a
    prior interrupted attempt; an unrecorded singleton match is not adoption authority;
-4. calls the official Linear connector's `save_project`, `create_issue_label`, and `save_issue`
+4. calls the official Linear connector's `save_project` and `save_issue`
    operations, always using returned IDs for Project membership and Issue `blockedBy` dependencies.
    Each initial Project description includes its exact incoming dependency set: Project 2 names Project
    1; Project 3 names Projects 1 and 2; Project 4 names Projects 2 and 3; Project 5 names Projects 1–4;
 5. writes every request summary, returned ID/URL, and governing SHA to
    `dydo/project/migrations/3.0-linear-bootstrap.json` as each call succeeds;
-6. calls `get_project(includeResources: true)`, `list_issue_labels`, and
-   `get_issue(includeRelations: true)` by returned identity; verifies the
+6. calls `get_project(includeResources: true)` and `get_issue(includeRelations: true)` by returned
+   identity; verifies the
    connector-managed fields at this stage—team, recorded status ID/name, descriptions, Project links,
-   labels, Issue Project membership, and Issue dependencies—and records the partial result;
+   Issue Project membership, and Issue dependencies—and records the partial result;
 7. compares the read-back `Depends on` sections to the expected incoming counts `1 + 2 + 2 + 4`, records
    all nine exact name/URL edges in the bootstrap evidence, and fails on a missing or extra edge. The
    current MCP surface cannot write native Project dependencies; native edges may be added manually
@@ -245,16 +246,13 @@ PASS, the human first approves publishing the governing artifacts. The operator 
    resource read-back so every branch-following link resolves. This is the comprehensive bootstrap
    PASS/FAIL comparison and checklist.
 
-Expected observable result: five Planned Dydo-only Projects, three labels, six Project 1 Issues, no
+Expected observable result: five Planned Dydo-only Projects, six Project 1 Issues, no
 Initiative/Cycles/Releases, exact description-level Project dependencies and native Issue relations, and
-`bootstrapVerification: "pass"` in the JSON plus a human-readable PASS checklist. Saved views are not
-available through the connector: Issue 1 creates `Factory ready` and `Needs me` in the Linear UI and
-records their URLs/checklist in the Markdown evidence.
+`bootstrapVerification: "pass"` in the JSON plus a human-readable PASS checklist.
 
 On the first failed or mismatched mutation, stop and do not retry by title. Record the failure and all
 returned IDs. Roll back by ID in reverse order: set created Issues and Projects to `Canceled` through
-the corresponding `save_*` operations; delete only the three new labels through the Linear UI after
-matching their recorded IDs. Read back every rollback state and
+the corresponding `save_*` operations. Read back every rollback state and
 record `rollbackVerification: "pass"`. Never touch a pre-existing object or remote Notion data.
 
 The plan bootstrap creates these six Issues only after PASS and after the governing artifacts are
@@ -268,51 +266,49 @@ available at a published commit. Every description carries this common execution
   commit permalink before an Issue can enter `Todo`.
 - **Execution evidence:** branch/worktree/session and review links belong on the Issue; durable decisions
   and audit results return to the repository.
+- **Execution repository:** Codex and Claude select the repository and isolation through their native
+  project/worktree context. A Linear team, Project name, Issue key, or GitHub integration reference does
+  not route execution to a repository.
 
 The following ownership and prerequisite map is part of each Issue contract, not optional bootstrap
 metadata:
 
 | Issue | Prerequisites | Exact owned paths | Additional governing context |
 |---|---|---|---|
-| 1 | Plan PASS and published governing commit | `dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md`; `dydo/project/plans/dydo-3-linear-migration.md`; `dydo/project/campaigns/linear-pm-pivot.md`; serial first write to `dydo/project/migrations/3.0-linear-bootstrap.md` | DR 041 and DR 042 |
+| 1 | Plan PASS and published governing commit | `dydo/project/plans/dydo-3-linear-migration.md`; serial first write to `dydo/project/migrations/3.0-linear-bootstrap.md` | DR 044 |
 | 2 | Issue 1 accepted | `dydo/project/migrations/3.0-pm-records.json`; `dydo/project/migrations/3.0-pm-records.md`; optional temporary `dydo/project/migrations/build-3.0-pm-manifest.ps1` | `dydo.json`, current folder/schema model, DR 034, DR 040 |
 | 3 | Issue 2 accepted | `dydo/project/migrations/3.0-pm-records.json`; `dydo/project/migrations/3.0-pm-records.md` | the generated manifest and its review checklist |
 | 4 | Issue 2 accepted; human approves live sync | `dydo/project/migrations/3.0-notion-freeze.md`; manifest commit/tag fields only | DR 025, DR 043, `dydo/reference/notion-sync.md` |
-| 5 | Issues 1, 3, and 4 accepted | `dydo/project/migrations/3.0-linear-bootstrap.json`; serial finalization of `dydo/project/migrations/3.0-linear-bootstrap.md` after Issue 1; Project 1 URL frontmatter in `dydo/project/plans/dydo-3-linear-migration.md` | Linear read-back of the bootstrapped Projects, labels, Issues, and links |
+| 5 | Issues 1, 3, and 4 accepted | `dydo/project/migrations/3.0-linear-bootstrap.json`; serial finalization of `dydo/project/migrations/3.0-linear-bootstrap.md` after Issue 1; Project 1 URL frontmatter in `dydo/project/plans/dydo-3-linear-migration.md` | Linear read-back of the bootstrapped Projects, Issues, and links |
 | 6 | Issue 5 accepted | `dydo/project/plans/dydo-3-linear-native-work-model.md` | DR 041, DR 042, ratified manifest, `pm-v2-final` freeze evidence |
 
-#### Issue 1 — Establish the Linear reference and team convention contract
+#### Issue 1 — Verify Dydo Linear/GitHub PM references
 
-Participation: HITL. Initial state: `Todo`. Type: documentation/design.
+Participation: documentation/design. Initial state: `Todo`.
 
 Deliverable:
 
-- Ratify the reference rules in §4.
-- Retain the default Dydo workflow statuses.
-- Verify and use only the bootstrap-created `HITL`, `AFK`, and `Needs human` labels; do not create them
-  again and do not recreate Notion's property taxonomy.
-- Define the `Factory ready` view as `Todo` + `AFK` + no blocker, and `Needs me` as `Needs human`
-  plus all active `HITL` Issues assigned to the human.
-- Record the convention in the new 3.0 work-model/glossary plan input, not as workspace-only lore.
+- Verify the Dydo team and its default workflow by recorded identity.
+- Verify that GitHub pull requests citing Dydo Issue keys attach to their intended Issues and reflect
+  review and merge status in Linear.
+- Record the durable Linear/Git boundary in these two records: Linear owns live PM objects and state;
+  Git/dydo owns durable documentation, Decisions, FutureFeatures, shared Codex/Claude skills, hooks,
+  nudges, templates, and repository instructions.
 
-Owned paths:
+Owned paths: `dydo/project/plans/dydo-3-linear-migration.md` and serial first write to
+`dydo/project/migrations/3.0-linear-bootstrap.md`.
 
-- `dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md`
-- `dydo/project/plans/dydo-3-linear-migration.md`
-- `dydo/project/campaigns/linear-pm-pivot.md`
-- `dydo/project/migrations/3.0-linear-bootstrap.md` (serial first write; Issue 5 finalizes it)
-
-Gate procedure: create the two saved views in Linear's UI, record their URLs and exact filters in
-`dydo/project/migrations/3.0-linear-bootstrap.md`, and read the three labels back through
-`list_issue_labels`. Run `dydo check` and `git diff --check --
-dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md
-dydo/project/plans/dydo-3-linear-migration.md dydo/project/campaigns/linear-pm-pivot.md`; require both
-exit 0. Obtain a fresh reviewer PASS on the three owned documents and record all observables in the
-bootstrap Markdown evidence.
+Gate procedure: read back the Dydo team/default workflow and GitHub/Linear Issue-reference behavior by
+recorded identity. Require evidence that PRs #3–#12 in `bodnarbalazs/dydo` attached to their intended
+Dydo Issues, and that DYD-25, DYD-3, and DYD-26 moved automatically to `In Review` and then `Done`
+after review and merge. Run `dydo check` and `git diff --check --
+dydo/project/plans/dydo-3-linear-migration.md dydo/project/migrations/3.0-linear-bootstrap.md`; require
+both exit 0. Obtain a fresh reviewer PASS on these two records and record all observables in the bootstrap
+Markdown evidence.
 
 #### Issue 2 — Inventory legacy PM records and incoming references
 
-Participation: AFK. Initial state: blocked by Issue 1, then `Todo`.
+Participation: agent-executable. Initial state: blocked by Issue 1, then `Todo`.
 
 Deliverable:
 
@@ -393,7 +389,7 @@ Gate procedure:
 
 #### Issue 3 — Human-ratify live-work dispositions
 
-Participation: HITL. Initial state: blocked by Issue 2.
+Participation: human ratification required. Initial state: blocked by Issue 2.
 
 Deliverable:
 
@@ -411,7 +407,7 @@ proof.
 
 #### Issue 4 — Freeze Notion and seal the v2 PM baseline
 
-Participation: AFK with human approval for the live run. Initial state: blocked by Issue 2.
+Participation: agent-executable with human approval for the live run. Initial state: blocked by Issue 2.
 
 Deliverable:
 
@@ -446,29 +442,27 @@ Gate procedure:
 
 #### Issue 5 — Verify and seal the reviewed Linear 3.0 graph
 
-Participation: AFK. Initial state: blocked by Issues 1, 3, and 4.
+Participation: agent-executable. Initial state: blocked by Issues 1, 3, and 4.
 
 Deliverable:
 
 - Verify the five bootstrapped Projects exactly match §3 and correct only differences
   against this plan using their recorded IDs, never title matching.
-- Verify the three approved labels, Project 1 Issues, dependency relations, governing commits, and link
-  resources.
+- Verify Project 1 Issues, dependency relations, governing commits, and link resources.
 - Write created Linear URLs back to the campaign/plan frontmatter where specified and attach the
   resulting branch-following resources.
 - Do not create Cycles, Releases, or speculative implementation Issues.
 
 Gate procedure: repeat bootstrap steps 6–8 entirely by recorded ID; require all JSON comparison booleans
 true, `bootstrapVerification: "pass"`, resolvable plan/campaign frontmatter URLs, and a Markdown PASS
-checklist signed by the human for saved views and Project dependencies. Correct a
+checklist for Project dependencies. Correct a
 safe field mismatch only by recorded ID and read it back again. If correction is ambiguous, unsupported,
-or fails, set Issue 5 to `Needs human`, record the exact mismatch, and stop. Because accepted Project 1
-work now exists, Issue 5 must never invoke whole-graph bootstrap rollback, cancel accepted objects, or
-delete labels.
+or fails, record the exact mismatch and stop for a human decision. Because accepted Project 1 work now
+exists, Issue 5 must never invoke whole-graph bootstrap rollback or cancel accepted objects.
 
 #### Issue 6 — Prepare and review the next delivery Project
 
-Participation: HITL. Initial state: blocked by Issue 5.
+Participation: human review required. Initial state: blocked by Issue 5.
 
 Deliverable:
 
@@ -482,6 +476,17 @@ obtain a fresh reviewer PASS recorded in that plan. No Project 2 Issue is create
 starts before all three observables exist.
 
 ## 4. Reference contract
+
+### Runtime execution boundary
+
+Linear owns live Project and Issue objects, their state, and their current review activity. Git/dydo owns
+durable docs, Decisions, FutureFeatures, shared Codex/Claude skills, hooks, nudges, templates, and
+repository instructions. Codex and Claude use dydo for those durable runtime materials; neither requires
+Linear Agent guidance nor a Linear-managed coding environment.
+
+GitHub↔Linear integration supplies Issue-key/PR references and status reflection. It does not select or
+route an execution repository: Codex and Claude use their host-native saved project and worktree context
+for repository selection and isolation. Saved views and team-prefix routing are not part of this contract.
 
 ### Durable artifact → Linear
 
@@ -564,8 +569,8 @@ may reset, overwrite, or opportunistically absorb it.
   every start path.
 - Do not import 61 stale Tasks or 243 resolved Issues merely because migration is automatable.
 - Do not mistake Linear Project shells for reviewed implementation plans.
-- Do not turn `Needs human` into a garbage chute. Escalation must cite searched authorities, researched
-  options, impact, and the smallest unresolved decision.
+- Do not turn an unresolved state into a garbage chute. Escalation must cite searched authorities,
+  researched options, impact, and the smallest unresolved decision.
 - Do not use a Linear comment as the only home of a new invariant or decision.
 - Do not create a custom Issue subtype hierarchy before real work demonstrates a missing native field.
 - Do not move or delete retained files until the incoming-reference graph is complete.
@@ -603,3 +608,12 @@ In-progress DYD-2 review found that the closed top-level manifest schema omitted
 already required by its gate. `provenance` now makes the archive source, counts, and actual write,
 verify, and normalized `dydo check` evidence machine-reviewable in both manifest artifacts. This amends
 the contract only; it does not assert that DYD-2 has passed.
+
+### Corrective boundary amendment — 2026-08-28
+
+The **DYD-1 human boundary correction** (Linear comment
+`916b8b30-2ca5-4902-a340-64033228866d`) removes four unsupported requirements from this plan: saved
+views, Linear Agent guidance, a Linear-managed coding environment, and team-prefix-based repository
+routing. The only DYD-1 acceptance is the recorded Dydo team/default workflow and GitHub Issue-key/PR
+reference and status-reflection behavior. Existing `HITL`, `AFK`, and `Needs human` labels are retained
+only as historical or workspace-convenience evidence; they are not dydo 3.0 product requirements.

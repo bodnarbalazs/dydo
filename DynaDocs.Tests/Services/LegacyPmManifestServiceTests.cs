@@ -4,9 +4,7 @@ using DynaDocs.Services;
 
 public sealed class LegacyPmManifestServiceTests : IDisposable
 {
-    private readonly string _dydoRoot = Path.Combine(
-        Path.GetTempPath(),
-        $"legacy-pm-manifest-{Guid.NewGuid():N}");
+    private readonly string _dydoRoot = Path.Combine(Path.GetTempPath(), "legacy-pm-manifest-" + Guid.NewGuid().ToString("N"));
 
     public LegacyPmManifestServiceTests()
     {
@@ -19,163 +17,132 @@ public sealed class LegacyPmManifestServiceTests : IDisposable
     }
 
     [Fact]
-    public void InactiveManifest_HasNoPendingRecords()
+    public void InactiveManifest_HasNoRecords()
     {
         var service = new LegacyPmManifestService(_dydoRoot);
 
         Assert.False(service.IsActive);
-        Assert.Empty(service.GetPendingRecordPaths());
+        Assert.Empty(service.GetManifestRecordPaths());
     }
 
     [Fact]
-    public void GetPendingRecordPaths_ParsesPendingRowsAndNormalizesPaths()
+    public void GetManifestRecordPaths_NormalizesEveryRecord()
     {
-        WriteManifest(
-            ("DYDO\\project\\tasks\\ONE.md", "pending"),
-            (ProjectPath("issues", "two.md"), "applied"));
+        WriteManifest(("DYDO\\project\\tasks\\ONE.md", "applied", "remove-historical", null),
+            (ProjectPath("future-features", "idea.md"), "applied", "retain-normalize", ProjectPath("future-features", "idea.md")));
         var service = new LegacyPmManifestService(_dydoRoot);
 
-        var path = Assert.Single(service.GetPendingRecordPaths());
-
-        Assert.Equal(ProjectPath("tasks", "one.md"), path);
         Assert.Equal(2, service.GetManifestRecordPaths().Count);
+        Assert.Contains(ProjectPath("tasks", "one.md"), service.GetManifestRecordPaths());
     }
 
     [Fact]
-    public void GetRetainedNonRecordPaths_ReturnsExactClosedAllowSet()
+    public void GetAllowedPaths_AllowsExactlyThreeLiveRetainedFutureFeatures()
     {
-        var paths = LegacyPmManifestService.GetRetainedNonRecordPaths();
-
-        Assert.Equal(12, paths.Count);
-        Assert.Equal(
-            [
-                ProjectPath("backlog", "_backlog.md"),
-                ProjectPath("backlog", "_index.md"),
-                ProjectPath("campaigns", "_campaigns.md"),
-                ProjectPath("campaigns", "_index.md"),
-                ProjectPath("issues", "_index.md"),
-                ProjectPath("issues", "_issues.md"),
-                ProjectPath("slices", "_index.md"),
-                ProjectPath("slices", "_slices.md"),
-                ProjectPath("sprints", "_index.md"),
-                ProjectPath("sprints", "_sprints.md"),
-                ProjectPath("tasks", "_index.md"),
-                ProjectPath("tasks", "_tasks.md")
-            ],
-            paths.Order(StringComparer.Ordinal));
-    }
-
-    [Fact]
-    public void GetAllowedPaths_CachesPendingAndRetainedPaths()
-    {
-        WriteManifest((ProjectPath("tasks", "one.md"), "pending"));
+        var retained = new[]
+        {
+            ProjectPath("future-features", "agent-graph-metrics.md"),
+            ProjectPath("future-features", "coverage.py-update.md"),
+            ProjectPath("future-features", "doc-coverage.md")
+        };
+        WriteManifest(
+            (retained[0], "pending", "retain-normalize", retained[0]),
+            (retained[1], "pending", "retain-normalize", retained[1]),
+            (retained[2], "pending", "retain-normalize", retained[2]),
+            (ProjectPath("issues", "removed.md"), "applied", "remove-historical", null),
+            (ProjectPath("issues", "cancelled.md"), "applied", "cancel-remove", null),
+            (ProjectPath("issues", "migrated.md"), "applied", "migrate-issue", null),
+            (ProjectPath("future-features", "not-yet-retained.md"), "pending", "retain", ProjectPath("future-features", "not-yet-retained.md")));
         var service = new LegacyPmManifestService(_dydoRoot);
 
-        var first = service.GetAllowedPaths();
-        var second = service.GetAllowedPaths();
-
-        Assert.Same(first, second);
-        Assert.Equal(13, first.Count);
+        Assert.Equal(3, service.GetAllowedPaths().Count);
+        foreach (var path in retained)
+            Assert.Contains(path, service.GetAllowedPaths());
+        Assert.DoesNotContain(ProjectPath("issues", "removed.md"), service.GetAllowedPaths());
+        Assert.DoesNotContain(ProjectPath("issues", "cancelled.md"), service.GetAllowedPaths());
+        Assert.DoesNotContain(ProjectPath("issues", "migrated.md"), service.GetAllowedPaths());
+        Assert.DoesNotContain(ProjectPath("future-features", "not-yet-retained.md"), service.GetAllowedPaths());
     }
 
     [Fact]
-    public void GetPendingRecordPaths_RejectsEscapingPath()
+    public void GetAllowedPaths_AcceptsAppliedRetainTransitions()
     {
-        WriteManifest(("dydo/../outside.md", "pending"));
+        var retained = ProjectPath("future-features", "idea.md");
+        var normalized = ProjectPath("future-features", "normalized.md");
+        WriteManifest(
+            (retained, "applied", "retain", retained),
+            (normalized, "applied", "retain-normalize", normalized));
         var service = new LegacyPmManifestService(_dydoRoot);
 
-        var exception = Assert.Throws<InvalidDataException>(() => service.GetPendingRecordPaths());
-
-        Assert.Contains("under dydo", exception.Message);
+        Assert.Equal(2, service.GetAllowedPaths().Count);
+        Assert.Contains(retained, service.GetAllowedPaths());
+        Assert.Contains(normalized, service.GetAllowedPaths());
+        Assert.Same(service.GetAllowedPaths(), service.GetAllowedPaths());
     }
 
-    [Fact]
-    public void NormalizeRepoPath_RejectsPathThatEscapesRepository()
+    [Theory]
+    [InlineData("../outside.md")]
+    [InlineData("..")]
+    public void NormalizeRepoPath_RejectsEscapingPath(string path)
     {
-        Assert.Throws<InvalidDataException>(() =>
-            LegacyPmManifestService.NormalizeRepoPath("../outside.md"));
-    }
-
-    [Fact]
-    public void NormalizeRepoPath_RejectsParentDirectoryItself()
-    {
-        Assert.Throws<InvalidDataException>(() =>
-            LegacyPmManifestService.NormalizeRepoPath(".."));
+        Assert.Throws<InvalidDataException>(() => LegacyPmManifestService.NormalizeRepoPath(path));
     }
 
     [Fact]
     public void NormalizeRepoPath_RejectsRootedPath()
     {
-        var rootedPath = Path.GetFullPath("outside.md");
-
-        Assert.Throws<InvalidDataException>(() =>
-            LegacyPmManifestService.NormalizeRepoPath(rootedPath));
-    }
-
-    [Fact]
-    public void GetPendingRecordPaths_RejectsDuplicateNormalizedPath()
-    {
-        WriteManifest(
-            (ProjectPath("tasks", "one.md"), "pending"),
-            ("DYDO\\PROJECT\\TASKS\\ONE.md", "pending"));
-        var service = new LegacyPmManifestService(_dydoRoot);
-
-        var exception = Assert.Throws<InvalidDataException>(() => service.GetPendingRecordPaths());
-
-        Assert.Contains("Duplicate", exception.Message);
+        Assert.Throws<InvalidDataException>(() => LegacyPmManifestService.NormalizeRepoPath(Path.GetFullPath("outside.md")));
     }
 
     [Theory]
     [InlineData("{}")]
     [InlineData("{\"records\":{}}")]
-    public void GetPendingRecordPaths_RejectsMissingOrNonArrayRecords(string json)
+    public void GetManifestRecordPaths_RejectsMissingOrNonArrayRecords(string json)
     {
         WriteRawManifest(json);
-        var service = new LegacyPmManifestService(_dydoRoot);
 
-        Assert.Throws<InvalidDataException>(() => service.GetPendingRecordPaths());
+        Assert.Throws<InvalidDataException>(() => new LegacyPmManifestService(_dydoRoot).GetManifestRecordPaths());
     }
 
     [Theory]
-    [InlineData("{\"path\":\"dydo/project/tasks/one.md\"}")]
-    [InlineData("{\"path\":\"dydo/project/tasks/one.md\",\"executionState\":1}")]
-    [InlineData("{\"path\":\"dydo/project/tasks/one.md\",\"executionState\":\"unknown\"}")]
-    public void GetPendingRecordPaths_RejectsInvalidExecutionState(string record)
+    [InlineData("{\"path\":\"dydo/project/tasks/one.md\",\"finalDisposition\":\"remove-historical\"}")]
+    [InlineData("{\"path\":\"dydo/project/tasks/one.md\",\"executionState\":\"unknown\",\"finalDisposition\":\"remove-historical\"}")]
+    [InlineData("{\"path\":\"dydo/project/tasks/one.md\",\"executionState\":\"applied\"}")]
+    public void GetManifestRecordPaths_RejectsIncompleteRecord(string record)
     {
         WriteRawManifest($"{{\"records\":[{record}]}}");
-        var service = new LegacyPmManifestService(_dydoRoot);
 
-        Assert.Throws<InvalidDataException>(() => service.GetPendingRecordPaths());
-    }
-
-    [Theory]
-    [InlineData("{\"executionState\":\"pending\"}")]
-    [InlineData("{\"path\":1,\"executionState\":\"pending\"}")]
-    [InlineData("{\"path\":\"\",\"executionState\":\"pending\"}")]
-    public void GetPendingRecordPaths_RejectsInvalidPath(string record)
-    {
-        WriteRawManifest($"{{\"records\":[{record}]}}");
-        var service = new LegacyPmManifestService(_dydoRoot);
-
-        Assert.Throws<InvalidDataException>(() => service.GetPendingRecordPaths());
+        Assert.Throws<InvalidDataException>(() => new LegacyPmManifestService(_dydoRoot).GetManifestRecordPaths());
     }
 
     [Fact]
-    public void GetPendingRecordPaths_WrapsMalformedJson()
+    public void GetAllowedPaths_RejectsAppliedRetainedPathWithoutMatchingTarget()
     {
-        WriteRawManifest("{");
-        var service = new LegacyPmManifestService(_dydoRoot);
+        WriteManifest((ProjectPath("future-features", "idea.md"), "applied", "retain-normalize", ProjectPath("future-features", "other.md")));
 
-        var exception = Assert.Throws<InvalidDataException>(() => service.GetPendingRecordPaths());
-
-        Assert.Contains("malformed", exception.Message);
+        Assert.Throws<InvalidDataException>(() => new LegacyPmManifestService(_dydoRoot).GetAllowedPaths());
     }
 
-    private void WriteManifest(params (string Path, string State)[] records)
+    [Fact]
+    public void GetManifestRecordPaths_RejectsDuplicateNormalizedPath()
     {
-        var rows = string.Join(",", records.Select(record =>
-            $$"""{"path":{{System.Text.Json.JsonSerializer.Serialize(record.Path)}},"executionState":"{{record.State}}"}"""));
-        WriteRawManifest($$"""{"records":[{{rows}}]}""");
+        WriteManifest(
+            (ProjectPath("tasks", "one.md"), "applied", "remove-historical", null),
+            ("DYDO\\PROJECT\\TASKS\\ONE.md", "applied", "remove-historical", null));
+
+        Assert.Throws<InvalidDataException>(() => new LegacyPmManifestService(_dydoRoot).GetManifestRecordPaths());
+    }
+
+    private void WriteManifest(params (string Path, string State, string Disposition, string? Target)[] records)
+    {
+        var rows = records.Select(record => new
+        {
+            path = record.Path,
+            executionState = record.State,
+            finalDisposition = record.Disposition,
+            target = record.Target == null ? null : new { kind = "retained-path", value = record.Target }
+        });
+        WriteRawManifest(System.Text.Json.JsonSerializer.Serialize(new { records = rows }));
     }
 
     private void WriteRawManifest(string json)
@@ -185,8 +152,5 @@ public sealed class LegacyPmManifestServiceTests : IDisposable
         File.WriteAllText(Path.Combine(directory, "3.0-pm-records.json"), json);
     }
 
-    private static string ProjectPath(string folder, string fileName)
-    {
-        return string.Join('/', "dydo", "project", folder, fileName);
-    }
+    private static string ProjectPath(string folder, string fileName) => string.Join('/', "dydo", "project", folder, fileName);
 }

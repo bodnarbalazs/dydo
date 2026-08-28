@@ -194,22 +194,22 @@ public class OrphanDocsRuleTests
     }
 
     [Fact]
-    public void Validate_PreservesFrozenV2TaskCompatibilityException()
+    public void Validate_TaskRecordUsesOrdinaryReachability()
     {
         var hub = CreateDoc("project/_index.md", linksTo: []);
-        var doc = CreateDoc(ProjectPath("tasks", "some-record.md"));
+        var doc = CreateDoc("project/tasks/some-record.md");
         var allDocs = new List<DocFile> { hub, doc };
 
         var violations = _rule.Validate(doc, allDocs, BasePath).ToList();
 
-        Assert.Empty(violations);
+        Assert.Single(violations);
     }
 
     [Fact]
     public void Validate_NonTaskLegacyRecord_StillUsesOrdinaryReachability()
     {
         var hub = CreateDoc("project/_index.md", linksTo: []);
-        var record = CreateDoc(ProjectPath("sprints", "some-record.md"));
+        var record = CreateDoc("project/sprints/some-record.md");
         var allDocs = new List<DocFile> { hub, record };
 
         var violations = _rule.Validate(record, allDocs, BasePath).ToList();
@@ -334,8 +334,4 @@ public class OrphanDocsRuleTests
         };
     }
 
-    private static string ProjectPath(string folder, string fileName)
-    {
-        return string.Join('/', "project", folder, fileName);
-    }
 }

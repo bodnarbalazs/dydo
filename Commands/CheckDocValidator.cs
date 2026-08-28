@@ -72,6 +72,7 @@ internal static class CheckDocValidator
             new RelativeLinksRule(),
             new FrontmatterRule(typesService),
             new LegacyPmRecordRule(legacyPmManifestService),
+            new FutureFeatureRule(),
             new SummaryRule(),
             new BrokenLinksRule(linkResolver),
             new HubFilesRule(),

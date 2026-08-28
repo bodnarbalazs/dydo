@@ -1,7 +1,6 @@
 namespace DynaDocs.Rules;
 
 using DynaDocs.Models;
-using DynaDocs.Services;
 using DynaDocs.Utils;
 
 public class OrphanDocsRule : RuleBase
@@ -23,12 +22,6 @@ public class OrphanDocsRule : RuleBase
 
         // Skip folder meta files (_foldername.md)
         if (IsFolderMetaFile(doc)) return [];
-
-        var normalized = PathUtils.NormalizePath(doc.RelativePath);
-        if (LegacyPmManifestService.IsLegacyTaskPath(normalized))
-        {
-            return [];
-        }
 
         // Only check files in the four main documentation folders
         var mainFolder = GetMainFolder(doc.RelativePath);

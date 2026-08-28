@@ -176,6 +176,123 @@ public class HubGeneratorTests
         Assert.True(hubs.ContainsKey("project/decisions/_index.md"));
     }
 
+    [Fact]
+    public void GenerateHub_SummaryWithDydo30_PreservesDottedVersion()
+    {
+        const string summary = "Identity and verification evidence for provisioning the reviewed dydo 3.0 work graph in Linear.";
+
+        Assert.Equal(summary, GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_SummaryWithDotNet10_UsesFirstCompleteSentence()
+    {
+        const string summary = "DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles native agent methods, and enforces universal guard rules. Linear is outside the runtime boundary and remains the sole owner of live project-management state.";
+
+        Assert.Equal(
+            "DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles native agent methods, and enforces universal guard rules.",
+            GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_SummaryWithModeTemplateFilename_PreservesInlineCodeDelimiters()
+    {
+        const string summary = "The mode template is the role: `dydo sync` discovers `mode-<name>.template.md` sources and compiles their methodology into native skills and, for worker roles, spawnable agent definitions. Role methods receive Linear Issue/Project context from the host; they do not create a repository work hierarchy.";
+
+        Assert.Equal(
+            "The mode template is the role: `dydo sync` discovers `mode-<name>.template.md` sources and compiles their methodology into native skills and, for...",
+            GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_TerminalPunctuationInsideInlineCode_IsIgnored()
+    {
+        const string summary = "Use `mode. template? name!` safely. More detail follows.";
+
+        Assert.Equal("Use `mode. template? name!` safely.", GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_SummaryWith1xAnd2x_PreservesBothDottedVersions()
+    {
+        const string summary = "A self-contained, ordered procedure for an AI coding agent to migrate an existing project's dydo workspace from the 1.x generation to the current 2.x generation. Execute it **in the target project** (the repo being migrated), not in the dydo source repo.";
+
+        Assert.Equal(
+            "A self-contained, ordered procedure for an AI coding agent to migrate an existing project's dydo workspace from the 1.x generation to the current...",
+            GenerateSummary(summary));
+    }
+
+    [Theory]
+    [InlineData("Deployment succeeded! More detail follows.", "Deployment succeeded!")]
+    [InlineData("Deployment succeeded? More detail follows.", "Deployment succeeded?")]
+    public void GenerateHub_SummaryWithAlternateTerminator_UsesFirstCompleteSentence(
+        string summary,
+        string expected)
+    {
+        Assert.Equal(expected, GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_SummaryWithPunctuationAndClosingMarkerCluster_PreservesEntireRun()
+    {
+        const string summary = "Deployment succeeded?!\")** More detail follows.";
+
+        Assert.Equal("Deployment succeeded?!\")**", GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_SentenceEndingAt150Characters_ReturnsCompleteSentence()
+    {
+        var summary = new string('a', 149) + ". More detail follows.";
+
+        Assert.Equal(new string('a', 149) + ".", GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_SummaryAtMost150CharactersWithoutTerminator_ReturnsWholeText()
+    {
+        var summary = new string('a', 150);
+
+        Assert.Equal(summary, GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_OverlongFallbackIntersectingInlineCode_MovesBeforeCodeSpan()
+    {
+        var summary = "Safe `complete.code` prefix " + new string('a', 90) + " `" + new string('x', 80) + ".template.md` trailing text";
+
+        Assert.Equal(
+            "Safe `complete.code` prefix " + new string('a', 90) + "...",
+            GenerateSummary(summary));
+    }
+
+    [Fact]
+    public void GenerateHub_OverlongFallbackWithoutWhitespace_HardCutsAt147Characters()
+    {
+        var summary = new string('a', 200);
+
+        Assert.Equal(new string('a', 147) + "...", GenerateSummary(summary));
+    }
+
+    private static string GenerateSummary(string summary)
+    {
+        const string prefix = "- [Example](./example.md) - ";
+        var doc = MakeDoc(
+            relativePath: "guides/example.md",
+            fileName: "example.md",
+            title: "Example",
+            summary: summary);
+
+        var hub = HubGenerator.GenerateHub(
+            relativeFolderPath: "guides",
+            docsInFolder: [doc],
+            subfolderHubs: [],
+            allDocs: [doc]);
+
+        var entry = hub.Split(Environment.NewLine).Single(line => line.StartsWith(prefix, StringComparison.Ordinal));
+        return entry[prefix.Length..];
+    }
+
     private static DocFile MakeDoc(string relativePath, string fileName, string? title, string? summary = null)
     {
         return new DocFile

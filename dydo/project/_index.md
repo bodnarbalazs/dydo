@@ -22,19 +22,18 @@ Issue bodies.
   architecture-sensitive Linear Projects.
 - [Releases](./releases/_index.md) — durable release records and Git-tag history.
 
-## Historical dydo 2.x corpus
+## Frozen dydo 2.x recovery
 
-The folders below are frozen migration evidence, not active queues. They remain temporarily so Project 3
-can apply the human-ratified disposition manifest; do not add records or use them to track current work.
+The retired dydo 2.x repository work corpus is not current navigation or a live work graph. Its exact
+historical state is frozen at commit
+[`ffffc02dcdf92b9677d0eb4f522d1af57a869990`](https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990).
+The former root-level records remain recoverable at that freeze:
 
-- [Backlog](./backlog/_index.md)
-- [Campaigns](./campaigns/_index.md)
-- [Issues](./issues/_index.md)
-- [Slices](./slices/_index.md)
-- [Sprints](./sprints/_index.md)
-- `tasks/` — retained task files have no active hub and are inventory-only.
+- [Documentation upgrade record](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/docs-upgrade-sprint.md)
+- [v1.3 release notes](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/v1.3-release.md)
+- [v1.4 release notes](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/v1.4-release.md)
 
-The root-level [documentation upgrade record](./docs-upgrade-sprint.md),
-[v1.3 release notes](./v1.3-release.md), and [v1.4 release notes](./v1.4-release.md) are also retained
-historical artifacts. New work belongs in Linear; new durable knowledge belongs in the appropriate
-repository section above.
+To recover another deleted historical record, use
+`git show ffffc02dcdf92b9677d0eb4f522d1af57a869990:<path>` in a reviewed corrective branch; do not
+recreate a repository work graph. New work belongs in Linear, and new durable knowledge belongs in the
+appropriate current repository section above.

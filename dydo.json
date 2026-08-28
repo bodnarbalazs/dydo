@@ -91,7 +91,7 @@
     },
     {
       "pattern": "\\buntil\\s\u002B\\[",
-      "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes (issue 0177).",
+      "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes ([issue 0177](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0177-open-ended-bash-poll-loops-until-s-while-tail-f-in-agent-shell-calls-crash-claud.md)).",
       "severity": "warn"
     },
     {

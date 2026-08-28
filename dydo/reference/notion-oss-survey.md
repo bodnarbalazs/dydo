@@ -77,4 +77,4 @@ Survey of the open-source Markdown/Obsidian ↔ Notion sync ecosystem, distilled
 ## Related
 
 - [notion-sync.md](./notion-sync.md) — our live-API constraints and smoke records
-- [Notion Stabilization sprint](../project/sprints/notion-stabilization.md) — the plan this survey feeds
+- [Notion Stabilization sprint](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/sprints/notion-stabilization.md) — the historical plan this survey fed

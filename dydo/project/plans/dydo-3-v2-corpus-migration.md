@@ -817,3 +817,24 @@ exact already-absent adjudication equals all 790 immutable tuples, and must intr
 DYD-43 must merge before DYD-31 resumes. DYD-31 then removes any artificially introduced forbidden
 permalink from its preserved worktree and reruns every amended gate. DYD-43 does not authorize resuming
 DYD-31, changing the manifest, weakening a test, or editing any source other than this plan.
+
+## 9. Chronological amendment — DYD-44 / P3-8A
+
+This non-retroactive amendment records one stale retained-link fact discovered by DYD-35. It authorizes
+one URL-only textual repair after this amendment is reviewed; it does not change the manifest or expand
+any Project-3 path authority.
+
+- stale source and text: `dydo/project/decisions/023-backlog-doc-category.md` contains
+  `[Issues](../issues/_index.md) — broken things; the "is this a bug?" boundary.`
+- cause: `../issues/_index.md` was an underscore compatibility hub deleted by P3-6, not a target row in
+  the closed 474-record manifest or any of its 2,845 incoming-reference tuples.
+- ownership evidence: DR-023 was not in DYD-31/P3-4's exact 36-source/790-tuple set and was unchanged
+  by reviewed head `a633cf61e4b8307c0eab58fcb675cedc01d0e9b8` from governing plan commit
+  `6ec7aa9ca4971451e5a883d738365477fa41d215`.
+- authorized DYD-35 repair: replace only the stale URL with
+  `[Issues](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/_index.md) — broken things; the "is this a bug?" boundary.`
+
+The repair preserves all 474 rows, all 2,845 tuples, immutable-row SHA-256
+`30421da6b5c3621a563938ba16a51b35a7f352c630d5ad1986d392e6a05bfb81`, deletion arithmetic, the
+Project-5 boundary, and every other path authority. It authorizes no repository-to-Linear synchronization,
+Linear-managed-agent machinery, Project-5 Notion runtime removal, hub rewrite, or unrelated cleanup.

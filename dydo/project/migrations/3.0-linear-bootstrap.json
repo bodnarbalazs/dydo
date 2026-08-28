@@ -147,32 +147,310 @@
       }
     ]
   },
-  "uiOnly": {
-    "projectDependencies": "authoritative-in-plan-and-project-descriptions",
-    "savedViews": "deferred-to-issue-1"
-  },
-  "verification": {
-    "verifiedBy": "Linear MCP read-back by recorded identity",
-    "projects": {
-      "count": 5,
-      "allPlanned": true,
-      "allDydoOnly": true,
-      "allHaveNoInitiative": true,
-      "allHaveThreeGitHubResources": true,
-      "incomingDependencyLinkCounts": [0, 1, 2, 2, 4],
-      "totalDependencyLinks": 9
+  "currentSeal": {
+    "sealedOn": "2026-08-28",
+    "verifiedBy": "Linear read-back by recorded identity and GitHub pull-request evidence",
+    "correction": {
+      "commit": "6dce10aa6a1d3b203795286daa527c3cbe46decf",
+      "pullRequest": "https://github.com/bodnarbalazs/dydo/pull/13",
+      "linearCommentId": "916b8b30-2ca5-4902-a340-64033228866d"
+    },
+    "projects": [
+      {
+        "order": 1,
+        "id": "82243b25-9699-473f-9efb-69746732473c",
+        "status": "In Progress",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+        "initiative": null,
+        "resourceCount": 3,
+        "resources": [
+          {
+            "id": "a006d010-303a-4f06-ac25-88c674828bf4",
+            "label": "DR-044 — Linear-canonical PM boundary",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
+          },
+          {
+            "id": "05749026-b2ea-4fe6-91e8-cec867642952",
+            "label": "Governing commit 868eae47",
+            "url": "https://github.com/bodnarbalazs/dydo/commit/868eae47fb39540ce0a9f1e14d6ae694a08e94a9"
+          },
+          {
+            "id": "ea5f4316-38b9-40e5-8f09-6c33591bfc53",
+            "label": "Reviewed dydo 3.0 migration plan",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/plans/dydo-3-linear-migration.md"
+          }
+        ]
+      },
+      {
+        "order": 2,
+        "id": "44eba9ff-0242-4179-b94b-932339b364fd",
+        "status": "Completed",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+        "initiative": null,
+        "resourceCount": 4,
+        "resources": [
+          {
+            "id": "2ab2d2b3-4308-489b-bce2-4beb13c3f31a",
+            "label": "Reviewed Linear-native work-model plan (1cf75a21)",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/1cf75a219e4a7a30397174e0ab79f4aff1326547/dydo/project/plans/dydo-3-linear-native-work-model.md"
+          },
+          {
+            "id": "7854389e-8c03-4c05-b599-f1519a577764",
+            "label": "DR-044 — Linear-canonical PM boundary",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
+          },
+          {
+            "id": "57fb93dc-34a2-4d9d-a156-9fb3f77efe8f",
+            "label": "Governing commit 868eae47",
+            "url": "https://github.com/bodnarbalazs/dydo/commit/868eae47fb39540ce0a9f1e14d6ae694a08e94a9"
+          },
+          {
+            "id": "96823982-aee1-4b00-b725-296127c06597",
+            "label": "Reviewed dydo 3.0 migration plan",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/plans/dydo-3-linear-migration.md"
+          }
+        ]
+      },
+      {
+        "order": 3,
+        "id": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
+        "status": "Planned",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+        "initiative": null,
+        "resourceCount": 3,
+        "resources": [
+          {
+            "id": "7b9aec1b-dae2-4d8e-b18c-12d86e3d2bdf",
+            "label": "Reviewed dydo 3.0 migration plan",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/plans/dydo-3-linear-migration.md"
+          },
+          {
+            "id": "8cb3f387-db6f-4f60-973c-60717cb24eeb",
+            "label": "Governing commit 868eae47",
+            "url": "https://github.com/bodnarbalazs/dydo/commit/868eae47fb39540ce0a9f1e14d6ae694a08e94a9"
+          },
+          {
+            "id": "9e745ba7-8c53-4a87-8ea7-6c6ed872ee3b",
+            "label": "DR-044 — Linear-canonical PM boundary",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
+          }
+        ]
+      },
+      {
+        "order": 4,
+        "id": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
+        "status": "Planned",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+        "initiative": null,
+        "resourceCount": 3,
+        "resources": [
+          {
+            "id": "7b3b599b-bd26-4c58-92b6-14ed43d1a624",
+            "label": "Governing commit 868eae47",
+            "url": "https://github.com/bodnarbalazs/dydo/commit/868eae47fb39540ce0a9f1e14d6ae694a08e94a9"
+          },
+          {
+            "id": "890d37b4-ac56-4d84-ad6f-8d1dc3f8de3d",
+            "label": "Reviewed dydo 3.0 migration plan",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/plans/dydo-3-linear-migration.md"
+          },
+          {
+            "id": "6560fe3f-1bd0-46c6-912e-dde1c8e0abbe",
+            "label": "DR-044 — Linear-canonical PM boundary",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
+          }
+        ]
+      },
+      {
+        "order": 5,
+        "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+        "status": "In Progress",
+        "teamId": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+        "initiative": null,
+        "resourceCount": 4,
+        "resources": [
+          {
+            "id": "4a6234a8-f594-4a26-9661-13387f1b9bf5",
+            "label": "Reviewed Notion runtime removal plan (cc0198ac)",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/cc0198ac/dydo/project/plans/dydo-3-notion-runtime-removal.md"
+          },
+          {
+            "id": "3d32327d-04fd-445e-9456-db1e75a7d4c1",
+            "label": "Reviewed dydo 3.0 migration plan",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/plans/dydo-3-linear-migration.md"
+          },
+          {
+            "id": "bdc9bed2-69dd-4155-81c2-458f22ad3e91",
+            "label": "Governing commit 868eae47",
+            "url": "https://github.com/bodnarbalazs/dydo/commit/868eae47fb39540ce0a9f1e14d6ae694a08e94a9"
+          },
+          {
+            "id": "e65a7255-f0d7-4a28-9e41-62a30cf5e2a5",
+            "label": "DR-044 — Linear-canonical PM boundary",
+            "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
+          }
+        ]
+      }
+    ],
+    "projectDescriptionDependencies": {
+      "edges": [
+        {
+          "sourceProjectId": "44eba9ff-0242-4179-b94b-932339b364fd",
+          "targetProjectId": "82243b25-9699-473f-9efb-69746732473c",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-pm-foundation-and-migration-contract-4cca89aae65f"
+        },
+        {
+          "sourceProjectId": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
+          "targetProjectId": "82243b25-9699-473f-9efb-69746732473c",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-pm-foundation-and-migration-contract-4cca89aae65f"
+        },
+        {
+          "sourceProjectId": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
+          "targetProjectId": "44eba9ff-0242-4179-b94b-932339b364fd",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-adopt-linear-native-work-model-8145ca3f78ad"
+        },
+        {
+          "sourceProjectId": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
+          "targetProjectId": "44eba9ff-0242-4179-b94b-932339b364fd",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-adopt-linear-native-work-model-8145ca3f78ad"
+        },
+        {
+          "sourceProjectId": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
+          "targetProjectId": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-migrate-the-v2-work-corpus-51b02b121391"
+        },
+        {
+          "sourceProjectId": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+          "targetProjectId": "82243b25-9699-473f-9efb-69746732473c",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-pm-foundation-and-migration-contract-4cca89aae65f"
+        },
+        {
+          "sourceProjectId": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+          "targetProjectId": "44eba9ff-0242-4179-b94b-932339b364fd",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-adopt-linear-native-work-model-8145ca3f78ad"
+        },
+        {
+          "sourceProjectId": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+          "targetProjectId": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-migrate-the-v2-work-corpus-51b02b121391"
+        },
+        {
+          "sourceProjectId": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+          "targetProjectId": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
+          "targetProjectUrl": "https://linear.app/bodnar-balazs/project/dydo-30-dogfood-and-accept-linear-pm-0a31eceeb1c2"
+        }
+      ],
+      "incomingCountsByOrder": [0, 1, 2, 2, 4],
+      "total": 9,
+      "nativeProjectDependencyObjectsOptional": true
     },
     "issues": {
-      "count": 6,
-      "allTodo": true,
-      "allInProject1": true,
-      "allLabelsExact": true,
-      "allBlockingRelationsExact": true,
-      "allContainGoverningSha": true
+      "originalBootstrapRoster": ["DYD-1", "DYD-2", "DYD-3", "DYD-4", "DYD-5", "DYD-6"],
+      "currentProject1Roster": ["DYD-1", "DYD-2", "DYD-3", "DYD-5", "DYD-6", "DYD-25", "DYD-26"],
+      "current": [
+        {
+          "id": "DYD-1",
+          "status": "Done",
+          "projectId": "82243b25-9699-473f-9efb-69746732473c",
+          "blockedBy": [],
+          "blocks": ["DYD-2", "DYD-5"]
+        },
+        {
+          "id": "DYD-2",
+          "status": "Done",
+          "projectId": "82243b25-9699-473f-9efb-69746732473c",
+          "blockedBy": ["DYD-1"],
+          "blocks": ["DYD-3", "DYD-4"]
+        },
+        {
+          "id": "DYD-3",
+          "status": "Done",
+          "projectId": "82243b25-9699-473f-9efb-69746732473c",
+          "blockedBy": ["DYD-2", "DYD-25"],
+          "blocks": ["DYD-5"]
+        },
+        {
+          "id": "DYD-4",
+          "status": "Done",
+          "projectId": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+          "blockedBy": ["DYD-2"],
+          "blocks": ["DYD-5", "DYD-7"],
+          "moveReason": "superseding Project 5 plan"
+        },
+        {
+          "id": "DYD-5",
+          "status": "In Progress",
+          "projectId": "82243b25-9699-473f-9efb-69746732473c",
+          "blockedBy": ["DYD-1", "DYD-3", "DYD-4"],
+          "blocks": ["DYD-6"]
+        },
+        {
+          "id": "DYD-6",
+          "status": "Done",
+          "projectId": "82243b25-9699-473f-9efb-69746732473c",
+          "blockedBy": ["DYD-5"],
+          "blocks": []
+        },
+        {
+          "id": "DYD-25",
+          "status": "Done",
+          "projectId": "82243b25-9699-473f-9efb-69746732473c",
+          "parentId": "DYD-3",
+          "blockedBy": [],
+          "blocks": ["DYD-3"],
+          "additionReason": "legitimately added after bootstrap"
+        },
+        {
+          "id": "DYD-26",
+          "status": "Done",
+          "projectId": "82243b25-9699-473f-9efb-69746732473c",
+          "blockedBy": [],
+          "blocks": [],
+          "additionReason": "legitimately added after bootstrap"
+        }
+      ]
     },
-    "labels": {
-      "count": 3,
-      "names": ["HITL", "AFK", "Needs human"]
+    "github": {
+      "mergedAndAttached": [
+        { "pullRequest": 3, "issue": "DYD-20" },
+        { "pullRequest": 4, "issue": "DYD-15" },
+        { "pullRequest": 5, "issue": "DYD-21" },
+        { "pullRequest": 6, "issue": "DYD-22" },
+        { "pullRequest": 7, "issue": "DYD-23" },
+        { "pullRequest": 8, "issue": "DYD-24" },
+        { "pullRequest": 9, "issue": "DYD-16" },
+        { "pullRequest": 10, "issue": "DYD-25", "statusReflection": ["In Review", "Done"] },
+        { "pullRequest": 11, "issue": "DYD-3", "statusReflection": ["In Review", "Done"] },
+        { "pullRequest": 12, "issue": "DYD-26", "statusReflection": ["In Review", "Done"] }
+      ],
+      "boundaryCorrection": {
+        "pullRequest": 13,
+        "merged": true,
+        "commit": "6dce10aa6a1d3b203795286daa527c3cbe46decf"
+      }
+    },
+    "boundary": {
+      "linearOwnsLiveProjectManagement": true,
+      "gitDydoOwnsDurableKnowledgeAndSharedCodexClaudeFramework": true,
+      "savedViewsRequired": false,
+      "labelsRequired": false,
+      "linearAgentGuidanceRequired": false,
+      "linearManagedCodingEnvironmentRequired": false,
+      "teamPrefixRoutingRequired": false,
+      "historicalLabelsRemainNonbindingEvidence": true
+    },
+    "invariants": {
+      "historicalBootstrapSnapshotPreserved": true,
+      "currentProjectsMatchRecordedIdentitiesStatusesAndResources": true,
+      "allProjectsDydoOnlyWithNoInitiative": true,
+      "allSeventeenProjectResourcesExact": true,
+      "descriptionDependencyEdgesExact": true,
+      "descriptionDependencyCountsExact": true,
+      "nativeProjectDependencyObjectsOptional": true,
+      "currentIssueRosterStatusesProjectsAndRelationsExact": true,
+      "githubAttachmentsMergesAndStatusReflectionExact": true,
+      "linearGitDydoBoundaryExact": true,
+      "obsoleteUiAndRoutingRequirementsRemoved": true
     }
   },
   "bootstrapVerification": "pass",

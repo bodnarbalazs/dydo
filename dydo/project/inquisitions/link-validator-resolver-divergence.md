@@ -5,7 +5,7 @@ type: inquisition
 
 # Inquisition: `dydo check` link-validator resolver divergence
 
-Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross-folder relative markdown links when running `dydo check` against a subfolder. The reporter hypothesised a divergence between the link resolvers used by `dydo check` and `dydo graph`, with folder-meta `_*.md` files specially affected. This inquisition: surveys the two resolvers, reproduces the failure mode, names the root cause, and maps the surface.
+Issue [#0184](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md --><!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md --> reports a 55-error wall of "Broken link" reports against valid cross-folder relative markdown links when running `dydo check` against a subfolder. The reporter hypothesised a divergence between the link resolvers used by `dydo check` and `dydo graph`, with folder-meta `_*.md` files specially affected. This inquisition: surveys the two resolvers, reproduces the failure mode, names the root cause, and maps the surface.
 
 **Headline:** the reporter's resolver-divergence hypothesis is **refuted as a code-algorithm divergence**. The two resolvers produce identical results for relative paths. The real bug is that **`dydo check <subfolder>` uses that subfolder as both the scan scope and the resolver's `basePath`**, so `allDocs` excludes everything outside `<subfolder>` and any cross-folder link points at "nothing the validator can see." `dydo graph` is not subject to this because it *always* scans from the docs root. The folder-meta `_*.md` suspicion is incidental — those files concentrate cross-folder navigation links by purpose, not by code path.
 
@@ -48,7 +48,7 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
   - `dydo check dydo/reference` → 27 broken-link false positives (including `reference/roles/*.md` using `../../project/...`).
   - Hand-crafted 4-file repro tree at `dydo/agents/Frank/repro/` exercising every link shape.
   - PowerShell trace of `PathUtils.ResolvePath` on the failing input (`_decisions.md` → `../pitfalls/_index.md`) showing the resolver returns the correct absolute path.
-- **Prior inquisitions consulted:** `dydo-check-drift.md` (Charlie, 2026-05-04) — same family of `dydo check`-rule bugs; #0163 (`DocScanner` recursing into worktrees) is the closest precedent for scanner-scope bugs.
+- **Prior inquisitions consulted:** `dydo-check-drift.md` (Charlie, 2026-05-04) — same family of `dydo check`-rule bugs; [#0163](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0163-docscanner-recurses-into-system-local-worktrees-dydo-check-reports-tens-of-spuri.md) (`DocScanner` recursing into worktrees) is the closest precedent for scanner-scope bugs.
 - **Scouts dispatched:** 0. Evidence is grep-able from rule source + hands-on CLI reproductions; the divergence claim is testable directly. Judge dispatched at the end.
 
 ### Findings
@@ -56,7 +56,7 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
 #### 1. `dydo check <subfolder>` shrinks `allDocs` to the subfolder, breaking every cross-folder link
 
 - **Category:** bug.
-- **Severity:** high (this *is* issue #0184; it eats the signal of `dydo check` for any sub-tree invocation).
+- **Severity:** high (this *is* issue [#0184](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md); it eats the signal of `dydo check` for any sub-tree invocation).
 - **Type:** tested.
 - **Evidence:**
   - `Commands/CheckCommand.cs:122-132` (`ResolvePath`): when the user passes a path, returns `Path.GetFullPath(path)` — the subfolder *becomes* the basePath. Falls back to `PathUtils.FindDocsFolder(Environment.CurrentDirectory)` (the docs root) only when no path is given.
@@ -87,6 +87,9 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
   $ dydo check          # no path arg → full docs tree
   Found 1 errors, 3 warnings in 957 files.   # zero broken-link false positives
   ```
+
+<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md -->
+<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0130-stale-working-reclaim-silently-archives-in-flight-work.md -->
 - **Algorithmic verification that the resolver itself is correct.** Ran the *exact* `PathUtils.ResolvePath` logic in PowerShell against the failing input:
   ```
   sourcePath = Path.Combine("…\dydo", "project/decisions/_decisions.md")
@@ -146,7 +149,7 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
 - **Alternative explanations considered:**
   - Could be intentional ("subfolder scan is meant to be a quick local check, don't run it across folder boundaries")? No — `CheckCommand`'s pathArgument has no such constraint, and the help text says "Path to docs folder or file to check" with no indication that targets are scoped to the subfolder. No documented exception in `coding-standards.md` or in `understand/`.
   - Could be a fallback path for `File.Exists` that I missed? `BrokenLinksRule.cs:46` calls `_linkResolver.ResolveLink` for `.md` targets; the resolver itself never falls back to `File.Exists`. The non-`.md` branch (lines 34-44) is the only `File.Exists` path and it doesn't apply here.
-- **Issue:** #0185 (severity: high)
+- **Issue:** [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md --> (severity: high)
 
 #### 2. Anchor-only `[label](#section)` links always produce a "Broken link: " error (empty target)
 
@@ -188,7 +191,7 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
   - Hand-traced the empty-target flow: `LinkExtractor.SplitAnchor("#section")` returns `(path: "", anchor: "section")` (line 71-73, `target[..anchorIndex]` when `anchorIndex == 0` is the empty string). `BrokenLinksRule.cs:32` — `"".EndsWith(".md")` is false, so the non-`.md` branch is taken. `PathUtils.ResolvePath(Path.Combine(basePath, doc.RelativePath), "")` evaluates to `Path.GetFullPath(Path.Combine(sourceDir, ""))` = source dir (a directory path). `File.Exists(<directory>)` is false. Error fires with empty target.
 - **Peripheral inaccuracy in Frank's evidence (does not change the ruling):** Frank wrote that `LinkResolver.ResolveLink` would handle anchor-only links correctly if called — that's not quite right. With `link.Target = ""`, `PathUtils.ResolvePath` returns the source *directory*, not the source *file*. The `allDocs.FirstOrDefault(d => d.FilePath.Equals(resolvedPath, …))` membership test on `LinkResolver.cs:17-20` would then also fail (no doc has a directory path as its `FilePath`). The underlying bug is real and reproduced; the suggested fix path needs to explicitly handle the anchor-only case (e.g., when `link.Target == "" && link.Anchor != null`, validate the anchor against `doc.Anchors` directly).
 - **Alternative explanations considered:** Could the empty-target error be considered acceptable because the markdown is unusual? No — anchor-only intra-page links (`[me](#section)`) are valid markdown and standard usage; there's no documented exception. Could `Validate_AcceptsValidAnchor` in `BrokenLinksRuleTests` already cover this? No — that test uses a non-empty target (`./reference.md`), so it exercises the `.md` branch, not the empty-target path.
-- **Issue:** #0186 (severity: low — latent in this repo today)
+- **Issue:** [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md --> (severity: low — latent in this repo today)
 
 #### 3. Two parallel resolver implementations (`LinkResolver` vs `DocLinkResolver`)
 
@@ -213,7 +216,7 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
   3. **`.`/`..` walk.** ✓ Confirmed. `DocLinkResolver.cs:27-42` walks segments against the relative path *string*. `LinkResolver` → `PathUtils.ResolvePath:54-59` delegates to `Path.GetFullPath`. Behaviours would diverge for a relative path that walks above the docs root (which the OS resolver would let escape the root; the manual walker would stop at empty).
   4. **Case handling.** ✓ Confirmed. `LinkResolver.cs:18` uses `StringComparison.OrdinalIgnoreCase`. `DocGraph.cs:20,27,36` builds its key set via `PathUtils.NormalizeForKey` which `ToLowerInvariant()`s (`PathUtils.cs:157-160`). Equivalent on case-insensitive filesystems; potentially divergent on Linux for paths with mixed-case characters.
 - **Alternative explanations considered:** Could one be staged to replace the other? No TODO, no inquisition, no commit message hint, and both have live callers (`BrokenLinksRule`/`OrphanDocsRule` and `DocGraph` respectively). Could the differences be deliberate (e.g., `DocGraph` needs a relative-string output while `LinkResolver` needs a membership probe)? Partially — `DocLinkResolver` does return a basepath-relative string and `LinkResolver` does membership-test. But the four named differences are *not* required by that contract distinction; they're incidental.
-- **Issue:** #0187 (severity: low — antipattern, no current production divergence)
+- **Issue:** [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md --> (severity: low — antipattern, no current production divergence)
 
 #### 4. Test coverage gap for the failing shapes
 
@@ -249,18 +252,18 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
   - Confirmed `CliEndToEndTests` only runs `dydo check .` (whole tree) — no `dydo check <subfolder>` integration test.
 - **One inaccuracy in Frank's evidence (does not change the ruling):** Frank wrote that `PathUtils.ResolvePath` has *zero* direct tests. There are in fact 3 direct tests in `PathUtilsDiscoveryTests.cs:40-54` (`ResolvePath_ResolvesRelative` with two inline-data cases, `ResolvePath_NormalizesBackslashes`). However, those tests only assert that the output contains *no backslash and no `..`* — they never assert the *correct* resolved path. So Frank's substantive point — that `ResolvePath` is severely under-tested for the core path-arithmetic primitive it's supposed to be — stands. The "zero" claim should be "three weak tests, no positive-correctness tests."
 - **Alternative explanations considered:** Could the missing tests be deliberate (e.g., the cross-folder scenario was considered out of scope)? No — there's no test-plan doc or coverage-omission record in `dydo/project/` that excludes this shape. Could `Init_ThenCheck_RunsWithoutCrash` be a sufficient integration guard? No — it asserts only `ExitCode <= 1` and `"Checking" in stdout`; it does not assert the *content* of the check output.
-- **Issue:** #0188 (severity: medium)
+- **Issue:** [#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md --> (severity: medium)
 
 ### Hypotheses Not Reproduced
 
-- **Reporter's hypothesis: "two resolvers, divergent algorithms."** Refuted as the *cause of the visible failure*. The two resolvers produce identical results on the failing inputs. The visible divergence comes from `dydo check` and `dydo graph` operating against different scan scopes, not different resolver logic. *Caveat:* there really are two resolver implementations (finding 3); they just don't disagree on the inputs that surface in this bug. A future input could expose a real algorithm-level divergence — but #0184 is not that today.
+- **Reporter's hypothesis: "two resolvers, divergent algorithms."** Refuted as the *cause of the visible failure*. The two resolvers produce identical results on the failing inputs. The visible divergence comes from `dydo check` and `dydo graph` operating against different scan scopes, not different resolver logic. *Caveat:* there really are two resolver implementations (finding 3); they just don't disagree on the inputs that surface in this bug. A future input could expose a real algorithm-level divergence — but [#0184](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md) is not that today.
 - **Reporter's hypothesis: folder-meta `_*.md` files have a special path-anchoring bug.** Refuted. No code path branches on `_` prefixes in the link-validation chain. Folder-meta files appear in the failure set because they concentrate outward navigation links by purpose. The hand-crafted repro tree reproduces the failure on a non-`_` `index.md` source as readily as on `_index.md`. (`HubFilesRule` and `OrphanDocsRule` *do* branch on `_index.md` / `IsHubFile`, but those branches are about coverage-reachability, not link resolution.)
 - **Suspected: URL decoding mismatch.** Refuted. Neither resolver URL-decodes link targets. No `%20`-style links exist in the failing set.
 - **Suspected: junction/symlink boundary corruption in worktrees.** Refuted for this bug class. The four junction-shared trees (`dydo/agents/`, `dydo/_system/roles/`, `dydo/project/issues/`, `dydo/project/inquisitions/`) are not implicated in the failures: the false positives reproduce with the same multiplicity whether the link target is in a junctioned folder (`021 → ../issues/resolved/0133`, `022 → ../issues/0130`) or a non-junctioned folder (`_decisions → ../pitfalls/_index.md`, `009 → ../../understand/architecture.md`). The bug class is independent of the worktree junction layout.
 - **Suspected: case sensitivity bug.** Refuted on this Windows host (the failing paths are all lowercase). Possibly latent on Linux — `LinkResolver` uses `OrdinalIgnoreCase`, `DocGraph` lowercases via `NormalizeForKey`. Calling that out under finding 3 rather than as its own finding.
 
 **Judge verification of refutations (Brian, 2026-05-19):** All five refutations stand.
-- Resolver-divergence-as-cause-of-#0184: verified — `dydo check` (root) and `dydo graph` both succeed on the same input that `dydo check <subfolder>` fails. The visible failure is upstream of resolver code.
+- Resolver-divergence-as-cause-of-[#0184](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md): verified — `dydo check` (root) and `dydo graph` both succeed on the same input that `dydo check <subfolder>` fails. The visible failure is upstream of resolver code.
 - Folder-meta `_*.md` special case: verified — grepped `Rules/BrokenLinksRule.cs`, `Services/LinkResolver.cs`, `Services/DocLinkResolver.cs`, `Utils/PathUtils.cs`, `Utils/PathUtils.Discovery.cs`, `Services/LinkExtractor.cs` for `_` prefix branches in the link chain; none exist. `HubFilesRule` / `OrphanDocsRule` branch on hub-ness but only for reachability, not link resolution.
 - URL decoding: verified — no `Uri.UnescapeDataString` or `%`-decoding in any resolver path; both `LinkResolver` and `DocLinkResolver` treat targets as literal strings.
 - Junction/symlink boundary: verified — the false-positive set spans both junctioned (`issues/`) and non-junctioned (`pitfalls/`, `understand/`) trees with identical multiplicity.
@@ -271,7 +274,7 @@ Issue #0184 reports a 55-error wall of "Broken link" reports against valid cross
 Out of scope per the brief. From the available evidence I can report:
 
 - The cross-tree `dydo/** → src/**` issue (the LC-side report about links crossing *out* of the docs tree) is a **different bug class with a different root cause**. That bug involves a link target that is intentionally outside the docs tree (under `src/**`); the validator has no mechanism to reach outside the configured docs root, by design.
-- The in-tree `dydo/** → dydo/**` failure reported in #0184 stays *inside* the docs tree — the targets are real, scannable, indexed files; they're just excluded from the *invocation-narrowed* `allDocs`.
+- The in-tree `dydo/** → dydo/**` failure reported in [#0184](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md) stays *inside* the docs tree — the targets are real, scannable, indexed files; they're just excluded from the *invocation-narrowed* `allDocs`.
 - **Shared root cause? No.** The cross-tree case fails because `DocScanner` cannot scan a sibling tree (architectural). The in-tree case fails because `DocScanner` is told to scan less than the full docs tree (invocation-dependent). Fix scoping should treat them independently — a fix that converges `dydo check`'s scope to the docs root resolves #0184 but does nothing for cross-tree.
 - **Implication for the fix slice for #0184:** the fix can ignore the cross-tree case. The cross-tree case will need its own ticket and its own design (link kind that opts out of scanning, or a configured cross-tree manifest, etc.).
 
@@ -310,28 +313,28 @@ Expected post-fix behaviour for `dydo check dydo/agents/Frank/repro`:
 
 ### For the planner (Brian — judge — 2026-05-19)
 
-A consolidated brief for whoever plans the fix slice. Issues #0185–#0188 (filed) capture each finding's surface; the cross-references below are the bits a planner would otherwise have to dig out of the report body.
+A consolidated brief for whoever plans the fix slice. Issues [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md)–[#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md) (filed) capture each finding's surface; the cross-references below are the bits a planner would otherwise have to dig out of the report body.
 
-**Fix-slice scope** — one slice should resolve issues **#0185, #0186, #0188**. Issue **#0187** (parallel resolvers) is the *enabling* code-health change that makes the fix safe; if the slice doesn't fold #0187 in, the next fix in this area will hit the same tripwires. Recommend bundling all four.
+**Fix-slice scope** — one slice should resolve issues **[#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md), [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md), [#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)**. Issue **[#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)** (parallel resolvers) is the *enabling* code-health change that makes the fix safe; if the slice doesn't fold [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) in, the next fix in this area will hit the same tripwires. Recommend bundling all four.
 
 **What the slice must do (acceptance criteria):**
 
-1. **`dydo check <subfolder>` accepts cross-folder links to in-tree targets that exist on disk** (issue #0185). Three fix shapes are viable — see finding 1 for the trade-offs:
+1. **`dydo check <subfolder>` accepts cross-folder links to in-tree targets that exist on disk** (issue [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md)). Three fix shapes are viable — see finding 1 for the trade-offs:
    - **(a) Scan from docs root, validate the user-supplied subset.** Most flexible; preserves the user's expected scope semantics for the violation output.
    - **(b) Keep subfolder scan, fall back to `File.Exists` for `.md` link targets that miss `allDocs`.** Smallest diff; mildly weakens the validator (cannot then validate anchors on out-of-scope targets — they fall through `File.Exists` only).
    - **(c) Reject subfolder invocation with a clear error** instructing the user to run from the docs root. Simplest behavioural fix; least useful UX.
    - **Recommendation:** (a). Matches `dydo graph`'s already-correct scope decision and preserves anchor validation across the tree.
-2. **Anchor-only `[label](#section)` links validate against the source doc's own anchors** (issue #0186). Two paths through the code:
+2. **Anchor-only `[label](#section)` links validate against the source doc's own anchors** (issue [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md)). Two paths through the code:
    - In `BrokenLinksRule.cs:24-51`, add an explicit branch *before* the `EndsWith(".md")` check: when `link.Target == "" && link.Anchor != null`, validate via `_linkResolver.ValidateAnchor(link.Anchor, doc)`.
-   - **OR** make `LinkResolver.ResolveLink` recognise empty-target as "source doc is the target." This is the more orthogonal fix and lines up with #0187 (one resolver path, not multiple call sites coding around it).
-3. **Collapse `LinkResolver` and `DocLinkResolver` to one implementation** (issue #0187). Recommendation: delete `Services/DocLinkResolver.cs`, extend `ILinkResolver` with whatever shape `DocGraph` needs (probably a `string? ResolveToRelativeKey(...)` method that returns the basepath-relative target string), and have `DocGraph.cs:33` call into it. This eliminates the four named tripwires in finding 3.
-4. **Add the regression tests named in finding 4** (issue #0188). Minimum set:
-   - `BrokenLinksRuleTests.Validate_AcceptsCrossFolderLink_WhenTargetNotInAllDocs_ButExistsOnDisk` — guards #0185 directly.
+   - **OR** make `LinkResolver.ResolveLink` recognise empty-target as "source doc is the target." This is the more orthogonal fix and lines up with [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) (one resolver path, not multiple call sites coding around it).
+3. **Collapse `LinkResolver` and `DocLinkResolver` to one implementation** (issue [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)). Recommendation: delete `Services/DocLinkResolver.cs`, extend `ILinkResolver` with whatever shape `DocGraph` needs (probably a `string? ResolveToRelativeKey(...)` method that returns the basepath-relative target string), and have `DocGraph.cs:33` call into it. This eliminates the four named tripwires in finding 3.
+4. **Add the regression tests named in finding 4** (issue [#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)). Minimum set:
+   - `BrokenLinksRuleTests.Validate_AcceptsCrossFolderLink_WhenTargetNotInAllDocs_ButExistsOnDisk` — guards [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) directly.
    - `BrokenLinksRuleTests.Validate_AcceptsTwoLevelParentLink_AcrossFolders` (`../../foo/bar.md`).
    - `BrokenLinksRuleTests.Validate_AcceptsAnchorOnlyLink_WhenAnchorExistsOnSamePage` — guards #0186.
    - `BrokenLinksRuleTests.Validate_ReportsAnchorOnlyLink_WhenAnchorDoesNotExist`.
    - `BrokenLinksRuleTests.Validate_DoesNotEmitEmptyTargetError_ForAnchorOnlyLink`.
-   - `DocLinkResolverTests.Resolve_AgreesWithLinkResolver_OnEveryRelativeShape` — *parametrised* cross-resolver agreement test. If #0187 is folded in by deletion, this becomes `LinkResolverTests.Resolve_HandlesEveryRelativeShape_UsedByBothCallers` instead.
+   - `DocLinkResolverTests.Resolve_AgreesWithLinkResolver_OnEveryRelativeShape` — *parametrised* cross-resolver agreement test. If [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) is folded in by deletion, this becomes `LinkResolverTests.Resolve_HandlesEveryRelativeShape_UsedByBothCallers` instead.
    - `CheckCommandTests.Check_Subfolder_AcceptsLinksToTargetsOutsideSubfolder` — integration-level guard for #0185.
    - `PathUtilsTests.ResolvePath_HandlesMixedSeparators` + `PathUtilsTests.ResolvePath_CollapsesParentSegments` — positive-correctness tests; `PathUtilsDiscoveryTests` currently only checks the result contains no `\` and no `..`.
 
@@ -361,13 +364,13 @@ Hand-crafted at `dydo/agents/Frank/repro/` (4 files). Source-of-truth for "every
 - `Commands/CheckDocValidator.cs` (if shape (a) — needs second pass or different `allDocs` source)
 - `Rules/BrokenLinksRule.cs` (anchor-only branch)
 - `Services/LinkResolver.cs` (potentially: empty-target handling, the public method `DocGraph` needs)
-- `Services/DocLinkResolver.cs` (delete if #0187 folded in)
+- `Services/DocLinkResolver.cs` (delete if [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) folded in)
 - `Services/DocGraph.cs` (re-route through `ILinkResolver`)
 - `Services/ILinkResolver.cs` (extend if `DocGraph` needs a new method)
 - `DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs` (regression tests)
 - `DynaDocs.Tests/Services/LinkResolverTests.cs` (regression tests)
 - `DynaDocs.Tests/Services/PathUtilsDiscoveryTests.cs` (positive `ResolvePath` tests)
 - `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` (new `Check_Subfolder_…` test)
-- Possibly new: `DynaDocs.Tests/Services/DocLinkResolverTests.cs` (only if #0187 keeps both resolvers)
+- Possibly new: `DynaDocs.Tests/Services/DocLinkResolverTests.cs` (only if [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) keeps both resolvers)
 
 **Rule-of-three / anti-slop reminder.** This report names a real second resolver (#0187) and a real test gap (#0188). The temptation will be to "while we're here" expand into the cross-tree bug, refactor the rule framework, etc. Don't. The slice ends when the four verification commands above pass.

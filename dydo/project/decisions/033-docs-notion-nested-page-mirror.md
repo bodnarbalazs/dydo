@@ -128,7 +128,7 @@ spine databases.
 - **Lossy converter — SUPERSEDED by [DR 035](./035-docs-body-sync-via-notion-native-markdown-api.md).**
   `NotionBlockConverter` was line-oriented (no inline formatting, nesting, tables, or even blank-line
   fidelity), so the round-trip drifted and the bidirectional merge fabricated conflict markers into
-  the canonical repo (issue 0235 — 176 docs corrupted in a live smoke). The fix is **not** converter
+  the canonical repo ([issue 0235](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md) — 176 docs corrupted in a live smoke). The fix is **not** converter
   enrichment: body sync moves to Notion's **native Markdown API** (Notion maps blocks↔markdown
   server-side), with a thin Markdig dialect-normalization for the merge and **shadow-file conflicts**
   (never write markers into a canonical file). See DR 035. The two-way body model of this DR is

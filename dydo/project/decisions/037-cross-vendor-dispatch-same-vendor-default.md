@@ -29,7 +29,7 @@ A Claude Code session can only spawn Claude-model subagents in its workflows; a 
 
 ### 2. The doctrine: same-vendor default, explicit cross-vendor override
 
-Default dispatch vendor = the dispatching agent's own vendor. Crossing vendors is an explicit `--codex` / `--claude` override on the dispatch — a deliberate act, normally the human's ("run this sprint on codex"). No routing table, no automatic vendor selection. If a standing preference ever emerges (e.g. capacity-based reroute per the [cross-vendor backlog](../backlog/cross-vendor-agent-integration.md)), it is expressed by whoever dispatches, not by dydo policy — revisit only if manual overrides become routine.
+Default dispatch vendor = the dispatching agent's own vendor. Crossing vendors is an explicit `--codex` / `--claude` override on the dispatch — a deliberate act, normally the human's ("run this sprint on codex"). No routing table, no automatic vendor selection. If a standing preference ever emerges (e.g. capacity-based reroute per the [cross-vendor backlog](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/backlog/cross-vendor-agent-integration.md)), it is expressed by whoever dispatches, not by dydo policy — revisit only if manual overrides become routine.
 
 Consequence of the default: unless the human says otherwise, everything stays on the vendor they addressed. Ask the (Claude-hosted) chief-of-staff for an inquisition or a thorough review → it runs Claude. Tell it to dispatch codex Tier-1 agents for a sprint → that sprint's sessions are Codex, and everything *those* sessions dispatch is Codex by the same default.
 
@@ -52,14 +52,14 @@ A stuck agent — any vendor — escalates via `dydo msg` to the chief-of-staff,
 
 ### 6. One hardening item
 
-A vendor override targeting an unconfigured/unavailable vendor must fail fast with an actionable message — [issue 0239](../issues/resolved/0239-dispatch-vendor-override-needs-a-friendly-error-when-the-target-vendor-is-not-co.md). With tri-modal support (claude-only, codex-only, both), that mistake is routine, not exotic.
+A vendor override targeting an unconfigured/unavailable vendor must fail fast with an actionable message — [issue 0239](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0239-dispatch-vendor-override-needs-a-friendly-error-when-the-target-vendor-is-not-co.md). With tri-modal support (claude-only, codex-only, both), that mistake is routine, not exotic.
 
 ## Consequences
 
 - No schema or behavior change to roles, tiers, skills, or workflows. The second vendor's tier mapping in `dydo.json` (anticipated by DR 028 §2) is the only config prerequisite.
-- Issue 0239 (friendly override error) is the only net-new code item from this decision.
-- Codex guard adapter (install the guard into Codex's hooks config at init/sync) is follow-up work — tracked on the [cross-vendor backlog](../backlog/cross-vendor-agent-integration.md), sequenced after the smoke test.
-- Adoption path (each step shippable alone, gated on the v2.0.6 CLI release carrying the Codex dispatch/launch/resume fixes, issues 0227/0230/0231, with 0233 e2e coverage still open):
+- [Issue 0239](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0239-dispatch-vendor-override-needs-a-friendly-error-when-the-target-vendor-is-not-co.md) (friendly override error) is the only net-new code item from this decision.
+- Codex guard adapter (install the guard into Codex's hooks config at init/sync) is follow-up work — tracked on the [cross-vendor backlog](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/backlog/cross-vendor-agent-integration.md), sequenced after the smoke test.
+- Adoption path (each step shippable alone, gated on the v2.0.6 CLI release carrying the Codex dispatch/launch/resume fixes, issues [0227](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0227-codex-dispatch-launch-fails-launcher-invokes-bare-codex-which-is-not-on-the-dydo.md)/[0230](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0230-shared-session-context-lets-non-owner-commands-act-as-the-active-agent.md)/[0231](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0231-codex-watchdog-auto-resume-launches-claude-instead-of-the-claimed-host.md), with [0233](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0233-codex-first-class-paths-lack-end-to-end-regression-coverage.md) e2e coverage still open):
   1. Single Codex dispatch smoke test (the standing plan, unchanged).
   2. One real task on a dispatched Codex worker — validates the bridge under load and the guard adapter.
   3. A Codex Tier-1 manager running a sprint of Codex workers, Claude-hosted audit at the gate.

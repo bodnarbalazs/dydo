@@ -69,7 +69,7 @@ missed.
 - **Files examined:** `Templates/about-dynadocs.template.md` (lines 215-242), `dydo/reference/about-dynadocs.md` (lines 218-242), `dydo/project/decisions/023-backlog-doc-category.md` (§1).
 - **Independent verification:** Read the `project/` tree block directly — lines 226-234 list `tasks/`, `decisions/`, `changelog/`, `issues/`, `inquisitions/`, `pitfalls/`, `future-features/`; `backlog/` is absent. The repo's generated `about-dynadocs.md` carries the identical omission at the same lines. Decision 023 §1 mandates `backlog/` as a sibling default of `future-features/`, so the diagram is internally inconsistent with the slice it ships in.
 - **Alternative explanations considered:** A deliberate exclusion? No — `future-features/`, its decision-mate, is listed; omitting only `backlog/` is an oversight. Not a non-exhaustive guide either: this is a full tree diagram enumerating every other `project/` subfolder.
-- **Issue:** #0209
+- **Issue:** [#0209](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0209-about-dynadocs-template-project-tree-diagram-omits-backlog-folder.md)
 
 #### 2. `_backlog.template.md` ships a dangling "Decision 023" reference to every project
 
@@ -88,7 +88,7 @@ missed.
 - **Files examined:** `Templates/_backlog.template.md` (line 56), `Templates/_future-features.template.md` (whole file), `dydo/project/decisions/023-backlog-doc-category.md`.
 - **Independent verification:** Line 56 is an inline code span ("See Decision 023 — `dydo/project/decisions/023-backlog-doc-category.md` — ..."), not a markdown link, so `BrokenLinksRule` cannot flag it. `dydo init` copies the template verbatim; a freshly scaffolded project has no `decisions/023`, so the pointer dangles. Confirmed `_future-features.template.md` carries no analogous reference — the defect is unique to the backlog meta template.
 - **Alternative explanations considered:** An intended in-repo cross-reference? The path resolves inside the dydo repo, but this is a *shipped template* whose audience is every downstream project — it must not reference repo-private docs. Defect confirmed.
-- **Issue:** #0210
+- **Issue:** [#0210](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0210-backlog-template-md-ships-dangling-decision-023-reference-to-downstream-projects.md)
 
 #### 3. Test-coverage gap — `FolderScaffolderTests` never asserts the two new folders scaffold
 
@@ -214,7 +214,7 @@ missed.
 
 ### Notes (not findings)
 
-- **`#0197` is unrelated.** The brief asked whether issue #0197's `gap_check` flag on
+- **[#0197](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0197-watchdog-and-terminal-launchers-do-not-scrub-or-pin-dydo-agent-on-child-processs.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0197-watchdog-and-terminal-launchers-do-not-scrub-or-pin-dydo-agent-on-child-processs.md --> is unrelated.** The brief asked whether issue [#0197](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0197-watchdog-and-terminal-launchers-do-not-scrub-or-pin-dydo-agent-on-child-processs.md)'s `gap_check` flag on
   `WorktreeCommand.cs` relates to the junction change. It does not — #0197 concerns
   `DYDO_AGENT` env-var scrubbing on watchdog/launcher `ProcessStartInfo`. The flag is
   incidental file-level overlap.
@@ -248,8 +248,8 @@ inconclusive. Each finding is genuine and correctly characterised; no over-claim
 
 | # | Finding | Ruling | Filed as |
 |---|---|---|---|
-| 1 | `about-dynadocs.template.md` tree omits `backlog/` | CONFIRMED | issue #0209 |
-| 2 | `_backlog.template.md` dangling Decision 023 reference | CONFIRMED | issue #0210 |
+| 1 | `about-dynadocs.template.md` tree omits `backlog/` | CONFIRMED | [issue #0209](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0209-about-dynadocs-template-project-tree-diagram-omits-backlog-folder.md) |
+| 2 | `_backlog.template.md` dangling Decision 023 reference | CONFIRMED | [issue #0210](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0210-backlog-template-md-ships-dangling-decision-023-reference-to-downstream-projects.md) |
 | 3 | `FolderScaffolderTests` misses the two new folders | CONFIRMED | backlog `land-backlog-slice-test-coverage.md` |
 | 4 | No negative role-permission test for `backlog/` | CONFIRMED | backlog `land-backlog-slice-test-coverage.md` |
 | 5 | Junction tests assert script text, never execute | CONFIRMED | backlog `junction-setup-script-e2e-test.md` |

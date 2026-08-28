@@ -49,7 +49,7 @@ The store is outside the repo, per-user, and off-canon by design, so dydo the CL
 
 ## Consequences
 
-- `TemplateGenerator` CLAUDE.md routing line — small code change, tracked on the [auto-memory backlog](../backlog/auto-memory-policy.md). This repo's own CLAUDE.md gets the same line (trivial edit).
+- `TemplateGenerator` CLAUDE.md routing line — small code change, tracked on the [auto-memory backlog](https://linear.app/bodnar-balazs/issue/DYD-36/implement-the-settled-agent-auto-memory-routing-policy). This repo's own CLAUDE.md gets the same line (trivial edit).
 - Chief-of-staff methodology gains the sweep item — same backlog.
 - Initial manual sweep of this machine's store: routing proposal at `dydo/agents/Leo/notes-memory-sweep-routing.md`, awaiting balazs's sign-off before any deletion.
 

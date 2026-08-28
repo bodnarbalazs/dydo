@@ -53,15 +53,15 @@ Loss of explicit per-channel tracking is acceptable — in practice it drifted f
 
 This is a cleaner separation of concerns: `--wait` becomes a *release constraint* on the callee, not a blocking call on the caller. The caller can continue working in parallel; the callee owes a reply.
 
-### Issue #0133 is a separate prerequisite
+### Issue [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md --> is a separate prerequisite
 
-The general-wait blocking bug (#0133) must be fixed before this ships, otherwise universalising the general wait deadlocks every agent the same way it currently deadlocks orchestrators. Fix and regression tests are required:
+The general-wait blocking bug ([#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md)) must be fixed before this ships, otherwise universalising the general wait deadlocks every agent the same way it currently deadlocks orchestrators. Fix and regression tests are required:
 
 - A test that verifies `dydo wait` (general) actually blocks when the inbox has only known/old unreads.
 - A test that verifies the wait marker reaches `Listening=true` before the next guard check (race scenario from `OrchestratorMissingGeneralWait`).
 - A test that verifies the marker is cleaned on `dydo agent release` so the wait teardown can't outlive the agent.
 
-These tests are part of the slice that fixes #0133, not part of the simplification slice.
+These tests are part of the slice that fixes [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md), not part of the simplification slice.
 
 ## Consequences
 
@@ -69,7 +69,7 @@ These tests are part of the slice that fixes #0133, not part of the simplificati
 
 - **Workflow / templates.** Every `Templates/mode-*.template.md` adds a "Register general wait" step right after the role-set step. The orchestrator template's "Dispatch" section drops per-task `dydo wait --task` registration and rewrites the dispatch pattern to rely on the general wait + agent list. Workflow files in `dydo/agents/*/` regenerate from templates.
 - **Guard.** `OrchestratorMissingGeneralWait` (`GuardCommand.cs:1331`) generalizes to `MissingGeneralWait` — applies to all roles once a general wait is expected post-claim. The orchestrator-specific carve-out goes away.
-- **Wait command.** `dydo wait` (no `--task`) keeps current semantics but the bug behind #0133 must be resolved as a hard prerequisite — see above for required tests.
+- **Wait command.** `dydo wait` (no `--task`) keeps current semantics but the bug behind [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) must be resolved as a hard prerequisite — see above for required tests.
 - **Dispatch.** `CheckWaitPrivilege` (`DispatchService.cs:490`) stays — `--wait` remains oversight-only. The dispatch-time auto-registration of `dydo wait --task` (today's orchestrator pattern) is removed. Release-time check on the dispatched agent gains a new constraint: if the dispatch was `--wait`, the agent cannot release until a message has been sent on the dispatched task's subject to the dispatcher.
 - **Tests.** Every test that exercises agent lifecycle or dispatch-with-wait needs updating. Mechanical but broad.
 
@@ -81,7 +81,7 @@ These tests are part of the slice that fixes #0133, not part of the simplificati
 ### Migration
 
 - Breaking change to templates and a behavioural change to `--wait`. Minor version bump (v1.4.0).
-- Ship #0133 fix first or in the same release; if same release, fix is the first slice to land.
+- Ship [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) fix first or in the same release; if same release, fix is the first slice to land.
 - Existing workflow files in `dydo/agents/*/` regenerate from templates on next `dydo fix` / template update.
 
 ### Re-evaluate
@@ -101,4 +101,4 @@ These tests are part of the slice that fixes #0133, not part of the simplificati
 - `Commands/WaitCommand.cs` — #0133 fix landing here as a prerequisite slice.
 - `Services/DispatchService.cs` — Drop dispatch-time task-wait registration; add `--wait` release constraint on the dispatched agent.
 - [Decision 005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md) — Partially superseded for the *what `--wait` means* question; "fresh agent for review feedback" stance unchanged.
-- [Issue #0133](../issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) — Hard prerequisite. Must ship first or in the same release with regression tests.
+- [Issue #0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) — Hard prerequisite. Must ship first or in the same release with regression tests.

@@ -64,4 +64,4 @@ discipline erodes, escalation is a CLI check, not more prose.
 - [DR-034](./034-pm-record-taxonomy.md) — Sprint/SprintTask records and status vocabulary.
 - [DR-041](./041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md) — why prompts
   and records are the only rails.
-- Exemplar: `dydo/project/sprints/c1-codex-adoption.md` — a sprint that lived the full gate.
+- Exemplar: [`dydo/project/sprints/c1-codex-adoption.md`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/sprints/c1-codex-adoption.md) — a sprint that lived the full gate.

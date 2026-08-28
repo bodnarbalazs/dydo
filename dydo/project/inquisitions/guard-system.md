@@ -43,7 +43,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Services/GuardLiftService.cs (lines 1-71), Commands/GuardCommand.cs (lines 271-280, 330-342, 785-793, 1330-1334), Commands/GuardLiftCommand.cs (lines 56-103, 1224-1226), dydo/files-off-limits.md (full file), DynaDocs.Tests/Integration/GuardLiftSelfEscalationTests.cs (full file)
 - **Independent verification:** Confirmed `.guard-lift.json` is NOT in files-off-limits.md. Confirmed `IsLifted()` performs no integrity validation — accepts any `liftedBy` value. Confirmed `HandleWriteOperation:272` returns Success before RBAC at line 283. Confirmed `HumanOnlyDydoCommandRegex` blocks agents from `dydo guard lift` CLI but not direct file writes. Confirmed `IsPathAllowed` for code-writer role permits `dydo/agents/{self}/**` which includes the marker path. Independently verified Mia's test suite — 5 tests covering the full exploit chain including blast radius validation (off-limits still blocks).
 - **Alternative explanations considered:** Could off-limits implicitly cover this? No — only `state.md`, `.session`, `.pending-session` are listed, not `.guard-lift.json`. Could RBAC block the marker write? No — all roles permit `dydo/agents/{self}/**`.
-- **Issue:** #0055
+- **Issue:** [#0055](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0055-guard-lift-self-escalation-agents-can-bypass-rbac-by-writing-marker-file.md)
 
 #### 2. Interpreter execution bypasses bash file operation analysis entirely
 - **Category:** security
@@ -58,7 +58,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Services/BashCommandAnalyzer.cs (lines 12-136, 301-332, 344-360, 440-509, 512-523, 628-702), Commands/GuardCommand.cs (lines 640-679, 731-746)
 - **Independent verification:** Confirmed `python`, `python3`, `node`, `ruby`, `perl`, `php` absent from all command dictionaries (ReadCommands, WriteCommands, DeleteCommands, PermissionCommands, CopyMoveCommands). Confirmed `AnalyzeSubCommand` only checks sed/awk special cases and redirections for unknown commands. Confirmed `AnalyzeAndCheckBashOperations` iterates `analysis.Operations` — if empty (no recognized file ops), no off-limits or RBAC checks occur. `Base64DecodePipeExecRegex` catches `base64 -d | python` but not standalone `python -c "..."`.
 - **Alternative explanations considered:** This is an inherent limitation of static shell analysis — the guard cannot execute arbitrary interpreter code to determine its file operations. However, detecting interpreter invocation patterns (`python -c`, `node -e`, etc.) as at minimum a warning is feasible and absent.
-- **Issue:** #0056
+- **Issue:** [#0056](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0056-interpreter-execution-bypasses-bash-file-operation-analysis.md)
 
 #### 3. Command substitution/variable expansion warnings don't block
 - **Category:** security
@@ -69,7 +69,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Services/BashCommandAnalyzer.cs (lines 344-360, 192-203, 301-332, 440-509, 733-734), Commands/GuardCommand.cs (lines 459-471, 731-746)
 - **Independent verification:** Confirmed `BypassChecks` array at line 344 only adds to `result.Warnings`, never sets `HasDangerousPattern` or returns early. Confirmed `HandleBashCommand` at lines 733-734 prints warnings via `Console.Error.WriteLine` then proceeds to file operation checks. The file operations extracted from commands containing `$(...)` or `$VAR` are based on literal tokens, not runtime-resolved values.
 - **Alternative explanations considered:** Blocking all command substitution would be overly restrictive — legitimate uses like `$(git rev-parse HEAD)` are common. The issue is not that warnings don't block, but that when these patterns are present, the file operation analysis is known to be unreliable yet the guard proceeds as if it's reliable. A "tainted analysis" flag could trigger stricter review.
-- **Issue:** #0057
+- **Issue:** [#0057](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0057-command-substitution-and-variable-expansion-bypass-file-operation-analysis.md)
 
 #### 4. DangerousPatterns has gaps for non-Unix destructive commands
 - **Category:** security
@@ -83,7 +83,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Services/BashCommandAnalyzer.cs (lines 139-185, 205-272), Commands/GuardCommand.cs (lines 459-471, 682-746)
 - **Independent verification:** Confirmed `RecursiveDeleteRootRegex` at line 205 requires `(/|~|/\*)` after flags — `./` does not match. Confirmed `RecursiveDeleteGlobRegex` catches `rm -rf *` but not `rm -rf ./`. Confirmed `DdDiskWriteRegex` at line 220 only matches `/dev/sd[a-z]`, missing NVMe/virtio/eMMC. No PowerShell dangerous pattern for `Remove-Item -Recurse -Force`. However: `rm -rf ./` would still be caught by RBAC as a delete operation extracted by `BashCommandAnalyzer`, and PowerShell `Remove-Item` is in `DeleteCommands` dictionary — these are partially mitigated by the RBAC layer.
 - **Alternative explanations considered:** The dangerous patterns are an early-exit safety net; RBAC provides a second layer for the `rm -rf ./` and PowerShell cases. The NVMe gap is narrow but real. The gaps are real even if partially mitigated.
-- **Issue:** #0058
+- **Issue:** [#0058](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0058-dangerouspatterns-has-gaps-for-rm-rf-powershell-and-nvme-devices.md)
 
 #### 5. Nudge patterns match content inside command arguments (false positives)
 - **Category:** bug
@@ -96,7 +96,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardCommand.cs (lines 441-549, 492-549), Services/ConfigFactory.cs (lines 9-58)
 - **Independent verification:** Confirmed `CheckNudges` at line 503 calls `regex.Match(command)` against the entire bash command string including arguments. Confirmed nudges run at line 451 BEFORE `IsDydoCommand()` at line 455. Verified the git worktree nudge pattern (`\bgit\b[^;|&]*\bworktree\s+(add|remove)\b` from ConfigFactory.cs:49) would match text inside `--brief` or `--body` arguments. The inquisitor observed this firsthand during investigation, which corroborates.
 - **Alternative explanations considered:** Could nudge patterns be designed to match argument text? No — the worktree nudge targets the `git worktree add` shell command, not text about it. The false positive is a bug in the matching scope.
-- **Issue:** #0059
+- **Issue:** [#0059](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0059-nudge-patterns-match-content-inside-command-arguments-causing-false-positives.md)
 
 #### 6. Off-limits bypass inconsistency: direct reads vs bash reads
 - **Category:** bug
@@ -107,7 +107,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardCommand.cs (lines 308-331, 333-342, 749-812), Services/OffLimitsService.cs (lines 56-64), dydo/files-off-limits.md (line 29: `dydo/agents/*/modes/**`)
 - **Independent verification:** Confirmed `CheckDirectFileOffLimits` (line 314) calls `ShouldBypassOffLimits` which invokes `IsAnyModeFile` for Stage 2 agents, allowing reads of any agent's mode files. Confirmed `CheckBashFileOperation` (lines 753-766) calls `offLimitsService.IsPathOffLimits(op.Path)` directly — no `ShouldBypassOffLimits` call. Verified `dydo/agents/*/modes/**` is in files-off-limits.md. Therefore `Read dydo/agents/Kate/modes/reviewer.md` succeeds (bootstrap bypass) but `cat dydo/agents/Kate/modes/reviewer.md` is blocked by off-limits.
 - **Alternative explanations considered:** Agents should use the Read tool, not cat. But the guard should be consistent regardless — inconsistent enforcement erodes trust in the system and causes confusing agent failures.
-- **Issue:** #0060
+- **Issue:** [#0060](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0060-off-limits-bypass-inconsistency-between-direct-reads-and-bash-reads.md)
 
 #### 7. Dead code in OffLimitsService (~70 lines)
 - **Category:** dead-code
@@ -118,7 +118,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Services/OffLimitsService.cs (lines 91-101, 238-266, 291-309), Services/IOffLimitsService.cs (lines 15-35)
 - **Independent verification:** Confirmed `CheckCommand` (line 91) is NOT on the `IOffLimitsService` interface — interface only exposes `LoadPatterns`, `IsPathOffLimits`, `Patterns`, `WhitelistPatterns`. Grepped for `.CheckCommand(` across all .cs files — zero callers found. `ExtractPathsFromCommand` (line 252) and `CommandPathPatterns` (line 238) are only reachable through `CheckCommand`. The private `LooksLikePath` (line 291) is only called by `ExtractPathsFromCommand`. All ~70 lines are dead code from an earlier implementation approach when off-limits checking was command-based rather than path-based.
 - **Alternative explanations considered:** Could these be used by the `dydo check` validation command? No — grepped for all `.CheckCommand(` calls and found none.
-- **Issue:** #0061
+- **Issue:** [#0061](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0061-dead-code-in-offlimitsservice-checkcommand-and-related-methods-70-lines.md)
 
 #### 8. Nudge evaluation order shadows dangerous pattern detection
 - **Category:** antipattern
@@ -129,7 +129,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardCommand.cs (lines 441-490, 451, 459, 492-549)
 - **Independent verification:** Confirmed `CheckNudges` runs at line 451 before `CheckDangerousPatterns` at line 459. For block-severity nudges, line 544-545 returns immediately, preventing dangerous pattern check from running. For warn-severity nudges, first invocation blocks at line 530, second invocation passes at line 533-534 then proceeds to dangerous pattern check at 459. Verified current default nudges (ConfigFactory) don't overlap with dangerous patterns, but custom nudges could. A misconfigured nudge matching `rm -rf /` would shadow H17.
 - **Alternative explanations considered:** Could the ordering be intentional? No — security checks (hardcoded, non-configurable) should always take priority over configurable nudges. The inversion means a project owner could inadvertently shadow security checks.
-- **Issue:** #0062
+- **Issue:** [#0062](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0062-nudge-evaluation-runs-before-dangerous-pattern-detection-can-shadow-security-che.md)
 
 #### 9. Performance: 15 filesystem reads per guard invocation
 - **Category:** inefficiency
@@ -140,7 +140,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardCommand.cs (lines 227, 249, 259, 312, 403, 512, 566, 593, 603, 645, 690, 709, 771, 789, 1318), Services/ConfigFactory.cs (line 500 in CheckNudges)
 - **Independent verification:** Counted 15 `registry.GetCurrentAgent(sessionId)` call sites in GuardCommand.cs — confirmed. Not all hit on every invocation (different code paths), but a typical non-dydo bash command path hits 6-10 per invocation. Confirmed `CheckNudges` at line 500 creates `new Regex(nudge.Pattern, RegexOptions.IgnoreCase)` per nudge per invocation — patterns are static but compiled fresh each time. The guard is a short-lived CLI process (no caching opportunity), so the practical impact is low on local SSDs but could matter on network filesystems.
 - **Alternative explanations considered:** The guard is invoked per tool call and exits — no opportunity for cross-invocation caching. Within a single invocation, a local variable could avoid redundant reads. Low practical severity but real waste.
-- **Issue:** #0063
+- **Issue:** [#0063](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0063-redundant-getcurrentagent-filesystem-reads-per-guard-invocation.md)
 
 #### 10. H19 (indirect dydo invocation) is a configurable nudge, not a hard rule
 - **Category:** doc-discrepancy
@@ -151,7 +151,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Services/ConfigFactory.cs (lines 9-58), Commands/GuardCommand.cs (lines 451, 455, 492-549), dydo/reference/guardrails.md (lines 100-107, 139-144)
 - **Independent verification:** Confirmed H19's patterns (`npx dydo`, `dotnet dydo`, etc.) are defined as `Severity = "block"` nudges in `ConfigFactory.DefaultNudges` (lines 11-38). Confirmed `CheckNudges` at line 492-549 processes these — same configurable mechanism as all nudges. Confirmed guardrails.md line 105 lists H19 under "Hard Rules (Uncrossable)" and line 141 states "Bash safety analysis (H17–H20, H26)" is "hard-coded." Confirmed `ConfigFactory.EnsureDefaultNudges` (line 96) adds missing defaults but doesn't prevent removal. A project owner editing `dydo.json` can remove these nudges.
 - **Alternative explanations considered:** Functionally, block-severity nudges always block (no marker/retry mechanism), so the behavior matches a hard rule. But the mechanism is fundamentally different — it's configurable, not hardcoded. The doc should distinguish this.
-- **Issue:** #0064
+- **Issue:** [#0064](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0064-h19-indirect-dydo-invocation-documented-as-hard-coded-but-is-configurable-nudge.md)
 
 #### 11. Guard lift mechanism entirely undocumented
 - **Category:** doc-discrepancy
@@ -162,7 +162,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardLiftCommand.cs (lines 1-147), Commands/GuardCommand.cs (lines 271-280, 792, 1330-1334), Services/GuardLiftService.cs (lines 42-68), dydo/understand/guard-system.md (full file), dydo/reference/guardrails.md (full file)
 - **Independent verification:** Searched guard-system.md for "lift" — zero mentions. Searched guardrails.md for "lift" — only found in HumanOnlyDydoCommandRegex context (line 1225) and as a human-only command category, but no dedicated guardrail entry documenting the RBAC bypass mechanism. GuardLiftCommand.cs is 147 lines implementing a significant feature. GuardCommand.cs at lines 271-280 and 792 uses `IsGuardLifted()` to bypass RBAC entirely.
 - **Alternative explanations considered:** Guard lift is human-only (blocked for agents by `IsHumanOnlyDydoCommand`), so one might argue it's an admin tool. But it's a mechanism that bypasses the entire RBAC layer and is relevant to understanding the guard system. Its absence from both docs is a significant gap, especially given finding #1 (the self-escalation vulnerability exists partly because this mechanism is undocumented).
-- **Issue:** #0065
+- **Issue:** [#0065](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0065-guard-lift-mechanism-entirely-undocumented.md)
 
 #### 12. git merge worktree block and human-only command restriction lack guardrail IDs
 - **Category:** doc-discrepancy
@@ -173,7 +173,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardCommand.cs (lines 706-729, 1221-1226), dydo/reference/guardrails.md (lines 69-70, 99-107)
 - **Independent verification:** Confirmed `git merge` block at lines 706-729 is a distinct guardrail with no ID in guardrails.md. Confirmed `HumanOnlyDydoCommandRegex` at line 1225 blocks `task approve/reject`, `roles reset`, `guard lift/restore` for agents — implemented at lines 563-578. Neither has a guardrail ID. Guardrails.md lists H17-H26 and H27 but has no entry for these two enforcement points.
 - **Alternative explanations considered:** The git merge block could be considered part of worktree enforcement, but it's a distinct hard rule with its own error message and deserves its own ID for completeness. The human-only restriction is a fundamental access control mechanism.
-- **Issue:** #0066
+- **Issue:** [#0066](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0066-git-merge-worktree-block-and-human-only-command-restriction-lack-guardrail-ids.md)
 
 #### 13. S3 (unread message delivery) doesn't follow soft-block pattern
 - **Category:** doc-discrepancy
@@ -184,7 +184,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardCommand.cs (lines 896-930), dydo/reference/guardrails.md (lines 36-49)
 - **Independent verification:** Confirmed S-tier definition (guardrails.md lines 36-39): "one-time blocking message... The agent CAN override by retrying... a marker file... On second attempt, the marker is found, deleted, and the command succeeds." Confirmed `NotifyUnreadMessages` (lines 896-930) checks `agent.UnreadMessages.Count == 0` — if not zero, blocks. No marker file created. Block persists until messages are read and cleared via `MarkMessageRead` / `dydo inbox clear`. The doc's own description at line 47 acknowledges: "this is a delivery mechanism, not a one-time check." S3 is correctly categorized as a persistent block, which contradicts the S-tier definition.
 - **Alternative explanations considered:** S3 could be in a tier of its own. The doc acknowledges the deviation in S3's description, but it undermines the tier system's clarity to have an entry that contradicts its tier's definition.
-- **Issue:** #0067
+- **Issue:** [#0067](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0067-s3-unread-message-delivery-behaves-as-hard-rule-but-categorized-as-soft-block.md)
 
 #### 14. Duplicate LooksLikePath implementations
 - **Category:** antipattern
@@ -195,7 +195,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Services/OffLimitsService.cs (lines 91-101, 238-266, 291-309), Services/BashCommandAnalyzer.cs (lines 687-702)
 - **Independent verification:** Confirmed `OffLimitsService.LooksLikePath` (line 291) and `BashCommandAnalyzer.LooksLikePath` (line 687) are separate implementations with divergent logic. OffLimitsService version: simpler, checks `.`, `/`, `\\`, shell builtins. BashCommandAnalyzer version: checks known extensions, sensitive names, bracket/digit-colon patterns, path indicators. Currently moot because the OffLimitsService version is dead code (finding #7). If the dead code is removed, this issue resolves itself.
 - **Alternative explanations considered:** N/A — currently moot. The finding is technically correct but has zero practical impact while finding #7 exists.
-- **Issue:** #0068
+- **Issue:** [#0068](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0068-duplicate-lookslikepath-implementations-in-offlimitsservice-and-bashcommandanaly.md)
 
 #### 15. Stage 2 agents can read ALL agents' mode files via off-limits bypass
 - **Category:** doc-discrepancy
@@ -206,7 +206,7 @@ Feature investigation of the guard system — `GuardCommand` and `GuardLiftComma
 - **Files examined:** Commands/GuardCommand.cs (lines 333-342, 1120-1127), dydo/understand/guard-system.md (off-limits and staged access sections)
 - **Independent verification:** Confirmed `ShouldBypassOffLimits` (line 339-340) calls `IsAnyModeFile(filePath)` when `agent.Role` is set — this matches `dydo/agents/*/modes/*.md` for ANY agent, not just the current one. Confirmed guard-system.md's staged onboarding section says Stage 1 adds "own mode files" and Stage 2 says "all reads allowed" — but doesn't clarify that the off-limits bypass scope expands at Stage 2 to include all agents' mode files specifically.
 - **Alternative explanations considered:** Mode files are generic role templates, not task-specific. Reading another agent's mode file reveals role instructions but no sensitive data. This may be intentional — judges reviewing inquisition reports benefit from understanding other roles. The security risk is minimal, but the documentation gap is real.
-- **Issue:** #0069
+- **Issue:** [#0069](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0069-stage-2-agents-can-read-all-agents-mode-files-via-off-limits-bypass-undocumented.md)
 
 ### Hypotheses Not Reproduced
 - Nudge marker pre-emption for warn-severity nudges: creating `.nudge-{hash}` markers would bypass the first-attempt block, but matches intended behavior — the agent would proceed to the second attempt anyway. Block-severity nudges are unaffected.
@@ -264,7 +264,7 @@ All 6 fixes mentioned in the brief are correctly implemented:
 - **Files examined:** Commands/WorktreeCommand.cs (lines 400-500, focusing on TeardownWorktree, RemoveJunction, DeleteDirectoryJunctionSafe, RemoveZombieDirectory), Services/DispatchService.cs (lines 615-630)
 - **Independent verification:** Confirmed `RemoveZombieDirectory` at line 480 uses `Directory.Delete(worktreePath, recursive: true)`. Confirmed `DeleteDirectoryJunctionSafe` at line 442-458 exists and IS used by `DispatchService.cs:624` with an explicit comment warning about junction following. Confirmed `RemoveJunction` has a bare `catch` block at line 431 that silently swallows failures — if any junction removal fails, the subsequent recursive delete follows into the remaining junction target. The two paths in the same codebase use different deletion strategies for the same class of risk.
 - **Alternative explanations considered:** Could `RemoveZombieDirectory` only be called on directories without junctions? No — `TeardownWorktree` at line 406-413 calls `RemoveJunction` first, then `RemoveZombieDirectory`. If junction removal fails silently (bare catch), the zombie directory still contains junctions when `Directory.Delete` runs. The `JunctionSubpaths` list could also be incomplete if new junctions are added without updating it.
-- **Issue:** #0084
+- **Issue:** [#0084](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0084-removezombiedirectory-uses-junction-unsafe-directory-delete.md)
 
 #### 2. Shell subcommand execution bypasses file operation analysis
 - **Category:** security
@@ -284,7 +284,7 @@ All 6 fixes mentioned in the brief are correctly implemented:
 - **Files examined:** Services/BashCommandAnalyzer.cs (lines 1-60 command dictionaries, lines 270-280 InlineInterpreterRegex, lines 180-188 DangerousPatterns), Commands/GuardCommand.cs (lines 730-770 HandleNonDydoBash file operation checks), DynaDocs.Tests/Integration/GuardIntegrationTests.cs (lines 625-653 false positive safety tests)
 - **Independent verification:** Grepped for `bash`, `sh`, `zsh` in all command dictionaries — zero matches. Confirmed `InlineInterpreterRegex` at line 279 covers `python[23]?|node|ruby|perl` with `-[ceE]` and `php -r` but NOT `bash/sh/zsh`. Confirmed tests at lines 636-637 show `sh -c "echo hello"` and `bash -c "npm install"` are explicitly kept as allowed (false positive safety), confirming this is a deliberate design tradeoff. The gap is real but narrower than it appears: dangerous patterns still match on the full string, redirections are detected by `AnalyzeRedirection`, and `bash -c "dydo ..."` is caught by the indirect invocation nudge.
 - **Alternative explanations considered:** Blocking all `bash -c` / `sh -c` would cause massive false positives — these are extremely common in legitimate CI/CD and build tool usage (the test suite itself documents this). The issue is not that they're allowed, but that the inner commands' file operations are invisible to off-limits and RBAC checks. A targeted approach (parsing the -c argument string as a subcommand) would be more appropriate than a blanket block.
-- **Issue:** #0085
+- **Issue:** [#0085](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0085-bash-c-sh-c-bypasses-guard-file-operation-analysis.md)
 
 #### 3. Command substitution hiding entire write operations
 - **Category:** security
@@ -306,7 +306,7 @@ All 6 fixes mentioned in the brief are correctly implemented:
 - **Files examined:** Commands/GuardCommand.cs (lines 738-760), Services/BashCommandAnalyzer.cs (lines 352-370 BypassChecks, lines 309-340 Analyze flow), DynaDocs.Tests/Integration/GuardSecurityTests.cs (lines 134-154)
 - **Independent verification:** Confirmed the block condition at GuardCommand.cs:739 requires `analysis.HasBypassAttempt && analysis.Operations.Any(op => op.Type is Write or Delete or Move or Copy or PermissionChange)`. Confirmed that when variable expansion completely hides the command name (e.g., `$CMD file.md`), the tokenizer produces `$CMD` which is not in any command dictionary, so `analysis.Operations` is empty and the condition evaluates to false. Confirmed test at GuardSecurityTests.cs:134-144 covers the case where redirection IS present (blocked correctly), and test at lines 146-154 covers tainted reads (allowed by design). The gap exists specifically when variable expansion hides the command name AND no shell redirection is used.
 - **Alternative explanations considered:** Could the guard block ALL commands with `HasBypassAttempt`? That would be too aggressive — variable expansion in read-only contexts (e.g., `cat $FILENAME`) is legitimate and the test at line 146-154 explicitly keeps this allowed. The issue is the asymmetry: when the write command itself is hidden, the guard has no operations to evaluate. This is an inherent limitation of static analysis — the guard can't resolve runtime variable values.
-- **Issue:** #0086
+- **Issue:** [#0086](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0086-command-substitution-hiding-entire-write-operations-bypasses-guard-block.md)
 
 #### 4. Off-limits bypass inconsistency for bash reads (still present from prior finding #6)
 - **Category:** bug
@@ -314,12 +314,12 @@ All 6 fixes mentioned in the brief are correctly implemented:
 - **Type:** obvious
 - **Evidence:** `CheckBashFileOperation` (`GuardCommand.cs:776`) calls `offLimitsService.IsPathOffLimits(op.Path)` directly — no `ShouldBypassOffLimits` call for bootstrap/mode files. `CheckDirectFileOffLimits` (line 315) DOES bypass off-limits for mode files via `ShouldBypassOffLimits` (line 334). Result: `Read dydo/agents/Kate/modes/reviewer.md` succeeds (bootstrap bypass), but `cat dydo/agents/Kate/modes/reviewer.md` is blocked by off-limits pattern `dydo/agents/*/modes/**`.
 
-  This was reported as finding #6 in the 2026-04-09 inquisition (issue #0060). Still present.
+  This was reported as finding #6 in the 2026-04-09 inquisition ([issue #0060](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0060-off-limits-bypass-inconsistency-between-direct-reads-and-bash-reads.md)). Still present.
 - **Judge ruling:** CONFIRMED
 - **Files examined:** Commands/GuardCommand.cs (lines 309-342 CheckDirectFileOffLimits and ShouldBypassOffLimits, lines 772-806 CheckBashFileOperation)
-- **Independent verification:** Confirmed `CheckDirectFileOffLimits` at line 315 calls `ShouldBypassOffLimits(filePath, agentForOffLimits)` which at line 340 calls `IsAnyModeFile(filePath)` for Stage 2 agents — allowing reads of mode files. Confirmed `CheckBashFileOperation` at line 776 calls `offLimitsService.IsPathOffLimits(op.Path)` directly with no `ShouldBypassOffLimits` call anywhere in the function. The two code paths handle the same semantic operation (reading a file) with different off-limits logic. This is the same issue as #0060 from the 2026-04-09 inquisition — it was not addressed in the fix batch.
+- **Independent verification:** Confirmed `CheckDirectFileOffLimits` at line 315 calls `ShouldBypassOffLimits(filePath, agentForOffLimits)` which at line 340 calls `IsAnyModeFile(filePath)` for Stage 2 agents — allowing reads of mode files. Confirmed `CheckBashFileOperation` at line 776 calls `offLimitsService.IsPathOffLimits(op.Path)` directly with no `ShouldBypassOffLimits` call anywhere in the function. The two code paths handle the same semantic operation (reading a file) with different off-limits logic. This is the same issue as [#0060](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0060-off-limits-bypass-inconsistency-between-direct-reads-and-bash-reads.md) from the 2026-04-09 inquisition — it was not addressed in the fix batch.
 - **Alternative explanations considered:** Could this be intentional — forcing agents to use the Read tool instead of `cat` for mode files? Plausible, but the guard should be consistent regardless of the tool used. An agent using `cat` in a `bash -c` subcommand or a piped workflow would hit a confusing failure. The inconsistency erodes trust in the guard's predictability.
-- **Issue:** #0087
+- **Issue:** [#0087](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0087-off-limits-bypass-inconsistency-for-bash-reads-still-present.md)
 
 ### Hypotheses Not Reproduced
 - **Worktree path normalization exploitable via crafted paths:** Tested whether a path containing the marker string `dydo/_system/.local/worktrees/` at a non-worktree location could trick the normalizer. The function remaps to the main project root, which makes the resulting path MORE restrictive (maps to protected paths). No exploitable path found.

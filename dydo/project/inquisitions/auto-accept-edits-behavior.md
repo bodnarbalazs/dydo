@@ -291,7 +291,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
   bypassing safety. But the docs offer no rationale, the four sister
   handlers (including the read-only `HandleReadOperation`) all emit, and
   Dexter's review labelled it a "gap", not an intentional carve-out.
-- **Issue:** #0099
+- **Issue:** [#0099](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0099-handlesearchtool-never-emits-worktree-allow-json-prompting-users-for-glob-grep-a.md)
 
 #### 2. `IsWorktreeContext` uses unanchored substring match
 
@@ -326,7 +326,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
   in principle — but no comment or doc records the decision, so it reads
   as oversight rather than deliberate. The bug is theoretical at low
   severity, matching Frank's framing.
-- **Issue:** #0100
+- **Issue:** [#0100](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0100-isworktreecontext-uses-unanchored-substring-match-on-cwd.md)
 
 #### 3. Rationale for worktree-only gating is undocumented
 
@@ -361,7 +361,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
   (prompts at root, silence in worktree) is a feature/UX concern, and
   is exactly what triggered this inquisition — so the silence is doing
   harm, not avoiding it.
-- **Issue:** #0101
+- **Issue:** [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md)
 
 ### Hypotheses not reproduced
 
@@ -387,8 +387,8 @@ Recorded as obvious findings only — no hypotheses needed testing.
 
 ### Judge verdict (2026-04-18 — Emma)
 
-All three findings CONFIRMED. Issues #0099 (HandleSearchTool gap),
-#0100 (unanchored substring), #0101 (undocumented gating) filed.
+All three findings CONFIRMED. Issues [#0099](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0099-handlesearchtool-never-emits-worktree-allow-json-prompting-users-for-glob-grep-a.md) (HandleSearchTool gap),
+[#0100](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0100-isworktreecontext-uses-unanchored-substring-match-on-cwd.md) (unanchored substring), [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md) (undocumented gating) filed.
 
 On the headline question — *does the LC-vs-DynaDocs prompt
 inconsistency the user observed warrant a fix task?* — my reading is
@@ -400,9 +400,9 @@ inconsistency the user observed warrant a fix task?* — my reading is
   There is nothing wrong with the code emitting allow inside worktrees;
   that's the deliberate fix from 2026-04-09.
 - What's missing is (a) the user's mental model — addressed by issue
-  #0101 (document the gating) — and (b) the Search-tool gap that makes
+  [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md) (document the gating) — and (b) the Search-tool gap that makes
   even the worktree behaviour inconsistent across handlers — addressed
-  by #0099.
+  by [#0099](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0099-handlesearchtool-never-emits-worktree-allow-json-prompting-users-for-glob-grep-a.md).
 - Frank's Option A (document) and Option C (close the search-tool gap
   without changing main-session behaviour) together cover the
   headline observation cheaply and conservatively. Option B
@@ -411,6 +411,6 @@ inconsistency the user observed warrant a fix task?* — my reading is
   security posture for project-root sessions, and that decision
   deserves its own discussion.
 
-Recommendation to the human: treat #0099 + #0101 as the immediate
+Recommendation to the human: treat [#0099](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0099-handlesearchtool-never-emits-worktree-allow-json-prompting-users-for-glob-grep-a.md) + [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md) as the immediate
 follow-up. Defer the Option B / Option D conversation as a separate
 design question.

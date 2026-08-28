@@ -7,8 +7,12 @@ type: hub
 
 # Migrations
 
-Index of migration evidence.
+Index of migrations documentation.
 
 ## Contents
 
-- [dydo 3.0 Linear Bootstrap](./3.0-linear-bootstrap.md) - Identity and verification evidence for the reviewed Linear graph bootstrap.
+- [dydo 3.0 Linear Bootstrap](./3.0-linear-bootstrap.md) - Identity and verification evidence for provisioning the reviewed dydo 3.0 work graph in Linear.
+- [dydo 3.0 Linear-Native Work-Model Assimilation](./3.0-linear-work-model-assimilation.md) - This brief captures what Project 2 changed, what its dogfood exposed, and what remains deliberately deferred.
+- [dydo 3.0 Linear-Native Work-Model Evidence](./3.0-linear-work-model.md) - This record seals the integrated acceptance evidence for Project 2: Adopt Linear-native work model.
+- [dydo 3.0 Notion Freeze Evidence](./3.0-notion-freeze.md) - The final dydo v2 PM baseline was sealed on 2026-08-27 without mutating remote Notion.
+- [3.0 PM record disposition review](./3.0-pm-records.md) - Generated from committed source ffffc02dcdf92b9677d0eb4f522d1af57a869990.

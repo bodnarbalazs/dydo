@@ -11,13 +11,13 @@ Index of guides documentation.
 
 ## Contents
 
-- [Adding a dydo Command: The Doc-Consistency Surfaces](./adding-a-command.md) - Adding a new top-level `dydo` command (or a new required flag) is never a one-file change: `DynaDocs.
+- [Adding a dydo Command](./adding-a-command.md) - A new command or required option changes a closed set of code, test, help, and reference surfaces.
 - [Coding Standards](./coding-standards.md) - Rules and conventions for writing code in this project.
-- [Customizing Roles](./customizing-roles.md) - The mode template **is** the role.
-- [Getting Started](./getting-started.md) - First-time setup walkthrough: install dydo, initialize a project, compile the skills, and run your first work session.
+- [Customizing Roles](./customizing-roles.md) - The mode template is the role: `dydo sync` discovers `mode-<name>.template.md` sources and compiles their methodology into native skills and, for...
+- [Getting Started](./getting-started.md) - Install dydo, initialize the durable knowledge tree, compile native skills, and connect the resulting project context to work managed in Linear.
 - [How to Use These Docs](./how-to-use-docs.md) - This documentation is designed to be navigated by AI agents.
-- [Migrating a Project from dydo 1.x to 2.x](./migrating-dydo-1x-to-2x.md) - A self-contained, ordered procedure for an AI coding agent to migrate an existing project's dydo workspace from the 1.
-- [Orchestration Pitfalls](./orchestration-pitfalls.md) - Field-tested failure modes of multi-agent work on this repo — worktree isolation, workflow invocation, and the shared working tree.
+- [Migrating a Project from dydo 1.x to 2.x](./migrating-dydo-1x-to-2x.md) - A self-contained, ordered procedure for an AI coding agent to migrate an existing project's dydo workspace from the 1.x generation to the current...
+- [Orchestration Pitfalls](./orchestration-pitfalls.md) - Failure modes observed while agents execute Linear Issues against this repository.
 - [Testing Strategy — Three-Tier System](./testing-strategy.md) - A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested.
-- [Troubleshooting](./troubleshooting.md) - Common errors, guard blocks, and recovery patterns.
-- [Writing Good Briefs](./writing-good-briefs.md) - The self-containment bar for anything handed to a fresh agent — a slice file's implementation detail, a discovery sub-agent's prompt, a workflow st...
+- [Troubleshooting](./troubleshooting.md) - Common guard, validation, template, and work-model failures, with the narrow recovery for each.
+- [Writing Good Briefs](./writing-good-briefs.md) - The self-containment bar for a Linear Issue, Project-plan lane, or prompt handed to a fresh agent.

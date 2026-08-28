@@ -6,7 +6,7 @@ date: 2026-05-04
 
 # Task: fix-pwsh-wait-approval
 
-Review commit 3808f37 for fix-pwsh-wait-approval (#0145).
+Review commit 3808f37 for fix-pwsh-wait-approval ([#0145](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0145-powershell-routed-dydo-wait-requires-approval-every-re-arm-breaks-unattended-wai.md)).
 
 Origin brief: dydo/agents/Yara/inbox/44c9a8b8-fix-pwsh-wait-approval.md (from Brian).
 Investigation: dydo/agents/Dexter/notes-investigate-pwsh-wait-approval.md.
@@ -35,7 +35,7 @@ Approve or reject.
 
 ## Review Summary
 
-Review commit 3808f37 for fix-pwsh-wait-approval (#0145).
+Review commit 3808f37 for fix-pwsh-wait-approval ([#0145](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0145-powershell-routed-dydo-wait-requires-approval-every-re-arm-breaks-unattended-wai.md)).
 
 Origin brief: dydo/agents/Yara/inbox/44c9a8b8-fix-pwsh-wait-approval.md (from Brian).
 Investigation: dydo/agents/Dexter/notes-investigate-pwsh-wait-approval.md.

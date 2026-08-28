@@ -6,7 +6,7 @@ date: 2026-04-29
 
 # Task: fix-watchdog-deaths-critical
 
-Review commit 06512de (fix-watchdog-deaths-critical) against Emma's plan at dydo/agents/Emma/archive/20260428-204956/plan-watchdog-deaths-critical.md and the agent-deaths inquisition (dydo/project/inquisitions/agent-deaths.md, findings #0121 + #0122).
+Review commit 06512de (fix-watchdog-deaths-critical) against Emma's plan at dydo/agents/Emma/archive/20260428-204956/plan-watchdog-deaths-critical.md and the agent-deaths inquisition (dydo/project/inquisitions/agent-deaths.md, findings [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md) + [#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md)).
 
 What was implemented:
 
@@ -28,9 +28,9 @@ What was implemented:
 
 3. DynaDocs.Tests/Services/WatchdogServiceTests.cs — 4 new tests + 1 [Theory] over 9
    emulator names = 12 new test instances:
-     - PollAndCleanup_LockHeldByWriter_DoesNotKill (#0121 regression: external lock held
+     - PollAndCleanup_LockHeldByWriter_DoesNotKill ([#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md) regression: external lock held
        -> no kill, no auto-close clear; release -> next poll proceeds)
-     - PollAndCleanup_LinuxTerminalEmulatorPid_NotKilled (#0122 regression: 9 emulators
+     - PollAndCleanup_LinuxTerminalEmulatorPid_NotKilled ([#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md) regression: 9 emulators
        gnome-terminal, konsole, xfce4-terminal, alacritty, kitty, wezterm, tilix, foot, xterm)
      - PollAndCleanup_ClaudeProcess_Killed (whitelist positive)
      - PollAndCleanup_ReleasesLockAfterWork (finally-block guard)
@@ -53,7 +53,7 @@ PathUtilsTests.IsInsideWorktree_NullPath_ChecksCwd — CWD race with parallel te
 classes — reproduced once, vanished on re-run; unrelated to this change).
 gap_check.py exit 0; 136/136 modules pass tier requirements.
 
-Out of scope (per brief): #0123-#0132 stay filed. ShellProcessNames untouched.
+Out of scope (per brief): [#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md)-[#0132](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0132-watchdog-cli-substring-match-has-undocumented-load-bearing-invariant.md) stay filed. ShellProcessNames untouched.
 Atomic WriteStateFile not included.
 
 ## Progress
@@ -66,7 +66,7 @@ Atomic WriteStateFile not included.
 
 ## Review Summary
 
-Review commit 06512de (fix-watchdog-deaths-critical) against Emma's plan at dydo/agents/Emma/archive/20260428-204956/plan-watchdog-deaths-critical.md and the agent-deaths inquisition (dydo/project/inquisitions/agent-deaths.md, findings #0121 + #0122).
+Review commit 06512de (fix-watchdog-deaths-critical) against Emma's plan at dydo/agents/Emma/archive/20260428-204956/plan-watchdog-deaths-critical.md and the agent-deaths inquisition (dydo/project/inquisitions/agent-deaths.md, findings [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md) + [#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md)).
 
 What was implemented:
 
@@ -88,9 +88,9 @@ What was implemented:
 
 3. DynaDocs.Tests/Services/WatchdogServiceTests.cs — 4 new tests + 1 [Theory] over 9
    emulator names = 12 new test instances:
-     - PollAndCleanup_LockHeldByWriter_DoesNotKill (#0121 regression: external lock held
+     - PollAndCleanup_LockHeldByWriter_DoesNotKill ([#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md) regression: external lock held
        -> no kill, no auto-close clear; release -> next poll proceeds)
-     - PollAndCleanup_LinuxTerminalEmulatorPid_NotKilled (#0122 regression: 9 emulators
+     - PollAndCleanup_LinuxTerminalEmulatorPid_NotKilled ([#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md) regression: 9 emulators
        gnome-terminal, konsole, xfce4-terminal, alacritty, kitty, wezterm, tilix, foot, xterm)
      - PollAndCleanup_ClaudeProcess_Killed (whitelist positive)
      - PollAndCleanup_ReleasesLockAfterWork (finally-block guard)
@@ -113,7 +113,7 @@ PathUtilsTests.IsInsideWorktree_NullPath_ChecksCwd — CWD race with parallel te
 classes — reproduced once, vanished on re-run; unrelated to this change).
 gap_check.py exit 0; 136/136 modules pass tier requirements.
 
-Out of scope (per brief): #0123-#0132 stay filed. ShellProcessNames untouched.
+Out of scope (per brief): [#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md)-[#0132](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0132-watchdog-cli-substring-match-has-undocumented-load-bearing-invariant.md) stay filed. ShellProcessNames untouched.
 Atomic WriteStateFile not included.
 
 ## Code Review
@@ -121,7 +121,7 @@ Atomic WriteStateFile not included.
 - Reviewed by: Noah
 - Date: 2026-04-28 21:28
 - Result: PASSED
-- Notes: PASS. Diff is faithful to plan with the two deviations Emma pre-disclosed (both well-justified): (a) TryAcquireLockAtPath keeps an agentName parameter for error-message preservation — verified existing AgentRegistryTests assert on 'claim in progress' + Environment.ProcessId substrings, dropping it would have broken them; (b) 6 mechanical override-edits to existing PollAndCleanup_* tests instead of 4 (DeadPid_ClearsAutoClose + FirstPoll_ProcessesRunning_ClearsImmediately also need GetProcessNameOverride='claude' because under the whitelist a null procName now skips instead of killing — correct call to keep the kill-and-throw path covered). TryAcquireLockAtPath / ReleaseLockAtPath bodies are char-faithful with the originals (only intentional change is GetLockFilePath(agentName) -> lockPath parameter). PollAndCleanup correctly brackets the read-decide-kill-clear cycle with try/finally; the early-continue runs inside the try so the lock is always released. Lock paths align with the registry: watchdog computes {dydoRoot}/agents/{dirname}/.claim.lock, registry computes Path.Combine(GetAgentWorkspace(agentName), '.claim.lock') = same value when dirname == agentName (the canonical convention). ClaudeProcessNames whitelist {claude, node} matches inquisition #0122 evidence exactly. ShellProcessNames left untouched per plan (no scope creep). Tests: 12 new instances cover #0121 lock-held-skip + release-and-resume, #0122 theory over all 9 emulators (gnome-terminal/konsole/xfce4-terminal/alacritty/kitty/wezterm/tilix/foot/xterm), whitelist positive case, and the finally-block lock-release guard. 3883/3883 pass under the worktree-isolated runner. gap_check.py exit 0; 136/136 modules pass tier requirements. Out-of-scope items (#0123-#0132, ShellProcessNames cleanup, atomic WriteStateFile) correctly stay filed.
+- Notes: PASS. Diff is faithful to plan with the two deviations Emma pre-disclosed (both well-justified): (a) TryAcquireLockAtPath keeps an agentName parameter for error-message preservation — verified existing AgentRegistryTests assert on 'claim in progress' + Environment.ProcessId substrings, dropping it would have broken them; (b) 6 mechanical override-edits to existing PollAndCleanup_* tests instead of 4 (DeadPid_ClearsAutoClose + FirstPoll_ProcessesRunning_ClearsImmediately also need GetProcessNameOverride='claude' because under the whitelist a null procName now skips instead of killing — correct call to keep the kill-and-throw path covered). TryAcquireLockAtPath / ReleaseLockAtPath bodies are char-faithful with the originals (only intentional change is GetLockFilePath(agentName) -> lockPath parameter). PollAndCleanup correctly brackets the read-decide-kill-clear cycle with try/finally; the early-continue runs inside the try so the lock is always released. Lock paths align with the registry: watchdog computes {dydoRoot}/agents/{dirname}/.claim.lock, registry computes Path.Combine(GetAgentWorkspace(agentName), '.claim.lock') = same value when dirname == agentName (the canonical convention). ClaudeProcessNames whitelist {claude, node} matches inquisition [#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md) evidence exactly. ShellProcessNames left untouched per plan (no scope creep). Tests: 12 new instances cover [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md) lock-held-skip + release-and-resume, [#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md) theory over all 9 emulators (gnome-terminal/konsole/xfce4-terminal/alacritty/kitty/wezterm/tilix/foot/xterm), whitelist positive case, and the finally-block lock-release guard. 3883/3883 pass under the worktree-isolated runner. gap_check.py exit 0; 136/136 modules pass tier requirements. Out-of-scope items ([#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md)-[#0132](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0132-watchdog-cli-substring-match-has-undocumented-load-bearing-invariant.md), ShellProcessNames cleanup, atomic WriteStateFile) correctly stay filed.
 
 Awaiting human approval.
 

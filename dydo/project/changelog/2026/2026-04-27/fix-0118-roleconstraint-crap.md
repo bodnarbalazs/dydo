@@ -6,7 +6,7 @@ date: 2026-04-27
 
 # Task: fix-0118-roleconstraint-crap
 
-Review #0118 refactor + tests. See git log master..HEAD (commits 4fdd383, 40c5582). Verify gap_check CRAP drops <30 for RoleConstraintEvaluator.cs.
+Review [#0118](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0118-roleconstraintevaluator-crap-score-regressed-past-30-limit-32-0-after-0045-case.md) refactor + tests. See git log master..HEAD (commits 4fdd383, 40c5582). Verify gap_check CRAP drops <30 for RoleConstraintEvaluator.cs.
 
 ## Progress
 
@@ -18,7 +18,7 @@ Review #0118 refactor + tests. See git log master..HEAD (commits 4fdd383, 40c558
 
 ## Review Summary
 
-Review #0118 refactor + tests. See git log master..HEAD (commits 4fdd383, 40c5582). Verify gap_check CRAP drops <30 for RoleConstraintEvaluator.cs.
+Review [#0118](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0118-roleconstraintevaluator-crap-score-regressed-past-30-limit-32-0-after-0045-case.md) refactor + tests. See git log master..HEAD (commits 4fdd383, 40c5582). Verify gap_check CRAP drops <30 for RoleConstraintEvaluator.cs.
 
 ## Code Review
 

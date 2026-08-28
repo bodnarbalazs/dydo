@@ -15,7 +15,7 @@ CHANGES
 - DynaDocs.Tests/Integration/InquisitionTests.cs (new test, RunGit Helper Tests region) — InitGitRepo_CompletesAndProducesValidRepository, the lighter contract pin per plan recommendation.
 
 CANONICAL SHAPE
-Mirrors aeee461 (#0148) exactly: using var process = Process.Start(psi) plus the null-throw, concurrent ReadToEndAsync on both pipes before WaitForExit, on timeout Kill(entireProcessTree:true) and throw the timeout message, on non-zero exit surface stderrTask.GetAwaiter().GetResult() in the throw. The 5 s timeout matches the existing per-helper contract (vs aeee461's 30 s).
+Mirrors aeee461 ([#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md)) exactly: using var process = Process.Start(psi) plus the null-throw, concurrent ReadToEndAsync on both pipes before WaitForExit, on timeout Kill(entireProcessTree:true) and throw the timeout message, on non-zero exit surface stderrTask.GetAwaiter().GetResult() in the throw. The 5 s timeout matches the existing per-helper contract (vs aeee461's 30 s).
 
 PLAN DEVIATIONS
 None. Followed dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md PR3 section verbatim. Did NOT take the optional TestProcess.cs extraction (plan recommendation: defer).
@@ -51,7 +51,7 @@ CHANGES
 - DynaDocs.Tests/Integration/InquisitionTests.cs (new test, RunGit Helper Tests region) — InitGitRepo_CompletesAndProducesValidRepository, the lighter contract pin per plan recommendation.
 
 CANONICAL SHAPE
-Mirrors aeee461 (#0148) exactly: using var process = Process.Start(psi) plus the null-throw, concurrent ReadToEndAsync on both pipes before WaitForExit, on timeout Kill(entireProcessTree:true) and throw the timeout message, on non-zero exit surface stderrTask.GetAwaiter().GetResult() in the throw. The 5 s timeout matches the existing per-helper contract (vs aeee461's 30 s).
+Mirrors aeee461 ([#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md)) exactly: using var process = Process.Start(psi) plus the null-throw, concurrent ReadToEndAsync on both pipes before WaitForExit, on timeout Kill(entireProcessTree:true) and throw the timeout message, on non-zero exit surface stderrTask.GetAwaiter().GetResult() in the throw. The 5 s timeout matches the existing per-helper contract (vs aeee461's 30 s).
 
 PLAN DEVIATIONS
 None. Followed dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md PR3 section verbatim. Did NOT take the optional TestProcess.cs extraction (plan recommendation: defer).

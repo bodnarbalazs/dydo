@@ -6,7 +6,7 @@ date: 2026-05-06
 
 # Task: pr1-scan-boundary
 
-PR1 of dydo-check-drift batch (#0163 + D5 scaffold). Implements scan-boundary fix and the RuleBase.ShouldSkip + RuleSkipPaths.IsTemplateOrAddition scaffold. PR2 will move the per-rule skip blocks onto the scaffold; PR1 only adds it.
+PR1 of dydo-check-drift batch ([#0163](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0163-docscanner-recurses-into-system-local-worktrees-dydo-check-reports-tens-of-spuri.md) + D5 scaffold). Implements scan-boundary fix and the RuleBase.ShouldSkip + RuleSkipPaths.IsTemplateOrAddition scaffold. PR2 will move the per-rule skip blocks onto the scaffold; PR1 only adds it.
 
 FILES CHANGED
 Source (modified):
@@ -66,7 +66,7 @@ Made the IConfigService param optional (default null -> new ConfigService()) fol
 
 ## Review Summary
 
-PR1 of dydo-check-drift batch (#0163 + D5 scaffold). Implements scan-boundary fix and the RuleBase.ShouldSkip + RuleSkipPaths.IsTemplateOrAddition scaffold. PR2 will move the per-rule skip blocks onto the scaffold; PR1 only adds it.
+PR1 of dydo-check-drift batch ([#0163](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0163-docscanner-recurses-into-system-local-worktrees-dydo-check-reports-tens-of-spuri.md) + D5 scaffold). Implements scan-boundary fix and the RuleBase.ShouldSkip + RuleSkipPaths.IsTemplateOrAddition scaffold. PR2 will move the per-rule skip blocks onto the scaffold; PR1 only adds it.
 
 FILES CHANGED
 Source (modified):
@@ -121,7 +121,7 @@ Made the IConfigService param optional (default null -> new ConfigService()) fol
 - Reviewed by: Charlie
 - Date: 2026-05-05 13:21
 - Result: PASSED
-- Notes: PASS on content. Code clean, ~22 new tests, dydo check baseline-equivalent (54e/23w/894f, no regression). Verification-gate caveat filed as issue #0165: gap_check exits 0 (coverage gate 139/139 green), but tests-under-coverage produce 3 unrelated failures (AgentRegistry concurrency + Console-capture cross-over between WorktreeCommand and AuditCompaction). None touch PR1 surface. run_tests.py is reproducibly 4076/4076 clean. Adele has full report; will flesh out #0165 body (reviewer cannot edit issue files).
+- Notes: PASS on content. Code clean, ~22 new tests, dydo check baseline-equivalent (54e/23w/894f, no regression). Verification-gate caveat filed as [issue #0165](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0165-tests-under-coverage-produce-3-unrelated-failures-xunit-console-capture-isolatio.md): gap_check exits 0 (coverage gate 139/139 green), but tests-under-coverage produce 3 unrelated failures (AgentRegistry concurrency + Console-capture cross-over between WorktreeCommand and AuditCompaction). None touch PR1 surface. run_tests.py is reproducibly 4076/4076 clean. Adele has full report; will flesh out [#0165](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0165-tests-under-coverage-produce-3-unrelated-failures-xunit-console-capture-isolatio.md) body (reviewer cannot edit issue files).
 
 Awaiting human approval.
 

@@ -16,7 +16,7 @@ Birds-eye co-thinking on the dydo 2.0 vision (as Brian, co-thinker), graduated t
 - [x] Sprint 1: run-sprint merge phase + sprint-auditor agent-type + LF/CRLF fix (ca55fe7)
 - [x] Sprint 2: model tiers, chief-of-staff, doctrine templates, Tier-1 nudge, docs, run-sprint hardening, Release+Issue sync objects + frontmatter-canonical status (108528a…bdfba00)
 - [x] Issue corpus healed for live Issue sync (cf682ef: 6 dup stems, 18 strays)
-- [x] Backlogs seeded (dydo-2-vision-followups; hardening additions); issue 0211 annotated
+- [x] Backlogs seeded (dydo-2-vision-followups; hardening additions); [issue 0211](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0211-active-agent-session-not-registered-in-dydo-agent-list-4-active-3-claimed.md) annotated
 - [x] Charlie unblocked for the 029+030 board sprint; final suite verified green at HEAD
 
 ## Files Changed

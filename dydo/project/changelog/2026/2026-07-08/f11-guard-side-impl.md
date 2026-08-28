@@ -6,7 +6,7 @@ date: 2026-07-08
 
 # Task: f11-guard-side-impl
 
-Review #0207 part 2 (guard-side ClaimedPid auto-refresh).
+Review [#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) part 2 (guard-side ClaimedPid auto-refresh).
 
 ## What landed (commit d23eb9d on fix/identity-hijack-slice-a)
 
@@ -41,7 +41,7 @@ Per Charlie's brief + plan dydo/agents/Charlie/plan-f11-guard-side.md (read it):
 
 ONE significant deviation: split RefreshResumedAgentSession into entry + UnderLock helper, AND extracted steps 1-5 into RecoveryClassifier.ShouldRefreshResumedPid. The plan said 'if gap_check flags it, extract the trigger predicate into RecoveryClassifier.ShouldRefreshResumedPid' — gap_check DID flag it (initial CC=42, CRAP=42.9 on RefreshResumedAgentSession). After the extraction it was still 30.4 (HandleExistingSession at CC=30 was now the hot method due to the companion change's added clause), so I also extracted IsReclaimableStaleWorking from HandleExistingSession. Final: gap_check 140/140. The plan-specified ShouldRefreshResumedPid extraction is in place.
 
-The HandleExistingSession same-session reclaim branch (#0143/#0153) is KEPT as the plan specifies — both paths are reachable (explicit re-claim vs first guarded call), idempotent under the lock (Proof B). The Slice A KEPT items (#0207 part 1 launcher dydo wait deletion; #0208 IsValidAgentName) untouched.
+The HandleExistingSession same-session reclaim branch ([#0143](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0143-watchdog-re-resumes-already-resumed-agent-on-subsequent-ticks-3-terminals-for-th.md)/[#0153](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0153-resume-attempts-is-not-reset-on-same-session-reclaims-so-the-counter-accumulates.md)) is KEPT as the plan specifies — both paths are reachable (explicit re-claim vs first guarded call), idempotent under the lock (Proof B). The Slice A KEPT items ([#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) part 1 launcher dydo wait deletion; [#0208](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0208-getsessioncontext-env-path-skips-isvalidagentname-validation.md) IsValidAgentName) untouched.
 
 ## Files touched
 
@@ -58,7 +58,7 @@ The HandleExistingSession same-session reclaim branch (#0143/#0153) is KEPT as t
 - The GuardRefreshThenWait_PassesF11Gate test asserts VerifyCallerOwnsAgent before/after refresh instead of invoking WaitCommand.Parse().Invoke() — WaitCommand has an unbounded while(!cancelled) poll loop that can't be cleanly cancelled from a unit test. The companion WaitWithoutClaudeAncestor_StaleClaimedPid_RefusedByF11Gate covers the refused side of the same predicate (kept unchanged).
 - One real-world data point: my own claude tab crashed mid-task and was auto-resumed. After resume, dydo whoami/wait worked normally — exercising the post-fix flow end-to-end as a free bonus spike.
 
-Pre-existing unaffected: #0208 IsValidAgentName test in identity-hijack-* tests stays green; F11 wait-DoS pinning test in AutoResumeRearmWaitGate stays green unchanged.
+Pre-existing unaffected: [#0208](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0208-getsessioncontext-env-path-skips-isvalidagentname-validation.md) IsValidAgentName test in identity-hijack-* tests stays green; F11 wait-DoS pinning test in AutoResumeRearmWaitGate stays green unchanged.
 
 ## Progress
 
@@ -70,7 +70,7 @@ Pre-existing unaffected: #0208 IsValidAgentName test in identity-hijack-* tests 
 
 ## Review Summary
 
-Review #0207 part 2 (guard-side ClaimedPid auto-refresh).
+Review [#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) part 2 (guard-side ClaimedPid auto-refresh).
 
 ## What landed (commit d23eb9d on fix/identity-hijack-slice-a)
 
@@ -105,7 +105,7 @@ Per Charlie's brief + plan dydo/agents/Charlie/plan-f11-guard-side.md (read it):
 
 ONE significant deviation: split RefreshResumedAgentSession into entry + UnderLock helper, AND extracted steps 1-5 into RecoveryClassifier.ShouldRefreshResumedPid. The plan said 'if gap_check flags it, extract the trigger predicate into RecoveryClassifier.ShouldRefreshResumedPid' — gap_check DID flag it (initial CC=42, CRAP=42.9 on RefreshResumedAgentSession). After the extraction it was still 30.4 (HandleExistingSession at CC=30 was now the hot method due to the companion change's added clause), so I also extracted IsReclaimableStaleWorking from HandleExistingSession. Final: gap_check 140/140. The plan-specified ShouldRefreshResumedPid extraction is in place.
 
-The HandleExistingSession same-session reclaim branch (#0143/#0153) is KEPT as the plan specifies — both paths are reachable (explicit re-claim vs first guarded call), idempotent under the lock (Proof B). The Slice A KEPT items (#0207 part 1 launcher dydo wait deletion; #0208 IsValidAgentName) untouched.
+The HandleExistingSession same-session reclaim branch ([#0143](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0143-watchdog-re-resumes-already-resumed-agent-on-subsequent-ticks-3-terminals-for-th.md)/[#0153](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0153-resume-attempts-is-not-reset-on-same-session-reclaims-so-the-counter-accumulates.md)) is KEPT as the plan specifies — both paths are reachable (explicit re-claim vs first guarded call), idempotent under the lock (Proof B). The Slice A KEPT items ([#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) part 1 launcher dydo wait deletion; [#0208](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0208-getsessioncontext-env-path-skips-isvalidagentname-validation.md) IsValidAgentName) untouched.
 
 ## Files touched
 
@@ -122,13 +122,13 @@ The HandleExistingSession same-session reclaim branch (#0143/#0153) is KEPT as t
 - The GuardRefreshThenWait_PassesF11Gate test asserts VerifyCallerOwnsAgent before/after refresh instead of invoking WaitCommand.Parse().Invoke() — WaitCommand has an unbounded while(!cancelled) poll loop that can't be cleanly cancelled from a unit test. The companion WaitWithoutClaudeAncestor_StaleClaimedPid_RefusedByF11Gate covers the refused side of the same predicate (kept unchanged).
 - One real-world data point: my own claude tab crashed mid-task and was auto-resumed. After resume, dydo whoami/wait worked normally — exercising the post-fix flow end-to-end as a free bonus spike.
 
-Pre-existing unaffected: #0208 IsValidAgentName test in identity-hijack-* tests stays green; F11 wait-DoS pinning test in AutoResumeRearmWaitGate stays green unchanged.
+Pre-existing unaffected: [#0208](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0208-getsessioncontext-env-path-skips-isvalidagentname-validation.md) IsValidAgentName test in identity-hijack-* tests stays green; F11 wait-DoS pinning test in AutoResumeRearmWaitGate stays green unchanged.
 
 ## Code Review (2026-05-23 16:24)
 
 - Reviewed by: Brian
 - Result: FAILED
-- Issues: FAIL: dydo check 13 errors (4 new, 9 pre-existing #0205 noise). Source-code work itself is exemplary — gap_check 140/140, 4290/4290 tests pass, plan executed faithfully with comprehensive edge-case coverage. The 4 new errors are in docs/inquisition files outside code-writer's writable paths — see dydo/agents/Brian/review-f11-guard-side-impl.md for the itemized list and recommendation. Minor non-blocker: dead AgentSession session parameter in RefreshResumedAgentSessionUnderLock.
+- Issues: FAIL: dydo check 13 errors (4 new, 9 pre-existing [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md) noise). Source-code work itself is exemplary — gap_check 140/140, 4290/4290 tests pass, plan executed faithfully with comprehensive edge-case coverage. The 4 new errors are in docs/inquisition files outside code-writer's writable paths — see dydo/agents/Brian/review-f11-guard-side-impl.md for the itemized list and recommendation. Minor non-blocker: dead AgentSession session parameter in RefreshResumedAgentSessionUnderLock.
 
 Requires rework.
 
@@ -137,7 +137,7 @@ Requires rework.
 - Reviewed by: Emma
 - Date: 2026-05-23 18:15
 - Result: PASSED
-- Notes: PASS. Re-review on working tree after Charlie's M1 fix and Frank's doc fixes (4 prior BLOCKERS). Gates: dotnet test 4290/4290, gap_check 140/140, dydo check 8 errors / 0 new (all pre-existing #0205 noise). M1 dead-param removal is clean; under-lock discipline preserved (fresh=GetSession at step 7 was the only session-state consumer, which is why the pre-lock snapshot was dead weight). Frank's two escape-boundary deviations verified against LinkExtractor.IsInsideInlineCode and CheckDocValidator agents/** exclusion — both sound. Full review: dydo/agents/Emma/review-f11-guard-side-impl.md.
+- Notes: PASS. Re-review on working tree after Charlie's M1 fix and Frank's doc fixes (4 prior BLOCKERS). Gates: dotnet test 4290/4290, gap_check 140/140, dydo check 8 errors / 0 new (all pre-existing [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md) noise). M1 dead-param removal is clean; under-lock discipline preserved (fresh=GetSession at step 7 was the only session-state consumer, which is why the pre-lock snapshot was dead weight). Frank's two escape-boundary deviations verified against LinkExtractor.IsInsideInlineCode and CheckDocValidator agents/** exclusion — both sound. Full review: dydo/agents/Emma/review-f11-guard-side-impl.md.
 
 Awaiting human approval.
 

@@ -10,7 +10,7 @@ Review fix-release-autoclose-and-atomic-write (commit 8d3e3b1).
 
 Two surgical edits in Services/AgentRegistry.cs implementing Charlie's plan + Brian's brief resolutions:
 
-1. ReleaseAgent (lines 492-506): added s.AutoClose = false to the UpdateAgentState lambda so on-disk state after release is 'free + auto-close: false', closing the #0121/#0123 redispatch-race window. SetDispatchMetadata remains the single authoritative producer of 'auto-close: true'.
+1. ReleaseAgent (lines 492-506): added s.AutoClose = false to the UpdateAgentState lambda so on-disk state after release is 'free + auto-close: false', closing the [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md)/[#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md) redispatch-race window. SetDispatchMetadata remains the single authoritative producer of 'auto-close: true'.
 
 2. WriteStateFile (lines 1406-1421): replaced final File.WriteAllText with same-directory temp-and-rename via File.Move(..., overwrite: true). Atomic on POSIX (rename(2)) and NTFS (MoveFileEx). Temp suffix is PID+Guid; same-volume by construction. Best-effort cleanup on rename failure preserves prior throw semantics.
 
@@ -29,7 +29,7 @@ Pre-commit grep: every remaining 'auto-close: true' test site is a synthetic wat
 Build: clean (0 warnings, 0 errors). Tests: 3888/3888. gap_check: 100% (136/136 modules pass).
 
 Plan: dydo/agents/Charlie/plan-release-autoclose-and-atomic-write.md
-Inquisition: dydo/project/inquisitions/agent-deaths.md (#0123, #0125)
+Inquisition: dydo/project/inquisitions/agent-deaths.md ([#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md), [#0125](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0125-state-file-read-write-unsynchronized-between-watchdog-and-registry.md))
 
 ## Progress
 
@@ -45,7 +45,7 @@ Review fix-release-autoclose-and-atomic-write (commit 8d3e3b1).
 
 Two surgical edits in Services/AgentRegistry.cs implementing Charlie's plan + Brian's brief resolutions:
 
-1. ReleaseAgent (lines 492-506): added s.AutoClose = false to the UpdateAgentState lambda so on-disk state after release is 'free + auto-close: false', closing the #0121/#0123 redispatch-race window. SetDispatchMetadata remains the single authoritative producer of 'auto-close: true'.
+1. ReleaseAgent (lines 492-506): added s.AutoClose = false to the UpdateAgentState lambda so on-disk state after release is 'free + auto-close: false', closing the [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md)/[#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md) redispatch-race window. SetDispatchMetadata remains the single authoritative producer of 'auto-close: true'.
 
 2. WriteStateFile (lines 1406-1421): replaced final File.WriteAllText with same-directory temp-and-rename via File.Move(..., overwrite: true). Atomic on POSIX (rename(2)) and NTFS (MoveFileEx). Temp suffix is PID+Guid; same-volume by construction. Best-effort cleanup on rename failure preserves prior throw semantics.
 
@@ -64,7 +64,7 @@ Pre-commit grep: every remaining 'auto-close: true' test site is a synthetic wat
 Build: clean (0 warnings, 0 errors). Tests: 3888/3888. gap_check: 100% (136/136 modules pass).
 
 Plan: dydo/agents/Charlie/plan-release-autoclose-and-atomic-write.md
-Inquisition: dydo/project/inquisitions/agent-deaths.md (#0123, #0125)
+Inquisition: dydo/project/inquisitions/agent-deaths.md ([#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md), [#0125](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0125-state-file-read-write-unsynchronized-between-watchdog-and-registry.md))
 
 ## Code Review
 
@@ -74,8 +74,8 @@ Inquisition: dydo/project/inquisitions/agent-deaths.md (#0123, #0125)
 - Notes: LGTM. Code matches Charlie's plan exactly.
 
 Production changes:
-- ReleaseAgent (Services/AgentRegistry.cs:505): s.AutoClose = false added in UpdateAgentState lambda; load-bearing comment explains the SetDispatchMetadata pairing. Closes #0121/#0123 redispatch race.
-- WriteStateFile (Services/AgentRegistry.cs:1410-1430): same-directory temp-and-rename via File.Move(..., overwrite: true). Same-volume by construction. PID+Guid suffix avoids collisions. Best-effort temp cleanup on rename failure preserves prior throw semantics. Closes #0125.
+- ReleaseAgent (Services/AgentRegistry.cs:505): s.AutoClose = false added in UpdateAgentState lambda; load-bearing comment explains the SetDispatchMetadata pairing. Closes [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md)/[#0123](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md) redispatch race.
+- WriteStateFile (Services/AgentRegistry.cs:1410-1430): same-directory temp-and-rename via File.Move(..., overwrite: true). Same-volume by construction. PID+Guid suffix avoids collisions. Best-effort temp cleanup on rename failure preserves prior throw semantics. Closes [#0125](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0125-state-file-read-write-unsynchronized-between-watchdog-and-registry.md).
 
 Tests:
 - Inverted Release_ClearsAutoCloseOnDisk in AgentLifecycleTests.cs.
@@ -87,7 +87,7 @@ Verification:
 - Tests: 3888/3888 pass via worktree-isolated runner.
 - gap_check: 136/137 modules pass (99.3%).
 
-WAIVED: Services/WatchdogLogger.cs (T1, 0% line coverage) is the single failing module. This file is UNTRACKED in the working tree (?? Services/WatchdogLogger.cs) and is NOT part of commit 8d3e3b1. It is Jack's in-flight work on task fix-watchdog-structured-logging (Grace's plan, inquisition #0129). Brian explicitly waived this failure for this review since Jack's PR will deliver the coverage. Confirmed via dydo msg from Brian (a588ae93).
+WAIVED: Services/WatchdogLogger.cs (T1, 0% line coverage) is the single failing module. This file is UNTRACKED in the working tree (?? Services/WatchdogLogger.cs) and is NOT part of commit 8d3e3b1. It is Jack's in-flight work on task fix-watchdog-structured-logging (Grace's plan, inquisition [#0129](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0129-watchdog-has-zero-structured-logging-kill-class-is-undiagnosable.md)). Brian explicitly waived this failure for this review since Jack's PR will deliver the coverage. Confirmed via dydo msg from Brian (a588ae93).
 
 Awaiting human approval.
 

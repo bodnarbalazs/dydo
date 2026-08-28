@@ -9,8 +9,8 @@ date: 2026-05-08
 Review PR2 of agent-crash-fixes batch (commit de50134, CI run 25504955467 green).
 
 SCOPE
-1. Finding #2 / #0174 — claim-time watchdog anchor written into the worktree's dydo dir instead of main. Root cause: AgentRegistry.cs:417 resolved its own dydo root via _configService.GetDydoRoot(_basePath), which returns the worktree's dydo when the basepath is inside one. Watchdog only reads main's anchors dir, so worktree-claimed leaf agents were invisible to it.
-2. Finding #4 / #0175 — TerminalLauncher.LaunchResume / WindowsTerminalLauncher.GetResumeArguments / LinuxTerminalLauncher.BuildResumeBashCommand / MacTerminalLauncher.BuildResumeShellComponents had no worktree wrapper symmetry with the dispatch path. A resumed claude in a worktree never recreated junctions, never ran init-settings, and never ran "dydo worktree cleanup" on release — so the worktree dir lingered.
+1. Finding #2 / [#0174](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0174-worktree-claimed-agent-registers-watchdog-anchor-in-worktree-dydo-root-main-watc.md) — claim-time watchdog anchor written into the worktree's dydo dir instead of main. Root cause: AgentRegistry.cs:417 resolved its own dydo root via _configService.GetDydoRoot(_basePath), which returns the worktree's dydo when the basepath is inside one. Watchdog only reads main's anchors dir, so worktree-claimed leaf agents were invisible to it.
+2. Finding #4 / [#0175](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0175-auto-resume-launch-path-skips-worktree-wrapper-junctions-init-settings-finally-c.md) — TerminalLauncher.LaunchResume / WindowsTerminalLauncher.GetResumeArguments / LinuxTerminalLauncher.BuildResumeBashCommand / MacTerminalLauncher.BuildResumeShellComponents had no worktree wrapper symmetry with the dispatch path. A resumed claude in a worktree never recreated junctions, never ran init-settings, and never ran "dydo worktree cleanup" on release — so the worktree dir lingered.
 
 CHANGES
 - Services/WatchdogService.cs (RegisterMainAnchor) — new public RegisterMainAnchor(int? anchorPid, string? startPath = null). Single-source helper that resolves to PathUtils.FindMainDydoRoot(startPath) and routes through RegisterAnchor. The optional startPath seed lets callers point at their basepath so test fixtures with synthetic project roots resolve correctly.
@@ -24,7 +24,7 @@ CHANGES
 
 TESTS (delta +12; baseline 4153 -> 4165 passing)
 - DynaDocs.Tests/Services/PathUtilsWorktreeIsolationTests.cs (+2 tests):
-  - RegisterMainAnchor_FromInsideWorktree_WritesToMainAnchorsDir — #0174 regression.
+  - RegisterMainAnchor_FromInsideWorktree_WritesToMainAnchorsDir — [#0174](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0174-worktree-claimed-agent-registers-watchdog-anchor-in-worktree-dydo-root-main-watc.md) regression.
   - RegisterMainAnchor_FromMainProject_WritesToMainAnchorsDir — control.
 - DynaDocs.Tests/Services/TerminalLauncherTests.cs (+8 tests):
   - GetWindowsResumeArguments_WithWorktree_IncludesSetupAndCleanup
@@ -32,7 +32,7 @@ TESTS (delta +12; baseline 4153 -> 4165 passing)
   - GetLinuxResumeArguments_WithWorktree_IncludesSetupAndCleanup
   - GetLinuxResumeArguments_WithoutWorktree_OmitsWrapper
   - GetMacResumeArguments_WithWorktree_IncludesSetupAndCleanup
-  - BuildResumeBashCommand_WithWorktree_UsesForwardSlashes_NotPlatformSeparator (cross-platform path-handling — #0175 brief asked specifically for at least one test that doesn't use literal backslash).
+  - BuildResumeBashCommand_WithWorktree_UsesForwardSlashes_NotPlatformSeparator (cross-platform path-handling — [#0175](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0175-auto-resume-launch-path-skips-worktree-wrapper-junctions-init-settings-finally-c.md) brief asked specifically for at least one test that doesn't use literal backslash).
   - TryLaunchResume_WithWorktree_PassesWrapperToTerminal
   - WindowsLaunchResume_WithWorktree_EmbedsWrapperInWtArguments
 - DynaDocs.Tests/Services/WatchdogServiceTests.cs (+2 tests):
@@ -66,8 +66,8 @@ Confirm the anchor-write site routes through RegisterMainAnchor and resolves to 
 Review PR2 of agent-crash-fixes batch (commit de50134, CI run 25504955467 green).
 
 SCOPE
-1. Finding #2 / #0174 — claim-time watchdog anchor written into the worktree's dydo dir instead of main. Root cause: AgentRegistry.cs:417 resolved its own dydo root via _configService.GetDydoRoot(_basePath), which returns the worktree's dydo when the basepath is inside one. Watchdog only reads main's anchors dir, so worktree-claimed leaf agents were invisible to it.
-2. Finding #4 / #0175 — TerminalLauncher.LaunchResume / WindowsTerminalLauncher.GetResumeArguments / LinuxTerminalLauncher.BuildResumeBashCommand / MacTerminalLauncher.BuildResumeShellComponents had no worktree wrapper symmetry with the dispatch path. A resumed claude in a worktree never recreated junctions, never ran init-settings, and never ran "dydo worktree cleanup" on release — so the worktree dir lingered.
+1. Finding #2 / [#0174](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0174-worktree-claimed-agent-registers-watchdog-anchor-in-worktree-dydo-root-main-watc.md) — claim-time watchdog anchor written into the worktree's dydo dir instead of main. Root cause: AgentRegistry.cs:417 resolved its own dydo root via _configService.GetDydoRoot(_basePath), which returns the worktree's dydo when the basepath is inside one. Watchdog only reads main's anchors dir, so worktree-claimed leaf agents were invisible to it.
+2. Finding #4 / [#0175](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0175-auto-resume-launch-path-skips-worktree-wrapper-junctions-init-settings-finally-c.md) — TerminalLauncher.LaunchResume / WindowsTerminalLauncher.GetResumeArguments / LinuxTerminalLauncher.BuildResumeBashCommand / MacTerminalLauncher.BuildResumeShellComponents had no worktree wrapper symmetry with the dispatch path. A resumed claude in a worktree never recreated junctions, never ran init-settings, and never ran "dydo worktree cleanup" on release — so the worktree dir lingered.
 
 CHANGES
 - Services/WatchdogService.cs (RegisterMainAnchor) — new public RegisterMainAnchor(int? anchorPid, string? startPath = null). Single-source helper that resolves to PathUtils.FindMainDydoRoot(startPath) and routes through RegisterAnchor. The optional startPath seed lets callers point at their basepath so test fixtures with synthetic project roots resolve correctly.
@@ -81,7 +81,7 @@ CHANGES
 
 TESTS (delta +12; baseline 4153 -> 4165 passing)
 - DynaDocs.Tests/Services/PathUtilsWorktreeIsolationTests.cs (+2 tests):
-  - RegisterMainAnchor_FromInsideWorktree_WritesToMainAnchorsDir — #0174 regression.
+  - RegisterMainAnchor_FromInsideWorktree_WritesToMainAnchorsDir — [#0174](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0174-worktree-claimed-agent-registers-watchdog-anchor-in-worktree-dydo-root-main-watc.md) regression.
   - RegisterMainAnchor_FromMainProject_WritesToMainAnchorsDir — control.
 - DynaDocs.Tests/Services/TerminalLauncherTests.cs (+8 tests):
   - GetWindowsResumeArguments_WithWorktree_IncludesSetupAndCleanup
@@ -89,7 +89,7 @@ TESTS (delta +12; baseline 4153 -> 4165 passing)
   - GetLinuxResumeArguments_WithWorktree_IncludesSetupAndCleanup
   - GetLinuxResumeArguments_WithoutWorktree_OmitsWrapper
   - GetMacResumeArguments_WithWorktree_IncludesSetupAndCleanup
-  - BuildResumeBashCommand_WithWorktree_UsesForwardSlashes_NotPlatformSeparator (cross-platform path-handling — #0175 brief asked specifically for at least one test that doesn't use literal backslash).
+  - BuildResumeBashCommand_WithWorktree_UsesForwardSlashes_NotPlatformSeparator (cross-platform path-handling — [#0175](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0175-auto-resume-launch-path-skips-worktree-wrapper-junctions-init-settings-finally-c.md) brief asked specifically for at least one test that doesn't use literal backslash).
   - TryLaunchResume_WithWorktree_PassesWrapperToTerminal
   - WindowsLaunchResume_WithWorktree_EmbedsWrapperInWtArguments
 - DynaDocs.Tests/Services/WatchdogServiceTests.cs (+2 tests):

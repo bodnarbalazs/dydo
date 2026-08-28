@@ -11,13 +11,13 @@ date: 2026-05-21
 ## Progress
 
 - [x] Investigated WindowsTerminalLauncher (dispatch + resume paths), Linux/Mac launchers, F13 finding, Dexter's plan, Slice A review.
-- [x] Wrote the corrected F13/#0197 Windows plan: `dydo/agents/Brian/plan-f13-windows.md`.
+- [x] Wrote the corrected F13/[#0197](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0197-watchdog-and-terminal-launchers-do-not-scrub-or-pin-dydo-agent-on-child-processs.md) Windows plan: `dydo/agents/Brian/plan-f13-windows.md`.
 - [ ] User sign-off (via Adele).
 - [ ] Frank implements per the plan.
 
 ## Plan
 
-See `dydo/agents/Brian/plan-f13-windows.md` — amends §F13/#0197 (Windows portion) of Dexter's plan.
+See `dydo/agents/Brian/plan-f13-windows.md` — amends §F13/[#0197](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0197-watchdog-and-terminal-launchers-do-not-scrub-or-pin-dydo-agent-on-child-processs.md) (Windows portion) of Dexter's plan.
 
 **Chosen mechanism:** `-NoProfile` + in-`-Command` controlled profile re-source. The
 `DYDO_AGENT` pin is the first `-Command` statement; profiles are then re-sourced so they

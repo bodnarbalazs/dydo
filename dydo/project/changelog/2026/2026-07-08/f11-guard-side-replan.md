@@ -6,10 +6,10 @@ date: 2026-07-08
 
 # Task: f11-guard-side-replan
 
-Re-plan of #0207 part 2: replace the rejected prompt-driven re-claim with a
+Re-plan of [#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) part 2: replace the rejected prompt-driven re-claim with a
 guard-side `ClaimedPid` auto-refresh. The guard, on a resumed session's first
 guarded tool call, refreshes `.session.ClaimedPid` to the live claude ancestor,
-resets resume bookkeeping (#0153), and emits the `recovery_kind=auto` audit +
+resets resume bookkeeping ([#0153](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0153-resume-attempts-is-not-reset-on-same-session-reclaims-so-the-counter-accumulates.md)), and emits the `recovery_kind=auto` audit +
 `resume_outcome=succeeded` log — all atomic under the agent's `.claim.lock`.
 
 ## Progress
@@ -27,7 +27,7 @@ resets resume bookkeeping (#0153), and emits the `recovery_kind=auto` audit +
 - [ ] Dexter completes implementation per revised plan (target: 27 unit tests + 3 live spikes + companion change)
 - [ ] Reviewer dispatched on `f11-guard-side-review` after Dexter's reply
 - [ ] Merge to master once review passes
-- [ ] #0207 resolution proposed to user
+- [ ] [#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) resolution proposed to user
 - [ ] Docs-writer dispatched for Decision 022 + architecture.md amendments
 - [ ] All dispatched agents released as work completes
 

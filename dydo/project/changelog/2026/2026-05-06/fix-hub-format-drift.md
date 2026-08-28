@@ -6,7 +6,7 @@ date: 2026-05-06
 
 # Task: fix-hub-format-drift
 
-Review commit 844579f for fix-hub-format-drift (#0166).
+Review commit 844579f for fix-hub-format-drift ([#0166](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md)).
 
 Scope: Services/HubGenerator.cs + DynaDocs.Tests/Services/HubGeneratorTests.cs only. Two-file commit (+143 / -7).
 
@@ -34,7 +34,7 @@ Approve or reject.
 
 ## Review Summary
 
-Review commit 844579f for fix-hub-format-drift (#0166).
+Review commit 844579f for fix-hub-format-drift ([#0166](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md)).
 
 Scope: Services/HubGenerator.cs + DynaDocs.Tests/Services/HubGeneratorTests.cs only. Two-file commit (+143 / -7).
 
@@ -57,7 +57,7 @@ Approve or reject.
 - Reviewed by: Frank
 - Date: 2026-05-05 19:10
 - Result: PASSED
-- Notes: Hub fix code, tests, and visual readback all clean. Full-suite gate failures are issue #0167 parallelism flakes (different test each run, both static-state races) — confirmed unrelated by balazs. Mergeable.
+- Notes: Hub fix code, tests, and visual readback all clean. Full-suite gate failures are [issue #0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md) parallelism flakes (different test each run, both static-state races) — confirmed unrelated by balazs. Mergeable.
 
 Awaiting human approval.
 

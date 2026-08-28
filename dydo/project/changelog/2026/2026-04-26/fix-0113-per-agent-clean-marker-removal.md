@@ -6,7 +6,7 @@ date: 2026-04-26
 
 # Task: fix-0113-per-agent-clean-marker-removal
 
-Review #0113 fix: extracted RemoveWorktreeMarkers helper in Services/WorkspaceCleaner.cs and wired into CleanAgent/CleanByTask/CleanAll. CleanAll's two registry-iteration loops were folded into one. Tests in DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs: flipped the bug-codifying Clean_SingleAgent_PreservesWorktreeMarkers into Clean_Agent_WithWorktreeMarkers_RemovesAllSeven, added Clean_ByTask_WithWorktreeMarkers_RemovesAllSeven, plus a no-op assertion test. Full suite 3796/3796, gap_check 100%. See commit 4d59fe4.
+Review [#0113](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0113-dydo-agent-clean-name-force-does-not-remove-worktree-markers-all-force-does-asym.md) fix: extracted RemoveWorktreeMarkers helper in Services/WorkspaceCleaner.cs and wired into CleanAgent/CleanByTask/CleanAll. CleanAll's two registry-iteration loops were folded into one. Tests in DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs: flipped the bug-codifying Clean_SingleAgent_PreservesWorktreeMarkers into Clean_Agent_WithWorktreeMarkers_RemovesAllSeven, added Clean_ByTask_WithWorktreeMarkers_RemovesAllSeven, plus a no-op assertion test. Full suite 3796/3796, gap_check 100%. See commit 4d59fe4.
 
 ## Progress
 
@@ -18,7 +18,7 @@ Review #0113 fix: extracted RemoveWorktreeMarkers helper in Services/WorkspaceCl
 
 ## Review Summary
 
-Review #0113 fix: extracted RemoveWorktreeMarkers helper in Services/WorkspaceCleaner.cs and wired into CleanAgent/CleanByTask/CleanAll. CleanAll's two registry-iteration loops were folded into one. Tests in DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs: flipped the bug-codifying Clean_SingleAgent_PreservesWorktreeMarkers into Clean_Agent_WithWorktreeMarkers_RemovesAllSeven, added Clean_ByTask_WithWorktreeMarkers_RemovesAllSeven, plus a no-op assertion test. Full suite 3796/3796, gap_check 100%. See commit 4d59fe4.
+Review [#0113](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0113-dydo-agent-clean-name-force-does-not-remove-worktree-markers-all-force-does-asym.md) fix: extracted RemoveWorktreeMarkers helper in Services/WorkspaceCleaner.cs and wired into CleanAgent/CleanByTask/CleanAll. CleanAll's two registry-iteration loops were folded into one. Tests in DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs: flipped the bug-codifying Clean_SingleAgent_PreservesWorktreeMarkers into Clean_Agent_WithWorktreeMarkers_RemovesAllSeven, added Clean_ByTask_WithWorktreeMarkers_RemovesAllSeven, plus a no-op assertion test. Full suite 3796/3796, gap_check 100%. See commit 4d59fe4.
 
 ## Code Review
 

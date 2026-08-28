@@ -6,7 +6,7 @@ date: 2026-04-02
 
 # Task: fix-reviewer-docs-guidance
 
-Issue #0003: Soft-code the conditional must-read system. Replace hardcoded checks in MustReadTracker with a data-driven `conditionalMustReads` field on RoleDefinition. Three condition types: `markerExists`, `taskNameMatches`, `dispatchedByRole`. Migrate all existing hardcoded cases. Add new case: reviewer dispatched by docs-writer reads writing-docs.md. Full plan at `agents/Charlie/plan-fix-reviewer-docs-guidance.md`.
+[Issue #0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md): Soft-code the conditional must-read system. Replace hardcoded checks in MustReadTracker with a data-driven `conditionalMustReads` field on RoleDefinition. Three condition types: `markerExists`, `taskNameMatches`, `dispatchedByRole`. Migrate all existing hardcoded cases. Add new case: reviewer dispatched by docs-writer reads writing-docs.md. Full plan at `agents/Charlie/plan-fix-reviewer-docs-guidance.md`.
 
 ## Progress
 

@@ -8,7 +8,7 @@ date: 2026-04-26
 
 Mirror new --body and --body-file options into the live reference doc.
 
-Background: I added --body and --body-file flags to `dydo issue create` (issue #0003). I updated Templates/dydo-commands.template.md, but the live doc at dydo/reference/dydo-commands.md is in my read-only zone (code-writer cannot edit dydo/**), so I need a docs-writer to mirror the change.
+Background: I added --body and --body-file flags to `dydo issue create` ([issue #0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md)). I updated Templates/dydo-commands.template.md, but the live doc at dydo/reference/dydo-commands.md is in my read-only zone (code-writer cannot edit dydo/**), so I need a docs-writer to mirror the change.
 
 What to do — one file, one section:
 
@@ -41,7 +41,7 @@ All four CommandDocConsistencyTests must pass.
 Commit with message:
 
 ```
-docs: add --body and --body-file to issue create reference (#0003)
+docs: add --body and --body-file to issue create reference ([#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md))
 ```
 
 Then message me back and release:
@@ -64,23 +64,23 @@ No worktree needed — single-file mirror edit, tight scope: only dydo/reference
 
 ## Review Summary
 
-Review fixes for issues #0003 and #0035.
+Review fixes for issues [#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md) and [#0035](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0035-test-generatemodefile-testwriter-skipscodingstandards-has-misleading-name.md).
 
 ## Scope
 
 Three commits on master since `5ffcb54` (`git log master ^5ffcb54 --oneline`):
 
-- `e4cd980` test: align GenerateModeFile_TestWriter test name with assertion (#0035)
-- `7811ad4` feat(issue): add --body and --body-file options to issue create (#0003)
-- `70e242f` docs: add --body and --body-file to issue create reference (#0003) — by Charlie (docs-writer dispatch)
+- `e4cd980` test: align GenerateModeFile_TestWriter test name with assertion ([#0035](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0035-test-generatemodefile-testwriter-skipscodingstandards-has-misleading-name.md))
+- `7811ad4` feat(issue): add --body and --body-file options to issue create ([#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md))
+- `70e242f` docs: add --body and --body-file to issue create reference ([#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md)) — by Charlie (docs-writer dispatch)
 
-## #0035 — resolution: rename (option a)
+## [#0035](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0035-test-generatemodefile-testwriter-skipscodingstandards-has-misleading-name.md) — resolution: rename (option a)
 
 Test was named `GenerateModeFile_TestWriter_SkipsCodingStandards` but asserted `Assert.Contains("coding-standards.md", content)`. The production behavior is correct (the `mode-test-writer.template.md` deliberately includes coding-standards with the comment "Code conventions (tests are code too)"). Renamed to `GenerateModeFile_TestWriter_IncludesCodingStandards` to match what the assertion actually verifies.
 
 Verified by reading the template and the generated test-writer mode file (line 18 in both has the coding-standards link).
 
-## #0003 — implementation
+## [#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md) — implementation
 
 `--body <text>` and `--body-file <path>` added to `dydo issue create`. Behavior:
 
@@ -127,7 +127,7 @@ Thanks!
 - Reviewed by: Frank
 - Date: 2026-04-26 19:28
 - Result: PASSED
-- Notes: PASS. Code review of e4cd980 + 7811ad4 + 70e242f. (1) #0035 rename matches assertion and template (mode-test-writer.template.md:18 includes coding-standards). (2) #0003 implementation in IssueCommand.cs/IssueCreateHandler.cs is surgical: mutual exclusion + missing-file + whitespace-trim-to-null all guarded; BuildBodySection regex ^## (Reproduction|Resolution)\b with Multiline correctly drops placeholders only on line-anchored headings. 6 new integration tests cover the matrix; Integration/ placement matches existing Issue_Create_* pattern. (3) Charlie's docs mirror is byte-identical to the template (verified via diff). gap_check: 3796/3796 pass, 136/136 modules at tier. One transient WatchdogServiceTests flake observed (CWD captured-then-deleted by sibling PathUtilsTests Dispose) — unrelated to this task, passes on rerun; worth filing separately. Minor notes (non-blocking): brief says 'Seven new tests' but only 6 exist; no explicit test for whitespace-only body content trimming to null.
+- Notes: PASS. Code review of e4cd980 + 7811ad4 + 70e242f. (1) [#0035](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0035-test-generatemodefile-testwriter-skipscodingstandards-has-misleading-name.md) rename matches assertion and template (mode-test-writer.template.md:18 includes coding-standards). (2) [#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md) implementation in IssueCommand.cs/IssueCreateHandler.cs is surgical: mutual exclusion + missing-file + whitespace-trim-to-null all guarded; BuildBodySection regex ^## (Reproduction|Resolution)\b with Multiline correctly drops placeholders only on line-anchored headings. 6 new integration tests cover the matrix; Integration/ placement matches existing Issue_Create_* pattern. (3) Charlie's docs mirror is byte-identical to the template (verified via diff). gap_check: 3796/3796 pass, 136/136 modules at tier. One transient WatchdogServiceTests flake observed (CWD captured-then-deleted by sibling PathUtilsTests Dispose) — unrelated to this task, passes on rerun; worth filing separately. Minor notes (non-blocking): brief says 'Seven new tests' but only 6 exist; no explicit test for whitespace-only body content trimming to null.
 
 Awaiting human approval.
 

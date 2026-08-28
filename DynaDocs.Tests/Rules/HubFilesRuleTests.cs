@@ -132,19 +132,20 @@ public class HubFilesRuleTests
     }
 
     [Fact]
-    public void ValidateFolder_PreservesFrozenV2TaskCompatibilityException()
+    public void ValidateFolder_RequiresHubForRetiredTaskFolder()
     {
         var basePath = Path.Combine(Path.GetTempPath(), $"hub-rule-{Guid.NewGuid():N}");
         var folder = Path.Combine(basePath, "project", "tasks");
         var docs = new List<DocFile>
         {
-            CreateDoc(ProjectPath("tasks", "_tasks.md")),
-            CreateDoc(ProjectPath("tasks", "some-task.md"))
+            CreateDoc("project/tasks/_tasks.md"),
+            CreateDoc("project/tasks/some-task.md")
         };
 
         var violations = _rule.ValidateFolder(folder, docs, basePath).ToList();
 
-        Assert.Empty(violations);
+        Assert.Single(violations);
+        Assert.Contains("_index.md", violations[0].Message);
     }
 
     #endregion
@@ -161,8 +162,4 @@ public class HubFilesRuleTests
         };
     }
 
-    private static string ProjectPath(string folder, string fileName)
-    {
-        return string.Join('/', "project", folder, fileName);
-    }
 }

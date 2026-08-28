@@ -5,8 +5,7 @@ using DynaDocs.Services;
 using DynaDocs.Utils;
 
 /// <summary>
-/// Prevents the frozen v2 PM corpus from growing while Project 3 applies its
-/// human-ratified disposition manifest.
+/// Prevents resurrection of the retired v2 PM corpus.
 /// </summary>
 public sealed class LegacyPmRecordRule : RuleBase
 {
@@ -36,7 +35,7 @@ public sealed class LegacyPmRecordRule : RuleBase
     }
 
     public override string Name => "LegacyPmRecord";
-    public override string Description => "The frozen v2 PM corpus may contain only manifest-backed records and retained hubs";
+    public override string Description => "The retired v2 PM corpus may not be recreated";
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
@@ -49,23 +48,6 @@ public sealed class LegacyPmRecordRule : RuleBase
 
         if (!_manifest.GetAllowedPaths().Contains(repoPath))
             yield return CreateError(doc, "Repository PM record is outside the frozen v2 manifest allow-set");
-    }
-
-    public override IEnumerable<Violation> ValidateFolder(string folderPath, List<DocFile> allDocs, string basePath)
-    {
-        if (!_manifest.IsActive || !PathsEqual(folderPath, basePath))
-            yield break;
-
-        var existingPaths = allDocs
-            .Select(doc => LegacyPmManifestService.ToRepoPath(doc.RelativePath))
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach (var missingPath in _manifest.GetPendingRecordPaths()
-                     .Where(path => !existingPaths.Contains(path))
-                     .Order(StringComparer.Ordinal))
-        {
-            yield return CreateFolderError(missingPath, "Pending legacy PM manifest path does not resolve");
-        }
     }
 
     private static bool IsCandidate(DocFile doc, string repoPath)
@@ -100,12 +82,6 @@ public sealed class LegacyPmRecordRule : RuleBase
         }
 
         return false;
-    }
-
-    private static bool PathsEqual(string left, string right)
-    {
-        return PathUtils.NormalizeForKey(Path.GetFullPath(left)).TrimEnd('/') ==
-               PathUtils.NormalizeForKey(Path.GetFullPath(right)).TrimEnd('/');
     }
 
     private static string RepoProjectDirectory(string folder)

@@ -1,7 +1,6 @@
 namespace DynaDocs.Rules;
 
 using DynaDocs.Models;
-using DynaDocs.Services;
 using DynaDocs.Utils;
 
 public class HubFilesRule : RuleBase
@@ -21,12 +20,6 @@ public class HubFilesRule : RuleBase
 
         // Skip system folders - no hub files required
         if (relativeFolderPath.StartsWith("_system", StringComparison.OrdinalIgnoreCase))
-        {
-            yield break;
-        }
-
-        // Project 3 removes this frozen-v2 compatibility exception with the corpus.
-        if (LegacyPmManifestService.IsLegacyTaskPath(relativeFolderPath))
         {
             yield break;
         }

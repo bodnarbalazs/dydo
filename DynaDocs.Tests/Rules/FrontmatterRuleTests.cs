@@ -296,54 +296,15 @@ public class FrontmatterRuleTests
 
     #endregion
 
-    #region Task File Validation
+    #region Retired task compatibility
 
     [Fact]
-    public void Validate_TaskFile_WithArea_NoType_Passes()
+    public void Validate_TaskFile_RequiresType()
     {
         var doc = CreateDocWithFrontmatter(new Frontmatter
         {
             Area = "backend"
         }, "project/tasks/my-feature.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
-    public void Validate_TaskFile_WithoutArea_Fails()
-    {
-        var doc = CreateDocWithFrontmatter(new Frontmatter(), "project/tasks/my-feature.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Single(violations);
-        Assert.Contains("area", violations[0].Message);
-    }
-
-    [Fact]
-    public void Validate_TaskFile_InvalidArea_Fails()
-    {
-        var doc = CreateDocWithFrontmatter(new Frontmatter
-        {
-            Area = "invalid-area"
-        }, "project/tasks/my-feature.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Single(violations);
-        Assert.Contains("Invalid area", violations[0].Message);
-    }
-
-    [Fact]
-    public void Validate_TaskMetaFile_StillRequiresType()
-    {
-        // Meta files (starting with _) in tasks folder should go through normal validation
-        var doc = CreateDocWithFrontmatter(new Frontmatter
-        {
-            Area = "project"
-        }, "project/tasks/_tasks.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 
@@ -377,6 +338,20 @@ public class FrontmatterRuleTests
         var violations = _rule.Validate(doc, [], "/base").ToList();
 
         Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_RejectsRetiredIssueType()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "project",
+            Type = "issue"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Contains(violations, violation => violation.Message.Contains("Invalid type"));
     }
 
     [Fact]

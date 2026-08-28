@@ -35,6 +35,16 @@ Two invariants, non-negotiable:
 
 ---
 
+## Human-facing identifiers
+
+Keep opaque issue numbers, short IDs, SHAs, filenames, and internal labels visible as secondary
+traceability, never as explanations by themselves. At first use, pair each with its canonical title or
+short plain-language meaning; in a decision request, also say why it matters and recommend an outcome.
+Summarize a common-fate batch by what its items mean and surface only meaningful exceptions. Once the
+human has settled an item, use its identifier as shorthand without repeating the explanation.
+
+---
+
 ## The Managers Doctrine
 
 Tier-1 agents — you, orchestrators, co-thinkers — are **managers, not implementers**. Discovery

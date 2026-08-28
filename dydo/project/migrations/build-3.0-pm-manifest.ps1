@@ -281,7 +281,7 @@ function Test-TargetAndEvidence([object]$record, [bool]$requireRatified) {
         if ([string]::IsNullOrWhiteSpace((Get-FreezeCommitUrl))) { return $record.target.kind -eq 'none' -and $record.target.value -eq '' -and $evidence.Count -eq 0 }
         return $record.target.kind -eq 'commit-permalink' -and (Test-FreezeCommitUrl $record.target.value) -and $evidence.Count -eq 1 -and $evidence[0].kind -eq 'freeze-commit' -and $evidence[0].value -eq $record.target.value
     }
-    if (-not $requireRatified -or $record.finalDisposition -notin $dispositions) { return $false }
+    if ($record.finalDisposition -notin $dispositions) { return $false }
     $hasRuling = @($evidence | Where-Object kind -eq 'human-ruling').Count -eq 1
     if (-not $hasRuling) { return $false }
     if ($migration) {

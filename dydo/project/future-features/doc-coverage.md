@@ -93,6 +93,10 @@ PageRank twist: concepts referenced by other highly-referenced concepts inherit 
 
 ---
 
+## Rationale
+
+FutureFeature is a repo-native idea record. It remains unpromoted until a separate human decision creates Linear work.
+
 ## Related
 
 - [dydo Commands Reference](../../reference/dydo-commands.md) — Existing command patterns

@@ -5,6 +5,14 @@ type: concept
 status: idea
 ---
 
-# Per-Method Complexity Breakdown for gap_check.py
+# Default Per-Method Bottleneck Detail for gap_check.py
 
-The per-method cyclomatic complexity breakdown would be a useful feature for `gap_check.py --inspect`. Right now `--inspect` shows the max CC but doesn't tell you which method is the bottleneck. Worth considering as an enhancement to gap_check.
+`gap_check.py --inspect PATTERN --methods` already reports per-method CC, coverage, and CRAP for the relevant failing methods. This idea is to surface the bottleneck method breakdown by default in `--inspect`, without requiring `--methods`, so the module-level maximum has immediate context.
+
+## Rationale
+
+FutureFeature is a repo-native idea record. It remains unpromoted until a separate human decision creates Linear work.
+
+## Related
+
+- [Coverage Tools](../../reference/coverage-tools.md) — Current coverage and complexity tooling

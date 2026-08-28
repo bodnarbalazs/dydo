@@ -75,3 +75,4 @@ target and terminal repository provenance; all later delivery state remains in L
 - [Writing Good Briefs](./writing-good-briefs.md)
 - [Testing Strategy](./testing-strategy.md)
 - [DR 044](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
+- [Frozen Notion board follow-ups](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/backlog/notion-board-followups.md) — historical workflow evidence retained at the migration freeze

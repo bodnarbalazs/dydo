@@ -355,7 +355,7 @@ have no Edit/Write in their compiled agent definitions; `dydo validate` passes.
 a **copy** in each project, so upstream fixes must be hand-applied. Apply these two, in either order.
 Both are small and localized.
 
-### 6.1 Staleness scan must cover `Sync/`, `Templates/`, and top-level `Program.cs` (issue #0217)
+### 6.1 Staleness scan must cover `Sync/`, `Templates/`, and top-level `Program.cs` ([issue #0217](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0217-gap-check-staleness-auto-skip-is-blind-to-sync-templates-program-cs-reuses-stale.md))
 
 Before this fix, the staleness check (which decides whether to skip re-running tests) scanned only a
 hardcoded set of source dirs with a single `*.cs` glob — so edits to `Sync/`, `Program.cs`, or the
@@ -413,7 +413,7 @@ also yields directories. **[VERIFY]** the target's real source-dir names and adj
 `SOURCE_FILES` / `SOURCE_DIR_GLOBS` to match that project's tree (e.g. a different top-level entrypoint
 than `Program.cs`, or different non-`.cs` resource dirs).
 
-### 6.2 Propagate the test exit code through the gate (issue #0169)
+### 6.2 Propagate the test exit code through the gate ([issue #0169](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0169-gap-check-py-does-not-propagate-dotnet-test-exit-code-gate-signal-lies-about-tes.md))
 
 Before this fix the gate exited 0 when `dotnet test` failed as long as the tier check passed —
 silently green-lighting flakes and regressions. In `main()`:

@@ -152,12 +152,14 @@ Project 2 establishes the target artifact shape before Project 3 rewrites or rem
 Project 4 is the live acceptance boundary. Project 5 alone may delete the frozen Notion runtime and is
 the release integration boundary.
 
-Bootstrap status contract: all five Projects are `Planned`. Bootstrap first
+Historical bootstrap status contract: all five Projects begin `Planned`. Bootstrap first
 reads and records the exact workspace Project status IDs/names for `Planned`, `In Progress`, `Completed`,
 and `Canceled`. After verification passes and the human starts execution, Project 1 alone moves to
 `In Progress` using the recorded ID. A later Project moves to `In Progress` only when its dependencies
 and fresh plan gate have passed; it becomes `Completed` only after its integrated audit and assimilation
-gate.
+gate. The immutable `createdObjects` snapshot records this creation-time state; the bootstrap evidence's
+separate current seal records later status and resource changes by exact Project ID without rewriting
+history.
 
 ### Low-resolution Project contracts
 
@@ -246,9 +248,11 @@ PASS, the human first approves publishing the governing artifacts. The operator 
    resource read-back so every branch-following link resolves. This is the comprehensive bootstrap
    PASS/FAIL comparison and checklist.
 
-Expected observable result: five Planned Dydo-only Projects, six Project 1 Issues, no
+Expected creation-time result: five Planned Dydo-only Projects, six Project 1 Issues, no
 Initiative/Cycles/Releases, exact description-level Project dependencies and native Issue relations, and
-`bootstrapVerification: "pass"` in the JSON plus a human-readable PASS checklist.
+`bootstrapVerification: "pass"` in the JSON plus a human-readable PASS checklist. The later DYD-5 seal
+must preserve that snapshot and separately verify current Project status/resource counts, the exact
+current Project 1 roster, moved or added Issues, and corrected boundary behavior by stable identity.
 
 On the first failed or mismatched mutation, stop and do not retry by title. Record the failure and all
 returned IDs. Roll back by ID in reverse order: set created Issues and Projects to `Canceled` through
@@ -448,14 +452,19 @@ Deliverable:
 
 - Verify the five bootstrapped Projects exactly match §3 and correct only differences
   against this plan using their recorded IDs, never title matching.
-- Verify Project 1 Issues, dependency relations, governing commits, and link resources.
+- Preserve `createdObjects` as the original bootstrap snapshot, then verify current Project status and
+  resources plus the exact Project 1 roster, moved or added Issues, dependency relations, governing
+  commits, and link resources in a separate current seal.
 - Write created Linear URLs back to the campaign/plan frontmatter where specified and attach the
   resulting branch-following resources.
 - Do not create Cycles, Releases, or speculative implementation Issues.
 
-Gate procedure: repeat bootstrap steps 6–8 entirely by recorded ID; require all JSON comparison booleans
-true, `bootstrapVerification: "pass"`, resolvable plan/campaign frontmatter URLs, and a Markdown PASS
-checklist for Project dependencies. Correct a
+Gate procedure: repeat bootstrap steps 6–8 entirely by recorded ID; require every corrected current-seal
+invariant explicitly true, `bootstrapVerification: "pass"`, resolvable plan/campaign frontmatter URLs,
+and a Markdown PASS checklist for exact Project identities/status/resources, description dependency
+counts, the current Issue roster/relations, GitHub attachment and status-reflection behavior, and the
+Linear/Git/dydo boundary. Native Project dependency objects, saved views, labels, Linear Agent guidance,
+a Linear-managed coding environment, and team-prefix routing are not requirements. Correct a
 safe field mismatch only by recorded ID and read it back again. If correction is ambiguous, unsupported,
 or fails, record the exact mismatch and stop for a human decision. Because accepted Project 1 work now
 exists, Issue 5 must never invoke whole-graph bootstrap rollback or cancel accepted objects.
@@ -555,6 +564,12 @@ the gate.
    dependency-ready frontier.
 7. Project 4 must be accepted before Project 5 deletes any Notion/runtime surface. Project 5 owns final
    deletion, integrated audit, packaging, and release.
+
+Current sealed outcome on 2026-08-28: Project 1 is `In Progress`, Project 2 is `Completed`, Projects 3
+and 4 are `Planned`, and Project 5 is `In Progress`. DYD-1, DYD-2, DYD-3, DYD-4, DYD-6, DYD-25, and
+DYD-26 are `Done`; DYD-5 is `In Progress`. DYD-25 and DYD-26 were legitimate post-bootstrap additions,
+and DYD-4 moved to Project 5 under its superseding plan. This records the observed ordering outcome
+without changing the Project 3 or Project 5 execution contracts above.
 
 The current dirty worktree is not migration input until each existing change is attributed to its owner
 and committed, discarded by that owner, or explicitly included in a reviewed Project. No migration Issue

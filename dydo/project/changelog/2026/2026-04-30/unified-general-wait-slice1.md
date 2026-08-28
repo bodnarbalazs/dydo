@@ -6,13 +6,13 @@ date: 2026-04-30
 
 # Task: unified-general-wait-slice1
 
-Review Slice 1 of unified-general-wait — fix for #0133 (dydo wait deadlock). 
+Review Slice 1 of unified-general-wait — fix for [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) (dydo wait deadlock).
 
 WHAT CHANGED
 - Services/AgentRegistry.cs: new CreateListeningWaitMarker(agentName, task, targetAgent, pid) — atomic temp-then-rename that publishes Listening=true + Pid in a single write. If a marker already exists, Target and Since are preserved (so a dispatcher-pre-created task marker keeps its dispatch context when WaitForTask flips it listening).
 - Services/AgentRegistry.cs ValidateReleasePreconditions: filter '_'-prefix sentinel markers from the wait-block check. CleanupAfterRelease still wipes them via ClearAllWaitMarkers — this just stops them from blocking validation. Mirrors existing '_'-sentinel semantics in GetActiveTaskWaitSubjects and Guard_GeneralWaitMarker_NotIncluded_InPendingTaskList.
 - Services/IAgentRegistry.cs: interface bump for the new method.
-- Commands/WaitCommand.cs WaitGeneral (line 81): replaced CreateWaitMarker + UpdateWaitMarkerListening with the atomic create — closes the race that #0133 traced.
+- Commands/WaitCommand.cs WaitGeneral (line 81): replaced CreateWaitMarker + UpdateWaitMarkerListening with the atomic create — closes the race that [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) traced.
 - Commands/WaitCommand.cs WaitForTask (line 134): same atomic upsert, replacing the non-atomic read-modify-write UpdateWaitMarkerListening (parity per the brief).
 - DynaDocs.Tests/Commands/CheckAgentValidatorTests.cs: stub the new interface method on FakeAgentRegistryForCAV.
 
@@ -54,13 +54,13 @@ FILES TOUCHED
 
 ## Review Summary
 
-Review Slice 1 of unified-general-wait — fix for #0133 (dydo wait deadlock). 
+Review Slice 1 of unified-general-wait — fix for [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) (dydo wait deadlock).
 
 WHAT CHANGED
 - Services/AgentRegistry.cs: new CreateListeningWaitMarker(agentName, task, targetAgent, pid) — atomic temp-then-rename that publishes Listening=true + Pid in a single write. If a marker already exists, Target and Since are preserved (so a dispatcher-pre-created task marker keeps its dispatch context when WaitForTask flips it listening).
 - Services/AgentRegistry.cs ValidateReleasePreconditions: filter '_'-prefix sentinel markers from the wait-block check. CleanupAfterRelease still wipes them via ClearAllWaitMarkers — this just stops them from blocking validation. Mirrors existing '_'-sentinel semantics in GetActiveTaskWaitSubjects and Guard_GeneralWaitMarker_NotIncluded_InPendingTaskList.
 - Services/IAgentRegistry.cs: interface bump for the new method.
-- Commands/WaitCommand.cs WaitGeneral (line 81): replaced CreateWaitMarker + UpdateWaitMarkerListening with the atomic create — closes the race that #0133 traced.
+- Commands/WaitCommand.cs WaitGeneral (line 81): replaced CreateWaitMarker + UpdateWaitMarkerListening with the atomic create — closes the race that [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) traced.
 - Commands/WaitCommand.cs WaitForTask (line 134): same atomic upsert, replacing the non-atomic read-modify-write UpdateWaitMarkerListening (parity per the brief).
 - DynaDocs.Tests/Commands/CheckAgentValidatorTests.cs: stub the new interface method on FakeAgentRegistryForCAV.
 
@@ -97,7 +97,7 @@ FILES TOUCHED
 - Reviewed by: Adele
 - Date: 2026-04-29 20:04
 - Result: PASSED
-- Notes: PASS. Atomic CreateListeningWaitMarker correctly closes the #0133 race: Listening=true and Pid published in a single temp-then-rename write that mirrors the existing WriteStateFile pattern (AgentRegistry.cs:1482). Existing-marker upsert preserves Target/Since so dispatcher-pre-created markers keep their context. ValidateReleasePreconditions sentinel filter is consistent with GetActiveTaskWaitSubjects and OrchestratorMissingGeneralWait — '_'-prefix semantics are uniform across the codebase. Both call sites (WaitGeneral, WaitForTask) updated; legitimate two-step callers (DispatchService.CreateWaitMarker dispatch path) untouched. Tests cover the atomic-write contract, upsert preservation, the regression scenario via IsProcessRunningOverride observation, and both release-block branches (sentinel vs real task). Plan deviations on test count are justified (existing tests already cover the variants). gap_check.py: 137/137 modules at tier compliance.
+- Notes: PASS. Atomic CreateListeningWaitMarker correctly closes the [#0133](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) race: Listening=true and Pid published in a single temp-then-rename write that mirrors the existing WriteStateFile pattern (AgentRegistry.cs:1482). Existing-marker upsert preserves Target/Since so dispatcher-pre-created markers keep their context. ValidateReleasePreconditions sentinel filter is consistent with GetActiveTaskWaitSubjects and OrchestratorMissingGeneralWait — '_'-prefix semantics are uniform across the codebase. Both call sites (WaitGeneral, WaitForTask) updated; legitimate two-step callers (DispatchService.CreateWaitMarker dispatch path) untouched. Tests cover the atomic-write contract, upsert preservation, the regression scenario via IsProcessRunningOverride observation, and both release-block branches (sentinel vs real task). Plan deviations on test count are justified (existing tests already cover the variants). gap_check.py: 137/137 modules at tier compliance.
 
 Awaiting human approval.
 

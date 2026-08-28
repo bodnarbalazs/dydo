@@ -6,7 +6,7 @@ date: 2026-05-04
 
 # Task: fix-test-git-helper-deadlock
 
-Fix the 30s WaitForExit cliff in WorktreeMergeSafetyIntegrationTests.Git() — pump stdout/stderr concurrently to avoid pipe-buffer deadlock. Diagnosed in #0148.
+Fix the 30s WaitForExit cliff in WorktreeMergeSafetyIntegrationTests.Git() — pump stdout/stderr concurrently to avoid pipe-buffer deadlock. Diagnosed in [#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md).
 
 ## Progress
 
@@ -18,7 +18,7 @@ Fix the 30s WaitForExit cliff in WorktreeMergeSafetyIntegrationTests.Git() — p
 
 ## Review Summary
 
-Review commit aeee461 for fix-test-git-helper-deadlock (#0148).
+Review commit aeee461 for fix-test-git-helper-deadlock ([#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md)).
 
 Plan: dydo/agents/Tara/plan-fix-test-git-helper-deadlock.md
 Brief: dydo/agents/Brian/brief-fix-test-git-helper-deadlock.md
@@ -31,7 +31,7 @@ Verify:
 Test results to verify:
 - Filtered: python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~WorktreeMergeSafety" - 27/27 pass.
 - Full suite (no coverage): 4018/4018 pass.
-- gap_check tier: 137/137. NOTE: gap_check flagged two pre-existing flakes under coverage instrumentation - WorktreeCommandTests.InitSettings_Idempotent_NoDuplicateReadEntry (CWD-race family, #0136/#0137) and FileReadRetryTests.Read_ExclusivelyLockedFile_RetriesAndSucceeds (#0119). Brian confirmed both pre-existing, not regressions, out of #0148 scope. Neither reproduces on the non-coverage 4018/4018 run.
+- gap_check tier: 137/137. NOTE: gap_check flagged two pre-existing flakes under coverage instrumentation - WorktreeCommandTests.InitSettings_Idempotent_NoDuplicateReadEntry (CWD-race family, [#0136](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0136-flaky-test-pathutilsdiscoverytests-finddocsfolder-returnsdydoroot-whenconfigexis.md)/[#0137](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0137-flaky-test-worktreecommandtests-initsettings-copiessettingswithreadpermission-fi.md)) and FileReadRetryTests.Read_ExclusivelyLockedFile_RetriesAndSucceeds ([#0119](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0119-filereadretrytests-read-exclusivelylockedfile-retriesandsucceeds-flakes-under-su.md)). Brian confirmed both pre-existing, not regressions, out of [#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md) scope. Neither reproduces on the non-coverage 4018/4018 run.
 
 Run dydo check too.
 

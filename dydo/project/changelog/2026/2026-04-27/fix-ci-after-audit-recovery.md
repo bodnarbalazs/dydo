@@ -6,7 +6,7 @@ date: 2026-04-27
 
 # Task: fix-ci-after-audit-recovery
 
-CI went red on master after the audit cherry-pick recovery. Three failing tests: two were obsolete after #0080 (sorted-hash) and #0073 (sanitized session ID) landed and needed their assertions updated, and a third (`WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning`) needed investigation to determine whether it was a real regression or a flake similar to #0116. This task addressed all three.
+CI went red on master after the audit cherry-pick recovery. Three failing tests: two were obsolete after [#0080](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0080-computebaselineid-does-not-sort-files-folders-before-hashing.md) (sorted-hash) and [#0073](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0073-getsession-crashes-on-session-ids-containing-path-separators.md) (sanitized session ID) landed and needed their assertions updated, and a third (`WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning`) needed investigation to determine whether it was a real regression or a flake similar to [#0116](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0116-watchdogservicetests-pollandcleanup-skipsworkingagents-flakes-when-sibling-pathu.md). This task addressed all three.
 
 # Fix CI failures after audit recovery (3 tests, 2 obsolete + 1 to investigate)
 
@@ -16,28 +16,28 @@ Master is RED on CI after the audit cherry-pick recovery. Three test failures:
 
 1. **`AuditEdgeCaseTests.ComputeBaselineId_DifferentFileOrder_ProducesDifferentHash`** — `Assert.NotEqual()` Failure: Strings are equal.
    - Test asserts different file order produces different hash.
-   - `#0080`'s correct fix (sort `Files`/`Folders` before hashing) makes them produce the **same** hash now. That's the intended new behaviour.
+   - `[#0080](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0080-computebaselineid-does-not-sort-files-folders-before-hashing.md)`'s correct fix (sort `Files`/`Folders` before hashing) makes them produce the **same** hash now. That's the intended new behaviour.
    - Test name and assertion are obsolete.
 2. **`AuditEdgeCaseTests.GetSession_SessionIdWithForwardSlash_ThrowsDirectoryNotFound`** — `Assert.Throws()` Failure: Exception type was not an exact match.
    - Test asserts `DirectoryNotFoundException`.
-   - `#0073`'s validation throws a different type (probably `ArgumentException` per the standard sanitization pattern).
+   - `[#0073](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0073-getsession-crashes-on-session-ids-containing-path-separators.md)`'s validation throws a different type (probably `ArgumentException` per the standard sanitization pattern).
    - Test needs to assert the new exception type.
 3. **`WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning`** — `Assert.True()` Failure.
-   - May or may not be related to the audit work. Could be a CI-environment-only flake similar to `#0116`'s sibling-test pattern. Investigate before assuming it's a real regression.
+   - May or may not be related to the audit work. Could be a CI-environment-only flake similar to `[#0116](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0116-watchdogservicetests-pollandcleanup-skipsworkingagents-flakes-when-sibling-pathu.md)`'s sibling-test pattern. Investigate before assuming it's a real regression.
 
 CI run reference: `24996949358` (latest red on master). `gh run view 24996949358 --log-failed` shows the full output.
 
 ## Scope
 
-1. **Read each test in `DynaDocs.Tests/Services/AuditEdgeCaseTests.cs`** for failures #1 and #2. Read the corresponding production code (`Services/SnapshotCompactionService.cs:368-379` for `ComputeBaselineId`; `Services/AuditService.cs` `GetSession` for `#0073` validation).
+1. **Read each test in `DynaDocs.Tests/Services/AuditEdgeCaseTests.cs`** for failures #1 and #2. Read the corresponding production code (`Services/SnapshotCompactionService.cs:368-379` for `ComputeBaselineId`; `Services/AuditService.cs` `GetSession` for `[#0073](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0073-getsession-crashes-on-session-ids-containing-path-separators.md)` validation).
 
 2. **Fix the obsolete tests:**
-   - **#1** — rename `ComputeBaselineId_DifferentFileOrder_ProducesDifferentHash` to something accurate (e.g., `ComputeBaselineId_DifferentFileOrder_ProducesSameHash`). Flip the assertion from `Assert.NotEqual` to `Assert.Equal`. Add a one-line comment explaining the change references `#0080`.
+   - **#1** — rename `ComputeBaselineId_DifferentFileOrder_ProducesDifferentHash` to something accurate (e.g., `ComputeBaselineId_DifferentFileOrder_ProducesSameHash`). Flip the assertion from `Assert.NotEqual` to `Assert.Equal`. Add a one-line comment explaining the change references `[#0080](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0080-computebaselineid-does-not-sort-files-folders-before-hashing.md)`.
    - **#2** — update `GetSession_SessionIdWithForwardSlash_ThrowsDirectoryNotFound` to assert the actual exception type the new sanitization throws. Read `GetSession` to see what it throws now. If the type is `ArgumentException`, rename the test accordingly (e.g., `..._ThrowsArgumentException`).
 
 3. **Investigate failure #3** — `WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning`:
    - Read the test. Read the `WatchdogService.Stop` method.
-   - If it's the same CI-only flake pattern `#0116` was about (CWD captured-then-deleted by sibling test), apply the same fix (don't capture CWD; use a test-context dir).
+   - If it's the same CI-only flake pattern `[#0116](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0116-watchdogservicetests-pollandcleanup-skipsworkingagents-flakes-when-sibling-pathu.md)` was about (CWD captured-then-deleted by sibling test), apply the same fix (don't capture CWD; use a test-context dir).
    - If it's a different pattern, report what you found in your message to Brian and DO NOT fix it without asking — could be a real regression we need to understand before patching over.
    - Run the test in isolation: `dotnet test --filter "FullyQualifiedName~WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning"`. Does it pass alone? Fails consistently or intermittently?
 
@@ -45,9 +45,9 @@ CI run reference: `24996949358` (latest red on master). `gh run view 24996949358
 
 5. **Commit incrementally and push to `origin/master` between commits** (lessons from this morning's losses):
    ```
-   git commit -am "test(audit): align ComputeBaselineId test with #0080's sort-before-hash"
+   git commit -am "test(audit): align ComputeBaselineId test with [#0080](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0080-computebaselineid-does-not-sort-files-folders-before-hashing.md)'s sort-before-hash"
    git push origin master
-   git commit -am "test(audit): align GetSession test with #0073's validation"
+   git commit -am "test(audit): align GetSession test with [#0073](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0073-getsession-crashes-on-session-ids-containing-path-separators.md)'s validation"
    git push origin master
    git commit -am "fix(watchdog): <whatever the actual fix is, or skip if not addressing>"
    git push origin master
@@ -67,8 +67,8 @@ CI run reference: `24996949358` (latest red on master). `gh run view 24996949358
 
 1. Up to three commits on master, each pushed to `origin/master` immediately after.
 2. Status messages to Brian after each push:
-   - `"Pushed test fix for #0080-aligned baseline test."`
-   - `"Pushed test fix for #0073-aligned GetSession test."`
+   - `"Pushed test fix for [#0080](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0080-computebaselineid-does-not-sort-files-folders-before-hashing.md)-aligned baseline test."`
+   - `"Pushed test fix for [#0073](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0073-getsession-crashes-on-session-ids-containing-path-separators.md)-aligned GetSession test."`
    - (if doing #3) `"Pushed Watchdog fix"` or `"Watchdog test fail #3 looks unrelated — leaving for separate investigation. Details: <one paragraph>."`
 3. Verify CI green via `gh run list --limit 1`. Wait for the run to complete (or note its in-progress status).
 4. Final message to Brian:
@@ -81,7 +81,7 @@ CI run reference: `24996949358` (latest red on master). `gh run view 24996949358
    Notes: <any deviations>."
    ```
 
-5. Dispatch a reviewer with explicit `--agent` (per `#0108`):
+5. Dispatch a reviewer with explicit `--agent` (per `[#0108](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md)`):
    ```
    dydo dispatch --no-wait --auto-close --agent <chosen-reviewer> --role reviewer --task fix-ci-after-audit-recovery --brief "Review CI fix. See git log master..HEAD."
    ```
@@ -98,7 +98,7 @@ Then release.
 
 ## Review Summary
 
-Review CI fix. See git log master..HEAD (2 commits: fc548ce, d012105). Both aligned obsolete tests with #0080 (sort-before-hash) and #0073 (path-separator validation). Watchdog test #3 left for separate investigation per Brian's discretion (different from #0116 pattern). gap_check: 1 pre-existing FAIL on RoleConstraintEvaluator (CRAP 32 from #0045) — unrelated to this task. Verify: (1) test renames and assertion flips correctly reference the production behaviour now in Services/SnapshotCompactionService.cs ComputeBaselineId and Services/AuditService.cs ValidateSessionId; (2) full suite passes (3823/3823 locally); (3) CI green on master HEAD (run 24998191977).
+Review CI fix. See git log master..HEAD (2 commits: fc548ce, d012105). Both aligned obsolete tests with [#0080](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0080-computebaselineid-does-not-sort-files-folders-before-hashing.md) (sort-before-hash) and [#0073](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0073-getsession-crashes-on-session-ids-containing-path-separators.md) (path-separator validation). Watchdog test #3 left for separate investigation per Brian's discretion (different from [#0116](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0116-watchdogservicetests-pollandcleanup-skipsworkingagents-flakes-when-sibling-pathu.md) pattern). gap_check: 1 pre-existing FAIL on RoleConstraintEvaluator (CRAP 32 from [#0045](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0045-inconsistent-case-sensitivity-in-roleconstraintevaluator.md)) — unrelated to this task. Verify: (1) test renames and assertion flips correctly reference the production behaviour now in Services/SnapshotCompactionService.cs ComputeBaselineId and Services/AuditService.cs ValidateSessionId; (2) full suite passes (3823/3823 locally); (3) CI green on master HEAD (run 24998191977).
 
 ## Approval
 

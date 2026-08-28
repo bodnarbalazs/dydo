@@ -8,7 +8,7 @@ date: 2026-05-08
 
 Review commit 3c34dd2 for v1.4.7 pre-tag. Two small fixes — review independently:
 
-FIX 1 (issue 0179) — worktree cleanup log honesty
+FIX 1 ([issue 0179](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0179-executecleanup-prints-worktree-x-cleaned-up-even-when-removezombiedirectory-fail.md)) — worktree cleanup log honesty
 - Commands/WorktreeCommand.cs:312 add RemoveZombieDirectoryOverride test seam
 - Commands/WorktreeCommand.cs:746 RemoveZombieDirectory now returns bool (true if dir is gone, false on Windows file-lock — WARNING preserved on stderr)
 - Commands/WorktreeCommand.cs:737-754 TeardownWorktree returns !Directory.Exists(worktreePath) — disk truth, not derived from inner bool, so RemoveGitWorktree's --force success after RemoveZombieDirectory failure also reports correctly
@@ -16,7 +16,7 @@ FIX 1 (issue 0179) — worktree cleanup log honesty
 - Commands/WorktreeCommand.cs:980-994 FinalizeMerge branches identically when refsRemaining==0 and branchDeleteExit==0
 - Commands/WorktreeCommand.cs:1018-1024 ExecutePrune does NOT increment orphansRemoved on failure, prints '  Worktree X: directory remains ...' line
 
-FIX 2 (issue 0177) — warn-nudge for open-ended bash polls
+FIX 2 ([issue 0177](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0177-open-ended-bash-poll-loops-until-s-while-tail-f-in-agent-shell-calls-crash-claud.md)) — warn-nudge for open-ended bash polls
 - Services/ConfigFactory.cs:78-82 added DefaultNudges entry: pattern \buntil\s+\[, severity warn. Idempotent via existing EnsureDefaultNudges (matches by Pattern). Ships with every project (CreateDefault writes it; EnsureDefaultNudges seeds existing dydo.json).
 
 TESTS (+11 cases / 5 methods, 4194 passing total)
@@ -52,7 +52,7 @@ Pre-tag fixes for v1.4.7. v1.4.6 already shipped PR1+PR2+PR3. After your review 
 
 Review commit 3c34dd2 for v1.4.7 pre-tag. Two small fixes — review independently:
 
-FIX 1 (issue 0179) — worktree cleanup log honesty
+FIX 1 ([issue 0179](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0179-executecleanup-prints-worktree-x-cleaned-up-even-when-removezombiedirectory-fail.md)) — worktree cleanup log honesty
 - Commands/WorktreeCommand.cs:312 add RemoveZombieDirectoryOverride test seam
 - Commands/WorktreeCommand.cs:746 RemoveZombieDirectory now returns bool (true if dir is gone, false on Windows file-lock — WARNING preserved on stderr)
 - Commands/WorktreeCommand.cs:737-754 TeardownWorktree returns !Directory.Exists(worktreePath) — disk truth, not derived from inner bool, so RemoveGitWorktree's --force success after RemoveZombieDirectory failure also reports correctly
@@ -60,7 +60,7 @@ FIX 1 (issue 0179) — worktree cleanup log honesty
 - Commands/WorktreeCommand.cs:980-994 FinalizeMerge branches identically when refsRemaining==0 and branchDeleteExit==0
 - Commands/WorktreeCommand.cs:1018-1024 ExecutePrune does NOT increment orphansRemoved on failure, prints '  Worktree X: directory remains ...' line
 
-FIX 2 (issue 0177) — warn-nudge for open-ended bash polls
+FIX 2 ([issue 0177](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0177-open-ended-bash-poll-loops-until-s-while-tail-f-in-agent-shell-calls-crash-claud.md)) — warn-nudge for open-ended bash polls
 - Services/ConfigFactory.cs:78-82 added DefaultNudges entry: pattern \buntil\s+\[, severity warn. Idempotent via existing EnsureDefaultNudges (matches by Pattern). Ships with every project (CreateDefault writes it; EnsureDefaultNudges seeds existing dydo.json).
 
 TESTS (+11 cases / 5 methods, 4194 passing total)

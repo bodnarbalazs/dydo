@@ -9,14 +9,14 @@ date: 2026-04-30
 Review commit bd3cebe — five-line revert of 8d3e3b1's  addition in ReleaseAgent (Services/AgentRegistry.cs:502-505), plus two test renames + assertion flips and one stale-comment touch-up.
 
 Diagnosis full notes: dydo/agents/Charlie/notes-investigate-auto-close-regression.md.
-Issue: #0134 (filed).
+Issue: [#0134](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0134-auto-close-mechanism-broken-releaseagent-clears-auto-close-prematurely-v1-3-9-re.md) (filed).
 
 What the change does: post-release on-disk state goes back to free + auto-close: true. The watchdog's kill condition at Services/WatchdogService.cs:359 then fires; ClearAutoClose flips auto-close to false after the kill (existing behaviour). Verified live: pre-revert, watchdog log shows continuous kills_attempted:0 with 14 free agents — the regression. New regression test ReleaseAgent_PreservesAutoCloseOnDisk_ForWatchdogKill captures the correct contract; failed before fix, passes after.
 
 Hard constraints honoured (verify):
-- Per-agent .claim.lock from 06512de (PollAndCleanupForAgent at Services/WatchdogService.cs:354) STAYS — closes #0121.
-- ClaudeProcessNames whitelist from 06512de (Services/WatchdogService.cs:404) STAYS — closes #0122.
-- Atomic WriteStateFile from 8d3e3b1 (#0125) STAYS — independent improvement.
+- Per-agent .claim.lock from 06512de (PollAndCleanupForAgent at Services/WatchdogService.cs:354) STAYS — closes [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md).
+- ClaudeProcessNames whitelist from 06512de (Services/WatchdogService.cs:404) STAYS — closes [#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md).
+- Atomic WriteStateFile from 8d3e3b1 ([#0125](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0125-state-file-read-write-unsynchronized-between-watchdog-and-registry.md)) STAYS — independent improvement.
 
 Tests: 3916/3916 pass. gap_check: 137/137 modules pass.
 
@@ -37,14 +37,14 @@ Out-of-scope flag for Brian: e1eac2e diff inspected — only -NoExit is touched;
 Review commit bd3cebe — five-line revert of 8d3e3b1's  addition in ReleaseAgent (Services/AgentRegistry.cs:502-505), plus two test renames + assertion flips and one stale-comment touch-up.
 
 Diagnosis full notes: dydo/agents/Charlie/notes-investigate-auto-close-regression.md.
-Issue: #0134 (filed).
+Issue: [#0134](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0134-auto-close-mechanism-broken-releaseagent-clears-auto-close-prematurely-v1-3-9-re.md) (filed).
 
 What the change does: post-release on-disk state goes back to free + auto-close: true. The watchdog's kill condition at Services/WatchdogService.cs:359 then fires; ClearAutoClose flips auto-close to false after the kill (existing behaviour). Verified live: pre-revert, watchdog log shows continuous kills_attempted:0 with 14 free agents — the regression. New regression test ReleaseAgent_PreservesAutoCloseOnDisk_ForWatchdogKill captures the correct contract; failed before fix, passes after.
 
 Hard constraints honoured (verify):
-- Per-agent .claim.lock from 06512de (PollAndCleanupForAgent at Services/WatchdogService.cs:354) STAYS — closes #0121.
-- ClaudeProcessNames whitelist from 06512de (Services/WatchdogService.cs:404) STAYS — closes #0122.
-- Atomic WriteStateFile from 8d3e3b1 (#0125) STAYS — independent improvement.
+- Per-agent .claim.lock from 06512de (PollAndCleanupForAgent at Services/WatchdogService.cs:354) STAYS — closes [#0121](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md).
+- ClaudeProcessNames whitelist from 06512de (Services/WatchdogService.cs:404) STAYS — closes [#0122](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md).
+- Atomic WriteStateFile from 8d3e3b1 ([#0125](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0125-state-file-read-write-unsynchronized-between-watchdog-and-registry.md)) STAYS — independent improvement.
 
 Tests: 3916/3916 pass. gap_check: 137/137 modules pass.
 
@@ -57,7 +57,7 @@ Out-of-scope flag for Brian: e1eac2e diff inspected — only -NoExit is touched;
 - Reviewed by: Dexter
 - Date: 2026-04-29 19:19
 - Result: PASSED
-- Notes: PASS. Verified: (1) bd3cebe is a clean 4-line revert of s.AutoClose=false in ReleaseAgent + a why-comment that names the watchdog precondition and the lock that obviates clearing; (2) hard constraints intact - .claim.lock bracketing (WatchdogService.cs:354), ClaudeProcessNames whitelist (WatchdogService.cs:404), atomic WriteStateFile (#0125) all untouched; (3) new regression test ReleaseAgent_PreservesAutoCloseOnDisk_ForWatchdogKill asserts the correct contract; the two existing Release_ClearsAutoCloseOnDisk tests are renamed and assertions flipped; SetDispatchMetadata_PersistsAcrossStateUpdates comment touched up. Tests: 3916/3916 pass via worktree runner. gap_check: 137/137 modules pass. Edge cases reasoned through (Release_WithoutAutoClose_StateShowsFalse still holds because default state is auto-close: false when never dispatched with auto-close; redispatch race genuinely closed by per-agent lock so the post-release free + auto-close: true window is design, not bug). Charlie's out-of-scope flag on e1eac2e (only -NoExit touched, --window/--new-tab routing untouched) noted - independent concern, not part of this fix.
+- Notes: PASS. Verified: (1) bd3cebe is a clean 4-line revert of s.AutoClose=false in ReleaseAgent + a why-comment that names the watchdog precondition and the lock that obviates clearing; (2) hard constraints intact - .claim.lock bracketing (WatchdogService.cs:354), ClaudeProcessNames whitelist (WatchdogService.cs:404), atomic WriteStateFile ([#0125](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0125-state-file-read-write-unsynchronized-between-watchdog-and-registry.md)) all untouched; (3) new regression test ReleaseAgent_PreservesAutoCloseOnDisk_ForWatchdogKill asserts the correct contract; the two existing Release_ClearsAutoCloseOnDisk tests are renamed and assertions flipped; SetDispatchMetadata_PersistsAcrossStateUpdates comment touched up. Tests: 3916/3916 pass via worktree runner. gap_check: 137/137 modules pass. Edge cases reasoned through (Release_WithoutAutoClose_StateShowsFalse still holds because default state is auto-close: false when never dispatched with auto-close; redispatch race genuinely closed by per-agent lock so the post-release free + auto-close: true window is design, not bug). Charlie's out-of-scope flag on e1eac2e (only -NoExit touched, --window/--new-tab routing untouched) noted - independent concern, not part of this fix.
 
 Awaiting human approval.
 

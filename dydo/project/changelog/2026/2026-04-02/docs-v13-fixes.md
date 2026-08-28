@@ -6,7 +6,7 @@ date: 2026-04-02
 
 # Task: docs-v13-fixes
 
-Review documentation fixes across 8 files for three issues: (1) removed false platform-agnostic claims, added 'Built for Claude Code' notice, (2) reframed amnesia problem to context problem (memory is unstructured, not absent), (3) fixed judge role description to prioritize inquisition report evaluation over dispute arbitration. Files changed: dydo/reference/about-dynadocs.md, README.md, dydo/reference/roles/_roles.md, dydo/project/v1.3-release.md, dydo/understand/roles-and-permissions.md, dydo/understand/about.md, dydo/guides/getting-started.md, dydo/_system/roles/judge.role.json.
+Review documentation fixes across 8 files for three issues: (1) removed false platform-agnostic claims, added 'Built for Claude Code' notice, (2) reframed amnesia problem to context problem (memory is unstructured, not absent), (3) fixed judge role description to prioritize inquisition report evaluation over dispute arbitration. Files changed: dydo/reference/about-dynadocs.md, README.md, dydo/reference/roles/_roles.md, [dydo/project/v1.3-release.md](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/v1.3-release.md), dydo/understand/roles-and-permissions.md, dydo/understand/about.md, dydo/guides/getting-started.md, dydo/_system/roles/judge.role.json.
 
 ## Progress
 
@@ -23,7 +23,7 @@ C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs — Modi
 
 ## Review Summary
 
-Review documentation fixes across 8 files for three issues: (1) removed false platform-agnostic claims, added 'Built for Claude Code' notice, (2) reframed amnesia problem to context problem (memory is unstructured, not absent), (3) fixed judge role description to prioritize inquisition report evaluation over dispute arbitration. Files changed: dydo/reference/about-dynadocs.md, README.md, dydo/reference/roles/_roles.md, dydo/project/v1.3-release.md, dydo/understand/roles-and-permissions.md, dydo/understand/about.md, dydo/guides/getting-started.md, dydo/_system/roles/judge.role.json.
+Review documentation fixes across 8 files for three issues: (1) removed false platform-agnostic claims, added 'Built for Claude Code' notice, (2) reframed amnesia problem to context problem (memory is unstructured, not absent), (3) fixed judge role description to prioritize inquisition report evaluation over dispute arbitration. Files changed: dydo/reference/about-dynadocs.md, README.md, dydo/reference/roles/_roles.md, [dydo/project/v1.3-release.md](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/v1.3-release.md), dydo/understand/roles-and-permissions.md, dydo/understand/about.md, dydo/guides/getting-started.md, dydo/_system/roles/judge.role.json.
 
 ## Code Review (2026-03-30 17:45)
 

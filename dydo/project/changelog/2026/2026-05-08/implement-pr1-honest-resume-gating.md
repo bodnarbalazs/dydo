@@ -6,13 +6,13 @@ date: 2026-05-08
 
 # Task: implement-pr1-honest-resume-gating
 
-Review PR1 of agent-crash-fixes (commit e80730c). Closes #0173 + augments #0151.
+Review PR1 of agent-crash-fixes (commit e80730c). Closes [#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md) + augments [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md).
 
 CHANGES (production):
 - Models/AgentState.cs:73-82 — new LaunchedPid field, mirrors PreResumePid.
 - Services/AgentRegistry.cs — launched-pid round-trips through state.md; RecordResumeLaunch helper persists it post-launch without bumping the resume counter; reset paths (claim, release, same-session reclaim) clear it.
 - Services/IAgentRegistry.cs — IncrementResumeAttempts gains optional launchedPid param; RecordResumeLaunch added to interface.
-- Services/WatchdogService.cs — ResumeWarmupGate bumped 60s -> 5min (#0173 audit showed 8/32/10-min rehydrations); IsBadSessionFailFast now also requires launched-PID dead; new IsLaunchedClaudeStillAlive silent-skips when warmup elapsed but launched PID alive (no log, no relaunch — per locked Q3 silent-skip decision); ResumeContext / ParseResumeFields plumb launched-pid; KillClaudeProcesses now routes through MatchesProcessName (dropped dead ClaudeProcessNames HashSet).
+- Services/WatchdogService.cs — ResumeWarmupGate bumped 60s -> 5min ([#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md) audit showed 8/32/10-min rehydrations); IsBadSessionFailFast now also requires launched-PID dead; new IsLaunchedClaudeStillAlive silent-skips when warmup elapsed but launched PID alive (no log, no relaunch — per locked Q3 silent-skip decision); ResumeContext / ParseResumeFields plumb launched-pid; KillClaudeProcesses now routes through MatchesProcessName (dropped dead ClaudeProcessNames HashSet).
 - Services/ProcessUtils.Ancestry.cs — anchored regex per needle: ^claude(\.exe(\.old\.\d+)?)?$ + ^node(\.exe)?$ — other needles keep literal-stem path.
 
 VERIFICATION:
@@ -25,7 +25,7 @@ LOCKED DECISIONS (from inbox brief, applied as-is):
 - Q2 launched-pid persistence: option (a) — AgentState field, mirrors PreResumePid via ParseResumeFields.
 - Q3 log honesty: silent-skip — keep resume_blocked event name, only emit on liveness=dead. Alive past warmup = no log line.
 - Q4 5-min gate: kept (belt-and-braces; not load-bearing once #5 ships).
-- Q7 SaturateResumeAttempts: kept (correct hammer now; alternative re-introduces #0152 race).
+- Q7 SaturateResumeAttempts: kept (correct hammer now; alternative re-introduces [#0152](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0152-auto-resume-race-watchdog-fires-duplicate-launches-during-the-resumed-claude-war.md) race).
 
 OUT OF SCOPE: PR2 (#2 worktree anchor + #4 LaunchResume worktree wrapper) and PR3 (instrumentation events, Q3-(ii) resume_pending) are deferred per brief.
 
@@ -48,13 +48,13 @@ Please verify (a) the plan-vs-implementation mapping is faithful, (b) the silent
 
 ## Review Summary
 
-Review PR1 of agent-crash-fixes (commit e80730c). Closes #0173 + augments #0151.
+Review PR1 of agent-crash-fixes (commit e80730c). Closes [#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md) + augments [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md).
 
 CHANGES (production):
 - Models/AgentState.cs:73-82 — new LaunchedPid field, mirrors PreResumePid.
 - Services/AgentRegistry.cs — launched-pid round-trips through state.md; RecordResumeLaunch helper persists it post-launch without bumping the resume counter; reset paths (claim, release, same-session reclaim) clear it.
 - Services/IAgentRegistry.cs — IncrementResumeAttempts gains optional launchedPid param; RecordResumeLaunch added to interface.
-- Services/WatchdogService.cs — ResumeWarmupGate bumped 60s -> 5min (#0173 audit showed 8/32/10-min rehydrations); IsBadSessionFailFast now also requires launched-PID dead; new IsLaunchedClaudeStillAlive silent-skips when warmup elapsed but launched PID alive (no log, no relaunch — per locked Q3 silent-skip decision); ResumeContext / ParseResumeFields plumb launched-pid; KillClaudeProcesses now routes through MatchesProcessName (dropped dead ClaudeProcessNames HashSet).
+- Services/WatchdogService.cs — ResumeWarmupGate bumped 60s -> 5min ([#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md) audit showed 8/32/10-min rehydrations); IsBadSessionFailFast now also requires launched-PID dead; new IsLaunchedClaudeStillAlive silent-skips when warmup elapsed but launched PID alive (no log, no relaunch — per locked Q3 silent-skip decision); ResumeContext / ParseResumeFields plumb launched-pid; KillClaudeProcesses now routes through MatchesProcessName (dropped dead ClaudeProcessNames HashSet).
 - Services/ProcessUtils.Ancestry.cs — anchored regex per needle: ^claude(\.exe(\.old\.\d+)?)?$ + ^node(\.exe)?$ — other needles keep literal-stem path.
 
 VERIFICATION:
@@ -67,7 +67,7 @@ LOCKED DECISIONS (from inbox brief, applied as-is):
 - Q2 launched-pid persistence: option (a) — AgentState field, mirrors PreResumePid via ParseResumeFields.
 - Q3 log honesty: silent-skip — keep resume_blocked event name, only emit on liveness=dead. Alive past warmup = no log line.
 - Q4 5-min gate: kept (belt-and-braces; not load-bearing once #5 ships).
-- Q7 SaturateResumeAttempts: kept (correct hammer now; alternative re-introduces #0152 race).
+- Q7 SaturateResumeAttempts: kept (correct hammer now; alternative re-introduces [#0152](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0152-auto-resume-race-watchdog-fires-duplicate-launches-during-the-resumed-claude-war.md) race).
 
 OUT OF SCOPE: PR2 (#2 worktree anchor + #4 LaunchResume worktree wrapper) and PR3 (instrumentation events, Q3-(ii) resume_pending) are deferred per brief.
 
@@ -87,7 +87,7 @@ Please verify (a) the plan-vs-implementation mapping is faithful, (b) the silent
 - Result: PASSED
 - Notes: PASS. PR1 (e80730c) faithful to plan and behaviour-correct on all five verification points.
 
-PLAN MAPPING (a): all listed file:line changes present and exactly as specified — AgentState.LaunchedPid (mirrors PreResumePid w/ #0173 cross-ref), AgentRegistry round-trip + RecordResumeLaunch + reset on claim/release/same-session-reclaim, IAgentRegistry signature additions, WatchdogService gate=5min + IsBadSessionFailFast launched-PID-dead requirement + IsLaunchedClaudeStillAlive silent-skip + ResumeContext/ParseResumeFields plumbing, ProcessUtils.Ancestry per-needle anchored regex with literal-stem fallthrough.
+PLAN MAPPING (a): all listed file:line changes present and exactly as specified — AgentState.LaunchedPid (mirrors PreResumePid w/ [#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md) cross-ref), AgentRegistry round-trip + RecordResumeLaunch + reset on claim/release/same-session-reclaim, IAgentRegistry signature additions, WatchdogService gate=5min + IsBadSessionFailFast launched-PID-dead requirement + IsLaunchedClaudeStillAlive silent-skip + ResumeContext/ParseResumeFields plumbing, ProcessUtils.Ancestry per-needle anchored regex with literal-stem fallthrough.
 
 SILENT-SKIP (b): IsLaunchedClaudeStillAlive (WatchdogService.cs:572-576) is checked at line 465-466 BEFORE IncrementResumeAttempts and BEFORE the LogResume emission, so an alive launched_pid past warmup produces no log line, no relaunch, no counter bump — exactly the locked Q3 decision. The two predicates are mutually exclusive on the LaunchedPid liveness clause, so ordering is safe.
 

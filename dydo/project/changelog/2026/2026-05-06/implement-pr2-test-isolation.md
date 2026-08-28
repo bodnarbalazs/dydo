@@ -6,7 +6,7 @@ date: 2026-05-06
 
 # Task: implement-pr2-test-isolation
 
-PR2 #0167 implementation in commit 405a220. Plan: dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md (PR2 section, OQ1=A locked).
+PR2 [#0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md) implementation in commit 405a220. Plan: dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md (PR2 section, OQ1=A locked).
 
 CHANGES (DynaDocs.Tests/** only):
 - AssemblyInfo.cs (new): [assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]
@@ -33,7 +33,7 @@ OUT OF SCOPE (per plan): OQ4 docs touch on dydo/project/issues/0148-… + dydo/g
 
 ## Review Summary
 
-PR2 #0167 implementation in commit 405a220. Plan: dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md (PR2 section, OQ1=A locked).
+PR2 [#0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md) implementation in commit 405a220. Plan: dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md (PR2 section, OQ1=A locked).
 
 CHANGES (DynaDocs.Tests/** only):
 - AssemblyInfo.cs (new): [assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]

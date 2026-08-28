@@ -6,11 +6,11 @@ date: 2026-05-06
 
 # Task: implement-pr3-issue-summary
 
-REVIEW PR3 of the dydo-check-drift batch (#0161). Three commits on master:
+REVIEW PR3 of the dydo-check-drift batch ([#0161](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0161-dydo-issue-create-output-cannot-satisfy-summaryrule-every-issue-stub-triggers-a.md)). Three commits on master:
 
 - c85947a feat(issues): add --summary flag + placeholder detection — code-writer (Dexter)
 - 5c77bbb docs(pr3): reference-doc sync + exclusion-model nudges — docs-writer (Frank)
-- cbd063f docs(issues): backfill summaries on #0151-#0158 — docs-writer (Frank)
+- cbd063f docs(issues): backfill summaries on [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) — docs-writer (Frank)
 
 PR1 + PR2 are already on master (commits fc83e31, 3213931, 8b71cd4, d05f696). The plan lives at dydo/agents/Brian/archive/20260504-215742/plan-dydo-check-drift.md (read the "PR3" section for file:line guidance, BC migration table, rollout risks).
 
@@ -33,7 +33,7 @@ Docs (5c77bbb, docs-writer):
 - dydo/project/changelog/2026/2026-05-04/cleanup-docs-check-backlog.md: appended Resolution paragraph tying PR1/PR2/PR3 hashes back. (Adele's original brief asked for a supersede on the dydo/project/tasks/ file but it was already migrated to the changelog at 9d2474e before her brief was written; Frank chose option (b) — annotate the changelog rather than skip — to preserve the audit trail.)
 
 Backfill (cbd063f, docs-writer):
-- dydo/project/issues/0151-*.md … 0158-*.md: each got a one-sentence summary inserted between the H1 and the first ## section, derived from the first sentence of ## Description. Frank flagged that #0155-#0158 each had a duplicate empty ## Description heading immediately preceding the real one; his single edit collapsed those pairs to one heading. Spot-check 2-3 backfill files to confirm summaries are faithful (not invented).
+- dydo/project/issues/0151-*.md … 0158-*.md: each got a one-sentence summary inserted between the H1 and the first ## section, derived from the first sentence of ## Description. Frank flagged that [#0155](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0155-rbac-off-limits-and-dangerous-pattern-checks-bypassed-for-any-bash-chain-contain.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) each had a duplicate empty ## Description heading immediately preceding the real one; his single edit collapsed those pairs to one heading. Spot-check 2-3 backfill files to confirm summaries are faithful (not invented).
 
 == VERIFICATION GATE OUTPUT ==
 
@@ -66,11 +66,11 @@ Per the brief, by accepting this review you take over Dexter's reply obligation 
 
 ## Review Summary
 
-REVIEW PR3 of the dydo-check-drift batch (#0161). Three commits on master:
+REVIEW PR3 of the dydo-check-drift batch ([#0161](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0161-dydo-issue-create-output-cannot-satisfy-summaryrule-every-issue-stub-triggers-a.md)). Three commits on master:
 
 - c85947a feat(issues): add --summary flag + placeholder detection — code-writer (Dexter)
 - 5c77bbb docs(pr3): reference-doc sync + exclusion-model nudges — docs-writer (Frank)
-- cbd063f docs(issues): backfill summaries on #0151-#0158 — docs-writer (Frank)
+- cbd063f docs(issues): backfill summaries on [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) — docs-writer (Frank)
 
 PR1 + PR2 are already on master (commits fc83e31, 3213931, 8b71cd4, d05f696). The plan lives at dydo/agents/Brian/archive/20260504-215742/plan-dydo-check-drift.md (read the "PR3" section for file:line guidance, BC migration table, rollout risks).
 
@@ -93,7 +93,7 @@ Docs (5c77bbb, docs-writer):
 - dydo/project/changelog/2026/2026-05-04/cleanup-docs-check-backlog.md: appended Resolution paragraph tying PR1/PR2/PR3 hashes back. (Adele's original brief asked for a supersede on the dydo/project/tasks/ file but it was already migrated to the changelog at 9d2474e before her brief was written; Frank chose option (b) — annotate the changelog rather than skip — to preserve the audit trail.)
 
 Backfill (cbd063f, docs-writer):
-- dydo/project/issues/0151-*.md … 0158-*.md: each got a one-sentence summary inserted between the H1 and the first ## section, derived from the first sentence of ## Description. Frank flagged that #0155-#0158 each had a duplicate empty ## Description heading immediately preceding the real one; his single edit collapsed those pairs to one heading. Spot-check 2-3 backfill files to confirm summaries are faithful (not invented).
+- dydo/project/issues/0151-*.md … 0158-*.md: each got a one-sentence summary inserted between the H1 and the first ## section, derived from the first sentence of ## Description. Frank flagged that [#0155](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0155-rbac-off-limits-and-dangerous-pattern-checks-bypassed-for-any-bash-chain-contain.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) each had a duplicate empty ## Description heading immediately preceding the real one; his single edit collapsed those pairs to one heading. Spot-check 2-3 backfill files to confirm summaries are faithful (not invented).
 
 == VERIFICATION GATE OUTPUT ==
 
@@ -121,7 +121,7 @@ Per the brief, by accepting this review you take over Dexter's reply obligation 
 - Reviewed by: Grace
 - Date: 2026-05-06 12:59
 - Result: PASSED
-- Notes: PASS. Tests 4118/4118 + gap_check 140/140 (100.0%). Code: IssueCreateHandler refactor cleanly decomposes Execute into TryValidateMetadata/TryResolveBody/NormalizeSummary/AcquireIssueLock/RenderIssueContent + EnumNames<T> helper; reads well. SummaryRule cross-namespace ref to IssueCreateHandler.SummaryPlaceholder is acceptable (single source of truth at the emitter; brief explicitly invited dissent and I have none worth blocking on). All 8 Templates/* mention --summary with consistent phrasing. Tests cover present/omitted/SummaryRule-pass/SummaryRule-warn. Docs (5c77bbb): reference clones mirror templates; configuration.md exclusion-layer + project-hub Tasks prose paragraphs are good follow-ups to PR1/PR2. Backfill (cbd063f): spot-checked #0151,#0152,#0155,#0156,#0157,#0158 - summaries faithful to ## Description content; duplicate-heading collapse on #0155-#0158 is a clean side-fix. Note (out-of-scope): the installed dydo binary at PATH is at 1259d156 (predates PR1); dydo/_system/templates/* and dydo/project/issues/_issues.md remain stale until binary rebuild + dydo template update - not introduced by this PR.
+- Notes: PASS. Tests 4118/4118 + gap_check 140/140 (100.0%). Code: IssueCreateHandler refactor cleanly decomposes Execute into TryValidateMetadata/TryResolveBody/NormalizeSummary/AcquireIssueLock/RenderIssueContent + EnumNames<T> helper; reads well. SummaryRule cross-namespace ref to IssueCreateHandler.SummaryPlaceholder is acceptable (single source of truth at the emitter; brief explicitly invited dissent and I have none worth blocking on). All 8 Templates/* mention --summary with consistent phrasing. Tests cover present/omitted/SummaryRule-pass/SummaryRule-warn. Docs (5c77bbb): reference clones mirror templates; configuration.md exclusion-layer + project-hub Tasks prose paragraphs are good follow-ups to PR1/PR2. Backfill (cbd063f): spot-checked [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md),[#0152](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0152-auto-resume-race-watchdog-fires-duplicate-launches-during-the-resumed-claude-war.md),[#0155](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0155-rbac-off-limits-and-dangerous-pattern-checks-bypassed-for-any-bash-chain-contain.md),[#0156](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0156-live-workaround-for-0149-deadlock-is-misexplained-works-via-0155-bash-chain-bypa.md),[#0157](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0157-waitcommand-cs-103-108-comment-claims-cannot-re-introduce-0141-deadlock-provably.md),[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) - summaries faithful to ## Description content; duplicate-heading collapse on [#0155](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0155-rbac-off-limits-and-dangerous-pattern-checks-bypassed-for-any-bash-chain-contain.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) is a clean side-fix. Note (out-of-scope): the installed dydo binary at PATH is at 1259d156 (predates PR1); dydo/_system/templates/* and dydo/project/issues/_issues.md remain stale until binary rebuild + dydo template update - not introduced by this PR.
 
 Awaiting human approval.
 

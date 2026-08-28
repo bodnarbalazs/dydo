@@ -32,7 +32,7 @@ Fixed 4 inquisition issues: (1) removed unused CheckCommand from IOffLimitsServi
 
 - Reviewed by: Frank
 - Result: FAILED
-- Issues: Undocumented code change at GuardCommand.cs:731-746 adds staged access control for bash reads — not listed in brief, no dedicated tests. Issues #0007, #0008, #0010 are clean. Fix: add tests for the new bash read access control path and document it.
+- Issues: Undocumented code change at GuardCommand.cs:731-746 adds staged access control for bash reads — not listed in brief, no dedicated tests. Issues [#0007](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0007-five-separate-hand-rolled-yaml-frontmatter-parsers.md), [#0008](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0008-doc-code-mismatch-worktree-inheritance-vs-child-worktree-creation.md), [#0010](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0010-excessive-parameter-counts-on-dispatchservice-methods.md) are clean. Fix: add tests for the new bash read access control path and document it.
 
 Requires rework.
 

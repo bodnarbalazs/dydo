@@ -6,7 +6,7 @@ date: 2026-05-06
 
 # Task: fix-pr2-dead-test
 
-Review commit e3e6c47 on master, the fix to PR #0167's dead test that Frank flagged.
+Review commit e3e6c47 on master, the fix to PR [#0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md)'s dead test that Frank flagged.
 
 WHAT
 - Deleted Compact_CorruptBaseline_DoesNotLeakConsoleErrorOnException (was AuditCompactionTests.cs:849-867). It was structurally dead: SnapshotCompactionService.Compact swallows malformed-baseline JSON to a stderr warning and returns (proven by the LogsWarningInsteadOfSilentSkip test directly above it), so the catch was unreachable and Assert.Same only re-verified the implicit success-path finally.
@@ -35,7 +35,7 @@ Per baton-passing convention, after reviewing report back to Adele on task fix-p
 
 ## Review Summary
 
-Review commit e3e6c47 on master, the fix to PR #0167's dead test that Frank flagged.
+Review commit e3e6c47 on master, the fix to PR [#0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md)'s dead test that Frank flagged.
 
 WHAT
 - Deleted Compact_CorruptBaseline_DoesNotLeakConsoleErrorOnException (was AuditCompactionTests.cs:849-867). It was structurally dead: SnapshotCompactionService.Compact swallows malformed-baseline JSON to a stderr warning and returns (proven by the LogsWarningInsteadOfSilentSkip test directly above it), so the catch was unreachable and Assert.Same only re-verified the implicit success-path finally.
@@ -58,7 +58,7 @@ Per baton-passing convention, after reviewing report back to Adele on task fix-p
 
 - Reviewed by: Charlie
 - Result: FAILED
-- Issues: FAIL on gap_check (exit 1). The commit itself is clean: dead-test claim verified (LoadBaselines swallows malformed JSON; LogsWarningInsteadOfSilentSkip pins the swallow-to-stderr behavior, so the catch was unreachable); the two new ConsoleCapture.Stderr contract pins exercise both restore paths exactly as named (throw + success); run_tests.py 4112/0 matches the brief; and the change also removes one of the three gate-bypass Console.SetError sites flagged in inquisition #0167 (AuditCompactionTests.cs:843-854). However per reviewer mode gap_check must be green and exits 1 with three failures + one CRAP fail, all unrelated to e3e6c47 (which only touches DynaDocs.Tests/ConsoleCaptureTests.cs and DynaDocs.Tests/Services/AuditCompactionTests.cs): (1) CommandDocConsistencyTests.ReadmeClones_ContentInSync — Templates/about-dynadocs.template.md:335 lists '[--summary "..."]' on dydo issue create which dydo/reference/about-dynadocs.md does not; (2) CommandDocConsistencyTests.ReferenceDocAndTemplate_HaveSameOptions — same --summary drift vs dydo-commands.md reference (third failure same area, name not captured in tail output); (3) Commands/IssueCreateHandler.cs CRAP 30.2 > T1 30. Drift looks introduced by PR2 work (#0160 SummaryRule added --summary to template but not reference docs). Grace's PR2 review reported gap_check 140/140 — discrepancy worth a sanity re-run on the docs side. Reporting back per baton convention; not dispatching a fix from here since the failures are outside this task's scope.
+- Issues: FAIL on gap_check (exit 1). The commit itself is clean: dead-test claim verified (LoadBaselines swallows malformed JSON; LogsWarningInsteadOfSilentSkip pins the swallow-to-stderr behavior, so the catch was unreachable); the two new ConsoleCapture.Stderr contract pins exercise both restore paths exactly as named (throw + success); run_tests.py 4112/0 matches the brief; and the change also removes one of the three gate-bypass Console.SetError sites flagged in inquisition [#0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md) (AuditCompactionTests.cs:843-854). However per reviewer mode gap_check must be green and exits 1 with three failures + one CRAP fail, all unrelated to e3e6c47 (which only touches DynaDocs.Tests/ConsoleCaptureTests.cs and DynaDocs.Tests/Services/AuditCompactionTests.cs): (1) CommandDocConsistencyTests.ReadmeClones_ContentInSync — Templates/about-dynadocs.template.md:335 lists '[--summary "..."]' on dydo issue create which dydo/reference/about-dynadocs.md does not; (2) CommandDocConsistencyTests.ReferenceDocAndTemplate_HaveSameOptions — same --summary drift vs dydo-commands.md reference (third failure same area, name not captured in tail output); (3) Commands/IssueCreateHandler.cs CRAP 30.2 > T1 30. Drift looks introduced by PR2 work ([#0160](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0160-summaryrule-lacks-the-system-template-additions-skip-block-its-three-sibling-rul.md) SummaryRule added --summary to template but not reference docs). Grace's PR2 review reported gap_check 140/140 — discrepancy worth a sanity re-run on the docs side. Reporting back per baton convention; not dispatching a fix from here since the failures are outside this task's scope.
 
 Requires rework.
 

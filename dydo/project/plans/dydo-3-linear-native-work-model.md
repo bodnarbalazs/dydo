@@ -83,12 +83,75 @@ production, test, template, or generated path without a reviewed amendment.
 |---|---|---|
 | 1 | `Commands/CheckDocValidator.cs`; new `Services/LegacyPmManifestService.cs`; new `Rules/LegacyPmRecordRule.cs`; `Rules/SummaryRule.cs`; `Rules/HubFilesRule.cs`; `Rules/OrphanDocsRule.cs`; `Rules/FolderMetaFilesRule.cs`; `Templates/_future-features.template.md`; `Templates/dydo-glossary.template.md`; `dydo/project/future-features/_future-features.md`; `dydo/reference/dydo-glossary.md`; `dydo/understand/work-model.md`; `dydo/understand/task-lifecycle.md`; `dydo/glossary.md`; `dydo/guides/orchestration-pitfalls.md`; `dydo/guides/writing-good-briefs.md` | New `DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs`; new `DynaDocs.Tests/Rules/LegacyPmRecordRuleTests.cs`; `DynaDocs.Tests/Rules/SummaryRuleTests.cs`; `DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs`; `DynaDocs.Tests/Rules/HubFilesRuleTests.cs`; `DynaDocs.Tests/Rules/OrphanDocsRuleTests.cs`; `DynaDocs.Tests/Rules/FolderMetaFilesRuleTests.cs`; `DynaDocs.Tests/Services/DocScannerTests.cs`. Replace the removed `IssueCreateHandler.SummaryPlaceholder` dependency with a local generic placeholder contract; add the manifest-backed no-new-record rule; document, but do not yet register, strict FutureFeature validation. |
 | 2 | `Program.cs`; delete `Commands/TaskCommand.cs`, `Commands/TaskCreateHandler.cs`, `Commands/TaskDoneHandler.cs`, `Commands/TaskListHandler.cs`, `Commands/TaskReviewHandler.cs`, `Commands/IssueCommand.cs`, `Commands/IssueCreateHandler.cs`, `Commands/IssueListHandler.cs`, `Commands/IssueResolveHandler.cs`, `Commands/ReviewCommand.cs`, `Models/TaskFile.cs`, `Models/TaskStatus.cs`, `Models/IssueStatus.cs`, `Models/IssueSeverity.cs`, `Models/IssueFoundBy.cs`; edit `Models/StructureConfig.cs`, `Services/ConfigService.cs`, `Services/IConfigService.cs`, `Services/ConfigFactory.cs`, `Services/FolderScaffolder.cs`, `Services/HubGenerator.cs`, `Commands/FixHubHandler.cs`, `Commands/HelpCommand.cs`, `Services/CompletionProvider.cs`, `Utils/PathUtils.cs`, and `dydo.json` | Delete `DynaDocs.Tests/Integration/IssueTests.cs`, `DynaDocs.Tests/Integration/TaskTests.cs`, `DynaDocs.Tests/Integration/WorkflowTests.cs`, and `DynaDocs.Tests/Models/TaskFileTests.cs`; rewrite `DynaDocs.Tests/Commands/CompleteCommandTests.cs`, `DynaDocs.Tests/Commands/CommandSmokeTests.cs`, `DynaDocs.Tests/Commands/CompletionsCommandTests.cs`, `DynaDocs.Tests/Commands/FixHubHandlerTests.cs`, `DynaDocs.Tests/Commands/GuardCommandTests.cs`, `DynaDocs.Tests/Commands/HelpCommandTests.cs`, `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`, `DynaDocs.Tests/Integration/GuardIntegrationTests.cs`, `DynaDocs.Tests/Integration/InitCommandTests.cs`, `DynaDocs.Tests/Integration/InitCheckIntegrationTests.cs`, `DynaDocs.Tests/Integration/FixCommandIntegrationTests.cs`, `DynaDocs.Tests/Services/CompletionProviderTests.cs`, `DynaDocs.Tests/Services/ConfigFactoryTests.cs`, `DynaDocs.Tests/Services/ConfigServiceTests.cs`, `DynaDocs.Tests/Services/ConfigurablePathsTests.cs`, `DynaDocs.Tests/Services/DocScannerTests.cs`, `DynaDocs.Tests/Services/FolderScaffolderTests.cs`, `DynaDocs.Tests/Services/HubGeneratorTests.cs`, `DynaDocs.Tests/Utils/RuleSkipPathsTests.cs`, and `DynaDocs.Tests/Rules/OffLimitsRuleTests.cs`. In `DocScannerTests`, remove only the obsolete `IConfigService.GetTasksPath`/`GetIssuesPath` fake members after Lane 2 deletes those interface methods; Lane 1 continues to own its scanner behavior coverage. Replace only the retired task/issue/review command and nudge assertions in `FixHubHandlerTests`, `CliEndToEndTests`, `GuardCommandTests`, and `GuardIntegrationTests`; preserve their surviving generic coverage. Prove removal leaves no local PM command/model/config consumer. |
-| 3 | delete `Templates/_tasks.template.md`, `Templates/_issues.template.md`, and `Templates/_backlog.template.md`; edit `Templates/_project.template.md`, `Templates/about-dynadocs.template.md`, `Templates/dydo-commands.template.md`, `Templates/architecture.template.md`, `Templates/index.template.md`, `Templates/mode-bro.template.md`, `Templates/mode-chief-of-staff.template.md`, `Templates/mode-co-thinker.template.md`, `Templates/mode-code-writer.template.md`, `Templates/mode-docs-writer.template.md`, `Templates/mode-grilling.template.md`, `Templates/mode-inquisitor.template.md`, `Templates/mode-orchestrator.template.md`, `Templates/mode-planner.template.md`, `Templates/mode-reviewer.template.md`, `Templates/mode-self-improvement.template.md`, `Templates/mode-test-writer.template.md`, `Templates/mode-wayfinder.template.md`, `Templates/reviewer-resource-code.template.md`, `Templates/reviewer-resource-docs.template.md`, `Templates/reviewer-resource-merge-sprint.template.md`, `Templates/reviewer-resource-plan.template.md`, `Templates/reviewer-resource-tests.template.md`, `Templates/workflow-run-sprint.js`, `Templates/workflow-inquisition.js`, and `Services/TemplateGenerator.cs`; regenerate `dydo/_system/templates/**` and `.agents/skills/**` with the product command | Rewrite `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`, `DynaDocs.Tests/Services/TemplateUpdateTests.cs`, `DynaDocs.Tests/Integration/TemplateCommandTests.cs`, `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`, `DynaDocs.Tests/Integration/ProcessWorkflowTests.cs`, `DynaDocs.Tests/Commands/WayfinderHarmonyTests.cs`, and `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`. Prove source templates, installed framework files, and compiled skills agree. |
+| 3 | delete `Templates/_tasks.template.md`, `Templates/_issues.template.md`, and `Templates/_backlog.template.md`; edit `Templates/_project.template.md`, `Templates/about-dynadocs.template.md`, `Templates/dydo-commands.template.md`, `Templates/architecture.template.md`, `Templates/index.template.md`, `Templates/mode-bro.template.md`, `Templates/mode-chief-of-staff.template.md`, `Templates/mode-co-thinker.template.md`, `Templates/mode-code-writer.template.md`, `Templates/mode-docs-writer.template.md`, `Templates/mode-grilling.template.md`, `Templates/mode-inquisitor.template.md`, `Templates/mode-orchestrator.template.md`, `Templates/mode-planner.template.md`, `Templates/mode-reviewer.template.md`, `Templates/mode-self-improvement.template.md`, `Templates/mode-test-writer.template.md`, `Templates/mode-wayfinder.template.md`, `Templates/reviewer-resource-code.template.md`, `Templates/reviewer-resource-docs.template.md`, `Templates/reviewer-resource-merge-sprint.template.md`, `Templates/reviewer-resource-plan.template.md`, `Templates/reviewer-resource-tests.template.md`, `Templates/workflow-run-sprint.js`, `Templates/workflow-inquisition.js`, and `Services/TemplateGenerator.cs`; regenerate `dydo/_system/templates/**`, `.agents/skills/**`, and the exact retrospective Claude/Codex outputs below with the product command | Rewrite `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`, `DynaDocs.Tests/Services/TemplateUpdateTests.cs`, `DynaDocs.Tests/Integration/TemplateCommandTests.cs`, `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`, `DynaDocs.Tests/Integration/ProcessWorkflowTests.cs`, `DynaDocs.Tests/Commands/WayfinderHarmonyTests.cs`, and `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`; apply only the four bounded `DynaDocs.Tests/Commands/SyncCommandTests.cs` expectation hunks below. Prove source templates, installed framework files, and compiled skills agree. |
 | 4 | `README.md`; `dydo/index.md`; `dydo/project/_index.md`; `dydo/reference/_index.md`; `dydo/reference/about-dynadocs.md`; `dydo/reference/configuration.md`; `dydo/reference/dydo-commands.md`; `dydo/understand/about.md`; `dydo/understand/architecture.md`; `dydo/understand/documentation-model.md`; `dydo/understand/templates-and-customization.md`; `dydo/guides/getting-started.md`; `dydo/guides/customizing-roles.md`; `dydo/guides/testing-strategy.md`; `dydo/guides/troubleshooting.md`; `dydo/guides/adding-a-command.md`; `dydo/guides/how-to-use-docs.md` | Rewrite `DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs`, `DynaDocs.Tests/Commands/ValidateCommandTests.cs`, `DynaDocs.Tests/Integration/DocumentationTests.cs`, `DynaDocs.Tests/Integration/InitCommandTests.cs`, and `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`; run `dydo check` against a fresh initialized fixture and prove no legacy hierarchy is scaffolded. |
-| 5 | new `dydo/project/migrations/3.0-linear-work-model.md` and new `dydo/project/migrations/3.0-linear-work-model-assimilation.md` only | No production edit. Run the integrated commands and capture their exact exits/read-back as evidence. |
+| 5 | new authored `dydo/project/migrations/3.0-linear-work-model.md` and `dydo/project/migrations/3.0-linear-work-model-assimilation.md`; generated `dydo/project/migrations/_index.md` | No production or test edit. Run the integrated commands and capture their exact exits/read-back as evidence; retain only the command-produced migrations hub from generated hub changes. |
+
+#### Retrospective DYD-20 authorization
+
+This amendment is retrospective governance correction for the already merged DYD-20 commit
+`df2c33a0323b1b5daf41fc7e1f93d6a19161ee76`; it is not prior authorization and does not reopen
+DYD-20. In addition to the paths already authorized above, it authorizes exactly these 25 paths and no
+wildcard or category substitute.
+
+Deterministic `dydo sync` outputs, exactly 23:
+
+1. `.claude/agents/inquisitor.md`
+2. `.claude/agents/reviewer.md`
+3. `.claude/skills/chief-of-staff/SKILL.md`
+4. `.claude/skills/co-thinker/SKILL.md`
+5. `.claude/skills/code-writer/SKILL.md`
+6. `.claude/skills/docs-writer/SKILL.md`
+7. `.claude/skills/grilling/SKILL.md`
+8. `.claude/skills/inquisitor/SKILL.md`
+9. `.claude/skills/orchestrator/SKILL.md`
+10. `.claude/skills/planner/SKILL.md`
+11. `.claude/skills/reviewer/SKILL.md`
+12. `.claude/skills/reviewer/resources/code.md`
+13. `.claude/skills/reviewer/resources/docs.md`
+14. `.claude/skills/reviewer/resources/merge-sprint.md`
+15. `.claude/skills/reviewer/resources/plan.md`
+16. `.claude/skills/reviewer/resources/tests.md`
+17. `.claude/skills/self-improvement/SKILL.md`
+18. `.claude/skills/test-writer/SKILL.md`
+19. `.claude/skills/wayfinder/SKILL.md`
+20. `.claude/workflows/inquisition.js`
+21. `.claude/workflows/run-sprint.js`
+22. `.codex/agents/inquisitor.toml`
+23. `.codex/agents/reviewer.toml`
+
+Bounded test correction, exactly one path: `DynaDocs.Tests/Commands/SyncCommandTests.cs`, and only its
+four `df2c33a0` expectation hunks: the workflow/inquisition Linear-Issue and Project-audit contract;
+Wayfinder's committed-Project, atomic-Issue, non-work-object ontology; the Tier-1 manager
+reviewed-intent doctrine; and the orchestrator's Linear-Issue/native-delegation/integrated-audit
+methodology.
+
+Source-parity correction, exactly one path: `Templates/how-to-use-docs.template.md`, and only its one
+`df2c33a0` ontology correction from repository tasks to Decisions, reviewed plans, audits, changelog,
+and pitfalls. Its generated counterpart is `dydo/guides/how-to-use-docs.md`.
+
+The integrated audit compares the exact paths changed in
+`1cf75a219e4a7a30397174e0ab79f4aff1326547..5cceda39657d9023c7c456b4f754e594f7cd0410`
+under the `.claude` and `.codex` scan roots plus the two bounded authored paths against this literal
+allow-set and must report `allowed=25; unexpected=0`. For each of the 25 paths, `git log` over that
+range must return exactly the single introducing commit
+`df2c33a0323b1b5daf41fc7e1f93d6a19161ee76`.
+
+Parity is mandatory: the 17 exact Claude skill/resource Git blobs numbered 3–19 are identical to the
+same relative paths under `.agents/skills/`; the Git blobs for `Templates/workflow-inquisition.js` and
+`.claude/workflows/inquisition.js` are identical; and the Git blobs for
+`Templates/workflow-run-sprint.js` and `.claude/workflows/run-sprint.js` are identical. A source-built
+`dydo sync` in a disposable copy must mechanically
+reproduce all four agent outputs numbered 1–2 and 22–23 from the already authorized
+`Templates/mode-inquisitor.template.md` and `Templates/mode-reviewer.template.md` role descriptions
+after their authorized `dydo template update` installation. The authorized `SyncCommandTests.cs` diff,
+rendered with `git diff --unified=5`, remains exactly four bounded expectation hunks, and the Git blobs
+for `Templates/how-to-use-docs.template.md` and
+`dydo/guides/how-to-use-docs.md` remain identical. Any mismatch fails the Project-level integrated audit.
 
 Generated paths are never hand-edited. `dydo template update` owns `dydo/_system/templates/**`, and
-`dydo sync` owns `.agents/skills/**`; a generated change outside those commands fails the lane.
+`dydo sync` owns `.agents/skills/**` plus the 23 exact Claude/Codex outputs listed above; a generated
+change outside those commands fails the lane.
 
 ## 3. Delivery lanes and ownership
 
@@ -98,9 +161,9 @@ Every lane begins from the published reviewed plan commit in an isolated worktre
 |---|---|---|
 | 1. Doctrine and compatibility contract | The Lane-1 exact paths in §2. Defines the target terms and FutureFeature state/reference rules while preserving the frozen corpus's task exception and issue vocabulary until Project 3 applies the manifest. | Project 1 accepted; this plan PASS |
 | 2. Retire local work runtime | The exact `Program.cs`, `Commands/*Task*`, `Commands/Issue*.cs`, Models, config/scaffold/completion/path files, `dydo.json`, and their direct tests named in §2. Deletes local task/issue command and model surfaces without introducing a Linear client. | Lane 1 |
-| 3. Templates, skills, and workflows | The mode/resource/workflow templates in §2, generated `.agents/skills/**`, and their template/skill/workflow tests. Replaces record-based planning/orchestration/review/audit language with reviewed Linear Issue/Project-plan contracts. | Lane 1; Lane 2's command names settled |
+| 3. Templates, skills, and workflows | The mode/resource/workflow templates in §2, generated `.agents/skills/**`, the 23 exact retrospective Claude/Codex outputs in §2, and their template/skill/workflow tests. Replaces record-based planning/orchestration/review/audit language with reviewed Linear Issue/Project-plan contracts. | Lane 1; Lane 2's command names settled |
 | 4. Active product docs and integration proof | `README.md`, active reference/understand/guides whose content is generated from or complements Lanes 1–3, plus command-doc/completion/init/validation integration tests. Removes live PM claims and verifies a fresh scaffold contains no repo work hierarchy. | Lanes 2–3 |
-| 5. Serial integration and audit | `dydo/project/migrations/3.0-linear-work-model.md`, `dydo/project/migrations/3.0-linear-work-model-assimilation.md`, evidence updates, conflict resolution, full gates, and independent review. No unrelated migration corpus files are absorbed. | Lanes 1–4 |
+| 5. Serial integration and audit | Author `dydo/project/migrations/3.0-linear-work-model.md` and `dydo/project/migrations/3.0-linear-work-model-assimilation.md`; generate only `dydo/project/migrations/_index.md`; perform evidence updates, conflict resolution, full gates, and independent review. No unrelated migration corpus file or generated hub is absorbed. | Lanes 1–4; this retrospective amendment merged |
 
 ### Owned path overlap with Project 5
 
@@ -120,7 +183,22 @@ Any additional overlap requires reviewed amendments to both plans before a later
 
 ## 4. Evidence, migration, and verification
 
-Lane 5 creates `dydo/project/migrations/3.0-linear-work-model.md` and `dydo/project/migrations/3.0-linear-work-model-assimilation.md`. The former records the published plan SHA/permalink; the exact Linear Project 2 URL; Project-resource read-back showing that URL is attached; each detailed Linear Issue ID/URL and governing SHA; generated-skill/template update evidence; scan counts; and test command exits. The latter records the independent review verdict, integrated-audit result, observed friction, adopted changes, and deferred follow-ups. Neither file copies Linear workflow state.
+Lane 5 authors `dydo/project/migrations/3.0-linear-work-model.md` and `dydo/project/migrations/3.0-linear-work-model-assimilation.md`. The former records the published plan SHA/permalink; the exact Linear Project 2 URL; Project-resource read-back showing that URL is attached; each detailed Linear Issue ID/URL and governing SHA; generated-skill/template update evidence; scan counts; and test command exits. The latter records the independent review verdict, integrated-audit result, observed friction, adopted changes, and deferred follow-ups. Neither file copies Linear workflow state.
+
+After both records exist, Lane 5 runs `dotnet build DynaDocs.csproj -c Release` and, from the repository
+root, the source-built corpus-scoped command `dotnet bin/Release/net10.0/dydo.dll fix`. It retains the
+command-produced `dydo/project/migrations/_index.md` byte-for-byte only when that hub has exactly five
+Markdown links in filename order: `./3.0-linear-bootstrap.md`,
+`./3.0-linear-work-model-assimilation.md`, `./3.0-linear-work-model.md`,
+`./3.0-notion-freeze.md`, and `./3.0-pm-records.md`. It rejects or restores every other generated hub
+change, and `dydo/project/tasks/_index.md` must remain absent. `dydo/project/_index.md`, every plans
+hub, historical record contents, production, and tests remain unchanged.
+
+The final DYD-16 implementation diff is exactly three paths: the two authored migration records and
+the generated migrations hub. Its total Project-integration branch diff against
+`5cceda39657d9023c7c456b4f754e594f7cd0410` is exactly four paths including this governing plan
+amendment. The source-built `dotnet bin/Release/net10.0/dydo.dll check` must exit zero with zero errors
+and no migrations/current-plan orphan warning before review or audit can pass.
 
 Before Project 3 begins, the integrator must use the official Linear connector to resolve Project 2 by the fixed ID `44eba9ff-0242-4179-b94b-932339b364fd`, assert team ID `caa6ccbf-4f9b-477e-826c-a51ed43b0687`, assert its URL equals the frontmatter URL, and read back an attached published GitHub plan resource whose URL equals the published plan permalink. For each Project-2 Issue, read back its ID, identifier, Project ID, team ID, governing-commit permalink attachment, and its actual `Done` status before the Project is completed. This is a one-time audit of references, not a dydo runtime feature. Project 3 then uses the Project 1 disposition manifest to remove legacy record files and rewrite incoming links; Project 2 does not silently remove them.
 
@@ -144,7 +222,7 @@ After all of Lanes 1–4 have landed, run the following predicate with the froze
 
 ```powershell
 $retired = 'TaskCommand|TaskCreateHandler|TaskDoneHandler|TaskListHandler|TaskReviewHandler|IssueCommand|IssueCreateHandler|IssueListHandler|IssueResolveHandler|ReviewCommand|TaskFile|TaskStatus|IssueStatus|IssueSeverity|IssueFoundBy|GetTasksPath|GetIssuesPath|project/(tasks|issues|sprints|slices|campaigns|backlog)'
-$roots = @('Program.cs','Commands','Models','Services','Utils','Rules','Serialization','Templates','dydo/_system/templates','.agents/skills','DynaDocs.Tests','README.md','dydo/index.md','dydo/reference','dydo/understand','dydo/guides','dydo.json') | Where-Object { Test-Path $_ }
+$roots = @('Program.cs','Commands','Models','Services','Utils','Rules','Serialization','Templates','dydo/_system/templates','.agents/skills','.claude','.codex','DynaDocs.Tests','README.md','dydo/index.md','dydo/reference','dydo/understand','dydo/guides','dydo.json') | Where-Object { Test-Path $_ }
 $hits = @(& rg -n -i $retired $roots --glob '!Templates/sync-model.template.json' --glob '!DynaDocs.Tests/Sync/**' --glob '!DynaDocs.Tests/Rules/FrontmatterRuleTests.cs' --glob '!DynaDocs.Tests/Fixtures/**' --glob '!dydo/guides/migrating-dydo-1x-to-2x.md' --glob '!notion-sync.md' --glob '!notion-oss-survey.md')
 if ($LASTEXITCODE -notin 0, 1) { throw "Retired-PM scan failed with exit $LASTEXITCODE" }
 $allowedRetiredMatches = @(
@@ -205,7 +283,14 @@ The existing `Sync\\Notion\\Fixtures` content include is intentionally outside t
 Project-5-owned under the separately excluded `DynaDocs.Tests/Sync/**` subtree. No other
 `DynaDocs.Tests/**` path is excluded.
 
-After Lane 4, run `dydo template update --diff`, `dydo sync`, and the predicate again; capture zero proposed/generated legacy-work paths. Finally run `py DynaDocs.Tests/coverage/run_tests.py`, `py DynaDocs.Tests/coverage/gap_check.py --force-run`, `dydo check`, and `git diff --check`. All must exit zero; the coverage module count is recalculated after deletion rather than pinned.
+After Lane 4, run `dydo template update --diff`, `dydo sync`, and the predicate again, including the
+`.claude` and `.codex` roots; capture zero unexpected retired-PM hits. Lane 5 then performs the exact
+25-path provenance/parity safeguards above and its migrations-hub procedure. Finally run
+`py DynaDocs.Tests/coverage/run_tests.py`, `py DynaDocs.Tests/coverage/gap_check.py --force-run`,
+source-built `dotnet bin/Release/net10.0/dydo.dll check`, link/plan consistency checks, and
+`git diff --check`. All must exit zero, the coverage module count is recalculated after deletion rather
+than pinned, and a fresh independent plan review of this exact single-file amendment diff must return
+strict PASS before DYD-16 resumes.
 
 ## 6. Acceptance criteria
 
@@ -214,6 +299,11 @@ After Lane 4, run `dydo template update --diff`, `dydo sync`, and the predicate 
 - FutureFeature remains a repo-native idea and only a human promotion records one stable Linear target; there is no sync or duplicate delivery state.
 - No Linear client, token, schema, daemon, poller, webhook, Markdown mirror, or cache is added to dydo.
 - Project 5's Notion/sync/watchdog owned paths remain untouched except for the explicit overlap landing order above.
+- The retrospective DYD-20 exception is exactly 25 paths with `allowed=25; unexpected=0`, exact
+  `df2c33a0` provenance, and all required source/generated parity; it creates no prospective wildcard.
+- Lane 5 owns only two authored migration records and one generated migrations hub; the final DYD-16
+  implementation diff is three paths and its total Project-integration branch diff is four paths including
+  this amendment.
 - The Project 2 plan resource, governing SHA links, detailed Issue links, review, audit, and assimilation evidence pass the required Linear read-back.
 
 ## Related

@@ -306,6 +306,78 @@ strict PASS before DYD-16 resumes.
   this amendment.
 - The Project 2 plan resource, governing SHA links, detailed Issue links, review, audit, and assimilation evidence pass the required Linear read-back.
 
+## 7. Chronological DYD-22 generated-navigation amendment
+
+This plan-only amendment was discovered after the DYD-21 amendment had merged at
+`c4aa06c0d44174c0fb341908a2573a68fd31bd7e`. It is new authorization only from this amendment's own
+reviewed merge forward: it does not rewrite history, retroactively authorize an earlier Lane-5 action,
+or imply that DYD-16 could retain either additional hub under the preceding contract. DYD-16 remains
+blocked until the exact single-file DYD-22 amendment receives independent plan review, merges, and is
+read back from the integration branch; only then may DYD-16 resume from the cumulatively amended plan.
+
+### Additional generated ownership and provenance
+
+In addition to the already authorized `dydo/project/migrations/_index.md`, Lane 5 may retain exactly
+two further command-produced outputs: `dydo/understand/_index.md` and `dydo/guides/_index.md`. This
+amendment authorizes no source-document edit and no other production, test, generated hub, evidence
+record, historical corpus, sync, or configuration path. Generated hubs are never hand-edited.
+
+The additional ownership repairs exactly three verified stale navigation entries introduced by
+`c22a8a69c73349b6e8ff7c9bc5cb909fde010821`. Their canonical sources were already corrected by
+`38c70b63fb984aa8c91d11606bcee994d5111801`; regeneration must reflect those existing sources rather
+than changing them:
+
+1. In `dydo/understand/_index.md`, replace the stale **Task Lifecycle** tasks-flow entry with exactly
+   `- [Linear Issue Lifecycle](./task-lifecycle.md) - Actionable work lives in Linear Issues.`, derived
+   from `dydo/understand/task-lifecycle.md`.
+2. In `dydo/understand/_index.md`, replace the stale **Work Model**
+   Slice → Sprint → Campaign → Release entry with exactly
+   `- [Work Model](./work-model.md) - Linear owns dydo's live work graph; Git owns durable knowledge and proof.`,
+   derived from `dydo/understand/work-model.md`.
+3. In `dydo/guides/_index.md`, replace the stale **Writing Good Briefs** slice-file implementation-detail
+   entry with exactly
+   `- [Writing Good Briefs](./writing-good-briefs.md) - The self-containment bar for a Linear Issue, Project-plan lane, or prompt handed to a fresh agent.`,
+   derived from `dydo/guides/writing-good-briefs.md`.
+
+### Superseding Lane-5 generation and scope contract
+
+For execution after this amendment merges, this subsection supersedes only the conflicting Lane-5
+generated-output and path-count limits above. After the two authored evidence records exist, DYD-16
+must perform the following generation procedure from the repository root:
+
+1. Run `dotnet build DynaDocs.csproj -c Release` and require success.
+2. Run the source-built `dotnet bin/Release/net10.0/dydo.dll fix` from the repository root.
+3. Retain only the command-produced `dydo/project/migrations/_index.md`,
+   `dydo/understand/_index.md`, and `dydo/guides/_index.md`; restore or reject every other
+   command-produced change. Never hand-edit any retained hub.
+4. In a disposable checkout at the exact candidate commit, repeat the same Release build and repo-root
+   source-built `fix` command. Prove each of the three retained hubs is byte-identical to its disposable
+   exact-candidate counterpart.
+5. Prove `dydo/project/migrations/_index.md` contains exactly five Markdown links in filename order:
+   `./3.0-linear-bootstrap.md`, `./3.0-linear-work-model-assimilation.md`,
+   `./3.0-linear-work-model.md`, `./3.0-notion-freeze.md`, and `./3.0-pm-records.md`.
+6. Assert the two navigation hubs contain the three exact corrected entries above and none of their
+   stale tasks-flow, Slice → Sprint → Campaign → Release, or slice-file implementation-detail
+   forms.
+7. Prove `dydo/project/_index.md` is unchanged and `dydo/project/tasks/_index.md` remains absent.
+
+The final DYD-16 implementation diff is exactly these five paths:
+
+1. `dydo/project/migrations/3.0-linear-work-model.md`
+2. `dydo/project/migrations/3.0-linear-work-model-assimilation.md`
+3. `dydo/project/migrations/_index.md`
+4. `dydo/understand/_index.md`
+5. `dydo/guides/_index.md`
+
+The total Project-integration diff from `5cceda39657d9023c7c456b4f754e594f7cd0410` is exactly six paths:
+the five implementation paths above and the cumulatively amended
+`dydo/project/plans/dydo-3-linear-native-work-model.md`. Any additional path fails scope.
+
+After generation and exact scope checks, DYD-16 must rerun the amended retired-PM scan, the
+source-built `dotnet bin/Release/net10.0/dydo.dll check`, `git diff --check`, a fresh independent
+documentation review, and the strict Project-level integrated audit. Each gate must return PASS before
+DYD-16 may complete.
+
 ## Related
 
 - [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md) — Binding ontology and ownership decision.

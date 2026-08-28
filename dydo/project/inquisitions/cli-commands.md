@@ -27,7 +27,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** Services/CompletionProvider.cs (lines 7-12), Program.cs (lines 7-41, 43-153)
 - **Independent verification:** Counted all 28 commands registered in Program.cs (lines 7-32 plus version at line 34 and help at line 43). CompletionProvider.TopLevelCommands has 17. Diff confirms 10 missing: message, wait, issue, inquisition, template, roles, validate, watchdog, worktree, queue. Also note `complete` is absent but this is reasonable as it's internal plumbing.
 - **Alternative explanations considered:** Could be intentional omission of newer commands — but no comment or documentation indicates this. The missing commands include core workflow commands (message, issue, worktree) that users would expect tab completion for.
-- **Issue:** #0049
+- **Issue:** [#0049](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0049-completionprovider-arrays-are-stale-missing-commands-roles-subcommands-and-optio.md)
 
 #### 2. CompletionProvider.Roles array is stale — 3 roles missing
 - **Category:** bug
@@ -38,7 +38,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** Services/CompletionProvider.cs (lines 14-15), dydo/_system/roles/ directory (9 .role.json files listed)
 - **Independent verification:** Listed all 9 role JSON files: co-thinker, code-writer, docs-writer, inquisitor, judge, orchestrator, planner, reviewer, test-writer. CompletionProvider.Roles has 6. Missing: orchestrator, inquisitor, judge — exactly as reported. Verified the cascade to OptionValueHandlers["--role"] (line 51) and ArgCompletions[("agent","role")] (line 38), which both reference the same Roles array.
 - **Alternative explanations considered:** Could be intentional to hide oversight roles from completion — but these roles are documented, available in the role system, and agents need to set them via `dydo agent role`.
-- **Issue:** #0049
+- **Issue:** [#0049](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0049-completionprovider-arrays-are-stale-missing-commands-roles-subcommands-and-optio.md)
 
 #### 3. CompletionProvider.SubcommandLists is stale — 7 missing entries, 2 incomplete
 - **Category:** bug
@@ -49,7 +49,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** Services/CompletionProvider.cs (lines 22-32), Program.cs (lines 98-135 for help text listing subcommands)
 - **Independent verification:** Cross-referenced SubcommandLists entries against Program.cs help text. Confirmed missing entries for issue (create/list/resolve at help lines 121-123), inquisition (coverage at line 126), roles (list/create/reset at lines 99-102), template (update at line 108), worktree (cleanup at line 135), queue (create/show/cancel/clear at lines 129-132). Watchdog subcommands confirmed via report citation. Agent "tree" confirmed at help line 66 but absent from SubcommandLists["agent"]. Task "compact" confirmed at help line 116 but absent from SubcommandLists["task"].
 - **Alternative explanations considered:** Could be that newer commands were added without updating CompletionProvider — this is the most likely explanation and represents a systemic maintenance gap.
-- **Issue:** #0049
+- **Issue:** [#0049](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0049-completionprovider-arrays-are-stale-missing-commands-roles-subcommands-and-optio.md)
 
 #### 4. CompletionProvider.OptionValueHandlers missing --subject handler
 - **Category:** missing-feature
@@ -60,7 +60,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** Services/CompletionProvider.cs (lines 50-58), Commands/MessageCommand.cs (line 27)
 - **Independent verification:** Grepped MessageCommand.cs for `--subject` — confirmed the option exists at line 27. OptionValueHandlers has 6 entries (--role, --task, --area, --status, --action, --to) but no --subject. The --subject option would logically complete with task names (same source as --task).
 - **Alternative explanations considered:** Could be intentionally omitted if --subject completions aren't useful — but --subject takes task names and --task already has a handler for this exact data source, so the omission is inconsistent.
-- **Issue:** #0049
+- **Issue:** [#0049](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0049-completionprovider-arrays-are-stale-missing-commands-roles-subcommands-and-optio.md)
 
 #### 5. HelpCommandTests tests a copied help text, not the actual Program.cs implementation
 - **Category:** antipattern
@@ -71,7 +71,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** DynaDocs.Tests/Commands/HelpCommandTests.cs (lines 16-100), Program.cs (lines 44-152)
 - **Independent verification:** Read both files end-to-end. HelpCommandTests.PrintHelp() (lines 22-100) is a standalone method that reproduces help text locally. CaptureHelpOutput() (line 17) calls this local method. No reference to Program.cs or the actual help command handler. All 9 test methods validate against this local copy. This is a structural antipattern — the tests are unfalsifiable against the production code.
 - **Alternative explanations considered:** Could be a deliberate design choice for test isolation — but testing a copy of the code rather than the code itself defeats the purpose of regression testing entirely. No comment or documentation justifies this approach.
-- **Issue:** #0050
+- **Issue:** [#0050](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0050-helpcommandtests-tests-a-hardcoded-copy-of-help-text-not-the-actual-implementati.md)
 
 #### 6. HelpCommandTests copy is massively stale
 - **Category:** bug
@@ -82,7 +82,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** DynaDocs.Tests/Commands/HelpCommandTests.cs (lines 22-100 for PrintHelp copy, lines 44-47 for agent section), Program.cs (lines 60-68 for actual agent section)
 - **Independent verification:** Compared the PrintHelp copy's agent section (lines 37-47) with Program.cs (lines 60-68). The copy is missing "agent tree" (Program.cs:66), Role Commands section (Program.cs:98-103), Validation Commands section (Program.cs:104-106), task compact (Program.cs:116), Issue Commands (Program.cs:120-123), Inquisition Commands (Program.cs:125-126), Queue Commands (Program.cs:128-133), Worktree Commands (Program.cs:134-135). This staleness is a direct consequence of Finding #5.
 - **Alternative explanations considered:** None — this is straightforward drift between the copy and the source. The copy was never updated when new commands were added to Program.cs.
-- **Issue:** #0050
+- **Issue:** [#0050](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0050-helpcommandtests-tests-a-hardcoded-copy-of-help-text-not-the-actual-implementati.md)
 
 #### 7. HelpCommandTests.Help_ListsAllAgentSubcommands missing 'agent tree' assertion
 - **Category:** missing-test
@@ -93,7 +93,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** DynaDocs.Tests/Commands/HelpCommandTests.cs (lines 128-142)
 - **Independent verification:** Lines 128-142 assert 10 agent subcommands: claim, release, status, list, role, new, rename, remove, reassign, clean. No assertion for "agent tree". Program.cs:66 confirms `agent tree` exists. However, this gap is moot due to Finding #5 — even if the assertion were added, it would pass or fail against the local PrintHelp copy, not the actual command.
 - **Alternative explanations considered:** Could be intentional if "agent tree" was added after the test was written — but that's exactly the kind of regression the test should catch. The test name says "ListsAllAgentSubcommands" but doesn't.
-- **Issue:** #0050
+- **Issue:** [#0050](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0050-helpcommandtests-tests-a-hardcoded-copy-of-help-text-not-the-actual-implementati.md)
 
 #### 8. CommandSmokeTests.RootCommand_CanBeBuilt missing WorktreeCommand
 - **Category:** missing-test
@@ -104,7 +104,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** DynaDocs.Tests/Commands/CommandSmokeTests.cs (lines 55-92), Program.cs (line 31)
 - **Independent verification:** Read CommandSmokeTests.cs:60-88 — the RootCommand_CanBeBuilt method lists 26 commands but omits WorktreeCommand.Create(). Confirmed WorktreeCommand IS present in AllCommands_CanBeInstantiated (line 43) and registered in Program.cs:31. The assertion `Assert.True(rootCommand.Subcommands.Count >= 26)` at line 91 passes with 26 commands, masking the omission.
 - **Alternative explanations considered:** Could be an intentional exclusion if WorktreeCommand had initialization side effects — but it's in the AllCommands test, so instantiation is safe. Simple omission.
-- **Issue:** #0051
+- **Issue:** [#0051](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0051-commandsmoketests-rootcommand-canbebuilt-missing-worktreecommand.md)
 
 #### 9. Smoke test .txt files committed to Commands/ directory
 - **Category:** dead-code
@@ -115,7 +115,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** Commands/ directory (listed 12 .txt files via ls), git ls-files Commands/*.txt (confirmed all 12 tracked)
 - **Independent verification:** Ran `git -C DynaDocs ls-files Commands/*.txt` — all 12 files are tracked: smoke-comp-a.txt, smoke-comp-b.txt, smoke-final-a.txt through smoke-final5-a.txt, smoke-test-v15.txt. These are one-line marker files from testing. They sit alongside production .cs files in Commands/.
 - **Alternative explanations considered:** Could be intentional test fixtures — but they have no references from any test code and their naming suggests ad-hoc smoke testing artifacts. Not in .gitignore.
-- **Issue:** #0052
+- **Issue:** [#0052](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0052-12-smoke-test-txt-files-committed-to-commands-directory.md)
 
 #### 10. dydo-commands.md: validate command misplaced under "Role Commands"
 - **Category:** doc-discrepancy
@@ -126,7 +126,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** dydo/reference/dydo-commands.md (lines 645-694), Program.cs (lines 98-106)
 - **Independent verification:** Read dydo-commands.md — `### dydo validate` appears at line 682, nested under `## Role Commands` (line 645). Program.cs help text has "Validation Commands:" as its own section (lines 104-106), separate from "Role Commands:" (lines 98-103). The validate command validates config, roles, templates, and agent state — it's a system-wide validation tool, not a role command.
 - **Alternative explanations considered:** Could be considered "close enough" since validate checks role files among other things — but its scope is much broader and Program.cs explicitly separates it.
-- **Issue:** #0053
+- **Issue:** [#0053](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0053-dydo-commands-md-discrepancies-validate-misplaced-judge-permissions-incomplete.md)
 
 #### 11. dydo-commands.md Role Permissions table incomplete for judge
 - **Category:** doc-discrepancy
@@ -137,7 +137,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** dydo/reference/dydo-commands.md (line 767), dydo/_system/roles/judge.role.json (lines 5-8)
 - **Independent verification:** Read judge.role.json — writablePaths includes `dydo/agents/{self}/**`, `dydo/project/issues/**`, `dydo/project/inquisitions/**`. The doc table at line 767 shows only `dydo/agents/{agent}/**`, `dydo/project/issues/**` — missing `dydo/project/inquisitions/**`. This is a critical omission since marking rulings on inquisition reports is the judge's primary function.
 - **Alternative explanations considered:** Could be a documentation lag from when the judge role was expanded — but the current role definition clearly includes inquisitions as writable.
-- **Issue:** #0053
+- **Issue:** [#0053](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0053-dydo-commands-md-discrepancies-validate-misplaced-judge-permissions-incomplete.md)
 
 #### 12. InitCommand prints unquoted humanName in shell example
 - **Category:** bug
@@ -148,7 +148,7 @@ Feature investigation of the dydo CLI command surface — every `Commands/*Comma
 - **Files examined:** Commands/InitCommand.cs (lines 160-188, 280-289)
 - **Independent verification:** Read line 172: `$"  1. Set environment variable: export DYDO_HUMAN={humanName}"` — no quotes around the interpolated value. Read line 288: `return name.Trim().ToLowerInvariant();` — name is lowercased and trimmed, but there's no validation against spaces or shell metacharacters. A name like "mary jane" would produce `export DYDO_HUMAN=mary jane`, which would be a shell error.
 - **Alternative explanations considered:** Practical risk is low since most users enter single-word names and the system lowercases them. But the code doesn't enforce single-word names, so the output is technically broken for multi-word inputs.
-- **Issue:** #0054
+- **Issue:** [#0054](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0054-initcommand-outputs-unquoted-dydo-human-in-export-example.md)
 
 ### Hypotheses Not Reproduced
 - **InitCommand security vulnerabilities** — Security audit (Emma) found no exploitable vulnerabilities. File writes, hook configuration, and input handling are implemented safely. TOCTOU in ScaffoldProject is theoretical only (one-time interactive command).

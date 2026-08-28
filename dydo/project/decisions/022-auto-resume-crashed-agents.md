@@ -25,7 +25,7 @@ Today, when claude crashes inside a dispatched terminal:
 Two facts make resume tractable rather than aspirational:
 
 1. **The claude session ID is already captured.** `Models/AgentSession.cs:8` — `AgentSession.SessionId` is the session ID Claude Code provides via its hook payload. Every claim writes it to `dydo/agents/<name>/.session`. We don't need to add capture; we need to read the file.
-2. **Resume preserves dydo identity by construction.** `Services/AgentRegistry.cs:305` short-circuits `HandleExistingSession` when an incoming claim's session ID matches the stored one. `claude --resume` passes the same session ID, so the hook resolves to the same agent and the reclaim/archive path (#0130) does not fire. The agent's role, task, workspace, and notes are intact.
+2. **Resume preserves dydo identity by construction.** `Services/AgentRegistry.cs:305` short-circuits `HandleExistingSession` when an incoming claim's session ID matches the stored one. `claude --resume` passes the same session ID, so the hook resolves to the same agent and the reclaim/archive path ([#0130](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0130-stale-working-reclaim-silently-archives-in-flight-work.md)) does not fire. The agent's role, task, workspace, and notes are intact.
 
 The remaining problem is therefore narrow: detect the crash, relaunch claude in resume mode, re-establish the wait, and cap retries.
 
@@ -103,4 +103,4 @@ After ~2 weeks of lived practice:
 - `Services/AgentRegistry.cs` — reset `resume-attempts` on claim/release.
 - `Models/AgentSession.cs` — referenced (no edit) for session ID source.
 - [Decision 021 — Unified General Wait](./021-unified-general-wait.md) — provides the backgrounded `dydo wait` startup pattern this decision reuses.
-- [Issue #0130 — Stale-Working Reclaim Silently Archives In-Flight Work](../issues/0130-stale-working-reclaim-silently-archives-in-flight-work.md) — companion: this decision avoids the archive path for transient crashes; #0130's reclaim path remains the fallback for crashes past the cap.
+- [Issue #0130 — Stale-Working Reclaim Silently Archives In-Flight Work](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0130-stale-working-reclaim-silently-archives-in-flight-work.md) — companion: this decision avoids the archive path for transient crashes; [#0130](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0130-stale-working-reclaim-silently-archives-in-flight-work.md)'s reclaim path remains the fallback for crashes past the cap.

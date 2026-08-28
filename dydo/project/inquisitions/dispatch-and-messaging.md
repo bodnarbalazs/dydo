@@ -42,14 +42,14 @@ Area investigation covering `DispatchService`, `MessageService`, `InboxService`,
   - `MarkerStore.GetReplyPendingMarkers` = `AgentRegistry.GetReplyPendingMarkers`
   - `MarkerStore.RemoveReplyPendingMarker` = `AgentRegistry.RemoveReplyPendingMarker`
   - Same for all Wait and Dispatch marker methods
-- **Judge ruling:** CONFIRMED — Issue #0004. Zero production references; only MarkerStore.cs and MarkerStoreTests.cs. AgentRegistry has identical methods at lines 955-1180.
+- **Judge ruling:** CONFIRMED — [Issue #0004](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0004-dead-code-markerstore-duplicates-agentregistry-marker-logic.md). Zero production references; only MarkerStore.cs and MarkerStoreTests.cs. AgentRegistry has identical methods at lines 955-1180.
 
 #### 2. Dead code: QueueService.TryEnqueue is superseded
 - **Category:** dead-code
 - **Severity:** low
 - **Type:** obvious
 - **Evidence:** `Services/QueueService.cs:193` — `TryEnqueue` was replaced by `TryAcquireOrEnqueue` (per `dydo/project/changelog/2026/2026-03-27/fix-queue-defaults-merge.md`). No production code calls `TryEnqueue`; it is only referenced in test files (`QueueServiceTests.cs`, `DispatchQueueTests.cs`, `QueueCommandTests.cs`). The replacement `TryAcquireOrEnqueue` uses file locking (`WithQueueLock`); the leftover `TryEnqueue` does not, making it racy if ever used concurrently.
-- **Judge ruling:** CONFIRMED — Issue #0005. TryEnqueue is only called from test files (QueueServiceTests, DispatchQueueTests, QueueCommandTests). Production code uses TryAcquireOrEnqueue with proper file locking.
+- **Judge ruling:** CONFIRMED — [Issue #0005](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0005-dead-code-queueservice-tryenqueue-superseded-by-tryacquireorenqueue.md). TryEnqueue is only called from test files (QueueServiceTests, DispatchQueueTests, QueueCommandTests). Production code uses TryAcquireOrEnqueue with proper file locking.
 
 #### 3. Duplicated file-lock pattern across DispatchService and QueueService
 - **Category:** antipattern
@@ -60,7 +60,7 @@ Area investigation covering `DispatchService`, `MessageService`, `InboxService`,
   - `Services/QueueService.cs:452-516` — `WithQueueLock` + `TryRemoveStaleLock`
   
   Both use the same algorithm: `FileMode.CreateNew` for atomic creation, write PID JSON, retry loop with 30 attempts / 1s delay, stale-lock detection via PID liveness check. The only difference is the method name. Per coding standards "Rule of Three" this is already at 2 copies; a shared `FileLock` utility would eliminate ~65 lines of duplicated logic.
-- **Judge ruling:** CONFIRMED — Issue #0006. Read both implementations side-by-side. Same algorithm: FileMode.CreateNew, PID JSON, 30 retries at 1s, stale-lock via PID liveness. Only method name and error message differ.
+- **Judge ruling:** CONFIRMED — [Issue #0006](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0006-duplicated-file-lock-pattern-in-dispatchservice-and-queueservice.md). Read both implementations side-by-side. Same algorithm: FileMode.CreateNew, PID JSON, 30 retries at 1s, stale-lock via PID liveness. Only method name and error message differ.
 
 #### 4. Five separate hand-rolled YAML frontmatter parsers
 - **Category:** antipattern
@@ -74,7 +74,7 @@ Area investigation covering `DispatchService`, `MessageService`, `InboxService`,
   5. `Services/MessageFinder.cs:37-86` — `ParseMessageFile`, inline switch for `type`/`from`/`subject`.
   
   All share the same structure: find `---` delimiters, split lines on `\n`, split each line on first `:`. A single shared frontmatter parser would eliminate ~100 lines of redundancy and prevent divergent parsing behavior.
-- **Judge ruling:** CONFIRMED — Issue #0007. All five share: find `---`, split `\n`, split on first `:`, switch/dictionary on key. Five independent copies of the same parsing logic.
+- **Judge ruling:** CONFIRMED — [Issue #0007](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0007-five-separate-hand-rolled-yaml-frontmatter-parsers.md). All five share: find `---`, split `\n`, split on first `:`, switch/dictionary on key. Five independent copies of the same parsing logic.
 
 #### 5. Doc/code mismatch: worktree inheritance behavior
 - **Category:** doc-discrepancy
@@ -89,14 +89,14 @@ Area investigation covering `DispatchService`, `MessageService`, `InboxService`,
     4. else → Normal worktree setup
   
   The doc describes only branch 2 (inheritance) and omits branch 1 (child worktree creation when `--worktree` is explicitly set from within a worktree). The doc also mentions a nudge being emitted — no nudge is present in the current code for inheritance. Additionally, the doc does not mention the merge dispatch path at all.
-- **Judge ruling:** CONFIRMED — Issue #0008. Code has four worktree branches; doc describes only inheritance. `--worktree` from within a worktree creates a child worktree (branch 1), not inheritance. No nudge emitted. Merge dispatch path undocumented.
+- **Judge ruling:** CONFIRMED — [Issue #0008](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0008-doc-code-mismatch-worktree-inheritance-vs-child-worktree-creation.md). Code has four worktree branches; doc describes only inheritance. `--worktree` from within a worktree creates a child worktree (branch 1), not inheritance. No nudge emitted. Merge dispatch path undocumented.
 
 #### 6. MessageFinder orders messages by File.GetCreationTimeUtc
 - **Category:** bug
 - **Severity:** low
 - **Type:** obvious
 - **Evidence:** `Services/MessageFinder.cs:13` — `Directory.GetFiles(inboxPath, "*-msg-*.md").OrderBy(f => File.GetCreationTimeUtc(f))`. File creation time is unreliable across file copies, moves, and OS-level operations. Each message file contains a `received` timestamp in the YAML frontmatter (`received: 2026-04-03T14:50:32Z`) that represents the actual send time. `InboxService.ExecuteShow` correctly orders by `item.Received` (line 58), but `MessageFinder` — which is used by `WaitCommand` to find messages — relies on filesystem metadata instead. If a file is copied or restored from backup, creation time could be wrong, causing messages to be consumed out of order.
-- **Judge ruling:** CONFIRMED — Issue #0009. MessageFinder.cs:13 uses File.GetCreationTimeUtc; InboxService.ExecuteShow uses item.Received. Frontmatter timestamps are authoritative; filesystem metadata is not.
+- **Judge ruling:** CONFIRMED — [Issue #0009](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0009-messagefinder-orders-by-file-creation-time-instead-of-received-timestamp.md). MessageFinder.cs:13 uses File.GetCreationTimeUtc; InboxService.ExecuteShow uses item.Received. Frontmatter timestamps are authoritative; filesystem metadata is not.
 
 #### 7. Excessive parameter counts on DispatchService methods
 - **Category:** antipattern
@@ -108,7 +108,7 @@ Area investigation covering `DispatchService`, `MessageService`, `InboxService`,
   - `Services/DispatchService.cs:448` — `LaunchTerminalIfNeeded(...)` has 9 parameters (plus 2 optional)
   
   Per C# conventions and clean code principles, methods with more than ~5 parameters are candidates for parameter objects. A `DispatchOptions` record could consolidate `noLaunch`, `useTab`, `useNewWindow`, `autoClose`, `wait`, `worktree`, `queue`, `escalate`, `files` into a single typed object, improving readability and making future parameter additions non-breaking.
-- **Judge ruling:** CONFIRMED — Issue #0010. Execute: 12 params, WriteAndLaunch: 17+1 optional, LaunchTerminalIfNeeded: 9+2 optional. A DispatchOptions record would consolidate the boolean/string flag sprawl.
+- **Judge ruling:** CONFIRMED — [Issue #0010](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0010-excessive-parameter-counts-on-dispatchservice-methods.md). Execute: 12 params, WriteAndLaunch: 17+1 optional, LaunchTerminalIfNeeded: 9+2 optional. A DispatchOptions record would consolidate the boolean/string flag sprawl.
 
 ### Hypotheses Not Reproduced
 

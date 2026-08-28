@@ -149,7 +149,7 @@ Feature investigation of the worktree system — `WorktreeCommand`, the cross-pl
   - `dispatch-and-messaging.md` claims a nudge is emitted on worktree inheritance — no such nudge exists in code
   - `architecture.md:91` attributes orphan handling to `git worktree prune` — actual handler is `dydo worktree prune` with custom logic
   - Major undocumented subsystems: merge flow, prune command, init-settings command, audit preservation, branch name encoding, file lock serialization, child count blocking, queue+worktree interaction
-  - ISSUE 0008 (changelog 2026-04-05) already flagged the inheritance/nudge discrepancy — docs still not updated
+  - [ISSUE 0008](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0008-doc-code-mismatch-worktree-inheritance-vs-child-worktree-creation.md) (changelog 2026-04-05) already flagged the inheritance/nudge discrepancy — docs still not updated
 - **Judge ruling:** [pending]
 
 ### Hypotheses Not Reproduced
@@ -195,7 +195,7 @@ The four fixes named in the brief have been verified:
 - **Files examined:** WorktreeCommand.cs (lines 393-413, 442-486), DispatchService.cs (line 624)
 - **Independent verification:** Read `TeardownWorktree` (line 406-413) — it iterates `JunctionSubpaths` to remove 4 known junctions, then calls `RemoveZombieDirectory` which uses `Directory.Delete(recursive: true)`. Separately read `DeleteDirectoryJunctionSafe` (lines 442-458) — it scans for ALL reparse points via `File.GetAttributes` at any depth. The two methods implement fundamentally different safety models: known-list vs. scan-all.
 - **Alternative explanations considered:** Could the known-list approach be sufficient? Only if the junction list never changes and no external reparse points exist. Since finding #4 documents the junction list being maintained in 5+ parallel locations, a mismatch is a realistic risk.
-- **Issue:** #0084
+- **Issue:** [#0084](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0084-removezombiedirectory-uses-junction-unsafe-directory-delete.md)
 
 #### 2. DeleteDirectoryJunctionSafe has unguarded File.GetAttributes
 - **Category:** bug
@@ -214,7 +214,7 @@ The four fixes named in the brief have been verified:
 - **Files examined:** WorktreeCommand.cs (lines 442-458), WorktreeCommandTests.cs (lines 2276-2341)
 - **Independent verification:** Read `DeleteDirectoryJunctionSafe` — confirmed no try-catch around `File.GetAttributes` (line 448), `File.Delete` (line 455), or `Directory.Delete` (line 457). Independently verified Leo's 4 tests: locked file test (line 2300) demonstrates IOException propagation leaving partial state; TOCTOU test (line 2330) demonstrates FileNotFoundException when directory vanishes between enumeration and attribute check. Both pass, confirming the structural lack of error handling.
 - **Alternative explanations considered:** Could the caller be expected to handle exceptions? The `CreateGitWorktree` caller at DispatchService.cs:624 also has no try-catch. `RemoveZombieDirectory` (line 473) does have a try-catch — so the pattern of defensive error handling exists elsewhere in the same file but was omitted here.
-- **Issue:** #0088
+- **Issue:** [#0088](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0088-deletedirectoryjunctionsafe-has-unguarded-file-getattributes-exceptions-leave-pa.md)
 
 #### 3. Unescaped mainProjectRoot in inherited-worktree cleanup cd on Linux/Mac
 - **Category:** bug
@@ -225,7 +225,7 @@ The four fixes named in the brief have been verified:
 - **Files examined:** LinuxTerminalLauncher.cs (lines 6-31), MacTerminalLauncher.cs (lines 10-33), TerminalLauncher.cs (lines 91-130), WindowsTerminalLauncher.cs (lines 65-84)
 - **Independent verification:** Read the inherited-worktree cleanup path in both Linux (line 23) and Mac (line 27) — `mainProjectRoot` is used raw inside single quotes. Then read `WorktreeSetupScript` (line 97) and `WorktreeInheritedSetupScript` (line 125) — both use `mainProjectRoot.Replace("'", "'\\''")`. The setup scripts in the same callers correctly delegate to these escaped methods, but the cleanup `cd` command is constructed inline without escaping. WindowsTerminalLauncher (line 74) uses `.Replace("'", "''")` for PowerShell escaping. The inconsistency is clear: setup is escaped, cleanup in the same code path is not.
 - **Alternative explanations considered:** Could this be intentional because project roots never contain single quotes? No — there's no such constraint, and the fact that adjacent code does escape confirms this is an oversight, not a deliberate omission.
-- **Issue:** #0089
+- **Issue:** [#0089](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0089-unescaped-mainprojectroot-in-inherited-worktree-cleanup-cd-on-linux-mac.md)
 
 #### 4. Junction list hardcoded in 5+ locations
 - **Category:** antipattern
@@ -240,7 +240,7 @@ The four fixes named in the brief have been verified:
 - **Files examined:** WorktreeCommand.cs (lines 393-399), TerminalLauncher.cs (lines 91-113), WindowsTerminalLauncher.cs (lines 34-68)
 - **Independent verification:** Counted junction references independently: `JunctionSubpaths` array (1 location, 4 paths), `WorktreeSetupScript` bash with absolute root variant (lines 98-102, 4 junction operations) and relative variant (lines 108-112, 4 junction operations), `WindowsTerminalLauncher.GetArguments` PowerShell (lines 34-64, 4 junction operations in 2 variants). Total: 5+ distinct code locations across 3 files and 3 languages. Adding a 5th junction requires synchronized edits to all locations — matches the Rule of Three threshold from coding standards.
 - **Alternative explanations considered:** Could the duplication be unavoidable because shell scripts can't reference C# arrays? The junction list could be emitted from a single source (e.g., `JunctionSubpaths` generates the shell snippets), but currently each script maintains its own copy.
-- **Issue:** #0090
+- **Issue:** [#0090](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0090-junction-list-hardcoded-in-5-locations-across-c-bash-and-powershell.md)
 
 #### 5. Worktree documentation still significantly lags implementation (0/6 prior items corrected)
 - **Category:** doc-discrepancy
@@ -254,12 +254,12 @@ The four fixes named in the brief have been verified:
   - `architecture.md:90` attributes orphan handling to `git worktree prune` — actual handler is `dydo worktree prune` (WorktreeCommand.cs:605+)
   - `how-to-merge-worktrees.md` omits child worktree blocking (WorktreeCommand.cs:532-536)
   - Both merge guides missing Related sections per writing-docs.md standards
-  This was previously filed as ISSUE 0028. No progress since.
+  This was previously filed as [ISSUE 0028](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0028-worktree-system-documentation-significantly-lags-implementation.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0028-worktree-system-documentation-significantly-lags-implementation.md -->. No progress since.
 - **Judge ruling:** CONFIRMED
 - **Files examined:** architecture.md (lines 81-91), dispatch-and-messaging.md (lines 56-63), WorktreeCommand.cs (lines 276, 393-399, 527-536, 605+)
 - **Independent verification:** Read all 5 cited doc discrepancies against the code: (1) architecture.md:87 says "junction/symlink to `dydo/agents/`" — code at `JunctionSubpaths` (lines 393-399) creates 4 junctions (agents, roles, issues, inquisitions). (2) architecture.md:88 lists 3 markers — `RemoveWorktreeMarkers` (line 276) handles 5 (`.worktree`, `.worktree-path`, `.worktree-base`, `.worktree-hold`, `.worktree-root`). (3) dispatch-and-messaging.md:63 claims "a nudge is emitted" — grepped for nudge-related code near worktree inheritance in DispatchService; no such nudge exists. (4) architecture.md:90 says "`git worktree prune` handling orphans" — actual handler is `ExecutePrune` at WorktreeCommand.cs:605 with custom logic. All discrepancies verified independently.
 - **Alternative explanations considered:** Could the docs describe a planned design? No — issue 0028 has been open since 2026-04-07 with no progress, and the discrepancies match the prior inquisition's finding #17, which also went unaddressed.
-- **Issue:** #0028
+- **Issue:** [#0028](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0028-worktree-system-documentation-significantly-lags-implementation.md)
 
 #### 6. EnumerateLeafDirectories misidentifies worktree roots for non-empty orphaned directories
 - **Category:** bug
@@ -270,7 +270,7 @@ The four fixes named in the brief have been verified:
 - **Files examined:** WorktreeCommand.cs (lines 676-695), WorktreeCommandTests.cs (prune test regions)
 - **Independent verification:** Read `CollectLeafDirectories` — it recurses into every subdirectory and only yields entries where `subdirs.Length == 0`. For `worktrees/my-task/Commands/SubDir/` (a leaf), it reports worktree ID `my-task/Commands/SubDir`. `CountWorktreeReferences` (line 290) then checks if any agent has `.worktree=my-task/Commands/SubDir` — none will, so `TeardownWorktree` runs on that leaf path. The junction removal in `TeardownWorktree` tries `Path.Combine(leafPath, "dydo", "agents")` which doesn't exist at the leaf. The actual junctions at the worktree root (`my-task/dydo/agents`) are never addressed. Additionally, if junctions still exist at the worktree root, `Directory.GetDirectories` would follow them, potentially traversing into the main repo.
 - **Alternative explanations considered:** Could this be a deliberate progressive-cleanup design? No — `RemoveGitWorktree` at line 460 needs the actual worktree root path to work correctly, and `git worktree remove` on a subdirectory would fail.
-- **Issue:** #0091
+- **Issue:** [#0091](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0091-collectleafdirectories-misidentifies-worktree-roots-for-non-empty-orphaned-direc.md)
 
 #### 7. No tests for DeleteDirectoryJunctionSafe
 - **Category:** missing-test
@@ -281,7 +281,7 @@ The four fixes named in the brief have been verified:
 - **Files examined:** WorktreeCommand.cs (lines 442-458), WorktreeCommandTests.cs (lines 2276-2341)
 - **Independent verification:** Leo's tests (hyp-2 region, lines 2276-2341) added 4 tests: non-existent path (line 2279), nested tree happy path (line 2286), locked file IOException propagation (line 2300), and TOCTOU FileNotFoundException (line 2330). These cover scenarios (b), (c), and (d) from the finding. However, scenario (a) — directory with reparse points at various depths — remains untested. This is the core use case: the entire purpose of `DeleteDirectoryJunctionSafe` is to detect and remove junctions, yet no test verifies junction handling. The existing tests prove the method can delete regular directories and that it lacks error handling, but not that it correctly handles junctions.
 - **Alternative explanations considered:** Could junction testing be impractical in unit tests? Creating junctions requires `mklink /J` on Windows and `ln -s` on Unix, which is platform-specific but feasible. The existing `RemoveJunction` method in WorktreeCommand.cs already implements the platform-specific logic.
-- **Issue:** #0092
+- **Issue:** [#0092](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0092-no-tests-for-deletedirectoryjunctionsafe-core-scenario-reparse-point-handling.md)
 
 #### 8. Thin test coverage for ValidateWorktreeId
 - **Category:** missing-test
@@ -292,7 +292,7 @@ The four fixes named in the brief have been verified:
 - **Files examined:** TerminalLauncher.cs (lines 48-64), TerminalLauncherTests.cs (lines 2383-2394)
 - **Independent verification:** Read `ValidateWorktreeId` — 4 distinct validation branches: (1) empty/null check (line 50-51), (2) backslash rejection (line 54-55), (3) per-component `.`/`..` rejection (line 59), (4) unsafe character regex (line 61). Only 2 tests exist: `ValidateWorktreeId_EmptyString_Throws` and `ValidateWorktreeId_UnsafeCharsInComponent_Throws`. The `..` path is only tested indirectly via `GenerateWorktreeId` (line 1577 in tests), not via `ValidateWorktreeId` itself — these are different code paths. Backslash rejection has zero test coverage. Valid hierarchical ID acceptance (e.g., `parent/child`) is untested. Empty component from `//` input (which produces `""` in `Split('/')`) is untested.
 - **Alternative explanations considered:** Are the `GenerateWorktreeId` tests sufficient proxy coverage? No — `GenerateWorktreeId` validates task name format (regex), while `ValidateWorktreeId` validates the composed ID with hierarchy. They share the `..` rejection but via different code paths.
-- **Issue:** #0093
+- **Issue:** [#0093](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0093-thin-test-coverage-for-validateworktreeid-missing-backslash-and-path-traversal-c.md)
 
 ### Hypotheses Tested
 
@@ -308,10 +308,10 @@ The four fixes named in the brief have been verified:
   - **Files examined:** PathUtils.cs (lines 104-121), PathUtilsTests.cs (lines 228-246)
   - **Independent verification:** Read `NormalizeWorktreePath` fallback at lines 104-113 — when `bestSplitPos < 0` (no `dydo.json` found on disk), it uses `afterMarker.IndexOf('/')` which finds only the first `/` after the worktree marker. For input `parent-task/child-task/some-file.cs`, `IndexOf('/')` returns the position after `parent-task`, stripping only the first segment. Verified Kate's test at PathUtilsTests.cs:236-243 — the assertion `Assert.Equal("C:/project/child-task/some-file.cs", result)` passes, confirming the fallback produces an incorrect path that retains `child-task/` as part of the project path. Independently confirmed the fail-safe property: the resulting path `C:/project/child-task/some-file.cs` won't match any role pattern, so the guard denies access rather than grants it.
   - **Alternative explanations considered:** Could the fallback be intentionally conservative, accepting over-blocking as a tradeoff? Possibly, but the comment at line 106-108 says it "handles relative paths where File.Exists can't verify the root" — it's designed to work, not to fail safe. The fail-safe behavior is an accidental consequence, not an intentional design.
-  - **Issue:** #0094
+  - **Issue:** [#0094](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0094-normalizeworktreepath-fallback-only-strips-first-segment-for-nested-worktree-pat.md)
 
 - **DeleteDirectoryJunctionSafe exception handling (hyp-2):** CONFIRMED by Leo. 4 tests written: (a) non-existent path no-op, (b) happy-path full deletion, (c) locked file causes IOException propagation leaving partial state, (d) TOCTOU race where `File.GetAttributes` throws `FileNotFoundException` on vanished directory. All pass, confirming the method has no error handling and leaves partially-deleted directories on any filesystem exception. See finding #2.
-  - **Judge ruling:** CONFIRMED (subsumed by finding #2 ruling — see issue #0088)
+  - **Judge ruling:** CONFIRMED (subsumed by finding #2 ruling — see [issue #0088](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0088-deletedirectoryjunctionsafe-has-unguarded-file-getattributes-exceptions-leave-pa.md))
 
 ### Hypotheses Not Reproduced
 - None — both hypotheses confirmed or partially confirmed.

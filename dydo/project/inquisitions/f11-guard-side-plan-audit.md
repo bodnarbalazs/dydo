@@ -17,9 +17,9 @@ plan's core mechanism, but the "beyond reproach" gate wants them tightened.
 ### Scope
 
 - **Entry point:** Feature audit — plan-phase inquisition of Charlie's
-  `plan-f11-guard-side.md` (the redesigned #0207 part 2 after the user rejected
+  `plan-f11-guard-side.md` (the redesigned [#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) part 2 after the user rejected
   the prompt-driven re-claim). Charlie's plan builds on the committed checkpoint
-  `fe9e551` (#0207 part 1 launcher `dydo wait` deletion + #0208
+  `fe9e551` ([#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) part 1 launcher `dydo wait` deletion + [#0208](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0208-getsessioncontext-env-path-skips-isvalidagentname-validation.md)
   `IsValidAgentName` guard); those are NOT in audit scope.
 - **Files cross-checked against the plan (read-only):**
   - `Services/AgentRegistry.cs` — full read of `ResolveClaimedPid`,
@@ -41,7 +41,7 @@ plan's core mechanism, but the "beyond reproach" gate wants them tightened.
   - `Models/AgentSession.cs`, `Models/AgentState.cs`.
   - `Services/TerminalLauncher.cs` — `ResumeContinuationPrompt` (confirmed: the
     short Decision-022 text is already on the checkpoint — no revert needed).
-  - `Services/{Windows,Linux,Mac}TerminalLauncher.cs` — confirmed `#0207` comment
+  - `Services/{Windows,Linux,Mac}TerminalLauncher.cs` — confirmed [`#0207`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) comment
     is in place; launcher-spawned `dydo wait` deletion is committed.
   - `DynaDocs.Tests/Services/AutoResumeRearmWaitGateTests.cs` — the two existing
     F11 tests on the checkpoint.
@@ -109,7 +109,7 @@ and re-dispatch the code-writer.
   The watchdog calls `SaturateResumeAttempts` from `IsBadSessionFailFast`
   (`WatchdogService.cs:506-522`) when the wall-clock warmup has elapsed AND
   `LaunchedPid` is null (or dead). This is exactly the **F2 corner Charlie
-  himself documents**: launcher returns `LaunchedPid=null` (#0173 corner) and
+  himself documents**: launcher returns `LaunchedPid=null` ([#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md) corner) and
   the resume is >5 min slow — watchdog logs `failed`, clears
   `LastResumeLaunchedAt`. The resumed claude is *still alive and recovering*.
 
@@ -143,13 +143,13 @@ and re-dispatch the code-writer.
   `LastResumeLaunchedAt` is cleared and `ResumeInFlight` falsely returns
   false; a concurrent claim could archive the recovering agent. The F2 corner
   is acknowledged out of scope (root cause: launcher `LaunchedPid` reporting
-  reliability, #0173-class). The companion change closes the *common*
+  reliability, [#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md)-class). The companion change closes the *common*
   warmup-window race; the F2 corner is a separate, instrumentation-pinned
   defect."
 - **Judge ruling:** CONFIRMED
 - **Files examined:** `Services/AgentRegistry.cs` (lines 158-181 `IsEffectivelyFree`/`IsStaleWorking`, 211-220 `ResetResumeBookkeeping`, 235-243 `IsSessionPidAlive`, 332-382 `HandleExistingSession` stale-working branch, 384-422 `SetupAgentWorkspace` including the `ArchiveWorkspace` call on line 390, 1731-1747 `SaturateResumeAttempts`), `Services/WatchdogService.cs` (lines 480-560 `PollAndResumeForAgent`, 506-522 `IsBadSessionFailFast` path that invokes `SaturateResumeAttempts` at line 508).
 - **Independent verification:** Walked the entire concurrent-claim chain in the F2 corner with the companion clause applied: `SaturateResumeAttempts` zeros `LastResumeLaunchedAt` on line 1739 → `ResumeInFlight(state)` returns false (the `is { } t` pattern fails on null) → `!ResumeInFlight(state)` is true → with `IsStaleWorking` true (>5 min) and `IsSessionPidAlive` false (`.session.ClaimedPid` still the dead pre-resume PID until guard refresh lands) → all three predicates true → branch falls through → `IsIdempotentReclaim` false (different `sessionId`) → `SetupAgentWorkspace` runs → `ArchiveWorkspace(workspace)` on line 390 destroys the recovering agent's workspace. The chain holds. The "provably zero" claim in Proof A's last paragraph is a probability argument dressed as a proof — exactly what the user's "beyond reproach" bar forbids.
-- **Alternative explanations considered:** Could the F2 corner be unreachable in practice? No — it is the well-documented `LaunchedPid=null` (#0173) corner that the watchdog actively handles (the `IsBadSessionFailFast` branch exists *because* the corner is reachable). Could the inquisitor be misreading `SaturateResumeAttempts`? No — line 1739 sets `LastResumeLaunchedAt = null` unconditionally. Could the predicate be saved by some other check? No — `HandleExistingSession`'s stale-working branch is the only filter, and the companion clause `!ResumeInFlight` is the only proposed mitigation. The F2 corner is the lone reachable hole.
+- **Alternative explanations considered:** Could the F2 corner be unreachable in practice? No — it is the well-documented `LaunchedPid=null` ([#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md)) corner that the watchdog actively handles (the `IsBadSessionFailFast` branch exists *because* the corner is reachable). Could the inquisitor be misreading `SaturateResumeAttempts`? No — line 1739 sets `LastResumeLaunchedAt = null` unconditionally. Could the predicate be saved by some other check? No — `HandleExistingSession`'s stale-working branch is the only filter, and the companion clause `!ResumeInFlight` is the only proposed mitigation. The F2 corner is the lone reachable hole.
 
 ---
 
@@ -332,7 +332,7 @@ and re-dispatch the code-writer.
   > self-gate to no-op. The episode shows `resume_outcome=failed` in the
   > watchdog log and no Claim event — inquisition queries that count
   > auto-recoveries by `recovery_kind=auto` undercount this case. Root cause
-  > is launcher `LaunchedPid` reporting reliability (#0173-class), out of
+  > is launcher `LaunchedPid` reporting reliability ([#0173](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0173-auto-resume-resumewarmupgate-60s-produces-false-positive-resume-blocked-no-refre.md)-class), out of
   > scope here; the amendment must be explicit so inquisition consumers know
   > the 4-bucket join misses this corner.
 - **Judge ruling:** CONFIRMED
@@ -656,7 +656,7 @@ through every lock-release boundary in the watchdog and the proposed refresh
 path. The findings are precise and reproducible (cited code + lines); none
 require a test scout to confirm. **Areas examined less deeply:** I did not
 re-run any existing test, did not exercise a live spike, and did not
-walk Slice B / #0190 / F14–F19 (out of scope per brief). I trust Charlie's
+walk Slice B / [#0190](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0190-resolvesessionfallback-does-not-filter-by-assignedhuman-currenthuman-despite-the.md) / F14–F19 (out of scope per brief). I trust Charlie's
 verification recipe to catch the live behavior; the design-level findings
 above are what the inquisition is for.
 
@@ -704,7 +704,7 @@ I re-derived each finding from the cited code independently (full reads of `Agen
 
 ### What this audit did not cover
 
-Hypotheses-not-reproduced (§ before this section) are the inquisitor's adversarial enumeration of items that did NOT break under re-derivation. I sampled three (Proof C / F11 closure, Proof B / idempotent at-most-one, and C5 / duplicate-claude) and confirmed the inquisitor's verifications hold — the core mechanism is sound. I did not run any test, did not exercise a live spike, and did not walk Slice B / #0190 / F14–F19 (out of scope). My confidence in the rulings above is high; my confidence in the plan's design correctness is high; the residual risk is in implementation precision, which the code-writer's review + verification recipe will catch.
+Hypotheses-not-reproduced (§ before this section) are the inquisitor's adversarial enumeration of items that did NOT break under re-derivation. I sampled three (Proof C / F11 closure, Proof B / idempotent at-most-one, and C5 / duplicate-claude) and confirmed the inquisitor's verifications hold — the core mechanism is sound. I did not run any test, did not exercise a live spike, and did not walk Slice B / [#0190](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0190-resolvesessionfallback-does-not-filter-by-assignedhuman-currenthuman-despite-the.md) / F14–F19 (out of scope). My confidence in the rulings above is high; my confidence in the plan's design correctness is high; the residual risk is in implementation precision, which the code-writer's review + verification recipe will catch.
 
 ### Worktree note
 

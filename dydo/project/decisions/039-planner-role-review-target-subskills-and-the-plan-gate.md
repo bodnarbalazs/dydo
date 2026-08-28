@@ -25,8 +25,8 @@ waste after the implementation review)."
   7 base roles, no `planner.role.json`.
 - The docs already half-promise the role: the customizing-roles guide lists planner among base
   roles, and the orchestrator's `requires-prior` constraint names it. Dispatch does not validate
-  `--role` strings (issue 0240, found when `--role planner` was silently accepted and the agent
-  landed on co-thinker; related: 0237).
+  `--role` strings (issue [0240](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0240-dispatch-does-not-validate-role-against-defined-roles-accepted-planner-roster-sh.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0240-dispatch-does-not-validate-role-against-defined-roles-accepted-planner-roster-sh.md -->, found when `--role planner` was silently accepted and the agent
+  landed on co-thinker; related: [0237](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0237-dispatch-role-validation-sees-dispatcher-as-unknown-role-and-orchestrator-gating.md)).
 - The same-day exemplar: Olivia's DR-034 migration plan caught four defects pre-implementation
   (sync-crashing stem collision, silent status-vocab rewrite, frontmatter-stripping archive,
   junction-defeated worktree isolation) — each would have cost an implementation-review round or a
@@ -161,7 +161,7 @@ the gate.
 
 - **R1 (role + validation):** `planner.role.json` (base: true; writable: own workspace +
   `project/sprints/**` + `project/sprint-tasks/**` + `project/tasks/**`); reviewer role gains
-  `role-transition fromRole: planner`. Fix dispatch `--role` validation (issues 0240 + 0237
+  `role-transition fromRole: planner`. Fix dispatch `--role` validation (issues [0240](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0240-dispatch-does-not-validate-role-against-defined-roles-accepted-planner-roster-sh.md) + [0237](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0237-dispatch-role-validation-sees-dispatcher-as-unknown-role-and-orchestrator-gating.md)
   together). NOTE: `dydo/_system/roles/` is guard-off-limits to agents — landing needs the human
   or a guard-sanctioned path.
 - **R2 (skills):** restructure the reviewer skill into the folder shape (shared SKILL.md +
@@ -197,5 +197,5 @@ the gate.
   folded, it applies to the reviewer agent across all targets, audit stage included.
 - `backlog/portable-skill-definitions.md` — vendor-neutral skill definitions; subskills are its
   first consumer.
-- Issues 0240 / 0237 — dispatch role validation.
+- Issues 0240 / [0237](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0237-dispatch-role-validation-sees-dispatcher-as-unknown-role-and-orchestrator-gating.md) — dispatch role validation.
 - Exemplar: `dydo/agents/Olivia/plan-dr034-migration-slices.md`.

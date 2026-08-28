@@ -14,7 +14,7 @@ detects changes within each representation, and translates genuine edits through
 Markdown syntax-tree alignment. It never uses normalization to overwrite canonical content.
 
 This completes DR 025's uniformly bidirectional authored-content contract and supersedes DR 035 §3's
-single-normalized-base approach for PM-spine bodies. It resolves issue 0309 without a temporary
+single-normalized-base approach for PM-spine bodies. It resolves [issue 0309](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0309-notion-watchdog-round-trip-corrupts-existing-pm-record-bodies.md) without a temporary
 quarantine or a one-way ownership rule.
 
 ## Context

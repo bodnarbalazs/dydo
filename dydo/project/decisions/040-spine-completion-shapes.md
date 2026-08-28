@@ -73,11 +73,11 @@ schema: `title`, `area`, `date`.
 ### 5. DR 039 sprint status vocabulary is encoded in this model change
 [DR 039](./039-planner-role-review-target-subskills-and-the-plan-gate.md) §3 fixed
 `planning → plan-review → active → audit → done` and gave SprintTask `ready` its meaning. M0 is
-the sync-model sprint and issue 0252 makes model changes expensive to propagate — encode the new
+the sync-model sprint and issue [0252](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0252-no-command-regenerates-the-live-system-sync-model-json-template-updates-never-re.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0252-no-command-regenerates-the-live-system-sync-model-json-template-updates-never-re.md --> makes model changes expensive to propagate — encode the new
 vocab now rather than touching the model again in P1. `escalated` is retained as an off-path
 state (run-sprint's escalation circuit-breaker still needs a word); `gate-result` stays.
 
-### 6. Sanctioned live-model regen: `dydo notion model-update` (issue 0252)
+### 6. Sanctioned live-model regen: `dydo notion model-update` ([issue 0252](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0252-no-command-regenerates-the-live-system-sync-model-json-template-updates-never-re.md))
 A new subcommand regenerates `_system/sync-model.json` from the template, shows a diff, and
 requires confirmation — never a blind overwrite (`SyncModelLoader`'s on-disk-is-source-of-truth
 philosophy stands; projects may customize the live file). It warns when the diff implies
@@ -99,4 +99,4 @@ markdown/hash-oriented and explicitly skips the model today.
 - [DR 034](./034-pm-record-taxonomy.md) — the taxonomy this completes; §4 amended, §5 confirmed.
 - [DR 036](./036-task-approval-reform.md) — the archive event's future CLI shape.
 - [DR 039](./039-planner-role-review-target-subskills-and-the-plan-gate.md) — sprint vocab, plan gate.
-- Issues 0252 (regen path — resolved by §6's implementation), 0249 (validator debt, partly mooted).
+- Issues 0252 (regen path — resolved by §6's implementation), [0249](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0249-dydo-check-reports-44-pre-existing-errors-validator-taxonomy-debt-inventory.md) (validator debt, partly mooted).

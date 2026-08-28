@@ -150,7 +150,7 @@ Finding 1 should be fixed before merge; 2 and 3 can be follow-ups.
   to MEDIUM): it silently breaks a shipped feature on all three platforms and strands a
   resumed agent behind the guard's missing-general-wait rule. Not CRITICAL — conversation
   context is preserved, no data loss, and an out-of-flow re-claim recovers it.
-- **Issue:** #0207
+- **Issue:** [#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md)
 
 ---
 
@@ -187,7 +187,7 @@ Finding 1 should be fixed before merge; 2 and 3 can be follow-ups.
   real pool agent, so adding the guard cannot break the claim flow. A genuine
   defense-in-depth inconsistency; coding-standards §6 (validate at boundaries) supports the
   fix. LOW severity and a safe post-merge follow-up.
-- **Issue:** #0208
+- **Issue:** [#0208](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0208-getsessioncontext-env-path-skips-isvalidagentname-validation.md)
 
 ---
 
@@ -242,7 +242,7 @@ Finding 1 should be fixed before merge; 2 and 3 can be follow-ups.
 - **F1 reproducer genuine** — `IdentityHijackRoleSetTests.ExecuteRoleFlow_…` exercises
   the hijack non-trivially: `FindAncestorProcessOverride` wires through
   `FindClaudeAncestor` (`ProcessUtils.Ancestry.cs:69-75`), Charlie is rejected by a
-  real PID mismatch, not a degenerate always-false. The two #0189 encoded-bug tests
+  real PID mismatch, not a degenerate always-false. The two [#0189](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0189-tests-agentregistrytests-getsessioncontext-prefersdydoagentenvvar-overfile-and-g.md) encoded-bug tests
   are genuinely rewritten to the new contract; `IsOwnedByCaller` is unit-tested on all
   branches incl. null `ClaimedPid` and no-claude-ancestor.
 - **F8 claim rollback** — `ExecuteClaim`/`ExecuteClaimAuto` refuse a mismatched stale
@@ -378,8 +378,8 @@ each finding for files examined and verification).
 
 | # | Finding | Ruling | Severity | Issue |
 |---|---------|--------|----------|-------|
-| 1 | F11 gate silently breaks the auto-resume general-wait re-arm | CONFIRMED | HIGH (upheld) | #0207 |
-| 2 | `GetSessionContext` env path skips `IsValidAgentName` | CONFIRMED | LOW | #0208 |
+| 1 | F11 gate silently breaks the auto-resume general-wait re-arm | CONFIRMED | HIGH (upheld) | [#0207](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0207-f11-ownership-check-silently-breaks-the-auto-resume-general-wait-re-arm-on-all-p.md) |
+| 2 | `GetSessionContext` env path skips `IsValidAgentName` | CONFIRMED | LOW | [#0208](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0208-getsessioncontext-env-path-skips-isvalidagentname-validation.md) |
 | 3 | CC=30 extraction not strictly behavior-preserving | FALSE POSITIVE | — | — |
 
 **Merge decision: Slice A is NOT safe to merge to `master` as-is.** Finding 1 is a real

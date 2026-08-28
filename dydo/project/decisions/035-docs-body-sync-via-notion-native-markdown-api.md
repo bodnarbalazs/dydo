@@ -11,10 +11,10 @@ participants: [balazs, Charlie]
 The docs-mirror ([DR 033](./033-docs-notion-nested-page-mirror.md)) stops hand-rolling a lossy
 markdown⇄Notion-block converter and instead uses **Notion's native Markdown Content API** to read and
 write page bodies. Notion performs the block↔markdown mapping **server-side, faithfully**; we send and
-receive markdown strings. This **retires the phantom-conflict corruption class at its root** ([issue
-0235](../issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)),
+receive markdown strings. This **retires the phantom-conflict corruption class at its root** (issue
+[0235](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md -->),
 and — when adopted for the spine too — its latent sibling
-([0236](../issues/resolved/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)).
+([0236](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)).
 It **supersedes [DR 025](./025-notion-sync-architecture.md) §6's "custom block↔markdown conversion"**;
 §6's *direct-REST, no-SDK, source-generated-JSON, AOT* stance **stands unchanged**.
 
@@ -73,8 +73,8 @@ warn; never the canonical file. A pure refuse-on-markers guard, a no-op in norma
 
 ## Consequences & caveats (resolve during build)
 - **Scope: docs mirror first; spine follows (coordinated with Brian).** The PM spine (`NotionSpineSync`)
-  shares `NotionBlockConverter` for row bodies (0236). Migrating it to the markdown API too would retire
-  the converter entirely and 0236 — but it touches Brian's live board, so it's a **scheduled** follow-on,
+  shares `NotionBlockConverter` for row bodies ([0236](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)). Migrating it to the markdown API too would retire
+  the converter entirely and [0236](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md) — but it touches Brian's live board, so it's a **scheduled** follow-on,
   not part of this sprint. Until then the converter stays for the spine only.
 - **Expiring URLs:** read-back image/file URLs are pre-signed and expire — never persist them as
   canonical.
@@ -85,7 +85,7 @@ warn; never the canonical file. A pure refuse-on-markers guard, a no-op in norma
   and folder pages carry the nested docs as children. So the write sends `false` for any page that still
   has child pages and `true` only for a leaf page; on a fresh sync bodies are written at create-time,
   before children exist, so the destructive replace never runs against a page with children.
-- **Child-page export tags are stripped on read (amended, issue 0235):** Notion's markdown export emits
+- **Child-page export tags are stripped on read (amended, [issue 0235](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)):** Notion's markdown export emits
   each child page as a `<page url="…">title</page>` tag. Child pages are STRUCTURE (repo-owned via the
   filesystem tree, DR 033 §5 / DR 025) — never body — so those tags are stripped in BOTH normalize
   (compare) and clean-for-persist (write) paths. Without this a folder read-back (prose + child tags)
@@ -141,4 +141,4 @@ write invariant (incl. shadow promotion) — commits `c2aeff8a`, `a2fc9218`, `84
 (in order): (1) the PM-DB surface shrink (Brian, DR 034/DR 040); (2) the `N(x)` dialect-convergence layer
 scoped to the ~40 residual docs — reappend-child-tags-on-write, H1-as-title, escape/blank-line/indent
 folding, grown off the fidelity corpus (§3); (3) re-smoke; then retire `NotionBlockConverter` for bodies
-once the spine also migrates (0236).
+once the spine also migrates ([0236](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0236-pm-spine-body-sync-shares-the-same-lossy-converter-phantom-conflict-risk-latent.md)).

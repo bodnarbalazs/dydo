@@ -112,7 +112,7 @@ release work independently reviewable and assimilable.
 
 - [DR 044](../decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md) owns the canonical
   boundary, retained FutureFeature, reviewed-intent gate, and 3.0 version.
-- [Linear PM Pivot Campaign](../campaigns/linear-pm-pivot.md) owns the destination, Fog, and Project
+- [Linear PM Pivot Campaign](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/campaigns/linear-pm-pivot.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/campaigns/linear-pm-pivot.md --><!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/campaigns/linear-pm-pivot.md --><!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/campaigns/linear-pm-pivot.md --> owns the destination, Fog, and Project
   sequence.
 - [DR 041](../decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md) established
   the still-valid boundary that dydo authors/knows while platforms run/coordinate.
@@ -373,8 +373,8 @@ commit exists.
 The scan covers every non-meta file in the configured/current Campaign, Sprint, Slice, Task, Issue,
 backlog, Release, and FutureFeature locations. It also scans every other non-meta Markdown file under
 `dydo/project/**` for legacy type/status/title signatures. The three current root exceptions are
-explicitly included: `dydo/project/docs-upgrade-sprint.md`, `dydo/project/v1.3-release.md`, and
-`dydo/project/v1.4-release.md`. Any other candidate stops generation and appears in
+explicitly included: [`dydo/project/docs-upgrade-sprint.md`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/docs-upgrade-sprint.md), [`dydo/project/v1.3-release.md`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/v1.3-release.md), and
+[`dydo/project/v1.4-release.md`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/v1.4-release.md). Any other candidate stops generation and appears in
 `unresolvedCandidates`; verification cannot pass until a human moves it into `records` or into
 `excludedCandidates` with a ratified non-PM reason.
 

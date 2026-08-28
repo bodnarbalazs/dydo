@@ -7,40 +7,48 @@ status: idea
 
 # Agent Graph Metrics
 
-Build a lightweight graph from audit data to measure whether prompt, template, and guardrail changes actually improve orchestration outcomes.
+Explore a lightweight graph over supported task and thread execution evidence to measure whether prompt, template, and guardrail changes improve orchestration outcomes. This remains a hypothetical idea, not a current dydo capability.
+
+## Evidence Boundary
+
+The audit logs, inbox archives, repository task files, and dispatch or messaging commands from dydo 1.x are retired machinery, not current inputs. Any implementation must consume current host-native task and thread execution evidence or first define a durable, supported evidence import.
 
 ## The Graph
 
-Agents form an implicit graph via dispatch chains and messaging. The audit log, inbox archives, and task files already capture the raw data. A graph built from these sources would have:
+When supported evidence is available, coordination and review relationships could form an implicit graph. A graph built from that evidence could have:
 
-- **Session nodes** — one per audit file (agent, role, task, timestamps, event counts)
-- **Task nodes** — one per task (status, lifecycle timestamps)
-- **Edges** — DISPATCHED (from inbox `from`/`origin` fields), MESSAGED (from `dydo msg` commands), WORKED_ON (from Role events), REVIEWED (inferred from role=reviewer on same task)
+- **Thread nodes** — one per recorded execution thread, with its available timing and role context
+- **Task nodes** — one per task represented by the evidence
+- **Edges** — handoff, collaboration, work, and review relationships when the supported evidence records them
 
 ## Metrics to Explore
 
 The goal is a small set of numbers that move when you change a prompt, so you can tell if the change helped. Candidates (needs experimentation to find which are actually informative):
 
-- **First-pass approval rate** — % of tasks approved on first review without re-dispatch
-- **Rework rate** — % of tasks where a reviewer dispatches another code-writer for fixes
-- **Chain completion rate** — % of dispatch chains that finish without human intervention
-- **Mean chain depth** — average sessions per task from first dispatch to approval
-- **Session duration by role** — median wall-clock time, grouped by role
+- **First-pass approval rate** — % of tasks accepted on first review without further work
+- **Rework rate** — % of tasks returned from review for further work
+- **Chain completion rate** — % of coordination chains that finish without human intervention
+- **Mean chain depth** — average recorded execution steps per task from work start to approval
+- **Execution duration by role** — median wall-clock time, grouped by role
 - **Block rate** — guardrail blocks / total events (high = prompt or onboarding friction)
-- **Orphan rate** — sessions without a Release event (agent got stuck)
+- **Orphan rate** — execution threads without a recorded terminal outcome
 
 ## Data Gap
 
-Dispatches currently appear as Bash events containing `dydo dispatch ...` strings. A dedicated `Dispatch` audit event (with `from`, `to`, `task`, `role` fields) would make graph construction precise instead of heuristic.
+dydo does not define a current execution-evidence schema for this analysis. The idea needs either a supported host-native source with stable relationship fields or a deliberately designed durable import before graph construction can be precise.
 
 ## Future: Stochastic Simulation
 
-Model each task as a parameterized pipeline (code, review, approve/rework) with transition probabilities estimated from the graph. Simulate to predict the impact of changes before deploying them. Needs the graph foundation first.
+Model each task as a parameterized pipeline (work, review, approve/rework) with transition probabilities estimated from the graph. Simulate to predict the impact of changes before deploying them. This depends on the evidence foundation first.
 
 ## Implementation
 
-A `dydo audit metrics` command that builds the graph in-memory, computes metrics, and outputs a summary. Optionally writes JSON to `dydo/_system/audit/reports/metrics.json` for trend tracking.
+After the evidence contract exists, evaluate a small analysis capability that builds the graph in memory and reports the selected metrics. It must not assume a current dydo command or repository audit output exists.
+
+## Rationale
+
+FutureFeature is a repo-native idea record. It remains unpromoted until a separate human decision creates Linear work.
 
 ## Related
 
-- [Audit System](../../reference/audit-system.md) — Audit trail reference (removed in 2.0 — this feature predates that removal)
+- [Work Model](../../understand/work-model.md) — Current boundary between durable knowledge and live work

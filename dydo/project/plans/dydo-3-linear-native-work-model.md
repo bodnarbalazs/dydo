@@ -378,6 +378,123 @@ source-built `dotnet bin/Release/net10.0/dydo.dll check`, `git diff --check`, a 
 documentation review, and the strict Project-level integrated audit. Each gate must return PASS before
 DYD-16 may complete.
 
+## 8. Chronological DYD-23 token-aware hub-summary amendment
+
+This plan-only amendment was discovered after the DYD-22 amendment had merged at
+`f9cb8a38176950fee17e29d14ffd90f326514daa`. It is explicitly non-retroactive: it grants new
+authorization only from this amendment's own reviewed merge forward, does not recast either earlier
+failure as authorized work, and does not alter the DYD-20, DYD-21, or DYD-22 chronology. DYD-16 remains
+blocked, and DYD-24 must not begin, until the exact single-file DYD-23 amendment receives independent
+plan review, merges, and is read back from the integration branch.
+
+### Independently reproduced blocker and root cause
+
+The fresh DYD-16 documentation review recorded in Linear comment
+`1c6e94b7-0bf3-4b5c-8036-52af773730d2` and the separate strict Project-level integrated audit recorded
+in comment `c1682a60-028d-401c-a3e9-dbcb9c399fdb` independently reproduced the same four malformed
+source-built hub summaries:
+
+1. `dydo/project/migrations/_index.md` truncates `3.0` to `dydo 3.`.
+2. `dydo/understand/_index.md` truncates `.NET 10` to `DynaDocs is a .`.
+3. `dydo/guides/_index.md` truncates inside inline code `mode-<name>.template.md`, leaving its Markdown
+   delimiters incomplete.
+4. `dydo/guides/_index.md` truncates `1.x` to `1.`; the same dotted-token defect applies to `2.x`.
+
+`Services/HubGenerator.cs` currently selects the first raw `.`, `!`, or `?` without distinguishing a
+sentence terminator from punctuation inside a dotted token or Markdown inline-code span.
+`DynaDocs.Tests/Services/HubGeneratorTests.cs` has no regression coverage for these cases. The defect
+predates DYD-16 and is newly exposed because DYD-16 must retain source-generated hubs; hand-editing a
+generated hub remains forbidden.
+
+### DYD-24 exclusive product lane
+
+DYD-24 is the only authorized product remediation and owns exactly these two paths:
+
+1. `Services/HubGenerator.cs`
+2. `DynaDocs.Tests/Services/HubGeneratorTests.cs`
+
+DYD-24 may change no generated hub, plan, evidence record, source document, historical corpus, sync or
+Projection helper, configuration, or other production/test path. In particular, it must not reuse a
+`Sync/**` or Projection helper scheduled for removal. After DYD-24 independently passes review and
+merges, the three generated hubs authorized by DYD-22 remain exclusively DYD-16-owned outputs.
+
+### Binding extraction algorithm
+
+DYD-24 must replace the raw first-period extraction with this deterministic contract; do not use regex:
+
+1. Parse the raw summary with the existing Markdig dependency and collect every `CodeInline` source
+   span. Treat each inclusive `Span.Start` through `Span.End` interval, including its raw backtick
+   delimiters, as protected. Process the sorted spans and the raw summary with monotonic cursors so the
+   complete operation is deterministic O(n); do not normalize or re-render Markdown.
+2. Scan the raw summary left to right. Ignore every `.`, `!`, or `?` whose source offset lies in a
+   protected inline-code span.
+3. Outside inline code, a `.`, `!`, or `?` starts one candidate terminal run. Advance across every
+   immediately adjacent terminal-punctuation character (`.`, `!`, or `?`) and closing marker (`)`, `]`,
+   `}`, `\"`, `'`, `’`, `”`, `*`, `_`, or `~`). The sentence boundary is after that entire run, and is
+   valid only when the next raw character satisfies `char.IsWhiteSpace` or the run ends at end-of-text.
+4. Return the original raw Markdown substring from offset zero through the first valid boundary only
+   when that substring's length is at most 150 characters. This preserves punctuation clusters,
+   closing markers, whitespace within the sentence, and original Markdown bytes/characters without
+   reconstruction.
+5. If no acceptable sentence boundary exists, return the whole original text unchanged when its length
+   is at most 150 characters.
+6. For longer text, reserve three characters for `...` and begin with raw offset 147 as the exclusive
+   prefix end. If that offset intersects a protected `CodeInline` span, move the search ceiling to the
+   start of that span. From that ceiling, scan backward to the last whitespace character outside every
+   protected span, cut immediately before that whitespace, and append `...`. If no such safe token
+   boundary exists, hard-cut the original raw text at offset 147 and append `...`. The result is always
+   at most 150 characters; the safe path never emits a partial inline-code span or unmatched backtick
+   delimiter.
+
+The algorithm operates on the raw `SummaryParagraph` string and returns an original prefix plus, only
+for the fallback, the literal ASCII ellipsis `...`. Dotted tokens such as `3.0`, `.NET`, `1.x`, and
+`2.x` therefore do not terminate a sentence unless a later punctuation/closing-marker run satisfies
+the whitespace-or-end rule.
+
+### Exact DYD-24 regressions and gates
+
+`DynaDocs.Tests/Services/HubGeneratorTests.cs` must assert exact returned hub-summary text for each of
+the following independently named cases:
+
+- the real `3.0` migrations summary;
+- the real `.NET 10` architecture summary;
+- the real inline-code `mode-<name>.template.md` summary, with both backtick delimiters preserved;
+- both `1.x` and `2.x` dotted tokens;
+- sentence boundaries ending in `!` and `?`;
+- an adjacent punctuation/closing-marker cluster whose entire run is preserved;
+- a complete sentence of exactly 150 characters;
+- text of at most 150 characters with no terminator, returned whole;
+- an overlong no-acceptable-sentence fallback that backs up to whitespace outside inline code and
+  preserves complete code delimiters; and
+- a no-whitespace overlong input proving the 147-character hard cut plus `...` only when no safe token
+  boundary exists.
+
+DYD-24 must run the focused `HubGeneratorTests`, `dotnet build DynaDocs.csproj -c Release`,
+`py DynaDocs.Tests/coverage/run_tests.py`, `py DynaDocs.Tests/coverage/gap_check.py --force-run`,
+source-built `dotnet bin/Release/net10.0/dydo.dll check`, exact two-path scope checks, and
+`git diff --check`. A fresh independent implementation review must return strict PASS before DYD-24
+may merge or DYD-16 may resume.
+
+### Superseding integration arithmetic and completion order
+
+For execution after this amendment and DYD-24 merge, this subsection supersedes only the conflicting
+post-DYD-22 Project-integration path count; it does not transfer ownership of any path:
+
+- DYD-24 product implementation is exactly two paths: `Services/HubGenerator.cs` and
+  `DynaDocs.Tests/Services/HubGeneratorTests.cs`.
+- DYD-16 implementation remains exactly the five paths listed in §7: two authored migration records
+  and three command-produced hubs.
+- The cumulative Project-integration diff from
+  `5cceda39657d9023c7c456b4f754e594f7cd0410` is exactly eight paths: one cumulatively amended
+  `dydo/project/plans/dydo-3-linear-native-work-model.md`, the two DYD-24 product/test paths, and the
+  five DYD-16 paths. The arithmetic is `1 + 2 + 5 = 8`; any ninth path fails scope.
+
+The serial order is binding: independently review and merge DYD-23; start, independently review, and
+merge DYD-24; then resume DYD-16, rebuild Release, regenerate only its three authorized hubs with the
+source-built `fix`, and rerun hub parity plus every amended Project gate. DYD-16 completion still
+requires a fresh independent documentation review, strict Project-level integrated audit, and the
+existing assimilation/read-back evidence. Neither DYD-23 nor DYD-24 may mark DYD-16 complete.
+
 ## Related
 
 - [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md) — Binding ontology and ownership decision.

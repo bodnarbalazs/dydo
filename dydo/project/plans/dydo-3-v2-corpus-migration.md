@@ -54,10 +54,12 @@ or a status-based guess.
   legacy source records after their Linear read-back succeeds: 471 manifest-record deletions in total.
 - Delete the twelve exact temporary legacy hub/meta files in §3 and remove the retired-corpus navigation
   section from `dydo/project/_index.md` while preserving exact freeze recovery links.
-- Rewrite the 1,358 frozen incoming-reference occurrences whose source survives: 1,339 exact frozen-file
-  permalinks, sixteen stable Linear URLs, and three unchanged FutureFeature links. The other 1,487
-  occurrences disappear because their source is one of the 1,062 occurrences inside a deleted record or
-  one of the 425 occurrences inside a deleted temporary hub/meta file.
+- Adjudicate all 1,358 frozen incoming-reference occurrences whose source survives: 1,338 exact
+  frozen-file permalinks and sixteen stable Linear URLs are present after rewrite, one exact frozen tuple
+  is already absent and satisfied without a write under the chronological DYD-43 amendment, and three
+  FutureFeature links remain unchanged. The other 1,487 occurrences disappear because their source is
+  one of the 1,062 occurrences inside a deleted record or one of the 425 occurrences inside a deleted
+  temporary hub/meta file.
 - Apply the Project-3-owned validator/model cleanup assigned by the reviewed work-model plan: strict
   FutureFeature validation, retirement of the task frontmatter/hub/orphan exceptions, removal of the
   `issue` frontmatter type, and conversion of the manifest-backed legacy rule from a temporary pending
@@ -99,10 +101,11 @@ or a status-based guess.
    index and working tree. The six legacy corpus roots have no tracked file. `dydo/project/_index.md`
    contains no live corpus navigation and names the exact freeze commit as recovery authority.
 5. All 1,358 surviving-source reference occurrences meet the closed tuple contract: sixteen contain the
-   mapped Linear URL, 1,339 contain
+   mapped Linear URL, 1,338 contain
    `https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/<record.path>`,
-   and the three FutureFeature index links remain unchanged. Counts are checked per source/target pair,
-   so one replacement cannot falsely satisfy several original occurrences.
+   the exact DYD-43 tuple is proven already absent without introducing a `project/issues` consumer, and
+   the three FutureFeature index links remain unchanged. Counts are checked per source/target pair, so
+   one replacement cannot falsely satisfy several original occurrences.
 6. The other 1,487 frozen references are accounted for only by deletion of their exact source file;
    no retained source is silently dropped from the rewrite ledger.
 7. `LegacyPmManifestService` permits the three applied retained paths, permits no temporary hub/meta path,
@@ -262,9 +265,11 @@ The manifest's 2,845 frozen tuples partition by source fate:
 P3-3 owns the exact 58 distinct retained `sourcePath` values under
 `dydo/project/changelog/**` (540 occurrences: 535 frozen permalinks and five Linear URLs). P3-4 owns the
 exact 36 distinct retained sources outside changelog after excluding the six Project-5 collision files,
-`dydo/project/_index.md`, and `dydo/project/future-features/_index.md` (790 occurrences: 779 frozen
-permalinks and eleven Linear URLs). P3-5 owns these six exact hot files (22 frozen-permalink
-occurrences):
+`dydo/project/_index.md`, and `dydo/project/future-features/_index.md` (an immutable evidence partition
+of 790 occurrences: 779 frozen-permalink resolutions and eleven Linear-URL resolutions). Its amended
+delivery arithmetic is 789 actual rewrites (778 frozen permalinks and eleven Linear URLs) plus the one
+exact already-absent DYD-43 adjudication, totaling all 790 tuples. P3-5 owns these six exact hot files
+(22 frozen-permalink occurrences):
 
 - `dydo.json`
 - `dydo/guides/migrating-dydo-1x-to-2x.md`
@@ -354,7 +359,7 @@ relations are exactly the §4 `Blockers` column; do not encode dependencies only
 | P3-1 — Create and read back the seven approved live Issues | Seven exact unprojected Dydo `Todo` Issues and a returned-ID map; no product implementation | Linear: exactly the seven new Issue objects in §3; repository: none | reviewed plan merged | exact creation/read-back predicate; zero extra objects |
 | P3-2 — Normalize the three retained FutureFeatures | Three unpromoted idea records meet the final content contract | the three exact FutureFeature files in §3 | reviewed plan merged | focused `FutureFeatureRule` fixture precheck after P3-7 integration; links resolve |
 | P3-3 — Rewrite frozen references in retained changelog | All 540 manifest tuples in the exact 58 retained changelog sources have their prescribed targets | exact manifest-derived retained `sourcePath` set matching `dydo/project/changelog/**` | P3-1 | source/target occurrence validator for this partition; `git diff --check` on its set |
-| P3-4 — Rewrite frozen references in retained knowledge and fixtures | All manifest tuples in the 36-file non-changelog, non-hot, non-index partition have prescribed targets | exact derived set in §3, including Decisions, inquisitions, active plan/context, and `DynaDocs.Tests/TestData/link-validator/index.md`; excludes every P3-3/P3-5/P3-6/P3-2 path | P3-1 | disjoint-set assertion; source/target occurrence validator; focused link-validator E2E test |
+| P3-4 — Rewrite frozen references in retained knowledge and fixtures | The 36-file non-changelog, non-hot, non-index partition has 789 prescribed-target rewrites plus the one exact already-absent DYD-43 adjudication, totaling its immutable 790 tuples without a `project/issues` consumer | exact derived set in §3, including Decisions, inquisitions, active plan/context, and `DynaDocs.Tests/TestData/link-validator/index.md`; excludes every P3-3/P3-5/P3-6/P3-2 path | P3-1; DYD-43 merged | disjoint-set assertion; 789 rewritten + 1 exact already-absent = 790 adjudicated; source/target occurrence validator; focused link-validator E2E and active-doc no-`project/issues` tests |
 | P3-5 — Rewrite the six Project-5 collision files | All 22 frozen tuples in the six exact hot files use durable targets without performing Project-5 removal | the six exact paths in §3, reference edits only | P3-1; Project-5 docs/config lane held | exact hot-file diff allowlist; occurrence validator; Project-5 owner acknowledges rebase point |
 | P3-6 — Delete the ratified corpus and retire its navigation | Exact 471 manifest source deletions, twelve hub/meta deletions, and a durable root recovery section | `records[finalDisposition != 'retain-normalize'].path`; twelve exact compatibility paths; `dydo/project/_index.md` | P3-1 read-back; P3-2 ready; P3-3–P3-5 review PASS | exact deletion-set equality; 3 retained rows present; six roots contain no tracked file |
 | P3-7 — Close the legacy validators and enforce FutureFeatures | Permanent tombstone and strict FutureFeature/frontmatter contract | `Services/LegacyPmManifestService.cs`; `Rules/LegacyPmRecordRule.cs`; `Rules/FrontmatterRule.cs`; `Rules/HubFilesRule.cs`; `Rules/OrphanDocsRule.cs`; new `Rules/FutureFeatureRule.cs`; `Commands/CheckDocValidator.cs`; `Models/Frontmatter.cs`; `Templates/types.json.template`; `dydo/_system/types.json`; `DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs`; `DynaDocs.Tests/Rules/LegacyPmRecordRuleTests.cs`; `DynaDocs.Tests/Rules/FrontmatterRuleTests.cs`; `DynaDocs.Tests/Rules/HubFilesRuleTests.cs`; `DynaDocs.Tests/Rules/OrphanDocsRuleTests.cs`; new `DynaDocs.Tests/Rules/FutureFeatureRuleTests.cs`; `DynaDocs.Tests/Services/FrontmatterTypesServiceTests.cs` | P3-2 and P3-6 integrated | build plus exact focused filter; no legacy exception symbols; strict fixtures pass |
@@ -526,7 +531,9 @@ resources before P3-1. This is one-time execution proof, not a runtime feature.
   `git diff --check -- <owned paths>`. Before P3-8, its `rewrite-linear` branch resolves
   `$linearUrlsByPreview[$sample.Value]`, where the seven-entry hashtable is copied mechanically from the
   exact P3-1 read-back map attached to that Issue; a missing/extra key fails. P3-4 additionally runs the
-  link-validator E2E filter. The final integrated run uses the applied manifest URL branch shown below.
+  link-validator E2E filter and the
+  `CommandDocConsistencyTests.ActiveProductDocs_ExcludeRetiredCommandsAndRepositoryWorkPaths` filter.
+  The final integrated run uses the applied manifest URL branch shown below.
 - P3-6: run the exact deletion predicate below; do not claim `dydo check` until P3-8.
 - P3-7:
 
@@ -688,6 +695,33 @@ $expectedResolutionCounts = @('rewrite-commit-permalink=1339','rewrite-linear=16
 if (($resolutionCounts -join "`n") -ne ($expectedResolutionCounts -join "`n")) { throw 'Surviving reference counts changed.' }
 if (@($surviving.Source | Sort-Object -Unique).Count -ne 102) { throw 'Retained source-file count changed.' }
 
+$p35Sources = @(
+  'dydo.json','dydo/guides/migrating-dydo-1x-to-2x.md','dydo/guides/orchestration-pitfalls.md',
+  'dydo/reference/notion-oss-survey.md','dydo/reference/notion-sync.md','dydo/understand/work-model.md'
+)
+$p34Sources = @($surviving.Source | Where-Object {
+  $_ -notlike 'dydo/project/changelog/*' -and $_ -notin $p35Sources -and
+  $_ -ne 'dydo/project/_index.md' -and $_ -ne 'dydo/project/future-features/_index.md'
+} | Sort-Object -Unique)
+$p34Ledger = @($surviving | Where-Object Source -in $p34Sources)
+if ($p34Sources.Count -ne 36 -or $p34Ledger.Count -ne 790) { throw 'P3-4 immutable evidence partition changed.' }
+$alreadyAbsent = @($p34Ledger | Where-Object {
+  $_.Source -eq 'dydo/understand/templates-and-customization.md' -and $_.Raw -eq 'issue 0301' -and
+  $_.Target -eq 'dydo/project/issues/resolved/0301-obsolete-pre-dr-041-dydo-diagram-svg-still-shipped-scaffolded-and-hash-tracked.md' -and
+  $_.Resolution -eq 'rewrite-commit-permalink'
+})
+if ($alreadyAbsent.Count -ne 1) { throw 'DYD-43 already-absent tuple is not exact and unique.' }
+$alreadyAbsentPermalink = "https://github.com/bodnarbalazs/dydo/blob/$freezeSha/$($alreadyAbsent[0].Target)"
+$alreadyAbsentSource = Get-Content -Raw -LiteralPath $alreadyAbsent[0].Source
+if ($alreadyAbsentSource.Contains($alreadyAbsent[0].Raw) -or
+    $alreadyAbsentSource.Contains('### Binary Assets') -or
+    $alreadyAbsentSource.Contains($alreadyAbsentPermalink) -or
+    $alreadyAbsentSource.Contains('dydo/project/issues/')) {
+  throw 'DYD-43 source is not already absent or a project/issues consumer was introduced.'
+}
+
+$p34ActualRewrites = 0
+$p34AlreadyAbsentAdjudications = 0
 foreach ($group in @($surviving | Group-Object Source,Target,Resolution)) {
   $sample = $group.Group[0]
   if (-not (Test-Path -LiteralPath $sample.Source)) { throw "Retained reference source missing: $($sample.Source)" }
@@ -699,7 +733,18 @@ foreach ($group in @($surviving | Group-Object Source,Target,Resolution)) {
     default { throw "Unknown resolution: $($sample.Resolution)" }
   }
   $actualCount = [regex]::Matches($content, [regex]::Escape($expected)).Count
-  if ($actualCount -ne $group.Count) { throw "Reference occurrence mismatch: $($sample.Source) -> $($sample.Target); expected $($group.Count), found $actualCount" }
+  $isAlreadyAbsent = $sample.Source -eq $alreadyAbsent[0].Source -and
+    $sample.Target -eq $alreadyAbsent[0].Target -and $sample.Resolution -eq $alreadyAbsent[0].Resolution
+  $expectedCount = if ($isAlreadyAbsent) { 0 } else { $group.Count }
+  if ($actualCount -ne $expectedCount) { throw "Reference occurrence mismatch: $($sample.Source) -> $($sample.Target); expected $expectedCount, found $actualCount" }
+  if ($sample.Source -in $p34Sources) {
+    if ($isAlreadyAbsent) { $p34AlreadyAbsentAdjudications += $group.Count }
+    else { $p34ActualRewrites += $actualCount }
+  }
+}
+if ($p34ActualRewrites -ne 789 -or $p34AlreadyAbsentAdjudications -ne 1 -or
+    ($p34ActualRewrites + $p34AlreadyAbsentAdjudications) -ne 790) {
+  throw "P3-4 delivery mismatch: $p34ActualRewrites rewritten + $p34AlreadyAbsentAdjudications already absent."
 }
 ```
 
@@ -744,3 +789,31 @@ not add a permanent source file or CLI command.
   paths are explicit.
 - Do not mark Project 3 complete merely because its PR merges. Linear completion follows final read-back,
   integrated audit PASS, and the human/coordinator's acceptance workflow.
+
+## 8. Chronological amendment — DYD-43 / P3-4A
+
+This non-retroactive amendment records one execution fact discovered after the original plan was reviewed.
+It does not alter the ratified manifest, its immutable 790-tuple P3-4 evidence partition, or any frozen
+source. It changes only P3-4 delivery arithmetic and the dependent acceptance and validator contract.
+
+The exact tuple is:
+
+- source: `dydo/understand/templates-and-customization.md`
+- raw target: `issue 0301`
+- target:
+  `dydo/project/issues/resolved/0301-obsolete-pre-dr-041-dydo-diagram-svg-still-shipped-scaffolded-and-hash-tracked.md`
+- forbidden replacement:
+  `https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0301-obsolete-pre-dr-041-dydo-diagram-svg-still-shipped-scaffolded-and-hash-tracked.md`
+
+At governing commit `6ec7aa9ca4971451e5a883d738365477fa41d215`, the current source already contains
+neither `issue 0301` nor the frozen `### Binary Assets` section. Reintroducing the frozen permalink solely
+to make the original occurrence predicate report 790/790 makes
+`CommandDocConsistencyTests.ActiveProductDocs_ExcludeRetiredCommandsAndRepositoryWorkPaths` fail on the
+new `project/issues` URL; omitting it leaves the old predicate at 789/790. Therefore this exact tuple is
+classified as already absent and satisfied without a write. P3-4 must prove 789 actual rewrites plus one
+exact already-absent adjudication equals all 790 immutable tuples, and must introduce no
+`project/issues` consumer.
+
+DYD-43 must merge before DYD-31 resumes. DYD-31 then removes any artificially introduced forbidden
+permalink from its preserved worktree and reruns every amended gate. DYD-43 does not authorize resuming
+DYD-31, changing the manifest, weakening a test, or editing any source other than this plan.

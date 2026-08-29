@@ -13,5 +13,6 @@ Index of plans documentation.
 
 - [dydo 3.0 Linear PM Migration](./dydo-3-linear-migration.md) - Reviewed rolling-wave plan for establishing the Linear work graph, freezing the v2 PM corpus safely, and preparing the bounded implementation Proje...
 - [dydo 3.0 Linear-Native Work Model](./dydo-3-linear-native-work-model.md) - This plan makes Linear the only live work graph and reduces dydo to its durable knowledge and proof role.
+- [dydo 3.0 Linear PM Dogfood and Acceptance](./dydo-3-linear-pm-dogfood.md) - This Project proves the new operating model through three migrated product Issues and one integrated audit/assimilation Issue.
 - [dydo 3.0 Notion Runtime Removal and Release](./dydo-3-notion-runtime-removal.md) - Delivery plan for removing the local Notion projection and its now-consumerless sync machinery, closing every command/config/template/test/release ...
 - [dydo 3.0 v2 Corpus Migration Execution](./dydo-3-v2-corpus-migration.md) - This plan applies the human-ratified 474-row v2 disposition manifest without recreating the retired repository work graph.

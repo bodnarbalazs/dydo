@@ -48,7 +48,7 @@ DATA_MODEL_MAX_LINES = 3
 GENERATED_PATTERNS = ["/obj/", ".g.cs", ".generated.cs"]
 
 # Source directories to check for staleness (relative to ROOT)
-SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization", "Sync", "Templates"]
+SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization", "Templates"]
 SOURCE_FILES = ["Program.cs"]
 SOURCE_GLOBS = ["*.cs"]
 SOURCE_DIR_GLOBS = {"Templates": ["*"]}

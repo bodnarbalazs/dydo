@@ -5,7 +5,6 @@ using System.Security.Cryptography;
 using System.Text;
 using DynaDocs.Models;
 using DynaDocs.Services;
-using DynaDocs.Sync.Model;
 using DynaDocs.Utils;
 
 public static class TemplateCommand
@@ -38,15 +37,7 @@ public static class TemplateCommand
             ["d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9"]),
     ];
 
-    // Framework-owned files generated from a template whose LIVE name differs from the template name, so they
-    // cannot ride FrameworkTemplateFiles' filename==template-name convention. They join the same hash-tracked
-    // refresh/skip flow as the doc files (an un-customized copy is refreshed, a customized one is left):
-    // sync-model.json — issue 0252, nothing regenerated the live model, so a template change never reached a
-    // provisioned board without a hand copy under the agent-off-limits _system tree.
-    public static readonly string[] FrameworkGeneratedFiles =
-    [
-        "_system/" + SyncModelLoader.ModelFileName
-    ];
+    public static readonly string[] FrameworkGeneratedFiles = [];
 
     public static Command Create()
     {
@@ -115,9 +106,6 @@ public static class TemplateCommand
 
         foreach (var relativePath in FrameworkDocFiles)
             AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff), tally);
-
-        foreach (var relativePath in FrameworkGeneratedFiles)
-            AccumulateResult(UpdateGeneratedFile(relativePath, dydoRoot, config, diff), tally);
 
         foreach (var relativePath in FrameworkBinaryFiles)
             AccumulateResult(UpdateBinaryFile(relativePath, dydoRoot, config, diff), tally);
@@ -512,39 +500,15 @@ public static class TemplateCommand
         return WriteUpdate(fullPath, relativePath, embeddedContent, config, diff);
     }
 
-    /// <summary>Refresh/skip for a framework file generated from a template under a DIFFERENT live name
-    /// (<see cref="FrameworkGeneratedFiles"/> — sync-model.json). Unlike a scaffolded doc, it is materialized
-    /// lazily (<see cref="SyncModelLoader.Load"/> writes it on first sync) and never seeded a baseline hash at
-    /// init, so a MISSING baseline must NOT be assumed clean: a project may have hand-edited its model. A null
-    /// baseline is therefore treated as a user edit (skip + warn); only a recorded hash proving the on-disk copy
-    /// is the untouched-but-stale framework version permits an overwrite. An on-disk copy identical to the
-    /// template (re)records the baseline so the next template bump is trusted (issue 0252).</summary>
-    internal static UpdateResult UpdateGeneratedFile(
-        string relativePath, string dydoRoot, DydoConfig config, bool diff)
+    private static string? GetEmbeddedDocContent(string relativePath) => relativePath switch
     {
-        var fullPath = Path.Combine(dydoRoot, relativePath);
-        var embeddedContent = GetEmbeddedDocContent(relativePath);
-        if (embeddedContent == null)
-            return new UpdateResult.Skipped();
-
-        if (!File.Exists(fullPath))
-            return CreateFile(fullPath, relativePath, embeddedContent, config, diff);
-
-        var onDisk = File.ReadAllText(fullPath);
-        if (NormalizeForHash(onDisk) == NormalizeForHash(embeddedContent))
-        {
-            config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
-            return new UpdateResult.Skipped();
-        }
-
-        if (config.FrameworkHashes.GetValueOrDefault(relativePath) != ComputeHash(onDisk))
-        {
-            Console.Error.WriteLine($"  Skipped: {relativePath} — user-edited (hash mismatch)");
-            return new UpdateResult.Warning($"{relativePath}: user-edited, skipped");
-        }
-
-        return WriteUpdate(fullPath, relativePath, embeddedContent, config, diff);
-    }
+        "reference/about-dynadocs.md" => TemplateGenerator.GenerateAboutDynadocsMd(),
+        "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
+        "reference/dydo-glossary.md" => TemplateGenerator.GenerateDydoGlossaryMd(),
+        "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
+        "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
+        _ => null
+    };
 
     private static UpdateResult UpdateBinaryFile(
         string relativePath, string dydoRoot, DydoConfig config, bool diff)
@@ -593,17 +557,6 @@ public static class TemplateCommand
         Console.WriteLine($"  Updated: {relativePath}");
         return new UpdateResult.Updated();
     }
-
-    private static string? GetEmbeddedDocContent(string relativePath) => relativePath switch
-    {
-        "reference/about-dynadocs.md" => TemplateGenerator.GenerateAboutDynadocsMd(),
-        "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
-        "reference/dydo-glossary.md" => TemplateGenerator.GenerateDydoGlossaryMd(),
-        "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
-        "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
-        "_system/sync-model.json" => TemplateGenerator.ReadBuiltInTemplate(SyncModelLoader.DefaultTemplateName),
-        _ => null
-    };
 
     private static string GetOldStockContent(
         string relativePath, DydoConfig config, string onDisk, string embeddedContent)

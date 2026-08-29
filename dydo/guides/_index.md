@@ -17,6 +17,7 @@ Index of guides documentation.
 - [Getting Started](./getting-started.md) - Install dydo, initialize the durable knowledge tree, compile native skills, and connect the resulting project context to work managed in Linear.
 - [How to Use These Docs](./how-to-use-docs.md) - This documentation is designed to be navigated by AI agents.
 - [Migrating a Project from dydo 1.x to 2.x](./migrating-dydo-1x-to-2x.md) - A self-contained, ordered procedure for an AI coding agent to migrate an existing project's dydo workspace from the 1.x generation to the current...
+- [Migrate from dydo 2.x to 3.x](./migrating-dydo-2x-to-3x.md) - dydo 3 keeps durable project knowledge in Git and uses Linear for live project management.
 - [Orchestration Pitfalls](./orchestration-pitfalls.md) - Failure modes observed while agents execute Linear Issues against this repository.
 - [Testing Strategy — Three-Tier System](./testing-strategy.md) - A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested.
 - [Troubleshooting](./troubleshooting.md) - Common guard, validation, template, and work-model failures, with the narrow recovery for each.

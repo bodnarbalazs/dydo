@@ -201,7 +201,6 @@ public static partial class GuardCommand
 
         RunDailyValidationIfDue();
         RestoreExpiredModelCapsIfDue();
-        AutoStartWatchdogIfDue();
 
         var sessionId = ctx.SessionId;
 
@@ -853,9 +852,8 @@ public static partial class GuardCommand
         }
     }
 
-    // How often the guard checks for expired model caps to restore. The watchdog tick that
-    // used to drive ModelCapService.RestoreExpired is gone (DR-041); the guard now self-triggers
-    // it — throttled like the daily validation so the hot path stays cheap. A restore only ever
+    // How often the guard checks for expired model caps to restore. The guard self-triggers
+    // it — throttled like daily validation so the hot path stays cheap. A restore only ever
     // does real work when a cap marker's reset time has actually passed.
     private const int ModelCapRestoreThrottleMinutes = 5;
 
@@ -893,38 +891,4 @@ public static partial class GuardCommand
         }
     }
 
-    // How often the guard refreshes the watchdog activity stamp (watchdog-autostart-lease). The hot path is ONE
-    // File stat: a stamp younger than this means a session is already active and a daemon (if warranted) is already
-    // running — nothing to do. Only a stale/missing stamp pays the refresh + auto-start attempt.
-    private const int WatchdogActivityThrottleMinutes = 5;
-
-    /// <summary>
-    /// Refreshes the watchdog activity stamp and, when warranted, auto-starts the Notion-sync daemon — at most once
-    /// per throttle window (watchdog-autostart-lease). The daemon leases against this stamp: it runs while someone
-    /// works in the project and self-exits an hour after the guard stops refreshing. The spawn decision (Notion
-    /// configured, no suppress marker, no live daemon) lives in <see cref="WatchdogService.AutoStart"/>; a fresh
-    /// stamp short-circuits before any of it, so the steady per-call cost stays a single stat.
-    /// </summary>
-    internal static void AutoStartWatchdogIfDue()
-    {
-        try
-        {
-            var dydoRoot = Path.Combine(Environment.CurrentDirectory, "dydo");
-            var stampPath = WatchdogService.ActivityStampPath(dydoRoot);
-
-            // Hot path is ONE stat: File.GetLastWriteTimeUtc returns the 1601 sentinel for a missing stamp — far
-            // older than the throttle window — so a first-ever call falls straight through to refresh + auto-start.
-            if ((DateTime.UtcNow - File.GetLastWriteTimeUtc(stampPath)).TotalMinutes < WatchdogActivityThrottleMinutes)
-                return;
-
-            PathUtils.EnsureLocalDirExists(dydoRoot);
-            File.WriteAllText(stampPath, DateTime.UtcNow.ToString("O"));
-
-            WatchdogService.AutoStart(dydoRoot);
-        }
-        catch
-        {
-            // Auto-start must never break or block the guard.
-        }
-    }
 }

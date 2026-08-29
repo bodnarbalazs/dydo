@@ -717,12 +717,10 @@ public static class TemplateGenerator
             | `dydo roles list\|reset\|create` | Manage role definitions |
             | `dydo model cap\|uncap <model>` | Time-boxed model outage swaps |
 
-            ## Integrations & Utility
+            ## Utility
 
             | Command | Description |
             |---------|-------------|
-            | `dydo notion connect\|sync\|reset\|reveal-token` | Notion projection |
-            | `dydo watchdog` | Background monitoring daemon |
             | `dydo completions <shell>` | Generate shell completions |
             | `dydo version` | Show version |
             | `dydo help` | Show help |

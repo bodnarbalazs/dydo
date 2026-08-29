@@ -17,7 +17,7 @@ public class CompletionProviderTests
     [InlineData("complete")]
     [InlineData("template")]
     [InlineData("validate")]
-    [InlineData("watchdog")]
+    [InlineData("model")]
     public void TopLevelCommands_ContainsCommand(string command)
     {
         var completions = CompletionProvider.GetCompletions(1, ["dydo"]).ToList();
@@ -28,7 +28,7 @@ public class CompletionProviderTests
 
     [Theory]
     [InlineData("template", new[] { "update" })]
-    [InlineData("watchdog", new[] { "start", "stop", "run" })]
+    [InlineData("model", new[] { "cap", "uncap", "status" })]
     public void Subcommands_ContainsExpectedEntries(string command, string[] expectedSubcommands)
     {
         var completions = CompletionProvider.GetSubcommandCompletions(command, 2, ["dydo", command]).ToList();

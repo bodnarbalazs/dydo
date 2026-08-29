@@ -147,16 +147,6 @@ dydo init claude --join
 Git carries durable knowledge; Linear carries current work and attention state. Do not create a second
 work graph in repository files.
 
-## Transition Compatibility
-
-Some dydo 2.x installations temporarily retain Notion export, rollback, and reconciliation commands
-while upgrading. That runtime is frozen migration compatibility, not dydo 3's work model and not a
-mirror of Linear. Do not start new work in the retired repository hierarchy or extend the compatibility
-surface; its removal is a separate migration and release step.
-
-The exact compatibility commands and safety constraints are documented under **Transition Compatibility
-Commands** in the [CLI reference](dydo/reference/dydo-commands.md).
-
 ## Command Reference
 
 ### Setup and compilation

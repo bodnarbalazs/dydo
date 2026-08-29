@@ -31,7 +31,6 @@
 
   <ItemGroup>
     <Content Include="TestData\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Sync\Notion\Fixtures\**\*" Link="Fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

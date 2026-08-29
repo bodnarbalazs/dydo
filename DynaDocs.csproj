@@ -7,17 +7,17 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>2.2.9</Version>
-        <Description>An AI orchestration and context-management framework for Claude Code.</Description>
+        <Version>3.0.0</Version>
+        <Description>Documentation, native skill compilation, and guardrails for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/bodnarbalazs/dydo</PackageProjectUrl>
         <RepositoryUrl>https://github.com/bodnarbalazs/dydo</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>claude;orchestration;documentation;ai-agents;cli</PackageTags>
+        <PackageTags>codex;claude;documentation;ai-agents;cli</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>An AI orchestration and context-management framework for Claude Code.</PackageReleaseNotes>
+        <PackageReleaseNotes>dydo 3.0 adopts Linear for live work and focuses on durable knowledge, shared role compilation, and guardrails.</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>
@@ -39,9 +39,6 @@
     <ItemGroup>
         <PackageReference Include="System.CommandLine" Version="2.0.2" />
         <PackageReference Include="Markdig" Version="0.44.0" />
-        <!-- Vault-only: Argon2id + XChaCha20-Poly1305 for the opt-in committed-ciphertext token vault
-             (Decision 027 §5). The local-only token path stays dependency-free. -->
-        <PackageReference Include="NSec.Cryptography" Version="25.4.0" />
         <!-- System.Management removed - using P/Invoke for parent PID lookup instead (AOT-compatible) -->
         <!-- Source Link for enhanced debugging -->
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />

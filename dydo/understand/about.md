@@ -29,9 +29,6 @@ folders and FutureFeature idea documentation, not a repository-backed work hiera
 The product is a .NET 10 CLI with Native AOT, System.CommandLine, Markdig, and source-generated JSON.
 Markdown and JSON are durable local state; Linear remains the external system of record for current work.
 
-The retained Notion adapter and watchdog are frozen dydo 2.x migration compatibility until the separate
-runtime-removal Project lands. They are not the active work model and must not be extended.
-
 ## Related
 
 - [Architecture](./architecture.md) — Component and boundary overview

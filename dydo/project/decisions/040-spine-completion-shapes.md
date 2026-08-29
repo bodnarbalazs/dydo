@@ -56,8 +56,9 @@ Consequences:
   files, plus the already-approved M1-S2a approve-time collision guard so the stock never regrows.
   Renaming history files is sanctioned — git history is the archive (balazs's 2026-07-08 ruling).
 - The archive-generation path (today `TaskApproveHandler`, post-DR-036 `dydo task archive`) must
-  emit the Changelog schema: `title:` (fixes the blank-Notion-title trap, live constraint #4 in
-  [notion-sync.md](../../reference/notion-sync.md)), `date`, `area`, `type: changelog`.
+  emit the Changelog schema: `title:` (fixes the historical blank-Notion-title trap, recorded in
+  [the frozen v2 reference](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/reference/notion-sync.md)),
+  `date`, `area`, `type: changelog`.
 
 ### 3. Decision record type — schema as surveyed
 `status: proposed | accepted | superseded`, `area` (corpus uses `platform` — the area enum for

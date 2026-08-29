@@ -5,29 +5,29 @@ type: folder-meta
 
 # Project
 
-Project management documentation: decisions, history, and ongoing work.
+Durable project knowledge: decisions, history, migration evidence, and FutureFeatures.
 
 ## Purpose
 
-This folder answers "What happened and why?" — the living record of project evolution. Check here for context on past decisions and current work.
+This folder answers "What happened and why?" Live work belongs in Linear; this tree keeps durable,
+reviewable context and evidence.
 
 ## Contents
 
-- **tasks/** - Transient agent task files, not indexed (locate via `dydo whoami` / `dydo agent status`)
-- **backlog/** - Identified, scoped work not yet in flight (`type: context`)
 - **future-features/** - Ideas not in scope for the current version
 - **decisions/** - Decision records
 - **changelog/** - History of completed work
 - **pitfalls/** - Known gotchas and issues
-- **issues/** - Actionable work items (open → resolved)
+- **migrations/** - Version and operating-model transition evidence
+- **plans/** - Reviewed implementation plans
 
 ## When to Add Docs Here
 
 Add to `project/` when documenting:
 - Technical decisions and their rationale
 - Completed work (changelog entries)
-- Known issues and workarounds
-- Task specifications
+- Known pitfalls and workarounds
+- Reviewed plans and migration evidence
 
 For technical specs, use `reference/`. For how-to guides, use `guides/`.
 

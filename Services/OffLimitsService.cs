@@ -28,7 +28,7 @@ public class OffLimitsService : IOffLimitsService
 
     // Hardcoded off-limits patterns for system-critical files that must never be agent-writable,
     // regardless of what's in files-off-limits.md. Prevents self-escalation attacks.
-    // dydo/_system/** (machine-managed state: audit, watchdog, worktree markers, role defs) and
+    // dydo/_system/** (machine-managed state: audit, local markers, role definitions) and
     // dydo.json (config, incl. security nudges) are agent-untouchable now that per-role RBAC,
     // which used to gate them, is gone (Decision 024).
     private static readonly (string Pattern, Regex Compiled)[] SystemOffLimits =

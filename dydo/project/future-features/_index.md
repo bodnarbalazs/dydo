@@ -11,6 +11,6 @@ Index of future-features documentation.
 
 ## Contents
 
-- [Agent Graph Metrics](./agent-graph-metrics.md) - Build a lightweight graph from audit data to measure whether prompt, template, and guardrail changes actually improve orchestration outcomes.
-- [Per-Method Complexity Breakdown for gap_check.py](./coverage.py-update.md) - The per-method cyclomatic complexity breakdown would be a useful feature for `gap_check.
+- [Agent Graph Metrics](./agent-graph-metrics.md) - Explore a lightweight graph over supported task and thread execution evidence to measure whether prompt, template, and guardrail changes improve...
+- [Default Per-Method Bottleneck Detail for gap_check.py](./coverage.py-update.md) - `gap_check.py --inspect PATTERN --methods` already reports per-method CC, coverage, and CRAP for the relevant failing methods.
 - [Documentation Coverage Estimation](./doc-coverage.md) - Static analysis that estimates how well the documentation workspace covers the concepts that matter in the codebase.

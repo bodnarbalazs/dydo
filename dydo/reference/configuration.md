@@ -84,10 +84,6 @@ the active configuration. Linear owns Initiatives, Projects, Issues, optional Mi
 along with live workflow state. Git owns Decisions, reviewed Project plans, guides, audits, assimilation
 briefs, changelog, and FutureFeature ideas.
 
-Some upgraded 2.x installations temporarily retain a `notion` block for final export, rollback, and
-freeze verification. That block belongs to the frozen compatibility runtime and must not be repurposed
-to mirror Linear. Its removal belongs to the separately reviewed runtime-removal Project.
-
 ## Hook configuration
 
 `dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically.

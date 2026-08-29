@@ -7,9 +7,9 @@ public static class CompletionProvider
     private static readonly string[] TopLevelCommands =
     [
         "check", "fix", "index", "init", "graph", "guard",
-        "sync", "notion",
+        "sync",
         "completions", "complete", "template", "validate",
-        "watchdog", "version", "help"
+        "model", "version", "help"
     ];
 
     private static readonly string[] GuardActions = ["edit", "write", "delete", "read"];
@@ -21,8 +21,7 @@ public static class CompletionProvider
         ["completions"] = ["bash", "zsh", "powershell"],
         ["graph"] = ["stats"],
         ["template"] = ["update"],
-        ["watchdog"] = ["start", "stop", "run"],
-        ["notion"] = ["sync"],
+        ["model"] = ["cap", "uncap", "status"],
     };
 
     private static readonly Dictionary<string, Func<IEnumerable<string>>> OptionValueHandlers = new()

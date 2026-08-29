@@ -342,7 +342,8 @@ public static partial class SyncCommand
         // apply_patch/shell/read intrinsically and inherits toggles from the parent when the
         // field is omitted. Read-only capability is a separate concern (issue 0272,
         // sandbox_mode). See issue 0271.
-        var stance = IsReadOnlyRole(role)
+        var readOnly = IsReadOnlyRole(role);
+        var stance = readOnly
             ? "You are read-only: assess and report without modifying project files."
             : "You produce and modify the project's files as your task requires.";
         var contextBlock = mustReads.Count == 0 ? "" :
@@ -353,7 +354,7 @@ public static partial class SyncCommand
         return $""""
             name = "{EscapeToml(role.Name)}"
             description = "{EscapeToml(role.Description)}"
-            model = "{EscapeToml(model ?? "gpt-5.6-terra")}"
+            model = "{EscapeToml(model ?? "gpt-5.6-terra")}"{(readOnly ? "\nsandbox_mode = \"read-only\"" : "")}
 
             developer_instructions = """
             You are {Article(role.Name)} **{role.Name}**. {role.Description} {stance} Your methodology lives in the `{role.Name}` skill; follow it.{contextBlock}
@@ -398,8 +399,7 @@ public static partial class SyncCommand
         return body.Trim() + "\n";
     }
 
-    /// <summary>A read-only role touches no source/tests/docs, so it needs no Edit/Write
-    /// tools (frontmatter <c>read-only: true</c>). Reviewer is the sole base role of this shape.</summary>
+    /// <summary>A role with frontmatter <c>read-only: true</c> needs no Edit/Write tools.</summary>
     private static bool IsReadOnlyRole(RoleDefinition role) =>
         role.ReadOnly;
 

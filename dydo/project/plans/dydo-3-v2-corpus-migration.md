@@ -854,3 +854,34 @@ twelve compatibility deletions, bounded-builder deletion, retained paths, Projec
 other authority. DYD-35 reruns only the integrated evidence invalidated by this sentinel and the changed
 integrated head; it does not authorize repository↔Linear synchronization, Linear-managed-agent machinery,
 Project-5 Notion runtime removal, or unrelated cleanup.
+
+## 11. Chronological amendment — DYD-46 / P3-8C
+
+This non-retroactive amendment records one forced-coverage failure from the DYD-35 integrated audit at
+head `a29d1d32fc83b7aef302c3c1b07cbcc9680f928b`. The forced coverage gate passed 133/134 modules but
+reported `Services/LegacyPmManifestService.cs` as T1 CRAP 48.5 (required at most 30). `ReadRecord` has
+cyclomatic complexity 48, so even complete test coverage has a CRAP floor of 48; tests alone cannot
+clear this gate.
+
+After this amendment is reviewed, DYD-35 may edit exactly these two P3-7-owned and reviewed paths:
+
+- `Services/LegacyPmManifestService.cs`
+- `DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs`
+
+The implementation is mechanical: extract the retained-row predicate from `ReadRecord` into
+`IsRetained(...)`, and extract retained-target validation into `ValidateRetainedTarget(...)`. It preserves
+the current condition order, validation messages, cache behavior, manifest schema interpretation, and all
+public behavior. Add one compact theory for the currently uncovered behavior: malformed JSON `{` reports
+`malformed`; a record with execution state and final disposition but no path reports `requires a path`; and
+a valid `project/tasks/one.md` record path outside `dydo` reports `must be under dydo`.
+
+No coverage-tool code, tier registry, manifest artifact, rule behavior, schema, or other source/test path
+may change. This amendment preserves the 474-row manifest, immutable-row SHA-256
+`30421da6b5c3621a563938ba16a51b35a7f352c630d5ad1986d392e6a05bfb81`, all 2,845 tuples, deletion
+arithmetic, bounded-builder deletion, retained paths, and the Project-5 boundary. It authorizes no
+repository↔Linear synchronization, Linear-managed-agent machinery, Project-5 Notion runtime removal,
+generic refactor, or unrelated test cleanup.
+
+DYD-35 reruns only the focused release build and `LegacyPmManifestServiceTests`, forced coverage, and the
+exact scope/diff/head evidence invalidated by these two paths. A fresh independent focused implementation
+review must confirm behavior preservation and meaningful tests; unaffected integrated gates are not rerun.

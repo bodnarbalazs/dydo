@@ -5,6 +5,8 @@
 This project's knowledge lives in [dydo/](dydo/index.md) — the docs are the source of
 truth. Read what bears on your task before acting.
 
+Before creating a memory, check whether it belongs in dydo — it probably does (issue, decision, guide, or other record). Keep memory only for facts about your human and for harness mechanics no dydo record can hold. Never store incident state or temporary workarounds as memories.
+
 Work happens through skills. Whatever you're about to do, a skill most likely defines how it's done
 here — invoke it and follow it.
 

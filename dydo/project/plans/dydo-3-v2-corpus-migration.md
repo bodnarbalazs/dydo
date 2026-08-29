@@ -838,3 +838,19 @@ The repair preserves all 474 rows, all 2,845 tuples, immutable-row SHA-256
 `30421da6b5c3621a563938ba16a51b35a7f352c630d5ad1986d392e6a05bfb81`, deletion arithmetic, the
 Project-5 boundary, and every other path authority. It authorizes no repository-to-Linear synchronization,
 Linear-managed-agent machinery, Project-5 Notion runtime removal, hub rewrite, or unrelated cleanup.
+
+## 10. Chronological amendment — DYD-45 / P3-8B
+
+This non-retroactive amendment records one retired-root sentinel discovered by the fresh DYD-35 integrated
+audit at reviewed head `a29d1d32fc83b7aef302c3c1b07cbcc9680f928b`. The Markdown-only retired-root
+predicate passed, but `git ls-files` found the tracked empty sentinel `dydo/project/issues/.lock`. DYD-33
+left that pre-existing non-Markdown path because it was outside both its 471 manifest-record and twelve
+compatibility-path deletion allowlists. That bounded preservation conflicts with §6's zero-tracked-root
+predicate and acceptance criterion 4: all six retired corpus roots must have no tracked file.
+
+After this amendment is reviewed, DYD-35 may delete exactly `dydo/project/issues/.lock` and no other
+additional path. The amendment preserves the 474-row manifest, all 2,845 tuples, 471 record deletions,
+twelve compatibility deletions, bounded-builder deletion, retained paths, Project-5 boundary, and every
+other authority. DYD-35 reruns only the integrated evidence invalidated by this sentinel and the changed
+integrated head; it does not authorize repository↔Linear synchronization, Linear-managed-agent machinery,
+Project-5 Notion runtime removal, or unrelated cleanup.

@@ -134,11 +134,21 @@ public sealed class LegacyPmManifestService
             throw new InvalidDataException("Every legacy PM record requires a finalDisposition.");
         }
 
-        var retained = disposition.GetString() is "retain" or "retain-normalize" &&
-                       (state.GetString() == "applied" || disposition.GetString() == "retain-normalize");
+        var retained = IsRetained(disposition, state);
         if (!retained)
             return (path, false);
 
+        ValidateRetainedTarget(record, path);
+
+        return (path, true);
+    }
+
+    private static bool IsRetained(JsonElement disposition, JsonElement state) =>
+        disposition.GetString() is "retain" or "retain-normalize" &&
+        (state.GetString() == "applied" || disposition.GetString() == "retain-normalize");
+
+    private static void ValidateRetainedTarget(JsonElement record, string path)
+    {
         if (!record.TryGetProperty("target", out var target) ||
             target.ValueKind != JsonValueKind.Object ||
             !target.TryGetProperty("kind", out var kind) || kind.ValueKind != JsonValueKind.String || kind.GetString() != "retained-path" ||
@@ -147,7 +157,5 @@ public sealed class LegacyPmManifestService
         {
             throw new InvalidDataException("Retained legacy PM records require a matching retained-path target.");
         }
-
-        return (path, true);
     }
 }

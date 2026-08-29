@@ -74,6 +74,7 @@ public static class ConfigFactory
         new()
         {
             Tools = ["Edit", "Write", "NotebookEdit"],
+            Audience = "manager",
             Pattern = "{source}|{tests}",
             Message = "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
             Severity = "notice"
@@ -151,7 +152,8 @@ public static class ConfigFactory
                 Pattern = n.Pattern,
                 Message = n.Message,
                 Severity = n.Severity,
-                Tools = n.Tools?.ToList()
+                Tools = n.Tools?.ToList(),
+                Audience = n.Audience
             }).ToList(),
             ScanExclude = DydoInternalScanExclude.ToList(),
             Models = CreateDefaultModels()
@@ -164,26 +166,41 @@ public static class ConfigFactory
     /// </summary>
     public static int EnsureDefaultNudges(DydoConfig config)
     {
-        var existingPatterns = new HashSet<string>(config.Nudges.Select(n => n.Pattern));
         var added = 0;
 
         foreach (var nudge in DefaultNudges)
         {
-            if (existingPatterns.Contains(nudge.Pattern))
+            var existing = config.Nudges.FirstOrDefault(current => current.Pattern == nudge.Pattern);
+            if (existing != null)
+            {
+                if (IsLegacyDefaultNudge(existing, nudge))
+                    existing.Audience = nudge.Audience;
                 continue;
+            }
 
             config.Nudges.Add(new NudgeConfig
             {
                 Pattern = nudge.Pattern,
                 Message = nudge.Message,
                 Severity = nudge.Severity,
-                Tools = nudge.Tools?.ToList()
+                Tools = nudge.Tools?.ToList(),
+                Audience = nudge.Audience
             });
             added++;
         }
 
         return added;
     }
+
+    private static bool IsLegacyDefaultNudge(NudgeConfig current, NudgeConfig shipped) =>
+        shipped.Audience == "manager"
+        && current.Audience == "all"
+        && !current.HasAudience
+        && current.Message == shipped.Message
+        && current.Severity == shipped.Severity
+        && current.Tools is not null
+        && shipped.Tools is not null
+        && current.Tools.SequenceEqual(shipped.Tools);
 
     /// <summary>
     /// Adds any dydo-internal scan-exclude entries missing from the config.

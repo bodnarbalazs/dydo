@@ -15,6 +15,22 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         $"{{\"session_id\":\"{TestSessionId}\",\"agent_id\":\"wkr-test-1\",\"agent_type\":\"reviewer\","
         + $"\"tool_name\":\"{toolName}\",\"tool_input\":{inputJson}}}";
 
+    private string ManagerJson(string toolName, string inputJson) =>
+        $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{inputJson}}}";
+
+    private void WriteFileNudge(string pattern, string audience, string severity = "notice")
+    {
+        WriteFile("dydo.json", $$"""
+            {
+              "version": 1,
+              "structure": { "root": "dydo" },
+              "nudges": [
+                { "pattern": "{{pattern}}", "message": "audience nudge", "severity": "{{severity}}", "tools": ["Write"], "audience": "{{audience}}" }
+              ]
+            }
+            """);
+    }
+
     #region Worker Lane — Universal Layers Only
 
     [Fact]
@@ -37,6 +53,66 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(WorkerJson("Write", "{\"file_path\":\"src/Foo.cs\"}"));
 
         result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("all", true)]
+    [InlineData("manager", false)]
+    [InlineData("worker", true)]
+    public async Task Worker_FileNudges_ApplyByAudience(string audience, bool applies)
+    {
+        await InitProjectAsync();
+        WriteFileNudge("src/**", audience);
+
+        var result = await GuardWithStdinAsync(WorkerJson("Write", "{\"file_path\":\"src/Foo.cs\"}"));
+
+        result.AssertSuccess();
+        Assert.Equal(applies, result.Stderr.Contains("NOTICE: audience nudge"));
+    }
+
+    [Theory]
+    [InlineData("all", true)]
+    [InlineData("manager", true)]
+    [InlineData("worker", false)]
+    public async Task Manager_FileNudges_ApplyByAudience(string audience, bool applies)
+    {
+        await InitProjectAsync();
+        WriteFileNudge("src/**", audience);
+
+        var result = await GuardWithStdinAsync(ManagerJson("Write", "{\"file_path\":\"src/Foo.cs\"}"));
+
+        result.AssertSuccess();
+        Assert.Equal(applies, result.Stderr.Contains("NOTICE: audience nudge"));
+    }
+
+    [Theory]
+    [InlineData("worker", true)]
+    [InlineData("manager", false)]
+    public async Task Worker_FileNudgeWarn_BlocksOnlyApplicableAudience(string audience, bool applies)
+    {
+        await InitProjectAsync();
+        WriteFileNudge("src/worker-warn.cs", audience, "warn");
+
+        var first = await GuardWithStdinAsync(WorkerJson("Write", "{\"file_path\":\"src/worker-warn.cs\"}"));
+        var second = await GuardWithStdinAsync(WorkerJson("Write", "{\"file_path\":\"src/worker-warn.cs\"}"));
+
+        Assert.Equal(applies ? 2 : 0, first.ExitCode);
+        Assert.Equal(0, second.ExitCode);
+    }
+
+    [Theory]
+    [InlineData("manager", true)]
+    [InlineData("worker", false)]
+    public async Task Manager_FileNudgeWarn_BlocksOnlyApplicableAudience(string audience, bool applies)
+    {
+        await InitProjectAsync();
+        WriteFileNudge("src/manager-warn.cs", audience, "warn");
+
+        var first = await GuardWithStdinAsync(ManagerJson("Write", "{\"file_path\":\"src/manager-warn.cs\"}"));
+        var second = await GuardWithStdinAsync(ManagerJson("Write", "{\"file_path\":\"src/manager-warn.cs\"}"));
+
+        Assert.Equal(applies ? 2 : 0, first.ExitCode);
+        Assert.Equal(0, second.ExitCode);
     }
 
     [Fact]
@@ -177,6 +253,32 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Worker_NativeMemoryPath_MatchingNudgeBlocks()
+    {
+        await InitProjectAsync();
+        var path = MemoryPath("MEMORY.md");
+        WriteFileNudge(path, "worker", "block");
+
+        var result = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{path}\"}}"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED: audience nudge");
+    }
+
+    [Fact]
+    public async Task Manager_NativeMemoryPath_MatchingNudgeBlocks()
+    {
+        await InitProjectAsync();
+        var path = MemoryPath("MEMORY.md");
+        WriteFileNudge(path, "manager", "block");
+
+        var result = await GuardWithStdinAsync(ManagerJson("Write", $"{{\"file_path\":\"{path}\"}}"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED: audience nudge");
     }
 
     [Fact]

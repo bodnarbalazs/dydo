@@ -75,6 +75,15 @@ public class ValidationService : IValidationService
                 continue;
             }
 
+            if (nudge.Audience is not ("all" or "manager" or "worker"))
+            {
+                issues.Add(new ValidationIssue
+                {
+                    Severity = "error", File = "dydo.json",
+                    Message = $"Nudge [{i}] has invalid audience '{nudge.Audience}'. Must be 'all', 'manager', or 'worker'."
+                });
+            }
+
             // Tool-scoped nudges (Decision 026 §4) carry glob patterns, not regexes.
             if (nudge.Tools is not { Count: > 0 })
             {
@@ -85,6 +94,15 @@ public class ValidationService : IValidationService
                     {
                         Severity = "error", File = "dydo.json",
                         Message = $"Nudge [{i}] has invalid regex pattern: {ex.Message}"
+                    });
+                }
+
+                if (nudge.HasAudience)
+                {
+                    issues.Add(new ValidationIssue
+                    {
+                        Severity = "error", File = "dydo.json",
+                        Message = $"Nudge [{i}] has audience but no tools. Audience applies only to file nudges."
                     });
                 }
             }

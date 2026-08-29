@@ -223,10 +223,13 @@ public static partial class GuardCommand
             return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
-        // Native auto-memory (~/.claude/projects/*/memory/) is always accessible —
-        // it lives outside the repo and outside dydo's jurisdiction (Decision 024 §5).
+        // Native auto-memory (~/.claude/projects/*/memory/) is exempt from off-limits
+        // enforcement, but a matching file nudge still applies.
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
-            return ExitCodes.Success;
+        {
+            var nudged = CheckFileNudges(toolName, filePath, env, "manager");
+            return nudged ?? ExitCodes.Success;
+        }
 
         var routed = RouteToolLayers(
             filePath, action, bashCommand, toolName, searchPath,
@@ -238,7 +241,7 @@ public static partial class GuardCommand
             return ExitCodes.Success;
 
         // Writes are allowed once past off-limits; only tool-scoped nudges remain.
-        return HandleWriteOperation(filePath, toolName, env, ctx.AgentType);
+        return HandleWriteOperation(filePath, toolName, env);
     }
 
     /// <summary>
@@ -291,21 +294,13 @@ public static partial class GuardCommand
         return null;
     }
 
-    private static int HandleWriteOperation(
-        string? filePath, string? toolName, GuardEnv env, string? agentType = null)
+    private static int HandleWriteOperation(string? filePath, string? toolName, GuardEnv env)
     {
         if (string.IsNullOrEmpty(filePath))
             return ExitCodes.Success;
 
-        // Tool-scoped nudges (Decision 026 §4) apply to Tier-1 only: absence of
-        // agent_type is the Tier-1 signal (Decision 024 verification). Tier-2 worker
-        // calls carry agent_id and never reach this lane; the agent_type check covers
-        // any anomalous payload that carries a type without an id.
-        if (string.IsNullOrEmpty(agentType))
-        {
-            var nudged = CheckFileNudges(toolName, filePath, env.Config);
-            if (nudged != null) return nudged.Value;
-        }
+        var nudged = CheckFileNudges(toolName, filePath, env, "manager");
+        if (nudged != null) return nudged.Value;
 
         return ExitCodes.Success;
     }
@@ -359,6 +354,12 @@ public static partial class GuardCommand
         {
             var offLimitsBlock = BlockIfPathOffLimits(checkPath, offLimitsService);
             if (offLimitsBlock != null) return offLimitsBlock.Value;
+        }
+
+        if (!string.IsNullOrEmpty(filePath))
+        {
+            var nudged = CheckFileNudges(ctx.ToolName, filePath, env, "worker");
+            if (nudged != null) return nudged.Value;
         }
 
         return ExitCodes.Success;
@@ -528,14 +529,14 @@ public static partial class GuardCommand
     /// Ships the Decision 026 §4 Tier-1 source-write reminder: severity "notice" is an
     /// exit-0 stderr warning, never a block — the trivial-edit exception stays frictionless.
     /// Patterns are '|'-separated globs; {source}/{tests} expand to the dydo.json path sets.
-    /// Returns an exit code only for block-severity matches, null otherwise.
+    /// Returns an exit code for block-severity matches and the first warn encounter.
     /// </summary>
-    internal static int? CheckFileNudges(string? toolName, string filePath, DydoConfig? config)
+    internal static int? CheckFileNudges(string? toolName, string filePath, GuardEnv env, string audience = "manager")
     {
         if (string.IsNullOrEmpty(toolName))
             return null;
 
-        var nudges = config?.Nudges;
+        var nudges = env.Config?.Nudges;
         if (nudges == null || nudges.Count == 0)
             return null;
 
@@ -546,23 +547,49 @@ public static partial class GuardCommand
         foreach (var nudge in nudges)
         {
             if (nudge.Tools is not { Count: > 0 }) continue;
+            if (!NudgeAppliesToAudience(nudge, audience)) continue;
             if (!nudge.Tools.Any(t => t.Equals(toolName, StringComparison.OrdinalIgnoreCase))) continue;
 
-            pathSets ??= new RoleDefinitionService().ResolvePathSets(config);
+            pathSets ??= new RoleDefinitionService().ResolvePathSets(env.Config);
             relPath ??= RelativizeToProjectRoot(filePath);
 
             if (!MatchesFileNudgePattern(nudge.Pattern, relPath, pathSets)) continue;
 
-            if (string.Equals(nudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.Error.WriteLine($"BLOCKED: {nudge.Message}");
-                return ExitCodes.ToolError;
-            }
-
-            // "notice" (and any non-block severity): soft — warn on stderr, allow.
-            Console.Error.WriteLine($"NOTICE: {nudge.Message}");
+            var result = ApplyFileNudge(nudge, env);
+            if (result != null) return result.Value;
         }
 
+        return null;
+    }
+
+    private static bool NudgeAppliesToAudience(NudgeConfig nudge, string audience) =>
+        nudge.Audience == "all" || nudge.Audience.Equals(audience, StringComparison.OrdinalIgnoreCase);
+
+    private static int? ApplyFileNudge(NudgeConfig nudge, GuardEnv env)
+    {
+        if (string.Equals(nudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.Error.WriteLine($"BLOCKED: {nudge.Message}");
+            return ExitCodes.ToolError;
+        }
+
+        if (!string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.Error.WriteLine($"NOTICE: {nudge.Message}");
+            return null;
+        }
+
+        var markerPath = Path.Combine(env.MarkerDir, $".nudge-{ComputeNudgeHash(nudge.Pattern)}");
+        Directory.CreateDirectory(env.MarkerDir);
+        if (!File.Exists(markerPath))
+        {
+            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+            Console.Error.WriteLine($"BLOCKED: {nudge.Message}");
+            Console.Error.WriteLine("  (Run the same command again to proceed anyway.)");
+            return ExitCodes.ToolError;
+        }
+
+        File.Delete(markerPath);
         return null;
     }
 
@@ -665,7 +692,8 @@ public static partial class GuardCommand
                     Pattern = existing.Pattern,
                     Message = existing.Message,
                     Severity = "block",
-                    Tools = existing.Tools
+                    Tools = existing.Tools,
+                    Audience = existing.Audience
                 };
             }
         }

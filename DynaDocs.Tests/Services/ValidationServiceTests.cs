@@ -191,5 +191,59 @@ public class ValidationServiceTests : IDisposable
         Assert.DoesNotContain(issues, i => i.Message.Contains("Nudge"));
     }
 
+    [Fact]
+    public void ValidateSystem_ToolScopedNudge_NormalizesAudience()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            nudges = new[] { new { pattern = "src/**", message = "test", severity = "notice", tools = new[] { "Write" }, audience = "WORKER" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.DoesNotContain(issues, i => i.Message.Contains("audience"));
+    }
+
+    [Fact]
+    public void ValidateSystem_NudgeWithUnknownAudience_ReportsError()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            nudges = new[] { new { pattern = "src/**", message = "test", severity = "notice", tools = new[] { "Write" }, audience = "team" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Message.Contains("invalid audience"));
+    }
+
+    [Fact]
+    public void ValidateSystem_ToolScopedNudgeWithNullAudience_ReportsError()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+            {"version":1,"structure":{"root":"dydo"},"nudges":[{"pattern":"src/**","message":"test","severity":"notice","tools":["Write"],"audience":null}]}
+            """);
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Message.Contains("invalid audience"));
+    }
+
+    [Fact]
+    public void ValidateSystem_BashNudgeWithAudience_ReportsError()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            nudges = new[] { new { pattern = "test", message = "test", severity = "block", audience = "all" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Message.Contains("audience but no tools"));
+    }
+
     #endregion
 }

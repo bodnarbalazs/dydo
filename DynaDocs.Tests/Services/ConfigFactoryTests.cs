@@ -1,6 +1,8 @@
 namespace DynaDocs.Tests.Services;
 
+using System.Text.Json;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 
 public class ConfigFactoryTests
@@ -103,6 +105,26 @@ public class ConfigFactoryTests
     }
 
     [Fact]
+    public void CreateDefault_SerializesOnlyTheManagersDoctrineAudience()
+    {
+        var json = JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig);
+
+        Assert.Equal(1, json.Split("\"audience\"").Length - 1);
+        Assert.Contains("\"audience\": \"manager\"", json);
+    }
+
+    [Fact]
+    public void NudgeAudience_OmissionDefaultsToAllAndNormalizesOutput()
+    {
+        var omitted = JsonSerializer.Deserialize("{}", DydoConfigJsonContext.Default.NudgeConfig)!;
+        var configured = new NudgeConfig { Audience = "WORKER" };
+        var json = JsonSerializer.Serialize(configured, DydoConfigJsonContext.Default.NudgeConfig);
+
+        Assert.Equal("all", omitted.Audience);
+        Assert.Contains("\"audience\": \"worker\"", json);
+    }
+
+    [Fact]
     public void EnsureDefaultNudges_AddsToEmptyList()
     {
         var config = new DydoConfig();
@@ -138,6 +160,57 @@ public class ConfigFactoryTests
         Assert.Equal(ConfigFactory.DefaultNudges.Count, added);
         Assert.Equal(ConfigFactory.DefaultNudges.Count + 1, config.Nudges.Count);
         Assert.Contains(config.Nudges, n => n.Pattern == "custom-pattern");
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_PreservesCustomNudgeAudience()
+    {
+        var config = new DydoConfig
+        {
+            Nudges = [new NudgeConfig { Pattern = "custom-pattern", Message = "Custom", Audience = "worker" }]
+        };
+
+        ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal("worker", config.Nudges.Single(n => n.Pattern == "custom-pattern").Audience);
+        Assert.Equal("manager", config.Nudges.Single(n => n.Tools is { Count: > 0 }).Audience);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_MigratesExactLegacyManagersDoctrineNudge()
+    {
+        var shipped = ConfigFactory.DefaultNudges.Single(n => n.Audience == "manager");
+        var legacy = new NudgeConfig
+        {
+            Pattern = shipped.Pattern,
+            Message = shipped.Message,
+            Severity = shipped.Severity,
+            Tools = shipped.Tools!.ToList()
+        };
+        var config = new DydoConfig { Nudges = [legacy] };
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(ConfigFactory.DefaultNudges.Count - 1, added);
+        Assert.Equal("manager", legacy.Audience);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_PreservesCustomManagersDoctrineNudge()
+    {
+        var shipped = ConfigFactory.DefaultNudges.Single(n => n.Audience == "manager");
+        var custom = new NudgeConfig
+        {
+            Pattern = shipped.Pattern,
+            Message = "custom doctrine",
+            Severity = shipped.Severity,
+            Tools = shipped.Tools!.ToList()
+        };
+        var config = new DydoConfig { Nudges = [custom] };
+
+        ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal("all", custom.Audience);
     }
 
 

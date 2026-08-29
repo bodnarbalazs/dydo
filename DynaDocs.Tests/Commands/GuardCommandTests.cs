@@ -508,14 +508,15 @@ public class GuardCommandTests : IDisposable
 
     #region Tool-Scoped File Nudges (Decision 026 §4)
 
-    private static (int? Result, string Stderr) RunFileNudge(string toolName, string filePath, GuardCommand.GuardEnv env)
+    private static (int? Result, string Stderr) RunFileNudge(
+        string toolName, string filePath, GuardCommand.GuardEnv env, string audience = "manager")
     {
         var original = Console.Error;
         var capture = new StringWriter();
         Console.SetError(capture);
         try
         {
-            return (GuardCommand.CheckFileNudges(toolName, filePath, env.Config), capture.ToString());
+            return (GuardCommand.CheckFileNudges(toolName, filePath, env, audience), capture.ToString());
         }
         finally
         {
@@ -585,6 +586,51 @@ public class GuardCommandTests : IDisposable
         Assert.Contains("BLOCKED: hands off", stderr);
     }
 
+    [Theory]
+    [InlineData("all", "manager", true)]
+    [InlineData("all", "worker", true)]
+    [InlineData("manager", "manager", true)]
+    [InlineData("manager", "worker", false)]
+    [InlineData("worker", "manager", false)]
+    [InlineData("worker", "worker", true)]
+    public void CheckFileNudges_AppliesOnlyToItsAudience(string nudgeAudience, string callAudience, bool applies)
+    {
+        WriteConfigWithFileNudge("{source}", "audience nudge", "notice", nudgeAudience);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunFileNudge("write", "src/Foo.cs", env, callAudience);
+
+        Assert.Null(result);
+        Assert.Equal(applies, stderr.Contains("NOTICE: audience nudge"));
+    }
+
+    [Fact]
+    public void CheckFileNudges_WarnSeverity_BlocksOnceThenAllows()
+    {
+        WriteConfigWithFileNudge("src/warn.cs", "warn nudge", "warn", "worker");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (firstResult, firstStderr) = RunFileNudge("write", "src/warn.cs", env, "worker");
+        var (secondResult, secondStderr) = RunFileNudge("write", "src/warn.cs", env, "worker");
+
+        Assert.Equal(ExitCodes.ToolError, firstResult);
+        Assert.Contains("BLOCKED: warn nudge", firstStderr);
+        Assert.Null(secondResult);
+        Assert.Empty(secondStderr);
+    }
+
+    [Fact]
+    public void CheckFileNudges_WarnSeverity_SuppressesNonApplicableAudience()
+    {
+        WriteConfigWithFileNudge("src/suppressed-warn.cs", "warn nudge", "warn", "manager");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunFileNudge("write", "src/suppressed-warn.cs", env, "worker");
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
     [Fact]
     public void CheckNudges_SkipsToolScopedNudges()
     {
@@ -598,14 +644,36 @@ public class GuardCommandTests : IDisposable
         Assert.Null(result);
     }
 
-    private void WriteConfigWithFileNudge(string pattern, string message, string severity)
+    [Fact]
+    public void MergeSystemNudges_PreservesAudienceWhenRestoringBlockSeverity()
     {
+        var systemNudge = ConfigFactory.DefaultNudges.First(n => n.Severity == "block");
+        var custom = new NudgeConfig
+        {
+            Pattern = systemNudge.Pattern,
+            Message = "custom message",
+            Severity = "warn",
+            Tools = ["Write"],
+            Audience = "worker"
+        };
+
+        var merged = GuardCommand.MergeSystemNudges([custom]);
+        var restored = Assert.Single(merged, n => n.Pattern == systemNudge.Pattern);
+
+        Assert.Equal("block", restored.Severity);
+        Assert.Equal("worker", restored.Audience);
+        Assert.Equal(["Write"], restored.Tools);
+    }
+
+    private void WriteConfigWithFileNudge(string pattern, string message, string severity, string? audience = null)
+    {
+        var audienceProperty = audience == null ? "" : $", \"audience\": \"{audience}\"";
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
             {
                 "version": 1,
                 "structure": { "root": "dydo" },
                 "nudges": [
-                  {"pattern": "{{pattern}}", "message": "{{message}}", "severity": "{{severity}}", "tools": ["Edit", "Write", "NotebookEdit"]}
+                  {"pattern": "{{pattern}}", "message": "{{message}}", "severity": "{{severity}}", "tools": ["Edit", "Write", "NotebookEdit"]{{audienceProperty}}}
                 ]
             }
             """);

@@ -235,6 +235,96 @@ public class SyncCommandTests : IDisposable
     }
 
     [Theory]
+    [InlineData("reviewer")]
+    [InlineData("inquisitor")]
+    public void SyncCodexRole_ReadOnlyWorker_EmitsSingleReadOnlySandboxImmediatelyAfterModel(string roleName)
+    {
+        var role = RoleDefinitionService.DiscoverRoles(_testDir).Single(r => r.Name == roleName);
+
+        SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
+        var lines = agent.Split('\n');
+        var modelIndex = Array.FindIndex(lines, line => line.StartsWith("model = \"", StringComparison.Ordinal));
+
+        Assert.StartsWith($"name = \"{roleName}\"\ndescription = \"", agent);
+        Assert.True(modelIndex >= 0, "Codex agent must emit a quoted model line.");
+        Assert.Equal("sandbox_mode = \"read-only\"", lines[modelIndex + 1]);
+        Assert.Equal(1, lines.Count(line => line == "sandbox_mode = \"read-only\""));
+        Assert.DoesNotContain('\r', agent);
+    }
+
+    [Fact]
+    public void SyncCodexRole_WritableWorker_InheritsParentSandboxPolicy()
+    {
+        var codeWriter = RoleDefinitionService.DiscoverRoles(_testDir).Single(r => r.Name == "code-writer");
+
+        SyncCommand.SyncCodexRole(codeWriter, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "code-writer.toml"));
+        var lines = agent.Split('\n');
+        var modelIndex = Array.FindIndex(lines, line => line.StartsWith("model = \"", StringComparison.Ordinal));
+
+        Assert.True(modelIndex >= 0, "Codex agent must emit a quoted model line.");
+        Assert.Equal(string.Empty, lines[modelIndex + 1]);
+        Assert.Equal("developer_instructions = \"\"\"", lines[modelIndex + 2]);
+        Assert.DoesNotContain(lines, line => line.StartsWith("sandbox_mode", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SyncCodexRole_ProjectOverrideReadOnlyRole_EscapesTomlAndUsesLf()
+    {
+        var templatesDir = Path.Combine(_testDir, "dydo", "_system", "templates");
+        Directory.CreateDirectory(templatesDir);
+        File.WriteAllText(Path.Combine(templatesDir, "mode-reviewer.template.md"), """
+            ---
+            mode: reviewer
+            description: Project "reviewer".
+            emit: agent
+            read-only: true
+            ---
+
+            # Project reviewer
+            """);
+
+        var roles = RoleDefinitionService.DiscoverRoles(_testDir);
+        var reviewer = Assert.Single(roles, role => role.Name == "reviewer");
+        Assert.Equal("Project \"reviewer\".", reviewer.Description);
+        Assert.True(reviewer.ReadOnly);
+
+        SyncCommand.SyncCodexRole(reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
+        Assert.Contains("description = \"Project \\\"reviewer\\\".\"", agent);
+        Assert.Contains("model = \"gpt-5.6-sol\"\nsandbox_mode = \"read-only\"\n\ndeveloper_instructions = \"\"\"", agent);
+        Assert.DoesNotContain('\r', agent);
+    }
+
+    [Fact]
+    public void SyncCodexRole_SecondIsolatedEmit_IsByteIdentical()
+    {
+        var roles = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Where(role => role.Name is "reviewer" or "inquisitor" or "code-writer")
+            .ToList();
+
+        foreach (var role in roles)
+            SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var firstEmit = roles.ToDictionary(
+            role => role.Name,
+            role => File.ReadAllBytes(Path.Combine(_testDir, ".codex", "agents", $"{role.Name}.toml")));
+
+        foreach (var role in roles)
+            SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+
+        foreach (var role in roles)
+        {
+            var path = Path.Combine(_testDir, ".codex", "agents", $"{role.Name}.toml");
+            Assert.Equal(firstEmit[role.Name], File.ReadAllBytes(path));
+        }
+    }
+
+    [Theory]
     [InlineData("code-writer", "gpt-5.6-terra")]
     [InlineData("docs-writer", "gpt-5.6-terra")]
     public void SyncCodexRole_DefaultModels_EmitsTierCorrectModel(string roleName, string expectedModel)

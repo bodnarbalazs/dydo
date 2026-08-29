@@ -115,6 +115,19 @@ public sealed class LegacyPmManifestServiceTests : IDisposable
         Assert.Throws<InvalidDataException>(() => new LegacyPmManifestService(_dydoRoot).GetManifestRecordPaths());
     }
 
+    [Theory]
+    [InlineData("{", "Legacy PM manifest is malformed:")]
+    [InlineData("{\"records\":[{\"executionState\":\"applied\",\"finalDisposition\":\"remove-historical\"}]}", "Every legacy PM record requires a path.")]
+    [InlineData("{\"records\":[{\"path\":\"project/tasks/one.md\",\"executionState\":\"applied\",\"finalDisposition\":\"remove-historical\"}]}", "Legacy PM manifest path must be under dydo/: project/tasks/one.md")]
+    public void GetManifestRecordPaths_RejectsMalformedOrInvalidPath(string json, string expectedMessage)
+    {
+        WriteRawManifest(json);
+
+        var exception = Assert.Throws<InvalidDataException>(() => new LegacyPmManifestService(_dydoRoot).GetManifestRecordPaths());
+
+        Assert.Contains(expectedMessage, exception.Message);
+    }
+
     [Fact]
     public void GetAllowedPaths_RejectsAppliedRetainedPathWithoutMatchingTarget()
     {

@@ -817,3 +817,71 @@ exact already-absent adjudication equals all 790 immutable tuples, and must intr
 DYD-43 must merge before DYD-31 resumes. DYD-31 then removes any artificially introduced forbidden
 permalink from its preserved worktree and reruns every amended gate. DYD-43 does not authorize resuming
 DYD-31, changing the manifest, weakening a test, or editing any source other than this plan.
+
+## 9. Chronological amendment — DYD-44 / P3-8A
+
+This non-retroactive amendment records one stale retained-link fact discovered by DYD-35. It authorizes
+one URL-only textual repair after this amendment is reviewed; it does not change the manifest or expand
+any Project-3 path authority.
+
+- stale source and text: `dydo/project/decisions/023-backlog-doc-category.md` contains
+  `[Issues](../issues/_index.md) — broken things; the "is this a bug?" boundary.`
+- cause: `../issues/_index.md` was an underscore compatibility hub deleted by P3-6, not a target row in
+  the closed 474-record manifest or any of its 2,845 incoming-reference tuples.
+- ownership evidence: DR-023 was not in DYD-31/P3-4's exact 36-source/790-tuple set and was unchanged
+  by reviewed head `a633cf61e4b8307c0eab58fcb675cedc01d0e9b8` from governing plan commit
+  `6ec7aa9ca4971451e5a883d738365477fa41d215`.
+- authorized DYD-35 repair: replace only the stale URL with
+  `[Issues](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/_index.md) — broken things; the "is this a bug?" boundary.`
+
+The repair preserves all 474 rows, all 2,845 tuples, immutable-row SHA-256
+`30421da6b5c3621a563938ba16a51b35a7f352c630d5ad1986d392e6a05bfb81`, deletion arithmetic, the
+Project-5 boundary, and every other path authority. It authorizes no repository-to-Linear synchronization,
+Linear-managed-agent machinery, Project-5 Notion runtime removal, hub rewrite, or unrelated cleanup.
+
+## 10. Chronological amendment — DYD-45 / P3-8B
+
+This non-retroactive amendment records one retired-root sentinel discovered by the fresh DYD-35 integrated
+audit at reviewed head `a29d1d32fc83b7aef302c3c1b07cbcc9680f928b`. The Markdown-only retired-root
+predicate passed, but `git ls-files` found the tracked empty sentinel `dydo/project/issues/.lock`. DYD-33
+left that pre-existing non-Markdown path because it was outside both its 471 manifest-record and twelve
+compatibility-path deletion allowlists. That bounded preservation conflicts with §6's zero-tracked-root
+predicate and acceptance criterion 4: all six retired corpus roots must have no tracked file.
+
+After this amendment is reviewed, DYD-35 may delete exactly `dydo/project/issues/.lock` and no other
+additional path. The amendment preserves the 474-row manifest, all 2,845 tuples, 471 record deletions,
+twelve compatibility deletions, bounded-builder deletion, retained paths, Project-5 boundary, and every
+other authority. DYD-35 reruns only the integrated evidence invalidated by this sentinel and the changed
+integrated head; it does not authorize repository↔Linear synchronization, Linear-managed-agent machinery,
+Project-5 Notion runtime removal, or unrelated cleanup.
+
+## 11. Chronological amendment — DYD-46 / P3-8C
+
+This non-retroactive amendment records one forced-coverage failure from the DYD-35 integrated audit at
+head `a29d1d32fc83b7aef302c3c1b07cbcc9680f928b`. The forced coverage gate passed 133/134 modules but
+reported `Services/LegacyPmManifestService.cs` as T1 CRAP 48.5 (required at most 30). `ReadRecord` has
+cyclomatic complexity 48, so even complete test coverage has a CRAP floor of 48; tests alone cannot
+clear this gate.
+
+After this amendment is reviewed, DYD-35 may edit exactly these two P3-7-owned and reviewed paths:
+
+- `Services/LegacyPmManifestService.cs`
+- `DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs`
+
+The implementation is mechanical: extract the retained-row predicate from `ReadRecord` into
+`IsRetained(...)`, and extract retained-target validation into `ValidateRetainedTarget(...)`. It preserves
+the current condition order, validation messages, cache behavior, manifest schema interpretation, and all
+public behavior. Add one compact theory for the currently uncovered behavior: malformed JSON `{` reports
+`malformed`; a record with execution state and final disposition but no path reports `requires a path`; and
+a valid `project/tasks/one.md` record path outside `dydo` reports `must be under dydo`.
+
+No coverage-tool code, tier registry, manifest artifact, rule behavior, schema, or other source/test path
+may change. This amendment preserves the 474-row manifest, immutable-row SHA-256
+`30421da6b5c3621a563938ba16a51b35a7f352c630d5ad1986d392e6a05bfb81`, all 2,845 tuples, deletion
+arithmetic, bounded-builder deletion, retained paths, and the Project-5 boundary. It authorizes no
+repository↔Linear synchronization, Linear-managed-agent machinery, Project-5 Notion runtime removal,
+generic refactor, or unrelated test cleanup.
+
+DYD-35 reruns only the focused release build and `LegacyPmManifestServiceTests`, forced coverage, and the
+exact scope/diff/head evidence invalidated by these two paths. A fresh independent focused implementation
+review must confirm behavior preservation and meaningful tests; unaffected integrated gates are not rerun.

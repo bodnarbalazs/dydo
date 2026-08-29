@@ -174,6 +174,6 @@ Both `dydo/project/backlog/` and `dydo/project/future-features/` join `dydo/proj
 
 ## Related
 
-- [Issues](../issues/_index.md) — broken things; the "is this a bug?" boundary.
+- [Issues](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/_index.md) — broken things; the "is this a bug?" boundary.
 - [Decisions](_index.md) — full decision index.
 - [Writing Documentation](../../reference/writing-docs.md) — the `area`/`type` enums this decision extends.

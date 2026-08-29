@@ -34,7 +34,7 @@ public static class HelpCommand
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
         Console.WriteLine();
         Console.WriteLine("Role Commands:");
-        Console.WriteLine("  sync                   Compile mode templates into native Claude + Codex agents/skills");
+        Console.WriteLine("  sync                   Compile skill templates into native Claude + Codex agents/skills");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate config and templates");

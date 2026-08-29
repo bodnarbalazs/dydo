@@ -50,7 +50,7 @@ execution evidence linked to a Linear Issue, not work-record types.
 
 ## Roles, skills, and generated artifacts
 
-The `mode-<name>.template.md` source defines a role's methodology and emission metadata. `dydo sync`
+The `skill-<name>.template.md` source defines a role's methodology and emission metadata. `dydo sync`
 compiles skills for both hosts and agent definitions only for spawnable worker roles. Resource templates
 compile beside their skill. Workflow templates compile to the host's native workflow surface.
 

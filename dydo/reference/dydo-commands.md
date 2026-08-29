@@ -35,7 +35,7 @@ Claude workflows.
 dydo sync
 ```
 
-Roles are discovered from `mode-<name>.template.md` files. Project overrides live in
+Roles are discovered from `skill-<name>.template.md` files. Project overrides live in
 `dydo/_system/templates/`. Change source templates and re-run this command; never hand-edit compiled
 artifacts.
 

@@ -5,8 +5,8 @@ using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for project-local template overrides in _system/templates/.
-/// The claim-time mode-file generation tests were removed with the claim ceremony (DR-041) —
-/// modes are compiled by <c>dydo sync</c>, not created at claim.
+/// The claim-time skill-template generation tests were removed with the claim ceremony (DR-041) —
+/// skills are compiled by <c>dydo sync</c>, not created at claim.
 /// </summary>
 [Collection("Integration")]
 public class TemplateOverrideTests : IntegrationTestBase
@@ -17,17 +17,17 @@ public class TemplateOverrideTests : IntegrationTestBase
         await InitProjectAsync();
 
         AssertDirectoryExists("dydo/_system/templates");
-        AssertFileExists("dydo/_system/templates/mode-code-writer.template.md");
-        AssertFileExists("dydo/_system/templates/mode-reviewer.template.md");
-        AssertFileExists("dydo/_system/templates/mode-co-thinker.template.md");
-        AssertFileExists("dydo/_system/templates/mode-planner.template.md");
-        AssertFileExists("dydo/_system/templates/mode-docs-writer.template.md");
-        AssertFileExists("dydo/_system/templates/mode-test-writer.template.md");
-        AssertFileExists("dydo/_system/templates/mode-orchestrator.template.md");
-        AssertFileExists("dydo/_system/templates/mode-inquisitor.template.md");
-        AssertFileExists("dydo/_system/templates/mode-wayfinder.template.md");
-        AssertFileExists("dydo/_system/templates/mode-grilling.template.md");
-        AssertFileExists("dydo/_system/templates/mode-bro.template.md");
+        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
+        AssertFileExists("dydo/_system/templates/skill-reviewer.template.md");
+        AssertFileExists("dydo/_system/templates/skill-co-thinker.template.md");
+        AssertFileExists("dydo/_system/templates/skill-planner.template.md");
+        AssertFileExists("dydo/_system/templates/skill-docs-writer.template.md");
+        AssertFileExists("dydo/_system/templates/skill-test-writer.template.md");
+        AssertFileExists("dydo/_system/templates/skill-orchestrator.template.md");
+        AssertFileExists("dydo/_system/templates/skill-inquisitor.template.md");
+        AssertFileExists("dydo/_system/templates/skill-wayfinder.template.md");
+        AssertFileExists("dydo/_system/templates/skill-grilling.template.md");
+        AssertFileExists("dydo/_system/templates/skill-bro.template.md");
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         await InitProjectAsync("none");
 
         // Modify a template
-        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/mode-code-writer.template.md");
+        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-code-writer.template.md");
         var customContent = "<!-- CUSTOM_CONTENT_PRESERVED -->\nCustom template";
         File.WriteAllText(templatePath, customContent);
 
@@ -71,17 +71,17 @@ public class TemplateOverrideTests : IntegrationTestBase
     {
         var templateNames = TemplateGenerator.GetAllTemplateNames();
 
-        Assert.Contains("mode-code-writer.template.md", templateNames);
-        Assert.Contains("mode-reviewer.template.md", templateNames);
-        Assert.Contains("mode-planner.template.md", templateNames);
-        Assert.Contains("mode-chief-of-staff.template.md", templateNames);
-        Assert.Contains("mode-inquisitor.template.md", templateNames);
-        Assert.Contains("mode-self-improvement.template.md", templateNames);
-        Assert.Contains("mode-wayfinder.template.md", templateNames);
-        Assert.Contains("mode-grilling.template.md", templateNames);
-        Assert.Contains("mode-bro.template.md", templateNames);
+        Assert.Contains("skill-code-writer.template.md", templateNames);
+        Assert.Contains("skill-reviewer.template.md", templateNames);
+        Assert.Contains("skill-planner.template.md", templateNames);
+        Assert.Contains("skill-chief-of-staff.template.md", templateNames);
+        Assert.Contains("skill-inquisitor.template.md", templateNames);
+        Assert.Contains("skill-self-improvement.template.md", templateNames);
+        Assert.Contains("skill-wayfinder.template.md", templateNames);
+        Assert.Contains("skill-grilling.template.md", templateNames);
+        Assert.Contains("skill-bro.template.md", templateNames);
 
-        // 13 mode templates (the compiler's role sources) + the reviewer's 5 skill
+        // 13 skill templates (the compiler's role sources) + the reviewer's 5 skill
         // resource templates (<role>-resource-<name>.template.md).
         Assert.Contains("reviewer-resource-plan.template.md", templateNames);
         Assert.Equal(18, templateNames.Count);
@@ -90,7 +90,7 @@ public class TemplateOverrideTests : IntegrationTestBase
     [Fact]
     public void ReadBuiltInTemplate_ReturnsTemplateContent()
     {
-        var content = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
         Assert.Contains("Code Writer", content);

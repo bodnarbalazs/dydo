@@ -80,7 +80,8 @@ public static class TemplateCommand
         MigrateHashFormat(config, dydoRoot);
 
         var tally = new UpdateTally();
-        UpdateFrameworkFiles(dydoRoot, config, diff, force, tally);
+        var legacyConflicts = MigrateLegacyModeTemplates(dydoRoot, config, diff, tally);
+        UpdateFrameworkFiles(dydoRoot, config, diff, force, tally, legacyConflicts);
 
         tally.Updated += CleanStaleTemplates(dydoRoot, config, diff);
         tally.Updated += CleanRetiredBinaries(dydoRoot, config, diff);
@@ -98,11 +99,20 @@ public static class TemplateCommand
     }
 
     private static void UpdateFrameworkFiles(
-        string dydoRoot, DydoConfig config, bool diff, bool force, UpdateTally tally)
+        string dydoRoot, DydoConfig config, bool diff, bool force, UpdateTally tally,
+        ISet<string> legacyConflicts)
     {
         foreach (var relativePath in FrameworkTemplateFiles)
+        {
+            if (legacyConflicts.Contains(relativePath))
+            {
+                tally.Skipped++;
+                continue;
+            }
+
             AccumulateResult(UpdateTemplateFile(relativePath, dydoRoot, config, diff, force),
                 tally, forceCountWarning: force);
+        }
 
         foreach (var relativePath in FrameworkDocFiles)
             AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff), tally);
@@ -177,8 +187,12 @@ public static class TemplateCommand
             var relative = "_system/templates/" + Path.GetFileName(file);
             if (validSet.Contains(relative)) continue;
 
+            // A mode-* file is legacy user data. The migration pass above either moved a
+            // hash-clean shipped copy or warned the user; never delete the retained file.
+            if (TryGetLegacySkillPath(relative, out _)) continue;
+
             // Only remove files we know we own (hash-tracked framework copies that are no
-            // longer shipped). An untracked mode-*.template.md is a user's custom role —
+            // longer shipped). An untracked skill-*.template.md is a user's custom role —
             // dydo sync compiles it — and any other untracked template is user data too.
             if (!config.FrameworkHashes.ContainsKey(relative)) continue;
 
@@ -188,6 +202,76 @@ public static class TemplateCommand
             removed++;
         }
         return removed;
+    }
+
+    private static HashSet<string> MigrateLegacyModeTemplates(
+        string dydoRoot, DydoConfig config, bool diff, UpdateTally tally)
+    {
+        var conflicts = new HashSet<string>();
+        var templatesDir = Path.Combine(dydoRoot, "_system", "templates");
+        if (!Directory.Exists(templatesDir))
+            return conflicts;
+
+        foreach (var legacyPath in Directory.GetFiles(templatesDir, "mode-*.template.md"))
+        {
+            var legacyRelativePath = "_system/templates/" + Path.GetFileName(legacyPath);
+            if (!TryGetLegacySkillPath(legacyRelativePath, out var skillRelativePath))
+                continue;
+
+            var skillPath = Path.Combine(templatesDir, Path.GetFileName(skillRelativePath));
+            if (File.Exists(skillPath))
+            {
+                if (FrameworkTemplateFiles.Contains(skillRelativePath))
+                    conflicts.Add(skillRelativePath);
+
+                AccumulateResult(new UpdateResult.Warning(
+                    $"{legacyRelativePath} was kept because {skillRelativePath} is already active; "
+                    + $"dydo sync ignores mode-* files. Merge or rename the legacy file after resolving "
+                    + $"the active {skillRelativePath} template."), tally);
+                continue;
+            }
+
+            var storedHash = config.FrameworkHashes.GetValueOrDefault(legacyRelativePath);
+            var isCleanShippedCopy = FrameworkTemplateFiles.Contains(skillRelativePath)
+                && storedHash != null
+                && storedHash == ComputeHash(File.ReadAllText(legacyPath));
+            if (isCleanShippedCopy)
+            {
+                if (!diff)
+                {
+                    File.Move(legacyPath, skillPath);
+                    config.FrameworkHashes.Remove(legacyRelativePath);
+                    config.FrameworkHashes[skillRelativePath] = storedHash!;
+                }
+
+                Console.WriteLine($"  {(diff ? "Would migrate" : "Migrated")} legacy: "
+                    + $"{legacyRelativePath} -> {skillRelativePath}");
+                continue;
+            }
+
+            var reason = storedHash == null ? "it is untracked" : "it was modified";
+            AccumulateResult(new UpdateResult.Warning(
+                $"{legacyRelativePath} was kept because {reason}; dydo sync ignores mode-* files. "
+                + $"Rename it to {skillRelativePath}."), tally);
+        }
+
+        return conflicts;
+    }
+
+    private static bool TryGetLegacySkillPath(string relativePath, out string skillRelativePath)
+    {
+        const string legacyPrefix = "_system/templates/mode-";
+        const string suffix = ".template.md";
+        if (!relativePath.StartsWith(legacyPrefix, StringComparison.Ordinal)
+            || !relativePath.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            skillRelativePath = "";
+            return false;
+        }
+
+        skillRelativePath = "_system/templates/skill-"
+            + relativePath[legacyPrefix.Length..];
+        return true;
     }
 
     /// <summary>Deletes retired framework binaries from the project when the on-disk copy is a

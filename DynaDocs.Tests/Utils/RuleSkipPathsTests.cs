@@ -7,7 +7,7 @@ public class RuleSkipPathsTests
 {
     [Theory]
     [InlineData("_system/templates/foo.md", true)]
-    [InlineData("_system/templates/mode-code-writer.template.md", true)]
+    [InlineData("_system/templates/skill-code-writer.template.md", true)]
     [InlineData("_system/template-additions/extra-y.md", true)]
     [InlineData("_system/template-additions/_README.md", true)]
     [InlineData("understand/about.md", false)]

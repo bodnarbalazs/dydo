@@ -136,13 +136,13 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// The shipped mode templates (mode-*.template.md) — the roles `dydo sync` compiles.
+    /// The shipped skill templates (skill-*.template.md) — the roles `dydo sync` compiles.
     /// Enumerated from embedded resources, plus source Templates/ in dev-mode so a
     /// not-yet-rebuilt template still counts.
     /// </summary>
-    public static IReadOnlyList<string> GetBuiltInModeTemplateNames()
+    public static IReadOnlyList<string> GetBuiltInSkillTemplateNames()
     {
-        const string prefix = "DynaDocs.Templates.mode-";
+        const string prefix = "DynaDocs.Templates.skill-";
         var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var resource in _assembly.GetManifestResourceNames()
@@ -153,7 +153,7 @@ public static class TemplateGenerator
         if (File.Exists("DynaDocs.csproj") && Directory.Exists("Templates"))
         {
             names.RemoveWhere(n => !File.Exists(Path.Combine("Templates", n)));
-            foreach (var file in Directory.GetFiles("Templates", "mode-*.template.md"))
+            foreach (var file in Directory.GetFiles("Templates", "skill-*.template.md"))
                 names.Add(Path.GetFileName(file));
         }
 
@@ -161,10 +161,28 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Project-local mode templates in dydo/_system/templates/ — overrides of shipped
+    /// Project-local skill templates in dydo/_system/templates/ — overrides of shipped
     /// roles and, when the name is new, custom roles.
     /// </summary>
-    public static IReadOnlyList<string> GetProjectModeTemplateNames(string? basePath = null)
+    public static IReadOnlyList<string> GetProjectSkillTemplateNames(string? basePath = null)
+    {
+        var projectPath = GetProjectTemplatesPath(basePath);
+        if (projectPath == null)
+            return [];
+
+        return Directory.GetFiles(projectPath, "skill-*.template.md")
+            .Select(Path.GetFileName)
+            .Where(n => n != null)
+            .Select(n => n!)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Legacy project-local role templates retained only to warn users during the filename
+    /// transition. They are never included in role discovery or compilation.
+    /// </summary>
+    internal static IReadOnlyList<string> GetProjectLegacyModeTemplateNames(string? basePath = null)
     {
         var projectPath = GetProjectTemplatesPath(basePath);
         if (projectPath == null)
@@ -183,14 +201,14 @@ public static class TemplateGenerator
     /// </summary>
     public static IReadOnlyList<string> GetAllTemplateNames()
     {
-        // The role mode templates (mode-*.template.md) — the source `dydo sync` compiles into
+        // The role skill templates (skill-*.template.md) — the source `dydo sync` compiles into
         // native agents — plus each role's skill resource templates
         // (<role>-resource-<name>.template.md), which ride the same override/hash machinery.
         var names = new List<string>();
-        foreach (var templateFile in GetBuiltInModeTemplateNames())
+        foreach (var templateFile in GetBuiltInSkillTemplateNames())
         {
             names.Add(templateFile);
-            var roleName = templateFile["mode-".Length..^".template.md".Length];
+            var roleName = templateFile["skill-".Length..^".template.md".Length];
             names.AddRange(GetSkillResourceTemplateNames(roleName));
         }
         return names;
@@ -920,7 +938,7 @@ public static class TemplateGenerator
 
             ## Agent Roles
 
-            Roles are compiled from mode templates by `dydo sync` into native Claude Code and Codex agents and skills:
+            Roles are compiled from skill templates by `dydo sync` into native Claude Code and Codex agents and skills:
 
             | Role | Shape | Purpose |
             |------|-------|---------|

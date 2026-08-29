@@ -245,7 +245,7 @@ public class CliEndToEndTests : IDisposable
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
         // Add a custom include tag to a template between known lines
-        var templatePath = Path.Combine(_testDir, "dydo", "_system", "templates", "mode-code-writer.template.md");
+        var templatePath = Path.Combine(_testDir, "dydo", "_system", "templates", "skill-code-writer.template.md");
         var content = File.ReadAllText(templatePath);
         var lines = content.Split('\n').ToList();
         var verifyIdx = lines.FindIndex(l => l.Contains("{{include:extra-verify}}"));
@@ -271,7 +271,7 @@ public class CliEndToEndTests : IDisposable
         var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
-        var templatePath = Path.Combine(_testDir, "dydo", "_system", "templates", "mode-code-writer.template.md");
+        var templatePath = Path.Combine(_testDir, "dydo", "_system", "templates", "skill-code-writer.template.md");
 
         // First round: user adds a custom include
         var content = File.ReadAllText(templatePath);

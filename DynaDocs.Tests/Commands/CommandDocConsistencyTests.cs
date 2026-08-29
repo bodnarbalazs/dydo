@@ -16,8 +16,7 @@ public class CommandDocConsistencyTests
     private static readonly HashSet<string> ExcludedPaths =
     [
         "guard lift", "guard restore", "completions", "help",
-        "worktree cleanup", "worktree merge", "worktree init-settings", "worktree prune", "worktree status",
-        "watchdog", "watchdog start", "watchdog stop", "watchdog run"
+        "worktree cleanup", "worktree merge", "worktree init-settings", "worktree prune", "worktree status"
     ];
     private static readonly HashSet<string> BuiltInOptionNames = ["--help", "-h", "-?", "--version"];
 

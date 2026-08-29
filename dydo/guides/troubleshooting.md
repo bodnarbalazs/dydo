@@ -56,8 +56,8 @@ dydo fix
 | Missing hub or folder metadata | Run `dydo fix`, then review its diff. |
 | Orphan document | Link it from the appropriate hub or durable parent. |
 
-The frozen dydo 2.x PM corpus is manifest-controlled migration evidence. Do not fix a reported problem
-by adding another record or by deleting historical files outside the migration Project.
+The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical
+evidence is needed; do not recreate repository work records to address a current problem.
 
 ## Compiled artifact drift
 
@@ -77,9 +77,6 @@ file, reconcile the source or include hook deliberately and preview again before
 dydo has no Linear client, token, schema, cache, poller, or mirror. Use the official Linear MCP, UI, API,
 or integrations for live work. Put only durable Decisions, plans, guides, audits, assimilation briefs,
 changelog, pitfalls, and FutureFeature ideas in Git.
-
-The retained Notion commands are frozen dydo 2.x migration compatibility. They must not be used to build
-a Linear mirror or to start new work.
 
 ## Related
 

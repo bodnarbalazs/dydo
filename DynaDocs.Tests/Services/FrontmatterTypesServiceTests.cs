@@ -31,17 +31,12 @@ public class FrontmatterTypesServiceTests : IDisposable
     }
 
     [Fact]
-    public void ActiveTypeVocabulariesRetireIssueWithoutChangingSyncModel()
+    public void ActiveTypeVocabulariesRetireIssue()
     {
         Assert.DoesNotContain("issue", Frontmatter.ValidTypes);
         Assert.DoesNotContain("\"issue\"", File.ReadAllText(RepoFile("Templates/types.json.template")));
         Assert.DoesNotContain("\"issue\"", File.ReadAllText(RepoFile("dydo/_system/types.json")));
 
-        var templateSyncModel = File.ReadAllText(RepoFile("Templates/sync-model.template.json"));
-        var localSyncModel = File.ReadAllText(RepoFile("dydo/_system/sync-model.json"));
-        Assert.Contains("\"type\": \"Issue\"", templateSyncModel);
-        Assert.Contains("\"type\": \"FutureFeature\"", templateSyncModel);
-        Assert.Equal(templateSyncModel, localSyncModel);
     }
 
     [Fact]

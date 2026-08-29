@@ -70,7 +70,7 @@ public static class ModelCapService
             return ExitCodes.ValidationErrors;
         }
         // Boundary validation: a non-future reset (a typo'd date, or a year-omitted reset that
-        // resolved to the past) would make the watchdog restore the cap on its very next tick,
+        // resolved to the past) would make the guard restore the cap on its next trigger,
         // silently undoing it. Reject it here rather than write a self-defeating marker.
         if (until <= DateTimeOffset.Now)
         {
@@ -115,7 +115,7 @@ public static class ModelCapService
 
     /// <summary>
     /// Restores a specific model's tier bindings on demand: reverses the rebind, clears the marker,
-    /// and re-syncs. The manual counterpart to the watchdog's time-based restore.
+    /// and re-syncs. The manual counterpart to the guard's time-based restore.
     /// </summary>
     public static int Uncap(string model, TextWriter @out, TextWriter err, string? startPath = null)
     {
@@ -153,7 +153,7 @@ public static class ModelCapService
     }
 
     /// <summary>
-    /// Watchdog entry point: restores every cap whose reset time has passed, re-syncing once if any
+    /// Guard entry point: restores every cap whose reset time has passed, re-syncing once if any
     /// did. A no-op (no config load, no sync) when the marker directory is absent or empty, so it is
     /// cheap to call every tick. Returns the number of caps restored.
     /// </summary>
@@ -182,13 +182,8 @@ public static class ModelCapService
         foreach (var (_, cap) in expired)
             RestoreBindings(loaded.Models, cap);
         config.SaveConfig(loaded, configPath);
-        foreach (var (path, cap) in expired)
-        {
+        foreach (var (path, _) in expired)
             TryDelete(path);
-            // Watchdog-only path: a cap silently expiring is a state change worth a trace, matching
-            // every other per-tick reconcile in the loop (the marker itself is gitignored).
-            WatchdogLogger.LogModelCapRestore(dydoRoot, cap.Model, cap.Fallback);
-        }
         Resync(Path.GetDirectoryName(configPath)!);
 
         return expired.Count;
@@ -214,7 +209,7 @@ public static class ModelCapService
             {
                 // Year omitted: a weekly reset stated as "01-03" in late December means NEXT January,
                 // not the one ~360 days in the past. Roll forward so a year-omitted cap never resolves
-                // to a past instant (which the watchdog would restore on its very next tick).
+                // to a past instant (which the guard would restore on its next trigger).
                 var candidate = new DateTime(DateTime.Now.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0, DateTimeKind.Local);
                 if (candidate <= DateTime.Now)
                     candidate = candidate.AddYears(1);

@@ -25,7 +25,6 @@ public class ModelCapServiceTests : IDisposable
     public void Dispose()
     {
         ModelCapService.ResyncOverride = null;
-        WatchdogLogger.LogPathOverride = null;
         try { Directory.Delete(_projectRoot, true); } catch { }
     }
 
@@ -211,8 +210,8 @@ public class ModelCapServiceTests : IDisposable
     public void RestoreExpired_RestoresExpiredCapFromDydoRoot()
     {
         // RestoreExpired compares against the supplied now, so seed an already-past marker directly
-        // rather than through Cap (which rejects a past --until). This is the restore the watchdog
-        // used to drive per-tick; the watchdog poll was stripped in the 2.1.0 campaign (DR-041).
+        // rather than through Cap (which rejects a past --until). This directly exercises
+        // the guard-driven restore path.
         SeedExpiredCap("claude-fable-5", "claude-sonnet-5", "anthropic", "strong");
 
         ModelCapService.RestoreExpired(DateTimeOffset.UtcNow, Path.Combine(_projectRoot, "dydo"));
@@ -222,7 +221,7 @@ public class ModelCapServiceTests : IDisposable
     }
 
     // Simulates a cap already applied and now past-due: rebind the tier and drop a past-due marker,
-    // bypassing Cap()'s future-until guard so the watchdog restore path can be exercised directly.
+    // bypassing Cap()'s future-until guard so the guard restore path can be exercised directly.
     private void SeedExpiredCap(string model, string fallback, string vendor, string tier)
     {
         var config = LoadConfig();
@@ -269,7 +268,7 @@ public class ModelCapServiceTests : IDisposable
     public void ParseUntil_YearOmitted_RollsForwardWhenDateAlreadyPast()
     {
         // Jan 1 00:00 of the current year is (essentially always) already past, so it must roll to
-        // next year rather than resolve to a past instant that the watchdog would instantly restore.
+        // next year rather than resolve to a past instant that the guard would immediately restore.
         var parsed = ModelCapService.ParseUntil("01-01 00:00");
 
         Assert.NotNull(parsed);
@@ -302,23 +301,6 @@ public class ModelCapServiceTests : IDisposable
 
         Assert.NotNull(_lastResyncRoot);
         Assert.Equal(Path.GetFullPath(_projectRoot), Path.GetFullPath(_lastResyncRoot!));
-    }
-
-    [Fact]
-    public void RestoreExpired_LogsModelCapRestoreEvent()
-    {
-        // Finding 3: a watchdog auto-restore emits a model_cap_restored line carrying the model + fallback.
-        var logPath = Path.Combine(_projectRoot, "watchdog.log");
-        WatchdogLogger.LogPathOverride = logPath;
-
-        var until = DateTimeOffset.Now.AddHours(1);
-        ModelCapService.Cap("claude-fable-5", until, "claude-sonnet-5", TextWriter.Null, TextWriter.Null, _projectRoot);
-        ModelCapService.RestoreExpired(until.AddMinutes(1), _projectRoot);
-
-        var log = File.ReadAllText(logPath);
-        Assert.Contains("\"event\":\"model_cap_restored\"", log);
-        Assert.Contains("\"model\":\"claude-fable-5\"", log);
-        Assert.Contains("\"fallback\":\"claude-sonnet-5\"", log);
     }
 
     [Fact]

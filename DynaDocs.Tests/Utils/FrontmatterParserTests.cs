@@ -120,7 +120,7 @@ public class FrontmatterParserTests
     {
         // Finding 7: duplicate-key handling is FIRST-wins across the whole stack — UpsertField rewrites the first
         // duplicate line, so the reader must resolve the first occurrence too, or an upserted value reads back
-        // invisible. Matches SyncDoc.GetField / FieldMerge.ToMap / the reconcile FirstWins overlay.
+        // invisible. The first declaration stays canonical.
         const string content = "---\nkey: first\nkey: second\n---\n";
 
         var fields = FrontmatterParser.ParseFields(content);

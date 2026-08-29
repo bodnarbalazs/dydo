@@ -2,7 +2,7 @@ using System.CommandLine;
 using System.Reflection;
 using DynaDocs.Commands;
 
-var rootCommand = new RootCommand("DynaDocs (dydo) - Documentation-driven context and agent orchestration for AI coding assistants.");
+var rootCommand = new RootCommand("DynaDocs (dydo) - Durable project knowledge and shared role compilation for AI coding assistants.");
 
 rootCommand.Subcommands.Add(CheckCommand.Create());
 rootCommand.Subcommands.Add(FixCommand.Create());
@@ -15,8 +15,6 @@ rootCommand.Subcommands.Add(CompletionsCommand.Create());
 rootCommand.Subcommands.Add(CompleteCommand.Create());
 rootCommand.Subcommands.Add(TemplateCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
-rootCommand.Subcommands.Add(WatchdogCommand.Create());
-rootCommand.Subcommands.Add(NotionCommand.Create());
 rootCommand.Subcommands.Add(ModelCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");

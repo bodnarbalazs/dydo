@@ -76,16 +76,8 @@ Markdown files carry frontmatter and relative links. The scanner builds the docu
 rules check summaries, links, folder metadata, hubs, filenames, and project-specific invariants.
 `dydo fix` applies supported repairs and `dydo graph` exposes navigation relationships.
 
-The frozen dydo 2.x work corpus remains temporarily tracked for the Project-3 migration manifest. A
-manifest-backed validation rule prevents it from growing. Those files are historical compatibility,
-not a live filesystem database.
-
-## Transition compatibility
-
-The Notion adapter, reconciliation engine, watchdog, token storage, rollback snapshots, and sync schema
-remain frozen until the separately reviewed runtime-removal Project. Their only supported purpose is
-final dydo 2.x export, rollback, and migration proof. They must not be repurposed as a Linear client or
-described as the active architecture.
+The dydo 2.x work corpus was migrated and retired as part of the 3.0 transition. Historical evidence is
+available through frozen Git commit permalinks, not as a live repository work model.
 
 ## Key design choices
 

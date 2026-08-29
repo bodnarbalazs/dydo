@@ -30,7 +30,7 @@ public static class FrontmatterParser
             var value = line[(colonIndex + 1)..].Trim();
             // First-wins on a duplicate key (finding 7): UpsertField rewrites the FIRST duplicate line, so the
             // reader must resolve the first occurrence too — else an upserted value reads back invisible on a
-            // duplicate-key file. Matches SyncDoc.GetField / FieldMerge.ToMap / the reconcile FirstWins overlay.
+            // duplicate-key file. The first declaration stays canonical.
             fields.TryAdd(key, value);
         }
 
@@ -101,7 +101,7 @@ public static class FrontmatterParser
     }
 
     /// <summary>The single shared boundary of a leading frontmatter block, resolved identically for every
-    /// frontmatter reader — this parser, <c>SyncDocFile</c>, and <c>SyncCommand</c> — so their opener,
+    /// frontmatter reader — this parser and <c>SyncCommand</c> — so their opener,
     /// empty-block, and closer semantics can never diverge (finding 8). The opener is <c>---</c> on the first
     /// line (trailing whitespace tolerated); the closer is the first LATER line that is <c>---</c> with only
     /// trailing whitespace, so a <c>---</c> inside a value is never the terminator and an EMPTY block

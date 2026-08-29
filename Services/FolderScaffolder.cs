@@ -16,7 +16,7 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/decisions", "Decision records", "project"),
         new("project/changelog", "Change history", "project"),
         new("project/pitfalls", "Known issues and gotchas", "project"),
-        new("project/releases", "Release records — top of the Notion PM sync spine (DR 025)", "project"),
+        new("project/releases", "Release records and durable release evidence", "project"),
         new("project/future-features", "Ideas not in scope for current version", "project"),
         new("_system", "System configuration (committed)", "_system"),
         new("_system/templates", "Project-local template overrides", "_system"),

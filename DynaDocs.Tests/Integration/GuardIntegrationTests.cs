@@ -183,7 +183,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dotnet run -- guard --action read --path foo.cs")]
     [InlineData("dotnet run -- roles list")]
     [InlineData("dotnet run -- validate")]
-    [InlineData("dotnet run -- watchdog status")]
     [InlineData("bash dydo agent claim auto")]
     [InlineData("sh dydo agent claim auto")]
     [InlineData("bash -c \\\"dydo agent claim auto\\\"")]

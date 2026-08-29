@@ -73,8 +73,8 @@ an Issue or Project.
 
 Campaign, Sprint, Slice, Task, backlog item, and the separate observed-problem Issue are retired as
 canonical work objects. “Slice” may remain an informal verb for making implementation reviewable; it
-creates no repo record, state machine, command, or Linear type. The frozen v2 corpus remains temporarily
-tracked only under the manifest-backed 3.0 migration boundary and cannot grow. The former
+creates no repo record, state machine, command, or Linear type. The v2 corpus has been migrated and
+retired. The former
 [dydo 2.0 Campaign Roadmap](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/backlog/dydo-2-campaign-roadmap.md)
 is frozen historical evidence, not an active work model.
 

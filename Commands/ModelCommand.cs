@@ -10,8 +10,8 @@ using DynaDocs.Utils;
 /// <summary>
 /// The <c>dydo model</c> command group (issue #214). A time-boxed operational swap for a model
 /// outage: <c>cap</c> rebinds every tier on an unavailable model to a fallback and re-syncs the
-/// native agents; <c>uncap</c> restores it. The watchdog auto-restores once the cap's reset time
-/// passes, so the swap is self-healing without a runtime failover interceptor.
+/// native agents; <c>uncap</c> restores it. The guard restores expired caps on its next trigger,
+/// so the swap is self-healing without a runtime failover interceptor.
 /// </summary>
 public static class ModelCommand
 {
@@ -92,7 +92,7 @@ public static class ModelCommand
                 @out.WriteLine($"ACTIVE: {cap.Model} → {cap.Fallback} until {cap.Until:yyyy-MM-dd HH:mm}.");
 
         foreach (var cap in expired.OrderBy(cap => cap.Model, StringComparer.Ordinal))
-            @out.WriteLine($"Expired model cap: {cap.Model} → {cap.Fallback} reset at {cap.Until:yyyy-MM-dd HH:mm}; awaiting watchdog restoration.");
+            @out.WriteLine($"Expired model cap: {cap.Model} → {cap.Fallback} reset at {cap.Until:yyyy-MM-dd HH:mm}; awaiting guard restoration.");
 
         return ExitCodes.Success;
     }

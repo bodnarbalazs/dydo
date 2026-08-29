@@ -11,9 +11,7 @@ public class DydoConfig
     public int Version { get; set; } = 1;
 
     /// <summary>
-    /// Optional project slug. When set, it is the source for the namespaced Notion token env var
-    /// (<c>DYDO_&lt;NAME&gt;_NOTION_TOKEN</c>, Decision 027 §2); when unset, the sanitized project-root
-    /// directory name is used instead.
+    /// Optional project slug for project-specific durable configuration.
     /// </summary>
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -26,9 +24,6 @@ public class DydoConfig
 
     [JsonPropertyName("integrations")]
     public Dictionary<string, bool> Integrations { get; set; } = new();
-
-    [JsonPropertyName("notion")]
-    public NotionConfig? Notion { get; set; }
 
     /// <summary>
     /// Model-tier bindings (Decision 028). Null when the section is absent —

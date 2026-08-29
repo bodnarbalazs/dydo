@@ -135,12 +135,6 @@ project/
     `-- _assets/
 ```
 
-## Transition Compatibility
-
-Some 2.x installations may temporarily retain Notion migration commands while upgrading. They are a
-rollback and export surface, not dydo 3's work model. Do not start new work in the retired repository PM
-hierarchy or treat Notion as a mirror of Linear.
-
 ## Command Reference
 
 See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, role-compilation,

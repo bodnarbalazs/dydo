@@ -1,6 +1,7 @@
 ---
 area: guides
 type: guide
+status: historical
 ---
 
 # Migrating a Project from dydo 1.x to 2.x

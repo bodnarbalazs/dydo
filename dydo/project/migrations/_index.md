@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 
@@ -11,10 +11,11 @@ Index of migrations documentation.
 
 ## Contents
 
-- [dydo 3.0 Linear Bootstrap](./3.0-linear-bootstrap.md) - Identity and verification evidence for provisioning the reviewed dydo 3.
-- [dydo 3.0 Linear PM Dogfood Assimilation](./3.0-linear-pm-dogfood-assimilation.md) - This brief records the durable Project-4 integration evidence for the Linear-PM dogfood lanes, including the one permitted Codex canary limitation and the still-pending human acceptance.
+- [dydo 3.0 Linear Bootstrap](./3.0-linear-bootstrap.md) - Identity and verification evidence for provisioning the reviewed dydo 3.0 work graph in Linear.
+- [dydo 3.0 Linear PM Dogfood Assimilation](./3.0-linear-pm-dogfood-assimilation.md) - This brief records the durable Project-4 integration evidence for the Linear-PM dogfood lanes, including the one permitted Codex canary limitation...
 - [dydo 3.0 Linear-Native Work-Model Assimilation](./3.0-linear-work-model-assimilation.md) - This brief captures what Project 2 changed, what its dogfood exposed, and what remains deliberately deferred.
 - [dydo 3.0 Linear-Native Work-Model Evidence](./3.0-linear-work-model.md) - This record seals the integrated acceptance evidence for Project 2: Adopt Linear-native work model.
 - [dydo 3.0 Notion Freeze Evidence](./3.0-notion-freeze.md) - The final dydo v2 PM baseline was sealed on 2026-08-27 without mutating remote Notion.
 - [3.0 PM record disposition review](./3.0-pm-records.md) - Generated from committed source ffffc02dcdf92b9677d0eb4f522d1af57a869990.
 - [dydo 3.0 v2 Corpus Migration Assimilation](./3.0-v2-corpus-migration-assimilation.md) - This brief seals the deterministic corpus disposition.
+- [Main-project adoption of dydo 3](./dydo-3-main-project-adoption.md) - This record describes the local adoption boundary for dydo 3.0.0.

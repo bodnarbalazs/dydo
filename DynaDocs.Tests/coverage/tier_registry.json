@@ -1,24 +1,4 @@
 {
-  "Sync/BaseSnapshotStore.cs": {
-    "test_file": "DynaDocs.Tests/Sync/BaseSnapshotStoreTests.cs",
-    "tier": 2
-  },
-  "Sync/FieldMerge.cs": {
-    "test_file": "DynaDocs.Tests/Sync/FieldMergeTests.cs",
-    "tier": 2
-  },
-  "Sync/ReconcileEngine.cs": {
-    "test_file": "DynaDocs.Tests/Sync/ReconcileEngineTests.cs",
-    "tier": 2
-  },
-  "Sync/SyncDocFile.cs": {
-    "test_file": "DynaDocs.Tests/Sync/SyncDocFileTests.cs",
-    "tier": 2
-  },
-  "Sync/ThreeWayTextMerge.cs": {
-    "test_file": "DynaDocs.Tests/Sync/ThreeWayTextMergeTests.cs",
-    "tier": 2
-  },
   "Utils/FrontmatterParser.cs": {
     "test_file": "DynaDocs.Tests/Utils/FrontmatterParserTests.cs",
     "tier": 2

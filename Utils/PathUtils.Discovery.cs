@@ -29,7 +29,7 @@ public static partial class PathUtils
     /// Find the main project root even when called from inside a worktree.
     /// Resolves via the <c>dydo/_system/.local/worktrees/</c> marker; falls back
     /// to <see cref="FindProjectRoot"/> when not inside a worktree.
-    /// Used by the watchdog so its PID file and CWD never land inside a worktree.
+    /// Used by commands that need the main checkout rather than a worktree.
     /// </summary>
     public static string? FindMainProjectRoot(string? startPath = null)
     {

@@ -1,7 +1,7 @@
 namespace DynaDocs.Models;
 
 /// <summary>
-/// A role as discovered from its mode template (mode-&lt;name&gt;.template.md) — the template
+/// A role as discovered from its skill template (skill-&lt;name&gt;.template.md) — the template
 /// IS the role; its frontmatter carries the metadata. There is no separate role file layer
 /// (the *.role.json disk layer was removed with the DR-041 residue hunt).
 /// </summary>

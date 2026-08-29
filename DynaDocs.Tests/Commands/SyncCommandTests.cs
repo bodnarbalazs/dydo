@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Services;
+using DynaDocs.Tests;
 using Xunit;
 
 public class SyncCommandTests : IDisposable
@@ -121,7 +122,7 @@ public class SyncCommandTests : IDisposable
     {
         var templatesDir = Path.Combine(_testDir, "dydo", "_system", "templates");
         Directory.CreateDirectory(templatesDir);
-        File.WriteAllText(Path.Combine(templatesDir, "mode-sprint-auditor.template.md"),
+        File.WriteAllText(Path.Combine(templatesDir, "skill-sprint-auditor.template.md"),
             """
             ---
             mode: sprint-auditor
@@ -143,6 +144,21 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "sprint-auditor", "SKILL.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "sprint-auditor.toml")));
         Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "sprint-auditor", "SKILL.md")));
+    }
+
+    [Fact]
+    public void Execute_LegacyModeTemplate_IsIgnoredAndWarned()
+    {
+        var templatesDir = Path.Combine(_testDir, "dydo", "_system", "templates");
+        Directory.CreateDirectory(templatesDir);
+        File.WriteAllText(Path.Combine(templatesDir, "mode-my-custom.template.md"),
+            "---\nmode: my-custom\n---\n\n# My Custom\n");
+
+        var stderr = ConsoleCapture.Stderr(() => SyncCommand.Execute(_testDir));
+
+        Assert.Contains("dydo sync ignores dydo/_system/templates/mode-my-custom.template.md", stderr);
+        Assert.Contains("rename it to dydo/_system/templates/skill-my-custom.template.md", stderr);
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "my-custom.md")));
     }
 
     private void SaveConfigWithIntegrations(bool claude, bool codex)
@@ -276,7 +292,7 @@ public class SyncCommandTests : IDisposable
     {
         var templatesDir = Path.Combine(_testDir, "dydo", "_system", "templates");
         Directory.CreateDirectory(templatesDir);
-        File.WriteAllText(Path.Combine(templatesDir, "mode-reviewer.template.md"), """
+        File.WriteAllText(Path.Combine(templatesDir, "skill-reviewer.template.md"), """
             ---
             mode: reviewer
             description: Project "reviewer".
@@ -414,7 +430,7 @@ public class SyncCommandTests : IDisposable
     public void ExtractMethodology_StripsFrontmatter()
     {
         var methodology = SyncCommand.ExtractMethodology(_reviewer, _testDir);
-        // The mode-file frontmatter (agent:/mode:) must not leak into the skill body
+        // The skill-template frontmatter (agent:/mode:) must not leak into the skill body
         Assert.DoesNotContain("mode: reviewer", methodology);
         Assert.StartsWith("#", methodology.TrimStart());
         // No dangling horizontal rule at the end after dropping the trailing section
@@ -1093,7 +1109,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void CoThinkerTemplate_DoesNotSwitchIntoCodeWriting()
     {
-        var raw = TemplateGenerator.ReadBuiltInTemplate("mode-co-thinker.template.md");
+        var raw = TemplateGenerator.ReadBuiltInTemplate("skill-co-thinker.template.md");
 
         Assert.DoesNotContain("dydo agent role code-writer", raw);
         Assert.DoesNotContain("--role planner", raw);

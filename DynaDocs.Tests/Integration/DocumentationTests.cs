@@ -418,14 +418,14 @@ public class DocumentationTests : IntegrationTestBase
 
         // Template files have .template.md suffix which isn't kebab-case
         // Verify they exist and aren't renamed
-        AssertFileExists("dydo/_system/templates/mode-code-writer.template.md");
+        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
 
         var result = await FixAsync();
 
         result.AssertSuccess();
         // Template file should still exist with original name
-        AssertFileExists("dydo/_system/templates/mode-code-writer.template.md");
-        Assert.DoesNotContain("mode-code-writer.template.md", result.Stdout);
+        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
+        Assert.DoesNotContain("skill-code-writer.template.md", result.Stdout);
     }
 
     [Fact]

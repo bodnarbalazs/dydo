@@ -5,7 +5,7 @@ type: guide
 
 # Customizing Roles
 
-The mode template is the role: `dydo sync` discovers `mode-<name>.template.md` sources and compiles
+The skill template is the role: `dydo sync` discovers `skill-<name>.template.md` sources and compiles
 their methodology into native skills and, for worker roles, spawnable agent definitions. Role methods
 receive Linear Issue/Project context from the host; they do not create a repository work hierarchy.
 
@@ -13,7 +13,7 @@ receive Linear Issue/Project context from the host; they do not create a reposit
 
 ## Creating a custom role
 
-1. Create `dydo/_system/templates/mode-<name>.template.md`. Frontmatter declares the metadata; the body is the methodology:
+1. Create `dydo/_system/templates/skill-<name>.template.md`. Frontmatter declares the metadata; the body is the methodology:
 
    ```markdown
    ---

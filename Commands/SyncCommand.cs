@@ -12,11 +12,11 @@ using DynaDocs.Utils;
 /// Claude Code <c>.claude/agents/&lt;role&gt;.md</c> / <c>.claude/skills/&lt;role&gt;/SKILL.md</c>
 /// and Codex <c>.codex/agents/&lt;role&gt;.toml</c> / <c>.agents/skills/&lt;role&gt;/SKILL.md</c>.
 ///
-/// The mode template IS the role: its frontmatter supplies the metadata (description,
+/// The skill template IS the role: its frontmatter supplies the metadata (description,
 /// emit shape, read-only → tool profile) and its body supplies the methodology prose,
 /// minus the old-runtime orchestration sections (claim / wait / dispatch / release)
 /// which the native model replaces. Roles are discovered by enumerating
-/// mode-*.template.md — shipped templates plus project-local
+/// skill-*.template.md — shipped templates plus project-local
 /// dydo/_system/templates/ ones, which is how custom roles compile.
 ///
 /// Two emission shapes (Decision 024 native pivot):
@@ -30,7 +30,7 @@ using DynaDocs.Utils;
 /// </summary>
 public static partial class SyncCommand
 {
-    // Mode-file ## sections that are old-runtime scaffolding, not timeless methodology.
+    // Skill-template ## sections that are old-runtime scaffolding, not timeless methodology.
     private static readonly HashSet<string> OrchestrationSections = new(StringComparer.OrdinalIgnoreCase)
     {
         "Must-Reads", "Set Role", "Register General Wait", "Verify", "Complete",
@@ -59,6 +59,7 @@ public static partial class SyncCommand
     {
         projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
         var roles = RoleDefinitionService.DiscoverRoles(projectRoot);
+        WarnAboutLegacyModeTemplates(projectRoot);
         CleanRetiredRoleArtifacts(projectRoot, roles);
         var config = new ConfigService().LoadConfig(projectRoot);
         var models = config?.Models;
@@ -72,6 +73,17 @@ public static partial class SyncCommand
         var workflows = emitClaude ? SyncWorkflows(projectRoot) : 0;
         PrintSyncSummary(workerRoles, skillOnlyRoles, workflows, emitClaude, emitCodex);
         return ExitCodes.Success;
+    }
+
+    private static void WarnAboutLegacyModeTemplates(string projectRoot)
+    {
+        foreach (var legacyTemplate in TemplateGenerator.GetProjectLegacyModeTemplateNames(projectRoot))
+        {
+            var skillTemplate = "skill-" + legacyTemplate["mode-".Length..];
+            Console.Error.WriteLine("Warning: dydo sync ignores "
+                + $"dydo/_system/templates/{legacyTemplate}; rename it to "
+                + $"dydo/_system/templates/{skillTemplate}.");
+        }
     }
 
     /// <summary>
@@ -134,7 +146,7 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// Removes compiler-owned files for allowlisted retired roles. A project-local mode template
+    /// Removes compiler-owned files for allowlisted retired roles. A project-local skill template
     /// makes the role active again and suppresses cleanup. Skill folders are removed only when
     /// empty so project-owned sibling resources survive.
     /// </summary>
@@ -378,7 +390,7 @@ public static partial class SyncCommand
         "aeiou".Contains(char.ToLowerInvariant(noun[0])) ? "an" : "a";
 
     /// <summary>
-    /// Reads the role's mode template, resolves include tags, strips the frontmatter and the
+    /// Reads the role's skill template, resolves include tags, strips the frontmatter and the
     /// old-runtime orchestration sections, and de-personalizes the {{AGENT_NAME}} prose —
     /// leaving the timeless methodology (mindset, work steps, checklist, out-of-scope).
     /// </summary>
@@ -433,7 +445,7 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// The role's static must-reads, taken from the [links] in the mode template's
+    /// The role's static must-reads, taken from the [links] in the skill template's
     /// "## Must-Reads" section (normalized to dydo-relative paths) so each role points at
     /// its own context. Conditional must-reads are task-runtime and left to the workflow.
     /// </summary>

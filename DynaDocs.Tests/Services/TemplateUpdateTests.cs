@@ -289,8 +289,8 @@ public class TemplateUpdateTests : IDisposable
     public void UpdateFile_AlreadyUpToDate_NoOp()
     {
         // Use a real template file
-        var relativePath = "_system/templates/mode-code-writer.template.md";
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var relativePath = "_system/templates/skill-code-writer.template.md";
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
         WriteTemplate(relativePath, embeddedContent);
 
         var config = new DydoConfig();
@@ -305,7 +305,7 @@ public class TemplateUpdateTests : IDisposable
     public void UpdateFile_CleanFile_Overwrites()
     {
         // Simulate: stored hash matches on-disk, but on-disk != embedded (framework updated)
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         var oldContent = "old framework content v1";
         WriteTemplate(relativePath, oldContent);
 
@@ -410,7 +410,7 @@ public class TemplateUpdateTests : IDisposable
     public void UpdateFile_Force_WithUnplaced_WritesAnywayWithBackup()
     {
         // Simulate the force flow: write template, backup old, write unplaced
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         var oldContent = "old content";
         WriteTemplate(relativePath, oldContent);
         var fullPath = Path.Combine(_dydoRoot, relativePath);

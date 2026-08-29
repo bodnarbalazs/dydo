@@ -15,8 +15,8 @@ public class ChiefOfStaffSyncTests : IDisposable
         Directory.CreateDirectory(_testDir);
         new FolderScaffolder().Scaffold(Path.Combine(_testDir, "dydo"));
         File.Copy(
-            Path.Combine(FindRepositoryRoot(), "dydo", "_system", "templates", "mode-chief-of-staff.template.md"),
-            Path.Combine(_testDir, "dydo", "_system", "templates", "mode-chief-of-staff.template.md"),
+            Path.Combine(FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md"),
+            Path.Combine(_testDir, "dydo", "_system", "templates", "skill-chief-of-staff.template.md"),
             overwrite: true);
     }
 
@@ -28,9 +28,9 @@ public class ChiefOfStaffSyncTests : IDisposable
     [Fact]
     public void AuthoredChiefOfStaffTemplates_ContainMemorySweepExactlyOnce()
     {
-        var builtIn = TemplateGenerator.ReadBuiltInTemplate("mode-chief-of-staff.template.md");
+        var builtIn = TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md");
         var projectSource = File.ReadAllText(Path.Combine(
-            FindRepositoryRoot(), "dydo", "_system", "templates", "mode-chief-of-staff.template.md"));
+            FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md"));
 
         AssertMemorySweep(builtIn);
         AssertMemorySweep(projectSource);

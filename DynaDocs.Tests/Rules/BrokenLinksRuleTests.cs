@@ -130,7 +130,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_SkipsTemplateFiles()
     {
-        var source = CreateDoc("_system/templates/mode-code-writer.template.md",
+        var source = CreateDoc("_system/templates/skill-code-writer.template.md",
             links: [CreateLink("../../../understand/about.md", LinkType.Markdown)]);
 
         var violations = _rule.Validate(source, [source], BasePath).ToList();

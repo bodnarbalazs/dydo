@@ -101,7 +101,7 @@ public class RoleDefinitionServiceTests : IDisposable
     public void DiscoverRoles_CustomProjectTemplate_BecomesARole()
     {
         var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "mode-security-auditor.template.md"),
+        File.WriteAllText(Path.Combine(templatesDir, "skill-security-auditor.template.md"),
             """
             ---
             mode: security-auditor
@@ -123,14 +123,14 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Equal("Audits changes for security regressions.", custom.Description);
         Assert.True(custom.EmitAgent);
         Assert.True(custom.ReadOnly);
-        Assert.Equal("mode-security-auditor.template.md", custom.TemplateFile);
+        Assert.Equal("skill-security-auditor.template.md", custom.TemplateFile);
     }
 
     [Fact]
     public void DiscoverRoles_CustomTemplate_DefaultsToWritableAgent()
     {
         var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "mode-infra-writer.template.md"),
+        File.WriteAllText(Path.Combine(templatesDir, "skill-infra-writer.template.md"),
             "---\nmode: infra-writer\n---\n\n# Infra Writer\n");
 
         var custom = RoleDefinitionService.DiscoverRoles(_testDir)
@@ -145,7 +145,7 @@ public class RoleDefinitionServiceTests : IDisposable
     public void DiscoverRoles_ProjectOverride_FrontmatterWinsOverSeed()
     {
         var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "mode-reviewer.template.md"),
+        File.WriteAllText(Path.Combine(templatesDir, "skill-reviewer.template.md"),
             """
             ---
             mode: reviewer
@@ -170,6 +170,17 @@ public class RoleDefinitionServiceTests : IDisposable
     {
         // _testDir has no dydo/_system/templates at all.
         Assert.NotEmpty(RoleDefinitionService.DiscoverRoles(_testDir));
+    }
+
+    [Fact]
+    public void DiscoverRoles_IgnoresLegacyModeTemplate()
+    {
+        var templatesDir = CreateProjectTemplatesDir();
+        File.WriteAllText(Path.Combine(templatesDir, "mode-legacy-role.template.md"),
+            "---\nmode: legacy-role\n---\n\n# Legacy Role\n");
+
+        Assert.DoesNotContain(RoleDefinitionService.DiscoverRoles(_testDir),
+            role => role.Name == "legacy-role");
     }
 
     #endregion

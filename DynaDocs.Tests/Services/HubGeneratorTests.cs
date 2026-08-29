@@ -195,12 +195,12 @@ public class HubGeneratorTests
     }
 
     [Fact]
-    public void GenerateHub_SummaryWithModeTemplateFilename_PreservesInlineCodeDelimiters()
+    public void GenerateHub_SummaryWithSkillTemplateFilename_PreservesInlineCodeDelimiters()
     {
-        const string summary = "The mode template is the role: `dydo sync` discovers `mode-<name>.template.md` sources and compiles their methodology into native skills and, for worker roles, spawnable agent definitions. Role methods receive Linear Issue/Project context from the host; they do not create a repository work hierarchy.";
+        const string summary = "The skill template is the role: `dydo sync` discovers `skill-<name>.template.md` sources and compiles their methodology into native skills and, for worker roles, spawnable agent definitions. Role methods receive Linear Issue/Project context from the host; they do not create a repository work hierarchy.";
 
         Assert.Equal(
-            "The mode template is the role: `dydo sync` discovers `mode-<name>.template.md` sources and compiles their methodology into native skills and, for...",
+            "The skill template is the role: `dydo sync` discovers `skill-<name>.template.md` sources and compiles their methodology into native skills and,...",
             GenerateSummary(summary));
     }
 

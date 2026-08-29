@@ -16,12 +16,12 @@ Shipped sources live in `Templates/`. Installed project copies and overrides liv
 
 | Pattern | Purpose |
 |---|---|
-| `mode-<name>.template.md` | Role methodology and emission metadata |
+| `skill-<name>.template.md` | Role methodology and emission metadata |
 | `<role>-resource-<name>.template.md` | Skill-specific reference resource |
 | `workflow-*.js` | Host-native workflow source |
 | framework `*.template.md` files | Installed orientation, reference, and folder documents |
 
-The mode template's frontmatter selects whether the role emits only an in-session skill or also a
+The skill template's frontmatter selects whether the role emits only an in-session skill or also a
 spawnable worker-agent definition. The body becomes the compiled methodology.
 
 ## Compilation
@@ -58,6 +58,10 @@ dydo template update --force
 The diff form previews framework-owned changes. The normal update uses stored hashes to refresh clean
 files and re-anchor supported include hooks in customized files. `--force` is a deliberate fallback
 that overwrites when re-anchoring cannot succeed and creates backups where applicable.
+
+During the filename transition, a hash-clean shipped `mode-<name>.template.md` copy is moved to its
+`skill-<name>.template.md` replacement. Modified, untracked, or conflicting legacy files are preserved
+and reported; rename those files yourself before `dydo sync`, which only compiles `skill-*` templates.
 
 Review the diff after an update, run `dydo sync`, and finish with `dydo check`. Framework documents and
 compiled artifacts must agree with their sources.

@@ -10,7 +10,7 @@ public class TemplateGeneratorTests
     public void ReadBuiltInTemplate_ReadsFromEmbeddedResources()
     {
         // This should work even without a Templates folder on disk
-        var content = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
         Assert.Contains("Code Writer", content);
@@ -26,17 +26,17 @@ public class TemplateGeneratorTests
     }
 
     [Theory]
-    [InlineData("mode-code-writer.template.md")]
-    [InlineData("mode-reviewer.template.md")]
-    [InlineData("mode-co-thinker.template.md")]
-    [InlineData("mode-planner.template.md")]
-    [InlineData("mode-docs-writer.template.md")]
-    [InlineData("mode-test-writer.template.md")]
-    [InlineData("mode-orchestrator.template.md")]
-    [InlineData("mode-self-improvement.template.md")]
-    [InlineData("mode-wayfinder.template.md")]
-    [InlineData("mode-grilling.template.md")]
-    [InlineData("mode-bro.template.md")]
+    [InlineData("skill-code-writer.template.md")]
+    [InlineData("skill-reviewer.template.md")]
+    [InlineData("skill-co-thinker.template.md")]
+    [InlineData("skill-planner.template.md")]
+    [InlineData("skill-docs-writer.template.md")]
+    [InlineData("skill-test-writer.template.md")]
+    [InlineData("skill-orchestrator.template.md")]
+    [InlineData("skill-self-improvement.template.md")]
+    [InlineData("skill-wayfinder.template.md")]
+    [InlineData("skill-grilling.template.md")]
+    [InlineData("skill-bro.template.md")]
     public void ReadBuiltInTemplate_AllListedTemplates_AreAccessible(string templateName)
     {
         var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
@@ -52,12 +52,12 @@ public class TemplateGeneratorTests
         var assembly = typeof(TemplateGenerator).Assembly;
         var resourceNames = assembly.GetManifestResourceNames();
 
-        // Verify templates are embedded. The mode templates are the source `dydo sync` compiles.
-        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-code-writer"));
-        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-self-improvement"));
-        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-wayfinder"));
-        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-grilling"));
-        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("mode-bro"));
+        // Verify templates are embedded. The skill templates are the source `dydo sync` compiles.
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-code-writer"));
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-self-improvement"));
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-wayfinder"));
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-grilling"));
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-bro"));
         Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("index.template"));
     }
 
@@ -77,7 +77,7 @@ public class TemplateGeneratorTests
     public void EmbeddedTemplates_HaveExpectedContent()
     {
         // Verify specific content to ensure templates aren't empty or corrupted
-        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
         Assert.Contains("mode: code-writer", codeWriterTemplate);
         Assert.Contains("Linear Issue", codeWriterTemplate);
         Assert.Contains("independent review", codeWriterTemplate);
@@ -352,7 +352,7 @@ public class TemplateGeneratorTests
     {
         // These meta files should NOT reference templates in _system/templates/
         // because changelog/decision/pitfall templates are not copied there
-        // (only mode-* templates are copied)
+        // (only skill-* templates are copied)
 
         var changelog = TemplateGenerator.GenerateChangelogMetaMd();
         Assert.DoesNotContain("_system/templates/", changelog);

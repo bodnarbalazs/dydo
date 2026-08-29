@@ -670,11 +670,11 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("permissions", content);
     }
 
-    // The role.json layer is gone (DR-041 residue hunt): the mode template IS the role,
-    // so init scaffolds mode templates — not role definition files — and sync discovers
+    // The role.json layer is gone (DR-041 residue hunt): the skill template IS the role,
+    // so init scaffolds skill templates — not role definition files — and sync discovers
     // roles by enumerating them.
     [Fact]
-    public async Task Init_GeneratesModeTemplates_NotRoleFiles()
+    public async Task Init_GeneratesSkillTemplates_NotRoleFiles()
     {
         var result = await InitProjectAsync("none");
 
@@ -683,16 +683,16 @@ public class InitCommandTests : IntegrationTestBase
             "init must not scaffold the removed dydo/_system/roles layer");
 
         var templatesDir = Path.Combine(TestDir, "dydo/_system/templates");
-        var modeTemplates = Directory.GetFiles(templatesDir, "mode-*.template.md")
+        var skillTemplates = Directory.GetFiles(templatesDir, "skill-*.template.md")
             .Select(Path.GetFileName).ToList();
-        Assert.Contains("mode-code-writer.template.md", modeTemplates);
-        Assert.Contains("mode-reviewer.template.md", modeTemplates);
-        Assert.Contains("mode-chief-of-staff.template.md", modeTemplates);
-        Assert.Contains("mode-wayfinder.template.md", modeTemplates);
-        Assert.Contains("mode-grilling.template.md", modeTemplates);
-        Assert.Contains("mode-bro.template.md", modeTemplates);
-        Assert.Equal(13, modeTemplates.Count);
-        Assert.DoesNotContain("mode-sprint-auditor.template.md", modeTemplates);
+        Assert.Contains("skill-code-writer.template.md", skillTemplates);
+        Assert.Contains("skill-reviewer.template.md", skillTemplates);
+        Assert.Contains("skill-chief-of-staff.template.md", skillTemplates);
+        Assert.Contains("skill-wayfinder.template.md", skillTemplates);
+        Assert.Contains("skill-grilling.template.md", skillTemplates);
+        Assert.Contains("skill-bro.template.md", skillTemplates);
+        Assert.Equal(13, skillTemplates.Count);
+        Assert.DoesNotContain("skill-sprint-auditor.template.md", skillTemplates);
     }
 
     [Fact]

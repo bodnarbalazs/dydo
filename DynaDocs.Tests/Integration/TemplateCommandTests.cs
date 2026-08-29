@@ -21,7 +21,7 @@ public class TemplateCommandTests : IntegrationTestBase
         await InitProjectAsync();
 
         // Tamper a template to simulate a framework update (on-disk != embedded, but hash matches)
-        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/mode-code-writer.template.md");
+        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-code-writer.template.md");
         var originalContent = File.ReadAllText(templatePath);
         var configContent = ReadFile("dydo.json");
 
@@ -32,7 +32,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
         // Update the stored hash to match the tampered file (simulating clean old install)
         var config = new ConfigService().LoadConfig()!;
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(oldContent);
         new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
 
@@ -44,7 +44,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
         // File should now match embedded content
         var updatedContent = File.ReadAllText(templatePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
         Assert.Equal(embeddedContent, updatedContent);
     }
 
@@ -62,6 +62,150 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task TemplateUpdate_TrackedLegacyModeTemplate_IsReplacedBySkillTemplate()
+    {
+        await InitProjectAsync();
+
+        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
+        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
+        var stockContent = File.ReadAllText(skillPath);
+        File.Move(skillPath, legacyPath);
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes.Remove(skillRelativePath);
+        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(stockContent);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Migrated legacy:");
+        Assert.True(File.Exists(skillPath));
+        Assert.Equal(stockContent, File.ReadAllText(skillPath));
+        Assert.False(File.Exists(legacyPath));
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.Equal(TemplateCommand.ComputeHash(stockContent),
+            updatedConfig.FrameworkHashes[skillRelativePath]);
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(legacyRelativePath));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_ModifiedTrackedLegacyModeTemplate_IsPreservedAndWarned()
+    {
+        await InitProjectAsync();
+
+        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
+        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
+        var stockContent = File.ReadAllText(skillPath);
+        var customContent = stockContent + "\n<!-- keep this custom legacy content -->\n";
+        File.Move(skillPath, legacyPath);
+        File.WriteAllText(legacyPath, customContent);
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes.Remove(skillRelativePath);
+        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(stockContent);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertExitCode(1);
+        result.AssertStderrContains("was kept because it was modified");
+        result.AssertStderrContains("Rename it to _system/templates/skill-code-writer.template.md");
+        Assert.Equal(customContent, File.ReadAllText(legacyPath));
+        Assert.Equal(stockContent, File.ReadAllText(skillPath));
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(legacyRelativePath));
+        Assert.Equal(TemplateCommand.ComputeHash(stockContent),
+            updatedConfig.FrameworkHashes[skillRelativePath]);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_Diff_LeavesCleanLegacyModeMigrationUnchanged()
+    {
+        await InitProjectAsync();
+
+        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
+        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
+        var stockContent = File.ReadAllText(skillPath);
+        File.Move(skillPath, legacyPath);
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes.Remove(skillRelativePath);
+        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(stockContent);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync("--diff");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Would migrate legacy:");
+        Assert.Equal(stockContent, File.ReadAllText(legacyPath));
+        Assert.False(File.Exists(skillPath));
+
+        var unchangedConfig = new ConfigService().LoadConfig()!;
+        Assert.Equal(TemplateCommand.ComputeHash(stockContent),
+            unchangedConfig.FrameworkHashes[legacyRelativePath]);
+        Assert.False(unchangedConfig.FrameworkHashes.ContainsKey(skillRelativePath));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_UntrackedLegacyModeTemplate_IsPreservedAndWarned()
+    {
+        await InitProjectAsync();
+
+        var legacyPath = Path.Combine(TestDir, "dydo", "_system", "templates",
+            "mode-my-custom.template.md");
+        const string customContent = "---\nmode: my-custom\n---\n# My Custom\n";
+        File.WriteAllText(legacyPath, customContent);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertExitCode(1);
+        result.AssertStderrContains("was kept because it is untracked");
+        result.AssertStderrContains("Rename it to _system/templates/skill-my-custom.template.md");
+        Assert.Equal(customContent, File.ReadAllText(legacyPath));
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo", "_system", "templates",
+            "skill-my-custom.template.md")));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_LegacyAndSkillTemplatesBothExist_PreservesBothAndWarns()
+    {
+        await InitProjectAsync();
+
+        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
+        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
+        const string skillContent = "project-owned skill template";
+        const string legacyContent = "legacy template that must not be replaced";
+        File.WriteAllText(skillPath, skillContent);
+        File.WriteAllText(legacyPath, legacyContent);
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(legacyContent);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertExitCode(1);
+        result.AssertStderrContains("is already active");
+        result.AssertStderrContains("Merge or rename the legacy file");
+        Assert.Equal(skillContent, File.ReadAllText(skillPath));
+        Assert.Equal(legacyContent, File.ReadAllText(legacyPath));
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(legacyRelativePath));
+    }
+
+    [Fact]
     public async Task TemplateUpdate_OldProject_AddsNewSkillTemplatesAndTracksHashes()
     {
         await InitProjectAsync();
@@ -71,9 +215,9 @@ public class TemplateCommandTests : IntegrationTestBase
         var config = configService.LoadConfig()!;
         var templateNames = new[]
         {
-            "mode-wayfinder.template.md",
-            "mode-grilling.template.md",
-            "mode-bro.template.md",
+            "skill-wayfinder.template.md",
+            "skill-grilling.template.md",
+            "skill-bro.template.md",
         };
 
         foreach (var templateName in templateNames)
@@ -102,9 +246,9 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         // Find a good anchor point — insert a user include tag in the template
         var lines = embeddedContent.Split('\n').ToList();
@@ -133,9 +277,9 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         // Add a user include with anchors that won't exist in the new template
         var userContent = embeddedContent + "\n{{include:orphan-hook}}\n";
@@ -157,9 +301,9 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         // Add a user include
         var lines = embeddedContent.Split('\n').ToList();
@@ -201,7 +345,7 @@ public class TemplateCommandTests : IntegrationTestBase
         await InitProjectAsync();
 
         // Tamper a template
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
         var oldContent = "old framework content";
         File.WriteAllText(templatePath, oldContent);
@@ -214,7 +358,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
         // Hash should be updated to match the new embedded content
         var updatedConfig = new ConfigService().LoadConfig()!;
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
         Assert.Equal(TemplateCommand.ComputeHash(embeddedContent), updatedConfig.FrameworkHashes[relativePath]);
     }
 
@@ -247,10 +391,10 @@ public class TemplateCommandTests : IntegrationTestBase
         await InitProjectAsync();
 
         // A hash-tracked template that is no longer shipped = a stale framework copy.
-        var staleFile = Path.Combine(TestDir, "dydo/_system/templates/mode-old-removed.template.md");
+        var staleFile = Path.Combine(TestDir, "dydo/_system/templates/skill-old-removed.template.md");
         File.WriteAllText(staleFile, "stale template");
         var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes["_system/templates/mode-old-removed.template.md"] =
+        config.FrameworkHashes["_system/templates/skill-old-removed.template.md"] =
             TemplateCommand.ComputeHash("stale template");
         new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
 
@@ -262,19 +406,19 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_UntrackedCustomModeTemplate_Kept()
+    public async Task TemplateUpdate_UntrackedCustomSkillTemplate_Kept()
     {
         await InitProjectAsync();
 
-        // An untracked mode template is a user's custom role (compiled by dydo sync) —
+        // An untracked skill template is a user's custom role (compiled by dydo sync) —
         // template update must never delete it.
-        var customFile = Path.Combine(TestDir, "dydo/_system/templates/mode-my-custom.template.md");
+        var customFile = Path.Combine(TestDir, "dydo/_system/templates/skill-my-custom.template.md");
         File.WriteAllText(customFile, "---\nmode: my-custom\n---\n# My Custom\n");
 
         var result = await RunTemplateUpdateAsync();
 
         result.AssertSuccess();
-        Assert.True(File.Exists(customFile), "custom mode template must survive template update");
+        Assert.True(File.Exists(customFile), "custom skill template must survive template update");
     }
 
     [Fact]
@@ -283,7 +427,7 @@ public class TemplateCommandTests : IntegrationTestBase
         await InitProjectAsync();
 
         var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes["_system/templates/mode-deleted.template.md"] = "abc123";
+        config.FrameworkHashes["_system/templates/skill-deleted.template.md"] = "abc123";
         new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
 
         var result = await RunTemplateUpdateAsync();
@@ -292,7 +436,7 @@ public class TemplateCommandTests : IntegrationTestBase
         result.AssertStdoutContains("Pruned stale hash:");
 
         var updatedConfig = new ConfigService().LoadConfig()!;
-        Assert.False(updatedConfig.FrameworkHashes.ContainsKey("_system/templates/mode-deleted.template.md"));
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey("_system/templates/skill-deleted.template.md"));
     }
 
     [Fact]
@@ -418,7 +562,7 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var relativePath = "_system/templates/skill-code-writer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
         File.Delete(templatePath);
 

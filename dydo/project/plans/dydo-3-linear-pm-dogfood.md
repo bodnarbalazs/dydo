@@ -50,8 +50,10 @@ The planning baseline and first governing implementation base are the Project-3 
   permalink to Project 4 and every implementation Issue.
 - Sharpen and move the three existing migrated Issues into Project 4; create exactly one new integration,
   audit, and assimilation Issue after an exact-name/Project read-back proves it does not already exist.
-- Make Codex read-only worker roles emit the supported native read-only sandbox setting and prove both
-  generated configuration and live spawned-reviewer behavior.
+- Make Codex read-only worker roles emit the supported native read-only sandbox setting and prove the
+  generated configuration deterministically. After DYD-47 — P4-4 — Integrate, audit, assimilate, and
+  request human acceptance (P4-4 below) installs the generated reviewer/inquisitor artifacts, attempt
+  the live spawned-reviewer canary once in that native execution context.
 - Complete DR-038's repository policy: scaffold the memory-routing paragraph and compile the
   chief-of-staff memory-sweep duty into both supported runtimes.
 - Add explicit file-nudge audience semantics so worker calls receive applicable nudges while the
@@ -90,9 +92,9 @@ The planning baseline and first governing implementation base are the Project-3 
    implementation Issues by exact commit permalink before implementation begins.
 2. Project 4 contains exactly the three selected existing product Issues plus one newly created
    integration/audit Issue. All belong to the fixed Dydo team and have the dependency graph in section 4.
-3. DYD-42 proves that generated read-only Codex roles include `sandbox_mode = "read-only"`, writable
-   roles do not receive a hard-coded sandbox override, the emitted TOML remains parseable, and a live
-   spawned read-only reviewer can read but cannot create a canary file in an otherwise writable fixture.
+3. DYD-42 proves that generated read-only Codex roles include `sandbox_mode = "read-only"` immediately
+   after `model`, writable roles do not receive a hard-coded sandbox override, strict TOML/config shape is
+   deterministic, and repeat compilation is byte-identical. Live host proof follows section 8 in P4-4.
 4. DYD-36 proves the generic entry-point template contains DR-038's exact routing paragraph, both authored
    chief-of-staff templates contain the route/retire/keep sweep duty, and isolated compilation emits the
    duty into both runtime skill surfaces. The repository's existing `CLAUDE.md` routing paragraph remains
@@ -123,8 +125,8 @@ The planning baseline and first governing implementation base are the Project-3 
     historical Project shell status.
 12. The human receives a plain-language evidence packet after implementation and integrated audit and
     explicitly accepts or rejects the operating model. Until that response is recorded, Project 4 cannot
-    complete and Project 5 cannot resume. Rejection also keeps Project 5 stopped; remediation requires a
-    separately reviewed contract.
+    complete. Project 5 remains stopped regardless of the response; any later start requires its own
+    separately reviewed authority.
 
 ### Questions and answers
 
@@ -140,8 +142,10 @@ The planning baseline and first governing implementation base are the Project-3 
   `sandbox_mode = "read-only"`. The implementation emits that field only when authored role frontmatter
   has `read-only: true`; writable roles inherit the parent runtime policy. If the documented schema changes
   before execution, DYD-42 stops for a reviewed plan amendment rather than inventing a fallback.
-- **Does a prose instruction count as read-only proof?** No. The unit gate checks emitted TOML and the live
-  canary proves host enforcement. Prose remains defense in depth, not the capability boundary.
+- **Does a prose instruction count as read-only proof?** No. DYD-42's strict config tests prove the
+  supported native schema is emitted; prose remains defense in depth, not the capability boundary. Only
+  P4-4's one native-context canary may establish live host enforcement, and a concrete host limitation
+  is reported as a limitation rather than relabeled as proof.
 - **Is the first memory sweep mandatory?** A human decision is mandatory; execution is not. DR-038 already
   makes first-sweep deletion human-gated. `accept`, `defer`, and `reject` are honest outcomes, and only an
   explicit acceptance authorizes the exact external actions named by the human.
@@ -205,11 +209,8 @@ writable roles. Do not emit `workspace-write`, approval policy, permission profi
 Claude tool names. Parent/session policy continues to own writable capability and approvals.
 
 Focused tests in `DynaDocs.Tests/Commands/SyncCommandTests.cs` must cover a read-only reviewer, a writable
-code writer, project-override role discovery, TOML quoting/newline shape, and repeat compilation. The
-live proof uses the newly compiled project reviewer in an otherwise writable disposable fixture: it
-must read a canary source, attempt to create a uniquely named sibling canary, receive host denial, and
-leave no created file. The review evidence records the runtime/client version, role file hash, exact
-attempt, and denial; it never weakens the parent sandbox to manufacture a result.
+code writer, project-override role discovery, exact TOML field order/quoting/newline shape, and repeat
+byte-idempotent compilation. The live canary follows section 8.
 
 ### DYD-36 — memory routing and the genuine human route
 
@@ -284,8 +285,8 @@ removed. No agent interprets silence, a merge, CI, or audit PASS as acceptance.
 
 ### Hazards and rollback
 
-- **Permission false positive:** prose compliance is not sandbox enforcement. The canary must prove a
-  denied write and absence of the target file.
+- **Permission false positive:** prose compliance and deterministic config tests are not live sandbox
+  enforcement. Only section 8's complete successful canary may claim live proof.
 - **Permission overreach:** hard-coding `workspace-write` on writable roles could widen or conflict with
   parent policy. Omission is the required behavior.
 - **Generated-file collision:** DYD-36 changes authored methodology while DYD-42 changes the compiler.
@@ -306,10 +307,10 @@ removed. No agent interprets silence, a merge, CI, or audit PASS as acceptance.
 
 | Issue | Outcome | Files touched (disjoint) | Blockers | Gate |
 |---|---|---|---|---|
-| DYD-42 — enforce read-only capability for Codex worker roles | Read-only Codex role TOML and live denial proof | `Commands/SyncCommand.cs`; `DynaDocs.Tests/Commands/SyncCommandTests.cs` | reviewed plan merged | focused `SyncCommandTests`; isolated emit/parsing; live read/write canary; independent code review |
+| DYD-42 — enforce read-only capability for Codex worker roles | Supported native read-only Codex role TOML with deterministic config proof | `Commands/SyncCommand.cs`; `DynaDocs.Tests/Commands/SyncCommandTests.cs` | reviewed plan merged | Release build; focused `SyncCommandTests`; strict isolated config and repeat byte-idempotence; coverage; diff check; independent code review |
 | DYD-36 — implement the settled agent auto-memory routing policy | Generic routing paragraph, compiled sweep duty, and one explicit first-sweep human disposition | `Templates/entry-point.template.md`; `Templates/mode-chief-of-staff.template.md`; `dydo/_system/templates/mode-chief-of-staff.template.md`; `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`; new `DynaDocs.Tests/Commands/ChiefOfStaffSyncTests.cs` | DYD-42 merged and read back | focused template/sync tests; source/output occurrence predicates; Needs-human decision evidence; independent code/docs review |
 | DYD-38 — make file nudges apply to workers by audience | Backward-compatible audience semantics across direct manager/worker calls | `Models/NudgeConfig.cs`; `Commands/GuardCommand.cs`; `Services/ConfigFactory.cs`; `Services/ValidationService.cs`; `DynaDocs.Tests/Integration/GuardWorkerLaneTests.cs`; `DynaDocs.Tests/Commands/GuardCommandTests.cs`; `DynaDocs.Tests/Services/ConfigFactoryTests.cs`; `DynaDocs.Tests/Services/ValidationServiceTests.cs` | DYD-42 merged and read back | focused guard/config/validation tests; `dydo validate` fixture; independent code/tests review |
-| P4-4 — integrate, audit, assimilate, and request human acceptance (new after plan merge) | Exact generated surfaces, combined gates, friction dispositions, assimilation, integrated audit, explicit accept/reject | `.agents/skills/chief-of-staff/SKILL.md`; `.claude/skills/chief-of-staff/SKILL.md`; `.codex/agents/reviewer.toml`; `.codex/agents/inquisitor.toml`; `dydo.json`; new `dydo/project/migrations/3.0-linear-pm-dogfood-assimilation.md`; `dydo/project/migrations/_index.md` | DYD-42, DYD-36, DYD-38 merged, CI green, reviewed, and read back | all section-6 gates; fresh integrated audit; explicit human decision; narrow acceptance-seal review |
+| P4-4 — integrate, audit, assimilate, and request human acceptance (new after plan merge) | Exact generated surfaces, combined gates, section-8 canary outcome, friction dispositions, assimilation, integrated audit, explicit accept/reject | `.agents/skills/chief-of-staff/SKILL.md`; `.claude/skills/chief-of-staff/SKILL.md`; `.codex/agents/reviewer.toml`; `.codex/agents/inquisitor.toml`; `dydo.json`; new `dydo/project/migrations/3.0-linear-pm-dogfood-assimilation.md`; `dydo/project/migrations/_index.md` | DYD-42, DYD-36, DYD-38 merged, CI green, reviewed, and read back | all section-6 gates; section-8 canary proof or limitation; fresh integrated audit; explicit human decision; narrow acceptance-seal review |
 
 The integration Issue may resolve textual conflicts only inside its seven owned paths. A generated delta
 outside the four listed compiled artifacts or a required edit outside the table is a plan finding, not
@@ -343,9 +344,10 @@ integration discretion.
 ### Delivery sequence
 
 1. DYD-42 runs alone in `codex/DYD-42` from the exact plan merge. A fresh reviewer receives the Issue,
-   governing plan commit, exact diff, focused gates, and live canary transcript. After PASS, push, open a
-   key-bearing PR, wait for CI, and await human/coordinator merge. Read back the PR attachment and Linear
-   state before unblocking later work.
+   governing plan commit, exact diff, strict config evidence, repeat byte-idempotence evidence, and the
+   Release/focused/coverage/diff gate transcripts. After PASS, push, open a key-bearing PR, wait for CI,
+   and await human/coordinator merge. Read back the PR attachment and Linear state before unblocking later
+   work. Section 8's nested-host limitation is evidence, not a failed DYD-42 gate.
 2. DYD-36 and DYD-38 branch from the exact DYD-42 merge into separate worktrees and run in parallel.
    Their source/test sets are disjoint. Each receives a separate fresh independent review and separate
    key-bearing PR/CI/human merge cycle.
@@ -354,12 +356,13 @@ integration discretion.
    continue. Remove the label after the exact response is recorded; do not equate the response with final
    Project acceptance.
 4. Create the P4-4 branch only after all three product merge commits and Linear read-backs are fixed.
-   Integrate from `origin/master`; do not cherry-pick unmerged work. Run generated-artifact parity,
+   Integrate from `origin/master`; do not cherry-pick unmerged work. After installing the generated
+   reviewer/inquisitor artifacts, run section 8's one canary attempt, then run generated-artifact parity,
    proportional/full gates, assimilation, and the fresh independent integrated audit.
 5. After integrated PASS, present the terminal accept/reject packet. The human decision controls Project
-   completion and Project-5 readiness. Seal that exact decision in assimilation, obtain the narrow
-   documentation review, push the final P4-4 commit, open its key-bearing PR, wait for CI, and await
-   human/coordinator merge.
+   4 completion; Project 5 remains stopped regardless. Seal that exact decision in assimilation, obtain
+   the narrow documentation review, push the final P4-4 commit, open its key-bearing PR, wait for
+   CI, and await human/coordinator merge.
 6. On acceptance and final evidence merge, read back the four Issues and Project. The human/coordinator
    may complete Project 4. On rejection, preserve evidence and keep Project 4 and Project 5 non-executing
    until a separately reviewed remedy is accepted.
@@ -388,12 +391,15 @@ DYD-42 additionally runs:
 
 ```powershell
 dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj -c Release --no-build --no-restore --filter "FullyQualifiedName~SyncCommandTests"
+py DynaDocs.Tests/coverage/run_tests.py
+py DynaDocs.Tests/coverage/gap_check.py --force-run
 ```
 
 The isolated emit predicate asserts reviewer/inquisitor TOML contains exactly one read-only sandbox
-line, writable role TOML contains none, every emitted file is parseable by the installed runtime, and a
-second emit is byte-identical. The live canary protocol in section 3 is required evidence, not a unit-test
-substitute.
+line immediately after `model`, writable role TOML contains none, project overrides follow the same rule,
+and exact field order, quoting, newline shape, and second-emit byte identity are deterministic. Together
+with the Release build, focused test, coverage, diff, and independent-review gates, this is sufficient for
+DYD-42 delivery; live host enforcement remains explicitly deferred to DYD-47.
 
 DYD-36 additionally runs:
 
@@ -435,6 +441,9 @@ filters again before the full suite. The exact combined file set must equal the 
 plan/index from the already-merged planning commit; no `Sync/**`, `DynaDocs.Tests/Sync/**`, Notion,
 watchdog, token/vault, package, or release path may appear.
 
+After the generated reviewer/inquisitor artifacts are installed and hashed, run section 8's live canary
+exactly once and preserve its proof or concrete limitation for the human acceptance packet.
+
 ### Linear and GitHub read-back
 
 Before integrated audit, read back and attach evidence that:
@@ -452,13 +461,14 @@ Before integrated audit, read back and attach evidence that:
 ### Review and terminal gate
 
 Give a fresh independent auditor the exact reviewed plan commit, Project-3 base, combined diff, four
-Issue contracts, all Issue-review verdicts, merge/CI/read-back evidence, generated hashes, Needs-human
-transcript, friction register, and gate transcripts. PASS means the demonstrated result is eligible for
-human acceptance; it does not accept the model.
+Issue contracts, all Issue-review verdicts, merge/CI/read-back evidence, generated hashes, section 8's
+canary result, Needs-human transcript, friction register, and gate transcripts. PASS means the
+demonstrated result is eligible for human acceptance; it does not accept the model or turn a canary
+limitation into live proof.
 
 The terminal packet asks the human to respond explicitly with acceptance or rejection and why. Silence,
 an emoji, Issue completion, PR merge, CI, or agent verdict is not an answer. Project 4 remains incomplete
-until that decision is recorded and sealed. Project 5 remains stopped unless the human accepts.
+until that decision is recorded and sealed. Project 5 remains stopped regardless of the decision.
 
 ## 7. Watch-outs
 
@@ -467,6 +477,7 @@ until that decision is recorded and sealed. Project 5 remains stopped unless the
 - Do not hand-edit `.agents/`, `.claude/`, or `.codex/` generated artifacts in product Issues.
 - Do not add a Codex `tools` list, a hard-coded writable sandbox, an approval override, or a custom
   permission framework.
+- Do not run another DYD-42 canary or more than the one authorized DYD-47 native-context attempt.
 - Do not let the active managers-doctrine nudge disappear while moving its audience into configuration.
 - Do not apply `Needs human` pre-emptively or leave it after the named decision is answered.
 - Do not inspect or mutate a personal memory store merely to make the human-intervention route pass.
@@ -475,4 +486,24 @@ until that decision is recorded and sealed. Project 5 remains stopped unless the
 - Do not run any retained Notion command or watchdog during the pilot.
 - Do not mark Project 4 complete because the implementation PRs merged. The integrated audit,
   assimilation, and explicit human accept/reject decision are independent gates.
-- Do not resume Project 5 after rejection or before the exact accepted Project-4 evidence is available.
+- Do not resume Project 5 from any Project-4 outcome; it remains stopped pending separately reviewed
+  Project-5 authority.
+
+## 8. Execution-time canary amendment
+
+On 2026-08-29, a nested local Codex CLI under a `workspace-write` parent first used a disposable fixture
+under `AppData\Local\Temp`; the parent write was denied because that path was outside the task's writable
+workspace. One evidence-based retry moved the fixture inside the task worktree and first tested a parent
+sentinel, but the parent write was denied there too. Because neither attempt established parent
+writability, this host context could not distinguish the generated child-role override. DYD-42 runs no
+further canary and may deliver on the supported native `sandbox_mode = "read-only"` schema, strict
+deterministic TOML/config and repeat byte-idempotence tests, green Release/focused/coverage/diff gates,
+and independent review.
+
+After P4-4 installs the generated reviewer/inquisitor artifacts, it retries the live canary exactly
+once in its native execution context. It must first prove parent sentinel creation and deletion, then
+record the child's successful source read, denied uniquely named sibling write, and absent sibling,
+together with runtime/client version, generated role-file hash, and exact attempt. Only that complete
+result is live proof. If the parent remains denied, the child cannot read, or the child writes, stop and
+record the concrete host limitation in the human acceptance packet without claiming live proof. No other
+canary variant is authorized. Project 5 remains stopped regardless of the canary or acceptance outcome.

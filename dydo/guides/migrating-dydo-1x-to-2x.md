@@ -134,7 +134,7 @@ dydo/
 ├── index.md                      # generated hub (do NOT hand-edit)
 ├── _system/                      # framework machinery (mostly agent-off-limits)
 │   ├── roles/*.role.json         # data-driven role defs (dydo roles reset)
-│   ├── templates/                # mode-*.template.md, agent-workflow.template.md
+│   ├── templates/                # skill-*.template.md, agent-workflow.template.md
 │   ├── sync-model.json           # Notion spine model (generated; create-only)
 │   ├── types.json                # frontmatter `type:` vocabulary
 │   ├── notion_sync/              # canonical sync mirror state

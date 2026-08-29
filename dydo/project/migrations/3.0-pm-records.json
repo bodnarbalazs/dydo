@@ -18,7 +18,7 @@
       "proposedDisposition": "migrate-project",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -69,7 +69,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -120,7 +120,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -207,7 +207,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -258,7 +258,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -375,7 +375,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -492,7 +492,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -645,7 +645,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -702,7 +702,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -771,7 +771,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -876,7 +876,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -939,7 +939,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -984,7 +984,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1041,7 +1041,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1158,7 +1158,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1305,7 +1305,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1386,7 +1386,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1653,7 +1653,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1728,7 +1728,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1761,7 +1761,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1806,7 +1806,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1839,7 +1839,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1896,7 +1896,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1929,7 +1929,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -1986,7 +1986,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2031,7 +2031,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2100,7 +2100,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2187,7 +2187,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2238,7 +2238,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2307,7 +2307,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2448,7 +2448,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2757,7 +2757,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -2886,7 +2886,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3027,7 +3027,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3126,7 +3126,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3219,7 +3219,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3336,7 +3336,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3453,7 +3453,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3504,7 +3504,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3699,7 +3699,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -3888,7 +3888,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -4065,7 +4065,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -4128,7 +4128,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -4281,7 +4281,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -4668,7 +4668,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -4917,7 +4917,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5118,7 +5118,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5163,7 +5163,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5214,7 +5214,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5391,7 +5391,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5688,7 +5688,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5739,7 +5739,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5802,7 +5802,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5865,7 +5865,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -5922,7 +5922,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6069,7 +6069,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6390,7 +6390,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6513,7 +6513,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6546,7 +6546,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6579,7 +6579,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6618,7 +6618,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6693,7 +6693,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6732,7 +6732,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6771,7 +6771,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6810,7 +6810,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6879,7 +6879,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6918,7 +6918,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6957,7 +6957,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -6996,7 +6996,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7035,7 +7035,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7074,7 +7074,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7113,7 +7113,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7158,7 +7158,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7197,7 +7197,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7236,7 +7236,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7287,7 +7287,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7344,7 +7344,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7425,7 +7425,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7536,7 +7536,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7629,7 +7629,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7752,7 +7752,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7809,7 +7809,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7878,7 +7878,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7911,7 +7911,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -7944,7 +7944,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8031,7 +8031,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8106,7 +8106,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8145,7 +8145,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8232,7 +8232,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8265,7 +8265,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8304,7 +8304,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8379,7 +8379,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8454,7 +8454,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8499,7 +8499,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8538,7 +8538,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8607,7 +8607,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8652,7 +8652,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8691,7 +8691,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8730,7 +8730,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8769,7 +8769,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8814,7 +8814,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8847,7 +8847,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8880,7 +8880,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8913,7 +8913,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -8982,7 +8982,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9015,7 +9015,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9048,7 +9048,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9081,7 +9081,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9114,7 +9114,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9159,7 +9159,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9192,7 +9192,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9261,7 +9261,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9294,7 +9294,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9327,7 +9327,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9360,7 +9360,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9393,7 +9393,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9528,7 +9528,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9591,7 +9591,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9672,7 +9672,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9705,7 +9705,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9774,7 +9774,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9849,7 +9849,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9882,7 +9882,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9915,7 +9915,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9948,7 +9948,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -9981,7 +9981,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10020,7 +10020,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10053,7 +10053,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10164,7 +10164,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10263,7 +10263,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10368,7 +10368,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10407,7 +10407,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10488,7 +10488,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10599,7 +10599,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10692,7 +10692,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10785,7 +10785,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10848,7 +10848,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10911,7 +10911,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -10980,7 +10980,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11097,7 +11097,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11208,7 +11208,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11361,7 +11361,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11436,7 +11436,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11511,7 +11511,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11556,15 +11556,19 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "migrate-issue",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
-        "kind": "linear-preview-key",
-        "value": "DYD-3-PREVIEW-BACKLOG-AUTO-MEMORY-POLICY"
+        "kind": "linear-url",
+        "value": "https://linear.app/bodnar-balazs/issue/DYD-36/implement-the-settled-agent-auto-memory-routing-policy"
       },
       "evidence": [
         {
           "kind": "human-ruling",
           "value": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions#comment-d2d63a77-8590-46f1-86cc-3025ff477f63"
+        },
+        {
+          "kind": "linear-readback",
+          "value": "https://linear.app/bodnar-balazs/issue/DYD-36/implement-the-settled-agent-auto-memory-routing-policy"
         }
       ],
       "reason": "Current work status makes this a candidate for human review as a Linear Issue; this draft does not authorize migration."
@@ -11603,7 +11607,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11648,7 +11652,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11687,7 +11691,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11726,7 +11730,7 @@
       "proposedDisposition": "migrate-project",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11759,7 +11763,7 @@
       "proposedDisposition": "retain-normalize",
       "finalDisposition": "retain-normalize",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "retained-path",
         "value": "dydo/project/future-features/doc-coverage.md"
@@ -11792,7 +11796,7 @@
       "proposedDisposition": "retain-normalize",
       "finalDisposition": "retain-normalize",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "retained-path",
         "value": "dydo/project/future-features/coverage.py-update.md"
@@ -11825,7 +11829,7 @@
       "proposedDisposition": "retain-normalize",
       "finalDisposition": "retain-normalize",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "retained-path",
         "value": "dydo/project/future-features/agent-graph-metrics.md"
@@ -11858,7 +11862,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11891,7 +11895,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11930,7 +11934,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -11981,7 +11985,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12032,7 +12036,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12065,7 +12069,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "cancel-remove",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12104,7 +12108,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12137,7 +12141,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12212,7 +12216,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12245,7 +12249,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12278,7 +12282,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12317,7 +12321,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12350,7 +12354,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12383,7 +12387,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12416,7 +12420,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12449,7 +12453,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12488,7 +12492,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12533,7 +12537,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12572,7 +12576,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12605,7 +12609,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12638,7 +12642,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12671,7 +12675,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12710,7 +12714,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12803,7 +12807,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -12950,7 +12954,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -13139,7 +13143,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -13268,7 +13272,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -13421,7 +13425,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -13772,7 +13776,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -13859,7 +13863,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -13892,7 +13896,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14027,7 +14031,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14126,7 +14130,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14219,7 +14223,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14288,7 +14292,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14375,7 +14379,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14450,7 +14454,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14495,7 +14499,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14552,7 +14556,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14645,7 +14649,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -14882,7 +14886,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -15131,7 +15135,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -15386,7 +15390,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -15509,7 +15513,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -15722,7 +15726,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -15767,7 +15771,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -15836,7 +15840,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -15947,7 +15951,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16088,7 +16092,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16151,7 +16155,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16214,7 +16218,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16451,7 +16455,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16622,7 +16626,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16655,7 +16659,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16688,7 +16692,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16787,7 +16791,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -16976,7 +16980,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17129,7 +17133,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17288,7 +17292,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17333,7 +17337,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17378,7 +17382,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17441,7 +17445,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17486,7 +17490,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17615,7 +17619,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17750,7 +17754,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17807,7 +17811,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -17948,7 +17952,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18089,7 +18093,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18122,7 +18126,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18173,7 +18177,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18242,7 +18246,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18341,7 +18345,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18410,7 +18414,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18479,7 +18483,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18632,7 +18636,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18677,7 +18681,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18710,7 +18714,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18749,7 +18753,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18824,7 +18828,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18857,7 +18861,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18902,7 +18906,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -18935,7 +18939,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19082,7 +19086,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19127,7 +19131,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19160,7 +19164,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19193,7 +19197,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19219,7 +19223,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19245,7 +19249,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19271,7 +19275,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19297,7 +19301,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19323,7 +19327,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19349,7 +19353,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19375,7 +19379,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19401,7 +19405,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19427,7 +19431,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19453,7 +19457,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19479,7 +19483,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19505,7 +19509,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19531,7 +19535,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19564,7 +19568,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19590,7 +19594,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19616,7 +19620,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19642,7 +19646,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19668,7 +19672,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19694,7 +19698,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19720,7 +19724,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19746,7 +19750,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19785,7 +19789,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19824,7 +19828,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19863,7 +19867,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19896,7 +19900,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19941,7 +19945,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19967,7 +19971,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -19993,7 +19997,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20038,7 +20042,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20064,7 +20068,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20090,7 +20094,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20116,7 +20120,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20142,7 +20146,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20168,7 +20172,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20194,7 +20198,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20220,7 +20224,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20246,7 +20250,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20272,7 +20276,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20298,7 +20302,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20324,7 +20328,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20350,7 +20354,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20389,7 +20393,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20415,7 +20419,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20441,7 +20445,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20467,7 +20471,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20493,7 +20497,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20519,7 +20523,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20545,7 +20549,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20571,7 +20575,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20597,7 +20601,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20623,7 +20627,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20649,7 +20653,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20675,7 +20679,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20701,7 +20705,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20727,7 +20731,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20753,7 +20757,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20792,7 +20796,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20831,7 +20835,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20870,7 +20874,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20896,7 +20900,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20929,7 +20933,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20962,7 +20966,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -20995,7 +20999,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21028,7 +21032,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21061,7 +21065,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21094,7 +21098,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21127,7 +21131,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21160,7 +21164,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21199,7 +21203,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21244,7 +21248,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21277,7 +21281,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21316,7 +21320,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21349,7 +21353,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21388,7 +21392,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21421,7 +21425,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21466,7 +21470,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21499,7 +21503,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21556,7 +21560,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21582,7 +21586,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21621,7 +21625,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21647,7 +21651,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21686,7 +21690,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21725,7 +21729,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21770,7 +21774,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21821,7 +21825,7 @@
       "proposedDisposition": "migrate-project",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21854,7 +21858,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21880,7 +21884,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21906,7 +21910,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21939,7 +21943,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -21978,7 +21982,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22017,7 +22021,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22056,7 +22060,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22095,7 +22099,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22140,7 +22144,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22179,7 +22183,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22218,7 +22222,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22257,7 +22261,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22296,7 +22300,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22329,7 +22333,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22362,7 +22366,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22401,7 +22405,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22427,7 +22431,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22460,7 +22464,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22493,7 +22497,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22526,7 +22530,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22559,7 +22563,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22592,7 +22596,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22625,7 +22629,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22658,7 +22662,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22691,7 +22695,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22724,7 +22728,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22757,7 +22761,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22796,7 +22800,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22829,7 +22833,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22862,7 +22866,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22895,7 +22899,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22970,7 +22974,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -22996,7 +23000,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23022,7 +23026,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23061,7 +23065,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23106,7 +23110,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23145,7 +23149,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23262,7 +23266,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23295,7 +23299,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23328,7 +23332,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23409,7 +23413,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23442,7 +23446,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23475,7 +23479,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23520,7 +23524,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23607,7 +23611,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23640,7 +23644,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23685,7 +23689,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23736,7 +23740,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23775,7 +23779,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23808,7 +23812,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23853,7 +23857,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23892,7 +23896,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23931,7 +23935,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -23982,7 +23986,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24093,7 +24097,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24162,7 +24166,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24213,7 +24217,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24276,15 +24280,19 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "migrate-issue",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
-        "kind": "linear-preview-key",
-        "value": "DYD-3-PREVIEW-ISSUE-0272-CODEX-WORKER-ROLE-READ-ONLY-CAPABILITY-NOT-EXPRESSED-TOOLS-FIELD-IS-CLAUDE-ONLY-US"
+        "kind": "linear-url",
+        "value": "https://linear.app/bodnar-balazs/issue/DYD-42/enforce-read-only-capability-for-codex-worker-roles"
       },
       "evidence": [
         {
           "kind": "human-ruling",
           "value": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions#comment-d2d63a77-8590-46f1-86cc-3025ff477f63"
+        },
+        {
+          "kind": "linear-readback",
+          "value": "https://linear.app/bodnar-balazs/issue/DYD-42/enforce-read-only-capability-for-codex-worker-roles"
         }
       ],
       "reason": "Current work status makes this a candidate for human review as a Linear Issue; this draft does not authorize migration."
@@ -24317,7 +24325,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24362,7 +24370,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24443,7 +24451,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24518,7 +24526,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24563,7 +24571,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24596,7 +24604,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24653,7 +24661,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24686,7 +24694,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24725,7 +24733,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24758,7 +24766,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24791,7 +24799,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24824,7 +24832,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24857,7 +24865,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24932,7 +24940,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24965,7 +24973,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -24998,7 +25006,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25031,7 +25039,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25088,7 +25096,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25121,7 +25129,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25154,7 +25162,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25187,7 +25195,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25220,7 +25228,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25253,7 +25261,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25286,7 +25294,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25319,7 +25327,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25352,7 +25360,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25385,7 +25393,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25418,7 +25426,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25451,7 +25459,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25484,7 +25492,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25547,7 +25555,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25580,7 +25588,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25631,7 +25639,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25730,7 +25738,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25799,7 +25807,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -25910,15 +25918,19 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "migrate-issue",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
-        "kind": "linear-preview-key",
-        "value": "DYD-3-PREVIEW-ISSUE-0164-SKIP-PATTERN-BLOCKS-DUPLICATED-ACROSS-RULES-WITH-NO-CENTRAL-SOURCE-OF-TRUTH-SILE"
+        "kind": "linear-url",
+        "value": "https://linear.app/bodnar-balazs/issue/DYD-37/centralize-documentation-rule-scope-policy"
       },
       "evidence": [
         {
           "kind": "human-ruling",
           "value": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions#comment-c1c66b4d-ba2f-4192-abbd-dc8a854b37f0"
+        },
+        {
+          "kind": "linear-readback",
+          "value": "https://linear.app/bodnar-balazs/issue/DYD-37/centralize-documentation-rule-scope-policy"
         }
       ],
       "reason": "Current work status makes this a candidate for human review as a Linear Issue; this draft does not authorize migration."
@@ -26089,7 +26101,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26158,7 +26170,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26299,7 +26311,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26464,7 +26476,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26509,7 +26521,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26560,7 +26572,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26623,7 +26635,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26668,7 +26680,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26743,7 +26755,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26788,7 +26800,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -26857,7 +26869,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27154,7 +27166,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27217,7 +27229,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27250,7 +27262,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27283,7 +27295,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27316,7 +27328,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27349,7 +27361,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27375,7 +27387,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27401,7 +27413,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27427,7 +27439,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27453,7 +27465,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27479,7 +27491,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27505,7 +27517,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27531,7 +27543,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27557,7 +27569,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27590,7 +27602,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27616,7 +27628,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27847,7 +27859,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -27922,7 +27934,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28003,15 +28015,19 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "migrate-issue",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
-        "kind": "linear-preview-key",
-        "value": "DYD-3-PREVIEW-ISSUE-0263-CROSS-REWRITE-DEAD-CODE-DEAD-IN-EFFECT-SURFACES-IN-TERMINALLAUNCHER-AGENTREGISTR"
+        "kind": "linear-url",
+        "value": "https://linear.app/bodnar-balazs/issue/DYD-41/surface-unknown-notion-block-ids-to-production-diagnostics"
       },
       "evidence": [
         {
           "kind": "human-ruling",
           "value": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions#comment-d2d63a77-8590-46f1-86cc-3025ff477f63"
+        },
+        {
+          "kind": "linear-readback",
+          "value": "https://linear.app/bodnar-balazs/issue/DYD-41/surface-unknown-notion-block-ids-to-production-diagnostics"
         }
       ],
       "reason": "Current work status makes this a candidate for human review as a Linear Issue; this draft does not authorize migration."
@@ -28050,7 +28066,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28101,7 +28117,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28140,7 +28156,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28371,7 +28387,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28452,7 +28468,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28503,15 +28519,19 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "migrate-issue",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
-        "kind": "linear-preview-key",
-        "value": "DYD-3-PREVIEW-ISSUE-0248-DYDO-FIX-HAS-NO-DIRECTORY-SCOPED-MODE-REPO-WIDE-SIDE-EFFECTS-ON-SHARED-DIRTY-TRE"
+        "kind": "linear-url",
+        "value": "https://linear.app/bodnar-balazs/issue/DYD-40/add-directory-scoped-dydo-fix"
       },
       "evidence": [
         {
           "kind": "human-ruling",
           "value": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions#comment-c1c66b4d-ba2f-4192-abbd-dc8a854b37f0"
+        },
+        {
+          "kind": "linear-readback",
+          "value": "https://linear.app/bodnar-balazs/issue/DYD-40/add-directory-scoped-dydo-fix"
         }
       ],
       "reason": "Current work status makes this a candidate for human review as a Linear Issue; this draft does not authorize migration."
@@ -28544,7 +28564,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28595,7 +28615,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28646,7 +28666,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28859,7 +28879,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28904,7 +28924,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -28979,7 +28999,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "cancel-remove",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29036,7 +29056,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29093,15 +29113,19 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "migrate-issue",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
-        "kind": "linear-preview-key",
-        "value": "DYD-3-PREVIEW-ISSUE-0213-GUARD-DAILY-VALIDATION-USES-RAW-CWD-CREATING-STRAY-NESTED-DYDO-TREE"
+        "kind": "linear-url",
+        "value": "https://linear.app/bodnar-balazs/issue/DYD-39/resolve-guard-state-paths-from-the-actual-dydo-root"
       },
       "evidence": [
         {
           "kind": "human-ruling",
           "value": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions#comment-c1c66b4d-ba2f-4192-abbd-dc8a854b37f0"
+        },
+        {
+          "kind": "linear-readback",
+          "value": "https://linear.app/bodnar-balazs/issue/DYD-39/resolve-guard-state-paths-from-the-actual-dydo-root"
         }
       ],
       "reason": "Current work status makes this a candidate for human review as a Linear Issue; this draft does not authorize migration."
@@ -29128,15 +29152,19 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "migrate-issue",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
-        "kind": "linear-preview-key",
-        "value": "DYD-3-PREVIEW-ISSUE-0212-TOOL-SCOPED-FILE-NUDGES-NEVER-FIRE-FOR-TIER-2-WORKERS-WORKER-LANE-SKIPS-CHECKFIL"
+        "kind": "linear-url",
+        "value": "https://linear.app/bodnar-balazs/issue/DYD-38/make-file-nudges-apply-to-workers-by-audience"
       },
       "evidence": [
         {
           "kind": "human-ruling",
           "value": "https://linear.app/bodnar-balazs/issue/DYD-3/human-ratify-live-work-dispositions#comment-c1c66b4d-ba2f-4192-abbd-dc8a854b37f0"
+        },
+        {
+          "kind": "linear-readback",
+          "value": "https://linear.app/bodnar-balazs/issue/DYD-38/make-file-nudges-apply-to-workers-by-audience"
         }
       ],
       "reason": "Current work status makes this a candidate for human review as a Linear Issue; this draft does not authorize migration."
@@ -29181,7 +29209,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29238,7 +29266,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29289,7 +29317,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29346,7 +29374,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29385,7 +29413,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29436,7 +29464,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29481,7 +29509,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29526,7 +29554,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29571,7 +29599,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29658,7 +29686,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29721,7 +29749,7 @@
       "proposedDisposition": "migrate-issue",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29760,7 +29788,7 @@
       "proposedDisposition": "remove-historical",
       "finalDisposition": "remove-historical",
       "humanRatified": true,
-      "executionState": "pending",
+      "executionState": "applied",
       "target": {
         "kind": "commit-permalink",
         "value": "https://github.com/bodnarbalazs/dydo/commit/ffffc02dcdf92b9677d0eb4f522d1af57a869990"
@@ -29800,7 +29828,7 @@
     },
     "dydoCheck": {
       "command": "dydo check",
-      "output": "Found 0 errors, 14 warnings in 1335 files.",
+      "output": "Found 0 errors, 1 warnings in 853 files.",
       "exitCode": 0
     }
   }

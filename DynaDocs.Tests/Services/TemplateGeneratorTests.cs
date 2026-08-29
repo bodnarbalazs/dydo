@@ -116,6 +116,21 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
+    public void GenerateEntryPointMd_ContainsDr038RoutingParagraphExactlyOnce_WithoutMutatingClaudeMd()
+    {
+        const string routingParagraph = "Before creating a memory, check whether it belongs in dydo — it probably does (issue, decision, guide, or other record). Keep memory only for facts about your human and for harness mechanics no dydo record can hold. Never store incident state or temporary workarounds as memories.";
+        var rootClaude = Path.Combine(FindRepositoryRoot(), "CLAUDE.md");
+        var before = File.ReadAllBytes(rootClaude);
+
+        var content = TemplateGenerator.GenerateEntryPointMd("Example");
+
+        Assert.Equal(1, CountOccurrences(content, routingParagraph));
+        Assert.Equal(1, CountOccurrences(TemplateGenerator.ReadBuiltInTemplate("entry-point.template.md"), routingParagraph));
+        Assert.Equal(1, CountOccurrences(File.ReadAllText(rootClaude), routingParagraph));
+        Assert.Equal(before, File.ReadAllBytes(rootClaude));
+    }
+
+    [Fact]
     public void GenerateIndexMd_ReturnsIndexTemplateContent()
     {
         var content = TemplateGenerator.GenerateIndexMd();
@@ -641,6 +656,20 @@ public class TemplateGeneratorTests
         Assert.DoesNotContain("dydo-diagram.svg", content);
         Assert.DoesNotContain("Workflow Flags", content);
         Assert.DoesNotContain("--inbox", content);
+    }
+
+    private static int CountOccurrences(string content, string value) =>
+        content.Split(value, StringSplitOptions.None).Length - 1;
+
+    private static string FindRepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory != null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
+                return directory.FullName;
+        }
+
+        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 
     #endregion

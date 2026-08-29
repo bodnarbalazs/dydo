@@ -98,6 +98,15 @@ judgment.
 
 Keep a running log in the shared workspace: `dydo/agents/workspace/log-<session>.md`.
 
+### 5. Memory sweep
+
+Only sweep the explicitly human-scoped auto-memory store, treating it as a buffer rather than project
+canon. Classify each entry as **route**, **retire**, or **keep**: keep only human-facts, harness
+mechanics dydo genuinely cannot hold, or pending-fix entries linked to their Issue; route project facts
+to durable dydo knowledge or a live Linear Issue — never a new repository PM record. Before the first
+sweep, get human authorization for its exact external changes or deletions. In later authorized sweeps,
+report each disposition in the status summary.
+
 ---
 
 ## Availability

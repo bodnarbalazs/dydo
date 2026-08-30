@@ -1,35 +1,16 @@
 # Template Additions
 
-This folder contains project-specific content that gets injected into agent mode files via `{{include:name}}` tags.
+Project-specific text in this folder is injected at matching `{{include:name}}` hooks in authored skill
+templates. Missing additions resolve to nothing; generated skill files remain output, never edit targets.
 
-## How It Works
+## Active additions
 
-Templates ship with `{{include:name}}` tags at natural extension points. Each tag resolves to a markdown file in this folder: `{{include:extra-verify}}` reads `extra-verify.md`.
+| Tag | Purpose |
+|---|---|
+| `extra-verify` | This repository's isolated test and coverage commands |
+| `extra-review-steps` | Independent execution of the candidate's exact gates |
+| `extra-review-checklist` | Coverage receipt required for a review verdict |
 
-- Missing file = tag resolves to empty string (no trace in output)
-- Same file referenced from multiple templates = shared content, zero duplication
-- Any `{{include:whatever}}` works — not limited to shipped hooks
-
-## Shipped Hook Points
-
-| Tag | Template | Location |
-|-----|----------|----------|
-| `{{include:extra-must-reads}}` | All modes | After must-reads list |
-| `{{include:extra-verify}}` | code-writer, test-writer | After verify step |
-| `{{include:extra-review-steps}}` | reviewer | After "Run tests" step |
-| `{{include:extra-review-checklist}}` | reviewer | End of review checklist |
-| `{{include:extra-complete-gate}}` | code-writer, reviewer | Before dispatch/completion |
-
-## Adding Content
-
-1. Create a `.md` file here named after the tag (e.g., `extra-verify.md`)
-2. Next time an agent claims, the content appears inline in their mode file
-
-## Custom Tags
-
-You can add `{{include:whatever}}` anywhere in a template (`dydo/_system/templates/`). Create the matching `whatever.md` file here. On `dydo template update`, user-added tags are re-anchored into updated templates automatically.
-
-## File Naming
-
-- `name.md` — active, resolved by `{{include:name}}`
-- `name.md.example` — inactive example, rename to `.md` to activate
+Add a new hook only when project-specific guidance cannot live in the shared skill without making that
+skill less reusable. Name the file after the hook and keep the addition shorter than the method it
+supports.

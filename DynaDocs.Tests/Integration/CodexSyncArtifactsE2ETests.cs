@@ -4,12 +4,12 @@ using DynaDocs.Commands;
 
 /// <summary>
 /// c1-7 / issue 0233 (ask 4): `dydo sync` emits skills for every shipped skill-only role
-/// (planner, the three manager modes, self-improvement, and the three prompt-level skills) without
+/// (planner, the three coordinating skills, self-improvement, and the three prompt-level skills) without
 /// minting an agent definition.
 /// Existing sync tests pin the ABSENCE of a <c>.claude/agents/&lt;role&gt;.md</c>; this one closes the
 /// codex-side gap: a spawnable <c>.codex/agents/&lt;role&gt;.toml</c> for any skill-only role would be
 /// artifact drift. Driven through the real sync command on an initialized project.
-/// Self-improvement is a generic harness method, not a Tier-1 identity.
+/// Self-improvement is a generic harness method, not a worker identity.
 /// </summary>
 [Collection("Integration")]
 public class CodexSyncArtifactsE2ETests : IntegrationTestBase
@@ -22,7 +22,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        // Self-improvement is included as a generic skill, not as a Tier-1 identity.
+        // Self-improvement is included as a generic skill, not as a worker identity.
         foreach (var role in new[]
         {
             "planner", "orchestrator", "co-thinker", "chief-of-staff", "self-improvement",
@@ -84,7 +84,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Sync_OrchestratorSkill_PreservesVisibleTaskCallbackContract()
+    public async Task Sync_OrchestratorSkill_StaysRuntimeNeutralAndPreservesDeliveryBoundary()
     {
         await InitProjectAsync("none");
 
@@ -92,14 +92,14 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         sync.AssertSuccess();
 
         var orchestrator = ReadFile(".agents/skills/orchestrator/SKILL.md");
-        Assert.Contains("visible Codex task or thread", orchestrator);
-        Assert.Contains("coordinator task or thread ID", orchestrator);
-        Assert.Contains("blocked-or-completed callback", orchestrator);
-        Assert.Contains("status, any blocker, branch, exact commit, review verdict", orchestrator);
-        Assert.Contains("gate evidence", orchestrator);
-        Assert.Contains("Register every created task ID and wait on it while active", orchestrator);
-        Assert.Contains("Linear remains canonical", orchestrator);
-        Assert.Contains("native subagent delegation keeps its native return path", orchestrator);
+        Assert.Contains("You coordinate; workers implement", orchestrator);
+        Assert.Contains("Review independently", orchestrator);
+        Assert.Contains("Integrate serially", orchestrator);
+        Assert.Contains("Audit the whole", orchestrator);
+        Assert.Contains("Keep Linear current", orchestrator);
+        Assert.DoesNotContain("Codex", orchestrator);
+        Assert.DoesNotContain("callback", orchestrator, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("task or thread", orchestrator, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -137,6 +137,6 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
 
         var codeWriter = ReadFile(".agents/skills/code-writer/SKILL.md");
         Assert.Contains("Linear Issue", codeWriter);
-        Assert.Contains("Project-plan", codeWriter);
+        Assert.Contains("Verify the contract", codeWriter);
     }
 }

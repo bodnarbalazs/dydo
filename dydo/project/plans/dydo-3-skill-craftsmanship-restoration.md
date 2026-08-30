@@ -159,17 +159,19 @@ beside the README, and `npm/package.json` includes the npm notice. Packaging tes
 |---|---|---|---|---|
 | P6-1 | Rename sources with the four-case legacy migration above | `Commands/HelpCommand.cs`, `Commands/SyncCommand.cs`, `Commands/TemplateCommand.cs`, `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`, `Services/TemplateGenerator.cs`, existing filename-contract tests/docs, all 26 source/install filename moves, `dydo.json` hash keys | — | Gate A |
 | P6-2 | Restore the minimal entry prompt and current root parity | `Templates/entry-point.template.md`, root `AGENTS.md`, root `CLAUDE.md`, new `DynaDocs.Tests/Integration/EntryPointParityTests.cs` | P6-1 | Gate B |
-| P6-3 | Apply the role-by-role table to mature dydo roles | the ten named non-Matt `Templates/skill-*.template.md` files, their ten `_system` copies, `dydo/_system/template-additions/**`, and the three existing semantic contract tests named below | P6-1 | Gate C |
+| P6-3 | Apply the role-by-role table to mature dydo roles | the ten named non-Matt `Templates/skill-*.template.md` files, their ten `_system` copies, `dydo/_system/template-additions/**`, the four existing semantic contract tests named below, and this plan for the chronological correction | P6-1 | Gate C |
 | P6-4 | Restore Matt-derived fidelity and add `writing-for-agents` | five named shipped templates and five `_system` copies; root/npm notices; `DynaDocs.csproj`; `npm/package.json`; new `DynaDocs.Tests/Integration/UpstreamSkillSourceTests.cs` | P6-1 | Gate D |
 | P6-5 | Compile exact descriptions and invocation policy | `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`, `Commands/SyncCommand.cs`, `DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs`, `DynaDocs.Tests/Commands/SyncCommandTests.cs`, `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs` | P6-1, P6-3 | Gate E |
 | P6-6 | Regenerate and audit the combined skill system | `.agents/skills/**`, `.claude/skills/**`, `.claude/agents/**`, `.codex/agents/**`, `dydo.json`, `dydo/project/migrations/3.0-skill-craftsmanship-assimilation.md`, generated migration/plan hubs | P6-2, P6-3, P6-4, P6-5 | Gate F |
 
 P6-1 and P6-5 both touch the compiler/model files and therefore run serially. P6-3 owns
 `DynaDocs.Tests/Commands/ChiefOfStaffSyncTests.cs`, `DynaDocs.Tests/Commands/SyncCommandTests.cs`, and
-`DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs` because those tests currently freeze the
-Memory Sweep, Managers Doctrine, and Codex callback sediment that P6-3 must remove. P6-5 follows P6-3
-before extending the latter two tests for invocation metadata. P6-4 owns only its exclusive new source
-test. Every Issue receives one fresh independent review before commit.
+`DynaDocs.Tests/Commands/WayfinderHarmonyTests.cs`, plus
+`DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`, because those tests currently freeze the
+Memory Sweep, Managers Doctrine, invented Waypoint/session choreography, and Codex callback sediment
+that P6-3 must remove. P6-5 follows P6-3 before extending the latter two tests for invocation metadata.
+P6-4 owns only its exclusive new source test. Every Issue receives one fresh independent review before
+commit.
 
 P6-1's non-move path set is closed: `Commands/HelpCommand.cs`, `Commands/SyncCommand.cs`,
 `Commands/TemplateCommand.cs`, `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`,
@@ -217,8 +219,9 @@ git diff --check -- Templates/entry-point.template.md AGENTS.md CLAUDE.md DynaDo
 ```powershell
 dotnet build DynaDocs.sln -c Release --no-restore
 rg -n "Tier-1|Managers Doctrine|visible Codex task|Memory sweep|stay active until dismissed|Campaign|Sprint|Slice" Templates/skill-chief-of-staff.template.md Templates/skill-co-thinker.template.md Templates/skill-code-writer.template.md Templates/skill-docs-writer.template.md Templates/skill-inquisitor.template.md Templates/skill-orchestrator.template.md Templates/skill-planner.template.md Templates/skill-reviewer.template.md Templates/skill-self-improvement.template.md Templates/skill-test-writer.template.md
-py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~ChiefOfStaffSyncTests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~CodexSyncArtifactsE2ETests"
-git diff --check -- Templates dydo/_system/templates dydo/_system/template-additions
+py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~ChiefOfStaffSyncTests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~WayfinderHarmonyTests|FullyQualifiedName~CodexSyncArtifactsE2ETests"
+py DynaDocs.Tests/coverage/gap_check.py --force-run
+git diff --check -- Templates dydo/_system/templates dydo/_system/template-additions DynaDocs.Tests/Commands/ChiefOfStaffSyncTests.cs DynaDocs.Tests/Commands/SyncCommandTests.cs DynaDocs.Tests/Commands/WayfinderHarmonyTests.cs DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs dydo/project/plans/dydo-3-skill-craftsmanship-restoration.md
 ```
 
 The `rg` command must return no hits. A fresh skill-quality review checks each row of the restoration
@@ -335,3 +338,17 @@ git diff --check -- Templates/entry-point.template.md AGENTS.md CLAUDE.md DynaDo
 
 A fresh review covers all seven paths. The two pre-existing test files may change only to replace the
 stale memory and kaizen assertions with minimal-entry and parity behavior.
+
+## 8. Chronological correction — P6-3 harmony contract (2026-08-30)
+
+The first P6-3 implementation run exposed one more content-sensitive test outside its original three-test
+surface: `DynaDocs.Tests/Commands/WayfinderHarmonyTests.cs` asserted the invented Waypoint and top-level
+session choreography that this Project explicitly removes. Leaving that test unchanged would make the
+reviewed role restoration contradict the repository gate.
+
+P6-3 therefore additionally owns exactly that test and this plan file. It replaces those obsolete prose
+assertions with semantic checks that FutureFeature promotion remains human-only, manager roles recommend
+rather than invoke Wayfinder, Planner refuses speculative complete routes, and no mature skill revives
+Waypoint/session choreography. Gate C now includes the harmony test, forced coverage, and an exact
+diff-check over the amended closed surface. This correction changes no Matt-derived skill, generated
+runtime artifact, PM ontology, or P6-4/P6-5 ownership.

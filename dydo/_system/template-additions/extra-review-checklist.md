@@ -1,2 +1,2 @@
-- [ ] `gap_check.py` exits 0 — coverage regressions mean FAIL, no exceptions
-- [ ] New code above T1 has tier annotation (`// @test-tier: N`)
+- [ ] The exact tests passed through the worktree-isolated runner.
+- [ ] Forced coverage passed with zero failing modules.

@@ -1,12 +1,10 @@
 namespace DynaDocs.Tests.Commands;
 
-using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 using DynaDocs.Services;
 
 public class ChiefOfStaffSyncTests : IDisposable
 {
-    private const string MemorySweepHeading = "### 5. Memory sweep";
     private readonly string _testDir;
 
     public ChiefOfStaffSyncTests()
@@ -26,57 +24,46 @@ public class ChiefOfStaffSyncTests : IDisposable
     }
 
     [Fact]
-    public void AuthoredChiefOfStaffTemplates_ContainMemorySweepExactlyOnce()
+    public void AuthoredChiefOfStaffTemplates_KeepBoardRoleAndExcludePersonalMemoryPolicy()
     {
-        var builtIn = TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md");
-        var projectSource = File.ReadAllText(Path.Combine(
-            FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md"));
-
-        AssertMemorySweep(builtIn);
-        AssertMemorySweep(projectSource);
+        foreach (var source in new[]
+        {
+            TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"),
+            File.ReadAllText(Path.Combine(
+                FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md")),
+        })
+        {
+            Assert.Contains("### Triage", source);
+            Assert.Contains("### Report", source);
+            Assert.Contains("### Mediate", source);
+            Assert.Contains("### Keep the board honest", source);
+            Assert.Contains("self-improvement", source);
+            Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Managers Doctrine", source);
+        }
     }
 
     [Fact]
-    public void SyncChiefOfStaff_EmitsMemorySweepIntoBothSkillPaths_WithoutAgents_AndIsByteIdentical()
+    public void SyncChiefOfStaff_EmitsIdenticalSkillsWithoutAgentDefinitions()
     {
-        var chiefOfStaff = RoleDefinitionService.DiscoverRoles(_testDir)
-            .Single(role => role.Name == "chief-of-staff");
-        var claudeAgent = Path.Combine(_testDir, ".claude", "agents", "chief-of-staff.md");
-        var codexAgent = Path.Combine(_testDir, ".codex", "agents", "chief-of-staff.toml");
+        var role = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(candidate => candidate.Name == "chief-of-staff");
         var claudeSkill = Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md");
         var codexSkill = Path.Combine(_testDir, ".agents", "skills", "chief-of-staff", "SKILL.md");
 
-        SyncCommand.SyncSkillOnlyRole(chiefOfStaff, _testDir);
-        SyncCommand.SyncCodexSkill(chiefOfStaff, _testDir);
+        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+        SyncCommand.SyncCodexSkill(role, _testDir);
 
-        Assert.False(File.Exists(claudeAgent));
-        Assert.False(File.Exists(codexAgent));
-        AssertMemorySweep(File.ReadAllText(claudeSkill));
-        AssertMemorySweep(File.ReadAllText(codexSkill));
-        var firstClaudeSkill = File.ReadAllBytes(claudeSkill);
-        var firstCodexSkill = File.ReadAllBytes(codexSkill);
+        Assert.Equal(File.ReadAllBytes(claudeSkill), File.ReadAllBytes(codexSkill));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "chief-of-staff.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", "chief-of-staff.toml")));
 
-        SyncCommand.SyncSkillOnlyRole(chiefOfStaff, _testDir);
-        SyncCommand.SyncCodexSkill(chiefOfStaff, _testDir);
-
-        Assert.Equal(firstClaudeSkill, File.ReadAllBytes(claudeSkill));
-        Assert.Equal(firstCodexSkill, File.ReadAllBytes(codexSkill));
-        Assert.False(File.Exists(claudeAgent));
-        Assert.False(File.Exists(codexAgent));
-    }
-
-    private static void AssertMemorySweep(string content)
-    {
-        var prose = Regex.Replace(content, @"\s+", " ");
-
-        Assert.Equal(1, content.Split(MemorySweepHeading, StringSplitOptions.None).Length - 1);
-        Assert.Contains("explicitly human-scoped auto-memory store", prose);
-        Assert.Contains("**route**, **retire**, or **keep**", prose);
-        Assert.Contains("harness mechanics dydo genuinely cannot hold", prose);
-        Assert.Contains("Before the first sweep, get human authorization", prose);
-        Assert.Contains("later authorized sweeps, report each disposition", prose);
-        Assert.Contains("durable dydo knowledge or a live Linear Issue", prose);
-        Assert.Contains("never a new repository PM record", prose);
+        var firstClaude = File.ReadAllBytes(claudeSkill);
+        var firstCodex = File.ReadAllBytes(codexSkill);
+        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+        SyncCommand.SyncCodexSkill(role, _testDir);
+        Assert.Equal(firstClaude, File.ReadAllBytes(claudeSkill));
+        Assert.Equal(firstCodex, File.ReadAllBytes(codexSkill));
     }
 
     private static string FindRepositoryRoot()

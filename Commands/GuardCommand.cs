@@ -577,18 +577,20 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Evaluates tool-scoped nudges (NudgeConfig.Tools) against a direct file-op path.
-    /// Ships the Decision 026 §4 Tier-1 source-write reminder: severity "notice" is an
-    /// exit-0 stderr warning, never a block — the trivial-edit exception stays frictionless.
+    /// Nothing shipped is tool-scoped — the pipeline exists for project configuration.
     /// Patterns are '|'-separated globs; {source}/{tests} expand to the dydo.json path sets.
-    /// Returns an exit code for block-severity matches and the first warn encounter.
+    /// Severity "notice" is an exit-0 stderr warning; "warn" blocks the first encounter and
+    /// lets the retry through; "block" always blocks.
     /// </summary>
     internal static int? CheckFileNudges(string? toolName, string filePath, GuardEnv env, string audience = "manager")
     {
         if (string.IsNullOrEmpty(toolName))
             return null;
 
-        var nudges = env.Config?.Nudges;
-        if (nudges == null || nudges.Count == 0)
+        // Reconciled, not raw: a config still carrying a retired shipped nudge must stop
+        // firing it here too, exactly as CheckNudges already guarantees on the bash lane.
+        var nudges = MergeSystemNudges(env.Config?.Nudges);
+        if (nudges.Count == 0)
             return null;
 
         // Resolved lazily — most calls have no tool-scoped nudge for this tool.
@@ -698,6 +700,9 @@ public static partial class GuardCommand
         "Use dydo worktree commands instead of git worktree directly.",
         "Use dydo worktree cleanup instead of deleting worktree directories directly.",
         "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
+        // Retired Decision 026 managers-doctrine nudge (DR 045): it points at the run-sprint
+        // workflow 3.0 deletes, so an install still carrying it must stop firing it.
+        "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
     ];
 
     /// <summary>
@@ -798,10 +803,14 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        // A Move takes the protected file away, so it counts as a delete. Copy does not: the
-        // analyzer tags source and destination alike, and copying *from* a protected file is
-        // a read, which the tier exists to keep allowed.
-        if (op.Type is FileOperationType.Write or FileOperationType.Delete or FileOperationType.Move)
+        // Anything that is not a read of op.Path can leave different bytes or different
+        // permissions there: writes, deletes, moves, copies, chmod/chown/takeown. Stated as an
+        // exclusion so a future op type is guarded by default instead of silently exempt, and
+        // because the analyzer tags a copy's source and destination alike — `cp <protected>
+        // elsewhere` is blocked too. Conservative on purpose: no wider than the off-limits
+        // block these paths carried before, and the content stays readable through
+        // Read, cat and head. Execute names a binary to run, not a file to change.
+        if (op.Type is not (FileOperationType.Read or FileOperationType.Execute))
             return BlockIfPathProtected(op.Path, offLimitsService, $"{op.Type} via {op.Command}");
 
         return null;

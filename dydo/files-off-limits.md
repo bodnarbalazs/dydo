@@ -120,9 +120,9 @@ agent may read but none may write or delete. Both are checked BEFORE role-based 
 ## Protected Patterns
 
 Paths listed here are **readable by every agent and writable by none**. `Edit`, `Write`,
-`NotebookEdit` and any shell write, delete or move to them is blocked; reads pass. These are
-dydo's own system files: agents must read them to orient themselves, and only a human edits
-them. Whitelist entries do not apply to this section.
+`NotebookEdit` and every shell operation that changes them — write, delete, move, copy,
+permission change — is blocked; read them with `Read`, `cat` or `head`. These are dydo's own system files: agents read them to orient
+themselves, and only a human edits them. Whitelist entries do not apply to this section.
 
 ```
 # DynaDocs entry point - every entry prompt tells agents to read it

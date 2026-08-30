@@ -52,9 +52,9 @@ BLOCKED: Path is off-limits to all agents.
   Configure exceptions in dydo/files-off-limits.md
 ```
 
-**Protected** patterns (a `## Protected Patterns` section) invert the emphasis: **every agent may read them, none may write or delete them** ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10). Membership is dydo's own system files — `dydo/index.md`, `dydo/files-off-limits.md` and the hardcoded `dydo.json` — because every entry prompt orders agents to read them to orient themselves, while only a human edits them. `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard entirely: the harness defends its own files, and off-limits keeps its original meaning of files agents must not even read.
+**Protected** patterns (a `## Protected Patterns` section) invert the emphasis: **every agent may read them, none may write or delete them** ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10). Membership is dydo's own system files — `dydo/index.md`, `dydo/files-off-limits.md` and the hardcoded `dydo.json` — because agents read them to orient themselves — `dydo/index.md` on every entry prompt's order — while only a human edits them. `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard entirely: the harness defends its own files, and off-limits keeps its original meaning of files agents must not even read.
 
-The tier binds on the mutating call only: the `Edit`, `Write` and `NotebookEdit` tools, Codex's `apply_patch`, and the writes, deletes and moves the bash analyzer extracts from a shell command. `Read`, `cat` and search pass. The whitelist does not apply.
+The tier binds on the mutating call only: the `Edit`, `Write` and `NotebookEdit` tools, Codex's `apply_patch`, and every operation the bash analyzer extracts from a shell command that is not a read of that path — write, delete, move, copy, permission change. `Read`, `cat`, `head` and search pass. The whitelist does not apply.
 
 ```
 BLOCKED: Path is protected — every agent may read it, none may write or delete it.
@@ -72,7 +72,7 @@ Bash commands get deeper treatment than direct tool calls:
 
 1. **Dangerous pattern detection** (immediate block): recursive root/home deletes, fork bombs, direct disk writes (`dd`), download-and-execute (`curl | sh`), eval of untrusted input, history clearing, security disables.
 2. **Bypass detection** (warnings, not blocks): command substitution (`$(...)`), base64/hex decode, variable expansion, embedded newlines — flagged because they can obscure the paths actually being touched.
-3. **File operation extraction**: the command is tokenized into reads (`cat`, `grep`), writes (`tee`, `>`, `>>`, `sed -i`), deletes (`rm`), copies/moves (`cp`, `mv`), and permission changes (`chmod`) — and each extracted path is checked against off-limits individually. A chain can't smuggle a protected path past the guard.
+3. **File operation extraction**: the command is tokenized into reads (`cat`, `grep`), writes (`tee`, `>`, `>>`, `sed -i`), deletes (`rm`), copies/moves (`cp`, `mv`), and permission changes (`chmod`) — and each extracted path is checked against off-limits — and, for anything that is not a read of it, the protected tier — individually. A chain can't smuggle a guarded path past the guard.
 4. **Chained `cd` block**: `cd /path && command` breaks path analysis — run `cd` separately or use absolute paths.
 
 The guard fires on `dydo` commands themselves too — nudges and off-limits apply to dydo's own CLI like anything else.
@@ -96,7 +96,7 @@ Two kinds:
 
 The shipped **review-block nudge** is the one that carries policy: a `gh pr create` whose command text has no `Independent review` in it is warned once, because nothing reaches the human that an independent agent has not reviewed and the PR body is where that proof lands ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §3). At `warn` an honest exception costs one retry; the severity escalates to `block` only if the discipline erodes.
 
-**Shipped defaults and self-healing:** the indirect-dydo-invocation nudges (`npx dydo`, `dotnet dydo`, `python dydo`, …) are severity-pinned — `MergeSystemNudges` reconciles config against the shipped set on every guard call: a deleted block-default is re-added, a downgraded severity is restored to `block`, and a nudge still carrying a known-stale shipped message is healed to the current text or dropped if its default was retired. A message the user customized matches no known-stale text and is never clobbered.
+**Shipped defaults and self-healing:** the indirect-dydo-invocation nudges (`npx dydo`, `dotnet dydo`, `python dydo`, …) are severity-pinned — `MergeSystemNudges` reconciles config against the shipped set on every guard call: a deleted block-default is re-added, a downgraded severity is restored to `block`, and a nudge still carrying a known-stale shipped message is healed to the current text or dropped if its default was retired. A message the user customized matches no known-stale text and is never clobbered. Both kinds go through it — command nudges and file nudges alike — so a retired shipped nudge stops firing in an existing install with no migration step: the Decision 026 source-write reminder, which pointed at a workflow 3.0 deletes, is dropped this way.
 
 ---
 

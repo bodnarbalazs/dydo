@@ -627,6 +627,38 @@ public class GuardCommandTests : IDisposable
         Assert.Empty(stderr);
     }
 
+    // The exact text shipped before DR 045 retired it. An install materialized under 2.x
+    // still carries it in dydo.json, so the guard has to drop it rather than keep pointing
+    // agents at the run-sprint workflow 3.0 deletes.
+    private const string RetiredDoctrineMessage =
+        "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint "
+        + "workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.";
+
+    [Fact]
+    public void CheckFileNudges_RetiredDoctrineNudgeInConfig_NoLongerFires()
+    {
+        WriteConfigWithFileNudge("{source}|{tests}", RetiredDoctrineMessage, "notice");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void CheckFileNudges_UserEditedMessageOnTheSamePattern_StillFires()
+    {
+        // Only the shipped text self-heals; docs promise the message stays editable.
+        WriteConfigWithFileNudge("{source}|{tests}", "our own house rule", "notice");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
+
+        Assert.Null(result);
+        Assert.Contains("NOTICE: our own house rule", stderr);
+    }
+
     [Fact]
     public void CheckNudges_SkipsToolScopedNudges()
     {

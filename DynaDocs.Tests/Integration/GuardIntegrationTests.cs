@@ -120,7 +120,19 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("sed -i 's/a/b/' dydo/index.md")]
     [InlineData("echo broken > dydo/files-off-limits.md")]
     [InlineData("rm dydo.json")]
-    public async Task Guard_ProtectedPath_BashWriteOrDeleteBlocked(string command)
+    // A move takes the protected file away or lands on top of it; both directions mutate.
+    [InlineData("mv dydo/index.md gone.md")]
+    [InlineData("mv other.md dydo/index.md")]
+    // A copy can overwrite a protected file. The analyzer cannot tell a copy's source from
+    // its destination, so copying *out of* a protected path is blocked too, by design —
+    // the content stays readable through Read, cat and head.
+    [InlineData("cp evil.json dydo.json")]
+    [InlineData("cp permissive.md dydo/files-off-limits.md")]
+    [InlineData("cp dydo/index.md backup.md")]
+    // A permission change is not a content write, but it was blocked before the tier existed
+    // and it is the classic self-escalation lever against the guard's own config.
+    [InlineData("chmod 777 dydo.json")]
+    public async Task Guard_ProtectedPath_BashMutatingOperationBlocked(string command)
     {
         await InitProjectAsync("none");
 

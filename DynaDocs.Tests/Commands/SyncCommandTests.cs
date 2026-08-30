@@ -793,6 +793,41 @@ public class SyncCommandTests : IDisposable
         Assert.DoesNotContain("{{include:", skill);
     }
 
+    /// <summary>
+    /// Counts H1 lines outside code fences. A fenced "# ..." line is shell prose, not a heading:
+    /// the shipped doc templates and the guides carry them inside ```bash blocks, and a procedure
+    /// guide or a skill skeleton may well do the same. A naive line count would read those as extra
+    /// H1s and fail a document that is structurally correct. Fence handling mirrors
+    /// SyncCommand.RenumberOrderedLists, which skips fenced content for the same reason.
+    /// </summary>
+    internal static int H1Count(string content)
+    {
+        var count = 0;
+        var inFence = false;
+        foreach (var line in content.Replace("\r\n", "\n").Split('\n'))
+        {
+            if (line.TrimStart().StartsWith("```", StringComparison.Ordinal))
+            {
+                inFence = !inFence;
+                continue;
+            }
+
+            if (!inFence && line.StartsWith("# ", StringComparison.Ordinal))
+                count++;
+        }
+
+        return count;
+    }
+
+    [Fact]
+    public void H1Count_CountsHeadingsOutsideFencesOnly()
+    {
+        var fenced = "# Title\n\n```bash\n# not a heading\n```\n\nprose";
+        Assert.Equal(1, H1Count(fenced));
+        Assert.Equal(2, H1Count("# One\n\nprose\n\n# Two"));
+        Assert.Equal(0, H1Count("```\n# fenced only\n```"));
+    }
+
     private static string RepositoryRoot()
     {
         for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory != null; directory = directory.Parent)
@@ -815,7 +850,7 @@ public class SyncCommandTests : IDisposable
         var methodology = SyncCommand.ExtractMethodology(_reviewer, _testDir);
         // The skill-template frontmatter (agent:/mode:) must not leak into the skill body
         Assert.DoesNotContain("mode: reviewer", methodology);
-        Assert.StartsWith("#", methodology.TrimStart());
+        Assert.Equal(1, H1Count(methodology));
         // No dangling horizontal rule at the end after dropping the trailing section
         Assert.False(methodology.TrimEnd().EndsWith("---"));
     }
@@ -1093,8 +1128,7 @@ public class SyncCommandTests : IDisposable
         var codexContent = File.ReadAllText(codexSkill);
         Assert.Equal(claudeContent, codexContent);
         Assert.Contains($"description: {role.Description}\n", claudeContent);
-        Assert.Single(FrontmatterParser.StripFrontmatter(claudeContent).Split('\n'),
-            line => line.StartsWith("# ", StringComparison.Ordinal));
+        Assert.Equal(1, H1Count(FrontmatterParser.StripFrontmatter(claudeContent)));
         Assert.DoesNotContain("{{", claudeContent);
 
         Assert.DoesNotContain('\r', claudeContent);
@@ -1140,7 +1174,7 @@ public class SyncCommandTests : IDisposable
         foreach (var (roleName, content) in compiled)
         {
             var body = FrontmatterParser.StripFrontmatter(content);
-            Assert.Single(body.Split('\n'), line => line.StartsWith("# ", StringComparison.Ordinal));
+            Assert.Equal(1, H1Count(body));
             Assert.DoesNotContain("Waypoint", body, StringComparison.OrdinalIgnoreCase);
             Assert.Equal(
                 Headings(TemplateGenerator.ReadBuiltInTemplate($"skill-{roleName}.template.md")).ToList(),

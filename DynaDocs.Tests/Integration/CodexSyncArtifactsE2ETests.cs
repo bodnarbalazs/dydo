@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Tests.Commands;
 using DynaDocs.Utils;
 
 /// <summary>
@@ -185,7 +186,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         {
             var body = FrontmatterParser.StripFrontmatter(File.ReadAllText(file));
             Assert.NotEmpty(body.Trim());
-            Assert.Single(body.Split('\n'), line => line.StartsWith("# ", StringComparison.Ordinal));
+            Assert.Equal(1, SyncCommandTests.H1Count(body));
         }
     }
 

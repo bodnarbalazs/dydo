@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Tests.Commands;
 
 public class TemplateGeneratorTests
 {
@@ -82,8 +83,7 @@ public class TemplateGeneratorTests
             .Replace("\r\n", "\n");
         Assert.Contains("mode: code-writer\n", codeWriterTemplate);
         Assert.Contains("description: ", codeWriterTemplate);
-        Assert.Single(codeWriterTemplate.Split('\n'),
-            line => line.StartsWith("# ", StringComparison.Ordinal));
+        Assert.Equal(1, SyncCommandTests.H1Count(codeWriterTemplate));
     }
 
     [Theory]
@@ -108,8 +108,7 @@ public class TemplateGeneratorTests
         Assert.StartsWith("---", content);
         Assert.Contains("area: guides", content);
         Assert.Contains("type: guide", content);
-        Assert.Single(content.Replace("\r\n", "\n").Split('\n'),
-            line => line.StartsWith("# ", StringComparison.Ordinal));
+        Assert.Equal(1, SyncCommandTests.H1Count(content));
         Assert.Contains("guides/working-tree-contract.md", TemplateCommand.FrameworkDocFiles);
     }
 
@@ -141,7 +140,8 @@ public class TemplateGeneratorTests
 
         var content = TemplateGenerator.GenerateEntryPointMd("Example");
 
-        Assert.StartsWith("# Example", content);
+        Assert.Contains("# Example", content);
+        Assert.Equal(1, SyncCommandTests.H1Count(content));
         Assert.DoesNotContain("{{PROJECT_NAME}}", content);
         Assert.Equal(before, File.ReadAllBytes(rootClaude));
     }

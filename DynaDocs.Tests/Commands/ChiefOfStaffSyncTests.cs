@@ -37,7 +37,7 @@ public class ChiefOfStaffSyncTests : IDisposable
         {
             Assert.Contains("mode: chief-of-staff\n", source);
             Assert.Contains("emit: skill\n", source);
-            Assert.Single(source.Split('\n'), line => line.StartsWith("# ", StringComparison.Ordinal));
+            Assert.Equal(1, SyncCommandTests.H1Count(source));
             Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));
             Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Managers Doctrine", source);

@@ -22,8 +22,10 @@ Place yourself on the map before you act: one stage, one hat, and the skills tha
 | Audit | inquisition workflow | inquisitor, reviewer, docs-writer, once the human confirms |
 | Land | human | walkthrough, then the feature branch merges into main |
 | Harmonize | human on main | walkthrough, teach |
-| Any stage | chief-of-staff | self-improvement, writing-for-agents, diagnosing-bugs, bro |
+
+Any hat, at any stage, may reach self-improvement, writing-for-agents, diagnosing-bugs and bro.
+The chief-of-staff hat cuts across the map too: it triages the human's attention with grilling, and never delivers.
 
 Branches, worktrees and merges follow [the working-tree contract](dydo/guides/working-tree-contract.md).
 
-`CLAUDE.md` and `AGENTS.md` carry this same text; an edit to one belongs in both.
+Where `AGENTS.md` exists beside `CLAUDE.md`, the two carry this same text; an edit to one belongs in both.

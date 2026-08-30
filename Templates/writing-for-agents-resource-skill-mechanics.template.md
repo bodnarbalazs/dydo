@@ -46,9 +46,9 @@ that independent reach costs a permanently loaded description, so it has to be w
 ## Where reference lives
 
 - **`## Must-Reads`** — markdown links to project documents under that heading. They survive into
-  the compiled skill body and into a spawned agent's context block, rewritten to resolve from the
-  folder the skill is emitted into. Close the list with `{{include:extra-must-reads}}` so a project
-  can add its own without editing framework text.
+  the compiled skill body, rewritten to resolve from the folder the skill is emitted into, and into
+  a spawned agent's context block as repo-relative paths. Close the list with
+  `{{include:extra-must-reads}}` so a project can add its own without editing framework text.
 - **Resources** — `<role>-resource-<name>.template.md` compiles to `resources/<name>.md` beside the
   skill, and the body reaches it by that same path, rewritten to the host's emitted location so even
   a preloaded agent can `Read` it. This is disclosure with a file boundary: one skill's own
@@ -58,9 +58,10 @@ that independent reach costs a permanently loaded description, so it has to be w
 
 ## Regeneration
 
-`dydo sync` compiles every source and deletes output whose source retired. The template is the role;
-everything under `.claude/`, `.codex/` and `.agents/` is a build product — fix the template and sync
-again rather than editing what came out.
+`dydo sync` compiles every source. Its cleanup is an allowlist of framework retirements, so output
+orphaned by a source you delete is yours to remove — until then its description loads every turn.
+The template is the role; everything under `.claude/`, `.codex/` and `.agents/` is a build product —
+fix the template and sync again rather than editing what came out.
 
 Two tiers bound what any tool may rewrite: `dydo/index.md`, `dydo/files-off-limits.md` and
 `dydo.json` are **protected** — every tool may read them, the human owns every edit — while

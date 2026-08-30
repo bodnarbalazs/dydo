@@ -31,11 +31,22 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // dydo/index.md is a system file
+        // dydo/index.md is a system file — protected, so the edit is blocked
         var result = await GuardAsync("edit", "dydo/index.md");
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
+    }
+
+    [Fact]
+    public async Task Guard_DydoSystemFile_ReadAllows()
+    {
+        await InitProjectAsync("none");
+
+        // …and read, because every entry prompt orders agents to read it (DR 045 §10).
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertSuccess();
     }
 
     [Fact]
@@ -63,6 +74,103 @@ public class GuardIntegrationTests : IntegrationTestBase
         var result = await GuardAsync("edit", "src/file.cs");
 
         result.AssertSuccess();
+    }
+
+    #endregion
+
+    #region Protected Tier — readable by every tool, writable by none (DR 045 §10)
+
+    [Theory]
+    [InlineData("dydo/index.md")]
+    [InlineData("dydo/files-off-limits.md")]
+    [InlineData("dydo.json")]
+    public async Task Guard_ProtectedPath_ReadAllowed(string path)
+    {
+        await InitProjectAsync("none");
+
+        var argMode = await GuardAsync("read", path);
+        var hookMode = await GuardWithStdinAsync(
+            $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Read\",\"tool_input\":{{\"file_path\":\"{path}\"}}}}");
+
+        argMode.AssertSuccess();
+        hookMode.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("Edit", "dydo/index.md")]
+    [InlineData("Write", "dydo/files-off-limits.md")]
+    [InlineData("NotebookEdit", "dydo.json")]
+    // Codex's apply_patch maps to no action, so the tier must recognize it by tool name or it
+    // would bind on Claude's lane only — and these files were writable on the Codex lane.
+    [InlineData("apply_patch", "dydo/index.md")]
+    public async Task Guard_ProtectedPath_DirectWriteToolBlocked(string toolName, string path)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(
+            $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"file_path\":\"{path}\"}}}}");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED:");
+        result.AssertStderrContains("protected");
+        result.AssertStderrContains(path);
+    }
+
+    [Theory]
+    [InlineData("sed -i 's/a/b/' dydo/index.md")]
+    [InlineData("echo broken > dydo/files-off-limits.md")]
+    [InlineData("rm dydo.json")]
+    // A move takes the protected file away or lands on top of it; both directions mutate.
+    [InlineData("mv dydo/index.md gone.md")]
+    [InlineData("mv other.md dydo/index.md")]
+    // A copy can overwrite a protected file. The analyzer cannot tell a copy's source from
+    // its destination, so copying *out of* a protected path is blocked too, by design —
+    // the content stays readable through Read, cat and head.
+    [InlineData("cp evil.json dydo.json")]
+    [InlineData("cp permissive.md dydo/files-off-limits.md")]
+    [InlineData("cp dydo/index.md backup.md")]
+    // A permission change is not a content write, but it was blocked before the tier existed
+    // and it is the classic self-escalation lever against the guard's own config.
+    [InlineData("chmod 777 dydo.json")]
+    public async Task Guard_ProtectedPath_BashMutatingOperationBlocked(string command)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(
+            $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
+
+        // "protected", not "off-limits": the tier, not the old block list, is what stops this.
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED:");
+        result.AssertStderrContains("protected");
+    }
+
+    [Theory]
+    [InlineData("cat dydo/index.md")]
+    [InlineData("head -n 5 dydo.json")]
+    public async Task Guard_ProtectedPath_BashReadAllowed(string command)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(
+            $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_UnprotectedPath_WriteToolsStillPass()
+    {
+        await InitProjectAsync("none");
+
+        // The tier is three files wide: ordinary source stays writable on both lanes.
+        var edit = await GuardWithStdinAsync(
+            $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Edit\",\"tool_input\":{{\"file_path\":\"src/Foo.cs\"}}}}");
+        var patch = await GuardWithStdinAsync(
+            $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"apply_patch\",\"tool_input\":{{\"file_path\":\"src/Foo.cs\"}}}}");
+
+        edit.AssertSuccess();
+        patch.AssertSuccess();
     }
 
     #endregion

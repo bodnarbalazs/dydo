@@ -303,7 +303,13 @@ public static class InitCommand
     // the shell analyzer once they reach the guard.
     internal const string CodexShellTools = "shell_command|exec|local_shell|unified_exec";
 
-    private const string CodexGuardMatcher = GuardMatcher + "|apply_patch|" + CodexShellTools;
+    // Codex's own matcher, not Claude's: the documented Codex names come first (shell and
+    // unified exec arrive as Bash, apply_patch also as Edit/Write, spawn_agent as Agent), and
+    // the legacy shell names above are retained on purpose — they were added empirically
+    // (issue 0295) and the documentation reading is unproven against the installed Codex.
+    // Claude-only UI names (Read, Glob, Grep, PowerShell, plan mode, AskUserQuestion) are
+    // dropped: Codex never emits them, so they could only ever be dead configuration.
+    private const string CodexGuardMatcher = "Bash|apply_patch|Edit|Write|Agent|" + CodexShellTools;
 
     private static void ConfigureGuardHook(JsonNode settings, string matcher)
     {

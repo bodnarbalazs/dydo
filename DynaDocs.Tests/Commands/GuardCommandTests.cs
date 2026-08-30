@@ -492,16 +492,12 @@ public class GuardCommandTests : IDisposable
     }
 
     [Fact]
-    public void DefaultNudges_Tier1SourceWriteReminder_IsSoftAndToolScoped()
+    public void DefaultNudges_ShipNoToolScopedNudge()
     {
-        // Decision 026 §4: shipped as a notice (exit-0 warning), scoped to the
-        // direct file-op tools, targeting the {source}/{tests} path sets.
-        var nudge = ConfigFactory.DefaultNudges.Single(n => n.Tools is { Count: > 0 });
-
-        Assert.Equal("notice", nudge.Severity);
-        Assert.Equal("{source}|{tests}", nudge.Pattern);
-        Assert.Equal(new[] { "Edit", "Write", "NotebookEdit" }, nudge.Tools);
-        Assert.Contains("if it needs a reviewer, it needs a workflow", nudge.Message);
+        // The Decision 026 source-write reminder retired with the workflow it pointed at
+        // (DR 045): nothing shipped is tool-scoped or audience-scoped any more.
+        Assert.DoesNotContain(ConfigFactory.DefaultNudges, n => n.Tools is { Count: > 0 });
+        Assert.DoesNotContain(ConfigFactory.DefaultNudges, n => n.Pattern == "{source}|{tests}");
     }
 
     #endregion
@@ -629,6 +625,38 @@ public class GuardCommandTests : IDisposable
 
         Assert.Null(result);
         Assert.Empty(stderr);
+    }
+
+    // The exact text shipped before DR 045 retired it. An install materialized under 2.x
+    // still carries it in dydo.json, so the guard has to drop it rather than keep pointing
+    // agents at the run-sprint workflow 3.0 deletes.
+    private const string RetiredDoctrineMessage =
+        "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint "
+        + "workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.";
+
+    [Fact]
+    public void CheckFileNudges_RetiredDoctrineNudgeInConfig_NoLongerFires()
+    {
+        WriteConfigWithFileNudge("{source}|{tests}", RetiredDoctrineMessage, "notice");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void CheckFileNudges_UserEditedMessageOnTheSamePattern_StillFires()
+    {
+        // Only the shipped text self-heals; docs promise the message stays editable.
+        WriteConfigWithFileNudge("{source}|{tests}", "our own house rule", "notice");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
+
+        Assert.Null(result);
+        Assert.Contains("NOTICE: our own house rule", stderr);
     }
 
     [Fact]
@@ -824,6 +852,40 @@ public class GuardCommandTests : IDisposable
                 ]
             }
             """);
+    }
+
+    #endregion
+
+    #region Review-Block Nudge (DR 045 §3)
+
+    private static NudgeConfig ReviewBlockNudge() =>
+        Assert.Single(ConfigFactory.DefaultNudges, n => n.Pattern.Contains(@"pr\s+create"));
+
+    [Fact]
+    public void ReviewBlockNudge_PrCreateWithoutTheBlock_BlocksOnce()
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge("gh pr create --title x --body 'ships the fix'", env);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: Paste the review block.", stderr);
+    }
+
+    [Fact]
+    public void ReviewBlockNudge_PrCreateCarryingTheBlock_StaysSilent()
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(
+            "gh pr create --body '## Independent review — rubric: code, verdict: PASS'", env);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
     }
 
     #endregion

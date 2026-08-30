@@ -43,7 +43,8 @@
       "docs-writer": "standard",
       "reviewer": "strong",
       "inquisitor": "strong",
-      "planner": "strong"
+      "implementer": "strong",
+      "research": "standard"
     },
     "efforts": {},
     "fallback": null
@@ -90,17 +91,6 @@
       "severity": "warn"
     },
     {
-      "pattern": "{source}|{tests}",
-      "message": "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
-      "severity": "notice",
-      "tools": [
-        "Edit",
-        "Write",
-        "NotebookEdit"
-      ],
-      "audience": "manager"
-    },
-    {
       "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|roles|validate|inquisition)\\b.*)",
       "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
       "severity": "block"
@@ -113,6 +103,11 @@
     {
       "pattern": "\\bwhile\\s\u002B(?:true|:)\\s*;\\s*do\\b(?:(?!\\bdone\\b)[\\s\\S])*\\bsleep\\b",
       "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes (issue 0177).",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;\u0026|]\\s*)gh\\s\u002Bpr\\s\u002Bcreate\\b(?![\\s\\S]*Independent review)",
+      "message": "This PR carries no review block. Paste the independent reviewer\u0027s block under an \u0027Independent review\u0027 heading in the body \u2014 rubric, reviewer and model, candidate and base SHA, verdict, gates rerun, findings.",
       "severity": "warn"
     }
   ],

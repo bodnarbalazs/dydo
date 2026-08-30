@@ -195,24 +195,11 @@ public class InitCommandTests : IntegrationTestBase
         var preToolUseEntry = Assert.Single(preToolUse);
         Assert.NotNull(preToolUseEntry);
         var matcher = preToolUseEntry["matcher"]?.GetValue<string>();
-        Assert.NotNull(matcher);
-        Assert.Contains("Edit", matcher);
-        Assert.Contains("Write", matcher);
-        Assert.Contains("Read", matcher);
-        Assert.Contains("Bash", matcher);
-        Assert.Contains("PowerShell", matcher);
-        Assert.Contains("Agent", matcher);
-        Assert.Contains("EnterPlanMode", matcher);
-        Assert.Contains("ExitPlanMode", matcher);
-        Assert.Contains("NotebookEdit", matcher);
-        Assert.Contains("AskUserQuestion", matcher);
-        Assert.Contains("apply_patch", matcher);
-        // Codex shell tool names (issue 0295) — without these the guard never sees codex shell
-        // commands, so off-limits/dangerous-bash/git-safety don't bind on the codex shell lane.
-        Assert.Contains("shell_command", matcher);
-        Assert.Contains("exec", matcher);
-        Assert.Contains("local_shell", matcher);
-        Assert.Contains("unified_exec", matcher);
+        // The documented Codex tool names first, then the legacy shell names kept from issue
+        // 0295 (without them the guard never sees Codex shell commands, so off-limits and
+        // dangerous-bash don't bind on that lane). Claude-only UI names are dropped: Codex
+        // never emits them, and a matcher entry that can never fire is dead configuration.
+        Assert.Equal("Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec", matcher);
 
         var guardHooks = Assert.IsType<JsonArray>(preToolUseEntry["hooks"]);
         var guardHook = Assert.Single(guardHooks);

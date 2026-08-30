@@ -15,6 +15,7 @@ using DynaDocs.Utils;
 ///
 /// Security layers (checked in order):
 /// 1. Global off-limits patterns (files-off-limits.md) - blocks ALL operations
+/// 1b. Protected patterns (files-off-limits.md) - blocks writes and deletes, allows reads
 /// 2. Dangerous command patterns (for Bash tool) - always blocked
 /// 3. Bash command analysis - extracts file operations and checks each
 /// 4. Role-based permissions - for write operations
@@ -98,6 +99,22 @@ public static partial class GuardCommand
     // lockstep with InitCommand.CodexShellTools, which puts the same names in the hook matcher.
     private static readonly HashSet<string> ShellTools = new(StringComparer.OrdinalIgnoreCase)
         { "bash", "powershell", "shell_command", "exec", "local_shell", "unified_exec" };
+
+    // Actions that mutate the file they name. The protected tier binds on these only, so an
+    // agent can still read its orientation files. The hook maps Edit/Write/NotebookEdit here,
+    // and the CLI lane carries the verb directly (arg mode has no tool name — issue 0302).
+    private static readonly HashSet<string> MutatingActions =
+        new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
+
+    // Codex delivers file edits as apply_patch, which HookInputExtensions maps to no action at
+    // all. It is in the Codex hook matcher precisely as the Codex form of Edit/Write, so it is
+    // named here too — otherwise the protected tier would bind on Claude's lane only.
+    private static readonly HashSet<string> MutatingTools =
+        new(StringComparer.OrdinalIgnoreCase) { "apply_patch" };
+
+    private static bool IsMutatingCall(string? action, string? toolName) =>
+        (action != null && MutatingActions.Contains(action))
+        || (toolName != null && MutatingTools.Contains(toolName));
 
     private static bool ShouldRouteToShellHandler(string? toolName, string? bashCommand)
     {
@@ -259,14 +276,21 @@ public static partial class GuardCommand
     private static int? RouteToolLayers(
         string? filePath, string? action, string? bashCommand, string? toolName,
         string? searchPath, string? sessionId,
-        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env)
     {
-        // SECURITY LAYER 1: off-limits patterns for direct file operations.
+        // SECURITY LAYER 1: off-limits patterns for direct file operations, then the protected
+        // tier for the mutating ones.
         if (!string.IsNullOrEmpty(filePath))
         {
             var blocked = BlockIfPathOffLimits(filePath, offLimitsService);
             if (blocked != null) return blocked.Value;
+
+            if (IsMutatingCall(action, toolName))
+            {
+                var protectedBlock = BlockIfPathProtected(filePath, offLimitsService);
+                if (protectedBlock != null) return protectedBlock.Value;
+            }
         }
 
         // SECURITY LAYER 2: Bash tool
@@ -340,7 +364,7 @@ public static partial class GuardCommand
     /// </summary>
     private static int HandleWorkerCall(
         GuardContext ctx, string? filePath, string? searchPath,
-        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
@@ -357,6 +381,12 @@ public static partial class GuardCommand
 
         if (!string.IsNullOrEmpty(filePath))
         {
+            if (IsMutatingCall(ctx.Action, ctx.ToolName) && !IsNativeMemoryPath(filePath))
+            {
+                var protectedBlock = BlockIfPathProtected(filePath, offLimitsService);
+                if (protectedBlock != null) return protectedBlock.Value;
+            }
+
             var nudged = CheckFileNudges(ctx.ToolName, filePath, env, "worker");
             if (nudged != null) return nudged.Value;
         }
@@ -379,6 +409,28 @@ public static partial class GuardCommand
         Console.Error.WriteLine($"  Path: {path}");
         Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
         Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+        return ExitCodes.ToolError;
+    }
+
+    /// <summary>
+    /// Shared protected-tier check (DR 045 §10) for a path the caller is about to change.
+    /// Callers gate on the operation being a write or a delete; this one only decides whether
+    /// the path is protected and reports it. <paramref name="detected"/> carries the bash
+    /// analyzer's op description so a shell block names what it saw.
+    /// </summary>
+    internal static int? BlockIfPathProtected(
+        string path, OffLimitsService offLimitsService, string? detected = null)
+    {
+        var protectedPattern = offLimitsService.IsPathProtected(path);
+        if (protectedPattern == null)
+            return null;
+
+        Console.Error.WriteLine("BLOCKED: Path is protected — every agent may read it, none may write or delete it.");
+        Console.Error.WriteLine($"  Path: {path}");
+        Console.Error.WriteLine($"  Pattern: {protectedPattern}");
+        if (detected != null)
+            Console.Error.WriteLine($"  Detected: {detected}");
+        Console.Error.WriteLine("  This file is human-owned: read it freely, and ask the human for any change.");
         return ExitCodes.ToolError;
     }
 
@@ -410,18 +462,18 @@ public static partial class GuardCommand
     private static int HandleBashCommand(
         string command,
         string? sessionId,
-        IOffLimitsService offLimitsService,
+        OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env,
         bool isWorker = false)
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Tier-2 workers don't run dydo commands — that machinery is the orchestrator's job.
+        // Tier-2 workers don't run dydo commands — that machinery belongs to the manager.
         if (isDydo && isWorker)
         {
             Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands — that belongs to the");
-            Console.Error.WriteLine("  top-level orchestrator, not a worker.");
+            Console.Error.WriteLine("  manager who spawned you, not a worker.");
             return ExitCodes.ToolError;
         }
 
@@ -525,18 +577,20 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Evaluates tool-scoped nudges (NudgeConfig.Tools) against a direct file-op path.
-    /// Ships the Decision 026 §4 Tier-1 source-write reminder: severity "notice" is an
-    /// exit-0 stderr warning, never a block — the trivial-edit exception stays frictionless.
+    /// Nothing shipped is tool-scoped — the pipeline exists for project configuration.
     /// Patterns are '|'-separated globs; {source}/{tests} expand to the dydo.json path sets.
-    /// Returns an exit code for block-severity matches and the first warn encounter.
+    /// Severity "notice" is an exit-0 stderr warning; "warn" blocks the first encounter and
+    /// lets the retry through; "block" always blocks.
     /// </summary>
     internal static int? CheckFileNudges(string? toolName, string filePath, GuardEnv env, string audience = "manager")
     {
         if (string.IsNullOrEmpty(toolName))
             return null;
 
-        var nudges = env.Config?.Nudges;
-        if (nudges == null || nudges.Count == 0)
+        // Reconciled, not raw: a config still carrying a retired shipped nudge must stop
+        // firing it here too, exactly as CheckNudges already guarantees on the bash lane.
+        var nudges = MergeSystemNudges(env.Config?.Nudges);
+        if (nudges.Count == 0)
             return null;
 
         // Resolved lazily — most calls have no tool-scoped nudge for this tool.
@@ -646,6 +700,9 @@ public static partial class GuardCommand
         "Use dydo worktree commands instead of git worktree directly.",
         "Use dydo worktree cleanup instead of deleting worktree directories directly.",
         "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
+        // Retired Decision 026 managers-doctrine nudge (DR 045): it points at the run-sprint
+        // workflow 3.0 deletes, so an install still carrying it must stop firing it.
+        "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
     ];
 
     /// <summary>
@@ -701,7 +758,7 @@ public static partial class GuardCommand
     }
 
     private static int AnalyzeAndCheckBashOperations(
-        string command, IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer)
+        string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer)
     {
         var analysis = bashAnalyzer.Analyze(command);
 
@@ -729,7 +786,7 @@ public static partial class GuardCommand
         return ExitCodes.Success;
     }
 
-    internal static int? CheckBashFileOperation(FileOperation op, IOffLimitsService offLimitsService)
+    internal static int? CheckBashFileOperation(FileOperation op, OffLimitsService offLimitsService)
     {
         // Native memory is exempt for any op type (out of dydo's jurisdiction).
         // Everything else is subject to the universal off-limits check.
@@ -745,6 +802,16 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"  Detected: {op.Type} via {op.Command}");
             return ExitCodes.ToolError;
         }
+
+        // Anything that is not a read of op.Path can leave different bytes or different
+        // permissions there: writes, deletes, moves, copies, chmod/chown/takeown. Stated as an
+        // exclusion so a future op type is guarded by default instead of silently exempt, and
+        // because the analyzer tags a copy's source and destination alike — `cp <protected>
+        // elsewhere` is blocked too. Conservative on purpose: no wider than the off-limits
+        // block these paths carried before, and the content stays readable through
+        // Read, cat and head. Execute names a binary to run, not a file to change.
+        if (op.Type is not (FileOperationType.Read or FileOperationType.Execute))
+            return BlockIfPathProtected(op.Path, offLimitsService, $"{op.Type} via {op.Command}");
 
         return null;
     }

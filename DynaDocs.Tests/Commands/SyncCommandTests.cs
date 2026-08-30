@@ -410,11 +410,9 @@ public class SyncCommandTests : IDisposable
         SyncCommand.SyncRole(_reviewer, _testDir);
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md"));
 
-        // Timeless methodology survives
-        Assert.Contains("Mindset", skill);
-        Assert.Contains("YOU SHALL NOT PASS", skill);
-        // Target rubrics ride resources/ (DR-039 subskills); the SKILL keeps the pointer map
-        Assert.Contains("Review Targets", skill);
+        // The review method and target rubrics survive compilation.
+        Assert.Contains("Decide whether one candidate satisfies its contract", skill);
+        Assert.Contains("## Method", skill);
         Assert.Contains("resources/plan.md", skill);
 
         // Old-runtime orchestration is gone
@@ -711,16 +709,14 @@ public class SyncCommandTests : IDisposable
         Assert.Equal(claudeContent, codexContent);
         foreach (var required in new[]
         {
-            "Kaizen is continuous improvement through small changes.",
-            "1.01^365 ≈ 37.8",
-            "Product behavior never triggers this skill.",
-            "These are harness classifications, not standing authorization. None routes product work.",
-            "Otherwise create or modify nothing",
-            "including record creation or modification.",
-            "harness implementation code only when the earlier layers cannot express the behavior.",
-            "Do not propose or perform product-feature or product-code changes, including benevolent or otherwise authorized adjacent product work; kaizen here applies only to the agent harness and its documentation and process surfaces.",
-            "Define verification and rollback",
-            "never memory",
+            "Apply kaizen to the agent harness",
+            "at least twice in available evidence",
+            "Choose one lever",
+            "Check authority",
+            "Define proof and rollback",
+            "Product behavior is outside this skill",
+            "Do not alter product behavior",
+            "If no small credible improvement survives these checks",
         })
         {
             Assert.Contains(required, claudeContent);
@@ -1021,13 +1017,12 @@ public class SyncCommandTests : IDisposable
         }
     }
 
-    // --- Tier-1 manager modes (Decision 026) ---
+    // --- Skill-only coordinating roles ---
 
     [Fact]
-    public void SyncCommand_Run_GeneratesTier1ManagerSkills_ButNoAgents()
+    public void SyncCommand_Run_GeneratesCoordinatingSkills_ButNoAgents()
     {
-        // Decision 026: orchestrator / co-thinker / chief-of-staff mode skills join the
-        // sync output, but Tier-1 identities are terminal sessions, never sub-agents.
+        // Coordinating methodologies are invokable skills, not spawnable worker definitions.
         var originalDir = Directory.GetCurrentDirectory();
         try
         {
@@ -1039,9 +1034,9 @@ public class SyncCommandTests : IDisposable
             foreach (var role in new[] { "orchestrator", "co-thinker", "chief-of-staff" })
             {
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")),
-                    $"missing Tier-1 skill: {role}");
+                    $"missing coordinating skill: {role}");
                 Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")),
-                    $"Tier-1 mode '{role}' must NOT get a native agent definition");
+                    $"coordinating skill '{role}' must NOT get a native agent definition");
             }
         }
         finally
@@ -1054,18 +1049,15 @@ public class SyncCommandTests : IDisposable
     [InlineData("orchestrator")]
     [InlineData("co-thinker")]
     [InlineData("chief-of-staff")]
-    public void Tier1ManagerSkills_StateTheManagersDoctrine(string roleName)
+    public void CoordinatingSkills_StateTheirOwnBoundaryWithoutSharedDoctrine(string roleName)
     {
-        // Every Tier-1 mode skill states the doctrine: managers write no code,
-        // implementation follows independently reviewed intent, with a trivial-edit exception.
         var role = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == roleName);
         SyncCommand.SyncSkillOnlyRole(role, _testDir);
 
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md"));
-        Assert.Contains("Managers Doctrine", skill);
-        Assert.Contains("reviewed intent", skill);
-        Assert.Contains("workflow", skill);
-        Assert.Contains("if it needs a reviewer", skill);
+        Assert.Contains("does not", role.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Managers Doctrine", skill);
+        Assert.DoesNotContain("Tier-1", skill);
     }
 
     [Fact]
@@ -1075,16 +1067,13 @@ public class SyncCommandTests : IDisposable
         SyncCommand.SyncSkillOnlyRole(chief, _testDir);
 
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md"));
-        // The human's right hand: triage + routing, status reports, mediation
-        Assert.Contains("right hand", skill);
-        Assert.Contains("Triage the funnel", skill);
-        Assert.Contains("Status reports", skill);
-        Assert.Contains("Escalations awaiting decisions", skill);
-        Assert.Contains("Gates awaiting the human", skill);
-        Assert.Contains("Mediate", skill);
-        // Invariants: never in an approval path; PM objects/docs, never code
-        Assert.Contains("never in an approval path", skill);
-        Assert.Contains("never code", skill);
+        Assert.Contains("### Triage", skill);
+        Assert.Contains("### Report", skill);
+        Assert.Contains("### Mediate", skill);
+        Assert.Contains("### Keep the board honest", skill);
+        Assert.Contains("You are staff, not line", skill);
+        Assert.Contains("work funnel", chief.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("memory", skill, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -1099,11 +1088,12 @@ public class SyncCommandTests : IDisposable
         Assert.DoesNotContain("dydo worktree merge", methodology);
         Assert.DoesNotContain("--role inquisitor", methodology);
         Assert.DoesNotContain("--role code-writer", methodology);
-        // The Linear-native reality is stated instead.
+        // The current Linear/Git boundary remains explicit.
         Assert.DoesNotContain("run-sprint", methodology);
-        Assert.Contains("Linear Issues", methodology);
-        Assert.Contains("native platform delegation", methodology);
-        Assert.Contains("integrated audit", methodology);
+        Assert.Contains("Linear Issue", methodology);
+        Assert.Contains("workers implement", methodology);
+        Assert.Contains("Audit the whole", methodology);
+        Assert.DoesNotContain("callback", methodology, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -1113,6 +1103,6 @@ public class SyncCommandTests : IDisposable
 
         Assert.DoesNotContain("dydo agent role code-writer", raw);
         Assert.DoesNotContain("--role planner", raw);
-        Assert.Contains("reviewed workflow", raw);
+        Assert.Contains("Do not turn exploration into implementation", raw);
     }
 }

@@ -21,15 +21,15 @@ public class WayfinderHarmonyTests : IDisposable
     }
 
     [Fact]
-    public void PlannerSkill_ResolvesGlossaryLink_AndPlansOnlyTheVisibleIncrement()
+    public void PlannerSkill_ResolvesGlossaryLink_AndRejectsSpeculativeCompleteRoutes()
     {
         var skillPath = CompileSkill("planner");
         var skill = File.ReadAllText(skillPath);
 
         const string glossaryTarget = "../../../dydo/reference/dydo-glossary.md";
         Assert.Contains($"[dydo glossary]({glossaryTarget})", skill);
-        Assert.Contains("plan only the currently visible Issue or bounded Project-plan", skill);
-        Assert.Contains("Never turn Fog into speculative Linear work", skill);
+        Assert.Contains("foggy beyond its visible frontier", skill);
+        Assert.Contains("instead of manufacturing a complete route", skill);
 
         var resolvedGlossary = Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(skillPath)!,
@@ -51,21 +51,24 @@ public class WayfinderHarmonyTests : IDisposable
     }
 
     [Fact]
-    public void ManagerSkills_KeepProjectNavigationInTheCurrentTopLevelConversation()
+    public void ManagerSkills_PreserveHumanNavigationAuthorityWithoutWaypointOrSessionChoreography()
     {
         var coThinker = File.ReadAllText(CompileSkill("co-thinker"));
-        Assert.Contains("Only the human\npromotes a FutureFeature into exactly one Linear Initiative, Project, or Issue", coThinker.Replace("\r\n", "\n"));
-        Assert.Contains("skill in this same top-level conversation", coThinker);
-        Assert.Contains("Grilling is a method for eliciting and nailing down intent", coThinker);
+        Assert.Contains("Only the human promotes a FutureFeature to Linear", coThinker);
+        Assert.Contains("recommend—never invoke—Wayfinder to the human", coThinker);
 
         var chiefOfStaff = File.ReadAllText(CompileSkill("chief-of-staff"));
-        Assert.Contains("only authority that\n  promotes a FutureFeature into exactly one Linear Initiative, Project, or Issue", chiefOfStaff.Replace("\r\n", "\n"));
-        Assert.Contains("top-level manager to\n  Wayfinder", chiefOfStaff.Replace("\r\n", "\n"));
-        Assert.Contains("do not start another top-level session or choose its Waypoints", chiefOfStaff);
+        Assert.Contains("Only the human promotes a FutureFeature to Linear", chiefOfStaff);
 
         var orchestrator = File.ReadAllText(CompileSkill("orchestrator"));
-        Assert.Contains("Return the audited delivery result and its evidence to the invoking top-level manager", orchestrator);
-        Assert.Contains("Never\n  choose the next Waypoint or spawn or coordinate top-level sessions", orchestrator.Replace("\r\n", "\n"));
+        Assert.Contains("Ask the human only for authority or judgment", orchestrator);
+
+        foreach (var skill in new[] { coThinker, chiefOfStaff, orchestrator })
+        {
+            Assert.DoesNotContain("Waypoint", skill);
+            Assert.DoesNotContain("top-level session", skill, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("invoke Wayfinder", skill, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private string CompileSkill(string roleName)

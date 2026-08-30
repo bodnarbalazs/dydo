@@ -119,9 +119,10 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(codexSibling));
     }
 
-    // DR 045: the orchestrator retires into the manager hat. Its shipped template survives the
-    // transition, so discovery must skip a retired name — otherwise the role stays "active", the
-    // sweep is suppressed, and the stale skill folder outlives the role on both hosts.
+    // DR 045: the orchestrator retires into the manager hat. Its template file still ships
+    // through the transition, so a retired name must leave the shipped template set — otherwise
+    // the role stays "active", the sweep below is suppressed by dydo's own source, and the stale
+    // skill folder outlives the role on both hosts.
     [Fact]
     public void Execute_RetiredOrchestrator_RemovesStaleSkillFoldersOnBothHosts()
     {

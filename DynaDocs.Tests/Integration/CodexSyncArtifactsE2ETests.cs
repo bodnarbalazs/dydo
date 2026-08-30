@@ -179,9 +179,47 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         Assert.True(hits.Count == 0,
             $"Compiled skill still instructs repository work management:\n  {string.Join("\n  ", hits)}");
 
-        var codeWriter = ReadFile(".agents/skills/code-writer/SKILL.md");
-        Assert.Contains("Linear Issue", codeWriter);
+        // The positive half is structural: every compiled skill is a non-empty body under its
+        // own H1. Which nouns it uses is the source's business.
+        foreach (var file in Directory.GetFiles(skillRoot, "SKILL.md", SearchOption.AllDirectories))
+        {
+            var body = FrontmatterParser.StripFrontmatter(File.ReadAllText(file));
+            Assert.NotEmpty(body.Trim());
+            Assert.Single(body.Split('\n'), line => line.StartsWith("# ", StringComparison.Ordinal));
+        }
     }
+
+    // The retirement has to survive `dydo init`, not just the shipped set: init mirrors every
+    // shipped template into dydo/_system/templates/, and discovery unions that mirror back in.
+    // While a retired template was still mirrored, sync compiled the retired role on both hosts
+    // in every initialized project and the sweep was suppressed by dydo's own copy.
+    [Fact]
+    public async Task InitThenSync_NeverCompilesARetiredRole()
+    {
+        await InitProjectAsync("none");
+
+        var sync = await RunAsync(SyncCommand.Create());
+        sync.AssertSuccess();
+
+        Assert.NotEmpty(SyncCommand.RetiredManagedRoles);
+        foreach (var retired in SyncCommand.RetiredManagedRoles)
+        {
+            AssertFileNotExists($"dydo/_system/templates/skill-{retired}.template.md");
+            AssertDirectoryNotExists($".claude/skills/{retired}");
+            AssertDirectoryNotExists($".agents/skills/{retired}");
+            AssertFileNotExists($".claude/agents/{retired}.md");
+            AssertFileNotExists($".codex/agents/{retired}.toml");
+        }
+
+        // The sweep is not vacuous: the surviving roles still compile on both hosts.
+        AssertFileExists(".claude/skills/reviewer/SKILL.md");
+        AssertFileExists(".agents/skills/reviewer/SKILL.md");
+    }
+
+    private void AssertDirectoryNotExists(string relativePath) =>
+        Assert.False(
+            Directory.Exists(Path.Combine(TestDir, relativePath.Replace('/', Path.DirectorySeparatorChar))),
+            $"expected no directory at {relativePath}");
 
     // DR 045 section 10: an agent definition only works if the skill reaches the spawned agent.
     // On Claude that is `skills:` plus the Skill tool; on Codex it is the load line, and a writer

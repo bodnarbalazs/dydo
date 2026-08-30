@@ -46,19 +46,16 @@ public class WayfinderHarmonyTests : IDisposable
             .Select(match => match.Groups[1].Value)
             .Where(target => target.Contains("/dydo/", StringComparison.Ordinal));
 
-    // DR 045 section 11 retires the Waypoint ontology and the session-choreography vocabulary;
-    // no compiled skill may reintroduce either.
+    // DR 045 section 11 retires the Waypoint ontology from the vocabulary, and nothing else in
+    // the navigation wording: the same DR calls the implementer the hat a top-level session
+    // wears, and makes wayfinder a method other roles invoke. Banning those phrases would fail
+    // DR-conformant prose.
     [Fact]
-    public void CompiledSkills_CarryNoRetiredNavigationVocabulary()
+    public void CompiledSkills_CarryNoRetiredWaypointOntology()
     {
         foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
-        {
-            var skill = File.ReadAllText(CompileSkill(role.Name));
-
-            Assert.DoesNotContain("Waypoint", skill, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("top-level session", skill, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("invoke Wayfinder", skill, StringComparison.OrdinalIgnoreCase);
-        }
+            Assert.DoesNotContain(
+                "Waypoint", File.ReadAllText(CompileSkill(role.Name)), StringComparison.OrdinalIgnoreCase);
     }
 
     private string CompileSkill(string roleName)

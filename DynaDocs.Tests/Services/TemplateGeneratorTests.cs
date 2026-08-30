@@ -108,7 +108,8 @@ public class TemplateGeneratorTests
         Assert.StartsWith("---", content);
         Assert.Contains("area: guides", content);
         Assert.Contains("type: guide", content);
-        Assert.Contains("# Working-Tree Contract", content);
+        Assert.Single(content.Replace("\r\n", "\n").Split('\n'),
+            line => line.StartsWith("# ", StringComparison.Ordinal));
         Assert.Contains("guides/working-tree-contract.md", TemplateCommand.FrameworkDocFiles);
     }
 

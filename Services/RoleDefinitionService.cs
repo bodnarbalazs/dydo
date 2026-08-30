@@ -1,6 +1,5 @@
 namespace DynaDocs.Services;
 
-using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -17,18 +16,14 @@ public class RoleDefinitionService : IRoleDefinitionService
     /// template frontmatter: <c>description</c>, <c>emit</c> (agent+skill unless <c>skill</c>),
     /// <c>read-only</c>, <c>delegates</c>, <c>invocation</c>.
     ///
-    /// A shipped template whose role name is retired is skipped, so sync's retired-artifact
-    /// sweep is never suppressed by a source dydo still carries through a transition. A
-    /// project-local template of that name still defines the role.
+    /// The shipped set already excludes retired names, so sync's retired-artifact sweep is
+    /// never suppressed by a source dydo still carries through a transition. A project-local
+    /// template of a retired name still defines the role — that is the deliberate escape hatch.
     /// </summary>
     public static List<RoleDefinition> DiscoverRoles(string? projectRoot = null)
     {
-        var retired = SyncCommand.RetiredManagedRoles
-            .Select(name => $"skill-{name}.template.md")
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var templateNames = new SortedSet<string>(
-            TemplateGenerator.GetBuiltInSkillTemplateNames().Where(name => !retired.Contains(name)),
-            StringComparer.OrdinalIgnoreCase);
+            TemplateGenerator.GetBuiltInSkillTemplateNames(), StringComparer.OrdinalIgnoreCase);
         templateNames.UnionWith(TemplateGenerator.GetProjectSkillTemplateNames(projectRoot));
 
         var roles = new List<RoleDefinition>();

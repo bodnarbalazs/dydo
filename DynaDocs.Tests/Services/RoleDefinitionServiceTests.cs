@@ -51,23 +51,55 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("grill-me", names);
         Assert.Contains("bro", names);
         Assert.Contains("writing-for-agents", names);
-        // Retired roles stay retired — including any whose shipped template still exists during a
-        // transition, or sync's retired-artifact sweep would be suppressed by its own source.
+        // Retired roles stay retired — including any whose template file dydo still ships
+        // through a transition, or sync's retired-artifact sweep would be suppressed by its own
+        // source and the role would outlive its retirement in every initialized project.
         Assert.DoesNotContain("judge", names);
         Assert.All(SyncCommand.RetiredManagedRoles, retired => Assert.DoesNotContain(retired, names));
     }
 
+    // Derived from the source tree rather than from the shipped-set API, so it still proves
+    // the exclusion after that API became the place the exclusion happens.
     [Fact]
-    public void DiscoverRoles_ShippedRoles_AreTheShippedSkillTemplatesMinusRetiredNames()
+    public void DiscoverRoles_ShippedRoles_AreTheAuthoredSkillTemplatesMinusRetiredNames()
     {
-        var shipped = TemplateGenerator.GetBuiltInSkillTemplateNames()
-            .Select(name => name["skill-".Length..^".template.md".Length]);
+        var authored = Directory
+            .GetFiles(Path.Combine(RepositoryRoot(), "Templates"), "skill-*.template.md")
+            .Select(path => Path.GetFileName(path)!["skill-".Length..^".template.md".Length]);
 
         var names = RoleDefinitionService.DiscoverRoles(_testDir).Select(r => r.Name).ToList();
 
         Assert.Equal(
-            shipped.Except(SyncCommand.RetiredManagedRoles).OrderBy(n => n, StringComparer.Ordinal),
+            authored.Except(SyncCommand.RetiredManagedRoles).OrderBy(n => n, StringComparer.Ordinal),
             names.OrderBy(n => n, StringComparer.Ordinal));
+        Assert.NotEmpty(names);
+    }
+
+    // A retired name must also leave the set `dydo init` mirrors and `dydo template update`
+    // hash-tracks: a mirrored copy would be unioned back into discovery and revive the role in
+    // every initialized project, and while it stays tracked the stale-copy prune cannot remove it.
+    [Fact]
+    public void ShippedTemplateSet_ExcludesRetiredRoles()
+    {
+        foreach (var retired in SyncCommand.RetiredManagedRoles)
+        {
+            var templateName = $"skill-{retired}.template.md";
+            Assert.DoesNotContain(templateName, TemplateGenerator.GetAllTemplateNames());
+            Assert.DoesNotContain(templateName, TemplateGenerator.GetBuiltInSkillTemplateNames());
+            Assert.DoesNotContain(
+                $"_system/templates/{templateName}", TemplateCommand.FrameworkTemplateFiles);
+        }
+    }
+
+    private static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
+                return directory.FullName;
+        }
+
+        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 
     // A project that wants a retired name back drops in its own template; sync then keeps the

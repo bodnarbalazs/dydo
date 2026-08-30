@@ -3,6 +3,7 @@ namespace DynaDocs.Services;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using DynaDocs.Commands;
 using DynaDocs.Models;
 
 /// <summary>
@@ -139,6 +140,14 @@ public static class TemplateGenerator
     /// The shipped skill templates (skill-*.template.md) — the roles `dydo sync` compiles.
     /// Enumerated from embedded resources, plus source Templates/ in dev-mode so a
     /// not-yet-rebuilt template still counts.
+    ///
+    /// A retired role's template is excluded even while the file still ships through a
+    /// transition. This is the single place the exclusion has to happen: everything downstream
+    /// reads the shipped set, so a retired name is not discovered, not mirrored into
+    /// dydo/_system/templates/ by `dydo init`, and not hash-tracked — which is what lets
+    /// `dydo template update` prune an already-mirrored copy as stale instead of reviving the
+    /// role forever. A project that deliberately authors its own skill-&lt;name&gt;.template.md
+    /// still gets the role: that copy is untracked, survives the prune, and joins discovery.
     /// </summary>
     public static IReadOnlyList<string> GetBuiltInSkillTemplateNames()
     {
@@ -157,6 +166,7 @@ public static class TemplateGenerator
                 names.Add(Path.GetFileName(file));
         }
 
+        names.ExceptWith(SyncCommand.RetiredManagedRoles.Select(role => $"skill-{role}.template.md"));
         return names.ToList();
     }
 

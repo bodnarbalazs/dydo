@@ -860,8 +860,14 @@ public class InitCommandTests : IntegrationTestBase
 
     #endregion
 
+    // What init mirrors is the shipped set minus retired names: mirroring a retired template
+    // would union it straight back into role discovery.
     private static IEnumerable<string> ShippedSkillTemplateNames()
     {
+        var retired = SyncCommand.RetiredManagedRoles
+            .Select(role => $"skill-{role}.template.md")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
         {
             if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
@@ -869,6 +875,7 @@ public class InitCommandTests : IntegrationTestBase
                 return Directory
                     .GetFiles(Path.Combine(directory.FullName, "Templates"), "skill-*.template.md")
                     .Select(path => Path.GetFileName(path)!)
+                    .Where(name => !retired.Contains(name))
                     .OrderBy(name => name, StringComparer.Ordinal);
             }
         }

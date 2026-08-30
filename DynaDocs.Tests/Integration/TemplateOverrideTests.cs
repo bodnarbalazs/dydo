@@ -110,12 +110,18 @@ public class TemplateOverrideTests : IntegrationTestBase
             "template update must track the working-tree contract by hash");
     }
 
+    // The mirrored set is the authored set minus retired roles and anything that hangs off
+    // them: a retired template mirrored into a project revives the role there.
     private static IEnumerable<string> ShippedTemplateNames()
     {
         var templates = Path.Combine(FindRepositoryRoot(), "Templates");
+        var retired = SyncCommand.RetiredManagedRoles;
         return Directory.GetFiles(templates, "skill-*.template.md")
             .Concat(Directory.GetFiles(templates, "*-resource-*.template.md"))
             .Select(path => Path.GetFileName(path)!)
+            .Where(name => !retired.Any(role =>
+                name.Equals($"skill-{role}.template.md", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith($"{role}-resource-", StringComparison.OrdinalIgnoreCase)))
             .OrderBy(name => name, StringComparer.Ordinal);
     }
 

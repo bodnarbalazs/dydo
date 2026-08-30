@@ -26,10 +26,12 @@ using DynaDocs.Utils;
 /// </summary>
 public static partial class SyncCommand
 {
-    // Framework roles dydo no longer owns. Discovery skips the shipped template of a retired
-    // name (RoleDefinitionService) so the sweep below is never suppressed by a source dydo
-    // itself still ships during a transition; a project-local skill template still defines the
-    // role and keeps its artifacts. This is deliberately not a generic output-directory cleaner.
+    // Framework roles dydo no longer owns. A retired name leaves the shipped template set
+    // (TemplateGenerator.GetBuiltInSkillTemplateNames), so it is never discovered, never
+    // mirrored into a project by `dydo init`, and never hash-tracked — `dydo template update`
+    // prunes an already-mirrored copy as stale, and the sweep below removes whatever it last
+    // compiled. A project that authors its own skill template of that name keeps the role and
+    // suppresses its cleanup. This is deliberately not a generic output-directory cleaner.
     internal static readonly string[] RetiredManagedRoles = ["sprint-auditor", "orchestrator"];
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the

@@ -1,16 +1,14 @@
 ---
 name: bro
-description: Explicitly invoked by the human to re-pitch only the immediately previous assistant response in plain technical English without dumbing it down. The methodology, standards, and checklist for working as a bro.
+description: Explicitly invoked by the human when the immediately previous response did not land and needs a clearer re-pitch.
+disable-model-invocation: true
 ---
+
+<!-- Adapted from mattpocock/skills wait-what at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
 
 # Bro
 
-Re-pitch only your immediately previous response in concise, plain technical English.
-
-- Preserve its exact technical meaning, constraints, conclusions, and uncertainty.
-- Expand unfamiliar abbreviations and explain local or unusually niche terms at first use.
-- Prefer ordinary technical vocabulary over invented shorthand and dense specialist phrasing.
-- Do not add beginner analogies, tutorials, new recommendations, or new analysis unless the human
-  asks for them.
-
-Stop after the re-pitch.
+Re-pitch only the immediately previous response. Supply the missing context, use ASD-STE100 Simplified
+Technical English, and use the project's ubiquitous language from `dydo/glossary.md` and the locked
+`dydo/reference/dydo-glossary.md`. Preserve the technical meaning, constraints, conclusions, and
+uncertainty. Add no new analysis or recommendation.

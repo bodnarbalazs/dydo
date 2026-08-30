@@ -304,3 +304,34 @@ audit.
 - Do not encode explicit invocation only in prose.
 - Do not let exact-wording tests freeze another bad draft; test emitted structure and behavior.
 - Do not complete or ship dydo 3.0 from this Project.
+
+## 7. DYD-48 boundary amendment
+
+During DYD-48 onboarding, two existing assertions were found to require the exact memory and kaizen
+text that P6-2 removes. The original four-path boundary therefore could not pass Gate B or the full CI
+suite. This chronological amendment adds only
+`DynaDocs.Tests/Integration/InitCommandTests.cs` and
+`DynaDocs.Tests/Services/TemplateGeneratorTests.cs` to replace those stale assertions, plus this plan
+record itself. It does not widen the product change.
+
+P6-2 owns exactly these seven paths:
+
+- `Templates/entry-point.template.md`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `DynaDocs.Tests/Integration/EntryPointParityTests.cs`
+- `DynaDocs.Tests/Integration/InitCommandTests.cs`
+- `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`
+- `dydo/project/plans/dydo-3-skill-craftsmanship-restoration.md`
+
+The amended Gate B is:
+
+```powershell
+dotnet build DynaDocs.sln -c Release --no-restore
+py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~EntryPointParityTests|FullyQualifiedName~InitCommandTests|FullyQualifiedName~TemplateGeneratorTests"
+dotnet bin/Release/net10.0/dydo.dll check
+git diff --check -- Templates/entry-point.template.md AGENTS.md CLAUDE.md DynaDocs.Tests/Integration/EntryPointParityTests.cs DynaDocs.Tests/Integration/InitCommandTests.cs DynaDocs.Tests/Services/TemplateGeneratorTests.cs dydo/project/plans/dydo-3-skill-craftsmanship-restoration.md
+```
+
+A fresh review covers all seven paths. The two pre-existing test files may change only to replace the
+stale memory and kaizen assertions with minimal-entry and parity behavior.

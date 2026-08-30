@@ -1,20 +1,9 @@
 # {{PROJECT_NAME}}
 
-<!-- Describe the project here in 2-3 sentences: what it is, who it's for. -->
+Read [dydo/index.md](dydo/index.md) before working. It is the entry point for this project's
+documentation and working conventions.
 
-This project's knowledge lives in [dydo/](dydo/index.md) — the docs are the source of
-truth. Read what bears on your task before acting.
+Linear owns live work. Git and dydo own durable knowledge and evidence.
 
-Before creating a memory, check whether it belongs in dydo — it probably does (issue, decision, guide, or other record). Keep memory only for facts about your human and for harness mechanics no dydo record can hold. Never store incident state or temporary workarounds as memories.
-
-Work happens through skills. Whatever you're about to do, a skill most likely defines how it's done
-here — invoke it and follow it.
-
-When work touches dydo records, planning, roles, skills, or workflows, consult
-`dydo/reference/dydo-glossary.md` and treat defined terms as locked. For project-domain terms,
-consult `dydo/glossary.md`.
-
-Practice kaizen: when a failure, correction, or workaround recurs, treat the pattern as evidence
-that the harness may need one small, durable improvement. Invoke the `self-improvement` skill to
-choose and route the smallest justified change without expanding the current task or silently
-changing policy.
+Shared agent methods are authored in dydo and compiled into platform-native skills and agents.
+Change their source, not generated output.

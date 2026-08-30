@@ -13,7 +13,7 @@ using DynaDocs.Utils;
 /// and Codex <c>.codex/agents/&lt;role&gt;.toml</c> / <c>.agents/skills/&lt;role&gt;/SKILL.md</c>.
 ///
 /// The skill template IS the role: its frontmatter supplies the metadata (description,
-/// emit shape, read-only → tool profile) and its body supplies the methodology prose,
+/// emit shape, invocation policy, read-only → tool profile) and its body supplies the methodology prose,
 /// minus the old-runtime orchestration sections (claim / wait / dispatch / release)
 /// which the native model replaces. Roles are discovered by enumerating
 /// skill-*.template.md — shipped templates plus project-local
@@ -245,7 +245,10 @@ public static partial class SyncCommand
     {
         var skillDir = Path.Combine(projectRoot, ".agents", "skills", role.Name);
         Directory.CreateDirectory(skillDir);
-        WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
+        WriteLf(
+            Path.Combine(skillDir, "SKILL.md"),
+            BuildSkill(role, ExtractMethodology(role, projectRoot), emitClaudePolicy: false));
+        WriteCodexInvocationPolicy(role, skillDir);
         WriteSkillResources(role, skillDir);
     }
 
@@ -256,8 +259,30 @@ public static partial class SyncCommand
     {
         var skillDir = Path.Combine(projectRoot, ".claude", "skills", role.Name);
         Directory.CreateDirectory(skillDir);
-        WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
+        WriteLf(
+            Path.Combine(skillDir, "SKILL.md"),
+            BuildSkill(role, ExtractMethodology(role, projectRoot), emitClaudePolicy: true));
         WriteSkillResources(role, skillDir);
+    }
+
+    private static void WriteCodexInvocationPolicy(RoleDefinition role, string skillDir)
+    {
+        var agentsDir = Path.Combine(skillDir, "agents");
+        var policyFile = Path.Combine(agentsDir, "openai.yaml");
+
+        if (role.ExplicitInvocation)
+        {
+            Directory.CreateDirectory(agentsDir);
+            WriteLf(policyFile, "policy:\n  allow_implicit_invocation: false\n");
+            return;
+        }
+
+        if (!File.Exists(policyFile))
+            return;
+
+        File.Delete(policyFile);
+        if (!Directory.EnumerateFileSystemEntries(agentsDir).Any())
+            Directory.Delete(agentsDir);
     }
 
     /// <summary>
@@ -300,8 +325,6 @@ public static partial class SyncCommand
         var stance = readOnly
             ? "You are read-only: you assess and report, you do not modify the project's files."
             : "You produce and modify the project's files as your task requires.";
-        var descriptionSuffix = readOnly ? " Use to assess changes without modifying the project." : "";
-
         var contextBlock = mustReads.Count == 0 ? "" :
             "\n\nRead these for project context before working:\n"
             + string.Join('\n', mustReads.Select(p => $"- {p}")) + "\n";
@@ -316,7 +339,7 @@ public static partial class SyncCommand
         return $"""
             ---
             name: {role.Name}
-            description: {role.Description}{descriptionSuffix}
+            description: {role.Description}
             tools: {tools}
             model: {model ?? "inherit"}{effortLine}
             ---
@@ -377,14 +400,24 @@ public static partial class SyncCommand
     private static string EscapeToml(string value) =>
         value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
-    private static string BuildSkill(RoleDefinition role, string methodology) => $"""
+    private static string BuildSkill(
+        RoleDefinition role,
+        string methodology,
+        bool emitClaudePolicy)
+    {
+        var invocationPolicy = emitClaudePolicy && role.ExplicitInvocation
+            ? "\ndisable-model-invocation: true"
+            : "";
+
+        return $"""
         ---
         name: {role.Name}
-        description: {role.Description} The methodology, standards, and checklist for working as {Article(role.Name)} {role.Name}.
+        description: {role.Description}{invocationPolicy}
         ---
 
         {methodology}
         """;
+    }
 
     private static string Article(string noun) =>
         "aeiou".Contains(char.ToLowerInvariant(noun[0])) ? "an" : "a";

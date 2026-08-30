@@ -14,7 +14,7 @@ public class RoleDefinitionService : IRoleDefinitionService
     /// <c>dydo/_system/templates/skill-*.template.md</c> — which is how a custom role
     /// compiles: drop a skill template in, run <c>dydo sync</c>. Metadata comes from the
     /// template frontmatter: <c>description</c>, <c>emit</c> (agent+skill unless <c>skill</c>),
-    /// <c>read-only</c>.
+    /// <c>read-only</c>, <c>invocation</c>.
     /// </summary>
     public static List<RoleDefinition> DiscoverRoles(string? projectRoot = null)
     {
@@ -28,6 +28,7 @@ public class RoleDefinitionService : IRoleDefinitionService
             var name = templateFile["skill-".Length..^".template.md".Length];
             var fields = FrontmatterParser.ParseFields(
                 TemplateGenerator.ReadTemplate(templateFile, projectRoot)) ?? [];
+            var explicitInvocation = ParseExplicitInvocation(fields, templateFile);
 
             roles.Add(new RoleDefinition
             {
@@ -38,10 +39,29 @@ public class RoleDefinitionService : IRoleDefinitionService
                     || e.Equals("agent", StringComparison.OrdinalIgnoreCase),
                 ReadOnly = fields.TryGetValue("read-only", out var r)
                     && r.Equals("true", StringComparison.OrdinalIgnoreCase),
+                ExplicitInvocation = explicitInvocation,
             });
         }
 
         return roles;
+    }
+
+    private static bool ParseExplicitInvocation(
+        IReadOnlyDictionary<string, string> fields,
+        string templateFile)
+    {
+        if (!fields.TryGetValue("invocation", out var value)
+            || value.Equals("automatic", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (value.Equals("explicit", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        throw new InvalidDataException(
+            $"Skill template '{templateFile}' has invalid invocation '{value}'; "
+            + "expected 'automatic' or 'explicit'.");
     }
 
     public Dictionary<string, List<string>> ResolvePathSets(DydoConfig? config)

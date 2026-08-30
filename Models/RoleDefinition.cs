@@ -24,4 +24,11 @@ public class RoleDefinition
     /// compiles it to a no-Edit/Write tool profile. Frontmatter key: <c>read-only: true</c>.
     /// </summary>
     public bool ReadOnly { get; init; }
+
+    /// <summary>
+    /// Whether the skill may be selected automatically or only when the human explicitly
+    /// invokes it. Frontmatter key: <c>invocation: automatic | explicit</c>. Missing metadata
+    /// preserves the native default: automatic discovery.
+    /// </summary>
+    public bool ExplicitInvocation { get; init; }
 }

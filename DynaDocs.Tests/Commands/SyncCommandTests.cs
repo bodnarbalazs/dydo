@@ -5,6 +5,7 @@ using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Tests;
+using DynaDocs.Utils;
 using Xunit;
 
 public class SyncCommandTests : IDisposable
@@ -197,6 +198,102 @@ public class SyncCommandTests : IDisposable
 
         Assert.True(File.Exists(
             Path.Combine(_testDir, ".agents", "skills", "reviewer", "resources", "plan.md")));
+    }
+
+    [Fact]
+    public void SyncSkillOnlyRole_ExplicitInvocation_EmitsClaudePolicyOnly()
+    {
+        var wayfinder = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(r => r.Name == "wayfinder");
+
+        SyncCommand.SyncSkillOnlyRole(wayfinder, _testDir);
+
+        var skill = File.ReadAllText(
+            Path.Combine(_testDir, ".claude", "skills", "wayfinder", "SKILL.md"));
+        Assert.Contains("\ndisable-model-invocation: true\n", skill);
+        Assert.Equal(1, skill.Split('\n').Count(line => line == $"description: {wayfinder.Description}"));
+    }
+
+    [Fact]
+    public void SyncSkillOnlyRole_AutomaticInvocation_OmitsClaudePolicy()
+    {
+        var grilling = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(r => r.Name == "grilling");
+
+        SyncCommand.SyncSkillOnlyRole(grilling, _testDir);
+
+        var skill = File.ReadAllText(
+            Path.Combine(_testDir, ".claude", "skills", "grilling", "SKILL.md"));
+        Assert.DoesNotContain("disable-model-invocation", skill);
+        Assert.Contains($"description: {grilling.Description}\n", skill);
+    }
+
+    [Fact]
+    public void SyncCodexSkill_ExplicitInvocation_EmitsOpenAiPolicy()
+    {
+        var wayfinder = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(r => r.Name == "wayfinder");
+
+        SyncCommand.SyncCodexSkill(wayfinder, _testDir);
+
+        var skill = File.ReadAllText(
+            Path.Combine(_testDir, ".agents", "skills", "wayfinder", "SKILL.md"));
+        var policy = File.ReadAllText(
+            Path.Combine(_testDir, ".agents", "skills", "wayfinder", "agents", "openai.yaml"));
+        Assert.DoesNotContain("disable-model-invocation", skill);
+        Assert.Contains($"description: {wayfinder.Description}\n", skill);
+        Assert.Equal("policy:\n  allow_implicit_invocation: false\n", policy);
+    }
+
+    [Fact]
+    public void SyncCodexSkill_AutomaticInvocation_RemovesStalePolicy()
+    {
+        var grilling = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(r => r.Name == "grilling");
+        var agentsDir = Path.Combine(_testDir, ".agents", "skills", "grilling", "agents");
+        Directory.CreateDirectory(agentsDir);
+        var policyFile = Path.Combine(agentsDir, "openai.yaml");
+        File.WriteAllText(policyFile, "policy:\n  allow_implicit_invocation: false\n");
+
+        SyncCommand.SyncCodexSkill(grilling, _testDir);
+
+        Assert.False(File.Exists(policyFile));
+        Assert.False(Directory.Exists(agentsDir));
+    }
+
+    [Fact]
+    public void SyncSkill_RepeatEmission_IsByteIdenticalIncludingInvocationPolicy()
+    {
+        var wayfinder = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(r => r.Name == "wayfinder");
+        SyncCommand.SyncSkillOnlyRole(wayfinder, _testDir);
+        SyncCommand.SyncCodexSkill(wayfinder, _testDir);
+        var files = new[]
+        {
+            Path.Combine(_testDir, ".claude", "skills", "wayfinder", "SKILL.md"),
+            Path.Combine(_testDir, ".agents", "skills", "wayfinder", "SKILL.md"),
+            Path.Combine(_testDir, ".agents", "skills", "wayfinder", "agents", "openai.yaml"),
+        };
+        var first = files.ToDictionary(path => path, File.ReadAllBytes);
+
+        SyncCommand.SyncSkillOnlyRole(wayfinder, _testDir);
+        SyncCommand.SyncCodexSkill(wayfinder, _testDir);
+
+        Assert.All(files, path => Assert.Equal(first[path], File.ReadAllBytes(path)));
+    }
+
+    [Fact]
+    public void SyncRole_DescriptionsPassThroughExactly()
+    {
+        SyncCommand.SyncRole(_reviewer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
+        var skill = File.ReadAllText(
+            Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md"));
+        Assert.Contains($"description: {_reviewer.Description}\n", agent);
+        Assert.Contains($"description: {_reviewer.Description}\n", skill);
+        Assert.DoesNotContain("The methodology, standards, and checklist", skill);
+        Assert.DoesNotContain("Use to assess changes without modifying the project", agent);
     }
 
     [Fact]
@@ -450,7 +547,7 @@ public class SyncCommandTests : IDisposable
         // The skill description must be role-correct, not reviewer-hardcoded
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "code-writer", "SKILL.md"));
         Assert.DoesNotContain("reviewing a code change", skill);
-        Assert.Contains("working as a code-writer", skill);
+        Assert.Contains($"description: {codeWriter.Description}\n", skill);
     }
 
     [Fact]
@@ -748,7 +845,9 @@ public class SyncCommandTests : IDisposable
             var claudeContent = File.ReadAllText(claudeSkill);
             var codexContent = File.ReadAllText(codexSkill);
 
-            Assert.Equal(claudeContent, codexContent);
+            Assert.Equal(
+                FrontmatterParser.StripFrontmatter(claudeContent),
+                FrontmatterParser.StripFrontmatter(codexContent));
             Assert.Contains($"name: {roleName}", claudeContent);
             Assert.Contains("mattpocock/skills", claudeContent);
             Assert.DoesNotContain('\r', claudeContent);

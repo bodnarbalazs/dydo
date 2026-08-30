@@ -730,24 +730,9 @@ public class SyncCommandTests : IDisposable
             entry?.ToJsonString().Contains("dydo guard") == true);
         Assert.NotNull(guardEntry);
         var matcher = guardEntry["matcher"]?.GetValue<string>();
-        Assert.NotNull(matcher);
-        Assert.Contains("Edit", matcher);
-        Assert.Contains("Write", matcher);
-        Assert.Contains("Read", matcher);
-        Assert.Contains("Bash", matcher);
-        Assert.Contains("PowerShell", matcher);
-        Assert.Contains("Agent", matcher);
-        Assert.Contains("EnterPlanMode", matcher);
-        Assert.Contains("ExitPlanMode", matcher);
-        Assert.Contains("NotebookEdit", matcher);
-        Assert.Contains("AskUserQuestion", matcher);
-        Assert.Contains("apply_patch", matcher);
-        // Codex shell tool names (issue 0295) — the guard must see codex shell execution, not
-        // only apply_patch file edits.
-        Assert.Contains("shell_command", matcher);
-        Assert.Contains("exec", matcher);
-        Assert.Contains("local_shell", matcher);
-        Assert.Contains("unified_exec", matcher);
+        // Documented Codex tool names plus the legacy shell names kept from issue 0295; the
+        // Claude-only UI names Codex never emits are dropped.
+        Assert.Equal("Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec", matcher);
 
         var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
         Assert.Contains(stop, entry => entry?.ToJsonString().Contains("dydo guard --stop") == true);
@@ -965,7 +950,7 @@ public class SyncCommandTests : IDisposable
 
     [Theory]
     [InlineData("reviewer", "gpt-5.6-sol")]
-    [InlineData("planner", "gpt-5.6-sol")]
+    [InlineData("implementer", "gpt-5.6-sol")]
     [InlineData("code-writer", "gpt-5.6-terra")]
     [InlineData("docs-writer", "gpt-5.6-terra")]
     public void ResolveModel_OpenAiDefault_UsesRoleTier(string roleName, string expectedModel)

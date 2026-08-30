@@ -5,7 +5,7 @@ type: concept
 
 # Guard System
 
-How dydo enforces boundaries through the PreToolUse hook. Every tool call — reads, writes, searches, bash, in the main thread and inside every subagent and workflow — passes through `dydo guard` before execution. Three layers: off-limits paths, dangerous-bash detection, and nudges.
+How dydo enforces boundaries through the PreToolUse hook. Every tool call — reads, writes, searches, bash, in the main thread and inside every subagent and workflow — passes through `dydo guard` before execution. Three layers: path tiers (off-limits and protected), dangerous-bash detection, and nudges.
 
 ---
 
@@ -34,11 +34,13 @@ There is no identity, no staging, no per-role permission matrix: the same rules 
 
 ---
 
-## Layer 1: Off-Limits Paths
+## Layer 1: Path Tiers
 
-Global patterns in `dydo/files-off-limits.md` hard-block **every** operation — read, write, search, or bash — for all callers.
+`dydo/files-off-limits.md` declares two tiers, both applying to every caller.
 
-- **Protected categories:** secrets and credentials (`.env*`, `*.pem`, `*.key`, `secrets.json`, database configs) and dydo system files.
+**Off-limits** patterns hard-block **every** operation — read, write, search, or bash.
+
+- **Covered:** secrets and credentials (`.env*`, `*.pem`, `*.key`, `secrets.json`, database configs) plus the hardcoded `dydo/_system/**` machine state.
 - **Whitelist:** a `## Whitelist` section carves exceptions (e.g. `.env.example`).
 - **Patterns** use glob syntax: `**/` for optional directory prefix, `**` for any path, `*` within a segment, `?` for a single character.
 - The only exemption is the platform's native auto-memory directory outside the repo.
@@ -48,6 +50,18 @@ BLOCKED: Path is off-limits to all agents.
   Path: .env
   Pattern: **/.env*
   Configure exceptions in dydo/files-off-limits.md
+```
+
+**Protected** patterns (a `## Protected Patterns` section) invert the emphasis: **every agent may read them, none may write or delete them** ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10). Membership is dydo's own system files — `dydo/index.md`, `dydo/files-off-limits.md` and the hardcoded `dydo.json` — because every entry prompt orders agents to read them to orient themselves, while only a human edits them. `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard entirely: the harness defends its own files, and off-limits keeps its original meaning of files agents must not even read.
+
+The tier binds on the mutating call only: the `Edit`, `Write` and `NotebookEdit` tools, Codex's `apply_patch`, and the writes, deletes and moves the bash analyzer extracts from a shell command. `Read`, `cat` and search pass. The whitelist does not apply.
+
+```
+BLOCKED: Path is protected — every agent may read it, none may write or delete it.
+  Path: dydo/index.md
+  Pattern: dydo/index.md
+  Detected: Write via sed -i
+  This file is human-owned: read it freely, and ask the human for any change.
 ```
 
 ---
@@ -78,7 +92,9 @@ Nudges are project-configurable rules in `dydo.json`: a pattern plus a message, 
 Two kinds:
 
 - **Command nudges** — regex matched against bash command text. Capture groups substitute into the message (`$1`, `$2`, …).
-- **File nudges** (`tools` key) — glob patterns matched against direct tool-call paths; `{source}` and `{tests}` expand to the path sets in `dydo.json`. The shipped example is the Tier-1 source-write reminder ([Decision 026](../project/decisions/026-tier1-managers-doctrine.md)): a `notice` that reminds managers to route implementation through worker skills without ever blocking the trivial-edit exception.
+- **File nudges** (`tools` key) — glob patterns matched against direct tool-call paths; `{source}` and `{tests}` expand to the path sets in `dydo.json`. Nothing shipped is tool-scoped: the file-nudge machinery is there for projects to use.
+
+The shipped **review-block nudge** is the one that carries policy: a `gh pr create` whose command text has no `Independent review` in it is warned once, because nothing reaches the human that an independent agent has not reviewed and the PR body is where that proof lands ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §3). At `warn` an honest exception costs one retry; the severity escalates to `block` only if the discipline erodes.
 
 **Shipped defaults and self-healing:** the indirect-dydo-invocation nudges (`npx dydo`, `dotnet dydo`, `python dydo`, …) are severity-pinned — `MergeSystemNudges` reconciles config against the shipped set on every guard call: a deleted block-default is re-added, a downgraded severity is restored to `block`, and a nudge still carrying a known-stale shipped message is healed to the current text or dropped if its default was retired. A message the user customized matches no known-stale text and is never clobbered.
 

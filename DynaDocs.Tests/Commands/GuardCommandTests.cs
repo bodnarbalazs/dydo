@@ -492,16 +492,12 @@ public class GuardCommandTests : IDisposable
     }
 
     [Fact]
-    public void DefaultNudges_Tier1SourceWriteReminder_IsSoftAndToolScoped()
+    public void DefaultNudges_ShipNoToolScopedNudge()
     {
-        // Decision 026 §4: shipped as a notice (exit-0 warning), scoped to the
-        // direct file-op tools, targeting the {source}/{tests} path sets.
-        var nudge = ConfigFactory.DefaultNudges.Single(n => n.Tools is { Count: > 0 });
-
-        Assert.Equal("notice", nudge.Severity);
-        Assert.Equal("{source}|{tests}", nudge.Pattern);
-        Assert.Equal(new[] { "Edit", "Write", "NotebookEdit" }, nudge.Tools);
-        Assert.Contains("if it needs a reviewer, it needs a workflow", nudge.Message);
+        // The Decision 026 source-write reminder retired with the workflow it pointed at
+        // (DR 045): nothing shipped is tool-scoped or audience-scoped any more.
+        Assert.DoesNotContain(ConfigFactory.DefaultNudges, n => n.Tools is { Count: > 0 });
+        Assert.DoesNotContain(ConfigFactory.DefaultNudges, n => n.Pattern == "{source}|{tests}");
     }
 
     #endregion
@@ -824,6 +820,40 @@ public class GuardCommandTests : IDisposable
                 ]
             }
             """);
+    }
+
+    #endregion
+
+    #region Review-Block Nudge (DR 045 §3)
+
+    private static NudgeConfig ReviewBlockNudge() =>
+        Assert.Single(ConfigFactory.DefaultNudges, n => n.Pattern.Contains(@"pr\s+create"));
+
+    [Fact]
+    public void ReviewBlockNudge_PrCreateWithoutTheBlock_BlocksOnce()
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge("gh pr create --title x --body 'ships the fix'", env);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: Paste the review block.", stderr);
+    }
+
+    [Fact]
+    public void ReviewBlockNudge_PrCreateCarryingTheBlock_StaysSilent()
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(
+            "gh pr create --body '## Independent review — rubric: code, verdict: PASS'", env);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
     }
 
     #endregion

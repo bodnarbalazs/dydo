@@ -15,25 +15,33 @@ public class OffLimitsService : IOffLimitsService
     private List<Regex> _compiledPatterns = [];
     private List<string> _whitelistPatterns = [];
     private List<Regex> _whitelistCompiled = [];
+    private List<string> _protectedPatterns = [];
+    private List<Regex> _protectedCompiled = [];
     private string? _basePath;
     private readonly IConfigService _configService;
 
     public IReadOnlyList<string> Patterns => _patterns.AsReadOnly();
     public IReadOnlyList<string> WhitelistPatterns => _whitelistPatterns.AsReadOnly();
+    public IReadOnlyList<string> ProtectedPatterns => _protectedPatterns.AsReadOnly();
 
     public OffLimitsService(IConfigService? configService = null)
     {
         _configService = configService ?? new ConfigService();
     }
 
-    // Hardcoded off-limits patterns for system-critical files that must never be agent-writable,
-    // regardless of what's in files-off-limits.md. Prevents self-escalation attacks.
-    // dydo/_system/** (machine-managed state: audit, local markers, role definitions) and
-    // dydo.json (config, incl. security nudges) are agent-untouchable now that per-role RBAC,
-    // which used to gate them, is gone (Decision 024).
+    // Hardcoded off-limits pattern for machine-managed state (audit, local markers, role
+    // definitions) that no agent may even read, regardless of what's in files-off-limits.md.
+    // Prevents self-escalation attacks; agent-untouchable since per-role RBAC went (Decision 024).
     private static readonly (string Pattern, Regex Compiled)[] SystemOffLimits =
     [
         ("dydo/_system/**", CompileGlobToRegex("dydo/_system/**")),
+    ];
+
+    // dydo.json carries the guard's own nudges, so it must never be agent-writable whatever
+    // files-off-limits.md says. Agents do read it to orient, so it sits in the protected tier
+    // rather than off-limits (DR 045 §10), and no whitelist entry can lift it.
+    private static readonly (string Pattern, Regex Compiled)[] SystemProtected =
+    [
         ("dydo.json", CompileGlobToRegex("dydo.json")),
     ];
 
@@ -44,18 +52,22 @@ public class OffLimitsService : IOffLimitsService
         _compiledPatterns.Clear();
         _whitelistPatterns.Clear();
         _whitelistCompiled.Clear();
+        _protectedPatterns.Clear();
+        _protectedCompiled.Clear();
 
         var offLimitsPath = GetOffLimitsPath(_basePath);
         if (offLimitsPath == null || !File.Exists(offLimitsPath))
             return;
 
         var content = File.ReadAllText(offLimitsPath);
-        var (patterns, whitelist) = ParsePatternsWithWhitelist(content);
+        var (patterns, whitelist, protectedPaths) = ParseSections(content);
 
         _patterns = patterns;
         _compiledPatterns = _patterns.Select(CompileGlobToRegex).ToList();
         _whitelistPatterns = whitelist;
         _whitelistCompiled = _whitelistPatterns.Select(CompileGlobToRegex).ToList();
+        _protectedPatterns = protectedPaths;
+        _protectedCompiled = _protectedPatterns.Select(CompileGlobToRegex).ToList();
     }
 
     public bool OffLimitsFileExists(string? basePath = null)
@@ -83,6 +95,25 @@ public class OffLimitsService : IOffLimitsService
             return null;
 
         return FindMatchingPattern(normalizedPath, _patterns, _compiledPatterns);
+    }
+
+    /// <summary>
+    /// Check if a path is protected: readable by every tool, writable by none (DR 045 §10).
+    /// Returns the matched pattern if protected, null otherwise. Callers apply it on
+    /// write/delete paths only — reading an orientation file is the point of the tier.
+    /// The whitelist does not apply: protected members are dydo's own system files.
+    /// </summary>
+    public string? IsPathProtected(string path)
+    {
+        var normalizedPath = PathUtils.NormalizeForPattern(RelativizeToProjectRoot(path));
+
+        foreach (var (pattern, compiled) in SystemProtected)
+        {
+            if (compiled.IsMatch(normalizedPath))
+                return pattern;
+        }
+
+        return FindMatchingPattern(normalizedPath, _protectedPatterns, _protectedCompiled);
     }
 
     /// <summary>
@@ -138,7 +169,9 @@ public class OffLimitsService : IOffLimitsService
     public IEnumerable<string> ValidateLiteralPaths(string basePath)
     {
         var missing = new List<string>();
-        foreach (var pattern in _patterns)
+        // Protected patterns are checked alongside off-limits ones: a typo there silently
+        // protects nothing, and dydo/index.md kept this check when it was still off-limits.
+        foreach (var pattern in _patterns.Concat(_protectedPatterns))
         {
             // Only check patterns that are literal paths (no wildcards)
             if (!ContainsWildcard(pattern))
@@ -162,14 +195,16 @@ public class OffLimitsService : IOffLimitsService
     }
 
     /// <summary>
-    /// Parse patterns from markdown content, supporting both off-limits and whitelist sections.
+    /// Parse patterns from markdown content into the off-limits, whitelist and protected sets.
     /// Supports patterns in code blocks (```...```) or list items (- or *).
-    /// Section is determined by headers containing "whitelist"/"exception" or "off-limits".
+    /// Section is determined by headers containing "whitelist"/"exception", "protected",
+    /// or "off-limits".
     /// </summary>
-    private static (List<string> patterns, List<string> whitelist) ParsePatternsWithWhitelist(string content)
+    private static (List<string> patterns, List<string> whitelist, List<string> protectedPaths) ParseSections(string content)
     {
         var patterns = new List<string>();
         var whitelist = new List<string>();
+        var protectedPaths = new List<string>();
         var lines = content.Split('\n');
         var inCodeBlock = false;
         var currentSection = "off-limits";
@@ -194,13 +229,15 @@ public class OffLimitsService : IOffLimitsService
             if (candidate == null)
                 continue;
 
-            if (currentSection == "whitelist")
-                whitelist.Add(candidate);
-            else
-                patterns.Add(candidate);
+            switch (currentSection)
+            {
+                case "whitelist": whitelist.Add(candidate); break;
+                case "protected": protectedPaths.Add(candidate); break;
+                default: patterns.Add(candidate); break;
+            }
         }
 
-        return (patterns, whitelist);
+        return (patterns, whitelist, protectedPaths);
     }
 
     private static string ClassifySection(string headerLine, string currentSection)
@@ -208,6 +245,8 @@ public class OffLimitsService : IOffLimitsService
         var lower = headerLine.ToLowerInvariant();
         if (lower.Contains("whitelist") || lower.Contains("exception"))
             return "whitelist";
+        if (lower.Contains("protected"))
+            return "protected";
         if (lower.Contains("off-limits") || lower.Contains("off limits"))
             return "off-limits";
         return currentSection;

@@ -13,7 +13,7 @@ agent may read but none may write or delete. Both bind on every caller, Claude a
 - Patterns are listed in the code blocks below
 - Glob patterns supported: `*` matches within directory, `**` matches across directories
 - Lines starting with `#` are comments
-- Patterns are case-insensitive on Windows, case-sensitive on Unix
+- Patterns are case-insensitive on every platform
 
 ## Default Patterns
 
@@ -121,16 +121,15 @@ agent may read but none may write or delete. Both bind on every caller, Claude a
 
 Paths listed here are **readable by every agent and writable by none**. `Edit`, `Write`,
 `NotebookEdit` and every shell operation that changes them — write, delete, move, copy,
-permission change — is blocked; read them with `Read`, `cat` or `head`. These are dydo's own system files: agents read them to orient
-themselves, and only a human edits them. Whitelist entries do not apply to this section.
+permission change — is blocked; read them with `Read`, `cat` or `head`. These are dydo's
+own system files: agents read them to orient themselves, and only a human edits them.
+Whitelist entries do not apply to this section.
 
 ```
 # DynaDocs entry point - every entry prompt tells agents to read it
-# Edit via: dydo init
 dydo/index.md
 
-# This security config file
-# Edit manually with care - protects sensitive files
+# The guard's own configuration - this file
 dydo/files-off-limits.md
 
 # Project configuration, including the guard's own nudges

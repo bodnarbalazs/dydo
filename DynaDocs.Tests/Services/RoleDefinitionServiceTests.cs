@@ -47,7 +47,9 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("self-improvement", names);
         Assert.Contains("wayfinder", names);
         Assert.Contains("grilling", names);
+        Assert.Contains("grill-me", names);
         Assert.Contains("bro", names);
+        Assert.Contains("writing-for-agents", names);
         // Retired roles stay retired.
         Assert.DoesNotContain("judge", names);
         Assert.DoesNotContain("sprint-auditor", names);
@@ -71,10 +73,15 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.False(roles["self-improvement"].EmitAgent);
         Assert.False(roles["wayfinder"].EmitAgent);
         Assert.False(roles["grilling"].EmitAgent);
+        Assert.False(roles["grill-me"].EmitAgent);
         Assert.False(roles["bro"].EmitAgent);
+        Assert.False(roles["writing-for-agents"].EmitAgent);
         Assert.StartsWith("Explicitly invoked by the human", roles["wayfinder"].Description);
-        Assert.StartsWith("Deliberately invoked by a manager", roles["grilling"].Description);
+        Assert.Contains("stress-test their thinking", roles["grilling"].Description,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith("Explicitly invoked by the human", roles["grill-me"].Description);
         Assert.StartsWith("Explicitly invoked by the human", roles["bro"].Description);
+        Assert.StartsWith("Writing documents for agents", roles["writing-for-agents"].Description);
     }
 
     [Fact]

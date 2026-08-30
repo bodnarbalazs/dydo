@@ -690,8 +690,10 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("skill-chief-of-staff.template.md", skillTemplates);
         Assert.Contains("skill-wayfinder.template.md", skillTemplates);
         Assert.Contains("skill-grilling.template.md", skillTemplates);
+        Assert.Contains("skill-grill-me.template.md", skillTemplates);
         Assert.Contains("skill-bro.template.md", skillTemplates);
-        Assert.Equal(13, skillTemplates.Count);
+        Assert.Contains("skill-writing-for-agents.template.md", skillTemplates);
+        Assert.Equal(15, skillTemplates.Count);
         Assert.DoesNotContain("skill-sprint-auditor.template.md", skillTemplates);
     }
 

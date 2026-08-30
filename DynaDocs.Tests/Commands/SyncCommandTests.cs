@@ -729,51 +729,15 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void PromptLevelSkills_CompileWithTheirSemanticBoundaries()
+    public void MattDerivedSkills_CompileAsSkills_WithWayfinderSemanticStructure()
     {
-        var expected = new Dictionary<string, string[]>
+        var roleNames = new[]
         {
-            ["wayfinder"] =
-            [
-                "Use Wayfinding only for a committed Linear Project.",
-                "Skip it for FutureFeatures and clear atomic-Issue",
-                "optional and low-resolution",
-                "not a work object",
-                "It may point to evidence",
-                "Linear Issue, or a bounded increment",
-                "Point actionable delivery Waypoints to Linear Issues.",
-                "Derive or select the frontier",
-                "Work exactly one non-research Waypoint",
-                "Keep HITL work in the current",
-                "For AFK research, use only bounded native discovery subagents.",
-                "Record the outcome once",
-                "redraw the Fog and frontier",
-                "Do not spawn top-level agents",
-                "invent claims or runtime coordination",
-                "outside the planner and normal workflow",
-            ],
-            ["grilling"] =
-            [
-                "Find discoverable facts yourself.",
-                "Separate unknown facts from unresolved choices.",
-                "one decision frontier at a time",
-                "Recommend an option and state its material trade-off.",
-                "Do not reopen resolved branches",
-                "return a compact resolved intent",
-                "Do not plan or implement",
-            ],
-            ["bro"] =
-            [
-                "only your immediately previous response",
-                "Preserve its exact technical meaning",
-                "Expand unfamiliar abbreviations",
-                "local or unusually niche terms",
-                "Do not add beginner analogies",
-                "Stop after the re-pitch.",
-            ],
+            "wayfinder", "grilling", "grill-me", "bro", "writing-for-agents"
         };
+        var compiled = new Dictionary<string, string>();
 
-        foreach (var (roleName, required) in expected)
+        foreach (var roleName in roleNames)
         {
             var role = RoleDefinitionService.DiscoverRoles(_testDir).Single(r => r.Name == roleName);
             SyncCommand.SyncSkillOnlyRole(role, _testDir);
@@ -785,11 +749,23 @@ public class SyncCommandTests : IDisposable
             var codexContent = File.ReadAllText(codexSkill);
 
             Assert.Equal(claudeContent, codexContent);
-            Assert.All(required, text => Assert.Contains(text, claudeContent));
+            Assert.Contains($"name: {roleName}", claudeContent);
+            Assert.Contains("mattpocock/skills", claudeContent);
             Assert.DoesNotContain('\r', claudeContent);
             Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md")));
             Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml")));
+
+            compiled[roleName] = claudeContent;
         }
+
+        var wayfinder = compiled["wayfinder"];
+        Assert.Contains("Linear Project is the canonical map", wayfinder);
+        Assert.Contains("Assignment is the claim", wayfinder);
+        Assert.Contains("native dependency relations", wayfinder);
+        Assert.Contains("## Fog of war", wayfinder);
+        Assert.Contains("### Chart the map", wayfinder);
+        Assert.Contains("### Work through the map", wayfinder);
+        Assert.DoesNotContain("Waypoint", wayfinder, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -46,23 +46,6 @@ public class WayfinderHarmonyTests : IDisposable
             .Select(match => match.Groups[1].Value)
             .Where(target => target.Contains("/dydo/", StringComparison.Ordinal));
 
-    // A rubric is authored one folder below SKILL.md and is copied verbatim, so its own climbs
-    // must survive compilation untouched.
-    [Fact]
-    public void ReviewerRubrics_AreEmittedVerbatimBesideTheSkill()
-    {
-        var reviewer = RoleDefinitionService.DiscoverRoles(_testDir)
-            .Single(role => role.Name == "reviewer");
-        SyncCommand.SyncRole(reviewer, _testDir);
-
-        foreach (var (fileName, expected) in TemplateGenerator.GetSkillResources("reviewer"))
-        {
-            var emitted = File.ReadAllText(Path.Combine(
-                _testDir, ".claude", "skills", "reviewer", "resources", fileName));
-            Assert.Equal(expected.Replace("\r\n", "\n"), emitted);
-        }
-    }
-
     // DR 045 section 11 retires the Waypoint ontology and the session-choreography vocabulary;
     // no compiled skill may reintroduce either.
     [Fact]

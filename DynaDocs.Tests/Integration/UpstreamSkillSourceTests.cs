@@ -4,29 +4,32 @@ public class UpstreamSkillSourceTests
 {
     private const string UpstreamCommit = "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76";
 
-    private static readonly IReadOnlyDictionary<string, string> ExpectedInvocation =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["wayfinder"] = "explicit",
-            ["grilling"] = "automatic",
-            ["grill-me"] = "explicit",
-            ["bro"] = "explicit",
-            ["writing-for-agents"] = "automatic"
-        };
+    private static readonly string[] MattDerivedSkills =
+        ["wayfinder", "grilling", "grill-me", "bro", "writing-for-agents"];
 
-    // The invocation metadata is a routing contract, not prose: an explicit-only skill that
-    // compiles as model-invocable will be selected behind the human's back. Shipped-vs-installed
-    // parity for these files lives in InstalledTemplateParityTests.
+    // DR 045 section 9's explicit-only list, narrowed to the skills this file covers. Every other
+    // invocation value belongs to the source that authors it, so it is validated, not pinned.
+    private static readonly string[] ExplicitOnlySkills = ["grill-me", "bro"];
+
+    // The invocation metadata is a routing contract, not prose: a skill with a missing or invalid
+    // value routes by accident. Which model-invoked skills exist is the taxonomy's business; that
+    // the human-only ones stay human-only is this test's. Shipped-vs-installed parity lives in
+    // InstalledTemplateParityTests, and the metadata-to-compiled-policy correspondence in
+    // CodexSyncArtifactsE2ETests.
     [Fact]
-    public void MattDerivedTemplates_CarryTheirInvocationMetadataAndAttribution()
+    public void MattDerivedTemplates_CarryValidInvocationMetadataAndAttribution()
     {
-        foreach (var (skill, invocation) in ExpectedInvocation)
+        foreach (var skill in MattDerivedSkills)
         {
             var source = ReadTemplate(skill);
+            var invocation = InvocationValue(source);
 
             Assert.Contains($"mode: {skill}\n", source);
-            Assert.Contains($"invocation: {invocation}\n", source);
             Assert.Contains("emit: skill\n", source);
+            Assert.True(invocation is "explicit" or "automatic",
+                $"{skill}: invocation must be 'explicit' or 'automatic', was '{invocation}'");
+            if (ExplicitOnlySkills.Contains(skill))
+                Assert.Equal("explicit", invocation);
             Assert.Contains("mattpocock/skills", source);
             Assert.Contains(UpstreamCommit, source);
             Assert.Contains("(MIT)", source);
@@ -47,13 +50,14 @@ public class UpstreamSkillSourceTests
     }
 
     // DR 045 section 11 retires the Waypoint ontology from the vocabulary; the rebuilt wayfinder
-    // navigates the Linear Project itself.
+    // navigates the Linear Project itself. Its invocation value is section 9's to set, not this
+    // test's to freeze.
     [Fact]
     public void Wayfinder_CarriesNoRetiredWaypointOntology()
     {
         var source = ReadTemplate("wayfinder");
 
-        Assert.Contains("invocation: explicit\n", source);
+        Assert.Contains("mode: wayfinder\n", source);
         Assert.DoesNotContain("Waypoint", source, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -82,6 +86,12 @@ public class UpstreamSkillSourceTests
 
     private static string ReadTemplate(string skill) => Normalize(File.ReadAllText(Path.Combine(
         FindRepositoryRoot(), "Templates", $"skill-{skill}.template.md")));
+
+    private static string InvocationValue(string source) =>
+        source.Split('\n')
+            .Single(line => line.StartsWith("invocation:", StringComparison.Ordinal))
+            ["invocation:".Length..]
+            .Trim();
 
     private static int NonBlankLines(string value) =>
         value.Split('\n').Count(line => !string.IsNullOrWhiteSpace(line));

@@ -136,7 +136,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("Code Writer", content);
+        Assert.Contains("mode: code-writer", content);
     }
 
     [Fact]

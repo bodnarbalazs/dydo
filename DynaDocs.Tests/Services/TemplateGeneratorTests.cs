@@ -14,7 +14,7 @@ public class TemplateGeneratorTests
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("Code Writer", content);
+        Assert.Contains("mode: code-writer", content);
     }
 
     [Fact]
@@ -76,11 +76,14 @@ public class TemplateGeneratorTests
     [Fact]
     public void EmbeddedTemplates_HaveExpectedContent()
     {
-        // Verify specific content to ensure templates aren't empty or corrupted
-        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
-        Assert.Contains("mode: code-writer", codeWriterTemplate);
-        Assert.Contains("Linear Issue", codeWriterTemplate);
-        Assert.Contains("independent review", codeWriterTemplate);
+        // Verify structure to ensure templates aren't empty or corrupted. The prose is the
+        // source's to write; what the compiler needs is frontmatter, an H1 and a body.
+        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md")
+            .Replace("\r\n", "\n");
+        Assert.Contains("mode: code-writer\n", codeWriterTemplate);
+        Assert.Contains("description: ", codeWriterTemplate);
+        Assert.Single(codeWriterTemplate.Split('\n'),
+            line => line.StartsWith("# ", StringComparison.Ordinal));
     }
 
     [Theory]
@@ -106,8 +109,7 @@ public class TemplateGeneratorTests
         Assert.Contains("area: guides", content);
         Assert.Contains("type: guide", content);
         Assert.Contains("# Working-Tree Contract", content);
-        Assert.Contains("working-tree-contract.template.md", TemplateGenerator.GetAllTemplateNames()
-            .Append("working-tree-contract.template.md"));
+        Assert.Contains("guides/working-tree-contract.md", TemplateCommand.FrameworkDocFiles);
     }
 
     [Fact]

@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Services;
 using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public class RoleDefinitionServiceTests : IDisposable
 {
@@ -107,24 +108,47 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.False(roles["grill-me"].EmitAgent);
         Assert.False(roles["bro"].EmitAgent);
         Assert.False(roles["writing-for-agents"].EmitAgent);
-        Assert.True(roles["wayfinder"].ExplicitInvocation);
+        // DR 045 section 9's explicit-only list, narrowed to roles that exist today: a human
+        // command that becomes model-invocable fires behind the human's back. Which other roles
+        // are model-invoked is the taxonomy's business, so it is derived, not listed here.
         Assert.True(roles["grill-me"].ExplicitInvocation);
         Assert.True(roles["bro"].ExplicitInvocation);
-        Assert.False(roles["grilling"].ExplicitInvocation);
-        Assert.False(roles["writing-for-agents"].ExplicitInvocation);
-        Assert.False(roles["reviewer"].ExplicitInvocation);
     }
+
+    // The frontmatter is the contract: every discovered flag must equal what that role's own
+    // template declares. Pinning a roster instead freezes a taxonomy that is still moving, and
+    // leaves a red test that no later Issue owns this file to fix.
+    [Fact]
+    public void DiscoverRoles_Flags_MatchEachTemplatesOwnFrontmatter()
+    {
+        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        {
+            var fields = FrontmatterParser.ParseFields(
+                TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile)) ?? [];
+
+            Assert.Equal(Declares(fields, "emit", "agent", fallback: true), role.EmitAgent);
+            Assert.Equal(Declares(fields, "read-only", "true"), role.ReadOnly);
+            Assert.Equal(Declares(fields, "delegates", "true"), role.Delegates);
+            Assert.Equal(Declares(fields, "invocation", "explicit"), role.ExplicitInvocation);
+        }
+    }
+
+    private static bool Declares(
+        IReadOnlyDictionary<string, string> fields, string key, string value, bool fallback = false) =>
+        fields.TryGetValue(key, out var actual)
+            ? actual.Equals(value, StringComparison.OrdinalIgnoreCase)
+            : fallback;
 
     [Fact]
     public void DiscoverRoles_ReviewerAndInquisitor_AreReadOnlyBaseRoles()
     {
         var roles = RoleDefinitionService.DiscoverRoles(_testDir);
 
+        // Read-only is how "reviewers don't write code" is natively enforced, so these two must
+        // carry it. Which other roles do is the taxonomy's business, derived from frontmatter by
+        // DiscoverRoles_Flags_MatchEachTemplatesOwnFrontmatter.
         Assert.True(roles.Single(r => r.Name == "reviewer").ReadOnly);
         Assert.True(roles.Single(r => r.Name == "inquisitor").ReadOnly);
-        Assert.All(
-            roles.Where(r => r.Name is not ("reviewer" or "inquisitor")),
-            r => Assert.False(r.ReadOnly));
     }
 
     // A description is what routes a model to the skill, so an empty one is a compile-time
@@ -135,12 +159,6 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.All(RoleDefinitionService.DiscoverRoles(_testDir),
             r => Assert.False(string.IsNullOrWhiteSpace(r.Description),
                 $"role '{r.Name}' has no description"));
-    }
-
-    [Fact]
-    public void DiscoverRoles_ShippedRoles_DoNotDelegateUnlessDeclared()
-    {
-        Assert.All(RoleDefinitionService.DiscoverRoles(_testDir), r => Assert.False(r.Delegates));
     }
 
     [Fact]

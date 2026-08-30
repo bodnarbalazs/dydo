@@ -63,28 +63,32 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        var roles = RoleDefinitionService.DiscoverRoles(TestDir).ToDictionary(role => role.Name);
-        var wayfinder = roles["wayfinder"];
-        var grilling = roles["grilling"];
-        var claudeExplicit = ReadFile(".claude/skills/wayfinder/SKILL.md");
-        var codexExplicit = ReadFile(".agents/skills/wayfinder/SKILL.md");
-        var claudeAutomatic = ReadFile(".claude/skills/grilling/SKILL.md");
-        var codexAutomatic = ReadFile(".agents/skills/grilling/SKILL.md");
+        // Over every skill-only role, not two named ones: which skills are human-only is DR 045
+        // section 9's to decide, and a fixture naming today's explicit skill goes red the day it
+        // changes, with no later Issue owning this file to fix it.
+        var roles = RoleDefinitionService.DiscoverRoles(TestDir).Where(role => !role.EmitAgent).ToList();
+        Assert.Contains(roles, role => role.ExplicitInvocation);
+        Assert.Contains(roles, role => !role.ExplicitInvocation);
 
-        Assert.Contains($"description: {wayfinder.Description}\n", claudeExplicit);
-        Assert.Contains($"description: {wayfinder.Description}\n", codexExplicit);
-        Assert.Contains("disable-model-invocation: true", claudeExplicit);
-        Assert.DoesNotContain("disable-model-invocation", codexExplicit);
-        AssertFileContains(
-            ".agents/skills/wayfinder/agents/openai.yaml",
-            "allow_implicit_invocation: false");
+        foreach (var role in roles)
+        {
+            var claude = ReadFile($".claude/skills/{role.Name}/SKILL.md");
+            var codex = ReadFile($".agents/skills/{role.Name}/SKILL.md");
+            var policy = $".agents/skills/{role.Name}/agents/openai.yaml";
 
-        Assert.Contains($"description: {grilling.Description}\n", claudeAutomatic);
-        Assert.Contains($"description: {grilling.Description}\n", codexAutomatic);
-        Assert.DoesNotContain("disable-model-invocation", claudeAutomatic);
-        AssertFileNotExists(".agents/skills/grilling/agents/openai.yaml");
-        Assert.DoesNotContain("The methodology, standards, and checklist", claudeExplicit);
-        Assert.DoesNotContain("The methodology, standards, and checklist", codexExplicit);
+            // The description survives compilation unchanged on both hosts — it is what routes.
+            Assert.Contains($"description: {role.Description}\n", claude);
+            Assert.Contains($"description: {role.Description}\n", codex);
+
+            // Each host expresses the same policy its own way, and never the other host's way.
+            Assert.Equal(role.ExplicitInvocation, claude.Contains("disable-model-invocation: true"));
+            Assert.DoesNotContain("disable-model-invocation", codex);
+
+            if (role.ExplicitInvocation)
+                AssertFileContains(policy, "allow_implicit_invocation: false");
+            else
+                AssertFileNotExists(policy);
+        }
     }
 
     /// <summary>

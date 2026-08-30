@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public class ChiefOfStaffSyncTests : IDisposable
 {
@@ -36,7 +37,7 @@ public class ChiefOfStaffSyncTests : IDisposable
         {
             Assert.Contains("mode: chief-of-staff\n", source);
             Assert.Contains("emit: skill\n", source);
-            Assert.Contains("# Chief of Staff", source);
+            Assert.Single(source.Split('\n'), line => line.StartsWith("# ", StringComparison.Ordinal));
             Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));
             Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Managers Doctrine", source);
@@ -56,7 +57,16 @@ public class ChiefOfStaffSyncTests : IDisposable
         SyncCommand.SyncSkillOnlyRole(role, _testDir);
         SyncCommand.SyncCodexSkill(role, _testDir);
 
-        Assert.Equal(File.ReadAllBytes(claudeSkill), File.ReadAllBytes(codexSkill));
+        // One authored source, so both hosts get the same body. Only the invocation policy is
+        // host-shaped — Claude carries it in frontmatter, Codex in a sibling yaml — so comparing
+        // whole files would go red the day this role becomes explicit-only.
+        Assert.Equal(
+            FrontmatterParser.StripFrontmatter(File.ReadAllText(claudeSkill)),
+            FrontmatterParser.StripFrontmatter(File.ReadAllText(codexSkill)));
+        Assert.Equal(
+            role.ExplicitInvocation,
+            File.ReadAllText(claudeSkill).Contains("disable-model-invocation: true"));
+        Assert.DoesNotContain("disable-model-invocation", File.ReadAllText(codexSkill));
         Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "chief-of-staff.md")));
         Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", "chief-of-staff.toml")));
 

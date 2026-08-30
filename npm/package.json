@@ -28,7 +28,8 @@
     "lib/",
     "install.js",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.md"
   ],
   "scripts": {
     "postinstall": "node install.js"

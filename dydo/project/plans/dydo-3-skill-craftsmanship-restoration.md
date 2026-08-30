@@ -352,3 +352,41 @@ rather than invoke Wayfinder, Planner refuses speculative complete routes, and n
 Waypoint/session choreography. Gate C now includes the harmony test, forced coverage, and an exact
 diff-check over the amended closed surface. This correction changes no Matt-derived skill, generated
 runtime artifact, PM ontology, or P6-4/P6-5 ownership.
+
+## 9. Chronological correction — P6-4 source expansion (2026-08-30)
+
+P6-4 adds two skill sources, so three pre-existing discovery/scaffold tests must move from the old
+13-skill inventory to the reviewed 15-skill inventory. It also replaces one frozen Grilling-description
+prefix with a semantic discovery check. The first P6-4 full-suite run exposed a separate P6-3 assertion
+that still locked the deleted Waypoint draft. This amendment assigns P6-4 the narrow reconciliation of
+that already-merged test: replace its prose list with cross-runtime skill structure and restored
+Wayfinder semantics. The skill sources themselves remain governed only by the pinned-upstream contract.
+
+P6-4 therefore additionally owns exactly:
+
+- `DynaDocs.Tests/Integration/TemplateOverrideTests.cs`
+- `DynaDocs.Tests/Integration/InitCommandTests.cs`
+- `DynaDocs.Tests/Services/RoleDefinitionServiceTests.cs`
+- `DynaDocs.Tests/Commands/SyncCommandTests.cs`, limited to the Matt-derived skill semantic test
+- this plan file
+
+The amended Gate D is:
+
+```powershell
+dotnet build DynaDocs.sln -c Release --no-restore
+py DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~UpstreamSkillSourceTests|FullyQualifiedName~TemplateOverrideTests|FullyQualifiedName~InitCommandTests|FullyQualifiedName~RoleDefinitionServiceTests|FullyQualifiedName~SyncCommandTests.MattDerivedSkills_CompileAsSkills_WithWayfinderSemanticStructure"
+py DynaDocs.Tests/coverage/run_tests.py
+py DynaDocs.Tests/coverage/gap_check.py --force-run
+dotnet pack DynaDocs.csproj -c Release --no-build --output artifacts/skill-restoration-pack
+$npmReceipt = npm pack ./npm --pack-destination artifacts/skill-restoration-pack --json | ConvertFrom-Json
+$nugetPackages = @(Get-ChildItem artifacts/skill-restoration-pack -Filter '*.nupkg')
+if ($nugetPackages.Count -ne 1) { throw "Expected one NuGet package, found $($nugetPackages.Count)" }
+$nugetArchive = [IO.Compression.ZipFile]::OpenRead($nugetPackages[0].FullName)
+try { if ($nugetArchive.Entries.FullName -notcontains 'THIRD-PARTY-NOTICES.md') { throw 'NuGet notice missing' } } finally { $nugetArchive.Dispose() }
+$npmPackage = Join-Path artifacts/skill-restoration-pack $npmReceipt[0].filename
+if ((tar -tf $npmPackage) -notcontains 'package/THIRD-PARTY-NOTICES.md') { throw 'npm notice missing' }
+git diff --check
+```
+
+The package directory is disposable and is removed after inspection. A fresh pinned-upstream review
+covers the complete amended surface before commit.

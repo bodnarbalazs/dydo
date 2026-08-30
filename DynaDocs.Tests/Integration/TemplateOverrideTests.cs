@@ -27,7 +27,9 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/skill-inquisitor.template.md");
         AssertFileExists("dydo/_system/templates/skill-wayfinder.template.md");
         AssertFileExists("dydo/_system/templates/skill-grilling.template.md");
+        AssertFileExists("dydo/_system/templates/skill-grill-me.template.md");
         AssertFileExists("dydo/_system/templates/skill-bro.template.md");
+        AssertFileExists("dydo/_system/templates/skill-writing-for-agents.template.md");
     }
 
     [Fact]
@@ -79,12 +81,14 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("skill-self-improvement.template.md", templateNames);
         Assert.Contains("skill-wayfinder.template.md", templateNames);
         Assert.Contains("skill-grilling.template.md", templateNames);
+        Assert.Contains("skill-grill-me.template.md", templateNames);
         Assert.Contains("skill-bro.template.md", templateNames);
+        Assert.Contains("skill-writing-for-agents.template.md", templateNames);
 
-        // 13 skill templates (the compiler's role sources) + the reviewer's 5 skill
+        // 15 skill templates (the compiler's role sources) + the reviewer's 5 skill
         // resource templates (<role>-resource-<name>.template.md).
         Assert.Contains("reviewer-resource-plan.template.md", templateNames);
-        Assert.Equal(18, templateNames.Count);
+        Assert.Equal(20, templateNames.Count);
     }
 
     [Fact]

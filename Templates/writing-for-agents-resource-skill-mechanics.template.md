@@ -9,13 +9,13 @@ is the universal reference in this skill's body.
 **The template is the role.** One `skill-<name>.template.md` carries the metadata and the
 methodology; `dydo sync` compiles it for every host and owns every host-specific detail. For where
 sources live and how to add or shadow one, see
-[customizing-roles.md](../../../dydo/guides/customizing-roles.md).
+[customizing-roles.md](../../../../dydo/guides/customizing-roles.md).
 
 ## Frontmatter
 
 | Key | Value | What the compiler does with it |
 |---|---|---|
-| `mode` | the role name | Names the role; matches the filename. |
+| `mode` | the role name | Read by nothing: the filename `skill-<name>.template.md` names the role. Keep the two equal. |
 | `description` | one line | Becomes the skill's and the agent's description. |
 | `emit` | `agent` \| `skill` | `agent` also compiles a spawnable agent that preloads this skill (`skills: [<name>]`) and carries the `Skill` tool; `skill` is methodology a session applies in its own thread. |
 | `read-only` | `true` | The compiled agent gets no `Edit`/`Write`: it assesses and reports. |
@@ -37,10 +37,11 @@ Two choices, trading the two loads:
   Its description turns human-facing: one punchy line, trigger lists stripped.
 
 Pick `automatic` only when the agent must reach the skill on its own, or another skill must. If it
-only ever fires by hand, make it `explicit` and pay no context load. Split a model-invoked skill off
-an existing one when it has a distinct leading word that should trigger it alone — a word you
-actually use in your prompts — or when another skill must reach it; that independent reach costs a
-permanently loaded description, so it has to be worth one.
+only ever fires by hand, make it `explicit` and pay no context load — except for an `emit: agent`
+role, which stays `automatic` because the agent's `skills:` preload cannot reach an explicit skill.
+Split a model-invoked skill off an existing one when it has a distinct leading word that should
+trigger it alone — a word you actually use in your prompts — or when another skill must reach it;
+that independent reach costs a permanently loaded description, so it has to be worth one.
 
 ## Where reference lives
 
@@ -50,8 +51,10 @@ permanently loaded description, so it has to be worth one.
   can add its own without editing framework text.
 - **Resources** — `<role>-resource-<name>.template.md` compiles to `resources/<name>.md` beside the
   skill, and the body reaches it by that same path, rewritten to the host's emitted location so even
-  a preloaded agent can `Read` it. This is disclosure with a file boundary: what only some branches
-  need, and the single home for reference that several skills share.
+  a preloaded agent can `Read` it. This is disclosure with a file boundary: one skill's own
+  reference, reached only by the branches that need it. Reference several skills share lives
+  instead in a model-invoked method skill, or in a `dydo/` document each of them lists under
+  Must-Reads.
 
 ## Regeneration
 

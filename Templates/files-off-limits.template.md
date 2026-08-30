@@ -6,7 +6,7 @@ type: config
 
 This file defines two global path tiers for all AI agents, regardless of role: **off-limits**
 paths, which block ALL operations (read, write, delete), and **protected** paths, which every
-agent may read but none may write or delete. Both are checked BEFORE role-based permissions.
+agent may read but none may write or delete. Both bind on every caller, Claude and Codex alike.
 
 ## Syntax
 
@@ -162,4 +162,4 @@ Use this for safe template files or test fixtures.
 - The `dydo check` command validates that literal paths (without wildcards) exist
 - Add project-specific sensitive files below the default patterns
 - These restrictions apply to ALL agents, including code-writers
-- Configure in this file, not in role permissions
+- Configure in this file; the tiers apply to every caller

@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Services;
 
+using DynaDocs.Commands;
 using DynaDocs.Services;
 
 public class TemplateGeneratorTests
@@ -32,7 +33,6 @@ public class TemplateGeneratorTests
     [InlineData("skill-planner.template.md")]
     [InlineData("skill-docs-writer.template.md")]
     [InlineData("skill-test-writer.template.md")]
-    [InlineData("skill-orchestrator.template.md")]
     [InlineData("skill-self-improvement.template.md")]
     [InlineData("skill-wayfinder.template.md")]
     [InlineData("skill-grilling.template.md")]
@@ -94,6 +94,21 @@ public class TemplateGeneratorTests
     }
 
     #endregion
+
+    // DR 045 section 8: the working-tree contract is a framework document, so it must ship as a
+    // template `dydo init` can scaffold and `dydo template update` can track.
+    [Fact]
+    public void GenerateWorkingTreeContractMd_IsAScaffoldableFrameworkGuide()
+    {
+        var content = TemplateGenerator.GenerateWorkingTreeContractMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: guides", content);
+        Assert.Contains("type: guide", content);
+        Assert.Contains("# Working-Tree Contract", content);
+        Assert.Contains("working-tree-contract.template.md", TemplateGenerator.GetAllTemplateNames()
+            .Append("working-tree-contract.template.md"));
+    }
 
     [Fact]
     public void GenerateAboutMd_ContainsPlaceholders()
@@ -645,6 +660,9 @@ public class TemplateGeneratorTests
         Assert.Contains("Linear owns the live", content);
         Assert.Contains("code-writer", content);
         Assert.Contains("reviewer", content);
+        // The fallback role table is documentation of the live roster; a retired name in it sends
+        // a reader at a role that no longer compiles.
+        Assert.All(SyncCommand.RetiredManagedRoles, retired => Assert.DoesNotContain(retired, content));
         Assert.Contains("github.com/bodnarbalazs/dydo", content);
         Assert.DoesNotContain("PM system that lives in your repo", content);
         Assert.DoesNotContain("backlog", content, StringComparison.OrdinalIgnoreCase);

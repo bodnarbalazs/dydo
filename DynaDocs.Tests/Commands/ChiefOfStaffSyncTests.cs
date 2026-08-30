@@ -23,25 +23,27 @@ public class ChiefOfStaffSyncTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
+    // The shipped source and the installed copy are one role, so they must agree on shape and on
+    // what the role must never grow: a personal memory store, or the retired tier doctrine.
     [Fact]
-    public void AuthoredChiefOfStaffTemplates_KeepBoardRoleAndExcludePersonalMemoryPolicy()
+    public void AuthoredChiefOfStaffTemplates_AgreeOnShapeAndExcludePersonalMemoryPolicy()
     {
-        foreach (var source in new[]
+        var shipped = Normalize(TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"));
+        var installed = Normalize(File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md")));
+
+        foreach (var source in new[] { shipped, installed })
         {
-            TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"),
-            File.ReadAllText(Path.Combine(
-                FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md")),
-        })
-        {
-            Assert.Contains("### Triage", source);
-            Assert.Contains("### Report", source);
-            Assert.Contains("### Mediate", source);
-            Assert.Contains("### Keep the board honest", source);
-            Assert.Contains("self-improvement", source);
+            Assert.Contains("mode: chief-of-staff\n", source);
+            Assert.Contains("emit: skill\n", source);
+            Assert.Contains("# Chief of Staff", source);
+            Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));
             Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Managers Doctrine", source);
         }
     }
+
+    private static string Normalize(string value) => value.Replace("\r\n", "\n");
 
     [Fact]
     public void SyncChiefOfStaff_EmitsIdenticalSkillsWithoutAgentDefinitions()

@@ -20,52 +20,59 @@ public class WayfinderHarmonyTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
+    // Every dydo link in a compiled skill must resolve from the folder the skill is emitted
+    // into — an unresolvable pointer is a context the agent silently never reads.
     [Fact]
-    public void PlannerSkill_ResolvesGlossaryLink_AndRejectsSpeculativeCompleteRoutes()
+    public void CompiledSkills_DydoLinksResolveFromTheEmittedSkillFolder()
     {
-        var skillPath = CompileSkill("planner");
-        var skill = File.ReadAllText(skillPath);
+        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        {
+            var skillPath = CompileSkill(role.Name);
+            var skillDir = Path.GetDirectoryName(skillPath)!;
 
-        const string glossaryTarget = "../../../dydo/reference/dydo-glossary.md";
-        Assert.Contains($"[dydo glossary]({glossaryTarget})", skill);
-        Assert.Contains("foggy beyond its visible frontier", skill);
-        Assert.Contains("instead of manufacturing a complete route", skill);
-
-        var resolvedGlossary = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(skillPath)!,
-            glossaryTarget.Replace('/', Path.DirectorySeparatorChar)));
-        Assert.True(File.Exists(resolvedGlossary), $"Compiled glossary link did not resolve: {resolvedGlossary}");
+            foreach (var target in DydoLinkTargets(File.ReadAllText(skillPath)))
+            {
+                Assert.StartsWith("../../../dydo/", target);
+                var resolved = Path.GetFullPath(Path.Combine(
+                    skillDir, target.Replace('/', Path.DirectorySeparatorChar)));
+                Assert.True(File.Exists(resolved),
+                    $"{role.Name}: compiled link '{target}' did not resolve to {resolved}");
+            }
+        }
     }
 
+    private static IEnumerable<string> DydoLinkTargets(string skill) =>
+        System.Text.RegularExpressions.Regex.Matches(skill, @"\]\(([^)\s]+)\)")
+            .Select(match => match.Groups[1].Value)
+            .Where(target => target.Contains("/dydo/", StringComparison.Ordinal));
+
+    // A rubric is authored one folder below SKILL.md and is copied verbatim, so its own climbs
+    // must survive compilation untouched.
     [Fact]
-    public void ReviewerPlanResource_TreatsOnlyProjectBlockingFogAsASpecGap()
+    public void ReviewerRubrics_AreEmittedVerbatimBesideTheSkill()
     {
         var reviewer = RoleDefinitionService.DiscoverRoles(_testDir)
             .Single(role => role.Name == "reviewer");
         SyncCommand.SyncRole(reviewer, _testDir);
 
-        var resource = File.ReadAllText(Path.Combine(
-            _testDir, ".claude", "skills", "reviewer", "resources", "plan.md"));
-        Assert.Contains("Wayfinding Fog is not a specification gap unless the current Project depends on resolving it", resource);
-        Assert.Contains("do not fail it for uncertainty deliberately left outside its frontier", resource);
+        foreach (var (fileName, expected) in TemplateGenerator.GetSkillResources("reviewer"))
+        {
+            var emitted = File.ReadAllText(Path.Combine(
+                _testDir, ".claude", "skills", "reviewer", "resources", fileName));
+            Assert.Equal(expected.Replace("\r\n", "\n"), emitted);
+        }
     }
 
+    // DR 045 section 11 retires the Waypoint ontology and the session-choreography vocabulary;
+    // no compiled skill may reintroduce either.
     [Fact]
-    public void ManagerSkills_PreserveHumanNavigationAuthorityWithoutWaypointOrSessionChoreography()
+    public void CompiledSkills_CarryNoRetiredNavigationVocabulary()
     {
-        var coThinker = File.ReadAllText(CompileSkill("co-thinker"));
-        Assert.Contains("Only the human promotes a FutureFeature to Linear", coThinker);
-        Assert.Contains("recommend—never invoke—Wayfinder to the human", coThinker);
-
-        var chiefOfStaff = File.ReadAllText(CompileSkill("chief-of-staff"));
-        Assert.Contains("Only the human promotes a FutureFeature to Linear", chiefOfStaff);
-
-        var orchestrator = File.ReadAllText(CompileSkill("orchestrator"));
-        Assert.Contains("Ask the human only for authority or judgment", orchestrator);
-
-        foreach (var skill in new[] { coThinker, chiefOfStaff, orchestrator })
+        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
         {
-            Assert.DoesNotContain("Waypoint", skill);
+            var skill = File.ReadAllText(CompileSkill(role.Name));
+
+            Assert.DoesNotContain("Waypoint", skill, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("top-level session", skill, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("invoke Wayfinder", skill, StringComparison.OrdinalIgnoreCase);
         }

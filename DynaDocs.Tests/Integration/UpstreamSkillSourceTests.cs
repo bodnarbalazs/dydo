@@ -14,52 +14,46 @@ public class UpstreamSkillSourceTests
             ["writing-for-agents"] = "automatic"
         };
 
+    // The invocation metadata is a routing contract, not prose: an explicit-only skill that
+    // compiles as model-invocable will be selected behind the human's back. Shipped-vs-installed
+    // parity for these files lives in InstalledTemplateParityTests.
     [Fact]
-    public void MattDerivedTemplates_ExistInBothSourceLocations_WithNeutralInvocationMetadata()
+    public void MattDerivedTemplates_CarryTheirInvocationMetadataAndAttribution()
     {
-        var root = FindRepositoryRoot();
-
         foreach (var (skill, invocation) in ExpectedInvocation)
         {
-            var shippedPath = Path.Combine(root, "Templates", $"skill-{skill}.template.md");
-            var installedPath = Path.Combine(
-                root, "dydo", "_system", "templates", $"skill-{skill}.template.md");
+            var source = ReadTemplate(skill);
 
-            Assert.True(File.Exists(shippedPath), $"Missing shipped source for {skill}");
-            Assert.True(File.Exists(installedPath), $"Missing installed source for {skill}");
-
-            var shipped = Normalize(File.ReadAllText(shippedPath));
-            var installed = Normalize(File.ReadAllText(installedPath));
-
-            Assert.Equal(shipped, installed);
-            Assert.Contains($"mode: {skill}\n", shipped);
-            Assert.Contains($"invocation: {invocation}\n", shipped);
-            Assert.Contains("emit: skill\n", shipped);
-            Assert.Contains("mattpocock/skills", shipped);
-            Assert.Contains(UpstreamCommit, shipped);
-            Assert.Contains("(MIT)", shipped);
+            Assert.Contains($"mode: {skill}\n", source);
+            Assert.Contains($"invocation: {invocation}\n", source);
+            Assert.Contains("emit: skill\n", source);
+            Assert.Contains("mattpocock/skills", source);
+            Assert.Contains(UpstreamCommit, source);
+            Assert.Contains("(MIT)", source);
         }
     }
 
+    // grill-me is the human's explicit entry to the grilling method; it must stay explicit-only
+    // and must point at the method rather than restating it.
     [Fact]
-    public void GrillMe_IsAnExplicitAliasForTheGeneratedGrillingSkill()
+    public void GrillMe_IsAnExplicitEntryPointThatDefersToTheGrillingSkill()
     {
         var source = ReadTemplate("grill-me");
 
-        Assert.Contains("invocation: explicit", source);
-        Assert.Contains("separately generated `grilling` skill", source);
-        Assert.Contains("human confirms shared understanding", source);
+        Assert.Contains("invocation: explicit\n", source);
+        Assert.Contains("grilling", source);
+        Assert.True(NonBlankLines(source) < NonBlankLines(ReadTemplate("grilling")),
+            "grill-me must stay thinner than the method it defers to");
     }
 
+    // DR 045 section 11 retires the Waypoint ontology from the vocabulary; the rebuilt wayfinder
+    // navigates the Linear Project itself.
     [Fact]
-    public void Wayfinder_UsesLinearProjectMap_WithoutInventedWaypointOntology()
+    public void Wayfinder_CarriesNoRetiredWaypointOntology()
     {
         var source = ReadTemplate("wayfinder");
 
-        Assert.Contains("Linear Project is the canonical map", source);
-        Assert.Contains("native dependency relations", source);
-        Assert.Contains("Assignment is the claim", source);
-        Assert.Contains("Fog of war", source);
+        Assert.Contains("invocation: explicit\n", source);
         Assert.DoesNotContain("Waypoint", source, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -88,6 +82,9 @@ public class UpstreamSkillSourceTests
 
     private static string ReadTemplate(string skill) => Normalize(File.ReadAllText(Path.Combine(
         FindRepositoryRoot(), "Templates", $"skill-{skill}.template.md")));
+
+    private static int NonBlankLines(string value) =>
+        value.Split('\n').Count(line => !string.IsNullOrWhiteSpace(line));
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n");
 

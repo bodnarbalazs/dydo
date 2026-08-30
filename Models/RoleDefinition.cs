@@ -26,6 +26,13 @@ public class RoleDefinition
     public bool ReadOnly { get; init; }
 
     /// <summary>
+    /// A delegating role may spawn sub-agents — sync grants its compiled Claude agent the Agent
+    /// tool. Workers never delegate, so fan-out stays a decision the role declares.
+    /// Frontmatter key: <c>delegates: true</c>.
+    /// </summary>
+    public bool Delegates { get; init; }
+
+    /// <summary>
     /// Whether the skill may be selected automatically or only when the human explicitly
     /// invokes it. Frontmatter key: <c>invocation: automatic | explicit</c>. Missing metadata
     /// preserves the native default: automatic discovery.

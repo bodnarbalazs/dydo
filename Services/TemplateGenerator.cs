@@ -278,6 +278,14 @@ public static class TemplateGenerator
     public static string GenerateIndexMd() => ReadTemplate("index.template.md");
 
     /// <summary>
+    /// dydo/guides/working-tree-contract.md — the shared branch, worktree and cleanup contract
+    /// every parallel agent follows (DR 045 §8). A framework document, so `dydo init` scaffolds
+    /// it and `dydo template update` tracks it.
+    /// </summary>
+    public static string GenerateWorkingTreeContractMd() =>
+        ReadTemplate("working-tree-contract.template.md");
+
+    /// <summary>
     /// Architecture overview template.
     /// Reads from architecture.template.md if available.
     /// </summary>
@@ -944,7 +952,6 @@ public static class TemplateGenerator
             |------|-------|---------|
             | `co-thinker` | skill | Explore ideas, scope requirements |
             | `planner` | skill | Turn intent into reviewed plans |
-            | `orchestrator` | skill | Coordinate workflows and dispatch |
             | `chief-of-staff` | skill | Triage Linear and route work |
             | `code-writer` | agent + skill | Implement features |
             | `test-writer` | agent + skill | Write tests, report bugs |

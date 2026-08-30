@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.Text;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -13,34 +12,38 @@ using DynaDocs.Utils;
 /// and Codex <c>.codex/agents/&lt;role&gt;.toml</c> / <c>.agents/skills/&lt;role&gt;/SKILL.md</c>.
 ///
 /// The skill template IS the role: its frontmatter supplies the metadata (description,
-/// emit shape, invocation policy, read-only → tool profile) and its body supplies the methodology prose,
-/// minus the old-runtime orchestration sections (claim / wait / dispatch / release)
-/// which the native model replaces. Roles are discovered by enumerating
+/// emit shape, invocation policy, delegation, read-only → tool profile) and its body supplies
+/// the whole methodology — context pointers included. Roles are discovered by enumerating
 /// skill-*.template.md — shipped templates plus project-local
 /// dydo/_system/templates/ ones, which is how custom roles compile.
 ///
 /// Two emission shapes (Decision 024 native pivot):
-/// - <c>emit: agent</c> roles (the workers: code-writer, reviewer, test-writer,
-///   docs-writer) emit BOTH an agent definition and a skill — they are spawned as
-///   typed sub-agents.
-/// - <c>emit: skill</c> roles emit a skill but NO agent: planner is a methodology the
-///   orchestrator/co-thinker applies in their own thread, and the Tier-1 manager modes
-///   (orchestrator, co-thinker, chief-of-staff — Decision 026) are named terminal
-///   identities, never spawnable sub-agents.
+/// - <c>emit: agent</c> roles emit BOTH an agent definition and a skill — they are spawned as
+///   typed sub-agents, and the agent is a thin identity wrapper that preloads its skill
+///   (DR 045 §10).
+/// - <c>emit: skill</c> roles emit a skill but NO agent: the methodology is one a session
+///   applies in its own thread, never a spawnable sub-agent.
 /// </summary>
 public static partial class SyncCommand
 {
-    // Skill-template ## sections that are old-runtime scaffolding, not timeless methodology.
-    private static readonly HashSet<string> OrchestrationSections = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Must-Reads", "Set Role", "Register General Wait", "Verify", "Complete",
-        "Read the Plan or Brief First",
-    };
+    // Framework roles dydo no longer owns. Discovery skips the shipped template of a retired
+    // name (RoleDefinitionService) so the sweep below is never suppressed by a source dydo
+    // itself still ships during a transition; a project-local skill template still defines the
+    // role and keeps its artifacts. This is deliberately not a generic output-directory cleaner.
+    internal static readonly string[] RetiredManagedRoles = ["sprint-auditor", "orchestrator"];
 
-    // Framework roles retired during the native-runtime pivot. Sync reconciles only these
-    // explicitly-owned filenames when the role is absent; this is deliberately not a generic
-    // output-directory cleaner.
-    private static readonly string[] RetiredManagedRoles = ["sprint-auditor"];
+    // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
+    // implementer's completion criterion). Claude is the only host with a workflow surface.
+    private static readonly string[] RetiredWorkflows = ["run-sprint.js"];
+
+    // Skill resources retired by rename (DR 045 §10: the merge-sprint rubric became merge),
+    // swept from both hosts' skill folders.
+    private static readonly string[] RetiredSkillResources = ["reviewer/resources/merge-sprint.md"];
+
+    // Where each host emits a skill: <root>/<role>/SKILL.md, three levels below the project
+    // root on both, which is why one link rewrite serves them equally.
+    private const string ClaudeSkillRoot = ".claude/skills";
+    private const string CodexSkillRoot = ".agents/skills";
 
     // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
     // Codex target reads a different vendor key from the same tiers map; the role → tier
@@ -60,7 +63,7 @@ public static partial class SyncCommand
         projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
         var roles = RoleDefinitionService.DiscoverRoles(projectRoot);
         WarnAboutLegacyModeTemplates(projectRoot);
-        CleanRetiredRoleArtifacts(projectRoot, roles);
+        CleanRetiredArtifacts(projectRoot, roles);
         var config = new ConfigService().LoadConfig(projectRoot);
         var models = config?.Models;
         var (emitClaude, emitCodex) = ResolveIntegrationTargets(config?.Integrations);
@@ -146,11 +149,12 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// Removes compiler-owned files for allowlisted retired roles. A project-local skill template
-    /// makes the role active again and suppresses cleanup. Skill folders are removed only when
-    /// empty so project-owned sibling resources survive.
+    /// Removes compiler-owned files dydo no longer emits: allowlisted retired roles, retired
+    /// workflow harnesses, and resources retired by rename. A project-local skill template makes
+    /// a retired role active again and suppresses its cleanup. Folders are removed only when
+    /// empty so project-owned siblings survive.
     /// </summary>
-    internal static int CleanRetiredRoleArtifacts(
+    internal static int CleanRetiredArtifacts(
         string projectRoot,
         IReadOnlyCollection<RoleDefinition> activeRoles)
     {
@@ -164,38 +168,47 @@ public static partial class SyncCommand
             if (activeNames.Contains(roleName))
                 continue;
 
-            var roleRemoved = 0;
-            var files = new[]
-            {
+            var roleRemoved = Sweep(
                 Path.Combine(projectRoot, ".claude", "agents", $"{roleName}.md"),
-                Path.Combine(projectRoot, ".claude", "skills", roleName, "SKILL.md"),
+                Combine(projectRoot, ClaudeSkillRoot, $"{roleName}/SKILL.md"),
                 Path.Combine(projectRoot, ".codex", "agents", $"{roleName}.toml"),
-                Path.Combine(projectRoot, ".agents", "skills", roleName, "SKILL.md"),
-            };
-
-            foreach (var file in files)
-            {
-                if (!File.Exists(file))
-                    continue;
-
-                File.Delete(file);
-                removed++;
-                roleRemoved++;
-
-                var parent = Path.GetDirectoryName(file);
-                if (parent != null
-                    && Directory.Exists(parent)
-                    && !Directory.EnumerateFileSystemEntries(parent).Any())
-                {
-                    Directory.Delete(parent);
-                }
-            }
+                Combine(projectRoot, CodexSkillRoot, $"{roleName}/SKILL.md"));
 
             if (roleRemoved > 0)
                 Console.WriteLine($"Removed retired role artifacts for '{roleName}'.");
+            removed += roleRemoved;
         }
 
+        foreach (var workflow in RetiredWorkflows)
+            removed += Sweep(Path.Combine(projectRoot, ".claude", "workflows", workflow));
+
+        foreach (var resource in RetiredSkillResources)
+            removed += Sweep(
+                Combine(projectRoot, ClaudeSkillRoot, resource),
+                Combine(projectRoot, CodexSkillRoot, resource));
+
         return removed;
+    }
+
+    private static int Sweep(params string[] files) => files.Count(DeleteIfPresent);
+
+    private static string Combine(string projectRoot, params string[] relativeSegments) =>
+        Path.Combine(projectRoot,
+            Path.Combine(relativeSegments.Select(s => s.Replace('/', Path.DirectorySeparatorChar)).ToArray()));
+
+    /// <summary>Deletes a compiler-owned file and the folder it leaves empty. True when it existed.</summary>
+    private static bool DeleteIfPresent(string file)
+    {
+        if (!File.Exists(file))
+            return false;
+
+        File.Delete(file);
+
+        var parent = Path.GetDirectoryName(file);
+        if (parent != null && Directory.Exists(parent) && !Directory.EnumerateFileSystemEntries(parent).Any())
+            Directory.Delete(parent);
+
+        return true;
     }
 
     /// <summary>
@@ -225,8 +238,8 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// Emits only the skill for a role, never an agent. Decision 024: planner is a
-    /// methodology the Tier-1 agent applies, not a spawnable sub-agent.
+    /// Emits only the skill for a role, never an agent (Decision 024): the role is a methodology
+    /// a session applies in its own thread, not a spawnable sub-agent.
     /// </summary>
     internal static void SyncSkillOnlyRole(RoleDefinition role, string projectRoot) =>
         WriteSkill(role, projectRoot);
@@ -247,7 +260,7 @@ public static partial class SyncCommand
         Directory.CreateDirectory(skillDir);
         WriteLf(
             Path.Combine(skillDir, "SKILL.md"),
-            BuildSkill(role, ExtractMethodology(role, projectRoot), emitClaudePolicy: false));
+            BuildSkill(role, CompileSkillBody(role, projectRoot, CodexSkillRoot), emitClaudePolicy: false));
         WriteCodexInvocationPolicy(role, skillDir);
         WriteSkillResources(role, skillDir);
     }
@@ -261,7 +274,7 @@ public static partial class SyncCommand
         Directory.CreateDirectory(skillDir);
         WriteLf(
             Path.Combine(skillDir, "SKILL.md"),
-            BuildSkill(role, ExtractMethodology(role, projectRoot), emitClaudePolicy: true));
+            BuildSkill(role, CompileSkillBody(role, projectRoot, ClaudeSkillRoot), emitClaudePolicy: true));
         WriteSkillResources(role, skillDir);
     }
 
@@ -287,7 +300,9 @@ public static partial class SyncCommand
 
     /// <summary>
     /// Skill resource templates (<role>-resource-<name>.template.md) compile into the
-    /// skill folder's resources/ (DR-039 review-target subskills; DR-042).
+    /// skill folder's resources/ (DR-039 review-target subskills; DR-042). Resource bodies are
+    /// copied verbatim: they are authored one folder deeper than SKILL.md and already carry the
+    /// climbs that resolve from resources/, so the skill-body link rewrite must not reach them.
     /// </summary>
     private static void WriteSkillResources(RoleDefinition role, string skillDir)
     {
@@ -309,19 +324,23 @@ public static partial class SyncCommand
         File.WriteAllText(path, content.Replace("\r\n", "\n").Replace("\r", "\n"));
 
     /// <summary>
-    /// The native sub-agent definition: identity + the tool profile derived from the
-    /// role's permission shape. A role that can write nothing is read-only for the codebase,
-    /// so it gets no Edit/Write — that is how "reviewers don't write code" becomes natively
-    /// enforced rather than guard-RBAC enforced. The allowlist also
-    /// deliberately never includes the Agent tool: worker roles cannot dispatch subagents
-    /// (Decision 026 requires this natively for the reviewer's merge-sprint audit).
+    /// The native sub-agent definition: a thin identity wrapper over the role's skill plus the
+    /// tool profile derived from its permission shape. A role that can write nothing is read-only
+    /// for the codebase, so it gets no Edit/Write — that is how "reviewers don't write code"
+    /// becomes natively enforced rather than guard-RBAC enforced. Every agent carries
+    /// <c>skills:</c>, which preloads the skill's full content at startup, and the Skill tool, so
+    /// the methodology actually reaches the spawned agent; the Agent tool is granted only to a
+    /// role whose frontmatter declares <c>delegates: true</c>, so workers still cannot fan out
+    /// (DR 045 §10).
     /// </summary>
     private static string BuildAgent(RoleDefinition role, List<string> mustReads, ModelsConfig? models = null)
     {
         var readOnly = IsReadOnlyRole(role);
         var tools = readOnly
-            ? "Read, Grep, Glob, Bash"
-            : "Read, Grep, Glob, Bash, Edit, Write";
+            ? "Read, Grep, Glob, Bash, Skill"
+            : "Read, Grep, Glob, Bash, Edit, Write, Skill";
+        if (role.Delegates)
+            tools += ", Agent";
         var stance = readOnly
             ? "You are read-only: you assess and report, you do not modify the project's files."
             : "You produce and modify the project's files as your task requires.";
@@ -341,6 +360,7 @@ public static partial class SyncCommand
             name: {role.Name}
             description: {role.Description}
             tools: {tools}
+            skills: [{role.Name}]
             model: {model ?? "inherit"}{effortLine}
             ---
 
@@ -385,14 +405,19 @@ public static partial class SyncCommand
             "\n\nRead these for project context before working:\n"
             + string.Join('\n', mustReads.Select(p => $"- {p}"));
         var (model, _) = ResolveModel(models, role.Name, OpenAiModelVendor);
+        // Codex has no `skills:` preload, so naming the skill to load is the only thing that
+        // carries the methodology into a spawned agent (DR 045 §10). A writer role needs the
+        // workspace-write sandbox to act on that methodology at all.
+        var sandbox = readOnly ? "read-only" : "workspace-write";
 
         return $""""
             name = "{EscapeToml(role.Name)}"
             description = "{EscapeToml(role.Description)}"
-            model = "{EscapeToml(model ?? "gpt-5.6-terra")}"{(readOnly ? "\nsandbox_mode = \"read-only\"" : "")}
+            model = "{EscapeToml(model ?? "gpt-5.6-terra")}"
+            sandbox_mode = "{sandbox}"
 
             developer_instructions = """
-            You are {Article(role.Name)} **{role.Name}**. {role.Description} {stance} Your methodology lives in the `{role.Name}` skill; follow it.{contextBlock}
+            You are {Article(role.Name)} **{role.Name}**. {role.Description} {stance} Load the `${role.Name}` skill before working.{contextBlock}
             """
             """";
     }
@@ -423,9 +448,10 @@ public static partial class SyncCommand
         "aeiou".Contains(char.ToLowerInvariant(noun[0])) ? "an" : "a";
 
     /// <summary>
-    /// Reads the role's skill template, resolves include tags, strips the frontmatter and the
-    /// old-runtime orchestration sections, and de-personalizes the {{AGENT_NAME}} prose —
-    /// leaving the timeless methodology (mindset, work steps, checklist, out-of-scope).
+    /// Reads the role's skill template, resolves include tags, strips the frontmatter, and
+    /// de-personalizes the {{AGENT_NAME}} prose — leaving the whole methodology. Every authored
+    /// section survives, ## Must-Reads included: dropping it compiled manager skills without
+    /// their context pointers and silently voided {{include:extra-must-reads}} (DR 045 §10).
     /// </summary>
     internal static string ExtractMethodology(RoleDefinition role, string projectRoot)
     {
@@ -435,13 +461,47 @@ public static partial class SyncCommand
         var resolved = TemplateGenerator.ResolveIncludes(raw, projectRoot);
 
         var body = StripFrontmatter(resolved);
-        body = DropOrchestrationSections(body);
         body = Depersonalize(body, role.Name);
         body = RenumberOrderedLists(body);
 
-        // Strip any horizontal rule left dangling at the end after dropping a trailing section.
+        // A trailing horizontal rule separates nothing; drop it so the body ends on content.
         body = Regex.Replace(body, @"(\s*\n---\s*)+\s*$", "\n");
         return body.Trim() + "\n";
+    }
+
+    /// <summary>
+    /// Compiles the skill body for one host: the methodology with every link rewritten to
+    /// resolve from the emitted skill folder.
+    /// </summary>
+    private static string CompileSkillBody(RoleDefinition role, string projectRoot, string skillRoot) =>
+        RewriteSkillLinks(ExtractMethodology(role, projectRoot), role.Name, skillRoot);
+
+    /// <summary>
+    /// Rewrites the compiled skill body's links (DR 045 §10). Both hosts emit SKILL.md three
+    /// levels below the project root, so a dydo document is <c>../../../dydo/&lt;x&gt;</c> on
+    /// either — the authored climb out of Templates/ lands one folder short of that. A
+    /// <c>resources/&lt;n&gt;.md</c> link becomes the host's emitted path instead: a preloaded
+    /// agent reads its skill from context, with no folder to resolve a relative link against.
+    /// Targets that are neither (URLs, anchors, prose in parentheses) are left alone, and every
+    /// rewrite is a fixed point so a second sync is byte-identical.
+    /// </summary>
+    internal static string RewriteSkillLinks(string body, string roleName, string skillRoot) =>
+        LinkTargetRegex().Replace(body, match =>
+            $"]({RewriteLinkTarget(match.Groups[1].Value, roleName, skillRoot)})");
+
+    private static string RewriteLinkTarget(string target, string roleName, string skillRoot)
+    {
+        if (target.StartsWith("resources/", StringComparison.Ordinal))
+            return $"{skillRoot}/{roleName}/{target}";
+
+        var climb = ClimbPrefixRegex().Match(target);
+        var document = target[climb.Length..];
+        if (!climb.Success && !document.StartsWith("dydo/", StringComparison.Ordinal))
+            return target;
+
+        return document.StartsWith("dydo/", StringComparison.Ordinal)
+            ? $"../../../{document}"
+            : $"../../../dydo/{document}";
     }
 
     /// <summary>A role with frontmatter <c>read-only: true</c> needs no Edit/Write tools.</summary>
@@ -509,23 +569,6 @@ public static partial class SyncCommand
     // other reader — no strict-regex divergence (finding 8).
     private static string StripFrontmatter(string content) => FrontmatterParser.StripFrontmatter(content);
 
-    private static string DropOrchestrationSections(string content)
-    {
-        // Split on ## headings, keeping the leading # title block, and drop any section
-        // whose heading is in OrchestrationSections.
-        var parts = Regex.Split(content, @"(?=^## )", RegexOptions.Multiline);
-        var kept = new StringBuilder();
-        foreach (var part in parts)
-        {
-            var heading = HeadingRegex().Match(part);
-            if (heading.Success && OrchestrationSections.Contains(heading.Groups[1].Value.Trim()))
-                continue;
-            kept.Append(part);
-        }
-        // Collapse the horizontal rules left dangling by removed sections.
-        return Regex.Replace(kept.ToString(), @"(\n---\s*){2,}", "\n---\n");
-    }
-
     private static string Depersonalize(string content, string roleName)
     {
         content = content.Replace($"{{{{AGENT_NAME}}}} — ", "");
@@ -536,15 +579,16 @@ public static partial class SyncCommand
         return content;
     }
 
-    [GeneratedRegex(@"^## (.+)$", RegexOptions.Multiline)]
-    private static partial Regex HeadingRegex();
-
     [GeneratedRegex(@"^(\s*)(\d+)\. (.*)$")]
     private static partial Regex OrderedItemRegex();
 
     [GeneratedRegex(@"^## Must-Reads\b.*?(?=^## |\z)", RegexOptions.Singleline | RegexOptions.Multiline)]
     private static partial Regex MustReadsSectionRegex();
 
-    [GeneratedRegex(@"\[[^\]]*\]\(([^)]+)\)")]
+    // Only a whitespace-free target is a path; "[title](Linear URL)" is prose, not a link.
+    [GeneratedRegex(@"\]\(([^)\s]+)\)")]
     private static partial Regex LinkTargetRegex();
+
+    [GeneratedRegex(@"^(?:\.\./)+")]
+    private static partial Regex ClimbPrefixRegex();
 }

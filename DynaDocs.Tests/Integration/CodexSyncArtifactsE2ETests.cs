@@ -5,13 +5,11 @@ using DynaDocs.Services;
 using DynaDocs.Utils;
 
 /// <summary>
-/// c1-7 / issue 0233 (ask 4): `dydo sync` emits skills for every shipped skill-only role
-/// (planner, the three coordinating skills, self-improvement, and the three prompt-level skills) without
-/// minting an agent definition.
-/// Existing sync tests pin the ABSENCE of a <c>.claude/agents/&lt;role&gt;.md</c>; this one closes the
-/// codex-side gap: a spawnable <c>.codex/agents/&lt;role&gt;.toml</c> for any skill-only role would be
-/// artifact drift. Driven through the real sync command on an initialized project.
-/// Self-improvement is a generic harness method, not a worker identity.
+/// c1-7 / issue 0233 (ask 4): `dydo sync` emits a skill for every skill-only role without minting
+/// an agent definition. Existing sync tests pin the ABSENCE of a <c>.claude/agents/&lt;role&gt;.md</c>;
+/// this one closes the codex-side gap: a spawnable <c>.codex/agents/&lt;role&gt;.toml</c> for any
+/// skill-only role would be artifact drift. Driven through the real sync command on an
+/// initialized project, over the discovered role set rather than a hand-kept list.
 /// </summary>
 [Collection("Integration")]
 public class CodexSyncArtifactsE2ETests : IntegrationTestBase
@@ -24,12 +22,13 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        // Self-improvement is included as a generic skill, not as a worker identity.
-        foreach (var role in new[]
-        {
-            "planner", "orchestrator", "co-thinker", "chief-of-staff", "self-improvement",
-            "wayfinder", "grilling", "grill-me", "bro", "writing-for-agents",
-        })
+        var skillOnly = RoleDefinitionService.DiscoverRoles(TestDir)
+            .Where(role => !role.EmitAgent)
+            .Select(role => role.Name)
+            .ToList();
+        Assert.NotEmpty(skillOnly);
+
+        foreach (var role in skillOnly)
         {
             // Skill on both surfaces: the methodology the skill-only role applies in its thread.
             AssertFileExists($".claude/skills/{role}/SKILL.md");
@@ -119,23 +118,29 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         }
     }
 
+    // One authored source compiles to both runtimes, so no compiled skill may name a host or the
+    // session choreography that would make it wrong on the other one.
     [Fact]
-    public async Task Sync_OrchestratorSkill_StaysRuntimeNeutralAndPreservesDeliveryBoundary()
+    public async Task Sync_CompiledSkills_StayRuntimeNeutral()
     {
         await InitProjectAsync("none");
 
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        var orchestrator = ReadFile(".agents/skills/orchestrator/SKILL.md");
-        Assert.Contains("You coordinate; workers implement", orchestrator);
-        Assert.Contains("Review independently", orchestrator);
-        Assert.Contains("Integrate serially", orchestrator);
-        Assert.Contains("Audit the whole", orchestrator);
-        Assert.Contains("Keep Linear current", orchestrator);
-        Assert.DoesNotContain("Codex", orchestrator);
-        Assert.DoesNotContain("callback", orchestrator, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("task or thread", orchestrator, StringComparison.OrdinalIgnoreCase);
+        var skills = Directory.GetFiles(
+            Path.Combine(TestDir, ".agents", "skills"), "SKILL.md", SearchOption.AllDirectories);
+        Assert.NotEmpty(skills);
+
+        foreach (var file in skills)
+        {
+            var skill = File.ReadAllText(file);
+
+            Assert.DoesNotContain("Claude Code", skill);
+            Assert.DoesNotContain("Codex", skill);
+            Assert.DoesNotContain("callback", skill, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("task or thread", skill, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]
@@ -152,7 +157,6 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
             "dydo task",
             "dydo issue",
             "dydo review",
-            "run-sprint",
             string.Join('/', "project", "tasks"),
             string.Join('/', "project", "issues"),
         };
@@ -173,6 +177,35 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
 
         var codeWriter = ReadFile(".agents/skills/code-writer/SKILL.md");
         Assert.Contains("Linear Issue", codeWriter);
-        Assert.Contains("Verify the contract", codeWriter);
+    }
+
+    // DR 045 section 10: an agent definition only works if the skill reaches the spawned agent.
+    // On Claude that is `skills:` plus the Skill tool; on Codex it is the load line, and a writer
+    // additionally needs the sandbox that lets it act.
+    [Fact]
+    public async Task Sync_CompiledAgents_ReachTheirSkillOnBothHosts()
+    {
+        await InitProjectAsync("none");
+
+        var sync = await RunAsync(SyncCommand.Create());
+        sync.AssertSuccess();
+
+        var workers = RoleDefinitionService.DiscoverRoles(TestDir).Where(role => role.EmitAgent).ToList();
+        Assert.NotEmpty(workers);
+
+        foreach (var role in workers)
+        {
+            var claude = ReadFile($".claude/agents/{role.Name}.md");
+            var toolsLine = claude.Split('\n').Single(line => line.StartsWith("tools: ", StringComparison.Ordinal));
+            Assert.Contains($"skills: [{role.Name}]", claude);
+            Assert.Contains("Skill", toolsLine);
+            Assert.Equal(role.Delegates, toolsLine.Contains("Agent", StringComparison.Ordinal));
+
+            var codex = ReadFile($".codex/agents/{role.Name}.toml");
+            Assert.Contains($"Load the `${role.Name}` skill before working.", codex);
+            Assert.Contains(
+                role.ReadOnly ? "sandbox_mode = \"read-only\"" : "sandbox_mode = \"workspace-write\"",
+                codex);
+        }
     }
 }

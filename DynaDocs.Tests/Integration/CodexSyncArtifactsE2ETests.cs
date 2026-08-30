@@ -1,6 +1,8 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
+using DynaDocs.Utils;
 
 /// <summary>
 /// c1-7 / issue 0233 (ask 4): `dydo sync` emits skills for every shipped skill-only role
@@ -26,7 +28,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         foreach (var role in new[]
         {
             "planner", "orchestrator", "co-thinker", "chief-of-staff", "self-improvement",
-            "wayfinder", "grilling", "bro",
+            "wayfinder", "grilling", "grill-me", "bro", "writing-for-agents",
         })
         {
             // Skill on both surfaces: the methodology the skill-only role applies in its thread.
@@ -37,11 +39,13 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
             AssertFileNotExists($".codex/agents/{role}.toml");
         }
 
-        foreach (var role in new[] { "wayfinder", "grilling", "bro" })
+        foreach (var role in new[] { "wayfinder", "grilling", "grill-me", "bro", "writing-for-agents" })
         {
             var claude = ReadFile($".claude/skills/{role}/SKILL.md");
             var codex = ReadFile($".agents/skills/{role}/SKILL.md");
-            Assert.Equal(claude, codex);
+            Assert.Equal(
+                FrontmatterParser.StripFrontmatter(claude),
+                FrontmatterParser.StripFrontmatter(codex));
             Assert.DoesNotContain('\r', claude);
             Assert.DoesNotContain('\r', codex);
         }
@@ -50,6 +54,38 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         // it just never mints a spawnable agent for a skill-only role.
         AssertFileExists(".codex/agents/code-writer.toml");
         AssertFileExists(".codex/agents/reviewer.toml");
+    }
+
+    [Fact]
+    public async Task Sync_InvocationPolicy_CompilesToEachRuntimeWithoutChangingDescriptions()
+    {
+        await InitProjectAsync("none");
+
+        var sync = await RunAsync(SyncCommand.Create());
+        sync.AssertSuccess();
+
+        var roles = RoleDefinitionService.DiscoverRoles(TestDir).ToDictionary(role => role.Name);
+        var wayfinder = roles["wayfinder"];
+        var grilling = roles["grilling"];
+        var claudeExplicit = ReadFile(".claude/skills/wayfinder/SKILL.md");
+        var codexExplicit = ReadFile(".agents/skills/wayfinder/SKILL.md");
+        var claudeAutomatic = ReadFile(".claude/skills/grilling/SKILL.md");
+        var codexAutomatic = ReadFile(".agents/skills/grilling/SKILL.md");
+
+        Assert.Contains($"description: {wayfinder.Description}\n", claudeExplicit);
+        Assert.Contains($"description: {wayfinder.Description}\n", codexExplicit);
+        Assert.Contains("disable-model-invocation: true", claudeExplicit);
+        Assert.DoesNotContain("disable-model-invocation", codexExplicit);
+        AssertFileContains(
+            ".agents/skills/wayfinder/agents/openai.yaml",
+            "allow_implicit_invocation: false");
+
+        Assert.Contains($"description: {grilling.Description}\n", claudeAutomatic);
+        Assert.Contains($"description: {grilling.Description}\n", codexAutomatic);
+        Assert.DoesNotContain("disable-model-invocation", claudeAutomatic);
+        AssertFileNotExists(".agents/skills/grilling/agents/openai.yaml");
+        Assert.DoesNotContain("The methodology, standards, and checklist", claudeExplicit);
+        Assert.DoesNotContain("The methodology, standards, and checklist", codexExplicit);
     }
 
     /// <summary>

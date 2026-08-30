@@ -82,6 +82,13 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.StartsWith("Explicitly invoked by the human", roles["grill-me"].Description);
         Assert.StartsWith("Explicitly invoked by the human", roles["bro"].Description);
         Assert.StartsWith("Writing documents for agents", roles["writing-for-agents"].Description);
+
+        Assert.True(roles["wayfinder"].ExplicitInvocation);
+        Assert.True(roles["grill-me"].ExplicitInvocation);
+        Assert.True(roles["bro"].ExplicitInvocation);
+        Assert.False(roles["grilling"].ExplicitInvocation);
+        Assert.False(roles["writing-for-agents"].ExplicitInvocation);
+        Assert.False(roles["reviewer"].ExplicitInvocation);
     }
 
     [Fact]
@@ -145,7 +152,35 @@ public class RoleDefinitionServiceTests : IDisposable
 
         Assert.True(custom.EmitAgent);
         Assert.False(custom.ReadOnly);
+        Assert.False(custom.ExplicitInvocation);
         Assert.Equal("", custom.Description);
+    }
+
+    [Fact]
+    public void DiscoverRoles_CustomTemplate_ParsesExplicitInvocation()
+    {
+        var templatesDir = CreateProjectTemplatesDir();
+        File.WriteAllText(Path.Combine(templatesDir, "skill-human-only.template.md"),
+            "---\nmode: human-only\ninvocation: explicit\n---\n\n# Human Only\n");
+
+        var custom = RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(r => r.Name == "human-only");
+
+        Assert.True(custom.ExplicitInvocation);
+    }
+
+    [Fact]
+    public void DiscoverRoles_CustomTemplate_RejectsInvalidInvocation()
+    {
+        var templatesDir = CreateProjectTemplatesDir();
+        File.WriteAllText(Path.Combine(templatesDir, "skill-invalid.template.md"),
+            "---\nmode: invalid\ninvocation: sometimes\n---\n\n# Invalid\n");
+
+        var error = Assert.Throws<InvalidDataException>(
+            () => RoleDefinitionService.DiscoverRoles(_testDir));
+
+        Assert.Contains("skill-invalid.template.md", error.Message);
+        Assert.Contains("expected 'automatic' or 'explicit'", error.Message);
     }
 
     [Fact]

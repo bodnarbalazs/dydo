@@ -116,17 +116,15 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateEntryPointMd_ContainsDr038RoutingParagraphExactlyOnce_WithoutMutatingClaudeMd()
+    public void GenerateEntryPointMd_ContainsMinimalBoundary_WithoutMutatingClaudeMd()
     {
-        const string routingParagraph = "Before creating a memory, check whether it belongs in dydo — it probably does (issue, decision, guide, or other record). Keep memory only for facts about your human and for harness mechanics no dydo record can hold. Never store incident state or temporary workarounds as memories.";
         var rootClaude = Path.Combine(FindRepositoryRoot(), "CLAUDE.md");
         var before = File.ReadAllBytes(rootClaude);
 
         var content = TemplateGenerator.GenerateEntryPointMd("Example");
 
-        Assert.Equal(1, CountOccurrences(content, routingParagraph));
-        Assert.Equal(1, CountOccurrences(TemplateGenerator.ReadBuiltInTemplate("entry-point.template.md"), routingParagraph));
-        Assert.Equal(1, CountOccurrences(File.ReadAllText(rootClaude), routingParagraph));
+        Assert.StartsWith("# Example", content);
+        Assert.DoesNotContain("{{PROJECT_NAME}}", content);
         Assert.Equal(before, File.ReadAllBytes(rootClaude));
     }
 

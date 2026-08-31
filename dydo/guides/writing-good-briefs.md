@@ -27,11 +27,11 @@ Every implementation Issue carries five fields. They are the contract; the rest 
 | **Exact gates** | the commands that decide done, verbatim, each with its pass condition |
 | **Base branch** | the branch this one is cut from |
 
-What the Issue deliberately does **not** carry is the route. Files to touch, the pattern to copy with
-its path, the ordered steps and the edge cases are written into the Issue by whoever picks it up, as
-their first act, and are reviewed together with the code they produce. Pre-writing that route ages
-badly and buys nothing: the implementing agent reads the code you were guessing about. The exception is
-an Issue the Project plan flags as architecture-sensitive, whose plan is reviewed before any code exists.
+What the Issue deliberately does **not** carry is the route. Pre-writing it ages badly and buys
+nothing: the implementing agent reads the code you were guessing about, and the high-resolution plan is
+written just in time by whoever picks the Issue up — the two planning resolutions are in the
+[Linear Issue Lifecycle](../understand/task-lifecycle.md). One act there is yours: an Issue the Project
+plan flags as architecture-sensitive says so, because its plan is reviewed before any code exists.
 
 Owned paths do double duty. They are the brief's scope and the isolation that lets Issues run in
 parallel, so two Issues in flight together own disjoint files or say plainly that they are serial. The
@@ -68,16 +68,14 @@ be judged against.
 
 ## The escape hatch
 
-A brief does not have to answer every question — it has to leave the open ones askable. When work meets
-a question the brief does not settle, the agent runs bounded discovery first (the Decision Records, the
-plan, the Issue's links, the glossary, the code), and only when that comes up empty does the question
-become a **question Issue**: label `question`, a `## Question` body listing what was already searched,
-wired as a blocker with the blocked Issue moved to Blocked. Facts are the agent's job; choices are the
-human's.
+A brief does not have to answer every question — it has to leave the open ones askable. What an agent
+does with a question the brief did not settle is the *fog → discovery → question Issue* rule in the
+[Linear Issue Lifecycle](../understand/task-lifecycle.md); what it ends up as is a **question Issue**,
+Linear label `question`, the question itself under a `## Question` heading.
 
-So name the open questions in the brief and link them rather than burying them as assumptions. Their
-answers stay on the Issue. An answer graduates to a Decision Record only when it is hard to reverse,
-surprising later, and the result of a real trade-off.
+Your part is upstream of that. Name the questions you already know are open, link the question Issues
+that carry them, and let the brief say plainly what it does not settle. An assumption buried inside an
+outcome reads as settled, and gets built.
 
 ## What does not belong
 

@@ -81,7 +81,7 @@ taxonomy. An `emit: agent` role stays `automatic`: an agent's preload cannot rea
 | `read-only: true` | agent tools without `Edit`/`Write` | `sandbox_mode = "read-only"`; a writing role gets `workspace-write` |
 | `delegates: true` | the `Agent` tool on the agent | — (a Codex agent carries no tool list) |
 | `invocation: explicit` | `disable-model-invocation: true` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` |
-| `<role>-resource-<n>.template.md` | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
+| a shipped `<role>-resource-<n>.template.md` | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
 
 ## The context a role carries
 
@@ -92,11 +92,14 @@ spawned agent's context block. Write each target as the document's path under `d
 the compiler normalizes both. Close the list with `{{include:extra-must-reads}}` so a project can add its
 own without editing framework text.
 
-**Resources** — a `<role>-resource-<name>.template.md` is the role's own reference behind a file
-boundary, read only by the branches that need it. Link it from the body as `resources/<name>.md`; the
-compiler rewrites that to the host's emitted path, so even a preloaded agent can read it. Reference that
-several roles share belongs in a model-invoked method skill instead, or in a `dydo/` document they each
-list under Must-Reads.
+**Resources** — a `<role>-resource-<name>.template.md` is a role's own reference behind a file
+boundary, read only by the branches that need it. A shipped role's body links it as
+`resources/<name>.md`, and the compiler rewrites that to the host's emitted path so even a preloaded
+agent can read it. The set is the one dydo ships: a project-local file of a shipped resource's name
+overrides that resource's content, but a resource name dydo does not ship is never discovered — sync
+emits nothing, and a body link to it compiles into a path that does not exist. A custom role's own
+reference therefore goes in a `dydo/` document listed under its Must-Reads, and so does reference that
+several roles share, unless it earns a model-invoked method skill of its own.
 
 **Includes** — `{{include:<name>}}` pulls in `dydo/_system/template-additions/<name>.md` at the hook,
 which keeps project-specific guidance out of framework text. The
@@ -112,13 +115,19 @@ Claude — the session's model, never a silent downgrade — and a built-in defa
 ## Override a shipped role
 
 `dydo template update` mirrors every shipped skill and resource template into `dydo/_system/templates/`
-and records a hash for each in `dydo.json`. Edit a copy and it is yours: the next update refreshes only
-the copies whose hash still matches, reports the ones you changed and leaves them, deletes hash-tracked
-copies whose shipped source is gone, and prunes their hashes. `--diff` previews the whole set.
+and records a hash for each in `dydo.json`. Edit a copy and `dydo sync` compiles your version — it reads
+the project-local copy before the shipped source — but only until the next `template update`. That
+update keeps the `{{include:…}}` hooks you added, re-anchored onto the new shipped text, and replaces
+every other edit; a copy you changed without adding a hook is overwritten outright. A hook it cannot
+place stops the update for that one file and lands in a `.unplaced` sidecar, and `--force` proceeds with
+a backup. It also deletes hash-tracked copies whose shipped source is gone and prunes their hashes, and
+`--diff` previews the whole set.
 
-Precedence decides the rest: `dydo sync` reads the project-local copy before the shipped source. That is
-what makes an override win — and what makes a stale copy compile in place of a newer shipped role until
-`dydo template update` runs. Update first, sync second, and read the diff.
+Durable customization of a shipped role is therefore an include hook filled from
+`dydo/_system/template-additions/`, or a role of your own under a new name — not an edit to the mirrored
+copy. The [template pipeline](../understand/templates-and-customization.md) carries the update flow in
+full. One ordering trap survives either choice: a mirrored copy older than the shipped source compiles
+in place of it, so update first, sync second, and read the diff.
 
 ## What is gone
 

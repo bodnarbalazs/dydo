@@ -6,9 +6,9 @@ type: guide
 # Orchestration Pitfalls
 
 Failure modes seen when several agents deliver one Project in parallel. They are stated against the
-model that governs delivery here: one hat owns one Issue end to end, a manager coordinates and writes
-nothing, a fresh reviewer gates every candidate, and Git isolation keeps concurrent work apart — one
-writer per worktree, commits touching owned paths only.
+model that governs delivery here: one hat owns one Issue end to end, a manager coordinates and
+implements nothing, a fresh reviewer gates every candidate, and Git isolation keeps concurrent work
+apart — one writer per worktree, commits touching owned paths only.
 
 ## 1. The coordinator picks up a file
 
@@ -19,8 +19,9 @@ contains a change nobody reviewed independently.
 the one that judges merges, so anything it writes is judged by its author, and its checkout becomes a
 second writer in a tree someone else owns.
 
-**Rule:** a manager sequences, merges, and judges work it did not write. Every edit belongs to a spawned
-worker or to the implementer that owns the Issue.
+**Rule:** a manager sequences, merges, and judges work it did not write. Every edit inside an Issue's
+owned paths belongs to a spawned worker or to the implementer that owns the Issue; the manager's own pen
+touches only the plan's dated amendments and the Linear record.
 
 ## 2. A branch cut from the wrong base
 
@@ -88,10 +89,10 @@ answers arrives at the human.
 from skipping the middle: discovery first, then a question that is on the record.
 
 **Rule:** run bounded discovery — the Decision Records, the plan, the Issue's links, the glossary, the
-code — then file a question Issue listing what you searched, wire it as a blocker, move the Issue to
-Blocked, and say so in a comment. Settle operational conflicts by precedence: the human's live
-instruction, then the Decision Record, the reviewed plan at its governing commit, the Issue contract,
-coding standards, existing code. The ladder is worker → implementer → manager → human, and the human is
+code — and only when it comes up empty file a question Issue listing what you searched, wire it as a
+blocker, move the Issue to Blocked, and say so in a comment. Settle operational conflicts by
+precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
+commit, the Issue contract, coding standards, existing code. The ladder is worker → implementer → manager → human, and the human is
 reached for a conflict with a Decision Record, live external state no agent can coordinate, or authority
 the contract cannot supply.
 

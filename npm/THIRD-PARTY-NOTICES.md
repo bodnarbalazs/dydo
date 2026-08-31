@@ -2,9 +2,31 @@
 
 ## Matt Pocock's Skills
 
-The Wayfinder, Grilling, Grill Me, Bro, and Writing for Agents skill templates contain adaptations of
-material from [mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
-`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`.
+Several dydo skill templates contain adaptations of material from
+[mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
+`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
+header, as do the copies installed under `dydo/_system/templates/` and the skills `dydo sync` compiles
+into `.claude/skills/` and `.agents/skills/`.
+
+| Upstream skill | Adapted in |
+|---|---|
+| `code-review` | `Templates/reviewer-resource-code.template.md` |
+| `codebase-design` | `Templates/skill-codebase-design.template.md` |
+| `diagnosing-bugs` | `Templates/skill-diagnosing-bugs.template.md` |
+| `domain-modeling` | `Templates/skill-domain-modeling.template.md` |
+| `grill-me` | `Templates/skill-grill-me.template.md` |
+| `grilling` | `Templates/skill-grilling.template.md` |
+| `handoff` | `Templates/skill-handoff.template.md` |
+| `improve-codebase-architecture` | `Templates/skill-improve-codebase-architecture.template.md` |
+| `prototype` | `Templates/skill-prototype.template.md` |
+| `research` | `Templates/skill-research.template.md` |
+| `retro` | `Templates/skill-self-improvement.template.md` |
+| `tdd` | `Templates/skill-code-writer.template.md`, `Templates/skill-test-writer.template.md`, `Templates/reviewer-resource-tests.template.md` |
+| `teach` | `Templates/skill-teach.template.md` |
+| `wait-what` | `Templates/skill-bro.template.md` |
+| `wayfinder` | `Templates/skill-wayfinder.template.md` |
+| `writing-for-agents` | `Templates/skill-writing-for-agents.template.md` |
+| `writing-for-agents/SKILL-MECHANICS` | `Templates/writing-for-agents-resource-skill-mechanics.template.md` |
 
 MIT License
 

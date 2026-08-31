@@ -10,10 +10,10 @@ invocation: automatic
 # Prototype
 
 A prototype is **throwaway code that answers a question**. The question decides the shape. Chart
-and Think reach for it to raise the fidelity of an answer prose cannot settle. Wayfinder files a
+is the stage, where it raises the fidelity of an answer prose cannot settle: wayfinder files a
 prototype question Issue when how something should look or how it should behave is the question
-the route waits on. A co-thinker builds one mid-think, when the exchange with the human has gone
-abstract and something to react to will settle it faster than another round of prose.
+the route waits on. A co-thinker whose exchange with the human has gone abstract routes the
+question the same way, through the human, whose manager maps the Project with wayfinder.
 
 ## Pick a branch
 
@@ -50,11 +50,10 @@ the assumption at the top of the prototype.
 5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or
    render the full relevant state so the human can see what changed.
 6. **Capture it when done.** Fold what the prototype proved into the real code, then capture the
-   prototype itself as a **primary source**: commit it to a `prototype/<name>` branch, out of main,
-   and link that branch from the question Issue it answers. Capture the answer too (the verdict and
-   the question it settled) on that Issue. The main branch keeps only what was folded in. The branch
-   never merges; the working-tree contract retires it like any other — deleted once the answer is
-   folded in, or kept as reference while the artifact is still worth running.
+   prototype itself as a **primary source**: commit it to a `prototype/<name>` branch, out of
+   main, and link that branch from the question Issue it answers. Capture the answer too (the
+   verdict and the question it settled) on that Issue. The main branch keeps only what was folded
+   in. The branch never merges.
 
 ## Logic Prototype
 

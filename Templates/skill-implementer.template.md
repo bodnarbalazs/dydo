@@ -56,8 +56,9 @@ contract cannot supply.
    the Issue, and the `manager` merges it in order; complete when the PR carries the block. Wearing
    the hat yourself: merge into the feature branch — main for an atomic Issue — after its merge
    review; complete on the merge SHA.
-7. **Clean up.** Delete your worktree, and the branch once its PR has landed; complete when nothing
-   of yours is left behind.
+7. **Clean up.** Spawned: push the branch, open its PR, then remove the worktree you made; the
+   `manager` deletes the branch at merge. Complete when the worktree is gone. Wearing the hat
+   yourself: once merged, delete your worktree and branch; complete when nothing of yours is left.
 
 ## Return
 

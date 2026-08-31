@@ -111,7 +111,10 @@ and blocks reject the action. Nudges enforce project process; they do not create
 
 - `dydo/_system/templates/` — project-local role, resource, workflow, and framework template overrides.
 - `dydo/_system/template-additions/` — durable `{{include:name}}` fragments.
-- `dydo/files-off-limits.md` — universal protected path patterns and narrow whitelist entries.
+- `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
+  read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.
+  Whitelist entries lift off-limits patterns only; [Guard System](../understand/guard-system.md) owns
+  how each tier binds.
 - `paths.pathSets` — named source/test groupings available to compiled methods.
 
 Change source templates and run `dydo sync`; never hand-edit compiled `.claude/`, `.codex/`, or

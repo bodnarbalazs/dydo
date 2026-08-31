@@ -43,8 +43,8 @@ both are true, a cadence only makes unreviewed work arrive faster.
 
 ## Rationale
 
-FutureFeature is a repo-native idea record. It remains unpromoted until a separate human decision
-creates Linear work.
+FutureFeature is a repo-native idea record. It remains unpromoted until the human promotes it to
+exactly one Linear Initiative, Project, or Issue.
 
 ## Related
 

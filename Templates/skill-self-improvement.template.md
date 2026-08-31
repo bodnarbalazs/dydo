@@ -40,18 +40,20 @@ the second occurrence is the pattern that earns a change.
 Where the lever usually sits:
 
 - **Navigation**: how easy was it to find the right files? Are there hidden dependencies between them?
-  Would a navigation pointer make it easier? _Use when_ finding a piece of information took a long time.
+  Would a navigation pointer make it easier? _Use when_ the session took a long time to find a piece of
+  information.
 - **Automated checks**: is there a check that could catch the error the agent made — linting, typing,
   tests, a documentation check? _Use when_ the agent made a mistake that could have been caught by an
   automated check.
 - **Coding standards**: should the review rubric be given a new rule to enforce, or an existing rule
-  removed or clarified? _Use when_ a review passed a mistake it should have caught.
+  removed or clarified? _Use when_ the review failed to catch a mistake.
 - **Entry point size**: which steering instructions belong in a guide or an automated check instead?
-  _Use when_ the always-loaded entry point carries what only some runs need.
+  _Use when_ the always-loaded entry point — in the repo or the human's global scope — is particularly
+  large.
 - **Tool economy**: did the agent make expensive tool calls that could be streamlined, or is some custom
   tooling token-inefficient? _Use when_ the agent made an expensive tool call.
 - **No-ops**: instructions in prompt files that do not modify behaviour against the model's default.
-  _Use when_ a prompt file has grown large and unwieldy.
+  _Use when_ the prompt files are large and unwieldy.
 - **Information access**: more access for the agent — teed logs, read-only reach into a third-party
   service. _Use when_ a crucial piece of information was not available to the agent.
 

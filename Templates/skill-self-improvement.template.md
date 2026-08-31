@@ -48,7 +48,7 @@ Where the lever usually sits:
 - **Entry point size**: which steering instructions belong in a guide or an automated check instead?
   _Use when_ the always-loaded entry point carries what only some runs need.
 - **Tool economy**: did the agent make expensive tool calls that could be streamlined, or is some custom
-  tooling token-inefficient? _Use when_ one answer cost many calls.
+  tooling token-inefficient? _Use when_ the agent made an expensive tool call.
 - **No-ops**: instructions in prompt files that do not modify behaviour against the model's default.
   _Use when_ a prompt file has grown large and unwieldy.
 - **Information access**: more access for the agent — teed logs, read-only reach into a third-party
@@ -65,4 +65,4 @@ Where the lever usually sits:
 
 Candidates in severity order, each one line: recurrence with its two occurrences → lever → proof →
 rollback. The session that reached for this method spends the top candidate itself or carries it to the
-human as a single decision; when no small credible change survives the checks, the pattern is the return.
+human as one question; when no small credible change survives the checks, the pattern is the return.

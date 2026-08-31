@@ -58,13 +58,12 @@ a product decision to finish, the brief is not ready.
 
 ## What comes back
 
-The verdict is a fresh reviewer's review block: rubric, reviewer label and model, candidate and base
-SHA, PASS or FAIL, the gates rerun with their results, and findings as `file:line → consequence →
-correction`. PASS means no findings.
+The verdict is a fresh reviewer's **review block** — its fields are locked in the
+[dydo Glossary](../reference/dydo-glossary.md) — and PASS means no findings.
 
-Write the brief so every one of those lines can be filled. Gates that are not commands cannot be rerun;
-an outcome with no observable form cannot be judged; a candidate with no owned paths has no boundary to
-be judged against.
+Write the brief so every field of that block can be filled from it. Gates that are not commands cannot
+be rerun; an outcome with no observable form cannot be judged; a candidate with no owned paths has no
+boundary to be judged against.
 
 ## The escape hatch
 

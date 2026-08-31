@@ -10,12 +10,12 @@ invocation: automatic
 # Diagnosing Bugs
 
 A discipline for hard bugs. Skip a phase only when you can say why. Implement stage: the implementer
-reaches for this when its Issue is a defect; the decisions binding the area you touch are the DRs
-under `dydo/project/decisions/`.
+reaches for this when its Issue is a defect.
 
 **Redact every secret** before you show a command, an output or a captured artifact: write `<REDACTED>`
-in its place, and build loops against env vars so the credential stays in the environment. If the
-redacted output is not enough to diagnose the bug, say so.
+in its place, and build loops against env vars so the credential stays in the environment. Captured
+artifacts carry auth headers: quote only the lines that carry the signal. If the redacted output is not
+enough to diagnose the bug, say so on the Issue.
 
 ## Phase 1: Build a feedback loop
 
@@ -26,8 +26,7 @@ here. **Be aggressive. Be creative. Refuse to give up.**
 
 Ways to construct one, in roughly this order:
 
-1. **Failing test** at whatever seam reaches the bug — unit, integration, e2e. Write the smallest test
-   that fails on the symptom, run it, iterate until the fix turns it green.
+1. **Failing test** at whatever seam reaches the bug — unit, integration, e2e.
 2. **Curl / HTTP script** against a running dev server.
 3. **CLI invocation** on a fixture input, diffing stdout against a known-good snapshot.
 4. **Headless browser script** driving the UI, asserting on DOM, console or network.
@@ -36,8 +35,6 @@ Ways to construct one, in roughly this order:
 7. **Property / fuzz loop** for "sometimes wrong output": 1000 random inputs, hunt the failure mode.
 8. **Bisection or differential loop** when the bug appeared between two known states: automate "boot at
    state X, check, repeat" for `git bisect run`, or diff one input through two versions or configs.
-9. **Human in the loop**, last resort. When someone must click, drive them one numbered instruction at a
-   time and capture each observation back, so the loop stays structured.
 
 ### Tighten the loop
 

@@ -164,14 +164,16 @@ dydo template update --force
 
 The mirrored templates under `dydo/_system/templates/` and the framework documents in
 `dydo/reference/` and `dydo/guides/` are compared against the shipped set. An unmodified copy is
-overwritten. In a template, your `{{include:...}}` hooks are re-anchored into the new text and other
-edits are replaced; an edited framework document is left alone and reported instead. A mirrored
-template dydo no longer ships is deleted, but only when its stored hash proves the copy is dydo's — a
-role a project authored itself is untracked and survives. The run also tops up default nudges, scan
+overwritten. An edited template is replaced whenever the update ships new text — your added
+`{{include:...}}` hooks included; those hooks are re-anchored only when the shipped text is
+unchanged. An edited framework document is left alone and reported instead. A mirrored template dydo
+no longer ships is deleted, but only when its stored hash proves the copy is dydo's — a role a
+project authored itself is untracked and survives. The run also tops up default nudges, scan
 exclusions, and frontmatter types. Warnings exit `1` unless `--force` is given.
 
-Durable customization belongs in `{{include:...}}` fragments; other edits to framework-owned files can
-be replaced.
+Durable customization belongs in the `{{include:...}}` fragments under
+`dydo/_system/template-additions/`, which this command never rewrites; other edits to framework-owned
+files can be replaced.
 
 ---
 

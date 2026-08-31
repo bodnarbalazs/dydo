@@ -11,6 +11,7 @@ invocation: automatic
 
 Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**:
 every decision branches into the decisions that hang off it.
+Think stage, and Chart when a Project is foggy: the co-thinker and the planner grill the human.
 
 Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled:
 the questions you can ask now without guessing at answers you have not heard yet. Ask the whole frontier

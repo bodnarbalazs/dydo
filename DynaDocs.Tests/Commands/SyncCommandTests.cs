@@ -828,6 +828,37 @@ public class SyncCommandTests : IDisposable
         Assert.Equal(0, H1Count("```\n# fenced only\n```"));
     }
 
+    /// <summary>
+    /// Collapses the two hosts' skill roots to one token so a compiled body can be compared
+    /// across hosts. SyncCommand.RewriteSkillLinks turns a role's own <c>resources/&lt;n&gt;.md</c>
+    /// link into the host's emitted path — <c>.claude/skills/…</c> for Claude, <c>.agents/skills/…</c>
+    /// for Codex — so a skill that links its own resource legitimately differs at exactly those
+    /// links and nowhere else. Only the prefix is normalized; everything after it, the role name
+    /// and the resource file included, still compares byte-exact, so real divergence still fails.
+    /// </summary>
+    internal static string NormalizeHostSkillRoot(string content) =>
+        content
+            .Replace(".claude/skills/", "<host>/skills/", StringComparison.Ordinal)
+            .Replace(".agents/skills/", "<host>/skills/", StringComparison.Ordinal);
+
+    [Fact]
+    public void NormalizeHostSkillRoot_CollapsesTheHostPrefixAndNothingElse()
+    {
+        const string claude = "read [merge](.claude/skills/reviewer/resources/merge.md) first";
+        const string codex = "read [merge](.agents/skills/reviewer/resources/merge.md) first";
+
+        Assert.Equal(NormalizeHostSkillRoot(claude), NormalizeHostSkillRoot(codex));
+        // Both segments the summary above enumerates, because this fixture is the only guard on
+        // the helper's width: a normalization that also collapsed the role folder would still
+        // pass the resource-file inversion, and would then hide a genuinely divergent link.
+        Assert.NotEqual(
+            NormalizeHostSkillRoot(claude),
+            NormalizeHostSkillRoot(codex.Replace("reviewer/", "planner/")));
+        Assert.NotEqual(
+            NormalizeHostSkillRoot(claude),
+            NormalizeHostSkillRoot(codex.Replace("merge.md", "plan.md")));
+    }
+
     private static string RepositoryRoot()
     {
         for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory != null; directory = directory.Parent)
@@ -1126,7 +1157,8 @@ public class SyncCommandTests : IDisposable
 
         var claudeContent = File.ReadAllText(claudeSkill);
         var codexContent = File.ReadAllText(codexSkill);
-        Assert.Equal(claudeContent, codexContent);
+        Assert.Equal(
+            NormalizeHostSkillRoot(claudeContent), NormalizeHostSkillRoot(codexContent));
         Assert.Contains($"description: {role.Description}\n", claudeContent);
         Assert.Equal(1, H1Count(FrontmatterParser.StripFrontmatter(claudeContent)));
         Assert.DoesNotContain("{{", claudeContent);
@@ -1157,9 +1189,11 @@ public class SyncCommandTests : IDisposable
             var claudeContent = File.ReadAllText(claudeSkill);
             var codexContent = File.ReadAllText(codexSkill);
 
+            // One authored source, so both hosts compile the same body — except where the
+            // compiler writes the host's own skill root into a link to the role's resources.
             Assert.Equal(
-                FrontmatterParser.StripFrontmatter(claudeContent),
-                FrontmatterParser.StripFrontmatter(codexContent));
+                NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(claudeContent)),
+                NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(codexContent)));
             Assert.Contains($"name: {roleName}", claudeContent);
             Assert.Contains("mattpocock/skills", claudeContent);
             Assert.DoesNotContain('\r', claudeContent);

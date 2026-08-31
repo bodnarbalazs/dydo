@@ -59,10 +59,13 @@ public class ChiefOfStaffSyncTests : IDisposable
 
         // One authored source, so both hosts get the same body. Only the invocation policy is
         // host-shaped — Claude carries it in frontmatter, Codex in a sibling yaml — so comparing
-        // whole files would go red the day this role becomes explicit-only.
+        // whole files would go red the day this role becomes explicit-only. A link to the role's
+        // own resources carries the host's skill root, so that prefix is normalized away too.
         Assert.Equal(
-            FrontmatterParser.StripFrontmatter(File.ReadAllText(claudeSkill)),
-            FrontmatterParser.StripFrontmatter(File.ReadAllText(codexSkill)));
+            SyncCommandTests.NormalizeHostSkillRoot(
+                FrontmatterParser.StripFrontmatter(File.ReadAllText(claudeSkill))),
+            SyncCommandTests.NormalizeHostSkillRoot(
+                FrontmatterParser.StripFrontmatter(File.ReadAllText(codexSkill))));
         Assert.Equal(
             role.ExplicitInvocation,
             File.ReadAllText(claudeSkill).Contains("disable-model-invocation: true"));

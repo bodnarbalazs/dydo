@@ -67,7 +67,7 @@ For each candidate, render a card with:
 - **Files**: which files and modules are involved, monospaced.
 - **Problem**: one sentence. What hurts.
 - **Solution**: one sentence, plain English. What changes.
-- **Wins**: bullets of six words or fewer, named in the glossary's terms — "locality: bugs
+- **Wins**: bullets of six words or fewer, named in `codebase-design` terms — "locality: bugs
   concentrate in one module", "interface shrinks; implementation absorbs the wrappers", "tests hit
   one interface" — and how tests would improve.
 - **Before / After diagram**: the centrepiece, side by side, illustrating the shallowness and the
@@ -107,8 +107,7 @@ Side effects happen inline as decisions crystallize:
 - **Naming a deepened module after a concept not in `dydo/glossary.md`?** Add the term there.
 - **Sharpening a fuzzy term during the conversation?** Update `dydo/glossary.md` right there.
 - **Want to explore alternative interfaces for the deepened module?** Call the Skill tool with
-  `codebase-design` and design it twice: parallel sub-agents take the interface several radically
-  different ways, then compare on depth, locality, and seam placement.
+  `codebase-design` and use its design-it-twice parallel sub-agent pattern.
 
 ### 4. Hand over what survived
 

@@ -56,7 +56,10 @@ the feature branch (`gh pr create --base feature/<project-slug>`) and its body c
 block. Merges into the feature branch are serial and `--no-ff`, one Issue at a time, each followed
 by a merge review; the feature branch reaches `main` through the human's hands.
 
-Once the merge has landed, whoever made the worktree removes it:
+Cleanup splits by path. **Spawned:** before returning `done`, the `implementer` pushes the branch,
+opens the PR and removes the worktree it made — branch and PR carry the work — and whoever merges
+the PR (the `manager`) deletes the Issue branch with it. **Wearing the hat:** the `implementer`
+removes its worktree and branch once the merge has landed. The commands:
 
 ```bash
 git worktree remove ../<repo>.worktrees/DYD-123-<slug>

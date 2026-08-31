@@ -22,9 +22,9 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 ## Fog and question Issues
 
-- **Fog** — the unknown unknowns: relevant uncertainty not yet sharp enough to state as an answerable
-  question. The rule is *fog → discovery → question Issue*. Search the Decision Records, the Project
-  plan, the Issue's own links, the glossary, and the code first; file only what that leaves open.
+- **Fog** — the unknown unknowns: relevant uncertainty not yet sharp enough to state as a question.
+  The rule is *fog → discovery → question Issue*. Search the Decision Records, the Project plan, the
+  Issue's own links, the glossary, and the code first; file only what that leaves open.
 - **Question Issue** — a Linear Issue labelled `question` carrying one open question that blocks
   planning or implementation and is too large to settle inline. It resolves into an **answer**
   recorded on the Issue; a small preference stays spec detail on the implementation Issue instead.
@@ -48,10 +48,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 ## Roles and skills
 
-- **Role** — an authored methodology identity compiled by dydo: a hat, a worker, a method, or a
-  human command.
+- **Role** — an authored skill source compiled by dydo: a hat, a worker, a method, or a human command.
 - **Skill** — the runtime package of a role's methodology and resources.
-- **Agent** — a native-platform worker instance.
+- **Agent** — a native-platform instance of a spawned role: a worker, or an implementer a manager
+  keeps in flight.
 - **Hat** — what a session is doing now: co-thinker, planner, implementer, manager, or
   chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
@@ -59,7 +59,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Method** — a reference or procedure used inside another skill, carrying no identity of its own:
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype,
   writing-for-agents, self-improvement.
-- **Human command** — a skill only the human invokes by name; a model never reaches for it.
+- **Human command** — a skill only the human invokes by name, never reached for by a model:
+  grill-me, bro, handoff, walkthrough, teach, improve-codebase-architecture.
 - **Workflow** — a host-executed script for a sequence prose cannot be trusted to hold. The
   inquisition is the only one.
 - **Rubric** — the one named standard a reviewer judges a candidate against: code, tests, docs, plan,
@@ -93,12 +94,12 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 These words survive only in older documents. Campaign, Sprint, Slice, Task, backlog item, and the
 separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initiative, Project, and
-Issue where work is live, though a slice may still name an implementation technique informally.
-Tier-1 manager, orchestrator, and the run-sprint workflow (internally run-issues) gave way to the
-hats — a manager coordinates one Project, an implementer owns one Issue. Wayfinding map, Waypoint,
-and the Frontier they defined are gone: a Project's map is its Linear description, and frontier now
-means the question Issues above. Integrated audit is replaced by the three reviews above. None of
-these words creates a file, command, lifecycle, or Linear type.
+Issue where work is live, though a slice may still name an implementation technique and a task a
+question Issue's type. Tier-1 manager, orchestrator, and the run-sprint workflow (internally
+run-issues) gave way to the hats — a manager coordinates one Project, an implementer owns one
+Issue. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
+Linear description, and frontier now means the question Issues above. Integrated audit is replaced
+by the three reviews above. None of these words creates a file, command, lifecycle, or Linear type.
 
 ## Related
 

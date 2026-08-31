@@ -67,10 +67,10 @@ Four guarantees the compiler owes a spawned agent
   host's output on the next sync, so nothing orphaned keeps loading its description.
 
 `dydo template update` mirrors shipped skill and resource templates plus the framework-owned documents
-into the project and tracks each by content hash, so a clean copy refreshes and a customized one is
-left alone. Everything under `.claude/`, `.codex/`, and `.agents/` is a build product: change the
-source template and sync. See [Templates and Customization](./templates-and-customization.md) for the
-frontmatter keys and the update flow.
+into the project and tracks each by content hash. Everything under `.claude/`, `.codex/`, and
+`.agents/` is a build product: change the source template and sync. See
+[Templates and Customization](./templates-and-customization.md) for the frontmatter keys and the
+update flow.
 
 ## Knowledge and work boundary
 

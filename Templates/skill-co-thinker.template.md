@@ -29,9 +29,9 @@ anything; what reaches him is what he alone has the authority to settle.
 ## Method
 
 1. **Do the homework first.** Read the code, the Decision Records, the plan and the glossary that
-   already cover this ground, and send `research` after anything outside the repository — it returns
-   cited Markdown from primary sources. Done when every question still standing is one only the human
-   can answer.
+   already cover this ground, and send `research` after anything outside the repository, naming where
+   its cited Markdown lands — a scratch file, or the Issue once one exists — and take the one-line
+   answer it reports back. Done when every question still standing is one only the human can answer.
 2. **Name the real choice.** Separate what is known from what is assumed, then frame the live options
    with what each one buys and what it costs. Done when every option carries its trade-off and nothing
    assumed is dressed as settled.

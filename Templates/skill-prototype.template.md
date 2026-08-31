@@ -12,8 +12,9 @@ invocation: automatic
 A prototype is **throwaway code that answers a question**. The question decides the shape. Chart
 is the stage, where it raises the fidelity of an answer prose cannot settle: wayfinder files a
 prototype question Issue when how something should look or how it should behave is the question
-the route waits on. A co-thinker whose exchange with the human has gone abstract routes the
-question the same way, through the human, whose manager maps the Project with wayfinder.
+the route waits on. A co-thinker whose exchange with the human has gone abstract sends the
+question the same way: the planner charts the Project with wayfinder, and this prototype question
+Issue is one of the map's.
 
 ## Pick a branch
 

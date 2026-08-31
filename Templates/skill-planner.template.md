@@ -30,12 +30,13 @@ anything still open back to Think with the question named, or file it as a quest
 
 ## Method
 
-1. **Chart before you route.** Chart a foggy Project with wayfinder: map what is known, file a question
-   Issue for every unknown a route would have to invent. Done when the frontier is visible and nothing
-   left on the map is guesswork.
+1. **Chart before you route.** Chart a foggy Project with wayfinder: map what is known, keep fog too
+   dim to phrase in `## Not yet specified`, and file a question Issue for every unknown sharp enough to
+   ask that a route would otherwise invent. Done when the frontier is visible and nothing on the map is
+   invented.
 2. **Read the ground.** Code, tests, prior plans, the governing Decisions. Done when you can name the
    pattern to follow with its path, the touchpoints, the hazards, and the evidence of success.
-3. **Design at architecture level.** Use codebase-design for module boundaries, seams, and depth. Done
+3. **Design at architecture level.** Use codebase-design for module interfaces, seams, and depth. Done
    when no implementation Issue is left carrying an architectural decision of its own.
 4. **Write the plan at low resolution.** Follow [project](resources/project.md): destination, scope,
    acceptance, the design, the Issue map, ordering and isolation, watch-outs. One atomic Issue is its
@@ -48,8 +49,9 @@ anything still open back to Think with the question named, or file it as a quest
    the self-containment bar of this repository's writing-good-briefs guide, and owns paths no sibling
    touches or is marked serial.
 6. **Leave high resolution to just-in-time.** The [issue](resources/issue.md) plan is written into the
-   Issue as implementation's first step and reviewed with the code. Done when the Issues whose plan is
-   reviewed before any code — the architecture-sensitive ones — say so on the Issue.
+   Issue as implementation's first step and reviewed with the code. Done when the Project plan flags
+   the architecture-sensitive Issues — the ones whose plan is reviewed before any code — and each such
+   Issue says so.
 
 ## Handoff
 

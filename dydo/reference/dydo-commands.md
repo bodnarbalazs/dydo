@@ -10,8 +10,9 @@ Live work is managed in Linear through its official surfaces; no dydo command cr
 caches, polls, or mirrors a Linear object. FutureFeatures stay repo-native ideas under
 `dydo/project/future-features/` and are promoted only by a human.
 
-Commands find the project by walking up to the nearest `dydo.json`. `dydo help` prints the one-screen
-summary; `dydo <command> --help` is the authoritative option list.
+Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
+and reads it from the current directory. `dydo help` prints the one-screen summary;
+`dydo <command> --help` is the authoritative option list.
 
 ---
 
@@ -54,9 +55,10 @@ both hosts. A role's `## Must-Reads` links become its agent's context list, link
 are rewritten to resolve from the emitted skill folder, `<role>-resource-<name>.template.md` files
 compile into that skill's `resources/`, and workflow harnesses compile into Claude's workflow folder.
 
-Only the integrations recorded in `dydo.json` are emitted. Every run also deletes outputs dydo no
-longer ships: retired workflows, resources retired by rename, and retired roles — unless a
-project-local template of that name keeps the role alive.
+Only the integrations recorded in `dydo.json` are emitted; a project with neither recorded — `none`,
+or a `dydo.json` from before integrations were recorded — emits for both hosts. Every run also deletes
+outputs dydo no longer ships: retired workflows, resources retired by rename, and retired roles —
+unless a project-local template of that name keeps the role alive.
 
 Change the source template and re-run this command; never hand-edit a compiled artifact.
 
@@ -67,7 +69,8 @@ Change the source template and re-run this command; never hand-edit a compiled a
 ### dydo check
 
 Validate documentation naming, frontmatter, summaries, links, hub and folder-meta coverage, orphans,
-and the off-limits patterns.
+the off-limits file, FutureFeature shape under `project/future-features/`, retired v2 work records,
+uncustomized foundation docs (warning), and `dydo.json` itself; config errors count toward exit `1`.
 
 ```bash
 dydo check
@@ -137,11 +140,10 @@ dydo guard --stop
 
 Exit `0` allows the action; exit `2` blocks it with `BLOCKED:` on stderr. **Off-limits** paths block
 every operation, reads included. **Protected** paths are readable by any tool and writable by none,
-Bash included. Both tiers are declared in `dydo/files-off-limits.md` and bind on every caller.
-`--stop` is a retained no-op so existing Stop-hook wiring keeps resolving.
-
-[Guard System](../understand/guard-system.md) owns the layers, the tiers, and the hook payload;
-[Configuration Reference](./configuration.md) owns the nudge format.
+Bash included. Both tiers bind on every caller; [Files Off-Limits](../files-off-limits.md) declares
+them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudges are configured in
+`dydo.json` — see [DynaDocs](./about-dynadocs.md). `--stop` is a retained no-op so existing Stop-hook
+wiring keeps resolving.
 
 ---
 
@@ -257,6 +259,5 @@ dydo help
 ## Related
 
 - [DynaDocs](./about-dynadocs.md) — Product boundary and operating model
-- [Configuration Reference](./configuration.md) — `dydo.json`, hooks, models, and customization points
-- [Guard System](../understand/guard-system.md) — What `dydo guard` enforces and how
+- [Files Off-Limits](../files-off-limits.md) — The two path tiers `dydo guard` enforces
 - [Writing Documentation](./writing-docs.md) — Documentation conventions validated by dydo

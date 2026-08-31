@@ -2,8 +2,8 @@
 
 Low-resolution map for one Linear Project: destination, scope, acceptance, architecture-level design,
 an Issue map. Every Issue is sharpened to mechanical detail just in time by whoever picks it, so
-file-by-file precision here is wasted work. Write it at `dydo/project/plans/<kebab-case>.md`, obey
-`dydo/reference/writing-docs.md`, keep `dydo check` clean, and keep the section numbers — briefs cite them.
+file-by-file precision here is wasted work. Write it at `dydo/project/plans/<kebab-case>.md`, keep
+`dydo check` clean, and keep the section numbers — briefs cite them.
 
 ```markdown
 ---

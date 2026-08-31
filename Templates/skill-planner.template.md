@@ -22,8 +22,8 @@ Turn ripe intent into a route another agent can walk without asking.
 ## Boundary
 
 Plan is the stage: intent arrives ripe from Think, the route goes to a fresh reviewer under the `plan`
-rubric, and the human approves it before the manager opens the feature. Route the work; the implementer
-writes the code.
+rubric, and the human approves it before the manager opens the feature. Route the work; write none of
+it.
 
 **Start only when ripe.** Ripe is a settled goal, settled trade-offs, settled product decisions. Send
 anything still open back to Think with the question named, or file it as a question Issue.
@@ -40,15 +40,16 @@ anything still open back to Think with the question named, or file it as a quest
 4. **Write the plan at low resolution.** Follow [project](resources/project.md): destination, scope,
    acceptance, the design, the Issue map, ordering and isolation, watch-outs. One atomic Issue is its
    own contract and needs no plan. Done when the plan can govern execution unchanged, or says
-   `## Not yet specified` and carries a question Issue for each gap.
+   `## Not yet specified` for fog too dim to phrase and carries a question Issue for every gap sharp
+   enough to ask.
 5. **Cut the map into tracer bullets.** Every Issue is one independently reviewable outcome that runs
    end to end through the stack; a wide refactor expands before it contracts. Done when each Issue
    carries its five required fields — outcome, owned paths, blockers, exact gates, base branch — meets
    the self-containment bar of this repository's writing-good-briefs guide, and owns paths no sibling
    touches or is marked serial.
-6. **Leave high resolution to just-in-time.** The implementer writes the [issue](resources/issue.md)
-   plan as its first step, reviewed with the code. Done when the architecture-sensitive Issues — the
-   ones whose plan is reviewed before any code — say so on the Issue.
+6. **Leave high resolution to just-in-time.** The [issue](resources/issue.md) plan is written into the
+   Issue as implementation's first step and reviewed with the code. Done when the Issues whose plan is
+   reviewed before any code — the architecture-sensitive ones — say so on the Issue.
 
 ## Handoff
 

@@ -1,54 +1,49 @@
-# Auditing an Integrated Project
+# Reviewing a Merge
 
-Target: the complete merged Project change as one unit after every implementation Issue has passed an
-independent review. Issue-level review proves each increment; this audit proves the integrated outcome
-against the reviewed Git Project plan linked from Linear.
+Target: the tree as it exists after a merge. Every merged Issue passed review alone; the seams between
+them passed nothing, and neither did the merge itself. Read the integrated state — not the reports
+about it — at the scale of what landed: a two-file merge is minutes of mechanical checking, a whole
+feature is not.
 
-Two characters at once:
+Scope is what this merge created or exposed. A defect it neither touched nor uncovered goes back to
+the invoker as a note and no further.
 
-- **Inquisitor** — hunt real, nameable problems, especially seams that Issue-level review cannot see.
-  Verify every suspicion against the merged code before reporting it; no speculation.
-- **Judge** — deliver a strict verdict. There is no "pass with notes"; notes are findings, and findings
-  mean FAIL. PASS means the Project satisfies its reviewed plan as one coherent result.
+## Scale
 
-You work alone — no subagents, by design. Every verification is yours to perform independently.
+- **After every Issue merge** — steps 1–4, sized to the merged diff.
+- **At the final feature merge** — steps 1–5. Plan acceptance is proved here or nowhere.
+- **At full scale** — as the judge inside the inquisition: steps 1–6 over the entire feature diff.
 
 ## Method
 
-1. **Read the reviewed Project plan** — resolve its exact governing commit, linked Linear Project, all
-   implementation Issues in scope, acceptance criteria, ordering, owned paths, and gates. A missing or
-   unreviewed plan is an automatic FAIL for coordinated Project work.
-2. **Check Issue evidence** — every implementation Issue must have an independent PASS, an exact commit
-   or branch link, and green gate evidence. Missing work and unexpected work are both findings.
-3. **Take the whole diff** — review the complete integrated Project diff end to end, including any
-   uncommitted changes. This is the unit under judgment.
-4. **Hunt, lens by lens:**
-   - **Correctness** — wrong or inverted conditions, off-by-one errors, unhandled edge cases, and
-     swallowed failures introduced anywhere in the Project.
-   - **Seams** — shared files or behaviors, one Issue breaking another's assumptions, contradictory or
-     duplicated logic, lost hunks, doubled code, and stale conflict leftovers.
-   - **Coverage** — Project behavior with no test, untested error paths, and assertions that would pass
-     even if the implementation were broken.
-   - **Standards** — coding-standard violations, unnecessary complexity, dead code, and documentation
-     drift introduced by the Project.
-5. **Verify the plan's acceptance criteria** — prove every criterion against the integrated state.
-6. **Verify each finding** — cite file:line from the merged code and drop anything you cannot confirm.
-7. **Run the full Project gates** — use the plan's exact commands against the integrated state, not an
-   individual Issue worktree.
-8. **Verdict and assimilation** — PASS only if the Project is correct, seam-clean, covered,
-   standards-clean, and acceptance-complete. Record the integrated-audit evidence in Linear, and ensure
-   the plan's durable assimilation brief captures observed friction, adopted knowledge, and deferred
-   follow-ups before the Project is completed.
+1. **Fix the unit.** Name the merge commit and both parents, and list the Issues that landed in it.
+   Diff the merged tree against the base the branch grew from, rather than re-reading the branch diff
+   each Issue's own review already covered.
+2. **Sweep for merge artifacts.** Conflict markers left in files, hunks that arrived twice, hunks that
+   disappeared in resolution, a neighbour's change reverted by the resolution, and build products or
+   local files committed by accident. Grep for the markers yourself; a clean build hides all of this.
+3. **Walk the seams.** Take every file, symbol, and behaviour that two merged Issues both touch: a
+   caller left on the old contract, a name that moved under someone else, two implementations of one
+   rule, an assumption one Issue holds and another broke. These are the defects no Issue review could
+   have seen, and they are why this pass exists.
+4. **Rerun the gates on the integrated state.** Run each landed Issue's exact gate commands yourself,
+   in the merged tree. Green in an isolated worktree proves nothing here. Record command and result.
+5. **Prove acceptance** (final merge and full scale). Read the reviewed plan at its governing commit
+   and prove each acceptance criterion against the merged tree, one at a time, citing the command
+   output or the file:line that proves it. A criterion you cannot prove is a finding.
+6. **Judge the findings** (full scale). Resolve every reported finding to `confirmed`, `plausible` or
+   `refuted` on evidence you verify yourself. Default to `refuted`; reach for `plausible` only when
+   the deciding state is genuinely unavailable, and name the missing fact.
+
+The verdict goes in the review block, naming the merge commit and every gate rerun.
 
 ## Checklist
 
-- [ ] Exact reviewed Project plan and governing commit read
-- [ ] Every in-scope Issue and its independent-review evidence accounted for
-- [ ] Entire integrated diff read — not per-Issue samples
-- [ ] Cross-Issue seams checked (shared files, shared behavior, broken assumptions)
-- [ ] No merge artifacts (lost or doubled hunks, conflict leftovers)
-- [ ] Every Project-plan acceptance criterion verified
-- [ ] Full tests and gates run against the integrated state
-- [ ] Every finding verified with file:line evidence
-- [ ] Verdict is strict: findings imply FAIL, with no "pass with notes"
-- [ ] Audit evidence is linked from Linear and durable assimilation is captured in dydo/Git
+- [ ] Merge commit, both parents, and every landed Issue named
+- [ ] Merged tree diffed against the branch base
+- [ ] Conflict markers, doubled hunks, lost hunks, and reverted neighbours searched for
+- [ ] Build products and local files kept out of the commit
+- [ ] Every file, symbol, or behaviour touched by two Issues checked for a broken assumption
+- [ ] Every landed Issue's gates rerun in the merged tree, with recorded output
+- [ ] Every acceptance criterion of the reviewed plan proved with evidence (final merge, full scale)
+- [ ] Every reported finding resolved to confirmed, plausible or refuted (full scale)

@@ -54,8 +54,7 @@ anything; what reaches him is what he alone has the authority to settle.
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
 | An idea worth keeping but not committed to | a FutureFeature in `dydo/project/future-features/` |
 | Ripe intent: goal and trade-offs settled | `planner`, for an Issue or a Project plan |
-| A Linear Project still foggy after the homework | the human, whose `manager` maps it with `wayfinder` |
+| A Linear Project still foggy after the homework | `planner`, who charts it with `wayfinder` |
 
-That last route runs through the `manager` who owns the Project: recommend it, and the human invokes
-it. A FutureFeature stays one until he promotes it. Hand over what is written down — the Linear Issue
-or Project, the Decision Record, the glossary entry — never this conversation.
+A FutureFeature stays one until the human promotes it. Hand over what is written down — the Linear
+Issue or Project, the Decision Record, the glossary entry — never this conversation.

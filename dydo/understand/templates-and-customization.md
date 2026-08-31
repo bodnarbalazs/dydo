@@ -5,24 +5,49 @@ type: concept
 
 # Templates and Customization
 
-dydo authors role methodologies, skill resources, workflows, and framework documents as templates, then
-uses product commands to compile or install their outputs. Templates contain durable process guidance;
-they do not define a repository work hierarchy or a Linear schema.
+dydo ships every role, skill resource, workflow, and project document as a template, then compiles
+or installs it with a product command. This is that pipeline: what each kind of source becomes, where
+a project hooks into it, and what `dydo template update` does to a file dydo has already written.
 
-## Template sources
+## Sources and outputs
 
-Shipped sources live in `Templates/`. Installed project copies and overrides live in
-`dydo/_system/templates/`.
+Shipped sources live in `Templates/`. A project's mirrored copies, and any role it authors itself,
+live in `dydo/_system/templates/`.
 
-| Pattern | Purpose |
+| Pattern | Becomes |
 |---|---|
-| `skill-<name>.template.md` | Role methodology and emission metadata |
-| `<role>-resource-<name>.template.md` | Skill-specific reference resource |
-| `workflow-*.js` | Host-native workflow source |
-| framework `*.template.md` files | Installed orientation, reference, and folder documents |
+| `skill-<name>.template.md` | the `<name>` skill on both hosts, plus an agent definition when the role emits one |
+| `<role>-resource-<name>.template.md` | `resources/<name>.md` beside that role's compiled skill |
+| `workflow-<name>.js` | `.claude/workflows/<name>.js` |
+| framework `*.template.md` | a project document `dydo init` writes: the `dydo/` tree, and the runtime entry files at the repository root |
 
-The skill template's frontmatter selects whether the role emits only an in-session skill or also a
-spawnable worker-agent definition. The body becomes the compiled methodology.
+Skill and resource templates are mirrored into the project; workflow sources are not. Six of the
+installed documents stay framework-owned, and they are the only documents a later update compares
+against a stored hash: `reference/about-dynadocs.md`, `reference/dydo-commands.md`,
+`reference/dydo-glossary.md`, `reference/writing-docs.md`, `guides/how-to-use-docs.md` and
+`guides/working-tree-contract.md`. Every other document `dydo init` writes — `understand/about.md`,
+`understand/architecture.md`, `guides/coding-standards.md`, `welcome.md`, `glossary.md`,
+`files-off-limits.md`, `index.md`, the hubs and folder meta files, `CLAUDE.md`, `AGENTS.md`, and
+`_system/template-additions/_README.md` beside its `extra-verify.md.example` — is written once and is
+the project's from then on. Two init outputs a later update still writes: `dydo.json`, where it
+refreshes the stored hashes and adds shipped defaults, and `_system/types.json`, which is topped up
+rather than compared.
+
+## Authoring a role
+
+The frontmatter keys, what each of them compiles to on each host, how `## Must-Reads` and a role's
+`resources/` reach a spawned agent, and how to add or override a role are in
+[Customizing Roles](../guides/customizing-roles.md).
+
+## Include tags
+
+`{{include:name}}` inserts `dydo/_system/template-additions/name.md` at a hook in a skill template,
+and resolves to nothing when that file is absent, leaving no trace in the output. Five hooks ship:
+`extra-must-reads`, `extra-verify`, `extra-review-steps`, `extra-review-checklist`, and
+`extra-test-guidance`. A project's own template may define any other name.
+
+That folder is where durable customization belongs: an addition stays separate from the shipped
+text, is shared by every skill template that names it, and survives the updates below.
 
 ## Compilation
 
@@ -30,22 +55,13 @@ spawnable worker-agent definition. The body becomes the compiled methodology.
 dydo sync
 ```
 
-`dydo sync` reads shipped templates plus project overrides and emits the supported native artifacts:
+`dydo sync` compiles every source into the native artifacts for both hosts; the output map is in
+[Architecture Overview](./architecture.md). Compiled files are build products: never edit them
+directly — change the source and sync.
 
-- Claude skills and worker agents under `.claude/`;
-- Codex worker agents under `.codex/agents/`;
-- shared Codex skills under `.agents/skills/`;
-- supported native workflows.
-
-Compiled outputs are generated artifacts. Never edit them directly; change the source template and sync.
-
-## Include tags
-
-`{{include:name}}` inserts `dydo/_system/template-additions/name.md` at a supported hook. Additions keep
-project-specific guidance separate from framework-owned text and survive product updates more reliably.
-
-Common hooks include extra must-reads, verification steps, review checks, completion gates, and testing
-guidance. A custom template may define additional include names.
+Its cleanup is an allowlist of the roles, workflows, and resources dydo itself has retired, not a
+general output cleaner. Delete a template of your own and the artifacts it last compiled are yours to
+remove, or their descriptions keep loading every turn.
 
 ## Template updates
 
@@ -55,25 +71,43 @@ dydo template update
 dydo template update --force
 ```
 
-The diff form previews framework-owned changes. The normal update uses stored hashes to refresh clean
-files and re-anchor supported include hooks in customized files. `--force` is a deliberate fallback
-that overwrites when re-anchoring cannot succeed and creates backups where applicable.
+`dydo init` mirrors the shipped skill and resource templates and installs the six framework-owned
+documents, recording a content hash for each of them in `dydo.json`. An update compares those hashes
+against what is on disk, and takes one of four paths per file:
 
-During the filename transition, a hash-clean shipped `mode-<name>.template.md` copy is moved to its
-`skill-<name>.template.md` replacement. Modified, untracked, or conflicting legacy files are preserved
-and reported; rename those files yourself before `dydo sync`, which only compiles `skill-*` templates.
+| The file on disk | What the update does |
+|---|---|
+| still matching its stored hash | replaced with the new shipped text |
+| a mirrored template the project has edited | replaced outright by an update that ships new text, the project's added `{{include:…}}` tags with it; those tags are carried into the new text only while the shipped text itself is unchanged |
+| one of the six framework-owned documents, edited | left alone, and reported as user-edited |
+| a mirrored copy of a template dydo has retired | deleted; a role the project authored itself is untracked, and is kept |
 
-Review the diff after an update, run `dydo sync`, and finish with `dydo check`. Framework documents and
-compiled artifacts must agree with their sources.
+Beyond that comparison the same run creates any newly shipped template or framework-owned document
+missing from disk; tops up `_system/types.json` with frontmatter types added since the project was
+scaffolded, creating it when absent and leaving a malformed one alone with a warning; adds shipped
+nudge and scan-exclusion defaults to `dydo.json` and upgrades legacy OpenAI model defaults there; and
+deletes a retired framework asset — today `_assets/dydo-diagram.svg` — when the copy on disk is one
+the framework wrote, keeping a modified copy as the project's own.
 
-## Work-model boundary
+`--diff` previews the file changes without writing; the `dydo.json` defaults are neither previewed
+nor applied under `--diff`. `--force` overrides one skip: when a carried-over tag finds no place in
+the new text, the update skips that file and names the tag, and `--force` writes anyway — backing the
+file up first and saving what it could not place. Every other skip the run reports — an edited
+framework-owned document, a kept legacy file — stays skipped under `--force`; the flag only lets the
+run exit 0 past it. A hash-clean copy left over from the 2.x `mode-<name>.template.md` naming is
+moved to its `skill-<name>.template.md` replacement, while a modified legacy file is kept and
+reported for you to rename, because `dydo sync` compiles only `skill-*` sources.
 
-Role methods receive Linear Issue/Project context from the host or coordinator. Coordinated work may
-link to a reviewed repository Project plan, but templates do not create a second PM schema, client,
-cache, or Markdown mirror.
+That carry-over is not a durability mechanism: it runs only while the shipped text is unchanged, and
+it stores the hash of what it wrote, so the next update replaces the file and those tags with it. Two
+things do survive — content in `dydo/_system/template-additions/`, reached through a hook the shipped
+template already carries, and a role the project authored itself, which no update tracks. Review the
+diff after an update, run `dydo sync`, and finish with `dydo check`; flags and exit codes are in the
+[dydo Commands Reference](../reference/dydo-commands.md).
 
 ## Related
 
-- [Customizing Roles](../guides/customizing-roles.md)
-- [CLI Commands](../reference/dydo-commands.md)
-- [Configuration](../reference/configuration.md)
+- [Customizing Roles](../guides/customizing-roles.md) — authoring a role, its frontmatter, what compiles where
+- [Architecture Overview](./architecture.md) — where compilation sits in the system
+- [dydo Commands Reference](../reference/dydo-commands.md) — full command documentation
+- [Configuration](../reference/configuration.md) — runtime configuration, including model bindings

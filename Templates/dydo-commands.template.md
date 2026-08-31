@@ -6,9 +6,13 @@ type: reference
 # CLI Commands Reference
 
 Complete reference for dydo's local documentation, compilation, guard, and configuration commands.
-Live work is managed in Linear through its official surfaces; dydo intentionally provides no command
-that creates, updates, caches, polls, or mirrors Linear objects. FutureFeatures remain repo-native ideas
-under `dydo/project/future-features/` and are promoted only by a human.
+Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
+caches, polls, or mirrors a Linear object. FutureFeatures stay repo-native ideas under
+`dydo/project/future-features/` and are promoted only by a human.
+
+Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
+and reads it from the current directory. `dydo help` prints the one-screen summary;
+`dydo <command> --help` is the authoritative option list.
 
 ---
 
@@ -16,28 +20,47 @@ under `dydo/project/future-features/` and are promoted only by a human.
 
 ### dydo init
 
-Initialize DynaDocs in a project.
+Create the project's durable knowledge tree and wire a runtime's guard hook.
 
 ```bash
 dydo init <integration>              # claude, codex, all, or none
-dydo init <integration> --join       # wire another runtime or machine into an existing project
+dydo init <integration> --join       # wire this machine, or an added runtime, into an existing project
 ```
 
-`claude` and `codex` install their native entry files and hook configuration; `all` wires both;
-`none` creates the documentation framework without a supported runtime integration.
+Writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents and
+`files-off-limits.md`, mirrors the shipped templates into `dydo/_system/templates/`, updates
+`.gitignore`, and writes the `CLAUDE.md` entry point — plus `AGENTS.md` when `codex` is selected.
+`claude` and `codex` also install that runtime's `PreToolUse` hook, so every matched tool call reaches
+`dydo guard`; `none` creates the documentation framework with no runtime integration. Nothing is
+compiled here — run `dydo sync` next.
+
+`--join` targets an already-initialized project: a fresh clone, or a second runtime added later. It
+wires this machine's hook and entry point without re-scaffolding or overwriting the tree, and records
+the integration in `dydo.json` so `dydo sync` emits for it.
 
 ### dydo sync
 
-Compile authored role templates into native Claude Code and Codex agents, skills, and resources, plus
-Claude workflows.
+Compile the authored skill templates into native Claude Code and Codex artifacts.
 
 ```bash
 dydo sync
 ```
 
-Roles are discovered from `skill-<name>.template.md` files. Project overrides live in
-`dydo/_system/templates/`. Change source templates and re-run this command; never hand-edit compiled
-artifacts.
+Roles are discovered by enumerating `skill-<name>.template.md`: the shipped set plus any project-local
+template in `dydo/_system/templates/`, which is how a project overrides a role or adds one of its own.
+Frontmatter decides each artifact's shape — `emit: agent` (the default) produces an agent definition
+*and* a skill, `emit: skill` produces the skill alone, `read-only: true` withholds the editing tools,
+`delegates: true` grants the `Agent` tool, and `invocation: explicit` disables model invocation on
+both hosts. A role's `## Must-Reads` links become its agent's context list, links in the compiled body
+are rewritten to resolve from the emitted skill folder, `<role>-resource-<name>.template.md` files
+compile into that skill's `resources/`, and workflow harnesses compile into Claude's workflow folder.
+
+Only the integrations recorded in `dydo.json` are emitted; a project with neither recorded — `none`,
+or a `dydo.json` from before integrations were recorded — emits for both hosts. Every run also deletes
+outputs dydo no longer ships: retired workflows, resources retired by rename, and retired roles —
+unless a project-local template of that name keeps the role alive.
+
+Change the source template and re-run this command; never hand-edit a compiled artifact.
 
 ---
 
@@ -45,7 +68,9 @@ artifacts.
 
 ### dydo check
 
-Validate documentation structure, frontmatter, links, includes, summaries, and configured rules.
+Validate documentation naming, frontmatter, summaries, links, hub and folder-meta coverage, orphans,
+the off-limits file, FutureFeature shape under `project/future-features/`, retired v2 work records,
+uncustomized foundation docs (warning), and `dydo.json` itself; config errors count toward exit `1`.
 
 ```bash
 dydo check
@@ -100,8 +125,8 @@ dydo graph stats --top 20
 
 ### dydo guard
 
-Evaluate universal off-limits rules, dangerous-command checks, and project nudges. Runtime hooks invoke
-this command automatically; argument mode is available for diagnostics.
+Evaluate one tool call against the two path tiers, the dangerous-command rules, and the project's
+nudges. Runtime hooks invoke this command automatically; the argument form is for diagnostics.
 
 ```bash
 # Hook mode
@@ -113,7 +138,12 @@ dydo guard --command "git status"
 dydo guard --stop
 ```
 
-`--stop` is a retained no-op for compatible hook wiring. Guard exit `2` means the action was blocked.
+Exit `0` allows the action; exit `2` blocks it with `BLOCKED:` on stderr. **Off-limits** paths block
+every operation, reads included. **Protected** paths are readable by any tool and writable by none,
+Bash included. Both tiers bind on every caller; [Files Off-Limits](../files-off-limits.md) declares
+them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudges are configured in
+`dydo.json` — see [DynaDocs](./about-dynadocs.md). `--stop` is a retained no-op so existing Stop-hook
+wiring keeps resolving.
 
 ---
 
@@ -121,7 +151,7 @@ dydo guard --stop
 
 ### dydo template update
 
-Update framework-owned templates and documents to the installed dydo version.
+Refresh this project's framework-owned templates and documents to the running dydo version.
 
 ```bash
 dydo template update
@@ -130,10 +160,20 @@ dydo template update --force
 ```
 
 - `--diff` previews changes without writing.
-- `--force` overwrites when user include hooks cannot be re-anchored and creates backups first.
+- `--force` overwrites when user include hooks cannot be re-anchored, backing the file up first.
 
-User-added `{{include:...}}` hooks are re-anchored when possible. Other edits to framework-owned files
-can be replaced, so keep durable customization in supported overrides and additions.
+The mirrored templates under `dydo/_system/templates/` and the framework documents in
+`dydo/reference/` and `dydo/guides/` are compared against the shipped set. An unmodified copy is
+overwritten. An edited template is replaced whenever the update ships new text — your added
+`{{include:...}}` hooks included; those hooks are re-anchored only when the shipped text is
+unchanged. An edited framework document is left alone and reported instead. A mirrored template dydo
+no longer ships is deleted, but only when its stored hash proves the copy is dydo's — a role a
+project authored itself is untracked and survives. The run also tops up default nudges, scan
+exclusions, and frontmatter types. Warnings exit `1` unless `--force` is given.
+
+Durable customization belongs in the `{{include:...}}` fragments under
+`dydo/_system/template-additions/`, which this command never rewrites; other edits to framework-owned
+files can be replaced.
 
 ---
 
@@ -153,8 +193,9 @@ This validates dydo's local configuration. It does not validate or provision Lin
 
 ## Model Commands
 
-Temporary model caps keep native workflows available during a provider limit or outage. Rebinding a
-tier re-runs native artifact compilation and records enough local state to restore it.
+Temporary model caps keep native agents available during a provider limit or outage. Capping rebinds
+every tier that names the model, re-runs compilation, and records enough local state to restore it;
+the guard lifts an expired cap on a later run, without human intervention.
 
 ### dydo model cap
 
@@ -163,13 +204,16 @@ dydo model cap <model> --until "08-28 09:00"
 dydo model cap <model> --until "2026-08-28 09:00" --fallback <fallback-model>
 ```
 
+`--until` is required and takes `[yyyy-]mm-dd hh:mm` in local time — the reset the limit error states.
+`--fallback` defaults to `models.fallback` in `dydo.json`.
+
 ### dydo model status
 
 ```bash
 dydo model status
 ```
 
-Shows active caps, fallback bindings, and reset times.
+Shows active caps with their fallback and reset time, and expired caps still awaiting restoration.
 
 ### dydo model uncap
 
@@ -177,7 +221,7 @@ Shows active caps, fallback bindings, and reset times.
 dydo model uncap <model>
 ```
 
-Restores the original bindings and clears the cap marker.
+Restores the original bindings, clears the cap marker, and re-compiles.
 
 ---
 
@@ -217,4 +261,5 @@ dydo help
 ## Related
 
 - [DynaDocs](./about-dynadocs.md) — Product boundary and operating model
+- [Files Off-Limits](../files-off-limits.md) — The two path tiers `dydo guard` enforces
 - [Writing Documentation](./writing-docs.md) — Documentation conventions validated by dydo

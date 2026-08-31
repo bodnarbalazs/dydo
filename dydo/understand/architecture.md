@@ -5,20 +5,21 @@ type: concept
 
 # Architecture Overview
 
-DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles native agent
-methods, and enforces universal guard rules. Linear is outside the runtime boundary and remains the sole
-owner of live project-management state.
+DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles shared agent
+methods into native host artifacts, and enforces universal guard rules. Linear sits outside the runtime
+boundary and remains the sole owner of live project-management state.
 
 ## Main flows
 
-1. `dydo init` scaffolds the documentation tree, source templates, runtime entry files, and guard hooks.
+1. `dydo init` scaffolds the documentation tree, template sources, runtime entry files, and guard hooks.
 2. The host runtime sends matched tool calls to `dydo guard`.
-3. The guard evaluates off-limits paths, dangerous commands, and configured nudges.
-4. `dydo sync` compiles role, resource, and workflow templates into native Claude Code and Codex artifacts.
-5. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
+3. The guard evaluates path tiers, dangerous commands, and configured nudges.
+4. `dydo sync` compiles skill, resource, and workflow templates into native Claude Code and Codex artifacts.
+5. `dydo template update` refreshes framework-owned documents and the project's template copies.
+6. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
 
-No step provisions, polls, caches, or mirrors Linear. Agents use Linear's official MCP, UI, API, and
-integrations outside dydo.
+No step provisions, polls, caches, or mirrors Linear. Agents reach Linear through its official MCP, UI,
+API, and integrations, outside dydo.
 
 ## Component layout
 
@@ -27,7 +28,7 @@ Commands/        System.CommandLine factories and handlers
 Services/        Documentation, configuration, template, and guard behavior
 Models/          Configuration and parsing data types
 Rules/           Documentation validation rules
-Templates/       Embedded framework, role, resource, and workflow sources
+Templates/       Embedded framework, skill, resource, and workflow sources
 DynaDocs.Tests/  Unit, integration, E2E, and coverage gates
 npm/             Native-binary npm wrapper
 ```
@@ -35,40 +36,50 @@ npm/             Native-binary npm wrapper
 Services are instantiated directly; interfaces provide test seams without a dependency-injection
 container. JSON serialization is source-generated for Native AOT compatibility.
 
+## The compiler
+
+`Templates/skill-<name>.template.md` is the role: its frontmatter carries the metadata, its body
+carries the whole methodology. `dydo sync` discovers every shipped skill template plus any project-local
+one under `dydo/_system/templates/`, and emits:
+
+| Output | Host | Emitted for |
+|---|---|---|
+| `.claude/skills/<role>/SKILL.md` and its `resources/` | Claude Code | every role |
+| `.claude/agents/<role>.md` | Claude Code | roles that emit an agent |
+| `.agents/skills/<role>/SKILL.md` and its `resources/` | Codex | every role; an `agents/openai.yaml` policy file joins it for explicit-only ones |
+| `.codex/agents/<role>.toml` | Codex | roles that emit an agent |
+| `.claude/workflows/<name>.js` from `Templates/workflow-<name>.js` | Claude Code | the only host with a workflow surface |
+
+The guarantees this compilation owes a spawned agent are
+[Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10's;
+what each frontmatter key compiles to is in [Customizing Roles](../guides/customizing-roles.md), and
+the pipeline — mirroring, update, cleanup — in
+[Templates and Customization](./templates-and-customization.md).
+
+`dydo template update` mirrors shipped skill and resource templates plus the framework-owned documents
+into the project and tracks each by content hash. Everything under `.claude/`, `.codex/`, and
+`.agents/` is a build product: change the source template and sync.
+
 ## Knowledge and work boundary
 
-Linear owns Initiatives, Projects, Issues, optional Milestones and Cycles, live status, priority,
-assignment, dependencies, updates, and review state.
+Linear owns Initiatives, Projects, Issues, optional Milestones and Cycles, and every live field:
+status, priority, assignment, dependencies, updates, review state.
 
-Git/dydo owns architecture, Decisions, reviewed Project plans, guides, audits, inquisitions,
-assimilation briefs, changelog, release tags, pitfalls, and repo-native FutureFeatures. A FutureFeature
-is non-actionable until a human promotes it to exactly one Linear target; later delivery state remains
-only in Linear.
-
-Branches, worktrees, sessions, native subagents, commits, pull requests, and review attempts are
-execution evidence linked to a Linear Issue, not work-record types.
-
-## Roles, skills, and generated artifacts
-
-The `skill-<name>.template.md` source defines a role's methodology and emission metadata. `dydo sync`
-compiles skills for both hosts and agent definitions only for spawnable worker roles. Resource templates
-compile beside their skill. Workflow templates compile to the host's native workflow surface.
-
-Project overrides live under `dydo/_system/templates/`. Compiled `.claude/`, `.codex/`, and
-`.agents/skills/` files are products of `dydo sync` and are never hand-edited.
+Git and dydo own architecture, Decisions, reviewed Project plans, guides, audits, inquisitions,
+assimilation briefs, changelog, release tags, pitfalls, and repo-native FutureFeatures. Branches,
+worktrees, sessions, native sub-agents, commits, pull requests, and review passes are execution
+evidence linked to a Linear Issue, not work-record types. The [Work Model](./work-model.md) states the
+contract; the [Linear Issue Lifecycle](./task-lifecycle.md) states how one Issue moves through it.
 
 ## Guard system
 
-The guard has three universal layers:
+Three universal layers, applied to every caller: path tiers (off-limits paths that no tool may even
+read, and protected paths that every tool may read and none may write), dangerous-command detection for
+destructive shell patterns, and configurable nudges that notice, warn, or block.
 
-1. off-limits path patterns for secrets and protected system state;
-2. dangerous-command detection for destructive shell patterns;
-3. configurable nudges that notice, warn, or block.
-
-The host platform owns identity and permissions. dydo does not maintain an agent roster, claim
-ceremony, scheduler, queue, or worktree manager.
-
-See [Guard System](./guard-system.md) for the wire contract.
+The host platform owns identity and permissions. dydo maintains no agent roster, scheduler, queue, or
+worktree manager: the [Working-Tree Contract](../guides/working-tree-contract.md) is a procedure agents
+follow, not machinery the CLI runs. See [Guard System](./guard-system.md) for the wire contract.
 
 ## Documentation graph
 
@@ -76,21 +87,19 @@ Markdown files carry frontmatter and relative links. The scanner builds the docu
 rules check summaries, links, folder metadata, hubs, filenames, and project-specific invariants.
 `dydo fix` applies supported repairs and `dydo graph` exposes navigation relationships.
 
-The dydo 2.x work corpus was migrated and retired as part of the 3.0 transition. Historical evidence is
-available through frozen Git commit permalinks, not as a live repository work model.
-
 ## Key design choices
 
 - **Dedicated live-work owner** — Linear manages volatile project state; dydo does not duplicate it.
-- **Git-native durable knowledge** — decisions and proof remain reviewable at exact commits.
+- **Git-native durable knowledge** — decisions and proof stay reviewable at exact commits.
 - **Host-native execution** — Claude Code and Codex own delegation, isolation, and lifecycle.
-- **Generated native methods** — one authored role source compiles to both supported runtimes.
-- **Universal guard rules** — enforcement is independent of a dydo-managed identity.
+- **One authored source per role** — a single template compiles to both supported runtimes.
+- **Universal guard rules** — enforcement is independent of any dydo-managed identity.
 - **No DI framework** — direct construction keeps the Native AOT CLI small.
 
 ## Related
 
 - [Work Model](./work-model.md) — Linear/Git operating contract
 - [Templates and Customization](./templates-and-customization.md) — Authoring and compilation
+- [Guard System](./guard-system.md) — Enforcement layers and the hook contract
 - [Configuration](../reference/configuration.md) — Runtime configuration
 - [Coding Standards](../guides/coding-standards.md) — Repository conventions

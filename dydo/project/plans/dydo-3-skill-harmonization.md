@@ -535,3 +535,8 @@ Paste this into a fresh Claude Code or Codex session started in the repository:
   defect the candidate neither created nor exposed is reported as one line after the block, prefixed
   `Observation (out of scope, non-binding):`, never as a finding; the `merge` rubric and the
   reviewer skill state it. Flagged for the human's H-11 pass as a possible DR 045 §6 clarification.
+- §7 co-thinker row — "wayfinder-via-manager" is reconciled with DR 045 §1 and §4 by manager ruling
+  (DYD-57's merge review): a foggy Project not yet charted goes to the `planner`, who charts it with
+  `wayfinder` (§1's Chart row); the `manager` receives question Issues only for a Project already in
+  delivery (§4's routing). The co-thinker's Handoff row and the prototype's placement sentence
+  follow the planner route.

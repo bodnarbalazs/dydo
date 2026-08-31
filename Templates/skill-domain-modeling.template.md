@@ -103,8 +103,9 @@ anything else stays with the thinking that raised it.
 ### Recording one
 
 Scan `dydo/project/decisions/` for the highest existing number and increment it: the file is
-`NNN-slug.md`, the folder's `_decisions.md` lists the frontmatter it must carry — `type: decision`,
-`status`, `date` — and the body carries the context, the choice, its consequences and what it
-affects. Run `dydo fix` afterwards so the hub (`_index.md`) lists it. Keep it short — the value is
-in recording *that* the choice was made and *why*, not in filling out sections. The alternatives you
-weighed earn their own section only when the rejected ones are worth remembering.
+`NNN-slug.md`, and its frontmatter carries the same four fields every record in the folder does —
+`area`, `type: decision`, `status` and `date`. The body opens with `# NNN — Title` and a one-line
+summary, then the context, the choice, its consequences and what it affects. Run `dydo fix`
+afterwards so the hub (`_index.md`) lists it. Keep it short — the value is in recording *that* the
+choice was made and *why*, not in filling out sections. The alternatives you weighed earn their own
+section only when the rejected ones are worth remembering.

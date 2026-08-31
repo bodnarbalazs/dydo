@@ -100,20 +100,24 @@ const audit = confirmedRun(args)
 log(`Human-confirmed inquisition over ${audit.scope}, against the reviewed Git Project plan at its governing commit.`)
 
 phase('Sweep')
+const dead = []
 const perLens = await pipeline(
   LENSES,
   lens => agent(
     `You are an inquisitor on a human-confirmed inquisition. Your assigned lens is ${lens.key}; use only it, because sibling inquisitors carry the others. Your purpose is to catch what got through, not to prove zero defects.\n\n${lens.hunt}\n\nComplete integrated scope:\n${audit.scope}\n\nReviewed Git Project plan and governing commit:\n${audit.projectPlan}\n\nLinear Issue review evidence:\n${audit.issueEvidence}\n\nReturn up to 8 findings from the ${lens.key} lens, strongest first, each with an exact location, a severity of high, medium or low, and the rationale naming what breaks. Clear your evidence bar on every one: a smell, a preference, or a hypothetical is not a finding, and settled work stays settled. A plan-acceptance failure is a finding even when every Issue review passed. An empty list is a real result.`,
     { agentType: 'inquisitor', label: `sweep:${lens.key}`, phase: 'Sweep', schema: FINDINGS }),
   (found, lens) => {
-    if (!found) return [{
-      title: `The ${lens.key} lens returned no result`,
-      location: `inquisition:${lens.key}`,
-      severity: 'high',
-      rationale: 'A required lens did not complete, so this inquisition cannot claim it swept the whole surface.',
-      lens: lens.key,
-      verification: { verdict: 'plausible', evidence: 'No structured sweep result came back.' },
-    }]
+    if (!found) {
+      dead.push(lens.key)
+      return [{
+        title: `The ${lens.key} lens returned no result`,
+        location: `inquisition:${lens.key}`,
+        severity: 'high',
+        rationale: 'A required lens did not complete, so this inquisition cannot claim it swept the whole surface.',
+        lens: lens.key,
+        verification: { verdict: 'plausible', evidence: 'No structured sweep result came back.' },
+      }]
+    }
     return parallel(found.findings.map(finding => () =>
       agent(
         `You are an inquisitor verifying one finding from the ${lens.key} lens of this inquisition. Start refuted and argue against the claim; let the evidence overturn you.\n\nFinding: ${finding.title}\nLocation: ${finding.location}\nClaimed severity: ${finding.severity}\nClaim: ${finding.rationale}\n\nComplete integrated scope:\n${audit.scope}\n\nReviewed Git Project plan and governing commit:\n${audit.projectPlan}\n\nReturn confirmed only when the repository proves the claim, plausible only when unavailable state would settle it — then name the missing fact — otherwise refuted, with the evidence that decided it. The reviewer judging this inquisition re-resolves your verdict, so give it evidence it can check rather than a conclusion it must trust.`,
@@ -128,11 +132,11 @@ const perLens = await pipeline(
 
 phase('Verify')
 const findings = perLens.filter(Boolean).flat().filter(Boolean).map((finding, index) => ({ id: index + 1, ...finding }))
-log(`${findings.length} findings swept and verified across ${LENSES.length} lenses; the judge re-resolves every one.`)
+log(`${findings.length} findings swept and verified; the judge re-resolves every one.`)
 
 phase('Judge')
 const reviewBlock = await agent(
-  `You are the reviewer judging this inquisition. Read .claude/skills/reviewer/resources/merge.md and work the merge rubric at full scale over the entire integrated state; this is the Project's final merge review, so its acceptance criteria are proved here or nowhere.\n\nComplete integrated scope:\n${audit.scope}\n\nReviewed Git Project plan and governing commit:\n${audit.projectPlan}\n\nLinear Issue review evidence:\n${audit.issueEvidence}\n\nReported findings, each already refuted or upheld once by the inquisitor that raised it:\n${JSON.stringify(findings, null, 2)}\n\nRead the integrated diff yourself, account for every Issue review, prove every acceptance criterion, and rerun the plan's gates on the merged tree. Then work step 6: resolve every reported finding by its id to confirmed, plausible or refuted on evidence you verify yourself, defaulting to refuted and naming the missing fact where you reach for plausible. The inquisitors' verifications are input to re-check, not a result to accept, and a finding you leave unresolved blocks this gate. Return the review block — rubric merge, your label and model, candidate and base SHA, the verdict, every gate rerun with its result, findings as file:line → consequence → correction — with your resolutions. PASS means every criterion and gate is proven and no finding survives your own resolution; there is no PASS with notes.`,
+  `You are the reviewer judging this inquisition. Read .claude/skills/reviewer/resources/merge.md and work the merge rubric at full scale over the entire integrated state; this is the Project's final merge review, so its acceptance criteria are proved here or nowhere.\n\nComplete integrated scope:\n${audit.scope}\n\nReviewed Git Project plan and governing commit:\n${audit.projectPlan}\n\nLinear Issue review evidence:\n${audit.issueEvidence}\n\nReported findings, each already argued against by a second inquisitor, whose verification is attached:\n${JSON.stringify(findings, null, 2)}\n\nRead the integrated diff yourself, account for every Issue review, prove every acceptance criterion, and rerun the plan's gates on the merged tree. Then work step 6: resolve every reported finding by its id to confirmed, plausible or refuted on evidence you verify yourself, defaulting to refuted and naming the missing fact where you reach for plausible. The inquisitors' verifications are input to re-check, not a result to accept, and a finding you leave unresolved blocks this gate. Return the review block — rubric merge, your label and model, candidate and base SHA, the verdict, every gate rerun with its result, findings as file:line → consequence → correction — with your resolutions. PASS means every criterion and gate is proven and no finding survives your own resolution; there is no PASS with notes.`,
   { agentType: 'reviewer', label: 'judge', phase: 'Judge', schema: REVIEW_BLOCK })
 
 const resolutions = reviewBlock?.resolutions ?? []
@@ -141,8 +145,8 @@ const plausible = resolutions.filter(resolution => resolution.verdict === 'plaus
 const everyFindingJudged = findings.every(finding => resolutions.some(resolution => resolution.id === finding.id))
 if (!everyFindingJudged) log('The judge left reported findings unresolved; a partial judgement cannot pass this gate.')
 
-const gate = reviewBlock?.verdict === 'PASS' && isNonBlank(reviewBlock.gates)
-  && everyFindingJudged && confirmed.length === 0 && plausible.length === 0 ? 'PASS' : 'FAIL'
+const gate = reviewBlock?.verdict === 'PASS' && isNonBlank(reviewBlock.gates) && everyFindingJudged
+  && confirmed.length === 0 && plausible.length === 0 && dead.length === 0 ? 'PASS' : 'FAIL'
 
 phase('Assimilate')
 const assimilation = await agent(
@@ -152,12 +156,14 @@ const assimilation = await agent(
 phase('Report')
 const projectAcceptanceReady = gate === 'PASS' && isNonBlank(assimilation?.brief)
 const high = confirmed.filter(resolution => findings.find(finding => finding.id === resolution.id)?.severity === 'high').length
-log(`Inquisition ${gate}: ${findings.length} findings swept; the judge confirmed ${confirmed.length} (${high} high), left ${plausible.length} plausible, refuted the rest. Project acceptance: ${projectAcceptanceReady ? 'ready' : 'blocked'}.`)
+const swept = `${LENSES.length - dead.length} of ${LENSES.length} lenses swept${dead.length ? `, no result from ${dead.join(', ')}` : ''}`
+log(`Inquisition ${gate}: ${swept}; ${findings.length} findings, of which the judge confirmed ${confirmed.length} (${high} high) and left ${plausible.length} plausible, refuting the rest. Project acceptance: ${projectAcceptanceReady ? 'ready' : 'blocked'}.`)
 
 return {
   gate,
   projectPlan: audit.projectPlan,
   findings,
+  deadLenses: dead,
   reviewBlock: reviewBlock ?? 'The judge returned no review block.',
   confirmed,
   plausible,

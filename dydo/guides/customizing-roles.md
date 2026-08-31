@@ -116,18 +116,18 @@ Claude — the session's model, never a silent downgrade — and a built-in defa
 
 `dydo template update` mirrors every shipped skill and resource template into `dydo/_system/templates/`
 and records a hash for each in `dydo.json`. Edit a copy and `dydo sync` compiles your version — it reads
-the project-local copy before the shipped source — but only until the next `template update`. That
-update keeps the `{{include:…}}` hooks you added, re-anchored onto the new shipped text, and replaces
-every other edit; a copy you changed without adding a hook is overwritten outright. A hook it cannot
-place stops the update for that one file and lands in a `.unplaced` sidecar, and `--force` proceeds with
-a backup. It also deletes hash-tracked copies whose shipped source is gone and prunes their hashes, and
-`--diff` previews the whole set.
+the project-local copy before the shipped source — but only until the next `template update`: once the
+shipped text has moved, that update replaces every edit in the mirrored copy, including any
+`{{include:…}}` hook you added. The only hooks that survive are the ones the shipped template already
+carries.
 
-Durable customization of a shipped role is therefore an include hook filled from
-`dydo/_system/template-additions/`, or a role of your own under a new name — not an edit to the mirrored
-copy. The [template pipeline](../understand/templates-and-customization.md) carries the update flow in
-full. One ordering trap survives either choice: a mirrored copy older than the shipped source compiles
-in place of it, so update first, sync second, and read the diff.
+Durable customization of a shipped role is therefore an addition file under
+`dydo/_system/template-additions/`, filling a hook the shipped template ships, or a role of your own
+under a new name — never an edit to the mirrored copy. The
+[template pipeline](../understand/templates-and-customization.md) carries the update flow in full.
+
+One ordering trap survives either choice: a mirrored copy older than the shipped source compiles in
+place of it, so update first, sync second, and read what changed.
 
 ## What is gone
 

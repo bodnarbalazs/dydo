@@ -10,7 +10,8 @@ Every item below is a FAIL when it holds.
 ## Method
 
 1. Resolve the contract — Issue, governing commit, and the Project plan when one governs — until
-   audience, owned paths, acceptance criteria and gates are all named.
+   audience, owned paths, acceptance criteria and gates are all named; an unmet criterion or an
+   edit outside the owned paths is a finding.
 2. Sort every changed file into one of the two lists below, then work that list entire.
 3. Verify from source, never from prose: open the paths, run the commands, read the code. Rerun the
    Issue's gates yourself, `dydo check` among them. Drift lives in the sentence nobody rechecked.
@@ -32,9 +33,10 @@ Every item below is a FAIL when it holds.
 `writing-for-agents` governs this writing; the list below is that method turned into verdicts.
 
 - **Description that is not a trigger.** Model-invoked: leading word front-loaded, one trigger per
-  branch, no identity the body already carries. Explicit-only: one punchy human-facing line.
-- **No anchor, or a tagline that changes nothing.** The no-op test grades against the model's
-  default, and a failing line is deleted rather than softened.
+  branch, no identity the body already carries. Explicit-only: one punchy human-facing line. A
+  worker spawned by name may state its job, in trigger form.
+- **Anchor missing or doubled, or a tagline that changes nothing.** The no-op test grades against
+  the model's default, and a failing line is deleted rather than softened.
 - **Shape broken.** Hats and workers: H1 → one-line job → Must-Reads → Boundary → Method with a
   completion criterion on every step → Return or Handoff. Methods keep their upstream shape.
 - **Off the map** — no sentence naming the stage it serves, who hands to it, and who it hands to.

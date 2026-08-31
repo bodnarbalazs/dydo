@@ -60,8 +60,9 @@ records.
 A fresh reviewer judges the candidate against the rubric it targets before any merge, and a second
 reviewer applies the `merge` rubric after the merge lands; both return the review block, which is
 posted on the Issue and carried in the PR body. A fifth consecutive FAIL on the same candidate is
-itself an escalation — stop looping and raise a hand. The three tiers, the review block's shape and
-the verdict's rule are in the [Work Model](./work-model.md).
+itself an escalation — stop looping and raise a hand. The three tiers and the verdict's rule are in
+the [Work Model](./work-model.md); the review block's fields are locked in the
+[dydo Glossary](../reference/dydo-glossary.md).
 
 ## Raising a hand
 

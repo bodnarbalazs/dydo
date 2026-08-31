@@ -5,7 +5,7 @@ type: concept
 
 # Templates and Customization
 
-dydo ships every role, skill resource, workflow, and framework document as a template, then compiles
+dydo ships every role, skill resource, workflow, and project document as a template, then compiles
 or installs it with a product command. This is that pipeline: what each kind of source becomes, where
 a project hooks into it, and what `dydo template update` does to a file dydo has already written.
 
@@ -22,13 +22,15 @@ live in `dydo/_system/templates/`.
 | framework `*.template.md` | a project document `dydo init` writes: the `dydo/` tree, and the runtime entry files at the repository root |
 
 Skill and resource templates are mirrored into the project; workflow sources are not. Six of the
-installed documents stay framework-owned, and they are the only ones a later update revisits:
-`reference/about-dynadocs.md`, `reference/dydo-commands.md`, `reference/dydo-glossary.md`,
-`reference/writing-docs.md`, `guides/how-to-use-docs.md` and `guides/working-tree-contract.md`.
-Everything else `dydo init` writes — `understand/about.md`, `understand/architecture.md`,
-`guides/coding-standards.md`, `welcome.md`, `glossary.md`, `files-off-limits.md`, `index.md`, the
-hubs and folder meta files, `CLAUDE.md` and `AGENTS.md` — is written once and is the project's from
-then on.
+installed documents stay framework-owned, and they are the only documents a later update compares
+against a stored hash: `reference/about-dynadocs.md`, `reference/dydo-commands.md`,
+`reference/dydo-glossary.md`, `reference/writing-docs.md`, `guides/how-to-use-docs.md` and
+`guides/working-tree-contract.md`. Everything else `dydo init` writes — `understand/about.md`,
+`understand/architecture.md`, `guides/coding-standards.md`, `welcome.md`, `glossary.md`,
+`files-off-limits.md`, `index.md`, the hubs and folder meta files, `CLAUDE.md`, `AGENTS.md`, and
+`_system/template-additions/_README.md` beside its `extra-verify.md.example` — is written once and is
+the project's from then on. The one init output a later update still touches is
+`_system/types.json`, which is topped up rather than compared.
 
 ## Authoring a role
 
@@ -43,7 +45,7 @@ resolves to nothing when that file is absent, leaving no trace in the output. Fi
 `extra-must-reads`, `extra-verify`, `extra-review-steps`, `extra-review-checklist`, and
 `extra-test-guidance`. A project's own template may define any other name.
 
-That folder is where durable customization belongs: an addition stays separate from framework-owned
+That folder is where durable customization belongs: an addition stays separate from the shipped
 text, is shared by every template that names it, and survives the updates below.
 
 ## Compilation
@@ -68,16 +70,23 @@ dydo template update
 dydo template update --force
 ```
 
-`dydo init` mirrors the shipped skill and resource templates and installs the six framework
-documents, recording a content hash for each of them in `dydo.json`. An update visits exactly that
-set — nothing else — and takes one of four paths:
+`dydo init` mirrors the shipped skill and resource templates and installs the six framework-owned
+documents, recording a content hash for each of them in `dydo.json`. An update compares those hashes
+against what is on disk, and takes one of four paths per file:
 
 | The file on disk | What the update does |
 |---|---|
 | still matching its stored hash | replaced with the new shipped text |
 | a mirrored template the project has edited | replaced outright by an update that ships new text, the project's added `{{include:…}}` tags with it; those tags are carried into the new text only while the shipped text itself is unchanged |
-| one of the six framework documents, edited | left alone, and reported as user-edited |
+| one of the six framework-owned documents, edited | left alone, and reported as user-edited |
 | a mirrored copy of a template dydo has retired | deleted; a role the project authored itself is untracked, and is kept |
+
+Beyond that comparison the same run creates any newly shipped template or framework-owned document
+missing from disk; tops up `_system/types.json` with frontmatter types added since the project was
+scaffolded, creating it when absent and leaving a malformed one alone with a warning; adds shipped
+nudge and scan-exclusion defaults to `dydo.json` and upgrades legacy OpenAI model defaults there; and
+deletes a retired framework asset — today `_assets/dydo-diagram.svg` — when the copy on disk is one
+the framework wrote, keeping a modified copy as the project's own.
 
 `--diff` previews all of it without writing. `--force` covers the one case that stops: when a
 carried-over tag finds no place in the new text, the update skips that file and names the tag, and

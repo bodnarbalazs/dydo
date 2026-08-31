@@ -526,3 +526,12 @@ Paste this into a fresh Claude Code or Codex session started in the repository:
 > Owned paths are exactly the row's surface. Prove defects with a failing test first; replace any
 > prose-freezing assertion you meet with a structural one. Run the full Gate and paste its output.
 > Return: changed files, behaviour delivered, gate results, any contract deviation.
+
+## Amendment — 2026-08-31
+
+- H-9 owned paths gain `dydo/reference/configuration.md` (files-off-limits section only), carried from
+  DYD-54's review: the section described one tier where H-1 shipped two. Manager ruling on DYD-62.
+- §7 reviewer row — "review block as the only return" is narrowed by manager ruling (DYD-60): a
+  defect the candidate neither created nor exposed is reported as one line after the block, prefixed
+  `Observation (out of scope, non-binding):`, never as a finding; the `merge` rubric and the
+  reviewer skill state it. Flagged for the human's H-11 pass as a possible DR 045 §6 clarification.

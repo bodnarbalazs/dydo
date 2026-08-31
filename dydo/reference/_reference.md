@@ -35,7 +35,6 @@ For conceptual explanations, use `understand/`. For how-to guides, use `guides/`
 ## Related
 
 - [About DynaDocs](./about-dynadocs.md)
-- [How to Use These Docs](../guides/how-to-use-docs.md)
 - [Writing Documentation](./writing-docs.md)
 - [Understand](../understand/_index.md)
 - [Guides](../guides/_index.md)

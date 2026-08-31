@@ -72,7 +72,6 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "about.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "architecture.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "guides", "coding-standards.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, "guides", "how-to-use-docs.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "reference", "writing-docs.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "files-off-limits.md")));
     }

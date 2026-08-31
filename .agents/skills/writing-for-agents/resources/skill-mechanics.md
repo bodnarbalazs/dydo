@@ -33,7 +33,7 @@ Two choices, trading the two loads:
   trigger-first, one trigger per branch, with this skill's pointer rules applied in full.
 - **`explicit`** keeps the skill out of the agent's reach: only the human typing its name invokes
   it, and no other skill can. Zero context load, but it spends cognitive load — a human has to know
-  it exists, which is why `dydo/index.md` carries the taxonomy instead of leaving that to memory.
+  it exists, which is why the locked dydo glossary carries the taxonomy instead of leaving that to memory.
   Its description turns human-facing: one punchy line, trigger lists stripped.
 
 Pick `automatic` only when the agent must reach the skill on its own, or another skill must. If it

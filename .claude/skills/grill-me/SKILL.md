@@ -8,8 +8,8 @@ disable-model-invocation: true
 
 # Grill Me
 
-Call the Skill tool with `grilling`, on whatever the human typed after the command — and on what is
-already on the table when he typed nothing.
+Load `grilling` on whatever the human typed after the command — and on what is already on the
+table when nothing follows.
 
 This is his handle on Think: the interview starts because he asked for it, not because an agent
 decided he needed it.

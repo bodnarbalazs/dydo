@@ -1,6 +1,6 @@
 ---
 name: grilling
-description: Grill the user relentlessly about a plan, decision, or idea when they want to stress-test their thinking or use a grill trigger phrase.
+description: Grill the user relentlessly about a plan, decision, or idea when they want their thinking stress-tested or ask to be grilled.
 ---
 
 <!-- Adapted from mattpocock/skills grilling at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
@@ -9,7 +9,7 @@ description: Grill the user relentlessly about a plan, decision, or idea when th
 
 Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**:
 every decision branches into the decisions that hang off it.
-Think stage, and Chart when a Project is foggy: the co-thinker and the planner grill the human.
+The co-thinker grills at Think; the planner grills at Chart, where a Project is foggy.
 
 Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled:
 the questions you can ask now without guessing at answers you have not heard yet. Ask the whole frontier

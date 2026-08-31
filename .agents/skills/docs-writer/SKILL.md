@@ -11,8 +11,7 @@ Make one documentation change true.
 
 1. The owning Linear Issue and exact linked Project plan, when present.
 2. [about.md](../../../dydo/understand/about.md)
-3. [how-to-use-docs.md](../../../dydo/guides/how-to-use-docs.md)
-4. [writing-docs.md](../../../dydo/reference/writing-docs.md)
+3. [writing-docs.md](../../../dydo/reference/writing-docs.md)
 
 ## Boundary
 

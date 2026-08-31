@@ -13,8 +13,7 @@ Make one documentation change true.
 
 1. The owning Linear Issue and exact linked Project plan, when present.
 2. [about.md](../../../understand/about.md)
-3. [how-to-use-docs.md](../../../guides/how-to-use-docs.md)
-4. [writing-docs.md](../../../reference/writing-docs.md)
+3. [writing-docs.md](../../../reference/writing-docs.md)
 
 {{include:extra-must-reads}}
 

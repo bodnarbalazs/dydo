@@ -21,10 +21,10 @@ live in `dydo/_system/templates/`.
 | `workflow-<name>.js` | `.claude/workflows/<name>.js` |
 | framework `*.template.md` | a project document `dydo init` writes: the `dydo/` tree, and the runtime entry files at the repository root |
 
-Skill and resource templates are mirrored into the project; workflow sources are not. Six of the
+Skill and resource templates are mirrored into the project; workflow sources are not. Five of the
 installed documents stay framework-owned, and they are the only documents a later update compares
 against a stored hash: `reference/about-dynadocs.md`, `reference/dydo-commands.md`,
-`reference/dydo-glossary.md`, `reference/writing-docs.md`, `guides/how-to-use-docs.md` and
+`reference/dydo-glossary.md`, `reference/writing-docs.md` and
 `guides/working-tree-contract.md`. Every other document `dydo init` writes — `understand/about.md`,
 `understand/architecture.md`, `guides/coding-standards.md`, `welcome.md`, `glossary.md`,
 `files-off-limits.md`, `index.md`, the hubs and folder meta files, `CLAUDE.md`, `AGENTS.md`, and

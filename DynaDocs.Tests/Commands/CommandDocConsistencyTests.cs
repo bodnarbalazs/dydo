@@ -362,7 +362,6 @@ public class CommandDocConsistencyTests
             Path.Combine("dydo", "guides", "testing-strategy.md"),
             Path.Combine("dydo", "guides", "troubleshooting.md"),
             Path.Combine("dydo", "guides", "adding-a-command.md"),
-            Path.Combine("dydo", "guides", "how-to-use-docs.md"),
         };
         var forbidden = new Regex(
             @"\bdydo\s+(task|issue|review)\b|project[\\/](tasks|issues|campaigns|sprints|slices|backlog)\b",

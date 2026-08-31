@@ -42,7 +42,6 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileExists("dydo/understand/about.md");
         AssertFileExists("dydo/understand/architecture.md");
         AssertFileExists("dydo/guides/coding-standards.md");
-        AssertFileExists("dydo/guides/how-to-use-docs.md");
         AssertFileExists("dydo/reference/writing-docs.md");
     }
 

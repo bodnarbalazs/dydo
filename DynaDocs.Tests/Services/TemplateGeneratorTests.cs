@@ -176,15 +176,6 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateHowToUseDocsMd_HasCorrectStructure()
-    {
-        var content = TemplateGenerator.GenerateHowToUseDocsMd();
-
-        Assert.StartsWith("---", content);
-        Assert.Contains("area: guides", content);
-    }
-
-    [Fact]
     public void GenerateFilesOffLimitsMd_HasCorrectStructure()
     {
         var content = TemplateGenerator.GenerateFilesOffLimitsMd();
@@ -329,28 +320,23 @@ public class TemplateGeneratorTests
         var understand = TemplateGenerator.GenerateUnderstandMetaMd();
         Assert.Contains("## Related", understand);
         Assert.Contains("../reference/about-dynadocs.md", understand);
-        Assert.Contains("../guides/how-to-use-docs.md", understand);
         Assert.Contains("../reference/writing-docs.md", understand);
 
-        // _guides.md links to how-to-use-docs in same folder, others in different folders
         var guides = TemplateGenerator.GenerateGuidesMetaMd();
         Assert.Contains("## Related", guides);
         Assert.Contains("../reference/about-dynadocs.md", guides);
-        Assert.Contains("./how-to-use-docs.md", guides);  // Same folder
         Assert.Contains("../reference/writing-docs.md", guides);
 
         // _reference.md links to docs in same folder, others in different folders
         var reference = TemplateGenerator.GenerateReferenceMetaMd();
         Assert.Contains("## Related", reference);
         Assert.Contains("./about-dynadocs.md", reference);  // Same folder
-        Assert.Contains("../guides/how-to-use-docs.md", reference);
         Assert.Contains("./writing-docs.md", reference);  // Same folder
 
         // _project.md links to docs in other folders
         var project = TemplateGenerator.GenerateProjectMetaMd();
         Assert.Contains("## Related", project);
         Assert.Contains("../reference/about-dynadocs.md", project);
-        Assert.Contains("../guides/how-to-use-docs.md", project);
         Assert.Contains("../reference/writing-docs.md", project);
     }
 
@@ -456,7 +442,6 @@ public class TemplateGeneratorTests
         var projectContent = TemplateGenerator.GenerateProjectMetaMd();
         Assert.Contains("../reference/dydo-glossary.md", projectContent);
         Assert.Contains("../reference/about-dynadocs.md", projectContent);
-        Assert.Contains("../guides/how-to-use-docs.md", projectContent);
     }
 
     #endregion
@@ -539,27 +524,6 @@ public class TemplateGeneratorTests
         Assert.Contains("## Naming Conventions", content);
         Assert.Contains("PascalCase", content);
         Assert.Contains("camelCase", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackHowToUseDocsMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackHowToUseDocsMd();
-
-        Assert.Contains("# How to Use These Docs", content);
-        Assert.Contains("area: guides", content);
-        Assert.Contains("type: guide", content);
-        Assert.Contains("## Documentation Structure", content);
-        Assert.Contains("understand/", content);
-        Assert.Contains("guides/", content);
-        Assert.Contains("reference/", content);
-        Assert.Contains("project/", content);
-        Assert.Contains("Decisions, reviewed plans, audits, changelog, pitfalls", content);
-        Assert.DoesNotContain("tasks", content, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("## Document Types", content);
-        Assert.Contains("## Navigation", content);
-        Assert.Contains("dydo graph", content);
-        Assert.Contains("## Key Reference Documents", content);
     }
 
     [Fact]

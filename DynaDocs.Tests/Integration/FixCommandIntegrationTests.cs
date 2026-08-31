@@ -181,7 +181,6 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         var hubContent = ReadFile("dydo/guides/_index.md");
         Assert.Contains("## Contents", hubContent);
         Assert.Contains("coding-standards.md", hubContent);
-        Assert.Contains("how-to-use-docs.md", hubContent);
     }
 
     [Fact]

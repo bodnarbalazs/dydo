@@ -18,7 +18,7 @@ into `.claude/skills/` and `.agents/skills/`.
 | `grilling` | `Templates/skill-grilling.template.md` |
 | `handoff` | `Templates/skill-handoff.template.md` |
 | `improve-codebase-architecture` | `Templates/skill-improve-codebase-architecture.template.md` |
-| `prototype` | `Templates/skill-prototype.template.md` |
+| `prototype` | `Templates/skill-prototype.template.md`, `Templates/prototype-resource-logic.template.md`, `Templates/prototype-resource-ui.template.md` |
 | `research` | `Templates/skill-research.template.md` |
 | `retro` | `Templates/skill-self-improvement.template.md` |
 | `tdd` | `Templates/skill-code-writer.template.md`, `Templates/skill-test-writer.template.md`, `Templates/reviewer-resource-tests.template.md` |

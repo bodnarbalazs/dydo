@@ -600,6 +600,73 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task TemplateUpdate_RetiredDoc_NotScaffoldedAndNotRecreated()
+    {
+        // DYD-68: the navigation guide is retired — a fresh init must not scaffold it,
+        // and template update must not resurrect it.
+        await InitProjectAsync();
+
+        var docPath = Path.Combine(TestDir, "dydo/guides/how-to-use-docs.md");
+        Assert.False(File.Exists(docPath), "retired doc must not be scaffolded by init");
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(docPath), "retired doc must not be recreated by template update");
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_RetiredDoc_HashCleanCopy_Deleted()
+    {
+        // A legacy project carrying the untouched framework guide (stored hash matches the
+        // on-disk text): retirement deletes the file and prunes its hash entry.
+        await InitProjectAsync();
+
+        var relativePath = "guides/how-to-use-docs.md";
+        var docPath = Path.Combine(TestDir, "dydo", relativePath);
+        var oldContent = "# How to Use These Docs\n\nold framework version\n";
+        File.WriteAllText(docPath, oldContent);
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(oldContent);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Removed retired: guides/how-to-use-docs.md");
+        Assert.False(File.Exists(docPath), "hash-clean retired doc must be deleted");
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(relativePath));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_RetiredDoc_UserModifiedCopy_Kept()
+    {
+        // A hand-modified copy: retirement must not destroy user data — the file stays
+        // (now user-owned) and only its stale hash entry is pruned.
+        await InitProjectAsync();
+
+        var relativePath = "guides/how-to-use-docs.md";
+        var docPath = Path.Combine(TestDir, "dydo", relativePath);
+        File.WriteAllText(docPath, "# My navigation notes\n");
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes[relativePath] = "0000000000000000000000000000000000000000000000000000000000000000";
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Kept: guides/how-to-use-docs.md");
+        Assert.True(File.Exists(docPath), "user-modified retired doc must be kept");
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(relativePath));
+    }
+
+    [Fact]
     public async Task TemplateUpdate_NoStoredHash_UserEditedTemplate_OverwritesCleanly()
     {
         // Exercises GetOldStockContent when storedHash is null (legacy install scenario).

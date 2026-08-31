@@ -31,7 +31,6 @@ For how-to guides, use `guides/`. For API specs, use `reference/`.
 ## Related
 
 - [About DynaDocs](../reference/about-dynadocs.md)
-- [How to Use These Docs](../guides/how-to-use-docs.md)
 - [Writing Documentation](../reference/writing-docs.md)
 - [Guides](../guides/_index.md)
 - [Reference](../reference/_index.md)

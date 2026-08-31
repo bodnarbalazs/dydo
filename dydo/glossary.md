@@ -31,4 +31,3 @@ It extends a compiled skill without editing the built-in source template.
 ## Related
 
 - [dydo Glossary](./reference/dydo-glossary.md)
-- [How to Use Docs](./guides/how-to-use-docs.md)

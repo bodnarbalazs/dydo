@@ -357,7 +357,6 @@ public static class TemplateGenerator
 
             After understanding the architecture:
             - Read [../guides/coding-standards.md](../guides/coding-standards.md) for code style
-            - Read [../guides/how-to-use-docs.md](../guides/how-to-use-docs.md) for workflow commands
             """;
     }
 
@@ -453,116 +452,6 @@ public static class TemplateGenerator
             | Constants | UPPER_SNAKE | `MAX_RETRY_COUNT` |
             | Variables | camelCase | `currentUser` |
 
-            ---
-
-            ## Next Steps
-
-            After understanding coding standards:
-            - Read [how-to-use-docs.md](how-to-use-docs.md) for workflow commands
-            """;
-    }
-
-    /// <summary>
-    /// How to use docs - guide to navigating the documentation.
-    /// Reads from how-to-use-docs.template.md if available.
-    /// </summary>
-    public static string GenerateHowToUseDocsMd()
-    {
-        try
-        {
-            return ReadTemplate("how-to-use-docs.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackHowToUseDocsMd();
-        }
-    }
-
-    internal static string GenerateFallbackHowToUseDocsMd()
-    {
-        return """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            # How to Use These Docs
-
-            This documentation is designed for AI agents. It follows JITI (Just-In-Time Information) - you don't need to read everything upfront. Navigate to what you need, when you need it.
-
-            ---
-
-            ## Documentation Structure
-
-            | Folder | Contains | When to Read |
-            |--------|----------|--------------|
-            | `understand/` | Project overview, architecture, domain context | Starting a new task |
-            | `guides/` | How-to guides, coding standards | When doing specific work |
-            | `reference/` | Command reference, API specs, config | When you need exact details |
-            | `project/` | Decisions, reviewed plans, audits, changelog, pitfalls | When you need history/context |
-
-            ---
-
-            ## Document Types
-
-            The frontmatter at the top of each doc tells you what kind it is:
-
-            | Type | Purpose |
-            |------|---------|
-            | `context` | Background information, overviews |
-            | `guide` | Step-by-step instructions |
-            | `reference` | Look-up information |
-            | `hub` | Index pages linking to other docs |
-
-            ---
-
-            ## Navigation
-
-            ### Index Files
-
-            Every folder has an `_index.md` — the table of contents for that area:
-
-            | Index | Contents |
-            |-------|----------|
-            | `understand/_index.md` | Context and architecture docs |
-            | `guides/_index.md` | How-to guides |
-            | `reference/_index.md` | Reference docs |
-            | `project/_index.md` | Decisions, changelog, pitfalls |
-
-            ### Related Links
-
-            Docs link to each other via **Related** sections at the bottom. Follow links only when you need more detail.
-
-            ---
-
-            ## Exploring Connections
-
-            Use `dydo graph` to see how documents connect:
-
-            ```bash
-            dydo graph dydo/understand/architecture.md
-            ```
-
-            This shows what links to and from a document - useful for finding related context.
-
-            ---
-
-            ## Key Reference Documents
-
-            | Document | Purpose |
-            |----------|---------|
-            | `glossary.md` | Domain-specific terms |
-            | `project/decisions/` | Why architectural choices were made |
-            | `project/changelog/` | What changed and when |
-            | `project/pitfalls/` | Known gotchas to avoid |
-
-            ---
-
-            ## Related
-
-            - [Architecture](../understand/architecture.md) — Project structure
-            - [Coding Standards](./coding-standards.md) — Code conventions
-            - [dydo Commands Reference](../reference/dydo-commands.md) — Full command documentation
             """;
     }
 

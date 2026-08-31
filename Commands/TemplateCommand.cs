@@ -21,7 +21,6 @@ public static class TemplateCommand
         "reference/dydo-commands.md",
         "reference/dydo-glossary.md",
         "reference/writing-docs.md",
-        "guides/how-to-use-docs.md",
         "guides/working-tree-contract.md"
     ];
 
@@ -36,6 +35,16 @@ public static class TemplateCommand
     [
         ("_assets/dydo-diagram.svg",
             ["d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9"]),
+    ];
+
+    // Framework docs retired from the framework, deleted from projects on update under the same
+    // ownership rule as the binaries: an unmodified copy (stored hash, or a shipped hash listed
+    // here) is removed; a user-edited copy is kept and becomes user-owned once its stale hash
+    // entry is pruned. Currently: the navigation guide, retired with the generated-hub
+    // experiment's verdict (DYD-68) — agents navigate by grep and direct links.
+    internal static readonly (string RelativePath, string[] KnownHashes)[] RetiredDocFiles =
+    [
+        ("guides/how-to-use-docs.md", []),
     ];
 
     public static readonly string[] FrameworkGeneratedFiles = [];
@@ -86,6 +95,7 @@ public static class TemplateCommand
 
         tally.Updated += CleanStaleTemplates(dydoRoot, config, diff);
         tally.Updated += CleanRetiredBinaries(dydoRoot, config, diff);
+        tally.Updated += CleanRetiredDocs(dydoRoot, config, diff);
         PruneStaleHashes(config, diff);
 
         tally.Updated += ApplyConfigDefaults(config, diff);
@@ -292,6 +302,35 @@ public static class TemplateCommand
             if (onDiskHash != storedHash && !knownHashes.Contains(onDiskHash))
             {
                 Console.WriteLine($"  Kept: {relativePath} — retired from the framework, but modified; now a user-owned asset");
+                continue;
+            }
+
+            if (!diff)
+                File.Delete(fullPath);
+            Console.WriteLine($"  Removed retired: {relativePath}");
+            removed++;
+        }
+        return removed;
+    }
+
+    /// <summary>Deletes retired framework docs from the project when the on-disk copy is a
+    /// known framework version (text hash, matching how <see cref="UpdateDocFile"/> stores it);
+    /// runs before <see cref="PruneStaleHashes"/> so the stored hash is still available for the
+    /// ownership check.</summary>
+    private static int CleanRetiredDocs(string dydoRoot, DydoConfig config, bool diff)
+    {
+        var removed = 0;
+        foreach (var (relativePath, knownHashes) in RetiredDocFiles)
+        {
+            var fullPath = Path.Combine(dydoRoot, relativePath);
+            if (!File.Exists(fullPath))
+                continue;
+
+            var onDiskHash = ComputeHash(File.ReadAllText(fullPath));
+            var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
+            if (onDiskHash != storedHash && !knownHashes.Contains(onDiskHash))
+            {
+                Console.WriteLine($"  Kept: {relativePath} — retired from the framework, but modified; now a user-owned document");
                 continue;
             }
 
@@ -591,7 +630,6 @@ public static class TemplateCommand
         "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
         "reference/dydo-glossary.md" => TemplateGenerator.GenerateDydoGlossaryMd(),
         "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
-        "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
         "guides/working-tree-contract.md" => TemplateGenerator.GenerateWorkingTreeContractMd(),
         _ => null
     };

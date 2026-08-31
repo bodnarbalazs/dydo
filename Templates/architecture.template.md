@@ -76,4 +76,3 @@ Input → Processing → Durable output
 
 - [dydo Glossary](../reference/dydo-glossary.md) — Work and knowledge vocabulary
 - [Coding Standards](../guides/coding-standards.md) — Code conventions
-- [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating documentation

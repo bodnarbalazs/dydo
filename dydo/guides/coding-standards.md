@@ -241,7 +241,6 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ## Related
 
-- [How to Use Docs](./how-to-use-docs.md) — Navigating the documentation
 - [Architecture](../understand/architecture.md) — Project structure
 
 <!--

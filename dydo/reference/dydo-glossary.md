@@ -92,7 +92,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 ## Retired PM terms
 
-These words survive only in older documents. Campaign, Sprint, Slice, Task, backlog item, and the
+These words survive only in older documents. Campaign, Sprint, Slice, Task, Ticket, backlog item, and the
 separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initiative, Project, and
 Issue where work is live, though a slice may still name an implementation technique and a task a
 question Issue's type. Tier-1 manager, orchestrator, and the run-sprint workflow (internally
@@ -104,5 +104,4 @@ by the three reviews above. None of these words creates a file, command, lifecyc
 ## Related
 
 - [Working-Tree Contract](../guides/working-tree-contract.md) — Branches, claims, worktrees, cleanup
-- [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating this documentation
 - [Project Glossary](../glossary.md) — This project's domain vocabulary

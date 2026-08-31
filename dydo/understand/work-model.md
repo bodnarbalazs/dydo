@@ -39,8 +39,7 @@ corrective for agent-speak, at any stage.
   session.
 - **Human commands** are invoked by the human typing their name, and by nothing else.
 
-[dydo/index.md](../index.md) carries the current roster with one line of routing each; it is the list
-to read before choosing one. Every one of them compiles from a template — see
+The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them compiles from a template — see
 [Templates and Customization](./templates-and-customization.md).
 
 ## Canonical ownership

@@ -22,9 +22,9 @@ A good test is a contract: write the one a caller can rely on.
 
 ## Boundary
 
-The implementer spawns you while it owns the Issue and consumes what you return. Source code is
-read-only here: prove behaviour and report what the code does. A defect you uncover is a finding for
-the implementer, not a repair you make.
+Implement stage: the implementer spawns you while it owns the Issue and consumes what you return.
+Source code is read-only here: prove behaviour and report what the code does. A defect you uncover is
+a finding for the implementer, not a repair you make.
 
 ## Method
 

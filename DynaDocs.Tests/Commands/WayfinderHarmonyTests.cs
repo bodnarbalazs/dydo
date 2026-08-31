@@ -20,31 +20,56 @@ public class WayfinderHarmonyTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
-    // Every dydo link in a compiled skill must resolve from the folder the skill is emitted
-    // into — an unresolvable pointer is a context the agent silently never reads.
+    // Acceptance criteria 2 and 6: every dydo link in a compiled skill climbs correctly out of
+    // the emitted skill folder AND names a document that exists. An unresolvable pointer is a
+    // context the agent silently never reads.
+    //
+    // The climb is checked against the emitted geometry — three levels below the project root on
+    // either host — but existence is checked against THIS repository's dydo/ tree, because that
+    // is where both criteria are judged after regeneration. A bare scaffold holds only framework
+    // documents, so resolving there would fail any skill that references a repo-authored guide
+    // (plan section 7 binds the planner to writing-good-briefs, which ships no template).
     [Fact]
-    public void CompiledSkills_DydoLinksResolveFromTheEmittedSkillFolder()
+    public void CompiledSkills_DydoLinksClimbToTheProjectRootAndNameRealDocuments()
     {
+        const string climb = "../../../dydo/";
+        var repositoryDydo = Path.Combine(RepositoryRoot(), "dydo");
+        var checkedLinks = 0;
+
         foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
         {
-            var skillPath = CompileSkill(role.Name);
-            var skillDir = Path.GetDirectoryName(skillPath)!;
-
-            foreach (var target in DydoLinkTargets(File.ReadAllText(skillPath)))
+            foreach (var target in DydoLinkTargets(File.ReadAllText(CompileSkill(role.Name))))
             {
-                Assert.StartsWith("../../../dydo/", target);
-                var resolved = Path.GetFullPath(Path.Combine(
-                    skillDir, target.Replace('/', Path.DirectorySeparatorChar)));
+                Assert.StartsWith(climb, target);
+
+                var document = target[climb.Length..].Replace('/', Path.DirectorySeparatorChar);
+                var resolved = Path.Combine(repositoryDydo, document);
                 Assert.True(File.Exists(resolved),
-                    $"{role.Name}: compiled link '{target}' did not resolve to {resolved}");
+                    $"{role.Name}: compiled link '{target}' names no document ({resolved})");
+                checkedLinks++;
             }
         }
+
+        Assert.True(checkedLinks > 0, "no compiled dydo link was checked; this fixture would pass vacuously");
     }
 
+    // A relative link into the knowledge tree, not an absolute URL that merely contains the word.
     private static IEnumerable<string> DydoLinkTargets(string skill) =>
         System.Text.RegularExpressions.Regex.Matches(skill, @"\]\(([^)\s]+)\)")
             .Select(match => match.Groups[1].Value)
-            .Where(target => target.Contains("/dydo/", StringComparison.Ordinal));
+            .Where(target => target.Contains("/dydo/", StringComparison.Ordinal)
+                && !target.Contains("://", StringComparison.Ordinal));
+
+    private static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
+                return directory.FullName;
+        }
+
+        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
+    }
 
     // DR 045 section 11 retires the Waypoint ontology from the vocabulary, and nothing else in
     // the navigation wording: the same DR calls the implementer the hat a top-level session

@@ -41,13 +41,13 @@ The frontmatter keys, what each of them compiles to on each host, how `## Must-R
 
 ## Include tags
 
-`{{include:name}}` inserts `dydo/_system/template-additions/name.md` at a hook in the template, and
-resolves to nothing when that file is absent, leaving no trace in the output. Five hooks ship:
+`{{include:name}}` inserts `dydo/_system/template-additions/name.md` at a hook in a skill template,
+and resolves to nothing when that file is absent, leaving no trace in the output. Five hooks ship:
 `extra-must-reads`, `extra-verify`, `extra-review-steps`, `extra-review-checklist`, and
 `extra-test-guidance`. A project's own template may define any other name.
 
 That folder is where durable customization belongs: an addition stays separate from the shipped
-text, is shared by every template that names it, and survives the updates below.
+text, is shared by every skill template that names it, and survives the updates below.
 
 ## Compilation
 
@@ -90,12 +90,13 @@ deletes a retired framework asset — today `_assets/dydo-diagram.svg` — when 
 the framework wrote, keeping a modified copy as the project's own.
 
 `--diff` previews the file changes without writing; the `dydo.json` defaults are neither previewed
-nor applied under `--diff`. `--force` covers the one case that stops: when a carried-over tag finds
-no place in the new text, the update skips that file and names the tag, and `--force` writes anyway —
-backing the file up first and saving what it could not place. A hash-clean copy left over from the
-2.x `mode-<name>.template.md` naming is moved to its `skill-<name>.template.md` replacement, while a
-modified legacy file is kept and reported for you to rename, because `dydo sync` compiles only
-`skill-*` sources.
+nor applied under `--diff`. `--force` overrides one skip: when a carried-over tag finds no place in
+the new text, the update skips that file and names the tag, and `--force` writes anyway — backing the
+file up first and saving what it could not place. Every other skip the run reports — an edited
+framework-owned document, a kept legacy file — stays skipped under `--force`; the flag only lets the
+run exit 0 past it. A hash-clean copy left over from the 2.x `mode-<name>.template.md` naming is
+moved to its `skill-<name>.template.md` replacement, while a modified legacy file is kept and
+reported for you to rename, because `dydo sync` compiles only `skill-*` sources.
 
 That carry-over is not a durability mechanism: it runs only while the shipped text is unchanged, and
 it stores the hash of what it wrote, so the next update replaces the file and those tags with it. Two

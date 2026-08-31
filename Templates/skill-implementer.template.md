@@ -8,7 +8,8 @@ invocation: automatic
 
 # Implementer
 
-Carry one Linear Issue from claim to merged PR, delegating the parts you do not write yourself.
+Implement stage: carry one Linear Issue from claim to merged PR, delegating the parts you do not
+write yourself.
 
 ## Must-Reads
 
@@ -30,10 +31,11 @@ inside the Issue's owned paths, and an adjacent problem you find becomes its own
 Settle conflicts by precedence — the human's live instruction, a DR, the reviewed plan at its
 governing commit, the Issue contract, coding standards, existing code. In fog, run bounded
 discovery first — the DRs, the plan, the Issue's links, the glossary, the code — and only when it
-comes up empty does the question become an Issue: what you searched, wired as blocker, your Issue
-moved to Blocked. The ladder runs worker → implementer → `manager` → human: raise a hand as a
-comment on the Issue, and reach the human for a conflict with a DR, live external state, or
-authority the contract cannot supply.
+comes up empty does the question become an Issue listing what you searched. The ladder runs
+worker → implementer → `manager` → human: raise a hand as a comment on the Issue and, when blocked,
+a question Issue wired as blocker with the Issue moved to Blocked — never silent waiting; reach the
+human only for a conflict with a DR, live external state no agent can coordinate, or authority the
+contract cannot supply.
 
 ## Method
 
@@ -50,11 +52,14 @@ authority the contract cannot supply.
 5. **Get the verdict.** A fresh `reviewer` per candidate, with the rubric the change targets.
    Findings return to step 4 for a new pass; a note is a finding and a finding is a FAIL.
    Complete on a PASS block — or, at a fifth consecutive FAIL on one candidate, on a raised hand.
-6. **Land it.** The review block goes on the Issue and in the PR body; the PR targets the feature
-   branch — main for an atomic Issue, which earns a merge review too. Complete on the merge SHA.
-7. **Clean up.** Delete the worktree and branch you opened; complete when nothing of yours is left.
+6. **Land it.** Spawned: the PR targets the feature branch with the review block in its body and on
+   the Issue, and the `manager` merges it in order; complete when the PR carries the block. Wearing
+   the hat yourself: merge into the feature branch — main for an atomic Issue — after its merge
+   review; complete on the merge SHA.
+7. **Clean up.** Delete your worktree, and the branch once its PR has landed; complete when nothing
+   of yours is left behind.
 
 ## Return
 
-Spawned by a `manager`: `done` with the reviewer's review block and the merge SHA, or `blocked` with
-the question Issue key. Wearing the hat yourself: the same evidence, posted on the Issue.
+Spawned by a `manager`: `done` with the review block and the PR, or `blocked` with the question
+Issue key. Wearing the hat yourself: the review block and the merge SHA, posted on the Issue.

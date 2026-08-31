@@ -89,10 +89,11 @@ no PASS with notes; a note is a finding, and a finding is a FAIL.
 ## References and evidence
 
 Use a branch-following GitHub URL for current human navigation, and an exact commit permalink for a
-governing contract or historical proof. A PR or commit carries its Linear Issue key, per the
-[Working-Tree Contract](../guides/working-tree-contract.md). Durable knowledge discovered during work
-is extracted to a Decision, guide, Project plan, audit, or assimilation brief rather than left in a
-comment thread or a session transcript.
+governing contract or historical proof. The Issue branch carries its Linear Issue key, so Linear's
+GitHub integration attaches branch and PR to the Issue natively; the
+[Working-Tree Contract](../guides/working-tree-contract.md) is the procedure. Durable knowledge
+discovered during work is extracted to a Decision, guide, Project plan, audit, or assimilation brief
+rather than left in a comment thread or a session transcript.
 
 ## FutureFeatures
 

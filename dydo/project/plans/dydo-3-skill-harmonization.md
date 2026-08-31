@@ -540,3 +540,6 @@ Paste this into a fresh Claude Code or Codex session started in the repository:
   `wayfinder` (§1's Chart row); the `manager` receives question Issues only for a Project already in
   delivery (§4's routing). The co-thinker's Handoff row and the prototype's placement sentence
   follow the planner route.
+- **H-10 surface** — `.gitattributes` gains `Templates/*.js text eol=lf` so workflow templates
+  stay LF at source like their compiled `.claude/workflows/*.js`; a one-line surface addition
+  outside H-10's owned paths, ruled by the manager on DYD-63 (2026-08-31).

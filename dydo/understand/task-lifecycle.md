@@ -45,12 +45,11 @@ Decision Records carry decisions, and the two are linked rather than copied.
 
 ## Claimed, isolated, executed
 
-Assignment is the claim: nothing else marks an Issue as taken. Branch off the Issue's base branch with
-the key in the name — `DYD-123-<slug>` — because that key is what lets Linear's GitHub integration
-attach the branch and the PR, and post branch, base SHA and worktree path on the Issue before the
-first edit. One writer per worktree; commits touch owned paths only. The
-[Working-Tree Contract](../guides/working-tree-contract.md) is that procedure end to end, cleanup
-included.
+Assignment is the claim: nothing else marks an Issue as taken. From there the Issue has one branch and
+one worktree, one writer inside it, and commits that touch only the paths the Issue owns. The
+[Working-Tree Contract](../guides/working-tree-contract.md) is that procedure end to end — how the
+branch is named, what goes on the Issue before the first edit, and what is cleaned up after the
+merge.
 
 Linear owns the Issue's status, priority, assignee, blockers and updates throughout. The branch,
 worktree, session, commits, PR and test runs are evidence for that Issue, never additional work
@@ -60,10 +59,9 @@ records.
 
 A fresh reviewer judges the candidate against the rubric it targets before any merge, and a second
 reviewer applies the `merge` rubric after the merge lands; both return the review block, which is
-posted on the Issue and carried in the PR body. There is no PASS with notes: a note is a finding, and
-a finding is a FAIL. A fifth consecutive FAIL on the same candidate is itself an escalation — stop
-looping and raise a hand. The three tiers and the review block's shape are in the
-[Work Model](./work-model.md).
+posted on the Issue and carried in the PR body. A fifth consecutive FAIL on the same candidate is
+itself an escalation — stop looping and raise a hand. The three tiers, the review block's shape and
+the verdict's rule are in the [Work Model](./work-model.md).
 
 ## Raising a hand
 

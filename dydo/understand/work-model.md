@@ -25,14 +25,16 @@ A session is not a type. It wears the hat the work is in now, and changes hats a
 | Land | the human | the feature branch merged into main | the human's own hands |
 | Harmonize | the human, on main | improvements, and a new feature branch when one is needed | none — main is the state |
 
-Some work has no stage of its own: chief-of-staff triages the human's attention at any stage and never
-delivers, and any hat may reach for self-improvement, writing-for-agents, diagnosing-bugs and bro.
+Some work has no stage of its own: chief-of-staff triages the human's attention and never delivers,
+and any hat may reach for self-improvement, writing-for-agents and diagnosing-bugs; bro is the human's
+corrective for agent-speak, at any stage.
 
 ## Hats, workers, and methods
 
-- **Hats** are what a session is doing now, one at a time: the map's Hat column, plus chief-of-staff.
-- **Workers** are spawned for one bounded job and report back to whoever spawned them. A worker does
-  its own work; only a hat fans out.
+- **Hats** are what a session is doing now, one at a time — the agent hats on the map plus
+  chief-of-staff; the human and the inquisition workflow hold rows but wear no hat.
+- **Workers** are spawned for one bounded job and report back to whoever spawned them. A worker never
+  delegates.
 - **Methods** are reference and procedure a session applies inside its own thread, never a separate
   session.
 - **Human commands** are invoked by the human typing their name, and by nothing else.
@@ -51,11 +53,6 @@ to read before choosing one. Every one of them compiles from a template — see
 | Audit, inquisition, migration, and assimilation evidence | dydo/Git |
 | Release tags and changelog | Git |
 | FutureFeatures before and after human promotion | dydo/Git |
-
-An Initiative is an optional workspace-level goal. A Project is one bounded outcome owned by a Linear
-team. An Issue is the only actionable work item; use Sub-issues only when children need independent
-tracking. Milestones are optional checkpoints inside a Project, and Cycles are optional capacity
-timeboxes orthogonal to Projects. Labels route across the graph; they are not a second type system.
 
 dydo has no Linear client, token, schema, poller, webhook receiver, cache, or Markdown mirror. Agents
 reach Linear through its official MCP, UI, API, and integrations, outside the dydo runtime.
@@ -83,29 +80,28 @@ to an Issue. They are not extra levels in the work graph.
 3. **Inquisition** — rare and human-confirmed, fanned out across lenses with the reviewer as judge and
    a docs-writer assimilating the result. It catches what got through; it never proves zero defects.
 
-Every reviewer verdict, in any tier, is the same **review block** — rubric, reviewer label and model, candidate and base
-SHA, verdict, the gates rerun with their results, and findings as `file:line → consequence →
-correction` — posted as a comment on the Linear Issue and pasted into the PR body. Independence here
-is independence of *context*: the reviewer arrives fresh and reads the candidate itself rather than
-the story told about it. There is no PASS with notes; a note is a finding, and a finding is a FAIL.
+Every reviewer verdict, in any tier, is the same **review block**, posted as a comment on the Linear
+Issue and carried in the PR body; its fields are locked in the
+[dydo Glossary](../reference/dydo-glossary.md). Independence here is independence of *context*: the
+reviewer arrives fresh and reads the candidate itself rather than the story told about it. There is
+no PASS with notes; a note is a finding, and a finding is a FAIL.
 
 ## References and evidence
 
 Use a branch-following GitHub URL for current human navigation, and an exact commit permalink for a
-governing contract or historical proof. A PR or commit carries its Linear Issue key so Linear's GitHub
-integration attaches the evidence natively. Durable knowledge discovered during work is extracted to a
-Decision, guide, Project plan, audit, or assimilation brief rather than left in a comment thread or a
-session transcript.
+governing contract or historical proof. A PR or commit carries its Linear Issue key, per the
+[Working-Tree Contract](../guides/working-tree-contract.md). Durable knowledge discovered during work
+is extracted to a Decision, guide, Project plan, audit, or assimilation brief rather than left in a
+comment thread or a session transcript.
 
 ## FutureFeatures
 
-A FutureFeature is an unscheduled, non-actionable repo-native idea. It has `area: project`,
-`type: concept`, and `status: idea` until the human promotes it. Promotion creates exactly one Linear
-Initiative, Project, or Issue, records its stable URL as `linear-reference`, and moves the status to
-the terminal `promoted`; delivery state after that exists only in Linear. Every idea carries a
-non-empty `## Rationale` and a `## Related` section with at least one resolving, non-Linear durable
-link, and none of the delivery fields Linear owns — no assignment, priority, blocker, dependency,
-Project, Initiative, Cycle, Milestone, due-date, estimate, label, parent, Sub-issue, or team.
+A FutureFeature is an unscheduled, non-actionable repo-native idea, and it stays one until the human
+decides otherwise. Promotion is his alone: it creates exactly one Linear Initiative, Project, or
+Issue, records that stable URL on the idea, and moves its status to the terminal `promoted`. Delivery
+state after that exists only in Linear, and the idea remains provenance rather than a mirror of it.
+The frontmatter and body an idea must carry in either state are in
+[Future Features](../project/future-features/_future-features.md).
 
 ## Related
 

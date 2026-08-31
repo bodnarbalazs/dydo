@@ -848,6 +848,12 @@ public class SyncCommandTests : IDisposable
         const string codex = "read [merge](.agents/skills/reviewer/resources/merge.md) first";
 
         Assert.Equal(NormalizeHostSkillRoot(claude), NormalizeHostSkillRoot(codex));
+        // Both segments the summary above enumerates, because this fixture is the only guard on
+        // the helper's width: a normalization that also collapsed the role folder would still
+        // pass the resource-file inversion, and would then hide a genuinely divergent link.
+        Assert.NotEqual(
+            NormalizeHostSkillRoot(claude),
+            NormalizeHostSkillRoot(codex.Replace("reviewer/", "planner/")));
         Assert.NotEqual(
             NormalizeHostSkillRoot(claude),
             NormalizeHostSkillRoot(codex.Replace("merge.md", "plan.md")));

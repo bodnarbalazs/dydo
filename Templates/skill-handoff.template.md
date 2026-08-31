@@ -22,6 +22,6 @@ so the human can hand it to the next session.
 
 Include a "suggested skills" section that names, by name, the dydo skills the next agent should call.
 
-Redact sensitive information: API keys, passwords, personal data.
+Redact any sensitive information, such as API keys, passwords, or personally identifiable information.
 
 Treat any arguments the human passed as the focus of the next session, and tailor the document to it.

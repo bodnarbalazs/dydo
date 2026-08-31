@@ -680,7 +680,8 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("skill-grill-me.template.md", skillTemplates);
         Assert.Contains("skill-bro.template.md", skillTemplates);
         Assert.Contains("skill-writing-for-agents.template.md", skillTemplates);
-        Assert.Equal(15, skillTemplates.Count);
+        // The scaffolded inventory IS the shipped inventory; a hard-coded count freezes it.
+        Assert.Equal(ShippedSkillTemplateNames(), skillTemplates.OrderBy(n => n, StringComparer.Ordinal));
         Assert.DoesNotContain("skill-sprint-auditor.template.md", skillTemplates);
     }
 
@@ -858,6 +859,29 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     #endregion
+
+    // What init mirrors is the shipped set minus retired names: mirroring a retired template
+    // would union it straight back into role discovery.
+    private static IEnumerable<string> ShippedSkillTemplateNames()
+    {
+        var retired = SyncCommand.RetiredManagedRoles
+            .Select(role => $"skill-{role}.template.md")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
+            {
+                return Directory
+                    .GetFiles(Path.Combine(directory.FullName, "Templates"), "skill-*.template.md")
+                    .Select(path => Path.GetFileName(path)!)
+                    .Where(name => !retired.Contains(name))
+                    .OrderBy(name => name, StringComparer.Ordinal);
+            }
+        }
+
+        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
+    }
 
     private static List<string> HookCommands(JsonNode? entry)
     {

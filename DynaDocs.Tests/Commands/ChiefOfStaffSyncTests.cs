@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public class ChiefOfStaffSyncTests : IDisposable
 {
@@ -23,25 +24,27 @@ public class ChiefOfStaffSyncTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
+    // The shipped source and the installed copy are one role, so they must agree on shape and on
+    // what the role must never grow: a personal memory store, or the retired tier doctrine.
     [Fact]
-    public void AuthoredChiefOfStaffTemplates_KeepBoardRoleAndExcludePersonalMemoryPolicy()
+    public void AuthoredChiefOfStaffTemplates_AgreeOnShapeAndExcludePersonalMemoryPolicy()
     {
-        foreach (var source in new[]
+        var shipped = Normalize(TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"));
+        var installed = Normalize(File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md")));
+
+        foreach (var source in new[] { shipped, installed })
         {
-            TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"),
-            File.ReadAllText(Path.Combine(
-                FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md")),
-        })
-        {
-            Assert.Contains("### Triage", source);
-            Assert.Contains("### Report", source);
-            Assert.Contains("### Mediate", source);
-            Assert.Contains("### Keep the board honest", source);
-            Assert.Contains("self-improvement", source);
+            Assert.Contains("mode: chief-of-staff\n", source);
+            Assert.Contains("emit: skill\n", source);
+            Assert.Equal(1, SyncCommandTests.H1Count(source));
+            Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));
             Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Managers Doctrine", source);
         }
     }
+
+    private static string Normalize(string value) => value.Replace("\r\n", "\n");
 
     [Fact]
     public void SyncChiefOfStaff_EmitsIdenticalSkillsWithoutAgentDefinitions()
@@ -54,7 +57,16 @@ public class ChiefOfStaffSyncTests : IDisposable
         SyncCommand.SyncSkillOnlyRole(role, _testDir);
         SyncCommand.SyncCodexSkill(role, _testDir);
 
-        Assert.Equal(File.ReadAllBytes(claudeSkill), File.ReadAllBytes(codexSkill));
+        // One authored source, so both hosts get the same body. Only the invocation policy is
+        // host-shaped — Claude carries it in frontmatter, Codex in a sibling yaml — so comparing
+        // whole files would go red the day this role becomes explicit-only.
+        Assert.Equal(
+            FrontmatterParser.StripFrontmatter(File.ReadAllText(claudeSkill)),
+            FrontmatterParser.StripFrontmatter(File.ReadAllText(codexSkill)));
+        Assert.Equal(
+            role.ExplicitInvocation,
+            File.ReadAllText(claudeSkill).Contains("disable-model-invocation: true"));
+        Assert.DoesNotContain("disable-model-invocation", File.ReadAllText(codexSkill));
         Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "chief-of-staff.md")));
         Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", "chief-of-staff.toml")));
 

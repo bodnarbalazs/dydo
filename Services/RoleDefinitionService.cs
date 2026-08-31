@@ -14,7 +14,11 @@ public class RoleDefinitionService : IRoleDefinitionService
     /// <c>dydo/_system/templates/skill-*.template.md</c> — which is how a custom role
     /// compiles: drop a skill template in, run <c>dydo sync</c>. Metadata comes from the
     /// template frontmatter: <c>description</c>, <c>emit</c> (agent+skill unless <c>skill</c>),
-    /// <c>read-only</c>, <c>invocation</c>.
+    /// <c>read-only</c>, <c>delegates</c>, <c>invocation</c>.
+    ///
+    /// The shipped set already excludes retired names, so sync's retired-artifact sweep is
+    /// never suppressed by a source dydo still carries through a transition. A project-local
+    /// template of a retired name still defines the role — that is the deliberate escape hatch.
     /// </summary>
     public static List<RoleDefinition> DiscoverRoles(string? projectRoot = null)
     {
@@ -39,6 +43,8 @@ public class RoleDefinitionService : IRoleDefinitionService
                     || e.Equals("agent", StringComparison.OrdinalIgnoreCase),
                 ReadOnly = fields.TryGetValue("read-only", out var r)
                     && r.Equals("true", StringComparison.OrdinalIgnoreCase),
+                Delegates = fields.TryGetValue("delegates", out var g)
+                    && g.Equals("true", StringComparison.OrdinalIgnoreCase),
                 ExplicitInvocation = explicitInvocation,
             });
         }

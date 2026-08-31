@@ -23,7 +23,6 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/skill-planner.template.md");
         AssertFileExists("dydo/_system/templates/skill-docs-writer.template.md");
         AssertFileExists("dydo/_system/templates/skill-test-writer.template.md");
-        AssertFileExists("dydo/_system/templates/skill-orchestrator.template.md");
         AssertFileExists("dydo/_system/templates/skill-inquisitor.template.md");
         AssertFileExists("dydo/_system/templates/skill-wayfinder.template.md");
         AssertFileExists("dydo/_system/templates/skill-grilling.template.md");
@@ -85,10 +84,56 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("skill-bro.template.md", templateNames);
         Assert.Contains("skill-writing-for-agents.template.md", templateNames);
 
-        // 15 skill templates (the compiler's role sources) + the reviewer's 5 skill
-        // resource templates (<role>-resource-<name>.template.md).
+        // The mirrored set IS the shipped set: every skill template plus every skill resource
+        // template (<role>-resource-<name>.template.md). A hard-coded count would freeze the
+        // inventory the DR 045 taxonomy is about to change.
         Assert.Contains("reviewer-resource-plan.template.md", templateNames);
-        Assert.Equal(20, templateNames.Count);
+        Assert.Equal(ShippedTemplateNames(), templateNames.OrderBy(n => n, StringComparer.Ordinal));
+    }
+
+    // DR 045 section 8: the working-tree contract is a framework document, so a fresh init
+    // scaffolds it and `template update` tracks it by hash like any other framework doc.
+    [Fact]
+    public async Task Init_ScaffoldsAndTracksTheWorkingTreeContractGuide()
+    {
+        await InitProjectAsync();
+
+        AssertFileExists("dydo/guides/working-tree-contract.md");
+        Assert.Equal(
+            TemplateGenerator.GenerateWorkingTreeContractMd(),
+            ReadFile("dydo/guides/working-tree-contract.md"));
+        Assert.Contains("guides/working-tree-contract.md", TemplateCommand.FrameworkDocFiles);
+
+        var config = System.Text.Json.JsonSerializer.Deserialize(ReadFile("dydo.json"),
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
+        Assert.True(config.FrameworkHashes.ContainsKey("guides/working-tree-contract.md"),
+            "template update must track the working-tree contract by hash");
+    }
+
+    // The mirrored set is the authored set minus retired roles and anything that hangs off
+    // them: a retired template mirrored into a project revives the role there.
+    private static IEnumerable<string> ShippedTemplateNames()
+    {
+        var templates = Path.Combine(FindRepositoryRoot(), "Templates");
+        var retired = SyncCommand.RetiredManagedRoles;
+        return Directory.GetFiles(templates, "skill-*.template.md")
+            .Concat(Directory.GetFiles(templates, "*-resource-*.template.md"))
+            .Select(path => Path.GetFileName(path)!)
+            .Where(name => !retired.Any(role =>
+                name.Equals($"skill-{role}.template.md", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith($"{role}-resource-", StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(name => name, StringComparer.Ordinal);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
+                return directory.FullName;
+        }
+
+        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 
     [Fact]
@@ -97,7 +142,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("Code Writer", content);
+        Assert.Contains("mode: code-writer", content);
     }
 
     [Fact]

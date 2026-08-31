@@ -21,7 +21,8 @@ public static class TemplateCommand
         "reference/dydo-commands.md",
         "reference/dydo-glossary.md",
         "reference/writing-docs.md",
-        "guides/how-to-use-docs.md"
+        "guides/how-to-use-docs.md",
+        "guides/working-tree-contract.md"
     ];
 
     public static readonly string[] FrameworkBinaryFiles = [];
@@ -591,6 +592,7 @@ public static class TemplateCommand
         "reference/dydo-glossary.md" => TemplateGenerator.GenerateDydoGlossaryMd(),
         "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
         "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
+        "guides/working-tree-contract.md" => TemplateGenerator.GenerateWorkingTreeContractMd(),
         _ => null
     };
 

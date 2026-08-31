@@ -1,7 +1,9 @@
 namespace DynaDocs.Tests.Services;
 
+using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public class RoleDefinitionServiceTests : IDisposable
 {
@@ -40,7 +42,6 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("test-writer", names);
         Assert.Contains("docs-writer", names);
         Assert.Contains("planner", names);
-        Assert.Contains("orchestrator", names);
         Assert.Contains("co-thinker", names);
         Assert.Contains("chief-of-staff", names);
         Assert.Contains("inquisitor", names);
@@ -50,9 +51,73 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("grill-me", names);
         Assert.Contains("bro", names);
         Assert.Contains("writing-for-agents", names);
-        // Retired roles stay retired.
+        // Retired roles stay retired — including any whose template file dydo still ships
+        // through a transition, or sync's retired-artifact sweep would be suppressed by its own
+        // source and the role would outlive its retirement in every initialized project.
         Assert.DoesNotContain("judge", names);
-        Assert.DoesNotContain("sprint-auditor", names);
+        Assert.All(SyncCommand.RetiredManagedRoles, retired => Assert.DoesNotContain(retired, names));
+    }
+
+    // Derived from the source tree rather than from the shipped-set API, so it still proves
+    // the exclusion after that API became the place the exclusion happens.
+    [Fact]
+    public void DiscoverRoles_ShippedRoles_AreTheAuthoredSkillTemplatesMinusRetiredNames()
+    {
+        var authored = Directory
+            .GetFiles(Path.Combine(RepositoryRoot(), "Templates"), "skill-*.template.md")
+            .Select(path => Path.GetFileName(path)!["skill-".Length..^".template.md".Length]);
+
+        var names = RoleDefinitionService.DiscoverRoles(_testDir).Select(r => r.Name).ToList();
+
+        Assert.Equal(
+            authored.Except(SyncCommand.RetiredManagedRoles).OrderBy(n => n, StringComparer.Ordinal),
+            names.OrderBy(n => n, StringComparer.Ordinal));
+        Assert.NotEmpty(names);
+    }
+
+    // A retired name must also leave the set `dydo init` mirrors and `dydo template update`
+    // hash-tracks: a mirrored copy would be unioned back into discovery and revive the role in
+    // every initialized project, and while it stays tracked the stale-copy prune cannot remove it.
+    [Fact]
+    public void ShippedTemplateSet_ExcludesRetiredRoles()
+    {
+        foreach (var retired in SyncCommand.RetiredManagedRoles)
+        {
+            var templateName = $"skill-{retired}.template.md";
+            Assert.DoesNotContain(templateName, TemplateGenerator.GetAllTemplateNames());
+            Assert.DoesNotContain(templateName, TemplateGenerator.GetBuiltInSkillTemplateNames());
+            Assert.DoesNotContain(
+                $"_system/templates/{templateName}", TemplateCommand.FrameworkTemplateFiles);
+        }
+    }
+
+    private static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
+                return directory.FullName;
+        }
+
+        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
+    }
+
+    // A project that wants a retired name back drops in its own template; sync then keeps the
+    // role and its artifacts. The retirement is dydo's default, not the project's ceiling.
+    [Fact]
+    public void DiscoverRoles_ProjectTemplateForARetiredName_RevivesTheRole()
+    {
+        var templatesDir = CreateProjectTemplatesDir();
+        foreach (var retired in SyncCommand.RetiredManagedRoles)
+        {
+            File.WriteAllText(Path.Combine(templatesDir, $"skill-{retired}.template.md"),
+                $"---\nmode: {retired}\ndescription: Project-owned {retired}.\nemit: skill\n---\n\n# Revived\n");
+        }
+
+        var roles = RoleDefinitionService.DiscoverRoles(_testDir).ToDictionary(r => r.Name);
+
+        Assert.All(SyncCommand.RetiredManagedRoles,
+            retired => Assert.Equal($"Project-owned {retired}.", roles[retired].Description));
     }
 
     [Fact]
@@ -65,9 +130,8 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.True(roles["reviewer"].EmitAgent);
         Assert.True(roles["test-writer"].EmitAgent);
         Assert.True(roles["docs-writer"].EmitAgent);
-        // Planner and the Tier-1 manager modes are skill-only.
+        // Coordinating methodologies are skill-only.
         Assert.False(roles["planner"].EmitAgent);
-        Assert.False(roles["orchestrator"].EmitAgent);
         Assert.False(roles["co-thinker"].EmitAgent);
         Assert.False(roles["chief-of-staff"].EmitAgent);
         Assert.False(roles["self-improvement"].EmitAgent);
@@ -76,39 +140,68 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.False(roles["grill-me"].EmitAgent);
         Assert.False(roles["bro"].EmitAgent);
         Assert.False(roles["writing-for-agents"].EmitAgent);
-        Assert.StartsWith("Explicitly invoked by the human", roles["wayfinder"].Description);
-        Assert.Contains("stress-test their thinking", roles["grilling"].Description,
-            StringComparison.OrdinalIgnoreCase);
-        Assert.StartsWith("Explicitly invoked by the human", roles["grill-me"].Description);
-        Assert.StartsWith("Explicitly invoked by the human", roles["bro"].Description);
-        Assert.StartsWith("Writing documents for agents", roles["writing-for-agents"].Description);
-
-        Assert.True(roles["wayfinder"].ExplicitInvocation);
+        // DR 045 section 9's explicit-only list, narrowed to roles that exist today: a human
+        // command that becomes model-invocable fires behind the human's back. Which other roles
+        // are model-invoked is the taxonomy's business, so it is derived, not listed here.
         Assert.True(roles["grill-me"].ExplicitInvocation);
         Assert.True(roles["bro"].ExplicitInvocation);
-        Assert.False(roles["grilling"].ExplicitInvocation);
-        Assert.False(roles["writing-for-agents"].ExplicitInvocation);
-        Assert.False(roles["reviewer"].ExplicitInvocation);
     }
+
+    // The frontmatter is the contract: every discovered flag must equal what that role's own
+    // template declares. Pinning a roster instead freezes a taxonomy that is still moving, and
+    // leaves a red test that no later Issue owns this file to fix.
+    [Fact]
+    public void DiscoverRoles_Flags_MatchEachTemplatesOwnFrontmatter()
+    {
+        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        {
+            var fields = FrontmatterParser.ParseFields(
+                TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile)) ?? [];
+
+            Assert.Equal(Declares(fields, "emit", "agent", fallback: true), role.EmitAgent);
+            Assert.Equal(Declares(fields, "read-only", "true"), role.ReadOnly);
+            Assert.Equal(Declares(fields, "delegates", "true"), role.Delegates);
+            Assert.Equal(Declares(fields, "invocation", "explicit"), role.ExplicitInvocation);
+        }
+    }
+
+    private static bool Declares(
+        IReadOnlyDictionary<string, string> fields, string key, string value, bool fallback = false) =>
+        fields.TryGetValue(key, out var actual)
+            ? actual.Equals(value, StringComparison.OrdinalIgnoreCase)
+            : fallback;
 
     [Fact]
     public void DiscoverRoles_ReviewerAndInquisitor_AreReadOnlyBaseRoles()
     {
         var roles = RoleDefinitionService.DiscoverRoles(_testDir);
 
+        // Read-only is how "reviewers don't write code" is natively enforced, so these two must
+        // carry it. Which other roles do is the taxonomy's business, derived from frontmatter by
+        // DiscoverRoles_Flags_MatchEachTemplatesOwnFrontmatter.
         Assert.True(roles.Single(r => r.Name == "reviewer").ReadOnly);
         Assert.True(roles.Single(r => r.Name == "inquisitor").ReadOnly);
-        Assert.All(
-            roles.Where(r => r.Name is not ("reviewer" or "inquisitor")),
-            r => Assert.False(r.ReadOnly));
     }
 
+    // A description is what routes a model to the skill, so an empty one is a compile-time
+    // defect. The wording is the source's business; its presence is the compiler's.
     [Fact]
     public void DiscoverRoles_ShippedRoles_HaveDescriptions()
     {
         Assert.All(RoleDefinitionService.DiscoverRoles(_testDir),
             r => Assert.False(string.IsNullOrWhiteSpace(r.Description),
                 $"role '{r.Name}' has no description"));
+    }
+
+    [Fact]
+    public void DiscoverRoles_CustomTemplate_ParsesDelegates()
+    {
+        var templatesDir = CreateProjectTemplatesDir();
+        File.WriteAllText(Path.Combine(templatesDir, "skill-fan-out.template.md"),
+            "---\nmode: fan-out\nemit: agent\ndelegates: true\n---\n\n# Fan Out\n");
+
+        Assert.True(RoleDefinitionService.DiscoverRoles(_testDir)
+            .Single(r => r.Name == "fan-out").Delegates);
     }
 
     [Fact]
@@ -153,6 +246,7 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.True(custom.EmitAgent);
         Assert.False(custom.ReadOnly);
         Assert.False(custom.ExplicitInvocation);
+        Assert.False(custom.Delegates);
         Assert.Equal("", custom.Description);
     }
 

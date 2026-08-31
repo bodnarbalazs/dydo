@@ -1,6 +1,8 @@
 namespace DynaDocs.Tests.Services;
 
+using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Tests.Commands;
 
 public class TemplateGeneratorTests
 {
@@ -13,7 +15,7 @@ public class TemplateGeneratorTests
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("Code Writer", content);
+        Assert.Contains("mode: code-writer", content);
     }
 
     [Fact]
@@ -32,7 +34,6 @@ public class TemplateGeneratorTests
     [InlineData("skill-planner.template.md")]
     [InlineData("skill-docs-writer.template.md")]
     [InlineData("skill-test-writer.template.md")]
-    [InlineData("skill-orchestrator.template.md")]
     [InlineData("skill-self-improvement.template.md")]
     [InlineData("skill-wayfinder.template.md")]
     [InlineData("skill-grilling.template.md")]
@@ -76,11 +77,13 @@ public class TemplateGeneratorTests
     [Fact]
     public void EmbeddedTemplates_HaveExpectedContent()
     {
-        // Verify specific content to ensure templates aren't empty or corrupted
-        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
-        Assert.Contains("mode: code-writer", codeWriterTemplate);
-        Assert.Contains("Linear Issue", codeWriterTemplate);
-        Assert.Contains("independent review", codeWriterTemplate);
+        // Verify structure to ensure templates aren't empty or corrupted. The prose is the
+        // source's to write; what the compiler needs is frontmatter, an H1 and a body.
+        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md")
+            .Replace("\r\n", "\n");
+        Assert.Contains("mode: code-writer\n", codeWriterTemplate);
+        Assert.Contains("description: ", codeWriterTemplate);
+        Assert.Equal(1, SyncCommandTests.H1Count(codeWriterTemplate));
     }
 
     [Theory]
@@ -94,6 +97,20 @@ public class TemplateGeneratorTests
     }
 
     #endregion
+
+    // DR 045 section 8: the working-tree contract is a framework document, so it must ship as a
+    // template `dydo init` can scaffold and `dydo template update` can track.
+    [Fact]
+    public void GenerateWorkingTreeContractMd_IsAScaffoldableFrameworkGuide()
+    {
+        var content = TemplateGenerator.GenerateWorkingTreeContractMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: guides", content);
+        Assert.Contains("type: guide", content);
+        Assert.Equal(1, SyncCommandTests.H1Count(content));
+        Assert.Contains("guides/working-tree-contract.md", TemplateCommand.FrameworkDocFiles);
+    }
 
     [Fact]
     public void GenerateAboutMd_ContainsPlaceholders()
@@ -123,7 +140,8 @@ public class TemplateGeneratorTests
 
         var content = TemplateGenerator.GenerateEntryPointMd("Example");
 
-        Assert.StartsWith("# Example", content);
+        Assert.Contains("# Example", content);
+        Assert.Equal(1, SyncCommandTests.H1Count(content));
         Assert.DoesNotContain("{{PROJECT_NAME}}", content);
         Assert.Equal(before, File.ReadAllBytes(rootClaude));
     }
@@ -645,6 +663,9 @@ public class TemplateGeneratorTests
         Assert.Contains("Linear owns the live", content);
         Assert.Contains("code-writer", content);
         Assert.Contains("reviewer", content);
+        // The fallback role table is documentation of the live roster; a retired name in it sends
+        // a reader at a role that no longer compiles.
+        Assert.All(SyncCommand.RetiredManagedRoles, retired => Assert.DoesNotContain(retired, content));
         Assert.Contains("github.com/bodnarbalazs/dydo", content);
         Assert.DoesNotContain("PM system that lives in your repo", content);
         Assert.DoesNotContain("backlog", content, StringComparison.OrdinalIgnoreCase);

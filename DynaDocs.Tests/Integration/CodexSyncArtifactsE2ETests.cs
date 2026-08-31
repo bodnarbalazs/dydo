@@ -43,9 +43,11 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         {
             var claude = ReadFile($".claude/skills/{role}/SKILL.md");
             var codex = ReadFile($".agents/skills/{role}/SKILL.md");
+            // Same body on both hosts, modulo the host skill root the compiler writes into a
+            // link to the role's own resources.
             Assert.Equal(
-                FrontmatterParser.StripFrontmatter(claude),
-                FrontmatterParser.StripFrontmatter(codex));
+                SyncCommandTests.NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(claude)),
+                SyncCommandTests.NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(codex)));
             Assert.DoesNotContain('\r', claude);
             Assert.DoesNotContain('\r', codex);
         }

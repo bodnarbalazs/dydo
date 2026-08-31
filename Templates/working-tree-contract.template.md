@@ -14,9 +14,10 @@ worktree; commits touch owned paths only.
 ## 1. Open the feature
 
 Once per Project, at plan approval: the `manager` — or the human when the Project has none — creates
-`feature/<project-slug>` from an up-to-date `main`, writes the Project map into the Project
-description, and confirms every Issue carries its outcome, owned paths, blockers, exact gates and
-base branch. Issues are pickable only when all three are done.
+`feature/<project-slug>` from an up-to-date `main` (the repository's default branch, whatever it is
+named), writes the Project map into the Project description, and confirms every Issue carries its
+outcome, owned paths, blockers, exact gates and base branch. Issues are pickable only when all three
+are done.
 
 ## 2. Claim the Issue and open the tree
 
@@ -50,10 +51,10 @@ resource). A failed check is a comment on the Issue, never a workaround.
 
 ## 4. Land it, then release the tree
 
-Stage the paths you own by name; a whole-tree `git add` sweeps in someone else's half-finished work.
-The PR targets the feature branch (`gh pr create --base feature/<project-slug>`) and its body carries
-the review block. Merges into the feature branch are serial and `--no-ff`, one Issue at a time, each
-followed by a merge review; the feature branch reaches `main` through the human's hands.
+Stage the paths you own by name; a whole-tree `git add` stages what you do not own. The PR targets
+the feature branch (`gh pr create --base feature/<project-slug>`) and its body carries the review
+block. Merges into the feature branch are serial and `--no-ff`, one Issue at a time, each followed
+by a merge review; the feature branch reaches `main` through the human's hands.
 
 Once the merge has landed, whoever made the worktree removes it:
 

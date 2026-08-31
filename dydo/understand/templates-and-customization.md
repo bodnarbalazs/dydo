@@ -25,12 +25,13 @@ Skill and resource templates are mirrored into the project; workflow sources are
 installed documents stay framework-owned, and they are the only documents a later update compares
 against a stored hash: `reference/about-dynadocs.md`, `reference/dydo-commands.md`,
 `reference/dydo-glossary.md`, `reference/writing-docs.md`, `guides/how-to-use-docs.md` and
-`guides/working-tree-contract.md`. Everything else `dydo init` writes — `understand/about.md`,
+`guides/working-tree-contract.md`. Every other document `dydo init` writes — `understand/about.md`,
 `understand/architecture.md`, `guides/coding-standards.md`, `welcome.md`, `glossary.md`,
 `files-off-limits.md`, `index.md`, the hubs and folder meta files, `CLAUDE.md`, `AGENTS.md`, and
 `_system/template-additions/_README.md` beside its `extra-verify.md.example` — is written once and is
-the project's from then on. The one init output a later update still touches is
-`_system/types.json`, which is topped up rather than compared.
+the project's from then on. Two init outputs a later update still writes: `dydo.json`, where it
+refreshes the stored hashes and adds shipped defaults, and `_system/types.json`, which is topped up
+rather than compared.
 
 ## Authoring a role
 
@@ -88,12 +89,13 @@ nudge and scan-exclusion defaults to `dydo.json` and upgrades legacy OpenAI mode
 deletes a retired framework asset — today `_assets/dydo-diagram.svg` — when the copy on disk is one
 the framework wrote, keeping a modified copy as the project's own.
 
-`--diff` previews all of it without writing. `--force` covers the one case that stops: when a
-carried-over tag finds no place in the new text, the update skips that file and names the tag, and
-`--force` writes anyway — backing the file up first and saving what it could not place. A hash-clean
-copy left over from the 2.x `mode-<name>.template.md` naming is moved to its
-`skill-<name>.template.md` replacement, while a modified legacy file is kept and reported for you to
-rename, because `dydo sync` compiles only `skill-*` sources.
+`--diff` previews the file changes without writing; the `dydo.json` defaults are neither previewed
+nor applied under `--diff`. `--force` covers the one case that stops: when a carried-over tag finds
+no place in the new text, the update skips that file and names the tag, and `--force` writes anyway —
+backing the file up first and saving what it could not place. A hash-clean copy left over from the
+2.x `mode-<name>.template.md` naming is moved to its `skill-<name>.template.md` replacement, while a
+modified legacy file is kept and reported for you to rename, because `dydo sync` compiles only
+`skill-*` sources.
 
 That carry-over is not a durability mechanism: it runs only while the shipped text is unchanged, and
 it stores the hash of what it wrote, so the next update replaces the file and those tags with it. Two

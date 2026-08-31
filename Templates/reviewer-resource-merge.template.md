@@ -6,7 +6,7 @@ about it — at the scale of what landed: a two-file merge is minutes of mechani
 feature is not.
 
 Scope is what this merge created or exposed. A defect it neither touched nor uncovered goes back to
-the invoker as a note and no further.
+the invoker as an observation, outside the findings, and does not bind this verdict.
 
 ## Scale
 

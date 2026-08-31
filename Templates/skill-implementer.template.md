@@ -52,13 +52,13 @@ contract cannot supply.
 5. **Get the verdict.** A fresh `reviewer` per candidate, with the rubric the change targets.
    Findings return to step 4 for a new pass; a note is a finding and a finding is a FAIL.
    Complete on a PASS block — or, at a fifth consecutive FAIL on one candidate, on a raised hand.
-6. **Land it.** Spawned: the PR targets the feature branch with the review block in its body and on
-   the Issue, and the `manager` merges it in order; complete when the PR carries the block. Wearing
-   the hat yourself: merge into the feature branch — main for an atomic Issue — after its merge
-   review; complete on the merge SHA.
-7. **Clean up.** Spawned: push the branch, open its PR, then remove the worktree you made; the
-   `manager` deletes the branch at merge. Complete when the worktree is gone. Wearing the hat
-   yourself: once merged, delete your worktree and branch; complete when nothing of yours is left.
+6. **Land it.** Spawned: push the branch and open the PR against the feature branch, with the
+   review block in its body and on the Issue; the `manager` merges it in order; complete when the
+   PR carries the block. Wearing the hat yourself: merge into the feature branch — main for an
+   atomic Issue — after its merge review; complete on the merge SHA.
+7. **Clean up.** Spawned: remove the worktree you made; the `manager` deletes the branch at merge.
+   Complete when the worktree is gone. Wearing the hat yourself: once merged, delete your worktree
+   and branch; complete when nothing of yours is left.
 
 ## Return
 

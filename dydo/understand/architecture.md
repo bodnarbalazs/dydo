@@ -50,27 +50,15 @@ one under `dydo/_system/templates/`, and emits:
 | `.codex/agents/<role>.toml` | Codex | roles that emit an agent |
 | `.claude/workflows/<name>.js` from `Templates/workflow-<name>.js` | Claude Code | the only host with a workflow surface |
 
-Four guarantees the compiler owes a spawned agent
-([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10):
-
-- **The methodology arrives.** Every authored section survives into the compiled skill, `## Must-Reads`
-  included, and an agent definition is a thin identity wrapper that preloads its skill — `skills:` and
-  the `Skill` tool on Claude; on Codex, whose agents have no preload, an instruction to load the skill
-  by name.
-- **Its pointers resolve.** Links in the compiled body are rewritten to resolve from the folder the
-  skill was emitted into, and a `resources/<name>.md` link becomes the host's emitted path, so an
-  agent holding a preloaded skill with no folder to resolve against can still read its rubric.
-- **Tools match the declaration.** `read-only` withholds Edit and Write, `delegates` alone grants the
-  Agent tool so a worker cannot fan out, and `invocation: explicit` emits each host's opt-out from
-  model invocation.
-- **Retirement is swept.** A role, workflow, or resource dydo itself retires is removed from every
-  host's output on the next sync, so nothing orphaned keeps loading its description.
+The guarantees this compilation owes a spawned agent are
+[Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10's;
+what each frontmatter key compiles to is in [Customizing Roles](../guides/customizing-roles.md), and
+the pipeline — mirroring, update, cleanup — in
+[Templates and Customization](./templates-and-customization.md).
 
 `dydo template update` mirrors shipped skill and resource templates plus the framework-owned documents
 into the project and tracks each by content hash. Everything under `.claude/`, `.codex/`, and
-`.agents/` is a build product: change the source template and sync. See
-[Templates and Customization](./templates-and-customization.md) for the frontmatter keys and the
-update flow.
+`.agents/` is a build product: change the source template and sync.
 
 ## Knowledge and work boundary
 

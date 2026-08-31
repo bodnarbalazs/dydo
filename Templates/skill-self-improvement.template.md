@@ -42,7 +42,8 @@ Where the lever usually sits:
 - **Navigation**: how easy was it to find the right files? Are there hidden dependencies between them?
   Would a navigation pointer make it easier? _Use when_ finding a piece of information took a long time.
 - **Automated checks**: is there a check that could catch the error the agent made — linting, typing,
-  tests, a documentation check? _Use when_ the mistake was mechanical.
+  tests, a documentation check? _Use when_ the agent made a mistake that could have been caught by an
+  automated check.
 - **Coding standards**: should the review rubric be given a new rule to enforce, or an existing rule
   removed or clarified? _Use when_ a review passed a mistake it should have caught.
 - **Entry point size**: which steering instructions belong in a guide or an automated check instead?

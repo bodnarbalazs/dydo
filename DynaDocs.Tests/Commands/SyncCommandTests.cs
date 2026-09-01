@@ -146,6 +146,40 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
+    public void Execute_ImplementerToIssueCaptainMigration_SweepsLegacyArtifactsAndEmitsReplacement()
+    {
+        Assert.Contains("implementer", SyncCommand.RetiredManagedRoles);
+
+        var issueCaptain = Assert.Single(
+            RoleDefinitionService.DiscoverRoles(_testDir), role => role.Name == "issue-captain");
+        Assert.True(issueCaptain.EmitAgent);
+        Assert.True(issueCaptain.Delegates);
+
+        var legacyArtifacts = new[]
+        {
+            Path.Combine(_testDir, ".claude", "agents", "implementer.md"),
+            Path.Combine(_testDir, ".claude", "skills", "implementer", "SKILL.md"),
+            Path.Combine(_testDir, ".codex", "agents", "implementer.toml"),
+            Path.Combine(_testDir, ".agents", "skills", "implementer", "SKILL.md"),
+        };
+        foreach (var artifact in legacyArtifacts)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(artifact)!);
+            File.WriteAllText(artifact, "legacy generated content");
+        }
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.All(legacyArtifacts, artifact => Assert.False(File.Exists(artifact), artifact));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "issue-captain.md")));
+        Assert.True(File.Exists(Path.Combine(
+            _testDir, ".claude", "skills", "issue-captain", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "issue-captain.toml")));
+        Assert.True(File.Exists(Path.Combine(
+            _testDir, ".agents", "skills", "issue-captain", "SKILL.md")));
+    }
+
+    [Fact]
     public void Execute_RetiredWorkflow_RemovesTheStaleRunSprintScript()
     {
         var stale = Path.Combine(_testDir, ".claude", "workflows", "run-sprint.js");
@@ -546,6 +580,7 @@ public class SyncCommandTests : IDisposable
     // for either the read-only or the read-write branch.
     [Theory]
     [InlineData("reviewer")]
+    [InlineData("planner")]
     [InlineData("code-writer")]
     public void SyncCodexRole_OmitsToolsField(string roleName)
     {
@@ -584,6 +619,7 @@ public class SyncCommandTests : IDisposable
     // guarantee the Skill tool is available, and `skills:` is what preloads the skill's content.
     [Theory]
     [InlineData("reviewer")]
+    [InlineData("planner")]
     [InlineData("code-writer")]
     [InlineData("test-writer")]
     [InlineData("docs-writer")]
@@ -1108,11 +1144,8 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCommand_Run_GeneratesPlannerSkill_ButNoPlannerAgent()
+    public void SyncCommand_Run_GeneratesSpawnablePlannerAndBothTargets()
     {
-        // Decision 024: planner is skill-only. `dydo sync` emits its SKILL.md so a session can
-        // apply the planning methodology, but never an agent definition — there is no planner
-        // sub-agent to spawn.
         var originalDir = Directory.GetCurrentDirectory();
         try
         {
@@ -1123,8 +1156,23 @@ public class SyncCommandTests : IDisposable
 
             Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "planner", "SKILL.md")),
                 "planner skill must be generated");
-            Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")),
-                "planner must NOT get a native agent definition");
+            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")),
+                "planner must get a native agent definition");
+            Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "planner.toml")));
+
+            var expectedResources = new[] { "issue.md", "project.md" };
+            foreach (var resourceDirectory in new[]
+            {
+                Path.Combine(_testDir, ".claude", "skills", "planner", "resources"),
+                Path.Combine(_testDir, ".agents", "skills", "planner", "resources"),
+            })
+            {
+                var actualResources = Directory.GetFiles(resourceDirectory)
+                    .Select(Path.GetFileName)
+                    .OrderBy(name => name, StringComparer.Ordinal)
+                    .ToArray();
+                Assert.Equal(expectedResources, actualResources);
+            }
         }
         finally
         {
@@ -1133,13 +1181,18 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncSkillOnlyRole_WritesSkillButNoAgent()
+    public void SyncRole_PlannerWritesAgentAndSkillForBothHosts()
     {
         var planner = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "planner");
-        SyncCommand.SyncSkillOnlyRole(planner, _testDir);
+        Assert.True(planner.EmitAgent);
+
+        SyncCommand.SyncRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
 
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "planner", "SKILL.md")));
-        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "planner", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "planner.toml")));
     }
 
     [Fact]
@@ -1317,7 +1370,8 @@ public class SyncCommandTests : IDisposable
 
     [Theory]
     [InlineData("reviewer", "gpt-5.6-sol")]
-    [InlineData("implementer", "gpt-5.6-sol")]
+    [InlineData("planner", "gpt-5.6-sol")]
+    [InlineData("issue-captain", "gpt-5.6-sol")]
     [InlineData("code-writer", "gpt-5.6-terra")]
     [InlineData("docs-writer", "gpt-5.6-terra")]
     public void ResolveModel_OpenAiDefault_UsesRoleTier(string roleName, string expectedModel)
@@ -1458,7 +1512,7 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var role in new[] { "planner", "co-thinker", "chief-of-staff" })
+            foreach (var role in new[] { "co-thinker", "chief-of-staff" })
             {
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")),
                     $"missing coordinating skill: {role}");
@@ -1473,7 +1527,6 @@ public class SyncCommandTests : IDisposable
     }
 
     [Theory]
-    [InlineData("planner")]
     [InlineData("co-thinker")]
     [InlineData("chief-of-staff")]
     public void SkillOnlyRoles_CompileWithoutTheRetiredTierDoctrine(string roleName)

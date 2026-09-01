@@ -50,9 +50,9 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 - **Role** — an authored skill source compiled by dydo: a hat, a worker, a method, or a human command.
 - **Skill** — the runtime package of a role's methodology and resources.
-- **Agent** — a native-platform instance of a spawned role: a worker, or an implementer a manager
+- **Agent** — a native-platform instance of a spawned role: a worker, or an Issue Captain a manager
   keeps in flight.
-- **Hat** — what a session is doing now: co-thinker, planner, implementer, manager, or
+- **Hat** — what a session is doing now: co-thinker, planner, issue-captain, manager, or
   chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
   spawned it: code-writer, test-writer, docs-writer, reviewer, inquisitor, research.
@@ -77,7 +77,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   integrated state that also proves the plan's acceptance criteria at a feature's final merge.
 - **Inquisition** — a rare, human-confirmed audit: inquisitors across lenses, the reviewer as judge,
   and an assimilation brief. It catches what got through; it does not prove zero defects.
-- **Review block** — the reviewer's whole return, and the only thing that fills an implementer's
+- **Review block** — the reviewer's whole return, and the only thing that fills an Issue Captain's
   review slot: rubric, reviewer label and model, candidate and base SHA, verdict, the gates rerun
   with their results, and findings as `file:line → consequence → correction`. It is posted as a
   comment on the Issue and carried in the PR body.
@@ -96,7 +96,7 @@ These words survive only in older documents. Campaign, Sprint, Slice, Task, Tick
 separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initiative, Project, and
 Issue where work is live, though a slice may still name an implementation technique and a task a
 question Issue's type. Tier-1 manager, orchestrator, and the run-sprint workflow (internally
-run-issues) gave way to the hats — a manager coordinates one Project, an implementer owns one
+run-issues) gave way to the hats — a manager coordinates one Project, an Issue Captain owns one
 Issue. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the question Issues above. Integrated audit is replaced
 by the three reviews above. None of these words creates a file, command, lifecycle, or Linear type.

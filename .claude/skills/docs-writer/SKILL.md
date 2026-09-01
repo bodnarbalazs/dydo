@@ -18,7 +18,7 @@ Make one documentation change true.
 Every sentence you write is a claim, and every claim needs a **witness** in the repository: code,
 configuration, a Decision Record, the Issue, the audit evidence you were handed. Where the witness is
 missing, return the gap instead. Edit the canonical source and let regeneration produce the rest; the
-implementer that spawned you owns review, integration, and follow-up work, and you own the words.
+Issue Captain that spawned you owns review, integration, and follow-up work, and you own the words.
 
 ## Method
 
@@ -35,6 +35,6 @@ implementer that spawned you owns review, integration, and follow-up work, and y
 
 ## Return
 
-The implementer consumes this: files changed, what each now says and why, the witness behind any claim
+The Issue Captain consumes this: files changed, what each now says and why, the witness behind any claim
 a reader could doubt, `dydo check` and gate results, and anything you noticed and left outside scope.
 For an assimilation brief, add its path and every heading that came back `None`.

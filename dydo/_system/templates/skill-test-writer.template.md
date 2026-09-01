@@ -22,9 +22,9 @@ A good test is a contract: write the one a caller can rely on.
 
 ## Boundary
 
-Implement stage: the implementer spawns you while it owns the Issue and consumes what you return.
+Implement stage: the Issue Captain spawns you while it owns the Issue and consumes what you return.
 Source code is read-only here: prove behaviour and report what the code does. A defect you uncover is
-a finding for the implementer, not a repair you make.
+a finding for the Issue Captain, not a repair you make.
 
 ## Method
 
@@ -50,6 +50,6 @@ a finding for the implementer, not a repair you make.
 
 ## Return
 
-Report to the implementer: the Issue key and title; each test added or changed with the claim it pins
+Report to the Issue Captain: the Issue key and title; each test added or changed with the claim it pins
 and the seam it sits at; the exact gates run and their results; for a hypothesis, `confirmed`, `not
 reproduced` or `inconclusive` with the observation that decided it; and any finding it must route.

@@ -47,7 +47,7 @@ Every item below is a FAIL when it holds.
   lines that change no behaviour.
 - **Upstream text altered without a binding reason** — Linear, dydo and host bindings are the whole
   licence, and the attribution comment stays.
-- **A return shape its consumer cannot parse** — the review block, the implementer's review slot,
+- **A return shape its consumer cannot parse** — the review block, the Issue Captain's review slot,
   the inquisitor's confirmed | plausible | refuted at high | medium | low.
 - **A link that will not exist after regeneration.** Resource bodies are copied verbatim and climb
   from `resources/`; resolve every path from the emitted folder on both hosts.

@@ -39,7 +39,7 @@ Decision Records carry decisions, and the two are linked rather than copied.
   as fog clears, and sends it back for review only when scope, acceptance criteria or the Issue map
   move.
 - **Issue** — high resolution, just in time: files to touch, the pattern to copy with its path, steps,
-  edge cases, exact gates — until building is mechanical. The implementer writes it into the Issue as
+  edge cases, exact gates — until building is mechanical. The Issue Captain writes it into the Issue as
   its first act, and it is reviewed together with the code it produced. A separate plan review before
   any code exists happens only for an Issue the Project plan flags as architecture-sensitive.
 
@@ -66,7 +66,7 @@ the [Work Model](./work-model.md); the review block's fields are locked in the
 
 ## Raising a hand
 
-The ladder runs worker → implementer → manager → human, and agents settle operational conflicts
+The ladder runs worker → Issue Captain → manager → human, and agents settle operational conflicts
 themselves by precedence, highest first: the human's live instruction, a Decision Record, the reviewed
 Project plan at its governing commit, the Issue contract, coding standards, existing code. The human
 is reached only for a conflict with a Decision Record — is it truth, or is it obsolete? — for live
@@ -79,7 +79,7 @@ blocker with the Issue moved to Blocked. Never silent waiting.
 
 Plan approval; HITL question Issues; an escalation that survived the ladder; confirming an
 inquisition; and the feature → main merge. Harmonization happens on main afterwards and is not a
-gate. An atomic Issue with no Project branches from main and is merged by its own implementer after
+gate. An atomic Issue with no Project branches from main and is merged by its own Issue Captain after
 Issue review and merge review.
 
 Linear status is the only delivery status. dydo does not copy it into frontmatter, infer it from Git,

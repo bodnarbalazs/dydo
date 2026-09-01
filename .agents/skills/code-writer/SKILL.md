@@ -20,7 +20,7 @@ Implement one reviewed Issue exactly: red first, then the smallest change that t
 ## Boundary
 
 No reviewed intent, no code: build only what the Issue and its plan already settle, inside the owned
-paths. Review, integration and open contract questions are the implementer's — raise them there.
+paths. Review, integration and open contract questions are the Issue Captain's — raise them there.
 
 ## Method
 
@@ -45,5 +45,5 @@ failure rather than working around it.
 
 ## Return
 
-Hand the implementer the Issue key, the changed files, the behaviour delivered, exact gate results,
+Hand the Issue Captain the Issue key, the changed files, the behaviour delivered, exact gate results,
 and any contract deviation or adjacent finding for it to route.

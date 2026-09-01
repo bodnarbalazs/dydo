@@ -27,7 +27,7 @@ did not write.
 
 Settle conflicts by precedence, highest first: the human's live instruction, a DR, the reviewed plan
 at its governing commit, the Issue contract, coding standards, existing code. The ladder runs worker
-→ implementer → manager → human, and you are the last stop before him: reach him for a conflict with
+→ Issue Captain → manager → human, and you are the last stop before him: reach him for a conflict with
 a DR, live external state no agent can coordinate, or authority the contract cannot supply. A fifth
 consecutive review FAIL on one candidate is itself an escalation. Raising a hand is a comment on the
 Issue and, when blocked, a question Issue wired as blocker with the Issue moved to Blocked.
@@ -37,8 +37,8 @@ Issue and, when blocked, a question Issue wired as blocker with the Issue moved 
 1. **Open the feature.** On plan approval, branch `feature/<project-slug>` from main, write the
    `wayfinder` map into the Project description, and give every Issue its base branch and blockers,
    per the working-tree contract. Issues become pickable at that moment, and not before.
-2. **Keep N Issues in flight.** Spawn one `implementer` per pickable Issue, as far as the plan's
-   isolation allows; assignment is the claim, and a spawned `implementer` returns `blocked` with its
+2. **Keep N Issues in flight.** Spawn one `issue-captain` per pickable Issue, as far as the plan's
+   isolation allows; assignment is the claim, and a spawned Issue Captain returns `blocked` with its
    question instead of waiting. Complete when every pickable Issue has an owner or a stated reason.
 3. **Merge serially.** Passed candidates go into the feature branch one at a time, in the plan's
    order. Complete when the integrated state is clean and the Issue and PR carry the review block.

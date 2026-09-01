@@ -7,7 +7,7 @@ description: The tight loop that goes red. Use when a defect needs diagnosing â€
 
 # Diagnosing Bugs
 
-A discipline for hard bugs. Skip a phase only when you can say why. Implement stage: the implementer
+A discipline for hard bugs. Skip a phase only when you can say why. Implement stage: the Issue Captain
 reaches for this when its Issue is a defect.
 
 **Redact every secret** before you show a command, an output or a captured artifact: write `<REDACTED>`
@@ -113,5 +113,5 @@ Declare the bug done when:
 ## Return
 
 The bug's evidence: the red command with its redacted output, the minimised repro, the hypothesis that
-held, the regression test or the missing-seam finding, and the Phase 6 checklist. The implementer posts
+held, the regression test or the missing-seam finding, and the Phase 6 checklist. The Issue Captain posts
 it on the Issue and carries it into review.

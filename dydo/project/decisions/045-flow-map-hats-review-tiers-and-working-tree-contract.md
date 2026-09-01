@@ -49,7 +49,7 @@ types.
 | Think | co-thinker | grilling, domain-modeling, research | ripe intent; a DR when the ADR test passes | — |
 | Chart *(foggy Projects)* | planner, using wayfinder | grilling, research, prototype | Linear Project as map; question Issues | — |
 | Plan | planner | codebase-design, writing-good-briefs | atomic Issue, or Project plan + Issue map | reviewer (plan) → human approval |
-| Implement | implementer | code/test/docs-writer as optional workers, tdd, diagnosing-bugs | Issue branch, PR into the feature branch, evidence on the Issue | reviewer PASS (review block) |
+| Implement | issue-captain | code/test/docs-writer as optional workers, tdd, diagnosing-bugs | Issue branch, PR into the feature branch, evidence on the Issue | reviewer PASS (review block) |
 | Coordinate *(optional)* | manager | wayfinder, research | N Issues in flight, serial merges, plan amendments | merge review after every merge |
 | Audit *(rare)* | inquisition workflow | inquisitors × lenses, reviewer as judge, docs-writer | audit + assimilation brief | human confirms before it runs |
 | Land | human | walkthrough | feature → main | human's hands |
@@ -60,8 +60,8 @@ self-improvement, writing-for-agents, diagnosing-bugs, bro.
 
 ### 2. Taxonomy
 
-- **Hats** (what a session is doing now): co-thinker · planner · implementer · manager · chief-of-staff.
-- **Workers** (spawned, `emit: agent`): code-writer · test-writer · docs-writer · reviewer ·
+- **Hats** (what a session is doing now): co-thinker · planner · issue-captain · manager · chief-of-staff.
+- **Workers** (spawned execution roles, `emit: agent`): code-writer · test-writer · docs-writer · reviewer ·
   inquisitor · research.
 - **Methods** (model-invoked reference and procedure used inside other skills): grilling · wayfinder ·
   domain-modeling · codebase-design · diagnosing-bugs · prototype · writing-for-agents ·
@@ -72,18 +72,22 @@ self-improvement, writing-for-agents, diagnosing-bugs, bro.
 - **Rubrics** (reviewer resources): code · tests · docs · plan · merge.
 - **Planner resources:** project · issue.
 
+The **planner** remains a hat and also compiles as a spawnable agent (`emit: agent`), bound to the
+strong tier. Its invoker names exactly one target: `project` for the low-resolution Project route and
+Issue map, or `issue` for the just-in-time route that makes implementation mechanical.
+
 Renames and moves: `orchestrator` retires; **manager** owns one Project's delivery and never
-implements. **implementer** is new: the hat a top-level session wears when it picks a ticket, owning one Issue
+implements. **Issue Captain** is new: the hat a top-level session wears when it picks an Issue, owning it
 end to end and delegating to workers — one worker by default, fan-out only for disjoint sub-tasks.
 It also compiles as a spawnable agent (`emit: agent`, `delegates: true`) so a manager can keep N
-Issues in flight as sub-agents; a spawned implementer returns `blocked` with its question instead of
+Issues in flight as sub-agents; a spawned Issue Captain returns `blocked` with its question instead of
 waiting on the human. The same skill serves both spawners; the Issue is the shared state and
 assignment is the claim. **wayfinder** stops
 being an identity and becomes a method consumed by the planner (charting) and the manager (working the
-map). `run-issues` retires; its loop becomes the implementer's completion criterion. Imported from
+map). `run-issues` retires; its loop becomes the Issue Captain's completion criterion. Imported from
 mattpocock/skills at `6654f6b6`, adapted: diagnosing-bugs, research, codebase-design, domain-modeling,
 prototype, handoff, teach, improve-codebase-architecture, and `SKILL-MECHANICS` as a writing-for-agents
-resource. New and dydo-native: implementer, walkthrough, the working-tree contract guide.
+resource. New and dydo-native: Issue Captain, walkthrough, the working-tree contract guide.
 
 ### 3. Three review tiers and the review block
 
@@ -99,7 +103,7 @@ resource. New and dydo-native: implementer, walkthrough, the working-tree contra
 
 The reviewer's return is a fixed **review block**: rubric, reviewer label and model, candidate and base
 SHA, verdict PASS/FAIL, gates rerun with results, findings as file:line → consequence → correction.
-The implementer's own return has a slot only this block can fill. The block is posted as a comment on
+The Issue Captain's own return has a slot only this block can fill. The block is posted as a comment on
 the Linear Issue and pasted into the PR body; a guard nudge on `gh pr create` checks for it at warn
 severity, escalating to block only if discipline erodes (DR 042's rule). Independence of *context* is
 the requirement; same-vendor review with the reviewer bound to the strong tier is acceptable, and the
@@ -133,23 +137,24 @@ blocking does the pickup.
   manager as fog clears, as dated amendment sections; re-reviewed only when scope, acceptance
   criteria or the Issue map change.
 - **`issue`** — high resolution, just in time: files to touch, the pattern to copy with its path,
-  steps, edge cases, exact gates — until implementation is mechanical. Written into the Issue by the
-  **implementer as its first step**; reviewed together with the code. A separate plan review before
-  code happens only for Issues the Project plan flags as architecture-sensitive.
+  steps, edge cases, exact gates — until implementation is mechanical. Authored in the Issue by a
+  spawned `planner(issue)` at the Issue Captain's direction, then implemented by delegated writers
+  and reviewed with their code. A separate plan review before code happens only for Issues the
+  Project plan flags as architecture-sensitive.
 
 Every implementation Issue carries as required fields: outcome, owned paths, blockers, exact gates,
 base branch.
 
 ### 6. Escalation ladder and precedence order
 
-Worker → implementer → manager → human. Agents resolve operational conflicts themselves by this
+Worker → Issue Captain → manager → human. Agents resolve operational conflicts themselves by this
 precedence: the human's live instruction > DR > reviewed Project plan at its governing commit > Issue
 contract > coding standards > existing code. The human is reached only for a conflict with a DR (which
 is truth, or is the DR obsolete?), live external state agents cannot coordinate, or authority the
 contract cannot supply. Raising a hand means a comment on the Issue and, when blocked, a question
 Issue wired as blocker with the Issue moved to Blocked — never silent waiting. A fifth consecutive
 review FAIL on the same candidate is itself an escalation: stop looping and raise. The retired
-`run-issues` workflow enforced this cap in code; the implementer and manager carry it as prose.
+`run-issues` workflow enforced this cap in code; the Issue Captain and manager carry it as prose.
 There is no "PASS with notes" — a note is a finding, and a finding is a FAIL; the cap, not a
 softened verdict, is the relief valve.
 
@@ -157,11 +162,11 @@ softened verdict, is the relief valve.
 
 Plan approval; HITL question Issues; escalations that survive the ladder; inquisition confirmation;
 the feature → main merge. Harmonization happens on main afterwards and is not a gate. Atomic Issues
-(no Project) branch from main and are merged by their implementer after Issue review and merge review.
+(no Project) branch from main and are merged by their Issue Captain after Issue review and merge review.
 
 ### 8. Working-tree contract
 
-One guide, `dydo/guides/working-tree-contract.md`, pointed at by implementer, manager, chief-of-staff
+One guide, `dydo/guides/working-tree-contract.md`, pointed at by issue-captain, manager, chief-of-staff
 and the planner's `issue` resource, so no agent invents its own habits:
 
 - At plan approval the manager (or the human when there is no manager) opens the feature: creates
@@ -171,7 +176,7 @@ and the planner's `issue` resource, so no agent invents its own habits:
   atomic Issues); the key in the name lets Linear's GitHub integration attach branch and PR.
 - Worktree location is host-managed; base SHA, branch and worktree path are posted on the Issue
   before the first edit. One writer per worktree; commits touch owned paths only.
-- The PR targets the feature branch and carries the review block. After merge the implementer deletes
+- The PR targets the feature branch and carries the review block. After merge the Issue Captain deletes
   its worktree and branch. The chief-of-staff sweeps orphans on its board-hygiene pass.
 
 ### 9. Invocation policy
@@ -193,7 +198,8 @@ is; explicit-only descriptions are a punchy human-facing line.
   points is an ownership rule, not enforcement.
 - `dydo sync` keeps `## Must-Reads` in the compiled body of every role and rewrites its links to
   resolve from the emitted skill folder; `{{include:extra-must-reads}}` therefore works again for all
-  roles. The dead `planner` model binding is removed. The `merge-sprint` resource is renamed `merge`.
+  roles. The spawnable `planner` is bound to the strong tier. The `merge-sprint` resource is renamed
+  `merge`.
 - Compiled agent definitions are thin identity wrappers over their skill, and the compiler must make
   the skill actually reach the spawned agent. Verified against the Claude Code documentation
   (2026-08-30): a custom subagent receives the full `CLAUDE.md` hierarchy; a `tools:` allowlist that
@@ -224,13 +230,13 @@ structure, invocation metadata and role boundaries, never prose.
 - Cross-vendor adversarial review is deferred; a cron-driven cross-vendor reviewer is a FutureFeature
   candidate once stateless spawning is routine.
 - The system described here does not yet exist. The Project that builds it runs hands-on under the
-  current tooling; its own plan must not assume implementer, manager or the protected tier are live.
+  current tooling; its own plan must not assume issue-captain, manager or the protected tier are live.
 
 ## Supersedes and amends
 
-Amends DR 026 (Tier-1 managers doctrine): hats replace fixed tiers, and the implementer is a
+Amends DR 026 (Tier-1 managers doctrine): hats replace fixed tiers, and the Issue Captain is a
 first-class top-level hat that delegates. Amends DR 041's interim "how work runs" section: workers
-are host-native sub-agents of an implementer, not `codex exec` sessions the human babysits. Amends DR
+are host-native sub-agents of an Issue Captain, not `codex exec` sessions the human babysits. Amends DR
 042: slice files become `issue`-resolution plans in the Linear Issue; the no-code-without-reviewed-intent
 rule stands. Amends DR 044: Waypoint is retired rather than optional; the three review tiers replace
 the single "integrated audit" phrase; question Issues are the fog-clearing unit.

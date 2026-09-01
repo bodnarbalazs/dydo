@@ -72,7 +72,7 @@ public class WayfinderHarmonyTests : IDisposable
     }
 
     // DR 045 section 11 retires the Waypoint ontology from the vocabulary, and nothing else in
-    // the navigation wording: the same DR calls the implementer the hat a top-level session
+    // the navigation wording: the same DR calls the Issue Captain the hat a top-level session
     // wears, and makes wayfinder a method other roles invoke. Banning those phrases would fail
     // DR-conformant prose.
     [Fact]

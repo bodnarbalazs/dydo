@@ -40,7 +40,7 @@ durable knowledge this Project owes dydo.
 root in the Issue's worktree, and what its evidence must prove>
 ## 5. Ordering and isolation — <kickoff acts, merge order, which Issues run in parallel, and every hot
 file owned by one Issue at a time>
-## 6. Watch-outs — <the mistakes this Project's implementers and reviewers would otherwise make>
+## 6. Watch-outs — <the mistakes this Project's Issue Captains and reviewers would otherwise make>
 ## Not yet specified — <in-scope fog too vague to state as a question; omit the section when clear>
 ```
 

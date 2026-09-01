@@ -850,7 +850,7 @@ public static class TemplateGenerator
             | Role | Shape | Purpose |
             |------|-------|---------|
             | `co-thinker` | skill | Explore ideas, scope requirements |
-            | `planner` | skill | Turn intent into reviewed plans |
+            | `planner` | agent + skill | Turn intent into reviewed plans |
             | `chief-of-staff` | skill | Triage Linear and route work |
             | `code-writer` | agent + skill | Implement features |
             | `test-writer` | agent + skill | Write tests, report bugs |

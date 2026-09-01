@@ -5,76 +5,88 @@ type: guide
 
 # Working-Tree Contract
 
-How parallel agents open, claim, isolate and clean up branches and worktrees so concurrent work never
-tangles.
+The bird's-eye view of how a Project moves through branches and worktrees. Managers use it to know
+what to expect from Issue Captains and their lane workers; Issue Captains use it to know what they own
+and what they hand back. The `chief-of-staff` audits failures of this contract, not routine cleanup.
 
-Assignment is the **claim**: public, exclusive, released by hand once the work lands. One writer per
-worktree; commits touch owned paths only.
+## Invariants
 
-## 1. Open the feature
+- Linear assignment is the **claim**. One Issue Captain owns the parent Issue and its integrated outcome
+  end to end.
+- Every parent Issue has an isolated integration worktree. Independently trackable parallel lanes may
+  become direct Sub-issues, each with an isolated branch and worktree. Workers write only the disjoint
+  paths their Issue Captain grants.
+- Commits touch owned paths only. The Issue Captain owns the whole diff, including worker edits.
+- Branch, base SHA and worktree path are posted on the relevant Issue or Sub-issue before the first edit.
+- Project Issues integrate serially through their feature branch; the human alone lands the feature on
+  `main`/`master` (the repository's default branch, whatever it is named).
 
-Once per Project, at plan approval: the `manager` — or the human when the Project has none — creates
-`feature/<project-slug>` from an up-to-date `main` (the repository's default branch, whatever it is
-named), writes the Project map into the Project description, and confirms every Issue carries its
-outcome, owned paths, blockers, exact gates and base branch. Issues are pickable only when all three
-are done.
+## Branches and targets
 
-## 2. Claim the Issue and open the tree
+| Work | Branches from | Branch | PR targets | Merger |
+|---|---|---|---|---|
+| Project | `main` | `feature/<project-slug>` | `main` | human |
+| Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | `manager` |
+| Atomic Issue | `main` | `DYD-123-<slug>` | `main` | `issue-captain` |
+| Lane Sub-issue | its parent Issue branch | `DYD-124-<slug>` | its parent Issue branch | `issue-captain` |
 
-Assign the Issue to yourself and move it to In Progress; nothing else claims work. Branch off the
-Issue's base branch as `DYD-123-<slug>` (an example key — use the Issue's own): the key in the name
-is what lets Linear's GitHub integration attach the branch and the PR. When the host isolates
-sessions it hands you a worktree; otherwise make one beside the repository:
+`DYD-123` is an example: use the Issue's key so Linear attaches the branch and PR. The host may
+provide the Issue worktree; otherwise place it beside the repository at
+`../<repo>.worktrees/DYD-123-<slug>`.
 
-```bash
-git worktree add -b DYD-123-<slug> ../<repo>.worktrees/DYD-123-<slug> <base-branch>
-git -C ../<repo>.worktrees/DYD-123-<slug> rev-parse HEAD   # the base SHA
-```
+## Who does what
 
-Post branch, base SHA and worktree path on the Issue **before the first edit**. Until that comment
-exists the claim is invisible, and a second writer can land on the same files.
+| Stage | Owner | Required state |
+|---|---|---|
+| Open the Project | `manager`, or the human when there is none | Feature branch exists; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
+| Claim the Issue | `issue-captain` | Issue is assigned and In Progress; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. |
+| Resolve the work | `issue-captain` | The Issue-resolution plan makes the work mechanical; workers receive disjoint paths and exact gates; independently trackable parallel lanes become direct Sub-issues. |
+| Open a parallel lane | `issue-captain` | The Sub-issue carries its own status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
+| Build and prove | workers | Changes stay inside owned paths; exact gates pass; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
+| Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
+| Integrate a Project Issue | `manager` | Passed PRs merge one at a time, in plan order and with `--no-ff`; each merge is followed by a fresh merge review over the integrated feature branch. |
+| Integrate an Atomic Issue | `issue-captain` | Issue review passes; the PR merges to `main`; a fresh merge review follows over the integrated state. |
+| Land the Project | human | The reviewed feature branch merges to `main`. |
 
-## 3. Check the environment
+## Before the first edit
 
-The `implementer` runs this before its first edit and before spawning any worker:
+Before the first edit in a parent Issue or lane, its assigned writer proves all five checks and comments
+on that work item instead of working around a failure:
 
-```bash
-git rev-parse --abbrev-ref HEAD                          # DYD-123-<slug>
-git rev-parse --show-toplevel                            # the worktree, not the main checkout
-git merge-base --is-ancestor <base-sha> HEAD && echo ok  # the posted base is in this history
-git status --porcelain                                   # empty
-```
+1. `HEAD` is on the relevant Issue or Sub-issue branch.
+2. The repository root is the isolated worktree, not the main checkout.
+3. The posted base SHA is an ancestor of `HEAD`.
+4. The worktree is clean.
+5. The work item owns every path named in its plan.
 
-Owned paths are the fifth check and the only one Git cannot answer: take them from the Issue, and
-name every file in the Issue-resolution plan you write as step one (the `planner`'s `issue`
-resource). A failed check is a comment on the Issue, never a workaround.
+## Delegation
 
-## 4. Land it, then release the tree
+- Workers inherit the relevant Issue or Sub-issue contract, owned paths and gates. They do not create
+  its branch, open its PR, merge it or review their own work.
+- Fan-out is safe only across disjoint paths. Each independently trackable parallel lane is a direct
+  Sub-issue of the captain's Issue; Sub-issues never have children. If a lane needs splitting, replace
+  it with sibling lanes under the parent Issue.
+- An agent invocation is recorded as comments and evidence on the relevant Issue or Sub-issue, never
+  as another child. Successive agents may work through the same record.
+- The Issue Captain resolves every collision, integrates review-passed lane branches into the parent
+  Issue branch and stages owned paths by name; a whole-tree add can capture another writer's work.
+- The Issue Captain consumes every worker return and remains accountable for the Issue, evidence and
+  complete diff. After integration it proves the combined state and obtains the final parent review.
 
-Stage the paths you own by name; a whole-tree `git add` stages what you do not own. The PR targets
-the feature branch (`gh pr create --base feature/<project-slug>`) and its body carries the review
-block. Merges into the feature branch are serial and `--no-ff`, one Issue at a time, each followed
-by a merge review; the feature branch reaches `main` through the human's hands.
+## Cleanup
 
-Cleanup splits by path. **Spawned:** before returning `done`, the `implementer` pushes the branch,
-opens the PR and removes the worktree it made — branch and PR carry the work — and whoever merges
-the PR (the `manager`) deletes the Issue branch with it. **Wearing the hat:** the `implementer`
-removes its worktree and branch once the merge has landed. The commands:
+| Artifact | Accountable | Completion |
+|---|---|---|
+| Parent Issue and lane worktrees | `issue-captain` | Every worktree it or its workers created is removed. A spawned Issue Captain first pushes the parent branch and opens its PR so the work survives its return. |
+| Integrated lane Sub-issue branch | `issue-captain` | The branch is deleted after it passes review and is integrated into the parent Issue branch. |
+| Merged Project-Issue branch | `manager` | The branch is deleted after the merge. |
+| Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the merge. |
+| Merged feature branch | `manager` | The branch is deleted after the human lands it. |
 
-```bash
-git worktree remove ../<repo>.worktrees/DYD-123-<slug>
-git branch -d DYD-123-<slug>
-```
-
-On Windows a worktree that has been built in can refuse removal with `Filename too long`: delete the
-folder with `rm -rf` and run `git worktree prune` instead. Whatever survives is swept by the
-`chief-of-staff` on its board-hygiene pass, against `git worktree list` and `git branch --merged`.
-
-## Atomic Issues
-
-An Issue with no Project has no feature branch: it branches from `main`, its PR targets `main`, and
-its `implementer` merges it after Issue review and merge review. Every other step is unchanged.
+The `chief-of-staff` compares `git worktree list` and merged branches with Linear during board hygiene.
+Anything it finds is a contract failure to clear or route with its owner named, not normal cleanup
+delegated to staff.
 
 ## Related
 
-- [dydo Glossary](../reference/dydo-glossary.md) — Locked delivery vocabulary
+- [dydo Glossary](../reference/dydo-glossary.md) — locked delivery vocabulary

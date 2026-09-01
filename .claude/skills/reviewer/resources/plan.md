@@ -18,7 +18,7 @@ Issue closes its own outcome, owned paths, blockers, exact gates and base branch
 2. **Verify claims against the codebase.** Read the cited paths and patterns at the proposed governing
    commit. A plan that misdescribes the code it intends to change is the highest-value catch this
    review makes.
-3. **Read every planned Issue as its implementer.** From its five fields — outcome, owned paths,
+3. **Read every planned Issue as its Issue Captain.** From its five fields — outcome, owned paths,
    blockers, exact gates, base branch — plus the section it cites, each row must become a
    self-contained Linear contract that needs no further architectural decision. Interpretive latitude
    is a finding.

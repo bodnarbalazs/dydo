@@ -19,7 +19,7 @@ A session is not a type. It wears the hat the work is in now, and changes hats a
 | Think | co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
 | Chart a foggy Project | planner, using wayfinder | the Linear Project as a map, and question Issues | — |
 | Plan | planner | an atomic Issue, or a Project plan and its Issue map | plan review, then the human's approval |
-| Implement | implementer | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
+| Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
 | Coordinate (optional) | manager | several Issues in flight, serial merges, plan amendments | merge review after every merge |
 | Audit (rare) | inquisition workflow | an audit and an assimilation brief | the human confirms before it runs |
 | Land | the human | the feature branch merged into main | the human's own hands |

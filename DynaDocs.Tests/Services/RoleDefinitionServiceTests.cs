@@ -125,13 +125,13 @@ public class RoleDefinitionServiceTests : IDisposable
     {
         var roles = RoleDefinitionService.DiscoverRoles(_testDir).ToDictionary(r => r.Name);
 
-        // Workers emit agent + skill.
+        // Spawnable roles emit agent + skill; planner remains usable as a session hat too.
+        Assert.True(roles["planner"].EmitAgent);
         Assert.True(roles["code-writer"].EmitAgent);
         Assert.True(roles["reviewer"].EmitAgent);
         Assert.True(roles["test-writer"].EmitAgent);
         Assert.True(roles["docs-writer"].EmitAgent);
-        // Coordinating methodologies are skill-only.
-        Assert.False(roles["planner"].EmitAgent);
+        // The remaining coordinating methodologies are skill-only.
         Assert.False(roles["co-thinker"].EmitAgent);
         Assert.False(roles["chief-of-staff"].EmitAgent);
         Assert.False(roles["self-improvement"].EmitAgent);

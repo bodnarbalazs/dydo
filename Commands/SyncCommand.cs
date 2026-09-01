@@ -32,10 +32,10 @@ public static partial class SyncCommand
     // prunes an already-mirrored copy as stale, and the sweep below removes whatever it last
     // compiled. A project that authors its own skill template of that name keeps the role and
     // suppresses its cleanup. This is deliberately not a generic output-directory cleaner.
-    internal static readonly string[] RetiredManagedRoles = ["sprint-auditor", "orchestrator"];
+    internal static readonly string[] RetiredManagedRoles = ["sprint-auditor", "orchestrator", "implementer"];
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
-    // implementer's completion criterion). Claude is the only host with a workflow surface.
+    // Issue Captain's completion criterion). Claude is the only host with a workflow surface.
     private static readonly string[] RetiredWorkflows = ["run-sprint.js"];
 
     // Skill resources retired by rename (DR 045 §10: the merge-sprint rubric became merge),

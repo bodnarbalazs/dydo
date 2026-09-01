@@ -183,8 +183,8 @@ public class ConfigFactoryTests
     {
         var roles = ConfigFactory.CreateDefaultModels().Roles;
 
-        Assert.DoesNotContain("planner", roles.Keys);
-        Assert.Equal("strong", roles["implementer"]);
+        Assert.Equal("strong", roles["planner"]);
+        Assert.Equal("strong", roles["issue-captain"]);
         Assert.Equal("standard", roles["research"]);
     }
 

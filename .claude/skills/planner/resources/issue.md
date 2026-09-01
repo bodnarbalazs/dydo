@@ -1,13 +1,13 @@
 # Planning One Issue
 
 The `issue` resolution: high detail, just in time. One implementation Issue's route from its contract
-to its diff, written into the Issue by the implementer as its first step and reviewed with the code
-it produces.
+to its diff, written into the Issue by a spawned `planner(issue)` at the Issue Captain's direction and
+reviewed with the code it guides.
 
-The Issue already carries outcome, owned paths, blockers, exact gates and base branch. The plan begins
-where those end and refines them until the work is **mechanical**: every remaining edit is one the
-implementer makes without deciding anything. That is the stopping bound — keep resolving while a step
-still hides a choice, and stop the moment none does.
+The Issue Captain coordinates; the Issue already carries outcome, owned paths, blockers, exact gates
+and base branch. The plan begins where those end and refines them until the work is **mechanical**:
+every remaining edit is one a delegated writer can make without deciding anything. That is the stopping
+bound — keep resolving while a step still hides a choice, and stop the moment none does.
 
 ## Where it goes
 

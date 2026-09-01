@@ -14,7 +14,7 @@ only for as long as a human keeps a session open.
 
 `manager` is a hat, compiled as an explicit-only skill: a human invokes it, and it carries one
 approved Project plan to a feature branch he can land. Inside that one session it opens the feature
-branch, keeps N Issues in flight by spawning an `implementer` per pickable Issue, merges serially,
+branch, keeps N Issues in flight by spawning an `issue-captain` per pickable Issue, merges serially,
 runs a merge review after every merge, amends the plan as fog clears, routes what the plan cannot
 answer, and offers the inquisition. When the session ends, the Project stops advancing.
 

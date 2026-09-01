@@ -296,6 +296,14 @@ public static class TemplateGenerator
         ReadTemplate("working-tree-contract.template.md");
 
     /// <summary>
+    /// dydo/reference/linear-workspace-standard.md — the canonical Linear labels, statuses and
+    /// templates expected by the agent system. The template is intentionally empty until its
+    /// dedicated HITL pass.
+    /// </summary>
+    public static string GenerateLinearWorkspaceStandardMd() =>
+        ReadTemplate("linear-workspace-standard.template.md");
+
+    /// <summary>
     /// Architecture overview template.
     /// Reads from architecture.template.md if available.
     /// </summary>
@@ -850,7 +858,8 @@ public static class TemplateGenerator
             | Role | Shape | Purpose |
             |------|-------|---------|
             | `co-thinker` | skill | Explore ideas, scope requirements |
-            | `planner` | agent + skill | Turn intent into reviewed plans |
+            | `project-planner` | agent + skill | Start and review the Project map |
+            | `issue-planner` | agent + skill | Remove hidden decisions from one Issue |
             | `chief-of-staff` | skill | Triage Linear and route work |
             | `code-writer` | agent + skill | Implement features |
             | `test-writer` | agent + skill | Write tests, report bugs |

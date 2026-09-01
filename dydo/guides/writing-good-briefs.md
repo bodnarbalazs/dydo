@@ -29,9 +29,10 @@ Every implementation Issue carries five fields. They are the contract; the rest 
 
 What the Issue deliberately does **not** carry is the route. Pre-writing it ages badly and buys
 nothing: the implementing agent reads the code you were guessing about, and the high-resolution plan is
-written just in time by whoever picks the Issue up — the two planning resolutions are in the
-[Linear Issue Lifecycle](../understand/task-lifecycle.md). One act there is yours: an Issue the Project
-plan flags as architecture-sensitive says so, because its plan is reviewed before any code exists.
+written just in time by `issue-planner` at the Issue Captain's direction — the two planning
+resolutions are in the [Linear Issue Lifecycle](../understand/task-lifecycle.md). The Issue Planner names
+route risk; the Captain may require `issue-plan` before production when that extra gate is worth its
+cost.
 
 Owned paths do double duty. They are the brief's scope and the isolation that lets Issues run in
 parallel, so two Issues in flight together own disjoint files or say plainly that they are serial. The
@@ -73,8 +74,8 @@ does with a question the brief did not settle is the *fog → discovery → ques
 Linear label `question`, the question itself under a `## Question` heading.
 
 Your part is upstream of that. Name the questions you already know are open, link the question Issues
-that carry them, and let the brief say plainly what it does not settle. An assumption buried inside an
-outcome reads as settled, and gets built.
+that carry them, and wire each as a blocker of the work awaiting its answer. Let the brief say plainly
+what it does not settle. An assumption buried inside an outcome reads as settled, and gets built.
 
 ## What does not belong
 

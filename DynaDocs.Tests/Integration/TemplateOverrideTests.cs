@@ -20,7 +20,8 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
         AssertFileExists("dydo/_system/templates/skill-reviewer.template.md");
         AssertFileExists("dydo/_system/templates/skill-co-thinker.template.md");
-        AssertFileExists("dydo/_system/templates/skill-planner.template.md");
+        AssertFileExists("dydo/_system/templates/skill-project-planner.template.md");
+        AssertFileExists("dydo/_system/templates/skill-issue-planner.template.md");
         AssertFileExists("dydo/_system/templates/skill-docs-writer.template.md");
         AssertFileExists("dydo/_system/templates/skill-test-writer.template.md");
         AssertFileExists("dydo/_system/templates/skill-inquisitor.template.md");
@@ -74,7 +75,8 @@ public class TemplateOverrideTests : IntegrationTestBase
 
         Assert.Contains("skill-code-writer.template.md", templateNames);
         Assert.Contains("skill-reviewer.template.md", templateNames);
-        Assert.Contains("skill-planner.template.md", templateNames);
+        Assert.Contains("skill-project-planner.template.md", templateNames);
+        Assert.Contains("skill-issue-planner.template.md", templateNames);
         Assert.Contains("skill-chief-of-staff.template.md", templateNames);
         Assert.Contains("skill-inquisitor.template.md", templateNames);
         Assert.Contains("skill-self-improvement.template.md", templateNames);
@@ -87,7 +89,9 @@ public class TemplateOverrideTests : IntegrationTestBase
         // The mirrored set IS the shipped set: every skill template plus every skill resource
         // template (<role>-resource-<name>.template.md). A hard-coded count would freeze the
         // inventory the DR 045 taxonomy is about to change.
-        Assert.Contains("reviewer-resource-plan.template.md", templateNames);
+        Assert.Contains("reviewer-resource-project-plan.template.md", templateNames);
+        Assert.Contains("reviewer-resource-issue-plan.template.md", templateNames);
+        Assert.DoesNotContain("reviewer-resource-plan.template.md", templateNames);
         Assert.Equal(ShippedTemplateNames(), templateNames.OrderBy(n => n, StringComparer.Ordinal));
     }
 
@@ -108,6 +112,23 @@ public class TemplateOverrideTests : IntegrationTestBase
             DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
         Assert.True(config.FrameworkHashes.ContainsKey("guides/working-tree-contract.md"),
             "template update must track the working-tree contract by hash");
+    }
+
+    [Fact]
+    public async Task Init_ScaffoldsAndTracksTheLinearWorkspaceStandard()
+    {
+        await InitProjectAsync();
+
+        AssertFileExists("dydo/reference/linear-workspace-standard.md");
+        Assert.Equal(
+            TemplateGenerator.GenerateLinearWorkspaceStandardMd(),
+            ReadFile("dydo/reference/linear-workspace-standard.md"));
+        Assert.Contains("reference/linear-workspace-standard.md", TemplateCommand.FrameworkDocFiles);
+
+        var config = System.Text.Json.JsonSerializer.Deserialize(ReadFile("dydo.json"),
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
+        Assert.True(config.FrameworkHashes.ContainsKey("reference/linear-workspace-standard.md"),
+            "template update must track the Linear workspace standard by hash");
     }
 
     // The mirrored set is the authored set minus retired roles and anything that hangs off

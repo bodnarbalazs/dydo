@@ -21,9 +21,11 @@ A **question Issue** (Linear label `question`, body under `## Question`) is an o
 blocks planning or implementation and is too big or too uncertain to settle inline. The rule is *fog →
 discovery → question Issue*: an agent in fog first runs a bounded discovery — the Decision index, the
 Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
-the question become an Issue that lists what was searched, wired as a blocker and routed onward: the
-admiral when the Project itself is foggy, the planner when the plan needs refinement, the human only
-when the question is HITL. Facts are the agent's job; choices are the human's.
+the question become an Issue that records what was searched and blocks every named plan or
+implementation Issue awaiting its answer. Project planners create these while starting the map;
+Issue planners and workers prepare a hand-raise for their Issue Captain; admirals create more as
+forward motion clears fog. The admiral routes AFK homework and sends only HITL judgment to the human.
+Facts are the agent's job; choices are the human's.
 
 Its resolution is an *answer* posted on the Issue. The answer graduates to a Decision Record only when
 it is hard to reverse, surprising later, and the result of a real trade-off. Issues carry questions,
@@ -32,16 +34,16 @@ Decision Records carry decisions, and the two are linked rather than copied.
 ## Planned at two resolutions
 
 - **Project** — low resolution: destination, scope, acceptance criteria,
-  architecture-level design, and an Issue map of tracer bullets that each cut end to end, with
-  ordering, isolation and watch-outs. When the route is foggy it says so in a `## Not yet specified`
-  section and files question Issues instead of pretending a complete route. A fresh reviewer passes it
-  against the `plan` rubric before any Issue is pickable; the admiral then amends it in dated sections
-  as fog clears, and sends it back for review only when scope, acceptance criteria or the Issue map
-  move.
+  architecture-level design, the first pickable tracer-bullet Issues, and rough later bearings. When
+  the route is foggy it says so in `## Not yet specified` and files blocking question Issues instead
+  of pretending a complete route. A fresh reviewer passes it against `project-plan` before human
+  approval; the admiral then amends the map as fog clears and returns only changes to destination,
+  scope, acceptance criteria, or governing architecture for review.
 - **Issue** — high resolution, just in time: files to touch, the pattern to copy with its path, steps,
-  edge cases, exact gates — until building is mechanical. The Issue Captain writes it into the Issue as
-  its first act, and it is reviewed together with the code it produced. A separate plan review before
-  any code exists happens only for an Issue the Project plan flags as architecture-sensitive.
+  edge cases, exact gates — until building contains no hidden decisions. A spawned `issue-planner`
+  writes it into the parent Issue or direct lane Sub-issue at the Issue Captain's direction. It is
+  reviewed with the code it produced; the Captain may require `issue-plan` before production when
+  route risk warrants it.
 
 ## Claimed, isolated, executed
 
@@ -77,7 +79,7 @@ blocker with the Issue moved to Blocked. Never silent waiting.
 
 ## Where the human is asked
 
-Plan approval; HITL question Issues; an escalation that survived the ladder; confirming an
+Project-plan approval; HITL question Issues; an escalation that survived the ladder; confirming an
 inquisition; and the feature → main merge. Harmonization happens on main afterwards and is not a
 gate. An atomic Issue with no Project branches from main and is merged by its own Issue Captain after
 Issue review and merge review.

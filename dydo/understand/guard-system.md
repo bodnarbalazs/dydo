@@ -105,7 +105,7 @@ The shipped **review-block nudge** is the one that carries policy: a `gh pr crea
 
 ## Also Enforced
 
-- **Plan-mode block**: `EnterPlanMode`/`ExitPlanMode` are blocked — planning happens through the planner skill and plan records, not the platform's plan mode.
+- **Plan-mode block**: `EnterPlanMode`/`ExitPlanMode` are blocked — planning happens through the Project Planner or Issue Planner skill and plan records, not the platform's plan mode.
 - **Agent-tool notice**: invoking the platform's built-in `Agent` tool passes with a stderr reminder that sub-agent calls run anonymous and governed by the same three layers.
 
 ## Housekeeping Rides Along

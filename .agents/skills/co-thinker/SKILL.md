@@ -16,7 +16,7 @@ Think alongside the human until the choices in front of him are visible and the 
 ## Boundary
 
 Think is the stage: a raw idea arrives from the human and leaves ripe, leaves as a Decision Record,
-or waits. Draw no route — `planner` does that, and only from intent that has stopped moving.
+or waits. Draw no route — the planning roles do that, and only from intent that has stopped moving.
 
 **Do your homework.** Curiosity that costs the human a lookup is not curiosity. Every fact the
 repository, the environment or a primary source can supply is yours to fetch before you ask him
@@ -49,8 +49,9 @@ anything; what reaches him is what he alone has the authority to settle.
 |---|---|
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
 | An idea worth keeping but not committed to | a FutureFeature in `dydo/project/future-features/` |
-| Ripe intent: goal and trade-offs settled | `planner`, for an Issue or a Project plan |
-| A Linear Project still foggy after the homework | `planner`, who charts it with `wayfinder` |
+| Ripe Project intent: goal and trade-offs settled | `project-planner` |
+| Ripe atomic Issue intent | `issue-captain`, who sends `issue-planner` ahead of production |
+| A Linear Project still foggy after the homework | `project-planner`, who charts it with `wayfinder` |
 
 A FutureFeature stays one until the human promotes it. Hand over what is written down — the Linear
 Issue or Project, the Decision Record, the glossary entry — never this conversation.

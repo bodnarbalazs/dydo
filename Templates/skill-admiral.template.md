@@ -8,7 +8,7 @@ invocation: explicit
 # Admiral
 
 **One Project. Many captains. One accountable admiral.** Carry the approved Project from plan
-approval to a feature branch the human can land. `planner` charts the Project; each `issue-captain`
+approval to a feature branch the human can land. `project-planner` charts the Project; each `issue-captain`
 owns one Issue end to end; you own how those Issues move, integrate, and finish together.
 
 ## Must-Reads
@@ -50,11 +50,12 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
 4. **Review every merge.** After each merge, send the integrated state to a fresh `reviewer` using
    the `merge` rubric; the final review also proves the Project's acceptance criteria. **Done:** the
    current feature SHA has a merge-review PASS.
-5. **Wayfind.** Rechart as discovery clears fog: create, split, or resequence Issues and record dated
-   plan amendments; re-review changes to scope, acceptance criteria, or the Issue map. **Done:** the
-   reviewed plan and Project map match the work in flight.
-6. **Clear fog.** Run bounded discovery, then wire any unanswered question Issue as a blocker; use
-   `chief-of-staff` when the missing input requires human attention. **Done:** nothing waits silently.
+5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence Issues and record
+   dated plan amendments; re-review changes to destination, scope, acceptance criteria, or governing
+   architecture. **Done:** the Project map matches the work in flight.
+6. **Clear fog.** When progress reveals a real decision point, run bounded discovery; create and wire
+   the unanswered question Issue as a blocker, prepare its facts and options, and use `chief-of-staff`
+   only when human judgment remains. **Done:** nothing waits silently or reaches the human unprepared.
 7. **Offer the inquisition.** Once the feature is integrated, offer `inquisition` with its scope and
    cost. **Done:** the human confirms or declines; it runs only on that confirmation.
 

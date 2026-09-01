@@ -26,8 +26,9 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   The rule is *fog → discovery → question Issue*. Search the Decision Records, the Project plan, the
   Issue's own links, the glossary, and the code first; file only what that leaves open.
 - **Question Issue** — a Linear Issue labelled `question` carrying one open question that blocks
-  planning or implementation and is too large to settle inline. It resolves into an **answer**
-  recorded on the Issue; a small preference stays spec detail on the implementation Issue instead.
+  named planning or implementation work and is too large to settle inline. It records the homework
+  already done and resolves into an **answer** on the Issue; a small preference stays spec detail on
+  the implementation Issue instead.
 - **Frontier** — the open, unblocked, unassigned question Issues: the edge of what a Project knows.
   Linear's own blocking relations and assignment render it; there is no separate navigation object.
 
@@ -40,8 +41,9 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   architecture-sensitive work, at low resolution: destination, acceptance, architecture, and an Issue
   map. Its `linear-project` URL is provenance, not synchronization.
 - **Issue-resolution plan** — the high-resolution plan written into an implementation Issue before
-  its code: files to touch, the pattern to copy, steps, edge cases, exact gates. It is reviewed
-  together with the code it governs.
+  its code: files to touch, the pattern to copy, steps, edge cases, exact gates. It is reviewed with
+  the code it governs; the Issue Captain may require a separate pre-code review when route risk
+  warrants the extra gate.
 - **FutureFeature** — an unscheduled repo-native idea. Only the human may promote it to exactly one
   Linear Initiative, Project, or Issue; `promoted` is terminal and does not mirror delivery state.
 - **Assimilation brief** — the durable account of what changed, what was learned, and what remains.
@@ -50,12 +52,12 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 - **Role** — an authored skill source compiled by dydo: a hat, a worker, a method, or a human command.
 - **Skill** — the runtime package of a role's methodology and resources.
-- **Agent** — a native-platform instance of a spawned role: a worker, or an Issue Captain that an admiral
-  keeps in flight.
-- **Hat** — what a session is doing now: co-thinker, planner, issue-captain, admiral, or
+- **Agent** — a native-platform instance of a spawned role: a worker, a Project Planner, or an Issue
+  Captain that an admiral keeps in flight.
+- **Hat** — what a session is doing now: co-thinker, project-planner, issue-captain, admiral, or
   chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
-  spawned it: code-writer, test-writer, docs-writer, reviewer, inquisitor, research.
+  spawned it: issue-planner, code-writer, test-writer, docs-writer, reviewer, inquisitor, research.
 - **Method** — a reference or procedure used inside another skill, carrying no identity of its own:
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype,
   writing-for-agents, self-improvement.
@@ -63,8 +65,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   grill-me, bro, handoff, walkthrough, teach, improve-codebase-architecture.
 - **Workflow** — a host-executed script for a sequence prose cannot be trusted to hold. The
   inquisition is the only one.
-- **Rubric** — the one named standard a reviewer judges a candidate against: code, tests, docs, plan,
-  or merge.
+- **Rubric** — the one named standard a reviewer judges a candidate against: code, tests, docs,
+  project-plan, issue-plan, or merge.
 
 ## Execution and proof
 

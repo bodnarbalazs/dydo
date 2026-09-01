@@ -34,6 +34,7 @@ public class FolderScaffolder : IFolderScaffolder
         ("guides/working-tree-contract.md", TemplateGenerator.GenerateWorkingTreeContractMd),
         ("reference/dydo-commands.md", TemplateGenerator.GenerateDydoCommandsMd),
         ("reference/dydo-glossary.md", TemplateGenerator.GenerateDydoGlossaryMd),
+        ("reference/linear-workspace-standard.md", TemplateGenerator.GenerateLinearWorkspaceStandardMd),
         ("reference/writing-docs.md", TemplateGenerator.GenerateWritingDocsMd),
         ("reference/about-dynadocs.md", TemplateGenerator.GenerateAboutDynadocsMd),
         ("files-off-limits.md", TemplateGenerator.GenerateFilesOffLimitsMd),

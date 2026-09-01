@@ -9,9 +9,9 @@ linear-project: https://linear.app/bodnar-balazs/project/dydo-30-harmonize-the-s
 # Harmonize the skill system
 
 Build the skill system [DR 045](../decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
-describes: one flow map every agent can place itself on, twenty-five skills that trigger correctly and
+describes: one flow map every agent can place itself on, twenty-six skills that trigger correctly and
 cross-reference only their genuine neighbours — each reference bound by the §7 table and living in
-exactly one place, never a web of everything naming everything — five rubrics, two planner resources, a working-tree contract, a guard
+exactly one place, never a web of everything naming everything — six rubrics, two planning roles, a working-tree contract, a guard
 that protects orientation files without hiding them, and a compiler whose agents actually reach their
 skill. This plan runs **under today's tooling** — the current orchestrator-era skills, hands-on
 sub-agent dispatch, and a disabled guard — because the system it builds does not exist yet.
@@ -31,18 +31,18 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   Codex hook matcher names removed.
 - Compiler: Must-Reads retained and link-rewritten for every role; `skills:` preload and the `Skill`
   tool on Claude agents; `delegates: true` → the `Agent` tool; Codex agents told to load their skill
-  by name; `planner` emitted as an agent as well as a skill; `merge-sprint` → `merge`; `run-issues` retired;
+  by name; `project-planner` and `issue-planner` emitted as agents as well as skills; `merge-sprint` → `merge`; `run-issues` retired;
   inventory tests derived from the shipped template set instead of a hard-coded count.
 - Sources: the sixteen files Codex restored, rewritten to the DR 045 contract; `issue-captain`,
   `admiral`, `walkthrough` new; `wayfinder` reshaped as a method; nine imports from
   mattpocock/skills at `6654f6b6` (diagnosing-bugs, research, codebase-design, domain-modeling,
   prototype, handoff, teach, improve-codebase-architecture, `SKILL-MECHANICS` as a resource);
-  planner resources `project` and `issue`; the five rubrics; the working-tree contract guide; the
+  separate Project Planner and Issue Planner skills; the six rubrics; the working-tree contract guide; the
   entry point and `dydo/index.md`; the inquisition workflow's `confirmed` gate and prompt wording.
 - Vocabulary and docs: glossary, work model, Issue lifecycle, architecture, orchestration pitfalls,
   writing good briefs, customizing roles, templates-and-customization, dydo commands, guard system,
   third-party notices; two FutureFeatures (routine admiral; cross-vendor review).
-- Runtime: `dydo.json` model bindings for the `planner`, `issue-captain`, and `research` agents; Linear labels
+- Runtime: `dydo.json` model bindings for the `project-planner`, `issue-planner`, `issue-captain`, and `research` agents; Linear labels
   `question`, `HITL`, `AFK` present in the workspace; an implementation-Issue template carrying the
   required fields (outcome, owned paths, blockers, exact gates, base branch).
 - Regeneration, idempotence, template-hash reconciliation, the human's file-by-file pass, and a
@@ -83,7 +83,7 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
    zero warnings**; Release build has zero warnings; the isolated full suite and forced coverage
    pass; `git diff --check` is clean; `CLAUDE.md` and `AGENTS.md` equal the entry-point template
    output; a fresh `dydo init claude` in a scratch directory installs
-   `dydo/guides/working-tree-contract.md` and ships `dydo.json` with `planner: strong`,
+   `dydo/guides/working-tree-contract.md` and ships `dydo.json` with both planning roles on `strong`,
    `issue-captain: strong`, and `research: standard`.
 9. `THIRD-PARTY-NOTICES.md` and `npm/THIRD-PARTY-NOTICES.md` list every adapted skill and are
    byte-identical; both packages include the notice.
@@ -113,9 +113,9 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   it is the hat a top-level session wears when it picks a ticket *and* a spawnable agent so an admiral
   can keep N Issues in flight as sub-agents (DR 045 §2, amended 2026-08-30). A spawned Issue Captain
   returns `blocked` with its question instead of waiting on the human.
-- **Why does the planner compile as an agent when it is also a hat?** The same method serves both:
-  a session may wear the hat directly, while an invoker may spawn a fresh planner with exactly one
-  target, `project` or `issue`. The role is bound to the strong tier.
+- **Why does the Project Planner compile as an agent when it is also a hat?** A session may wear the
+  hat directly, while Think may spawn a fresh Project Planner for one Project. The Issue Planner is separate
+  crew under the Issue Captain, so neither role spends half its attention at the wrong resolution.
 - **What about `tdd`?** Folded, not imported: seams and anti-patterns into test-writer, red-before-
   green into code-writer and Issue Captain.
 
@@ -150,7 +150,7 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   `gh pr create` whose command lacks `Independent review`), the DR 026 "Tier-1 agents are managers …
   run-sprint workflow" nudge is retired from the factory, every remaining `run-sprint` mention in
   that file (including comments) goes with it, and this repo's `dydo.json` mirrors both changes;
-  `CreateDefaultModels` binds `planner: strong`, `issue-captain: strong`, and `research: standard`,
+  `CreateDefaultModels` binds both planning roles and `issue-captain` to strong, and `research` to standard,
   so a fresh `dydo init` ships the DR 045 bindings, and this repo's `dydo.json` is updated to match.
   The Codex hook matcher (`InitCommand.CodexGuardMatcher`) becomes exactly
   `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec` — the documented
@@ -188,7 +188,7 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   (`ChiefOfStaffSyncTests`, `WayfinderHarmonyTests`, `SyncCommandTests.MattDerivedSkills…`,
   `UpstreamSkillSourceTests`'s wayfinder-explicit and grill-me-phrase assertions,
   `EntryPointParityTests.SharedTemplate_ContainsOnlyTheMinimalEntryContract`'s required/forbidden
-  word lists, and `SyncCommandTests`' `planner` model `InlineData`) will fail on the new prose and
+  word lists, and `SyncCommandTests`' planning-role model `InlineData`) will fail on the new prose and
   config; H-2 replaces them with structural assertions (the entry point: ≤ 25 non-blank lines, a
   link to `dydo/index.md`, CLAUDE.md/AGENTS.md parity kept — the working-tree link is H-3's and is
   proved by its per-file review and Gate E, never asserted before H-3 merges). The
@@ -209,7 +209,7 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   Issues merge with the suite green only because every test their sources trip is either de-frozen by
   H-2 (merged first) or kept green by the Issue itself — H-3 keeps `CLAUDE.md`/`AGENTS.md` in parity
   with its rewritten template for exactly that reason. Test ownership in §4 is spot-exact: H-1's config, matcher and nudge changes break
-  `SyncCommandTests`' Codex-matcher assertions and `planner` model `InlineData`, and
+  `SyncCommandTests`' Codex-matcher assertions and planning-role model `InlineData`, and
   `ConfigFactoryTests`' managers-doctrine nudge tests — those spots are H-1's, and `ConfigFactory.
   IsLegacyDefaultNudge` becomes dead code H-1 removes. `GuardIntegrationTests` asserts that an edit of
   `dydo/index.md` exits 2 with `BLOCKED` on stderr; the protected tier keeps that contract for writes
@@ -223,13 +223,13 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
 
 | Issue | Outcome | Exclusive surface | Blockers | Gate |
 |---|---|---|---|---|
-| H-1 | Guard protected tier, review-block default nudge, DR 026 nudge retired, Codex hook matcher cleanup | `Services/OffLimitsService.cs`, `Commands/GuardCommand.cs`, `Commands/InitCommand.cs` (hooks), `Services/ConfigFactory.cs` (retire the DR 026 nudge and every `run-sprint` mention, add the review-block default, fix `CreateDefaultModels`), `Templates/files-off-limits.template.md`, `dydo/files-off-limits.md`, `dydo.json` (nudges; `models.roles`: bind `planner: strong`, `issue-captain: strong`, `research: standard`), `.codex/hooks.json`, `dydo/understand/guard-system.md`, tests `OffLimitsServiceTests`, `GuardCommandTests`, `GuardIntegrationTests`, `ConfigFactoryTests`, `InitCommandTests` (Codex matcher assertions only), `SyncCommandTests` (only the Codex-matcher assertions and the `planner` model `InlineData`) | — | A |
+| H-1 | Guard protected tier, review-block default nudge, DR 026 nudge retired, Codex hook matcher cleanup | `Services/OffLimitsService.cs`, `Commands/GuardCommand.cs`, `Commands/InitCommand.cs` (hooks), `Services/ConfigFactory.cs` (retire the DR 026 nudge and every `run-sprint` mention, add the review-block default, fix `CreateDefaultModels`), `Templates/files-off-limits.template.md`, `dydo/files-off-limits.md`, `dydo.json` (nudges; `models.roles`: bind both planning roles and `issue-captain` to strong, `research` to standard), `.codex/hooks.json`, `dydo/understand/guard-system.md`, tests `OffLimitsServiceTests`, `GuardCommandTests`, `GuardIntegrationTests`, `ConfigFactoryTests`, `InitCommandTests` (Codex matcher assertions only), `SyncCommandTests` (only the Codex-matcher assertions and planning-role model `InlineData`) | — | A |
 | H-2 | Compiler contract, test de-freezing, retired-output cleanup, `merge` file rename, working-tree-contract scaffolding | `Commands/SyncCommand.cs`, `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`, `Services/TemplateGenerator.cs` (incl. its fallback role table, which still lists `orchestrator`), `Services/FolderScaffolder.cs`, `Commands/TemplateCommand.cs`, new stub `Templates/working-tree-contract.template.md` **and its installed twin** `dydo/guides/working-tree-contract.md` (each frontmatter, H1 and a one-sentence summary — so no later worktree materializes an orphan and `dydo check` stays warning-free; H-2 regenerates `dydo/guides/_index.md` so the hub line exists; H-6 writes the real content of both), `git mv Templates/reviewer-resource-merge-sprint.template.md Templates/reviewer-resource-merge.template.md` (content untouched), delete `Templates/workflow-run-sprint.js`, tests `SyncCommandTests` (everything except H-1's two spots), `RoleDefinitionServiceTests`, `TemplateGeneratorTests`, `CodexSyncArtifactsE2ETests`, `ChiefOfStaffSyncTests`, `WayfinderHarmonyTests`, `TemplateOverrideTests`, `InitCommandTests` (inventory count only), `UpstreamSkillSourceTests`, `EntryPointParityTests`, new `InstalledTemplateParityTests` | H-1 | B |
 | H-3 | The standard-setters: writing-for-agents + `SKILL-MECHANICS` resource, entry point, `dydo/index.md` taxonomy | `Templates/skill-writing-for-agents.template.md`, new `Templates/writing-for-agents-resource-skill-mechanics.template.md`, `Templates/entry-point.template.md` with its mirrors `CLAUDE.md` and `AGENTS.md` (parity is this Issue's contract), `Templates/index.template.md`, `dydo/index.md` | — | C |
 | H-4 | Thinking cluster | `skill-co-thinker`, `skill-grilling`, `skill-grill-me`, `skill-bro`, new `skill-domain-modeling`, `skill-research`, `skill-prototype` | H-3 | C |
-| H-5 | Planning cluster | `skill-planner`, new `planner-resource-project`, `planner-resource-issue`, `skill-wayfinder` (method), new `skill-codebase-design` | H-3 | C |
+| H-5 | Planning cluster | new `skill-project-planner`, `skill-issue-planner`, `skill-wayfinder` (method), new `skill-codebase-design` | H-3 | C |
 | H-6 | Delivery cluster + working-tree contract | new `skill-issue-captain`, `skill-admiral` (from orchestrator, which is deleted), `skill-code-writer`, `skill-test-writer`, `skill-docs-writer`, new `skill-diagnosing-bugs`, `skill-handoff`, the content of `Templates/working-tree-contract.template.md` (H-2 ships the stub and the scaffolding) + its installed copy `dydo/guides/working-tree-contract.md` (written by hand here; H-10 reconciles the hash) | H-3 | C |
-| H-7 | Review cluster + inquisition workflow | `skill-reviewer` (incl. its rubric link line → `resources/merge.md`), `skill-inquisitor`, `reviewer-resource-{code,tests,docs,plan,merge}` (content), `Templates/workflow-inquisition.js` (`confirmed` gate, prompt wording, citation of the compiled `merge` rubric path) | H-2, H-3 | C |
+| H-7 | Review cluster + inquisition workflow | `skill-reviewer` (incl. its rubric link line → `resources/merge.md`), `skill-inquisitor`, `reviewer-resource-{code,tests,docs,project-plan,issue-plan,merge}` (content), `Templates/workflow-inquisition.js` (`confirmed` gate, prompt wording, citation of the compiled `merge` rubric path) | H-2, H-3 | C |
 | H-8 | Human cluster | `skill-chief-of-staff`, `skill-self-improvement`, new `skill-walkthrough`, `skill-teach`, `skill-improve-codebase-architecture` | H-3 | C |
 | H-9 | Vocabulary, docs, notices | `Templates/dydo-glossary.template.md` + `dydo/reference/dydo-glossary.md`, `dydo/understand/{work-model,task-lifecycle,architecture,templates-and-customization}.md`, `dydo/guides/{orchestration-pitfalls,customizing-roles,writing-good-briefs}.md`, `Templates/dydo-commands.template.md` + `dydo/reference/dydo-commands.md`, `THIRD-PARTY-NOTICES.md`, `npm/THIRD-PARTY-NOTICES.md`, new `dydo/project/future-features/{routine-admiral,cross-vendor-review}.md` | H-2, H-3 | D |
 | H-10 | Regenerate, reconcile, integrate | `dydo/_system/templates/**`, `dydo.json` (hashes only), `.claude/**`, `.codex/agents/**`, `.agents/skills/**`, `CLAUDE.md`, `AGENTS.md`, generated hubs | H-1 … H-9 | E |
@@ -258,7 +258,8 @@ Fixtures prove: protected file readable via `Read` and `cat`; blocked via `Edit`
 `echo >`, `rm` (exit 2, `BLOCKED:` on stderr); off-limits still blocks reads; the review-block nudge
 fires on `gh pr create` without the block and stays silent with it; the emitted Codex matcher
 equals the §3 literal (Claude-only UI names dropped, legacy shell names retained); a fresh
-`CreateDefaultModels` binds `planner: strong`, `issue-captain: strong`, and `research: standard`.
+`CreateDefaultModels` binds `project-planner: strong`, `issue-planner: strong`,
+`issue-captain: strong`, and `research: standard`.
 `gap_check.py` runs the whole suite: H-1's named test spots keep it green.
 
 **Gate B — compiler**
@@ -430,31 +431,31 @@ never edits sources itself and never merges without a review block.
 | index.template / dydo/index.md | fix | "Skills and Roles" becomes the taxonomy (hats, workers, methods, commands, workflow, rubrics) with one-line routing each | all skills by name |
 | writing-for-agents | fix | keep upstream body; replace the compiler sentence with a pointer to the `skill-mechanics` resource | skill-mechanics, self-improvement |
 | skill-mechanics (resource) | new | Matt's `SKILL-MECHANICS` adapted to dydo: `mode`, `description`, `emit`, `read-only`, `delegates`, `invocation`, Must-Reads, includes, resources, `dydo sync`, protected files | customizing-roles |
-| co-thinker | fix | restore curiosity and "do your homework"; step for grilling and domain-modeling; research for facts; hand-off table (DR / FutureFeature / planner / wayfinder-via-admiral) | grilling, domain-modeling, research, planner, wayfinder |
+| co-thinker | fix | restore curiosity and "do your homework"; step for grilling and domain-modeling; research for facts; hand-off table (DR / FutureFeature / project-planner / issue-captain) | grilling, domain-modeling, research, project-planner, issue-captain |
 | grilling | keep | faithful upstream; description already a trigger | — |
 | grill-me | fix | "Call the Skill tool with `grilling`." one line; human-facing description | grilling |
 | bro | fix | description: *Stop. That did not land — re-pitch it.*; body keeps STE + both glossaries; note it is the corrective for agent-speak anywhere | glossary, dydo-glossary |
 | domain-modeling | import | glossary discipline for `dydo/glossary.md` and DRs (ADR test = hard to reverse + surprising + real trade-off); no CONTEXT.md | glossary, decisions, co-thinker |
 | research | import | `emit: agent`, `read-only: true`; primary sources; cited Markdown at a named location or as an Issue comment; invoked by co-thinker, wayfinder, admiral | co-thinker, wayfinder |
 | prototype | import | throwaway artifact to raise fidelity; `prototype/<name>` branch; linked from the question Issue | wayfinder, co-thinker |
-| planner | fix | `emit: agent`, `planner: strong`, while remaining a hat; "Start only when ripe" stays; invoker names one of two targets via resources; tracer bullets; required Issue fields incl. base branch; hand-off to reviewer(plan) then admiral | project, issue, wayfinder, codebase-design, writing-good-briefs, reviewer, admiral |
-| planner-resource-project | new | plan skeleton with frontmatter (`title`, `status`, `area`, `type`, `linear-project`), the six sections, `## Not yet specified` when foggy, amendment convention | wayfinder, reviewer(plan) |
-| planner-resource-issue | new | the Issue-resolution plan: files, pattern to copy with path, steps, edge cases, gates; authored by a spawned `planner(issue)` at the Issue Captain's direction, then implemented by delegated writers | issue-captain, working-tree-contract |
-| wayfinder | reshape | method, `invocation: automatic`; map body, fog/frontier, **question Issues** (label `question`, `## Question`), types research/prototype/grilling/task; consumed by planner (chart) and admiral (work the map); no identity, no "modes" | grilling, research, prototype, planner, admiral |
-| codebase-design | import | glossary of module/interface/depth/seam/adapter/leverage/locality + principles; used by planner, reviewer, test-writer | planner, reviewer, test-writer |
-| issue-captain | new | `emit: agent`, `delegates: true`; anchor: *One Issue. One accountable captain.*; the Issue contract is the destination, its reviewed plan the route, and spawned planners, writers, and independent reviewers the crew; method: claim → environment check (right base, isolated worktree, base SHA posted, clean tree, owned paths) → parent record or one level of disjoint lane Sub-issues → spawn `planner(issue)` just in time until implementation is mechanical → direct all code, test and docs production through the crew, using `diagnosing-bugs` where needed → fresh binding reviewer loop (a fifth consecutive FAIL on one candidate escalates — the retired workflow's cap, now prose) → integrate passed lanes serially → combined gates and final parent review → review block on Issue + PR → return the pushed PR to admiral, or merge an atomic Issue → cleanup every captain-owned artifact; accountable for every delegated change; never authors production or self-reviews; fog → discovery → question Issue; escalation ladder and precedence order (DR 045 §6) inline | working-tree-contract, planner(issue), code-writer, test-writer, docs-writer, reviewer, diagnosing-bugs, admiral |
-| admiral | rewrite from orchestrator | `invocation: explicit`; anchor: *One Project. Many captains. One accountable admiral.*; carry an approved Project from plan approval to a human-landable feature branch; one `issue-captain` owns each Issue and its crew while the admiral coordinates the captains; perfect plans are fiction, so the plan fixes the destination while the admiral uses `wayfinder` to create, split or resequence Issues as fog clears; open the feature; commission pickable Issues; integrate serially; merge review after every merge; record dated amendments; propose inquisition; escalation ladder and precedence order (DR 045 §6) inline; never implements or self-reviews | working-tree-contract, issue-captain, reviewer(merge), wayfinder, planner, inquisition, chief-of-staff |
+| project-planner | split | `emit: agent`, `delegates: true`, `strong`, and a hat; starts the low-resolution Project map, owns reviewer(project-plan) through PASS, then asks for human approval and returns the route to the admiral | wayfinder, codebase-design, writing-good-briefs, reviewer, admiral |
+| issue-planner | split | `emit: agent`, `strong`, and crew; plans one parent Issue or direct lane Sub-issue until implementation has no hidden decisions, then returns blockers and an optional review recommendation to the Issue Captain | issue-captain, working-tree-contract, codebase-design |
+| wayfinder | reshape | method, `invocation: automatic`; map body, fog/frontier, **question Issues** (label `question`, `## Question`), types research/prototype/grilling/task; consumed by project-planner (chart) and admiral (work the map); no identity, no "modes" | grilling, research, prototype, project-planner, admiral |
+| codebase-design | import | glossary of module/interface/depth/seam/adapter/leverage/locality + principles; used by both planners, reviewer, test-writer | project-planner, issue-planner, reviewer, test-writer |
+| issue-captain | new | `emit: agent`, `delegates: true`; anchor: *One Issue. One accountable captain.*; the Issue contract is the destination, its Issue-resolution plan the route, and spawned planners, writers, and independent reviewers the crew; method: claim → environment check (right base, isolated worktree, base SHA posted, clean tree, owned paths) → parent record or one level of disjoint lane Sub-issues → spawn `issue-planner` just in time until implementation has no hidden decisions → require optional `issue-plan` review only when route risk warrants it → direct all code, test and docs production through the crew, using `diagnosing-bugs` where needed → fresh binding reviewer loop (a fifth consecutive FAIL on one candidate escalates — the retired workflow's cap, now prose) → integrate passed lanes serially → combined gates and final parent review → review block on Issue + PR → return the pushed PR to admiral, or merge an atomic Issue → cleanup every captain-owned artifact; accountable for every delegated change; never authors production or self-reviews; fog → discovery → question Issue; escalation ladder and precedence order (DR 045 §6) inline | working-tree-contract, issue-planner, code-writer, test-writer, docs-writer, reviewer, diagnosing-bugs, admiral |
+| admiral | rewrite from orchestrator | `invocation: explicit`; anchor: *One Project. Many captains. One accountable admiral.*; carry an approved Project from plan approval to a human-landable feature branch; one `issue-captain` owns each Issue and its crew while the admiral coordinates the captains; perfect plans are fiction, so the plan fixes the destination while the admiral uses `wayfinder` to create, split, drop or resequence Issues and raise newly visible blocking questions as fog clears; open the feature; commission pickable Issues; integrate serially; merge review after every merge; record dated amendments; propose inquisition; escalation ladder and precedence order (DR 045 §6) inline; never implements or self-reviews | working-tree-contract, issue-captain, reviewer(merge), wayfinder, project-planner, inquisition, chief-of-staff |
 | code-writer | polish | keep; red-before-green inline; return shape with the Issue Captain as consumer | issue-captain, coding-standards |
 | test-writer | polish | keep; seams + anti-patterns (tautological, horizontal slicing) from `tdd`; anchor: *a good test is a contract* | issue-captain, codebase-design |
 | docs-writer | polish | keep; assimilation-brief headings; writing-docs pointer | issue-captain, writing-docs |
 | diagnosing-bugs | import | keep upstream phases; drop CONTEXT.md/ADR lines; `scripts/hitl-loop` reference removed or replaced; anchor: *tight loop that goes red* | issue-captain, test-writer |
 | handoff | import | scratch-dir output; suggested skills section; redaction | — |
-| working-tree-contract (guide) | new | DR 045 §8 as procedure: branch names, host vs fallback worktrees (`../<repo>.worktrees/`), Issue fields, environment check, cleanup, orphan sweep, atomic-Issue path | issue-captain, admiral, chief-of-staff, planner(issue) |
-| reviewer | fix | anchor: *Gandalf — YOU SHALL NOT PASS*; five rubrics named as the invoker names them; review block as the only return | code, tests, docs, plan, merge, inquisitor |
+| working-tree-contract (guide) | new | DR 045 §8 as procedure: branch names, host vs fallback worktrees (`../<repo>.worktrees/`), Issue fields, environment check, cleanup, orphan sweep, atomic-Issue path | issue-captain, admiral, chief-of-staff, issue-planner |
+| reviewer | fix | anchor: *Gandalf — YOU SHALL NOT PASS*; six rubrics named as the invoker names them; review block as the only return | code, tests, docs, project-plan, issue-plan, merge, inquisitor |
 | reviewer-resource-code | fix | add the Fowler smell baseline as judgement calls; review block | review block |
 | reviewer-resource-tests | fix | align with test-writer's anti-patterns | — |
 | reviewer-resource-docs | fix | add the §6 writing checklist as the rubric for agent-facing documents | writing-for-agents |
-| reviewer-resource-plan | fix | align with planner-resource-project sections and question Issues; "Wayfinding Fog is not a gap" stays | planner-resource-project |
+| reviewer-resource-project-plan | split | mandatory Project-plan gate: verify the destination, first pickable Issues, rough later bearings, and blocking questions; "Wayfinding Fog is not a gap" stays | project-planner |
+| reviewer-resource-issue-plan | split | optional Captain-invoked pre-code gate for material route defects and hidden decisions; prose preferences and equally valid routes are outside the rubric | issue-planner |
 | reviewer-resource-merge | rewrite from merge-sprint | merge review: mechanical spot check scaling with size — merge artifacts, seams, gates rerun on the integrated state; plan acceptance at the final merge; no lens-hunting; no "two characters" | inquisition |
 | inquisitor | polish | restore the calibration section and severity scale; name the inquisition as its only invoker | inquisition, reviewer |
 | workflow-inquisition.js | fix | `confirmed: true` arg gate; prompts cite `.claude/skills/reviewer/resources/merge.md`; inquisitor prompts carry the lens name | inquisitor, reviewer(merge), docs-writer |
@@ -538,10 +539,10 @@ Paste this into a fresh Claude Code or Codex session started in the repository:
   `Observation (out of scope, non-binding):`, never as a finding; the `merge` rubric and the
   reviewer skill state it. Flagged for the human's H-11 pass as a possible DR 045 §6 clarification.
 - §7 co-thinker row — "wayfinder-via-admiral" is reconciled with DR 045 §1 and §4 by admiral ruling
-  (DYD-57's merge review): a foggy Project not yet charted goes to the `planner`, who charts it with
+  (DYD-57's merge review): a foggy Project not yet charted goes to the `project-planner`, who charts it with
   `wayfinder` (§1's Chart row); the `admiral` receives question Issues only for a Project already in
   delivery (§4's routing). The co-thinker's Handoff row and the prototype's placement sentence
-  follow the planner route.
+  follow the Project Planner route.
 - **H-10 surface** — `.gitattributes` gains `Templates/*.js text eol=lf` so workflow templates
   stay LF at source like their compiled `.claude/workflows/*.js`; a one-line surface addition
   outside H-10's owned paths, ruled by the admiral on DYD-63 (2026-08-31).

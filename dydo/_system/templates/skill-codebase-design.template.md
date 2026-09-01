@@ -12,7 +12,7 @@ invocation: automatic
 Design **deep modules**: a lot of behaviour behind a small interface, placed at a clean seam, testable
 through that interface. Use this language and these principles wherever code is designed or
 restructured. The aim is leverage for callers, locality for maintainers, and testability for everyone.
-Planning reaches for it most — the planner for a plan's architecture-level design, the reviewer when it
+Planning reaches for it most — Project and Issue Planners for a plan's architecture-level design, the reviewer when it
 judges a design, the test-writer when it picks the seam a test crosses.
 
 ## Glossary

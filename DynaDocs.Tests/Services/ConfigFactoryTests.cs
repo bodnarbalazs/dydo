@@ -183,9 +183,28 @@ public class ConfigFactoryTests
     {
         var roles = ConfigFactory.CreateDefaultModels().Roles;
 
-        Assert.Equal("strong", roles["planner"]);
+        Assert.Equal("strong", roles["project-planner"]);
+        Assert.Equal("strong", roles["issue-planner"]);
         Assert.Equal("strong", roles["issue-captain"]);
         Assert.Equal("standard", roles["research"]);
+    }
+
+    [Fact]
+    public void UpgradeLegacyPlannerRole_PreservesTheChosenTierAndIsIdempotent()
+    {
+        var config = new DydoConfig
+        {
+            Models = new ModelsConfig
+            {
+                Roles = new Dictionary<string, string> { ["planner"] = "custom-tier" }
+            }
+        };
+
+        Assert.True(ConfigFactory.UpgradeLegacyPlannerRole(config));
+        Assert.False(config.Models.Roles.ContainsKey("planner"));
+        Assert.Equal("custom-tier", config.Models.Roles["project-planner"]);
+        Assert.Equal("custom-tier", config.Models.Roles["issue-planner"]);
+        Assert.False(ConfigFactory.UpgradeLegacyPlannerRole(config));
     }
 
     [Fact]

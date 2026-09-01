@@ -47,8 +47,8 @@ types.
 | Stage | Hat | Uses | Output | Gate |
 |---|---|---|---|---|
 | Think | co-thinker | grilling, domain-modeling, research | ripe intent; a DR when the ADR test passes | — |
-| Chart *(foggy Projects)* | planner, using wayfinder | grilling, research, prototype | Linear Project as map; question Issues | — |
-| Plan | planner | codebase-design, writing-good-briefs | atomic Issue, or Project plan + Issue map | reviewer (plan) → human approval |
+| Chart and plan a Project | project-planner, using wayfinder | grilling, research, prototype | first Project map; blocking question Issues | reviewer (project-plan) → human approval |
+| Plan an Issue | issue-captain, using issue-planner | codebase-design, writing-good-briefs | just-in-time Issue route | optional reviewer (issue-plan) |
 | Implement | issue-captain | code/test/docs-writer as optional workers, tdd, diagnosing-bugs | Issue branch, PR into the feature branch, evidence on the Issue | reviewer PASS (review block) |
 | Coordinate *(optional)* | admiral | wayfinder, research | N Issues in flight, serial merges, plan amendments | merge review after every merge |
 | Audit *(rare)* | inquisition workflow | inquisitors × lenses, reviewer as judge, docs-writer | audit + assimilation brief | human confirms before it runs |
@@ -60,32 +60,32 @@ self-improvement, writing-for-agents, diagnosing-bugs, bro.
 
 ### 2. Taxonomy
 
-- **Hats** (what a session is doing now): co-thinker · planner · issue-captain · admiral · chief-of-staff.
+- **Hats** (what a session is doing now): co-thinker · project-planner · issue-captain · admiral · chief-of-staff.
 - **Workers** (spawned execution roles, `emit: agent`): code-writer · test-writer · docs-writer · reviewer ·
-  inquisitor · research.
+  issue-planner · inquisitor · research.
 - **Methods** (model-invoked reference and procedure used inside other skills): grilling · wayfinder ·
   domain-modeling · codebase-design · diagnosing-bugs · prototype · writing-for-agents ·
   self-improvement.
 - **Human commands** (explicit-only): grill-me · bro · handoff · walkthrough · teach ·
   improve-codebase-architecture.
 - **Workflow:** inquisition, and nothing else.
-- **Rubrics** (reviewer resources): code · tests · docs · plan · merge.
-- **Planner resources:** project · issue.
-
-The **planner** remains a hat and also compiles as a spawnable agent (`emit: agent`), bound to the
-strong tier. Its invoker names exactly one target: `project` for the low-resolution Project route and
-Issue map, or `issue` for the just-in-time route that makes implementation mechanical.
+- **Rubrics** (reviewer resources): code · tests · docs · project-plan · issue-plan · merge.
+The **Project Planner** is a hat and also compiles as a spawnable agent (`emit: agent`,
+`delegates: true`), bound to the strong tier. It owns the low-resolution Project map and its mandatory
+`reviewer(project-plan)` loop through PASS and human approval. The **Issue Planner** is a spawned
+worker (`emit: agent`), also bound to strong, that makes one Issue mechanical and returns its plan and
+review recommendation to the Issue Captain. Neither role accepts the other's target.
 
 Renames and moves: `orchestrator` retires; **admiral** owns one Project's delivery from plan approval
 to a human-landable feature branch. One **Issue Captain** owns each Issue end to end: the Issue
-contract is its destination, the reviewed plan its route, and spawned planners, writers, and
+contract is its destination, its Issue-resolution plan the route, and spawned Issue Planners, writers, and
 independent reviewers its crew. Admirals coordinate captains; captains direct crews; neither role
 authors production changes or reviews its own candidate.
 It also compiles as a spawnable agent (`emit: agent`, `delegates: true`) so an admiral can keep N
 Issues in flight as sub-agents; a spawned Issue Captain returns `blocked` with its question instead of
 waiting on the human. The same skill serves both spawners; the Issue is the shared state and
 assignment is the claim. **wayfinder** stops
-being an identity and becomes a method consumed by the planner (charting) and the admiral (working the
+being an identity and becomes a method consumed by the Project Planner (charting) and the admiral (working the
 map). `run-issues` retires; its loop becomes the Issue Captain's completion criterion. Imported from
 mattpocock/skills at `6654f6b6`, adapted: diagnosing-bugs, research, codebase-design, domain-modeling,
 prototype, handoff, teach, improve-codebase-architecture, and `SKILL-MECHANICS` as a writing-for-agents
@@ -93,7 +93,9 @@ resource. New and dydo-native: Issue Captain, walkthrough, the working-tree cont
 
 ### 3. Three review tiers and the review block
 
-1. **Issue review** — reviewer with the target rubric (code, tests, docs, plan) before any merge.
+1. **Issue review** — reviewer with the target rubric: code, tests, or docs before a production merge;
+   project-plan before Project approval; issue-plan before production only when the Issue Captain
+   requires it.
 2. **Merge review** — reviewer with the `merge` rubric after *every* merge: a mechanical spot check
    that scales with what landed; at the final feature merge it also proves the plan's acceptance
    criteria. The former `merge-sprint.md` is this rubric, renamed and narrowed; lens-hunting moves to
@@ -114,36 +116,39 @@ block records the model so cross-vendor review remains observable later.
 ### 4. Questions are Issues; decisions are DRs
 
 A **question Issue** (Linear label `question`, body `## Question`) is an open question that blocks
-planning or implementation and is too big or too uncertain to settle inline. Its resolution is an
-*answer* posted on the Issue; small preferences stay as spec detail on the implementation Issue. The
-word *decision* is reserved for Decision Records: an answer graduates to a DR only when it is hard to
-reverse, surprising later, and the result of a real trade-off. Issues carry questions and work; DRs
-carry decisions; the two are linked, never copied.
+named planning or implementation work and is too big or too uncertain to settle inline. It records
+why it blocks and the homework already done. Its resolution is an *answer* posted on the Issue; small
+preferences stay as spec detail on the implementation Issue, and a thought that blocks nothing stays
+fog rather than becoming an Issue. The word *decision* is reserved for Decision Records: an answer
+graduates to a DR only when it is hard to reverse, surprising later, and the result of a real
+trade-off. Issues carry questions and work; DRs carry decisions; the two are linked, never copied.
 
 **Fog** is the leading word for unknown unknowns. The rule is *fog → discovery → question Issue*: an
-agent in fog first runs a bounded discovery (DR index, the Project plan, the Issue's links, the
-glossary, the code); only if that comes up empty does it file a question Issue, listing what it
-searched, wire the blocking relation, and route it — wayfinder-style through the admiral when the
-Project is foggy, the planner when the plan needs refinement, the human only when HITL. The filing
-test is Grilling's own sentence: facts are the agent's job; choices are the human's. Question Issues
-resolve by either path — the human answering in Linear, or the chief-of-staff surfacing open HITL
-questions on request and grilling the human, recording answer and reasoning on the Issue. Native
-blocking does the pickup.
+agent in fog first runs bounded discovery through the DR index, Project plan, Issue links, glossary,
+code, and tests. Only a precise blocker still unanswered after that homework becomes a question Issue.
+A Project Planner creates and wires these while starting the map. During Issue work, an Issue Planner or
+worker returns the prepared hand-raise to the Issue Captain, who records and wires it and returns
+`blocked` plus its key to the admiral. The admiral may create new questions directly as forward motion
+clears fog, routes AFK homework to agents, and sends only remaining HITL judgment through
+chief-of-staff to the human. The filing test is Grilling's sentence: facts are the agent's job;
+choices are the human's. Native blocking does the pickup.
 
 ### 5. Planning at two resolutions
 
-- **`project`** — low resolution: destination, scope, acceptance, architecture-level design, an Issue
-  map of tracer-bullet vertical slices with blockers (expand–contract for wide refactors), ordering
-  and isolation, watch-outs, and — when foggy — a `## Not yet specified` section plus question
-  Issues instead of a pretended-complete route. Perfect plans are fiction: the approved plan fixes
-  the destination, not every turn. The admiral uses wayfinder as fog clears to create, split, or
-  resequence Issues, recording changes as dated amendments; re-reviewed only when scope, acceptance
-  criteria or the Issue map change.
-- **`issue`** — high resolution, just in time: files to touch, the pattern to copy with its path,
-  steps, edge cases, exact gates — until implementation is mechanical. Authored in the Issue by a
-  spawned `planner(issue)` at the Issue Captain's direction, then implemented by delegated writers
-  and reviewed with their code. A separate plan review before code happens only for Issues the
-  Project plan flags as architecture-sensitive.
+- **Project planning** — low resolution: destination, scope, acceptance, architecture-level design, the first
+  few pickable tracer-bullet Issues with full contracts (expand–contract for wide refactors), rough
+  later bearings, ordering and isolation, watch-outs, and — when foggy — `## Not yet specified` plus
+  blocking question Issues instead of a pretended-complete route. Perfect plans are fiction: the
+  approved plan fixes the destination, not every turn. The admiral uses wayfinder as fog clears to
+  create, split, drop, or resequence Issues and records dated amendments. Normal map refinement inside
+  the approved destination needs no new review; changes to destination, scope, acceptance criteria,
+  or governing architecture do.
+- **Issue planning** — high resolution, just in time: files to touch, the pattern to copy with its path,
+  steps, edge cases, exact gates — until implementation contains no hidden decisions. Authored in the
+  parent Issue or direct lane Sub-issue by a spawned `issue-planner` at the Issue Captain's direction,
+  then implemented by delegated writers and reviewed with their code. The Issue Planner recommends whether
+  route risk warrants a separate `issue-plan` review; the Issue Captain decides and uses it sparingly
+  before production for hard-to-reverse or high-blast-radius work.
 
 Every implementation Issue carries as required fields: outcome, owned paths, blockers, exact gates,
 base branch.
@@ -163,14 +168,14 @@ softened verdict, is the relief valve.
 
 ### 7. The human's gates
 
-Plan approval; HITL question Issues; escalations that survive the ladder; inquisition confirmation;
+Project-plan approval; HITL question Issues; escalations that survive the ladder; inquisition confirmation;
 the feature → main merge. Harmonization happens on main afterwards and is not a gate. Atomic Issues
 (no Project) branch from main and are merged by their Issue Captain after Issue review and merge review.
 
 ### 8. Working-tree contract
 
 One guide, `dydo/guides/working-tree-contract.md`, pointed at by issue-captain, admiral, chief-of-staff
-and the planner's `issue` resource, so no agent invents its own habits:
+and the Issue Planner, so no agent invents its own habits:
 
 - At plan approval the admiral (or the human when there is no admiral) opens the feature: creates
   `feature/<project-slug>` from main, writes the wayfinder map into the Project description, confirms
@@ -201,7 +206,7 @@ is; explicit-only descriptions are a punchy human-facing line.
   points is an ownership rule, not enforcement.
 - `dydo sync` keeps `## Must-Reads` in the compiled body of every role and rewrites its links to
   resolve from the emitted skill folder; `{{include:extra-must-reads}}` therefore works again for all
-  roles. The spawnable `planner` is bound to the strong tier. The `merge-sprint` resource is renamed
+  roles. The spawnable `project-planner` and `issue-planner` are bound to the strong tier. The `merge-sprint` resource is renamed
   `merge`.
 - Compiled agent definitions are thin identity wrappers over their skill, and the compiler must make
   the skill actually reach the spawned agent. Verified against the Claude Code documentation
@@ -225,7 +230,7 @@ structure, invocation metadata and role boundaries, never prose.
 
 ## Consequences
 
-- Twenty-five skills, one workflow, five rubrics, two planner resources. The count is acceptable
+- Twenty-six skills, one workflow and six rubrics. The count is acceptable
   only because the entry prompt carries the flow map and `dydo/index.md` the taxonomy; routing is a
   first-class deliverable, not documentation.
 - The human clicks exactly one merge per feature and reads a walkthrough first; everything else

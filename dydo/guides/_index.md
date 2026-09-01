@@ -20,5 +20,5 @@ Index of guides documentation.
 - [Orchestration Pitfalls](./orchestration-pitfalls.md) - Failure modes seen when several agents deliver one Project in parallel.
 - [Testing Strategy — Three-Tier System](./testing-strategy.md) - A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested.
 - [Troubleshooting](./troubleshooting.md) - Common guard, validation, template, and work-model failures, with the narrow recovery for each.
-- [Working-Tree Contract](./working-tree-contract.md) - How parallel agents open, claim, isolate and clean up branches and worktrees so concurrent work never tangles.
+- [Working-Tree Contract](./working-tree-contract.md) - The bird's-eye view of how a Project moves through branches and worktrees.
 - [Writing Good Briefs](./writing-good-briefs.md) - The self-containment bar for work handed to an agent.

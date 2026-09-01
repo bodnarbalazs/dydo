@@ -224,14 +224,15 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "workflows", "inquisition.js")));
     }
 
-    // The merge-sprint rubric was renamed to merge (DR 045 section 10). The old compiled file is
-    // not overwritten by the new one, so sync has to delete it on both hosts.
+    // Renamed and split rubrics are not overwritten by their replacements, so sync has to delete
+    // every retired compiled file on both hosts without sweeping project-owned siblings.
     [Fact]
-    public void CleanRetiredArtifacts_RemovesTheRenamedReviewerRubricOnBothHosts()
+    public void CleanRetiredArtifacts_RemovesRenamedReviewerRubricsOnBothHosts()
     {
         var stale = new[] { ".claude", ".agents" }
-            .Select(host => Path.Combine(
-                _testDir, host, "skills", "reviewer", "resources", "merge-sprint.md"))
+            .SelectMany(host => new[] { "merge-sprint.md", "plan.md" }
+                .Select(name => Path.Combine(
+                    _testDir, host, "skills", "reviewer", "resources", name)))
             .ToList();
         var sibling = Path.Combine(
             _testDir, ".claude", "skills", "reviewer", "resources", "project-notes.md");
@@ -247,7 +248,7 @@ public class SyncCommandTests : IDisposable
 
         Assert.All(stale, file => Assert.False(File.Exists(file), file));
         Assert.True(File.Exists(sibling), "a project-owned sibling must survive the sweep");
-        Assert.Equal(2, removed);
+        Assert.Equal(4, removed);
     }
 
     [Fact]
@@ -314,22 +315,28 @@ public class SyncCommandTests : IDisposable
     // DR-039 review-target subskills / DR-042: <role>-resource-<name>.template.md files
     // compile into the skill's resources/ folder, on both the Claude and Codex emit paths.
     [Fact]
-    public void SyncRole_EmitsSkillReferences_PlanRubric()
+    public void SyncRole_EmitsSkillReferences_BothPlanRubrics()
     {
         SyncCommand.SyncRole(_reviewer, _testDir);
 
-        var plan = Path.Combine(_testDir, ".claude", "skills", "reviewer", "resources", "plan.md");
-        Assert.True(File.Exists(plan), "reviewer skill must ship resources/plan.md");
-        Assert.NotEmpty(File.ReadAllText(plan));
+        foreach (var name in new[] { "project-plan.md", "issue-plan.md" })
+        {
+            var plan = Path.Combine(_testDir, ".claude", "skills", "reviewer", "resources", name);
+            Assert.True(File.Exists(plan), $"reviewer skill must ship resources/{name}");
+            Assert.NotEmpty(File.ReadAllText(plan));
+        }
     }
 
     [Fact]
-    public void SyncCodexSkill_EmitsSkillReferences_PlanRubric()
+    public void SyncCodexSkill_EmitsSkillReferences_BothPlanRubrics()
     {
         SyncCommand.SyncCodexSkill(_reviewer, _testDir);
 
-        Assert.True(File.Exists(
-            Path.Combine(_testDir, ".agents", "skills", "reviewer", "resources", "plan.md")));
+        foreach (var name in new[] { "project-plan.md", "issue-plan.md" })
+        {
+            Assert.True(File.Exists(
+                Path.Combine(_testDir, ".agents", "skills", "reviewer", "resources", name)));
+        }
     }
 
     [Fact]
@@ -612,7 +619,8 @@ public class SyncCommandTests : IDisposable
     // for either the read-only or the read-write branch.
     [Theory]
     [InlineData("reviewer")]
-    [InlineData("planner")]
+    [InlineData("project-planner")]
+    [InlineData("issue-planner")]
     [InlineData("code-writer")]
     public void SyncCodexRole_OmitsToolsField(string roleName)
     {
@@ -651,7 +659,8 @@ public class SyncCommandTests : IDisposable
     // guarantee the Skill tool is available, and `skills:` is what preloads the skill's content.
     [Theory]
     [InlineData("reviewer")]
-    [InlineData("planner")]
+    [InlineData("project-planner")]
+    [InlineData("issue-planner")]
     [InlineData("code-writer")]
     [InlineData("test-writer")]
     [InlineData("docs-writer")]
@@ -921,7 +930,7 @@ public class SyncCommandTests : IDisposable
         // pass the resource-file inversion, and would then hide a genuinely divergent link.
         Assert.NotEqual(
             NormalizeHostSkillRoot(claude),
-            NormalizeHostSkillRoot(codex.Replace("reviewer/", "planner/")));
+            NormalizeHostSkillRoot(codex.Replace("reviewer/", "project-planner/")));
         Assert.NotEqual(
             NormalizeHostSkillRoot(claude),
             NormalizeHostSkillRoot(codex.Replace("merge.md", "plan.md")));
@@ -1176,35 +1185,39 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCommand_Run_GeneratesSpawnablePlannerAndBothTargets()
+    public void SyncCommand_Run_GeneratesBothSpawnablePlanningRoles()
     {
         var originalDir = Directory.GetCurrentDirectory();
         try
         {
             File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "{\"version\":1}");
+            var retiredPlannerArtifacts = new[]
+            {
+                Path.Combine(_testDir, ".claude", "agents", "planner.md"),
+                Path.Combine(_testDir, ".claude", "skills", "planner", "resources", "project.md"),
+                Path.Combine(_testDir, ".claude", "skills", "planner", "resources", "issue.md"),
+                Path.Combine(_testDir, ".codex", "agents", "planner.toml"),
+                Path.Combine(_testDir, ".agents", "skills", "planner", "resources", "project.md"),
+                Path.Combine(_testDir, ".agents", "skills", "planner", "resources", "issue.md")
+            };
+            foreach (var artifact in retiredPlannerArtifacts)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(artifact)!);
+                File.WriteAllText(artifact, "stale generic planner output");
+            }
             Directory.SetCurrentDirectory(_testDir);
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "planner", "SKILL.md")),
-                "planner skill must be generated");
-            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")),
-                "planner must get a native agent definition");
-            Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "planner.toml")));
-
-            var expectedResources = new[] { "issue.md", "project.md" };
-            foreach (var resourceDirectory in new[]
+            foreach (var roleName in new[] { "project-planner", "issue-planner" })
             {
-                Path.Combine(_testDir, ".claude", "skills", "planner", "resources"),
-                Path.Combine(_testDir, ".agents", "skills", "planner", "resources"),
-            })
-            {
-                var actualResources = Directory.GetFiles(resourceDirectory)
-                    .Select(Path.GetFileName)
-                    .OrderBy(name => name, StringComparer.Ordinal)
-                    .ToArray();
-                Assert.Equal(expectedResources, actualResources);
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md")));
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md")));
+                Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", roleName, "SKILL.md")));
+                Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml")));
             }
+
+            Assert.All(retiredPlannerArtifacts, artifact => Assert.False(File.Exists(artifact), artifact));
         }
         finally
         {
@@ -1213,18 +1226,21 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_PlannerWritesAgentAndSkillForBothHosts()
+    public void SyncRole_PlanningRolesWriteAgentAndSkillForBothHosts()
     {
-        var planner = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "planner");
-        Assert.True(planner.EmitAgent);
+        foreach (var roleName in new[] { "project-planner", "issue-planner" })
+        {
+            var planner = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == roleName);
+            Assert.True(planner.EmitAgent);
 
-        SyncCommand.SyncRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
-        SyncCommand.SyncCodexRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
+            SyncCommand.SyncRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
+            SyncCommand.SyncCodexRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
 
-        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "planner", "SKILL.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "planner", "SKILL.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "planner.toml")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", roleName, "SKILL.md")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml")));
+        }
     }
 
     [Fact]
@@ -1325,7 +1341,9 @@ public class SyncCommandTests : IDisposable
 
         Assert.Contains("merge", emitted);
         Assert.Contains("code", emitted);
-        Assert.Contains("plan", emitted);
+        Assert.Contains("project-plan", emitted);
+        Assert.Contains("issue-plan", emitted);
+        Assert.DoesNotContain("plan", emitted);
         Assert.Contains("docs", emitted);
         Assert.Contains("tests", emitted);
         Assert.All(emitted, name => Assert.NotEmpty(File.ReadAllText(Path.Combine(resources, $"{name}.md"))));
@@ -1402,7 +1420,8 @@ public class SyncCommandTests : IDisposable
 
     [Theory]
     [InlineData("reviewer", "gpt-5.6-sol")]
-    [InlineData("planner", "gpt-5.6-sol")]
+    [InlineData("project-planner", "gpt-5.6-sol")]
+    [InlineData("issue-planner", "gpt-5.6-sol")]
     [InlineData("issue-captain", "gpt-5.6-sol")]
     [InlineData("code-writer", "gpt-5.6-terra")]
     [InlineData("docs-writer", "gpt-5.6-terra")]

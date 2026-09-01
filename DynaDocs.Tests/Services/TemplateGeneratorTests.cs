@@ -31,7 +31,8 @@ public class TemplateGeneratorTests
     [InlineData("skill-code-writer.template.md")]
     [InlineData("skill-reviewer.template.md")]
     [InlineData("skill-co-thinker.template.md")]
-    [InlineData("skill-planner.template.md")]
+    [InlineData("skill-project-planner.template.md")]
+    [InlineData("skill-issue-planner.template.md")]
     [InlineData("skill-docs-writer.template.md")]
     [InlineData("skill-test-writer.template.md")]
     [InlineData("skill-self-improvement.template.md")]
@@ -110,6 +111,18 @@ public class TemplateGeneratorTests
         Assert.Contains("type: guide", content);
         Assert.Equal(1, SyncCommandTests.H1Count(content));
         Assert.Contains("guides/working-tree-contract.md", TemplateCommand.FrameworkDocFiles);
+    }
+
+    [Fact]
+    public void GenerateLinearWorkspaceStandardMd_IsAScaffoldableFrameworkReference()
+    {
+        var content = TemplateGenerator.GenerateLinearWorkspaceStandardMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: reference", content);
+        Assert.Contains("type: reference", content);
+        Assert.Equal(1, SyncCommandTests.H1Count(content));
+        Assert.Contains("reference/linear-workspace-standard.md", TemplateCommand.FrameworkDocFiles);
     }
 
     [Fact]
@@ -629,7 +642,9 @@ public class TemplateGeneratorTests
         Assert.Contains("reviewer", content);
         // The fallback role table is documentation of the live roster; a retired name in it sends
         // a reader at a role that no longer compiles.
-        Assert.All(SyncCommand.RetiredManagedRoles, retired => Assert.DoesNotContain(retired, content));
+        Assert.All(SyncCommand.RetiredManagedRoles.Where(retired => retired != "planner"),
+            retired => Assert.DoesNotContain(retired, content));
+        Assert.DoesNotContain("| `planner` |", content);
         Assert.Contains("github.com/bodnarbalazs/dydo", content);
         Assert.DoesNotContain("PM system that lives in your repo", content);
         Assert.DoesNotContain("backlog", content, StringComparison.OrdinalIgnoreCase);

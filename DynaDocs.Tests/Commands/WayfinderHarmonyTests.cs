@@ -28,7 +28,7 @@ public class WayfinderHarmonyTests : IDisposable
     // either host — but existence is checked against THIS repository's dydo/ tree, because that
     // is where both criteria are judged after regeneration. A bare scaffold holds only framework
     // documents, so resolving there would fail any skill that references a repo-authored guide
-    // (plan section 7 binds the planner to writing-good-briefs, which ships no template).
+    // (plan section 7 binds the Issue Planner to writing-good-briefs, which ships no template).
     [Fact]
     public void CompiledSkills_DydoLinksClimbToTheProjectRootAndNameRealDocuments()
     {

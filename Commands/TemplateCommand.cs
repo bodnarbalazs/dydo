@@ -20,6 +20,7 @@ public static class TemplateCommand
         "reference/about-dynadocs.md",
         "reference/dydo-commands.md",
         "reference/dydo-glossary.md",
+        "reference/linear-workspace-standard.md",
         "reference/writing-docs.md",
         "guides/working-tree-contract.md"
     ];
@@ -148,6 +149,13 @@ public static class TemplateCommand
         if (modelsUpgraded)
         {
             Console.WriteLine("  Upgraded legacy OpenAI model defaults");
+            updated++;
+        }
+
+        var plannerRolesUpgraded = !diff && ConfigFactory.UpgradeLegacyPlannerRole(config);
+        if (plannerRolesUpgraded)
+        {
+            Console.WriteLine("  Replaced legacy planner model binding with project-planner and issue-planner");
             updated++;
         }
 
@@ -629,6 +637,7 @@ public static class TemplateCommand
         "reference/about-dynadocs.md" => TemplateGenerator.GenerateAboutDynadocsMd(),
         "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
         "reference/dydo-glossary.md" => TemplateGenerator.GenerateDydoGlossaryMd(),
+        "reference/linear-workspace-standard.md" => TemplateGenerator.GenerateLinearWorkspaceStandardMd(),
         "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
         "guides/working-tree-contract.md" => TemplateGenerator.GenerateWorkingTreeContractMd(),
         _ => null

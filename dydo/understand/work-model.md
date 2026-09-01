@@ -17,8 +17,8 @@ A session is not a type. It wears the hat the work is in now, and changes hats a
 | Stage | Hat | Output | Gate |
 |---|---|---|---|
 | Think | co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
-| Chart a foggy Project | planner, using wayfinder | the Linear Project as a map, and question Issues | — |
-| Plan | planner | an atomic Issue, or a Project plan and its Issue map | plan review, then the human's approval |
+| Chart and plan a Project | project-planner, using wayfinder | the first Project map and blocking question Issues | project-plan review, then human approval |
+| Plan an Issue | issue-captain, using issue-planner | a just-in-time route with no hidden implementation decisions | optional issue-plan review |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
 | Coordinate (optional) | admiral | several Issues in flight, serial merges, plan amendments | merge review after every merge |
 | Audit (rare) | inquisition workflow | an audit and an assimilation brief | the human confirms before it runs |
@@ -72,8 +72,9 @@ to an Issue. They are not extra levels in the work graph.
 
 ## Three review tiers
 
-1. **Issue review** — a fresh reviewer with the rubric the change targets (code, tests, docs, plan),
-   before any merge.
+1. **Issue review** — a fresh reviewer with the rubric the candidate targets: code, tests, or docs
+   before merge; `project-plan` before Project approval; `issue-plan` before production only when the
+   Issue Captain requires it.
 2. **Merge review** — a reviewer with the `merge` rubric after *every* merge: a mechanical spot check
    scaled to what landed, which at the final feature merge also proves the plan's acceptance criteria.
 3. **Inquisition** — rare and human-confirmed, fanned out across lenses with the reviewer as judge and

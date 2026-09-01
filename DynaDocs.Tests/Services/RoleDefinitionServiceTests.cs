@@ -41,7 +41,8 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("reviewer", names);
         Assert.Contains("test-writer", names);
         Assert.Contains("docs-writer", names);
-        Assert.Contains("planner", names);
+        Assert.Contains("project-planner", names);
+        Assert.Contains("issue-planner", names);
         Assert.Contains("co-thinker", names);
         Assert.Contains("chief-of-staff", names);
         Assert.Contains("admiral", names);
@@ -126,8 +127,9 @@ public class RoleDefinitionServiceTests : IDisposable
     {
         var roles = RoleDefinitionService.DiscoverRoles(_testDir).ToDictionary(r => r.Name);
 
-        // Spawnable roles emit agent + skill; planner remains usable as a session hat too.
-        Assert.True(roles["planner"].EmitAgent);
+        // Spawnable roles emit agent + skill; Project Planner remains usable as a session hat too.
+        Assert.True(roles["project-planner"].EmitAgent);
+        Assert.True(roles["issue-planner"].EmitAgent);
         Assert.True(roles["code-writer"].EmitAgent);
         Assert.True(roles["reviewer"].EmitAgent);
         Assert.True(roles["test-writer"].EmitAgent);

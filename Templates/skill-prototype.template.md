@@ -12,7 +12,7 @@ invocation: automatic
 A prototype is **throwaway code that answers a question**. The question decides the shape. Chart
 is the stage: `wayfinder` files a prototype question Issue when how something should look or
 behave is what the route waits on, and a co-thinker whose exchange has gone abstract routes its
-question the same way — through the planner's charting.
+question the same way — through the Project Planner's charting.
 
 ## Pick a branch
 

@@ -108,7 +108,8 @@ public static class ConfigFactory
             ["docs-writer"] = "standard",
             ["reviewer"] = "strong",
             ["inquisitor"] = "strong",
-            ["planner"] = "strong",
+            ["project-planner"] = "strong",
+            ["issue-planner"] = "strong",
             ["issue-captain"] = "strong",
             ["research"] = "standard"
         },
@@ -118,6 +119,22 @@ public static class ConfigFactory
         // harness script, which retries a stage on this same model.
         Fallback = "claude-sonnet-5"
     };
+
+    /// <summary>
+    /// Replaces the retired generic planner binding with both literal planning roles while
+    /// preserving the project's chosen tier. Idempotent and leaves configs without the legacy
+    /// binding untouched.
+    /// </summary>
+    public static bool UpgradeLegacyPlannerRole(DydoConfig config)
+    {
+        var roles = config.Models?.Roles;
+        if (roles == null || !roles.Remove("planner", out var tier))
+            return false;
+
+        roles.TryAdd("project-planner", tier);
+        roles.TryAdd("issue-planner", tier);
+        return true;
+    }
 
     /// <summary>
     /// Upgrades the exact OpenAI tier block emitted by older versions. A project that

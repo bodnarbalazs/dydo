@@ -10,7 +10,7 @@ description: Fog — the route through a Linear Project is not visible yet. Use 
 A Linear Project is too large for one agent session and wrapped in **fog**: the way from here to the
 **destination** is not visible yet. Wayfinding finds that way; it does not charge at the destination.
 The Project is the shared map, and its **question Issues** hold the questions the route waits on. The
-planner charts a foggy Project; the admiral works the map afterwards.
+Project Planner charts a foggy Project; the admiral works the map afterwards.
 
 Naming the destination is the first act of charting, because it shapes every question Issue: a spec
 ready for planning, a Decision Record locked before implementation, or a change made in place.
@@ -57,13 +57,22 @@ session orients to it before choosing a question>
 
 ### Question Issues
 
-Each open question is one Linear Issue in the Project, labelled `question` and sized for one agent
-session:
+Each open question is one Linear Issue in the Project, labelled `question`, sized for one agent
+session, and wired as a blocker of every plan or implementation Issue waiting on its answer. If
+nothing is blocked, keep the thought as fog or spec detail rather than creating a question Issue.
 
 ```markdown
 ## Question
 
-<the question this Issue resolves, and what was already searched for its answer>
+<the one question this Issue resolves>
+
+## Why it blocks
+
+<the named plan or implementation Issues that cannot proceed, and why>
+
+## Homework
+
+<what was searched; facts, constraints and credible options already found; the remaining judgment>
 ```
 
 Name its type — research, prototype, grilling or task — and carry the HITL or AFK label for who must
@@ -103,12 +112,21 @@ The test is precision, not answerability:
 
 ### Fog, then discovery, then a question Issue
 
-An agent in fog runs a bounded discovery first: the Decision Record index, the Project plan, the
-Issue's own links, the glossary, then the code. Only when that comes up empty does it file a question
-Issue, listing what it searched, wire the blocking relation, and route it — through the admiral when
-the Project itself is foggy, the planner when the plan needs refinement, the human only when HITL. The
-filing test is grilling's own sentence: facts are the agent's job, choices are the human's. Native
-blocking does the pickup.
+Search the Decision Record index, Project plan, Issue links, glossary, code and tests first. Only a
+precise answer still absent after that homework earns a blocking question Issue. It can enter the map
+through several hands:
+
+| Found by | Recording path |
+|---|---|
+| `project-planner` while starting the map | create it and wire its blockers |
+| `issue-planner` or a worker during one Issue | return the prepared hand-raise to the Issue Captain, who records and wires it |
+| Issue Captain | return `blocked` plus its key to the admiral |
+| admiral as forward motion clears fog | create it, wire it, and rechart the affected Issues |
+
+The admiral routes AFK homework to research or prototype work and sends only the remaining HITL
+judgment through `chief-of-staff` to the human. For an atomic Issue, the Issue Captain occupies that
+final delivery rung. The filing test is grilling's sentence: facts are the agent's job; choices are
+the human's. Native blocking does the pickup.
 
 An answer resolves its Issue and stays there; it graduates to a Decision Record only when it is hard to
 reverse, surprising later, and the result of a real trade-off. Issues carry questions, Decision Records
@@ -132,8 +150,8 @@ Charting starts from an active Project and a loose destination.
    journey fits one session, say so and ask how the human wants to proceed.
 3. Write the map body into the Project description, with Answers so far empty and the fog sketched into
    Not yet specified.
-4. Create the question Issues that are sharp now, then wire blocking relations in a second pass, once
-   their keys exist.
+4. Create the question Issues that are sharp now, then wire each to the plan or implementation Issues
+   it blocks in a second pass, once their keys exist.
 5. Dispatch one **research** sub-agent per research Issue created, in parallel; its cited findings land
    as a comment on that Issue.
 6. Stop. Charting answers nothing itself.

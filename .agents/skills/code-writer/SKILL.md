@@ -20,7 +20,8 @@ Implement one reviewed Issue exactly: red first, then the smallest change that t
 ## Boundary
 
 No reviewed intent, no code: build only what the Issue and its plan already settle, inside the owned
-paths. Review, integration and open contract questions are the Issue Captain's — raise them there.
+paths. Review, integration, Linear labels and status, and open contract questions are the Issue
+Captain's — raise them there.
 
 ## Method
 

@@ -28,6 +28,8 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
   their crews; you coordinate the captains rather than their workers.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to create, split, or resequence Issues and keep the Project on course.
+- **Board discipline:** keep Project and Issue statuses, labels, blockers, answers, and evidence true
+  to the work. Close answered Question Issues as `Done`; repair stale mechanical state when you see it.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Neither role authors
   production changes or reviews its own candidate.
 - **Precedence:** human's live instruction → DR → reviewed plan at its governing commit → Issue
@@ -39,8 +41,9 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
 ## Method
 
 1. **Open the feature.** On plan approval, create `feature/<project-slug>` from main, put the
-   `wayfinder` map in the Project description, and assign every Issue its base branch and blockers
-   under the working-tree contract. **Done:** the feature is open and unblocked Issues are pickable.
+   `wayfinder` map in the Project description, and assign every implementation Issue its base branch and blockers
+   under the working-tree contract. Set the Project to `In Progress`; every implementation Issue has
+   one Type and Mode. **Done:** the feature is open and unblocked `Todo` Issues are pickable.
 2. **Commission captains.** Spawn one `issue-captain` per pickable Issue as isolation allows;
    assignment is the claim. **Done:** every pickable Issue has a captain or a stated reason, and a
    blocked captain has returned its question Issue instead of waiting.
@@ -49,17 +52,20 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
    and PR carries its review block.
 4. **Review every merge.** After each merge, send the integrated state to a fresh `reviewer` using
    the `merge` rubric; the final review also proves the Project's acceptance criteria. **Done:** the
-   current feature SHA has a merge-review PASS.
+   current feature SHA has a merge-review PASS and the merged Issue is `Done`.
 5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence Issues and record
-   dated plan amendments; re-review changes to destination, scope, acceptance criteria, or governing
-   architecture. **Done:** the Project map matches the work in flight.
+   dated plan amendments; give every new implementation Issue one Type, one Mode, and `Todo`; re-review
+   changes to destination, scope, acceptance criteria, or governing architecture. **Done:** the
+   Project map matches the work in flight.
 6. **Clear fog.** When progress reveals a real decision point, run bounded discovery; create and wire
-   the unanswered question Issue as a blocker, prepare its facts and options, and use `chief-of-staff`
-   only when human judgment remains. **Done:** nothing waits silently or reaches the human unprepared.
+   a `Question` Issue only when human judgment remains. Put it in `Waiting for Human` with no Mode,
+   its searched sources, facts, options, and recommendation, and wire it as a blocker. **Done:**
+   nothing waits silently or reaches the human unprepared.
 7. **Offer the inquisition.** Once the feature is integrated, offer `inquisition` with its scope and
    cost. **Done:** the human confirms or declines; it runs only on that confirmation.
+8. **Close the Project.** Once the feature → main merge and closeout are recorded, set the Project
+   `Completed` and retire its feature artifacts. **Done:** Linear and Git read true; no orphan remains.
 
 ## Return
 
-The human owns the feature → main merge. Return the feature branch and SHA, the final merge-review
-PASS block, and whether the inquisition ran or was declined.
+The human owns the feature → main merge. Present the branch, SHA, final merge-review PASS, and inquisition outcome; keep the Project `In Progress` until step 8 is true.

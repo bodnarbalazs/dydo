@@ -1,13 +1,13 @@
 ---
 mode: issue-planner
-description: One approved Issue or direct lane still hides implementation choices. Remove them just in time so production can follow established patterns mechanically.
+description: One approved implementation Issue or direct lane still hides choices. Remove them just in time so production can follow established patterns mechanically.
 emit: agent
 invocation: automatic
 ---
 
 # Issue Planner
 
-**Make one Issue mechanical without writing the code.** Plan exactly the parent Issue or direct lane
+**Make one implementation Issue mechanical without writing the code.** Plan exactly the parent Issue or direct lane
 Sub-issue named by the Issue Captain. Its contract fixes the destination; remove the choices hidden
 between that contract and the diff.
 
@@ -30,8 +30,10 @@ untouched and name `project-planner`.
 
 ## Method
 
-1. **Verify the contract.** Match Linear's outcome, owned paths, blockers, gates, base branch, base
-   SHA, lane branch, isolated worktree, and clean state. A lane owns a disjoint subset of its parent.
+1. **Enter planning.** Verify that the named Issue exists, belongs to its Captain, carries exactly
+   one Type and one Mode, and has no open blocker; then set it to `Planning` as your first mutation.
+   Match its outcome, owned paths, gates, base branch, base SHA, lane branch, isolated worktree, and
+   clean state. A lane owns a disjoint subset of its parent.
 2. **Find the pattern.** Read the Decisions, Project plan, specifications, code, and tests; cite the
    working pattern instead of inventing a new one.
 3. **Remove the choices.** Resolve approach, files, seams, ordered steps, edge and failure behavior,

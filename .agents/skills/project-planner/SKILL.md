@@ -32,16 +32,21 @@ keep the section numbers — Issue contracts cite them.
 
 ## Method
 
-1. **Read the ground.** Inspect the intent, Decisions, prior art, code, tests, and specifications.
+1. **Enter planning.** Set the Linear Project to `Planning`, then inspect the intent, Decisions,
+   prior art, code, tests, and specifications.
 2. **Fix the destination.** State scope, acceptance, governing design, and settled answers without
    claiming that later bearings are ready work.
-3. **Start the map.** Make the first stable Issues independently pickable; record later work as rough
-   bearings the admiral may promote, split, drop, or reorder.
-4. **Expose blocking questions.** Search durable knowledge first. When a precise unanswered question
-   blocks work, file and wire a Linear question Issue with the homework already done; never assume.
+3. **Start the map.** Make the first stable implementation Issues independently pickable: each carries one Type,
+   one Mode (`AFK` or `HITL`), and `Todo`; record later work as rough bearings the admiral may
+   promote, split, drop, or reorder.
+4. **Expose blocking questions.** Search durable knowledge first. When human judgment still blocks
+   work, file and wire a `Question` Issue in `Waiting for Human`, with the homework already done and
+   no Mode label; when answered, record the answer and mark it `Done`. If the sources settle it,
+   record the answer where the work lives without creating a Question.
 5. **Write the plan.** Use the skeleton below and commit it before review.
 6. **Own the review loop.** Spawn a fresh `reviewer(project-plan)`. Resolve every FAIL and rerun a
-   fresh review. After PASS, ask the human to approve; only approval opens the route to the admiral.
+   fresh review. After PASS, ask the human to approve; on approval set the plan's frontmatter status
+   to `reviewed` and the Linear Project to `Planned`. Only then does the route open to the admiral.
 
 ## Project plan skeleton
 
@@ -80,11 +85,11 @@ linear-project: <the Linear Project URL>
 
 ## Questions and amendments
 
-A question Issue is blocking, carries `question`, records the facts and options already found, and
-blocks every plan or implementation Issue waiting on its answer. Use `research` for homework and
-`HITL` only when the remaining answer requires human judgment.
+A Question Issue is blocking, carries `Question`, records the authoritative sources searched plus
+the facts, options, and recommendation already found, and blocks every plan or implementation Issue
+waiting on its answer. It exists only when that homework leaves human judgment.
 
-After review PASS and human approval, set `status: reviewed` and return the passing commit, first
-pickable Issues, later bearings, and blockers to the admiral. The admiral records discoveries in
+After review PASS and human approval, return the passing commit, first pickable Issues, later
+bearings, and blockers to the admiral. The admiral records discoveries in
 dated `## Amendment — <YYYY-MM-DD>` sections. Re-review only when an amendment changes destination,
 scope, acceptance criteria, or governing architecture.

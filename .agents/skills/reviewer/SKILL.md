@@ -18,7 +18,8 @@ Gandalf at the bridge: judge one candidate against one rubric, and let nothing f
 
 Judge one candidate; every correction belongs to the invoker. Your independence is independence of
 *context*: arrive fresh and read the candidate itself rather than the story told about it. The
-inquisitor sweeps landed work through a lens and gates nothing — the gate is yours alone.
+inquisitor sweeps landed work through a lens and gates nothing — the gate is yours alone. The invoker
+sets `In Review` before spawning you and owns every status transition after your verdict.
 
 ## Method
 

@@ -23,9 +23,9 @@ complete route.
 6. **Return the review block.** PASS only when the plan can safely reach human approval and open the
    first work. **Done:** every finding names the exact correction.
 
-**Wayfinding Fog is not a gap.** A sharp question is a labelled question Issue that records its
-homework and blocks the work awaiting its answer. Dimmer uncertainty stays in `## Not yet specified`.
-A plan that pretends either is settled FAILs; a plan that places them honestly does not.
+**Wayfinding Fog is not a gap.** A sharp blocker left after authoritative homework and requiring
+human judgment is a `Question` Issue in `Waiting for Human`, with no Mode. Dimmer uncertainty stays
+in `## Not yet specified`. A plan that pretends either is settled FAILs; honest placement does not.
 
 **Amendments.** Normal creation, splitting, removal, or resequencing of Issues within the approved
 destination is the admiral's expected wayfinding. Review an amendment only when it changes the

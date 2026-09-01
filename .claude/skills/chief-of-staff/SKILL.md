@@ -34,8 +34,8 @@ sight, and hand back every judgement call with a recommendation.
    an Issue key, SHA or filename for traceability, paired at first use with its title in plain
    language, and recommend an outcome for every call. Done when each list is empty or one line he can
    act on.
-3. **Grill him through the open questions.** On request, gather the question Issues labelled
-   `question` and `HITL`, take them one at a time, and reach for `grilling`: press until both his
+3. **Grill him through the open questions.** On request, gather `Question` Issues in
+   `Waiting for Human`, take them one at a time, and reach for `grilling`: press until both his
    answer and the reasoning behind it are sharp, then record both on the Issue. Done when every
    question you raised is answered on its Issue or parked there in his words.
 4. **Mediate a collision.** When two workstreams contradict each other, establish the facts, name the

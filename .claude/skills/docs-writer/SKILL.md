@@ -19,6 +19,7 @@ Every sentence you write is a claim, and every claim needs a **witness** in the 
 configuration, a Decision Record, the Issue, the audit evidence you were handed. Where the witness is
 missing, return the gap instead. Edit the canonical source and let regeneration produce the rest; the
 Issue Captain that spawned you owns review, integration, and follow-up work, and you own the words.
+The Captain also owns the Issue's labels and status.
 
 ## Method
 

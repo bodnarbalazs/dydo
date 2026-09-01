@@ -21,8 +21,8 @@ agent coordination.
 - **Documentation tooling** — `dydo check`, `dydo fix`, indexes, and graph commands keep knowledge usable.
 - **Reviewed delivery knowledge** — Decisions, Project plans, audits, and assimilation evidence remain in Git.
 
-dydo does not manage Linear objects or mirror their state. A fresh project scaffolds durable knowledge
-folders and FutureFeature idea documentation, not a repository-backed work hierarchy.
+dydo does not manage Linear objects or mirror their state. A fresh project scaffolds durable knowledge,
+not a repository-backed work hierarchy; FutureFeatures live in Linear with the rest of the work graph.
 
 ## Technology
 

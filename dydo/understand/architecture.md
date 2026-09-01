@@ -66,10 +66,11 @@ Linear owns Initiatives, Projects, Issues, optional Milestones and Cycles, and e
 status, priority, assignment, dependencies, updates, review state.
 
 Git and dydo own architecture, Decisions, reviewed Project plans, guides, audits, inquisitions,
-assimilation briefs, changelog, release tags, pitfalls, and repo-native FutureFeatures. Branches,
-worktrees, sessions, native sub-agents, commits, pull requests, and review passes are execution
-evidence linked to a Linear Issue, not work-record types. The [Work Model](./work-model.md) states the
-contract; the [Linear Issue Lifecycle](./task-lifecycle.md) states how one Issue moves through it.
+assimilation briefs, changelog, release tags, and pitfalls. Linear owns FutureFeatures with the rest
+of the work graph. Branches, worktrees, sessions, native sub-agents, commits, pull requests, and
+review passes are execution evidence linked to a Linear Issue, not work-record types. The
+[Work Model](./work-model.md) states the contract; the [Linear Issue Lifecycle](./task-lifecycle.md)
+states how one Issue moves through it.
 
 ## Guard system
 

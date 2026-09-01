@@ -45,8 +45,19 @@ that can drift from Linear's dependency graph.
 
 ### Type group
 
-Every Issue carries exactly one Type label. Type records why the Issue exists, normally remains
-stable throughout its life, and selects one of two control loops.
+Every Issue carries exactly one Type label. Type records why the Issue exists and selects its control
+loop.
+
+#### Intake
+
+| Label | Meaning |
+|---|---|
+| `FutureFeature` | Preserve an unscheduled strategic possibility whose delivery grain and commitment remain open. |
+
+A FutureFeature stays in `Backlog` without a Mode or Issue Captain. Only the human promotes it. At
+Issue grain, replace its Type with `Feature` or `Improvement` and enter the delivery loop on the same
+record. At Project or Initiative grain, create and link that record, then mark the FutureFeature
+`Done`. A rejected FutureFeature becomes `Canceled` with the reason recorded.
 
 #### Delivery
 
@@ -74,8 +85,8 @@ only when the work needs independent tracking or blocks other work.
 
 ### Mode group
 
-Every delivery Issue carries exactly one Mode label before it becomes pickable. Wayfinding Issues
-carry neither: their Type, assignee, status, and blockers already state how they move.
+Every delivery Issue carries exactly one Mode label before it becomes pickable. FutureFeature and
+Wayfinding Issues carry neither.
 
 | Label | Meaning |
 |---|---|
@@ -136,6 +147,12 @@ implementation outcome is already stable, create both records and make the Quest
 When a new question surfaces during execution, the Issue Captain creates it locally only under the
 scope rule above; otherwise the Captain prepares the hand-raise and the Admiral creates and wires the
 Project-level Question Issue.
+
+## Decision Records
+
+Linear records the decision-making work; dydo records a qualifying decision. Link the Question or
+Grilling Issue to its repository Decision Record and link the record back when it has a Linear origin.
+The Decision Record is canonical: keep its rationale in dydo rather than copying it into Linear.
 
 ## Related
 

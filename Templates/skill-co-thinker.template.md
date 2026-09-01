@@ -52,7 +52,7 @@ anything; what reaches him is what he alone has the authority to settle.
 | What leaves | Where it lands |
 |---|---|
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
-| An idea worth keeping but not committed to | a FutureFeature in `dydo/project/future-features/` |
+| An unscheduled strategic possibility worth preserving | a Linear Issue labelled `FutureFeature` |
 | Ripe Project intent: goal and trade-offs settled | `project-planner` |
 | Ripe atomic Issue intent | `issue-captain`, who sends `issue-planner` ahead of production |
 | A Linear Project still foggy after the homework | `project-planner`, who charts it with `wayfinder` |

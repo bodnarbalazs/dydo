@@ -44,8 +44,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   its code: files to touch, the pattern to copy, steps, edge cases, exact gates. It is reviewed with
   the code it governs; the Issue Captain may require a separate pre-code review when route risk
   warrants the extra gate.
-- **FutureFeature** — an unscheduled repo-native idea. Only the human may promote it to exactly one
-  Linear Initiative, Project, or Issue; `promoted` is terminal and does not mirror delivery state.
+- **FutureFeature** — an unscheduled strategic possibility recorded as a Linear Issue, distinct from
+  a generic idea or delivery contract. It stays in `Backlog` until the human promotes or cancels it.
 - **Assimilation brief** — the durable account of what changed, what was learned, and what remains.
 
 ## Roles and skills

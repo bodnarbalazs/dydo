@@ -51,7 +51,7 @@ The [dydo glossary](../reference/dydo-glossary.md) names every member of each ca
 | Decisions, reviewed Project plans, guides | dydo/Git |
 | Audit, inquisition, migration, and assimilation evidence | dydo/Git |
 | Release tags and changelog | Git |
-| FutureFeatures before and after human promotion | dydo/Git |
+| FutureFeatures and their promotion state | Linear |
 
 dydo has no Linear client, token, schema, poller, webhook receiver, cache, or Markdown mirror. Agents
 reach Linear through its official MCP, UI, API, and integrations, outside the dydo runtime.
@@ -97,12 +97,10 @@ rather than left in a comment thread or a session transcript.
 
 ## FutureFeatures
 
-A FutureFeature is an unscheduled, non-actionable repo-native idea, and it stays one until the human
-decides otherwise. Promotion is his alone: it creates exactly one Linear Initiative, Project, or
-Issue, records that stable URL on the idea, and moves its status to the terminal `promoted`. Delivery
-state after that exists only in Linear, and the idea remains provenance rather than a mirror of it.
-The frontmatter and body an idea must carry in either state are in
-[Future Features](../project/future-features/_future-features.md).
+A FutureFeature is an unscheduled strategic possibility recorded as a Linear Issue, not a generic
+idea or delivery contract. It stays in `Backlog` until the human promotes or cancels it. The
+[Linear Workspace Standard](../reference/linear-workspace-standard.md) defines its Type and
+promotion paths.
 
 ## Related
 

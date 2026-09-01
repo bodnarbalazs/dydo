@@ -50,7 +50,7 @@ Input → Processing → Durable output
 - **Linear** owns Initiatives, Projects, Issues, optional Milestones and Cycles, plus live status,
   priority, assignment, dependencies, updates, and review state.
 - **Git/dydo** owns architecture, Decisions, reviewed Project plans, guides, audits, assimilation
-  evidence, changelog, and repo-native FutureFeatures.
+  evidence, and changelog. Linear owns FutureFeatures with the rest of the work graph.
 - Link between the two; do not mirror volatile Linear state into repository documents.
 
 ---

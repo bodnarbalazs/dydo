@@ -27,9 +27,8 @@ priority, assignee, dependencies, current updates, and review state. dydo does n
 Markdown. Linear links to durable repository artifacts; knowledge discovered during execution flows
 back into the appropriate Decision, guide, plan, audit, or assimilation brief.
 
-FutureFeatures are the deliberate exception. An unscheduled idea remains repo-native until the human
-promotes it to exactly one Linear Initiative, Project, or Issue. The idea records the stable Linear URL
-once and never mirrors subsequent delivery state.
+FutureFeatures are distinct unscheduled strategic possibilities in Linear. They stay in `Backlog`
+until the human promotes or cancels them; durable knowledge they uncover flows into dydo.
 
 ## Stop Doing Agent Work Yourself
 
@@ -67,7 +66,7 @@ commands hard-block; project nudges add configurable notices, warnings, and bloc
 
 `dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, role templates,
 guard wiring, and runtime entry files. It does not create a second live work graph; use Linear for work
-management and keep FutureFeatures in `dydo/project/future-features/` until human promotion.
+management, including FutureFeatures.
 
 ## How Work Runs
 
@@ -129,7 +128,6 @@ project/
     |-- guides/                  # How-to guidance
     |-- reference/               # Exact commands and specifications
     |-- project/                 # Durable knowledge and delivery proof
-    |   `-- future-features/     # Unscheduled repo-native ideas
     |-- _system/templates/       # Project template overrides
     |-- _system/template-additions/
     `-- _assets/

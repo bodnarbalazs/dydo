@@ -15,4 +15,4 @@ Index of future-features documentation.
 - [Default Per-Method Bottleneck Detail for gap_check.py](./coverage.py-update.md) - `gap_check.py --inspect PATTERN --methods` already reports per-method CC, coverage, and CRAP for the relevant failing methods.
 - [Cross-Vendor Review](./cross-vendor-review.md) - Bind the reviewer to a different vendor's model than the writer, so a candidate written on Claude is judged on Codex and the reverse.
 - [Documentation Coverage Estimation](./doc-coverage.md) - Static analysis that estimates how well the documentation workspace covers the concepts that matter in the codebase.
-- [Routine Manager](./routine-manager.md) - A manager that wakes on a cadence and keeps a Project moving while nobody is watching, instead of only for as long as a human keeps a session open.
+- [Routine Admiral](./routine-admiral.md) - An admiral that wakes on a cadence and keeps a Project moving while nobody is watching, instead of only for as long as a human keeps a session open.

@@ -52,7 +52,7 @@ anything still open back to Think with the question named, or file it as a quest
 
 For `project`, give a fresh reviewer the committed plan at its exact commit, its governing Decisions,
 and its Linear Project; name the `plan` rubric. Resolve every finding, then ask the human to approve and
-hand the manager the passing commit, Issue map, blockers, base branches, and open question Issues.
+hand the admiral the passing commit, Issue map, blockers, base branches, and open question Issues.
 
 For `issue`, return the Issue plan to the Issue Captain. The captain decides whether it needs a
 standalone plan review before work begins and owns implementation, correction, and final review.

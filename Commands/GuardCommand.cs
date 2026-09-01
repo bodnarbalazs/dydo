@@ -469,11 +469,11 @@ public static partial class GuardCommand
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Tier-2 workers don't run dydo commands — that machinery belongs to the manager.
+        // Tier-2 workers don't run dydo commands — that machinery belongs to the admiral.
         if (isDydo && isWorker)
         {
             Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands — that belongs to the");
-            Console.Error.WriteLine("  manager who spawned you, not a worker.");
+            Console.Error.WriteLine("  admiral who spawned you, not a worker.");
             return ExitCodes.ToolError;
         }
 

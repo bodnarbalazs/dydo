@@ -44,6 +44,7 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("planner", names);
         Assert.Contains("co-thinker", names);
         Assert.Contains("chief-of-staff", names);
+        Assert.Contains("admiral", names);
         Assert.Contains("inquisitor", names);
         Assert.Contains("self-improvement", names);
         Assert.Contains("wayfinder", names);
@@ -134,6 +135,7 @@ public class RoleDefinitionServiceTests : IDisposable
         // The remaining coordinating methodologies are skill-only.
         Assert.False(roles["co-thinker"].EmitAgent);
         Assert.False(roles["chief-of-staff"].EmitAgent);
+        Assert.False(roles["admiral"].EmitAgent);
         Assert.False(roles["self-improvement"].EmitAgent);
         Assert.False(roles["wayfinder"].EmitAgent);
         Assert.False(roles["grilling"].EmitAgent);
@@ -145,6 +147,7 @@ public class RoleDefinitionServiceTests : IDisposable
         // are model-invoked is the taxonomy's business, so it is derived, not listed here.
         Assert.True(roles["grill-me"].ExplicitInvocation);
         Assert.True(roles["bro"].ExplicitInvocation);
+        Assert.True(roles["admiral"].ExplicitInvocation);
     }
 
     // The frontmatter is the contract: every discovered flag must equal what that role's own

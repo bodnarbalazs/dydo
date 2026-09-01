@@ -20,7 +20,7 @@ A session is not a type. It wears the hat the work is in now, and changes hats a
 | Chart a foggy Project | planner, using wayfinder | the Linear Project as a map, and question Issues | — |
 | Plan | planner | an atomic Issue, or a Project plan and its Issue map | plan review, then the human's approval |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
-| Coordinate (optional) | manager | several Issues in flight, serial merges, plan amendments | merge review after every merge |
+| Coordinate (optional) | admiral | several Issues in flight, serial merges, plan amendments | merge review after every merge |
 | Audit (rare) | inquisition workflow | an audit and an assimilation brief | the human confirms before it runs |
 | Land | the human | the feature branch merged into main | the human's own hands |
 | Harmonize | the human, on main | improvements, and a new feature branch when one is needed | none — main is the state |

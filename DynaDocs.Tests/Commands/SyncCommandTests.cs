@@ -119,7 +119,7 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(codexSibling));
     }
 
-    // DR 045: the orchestrator retires into the manager hat. Its template file still ships
+    // DR 045: the orchestrator retires into the admiral hat. Its template file still ships
     // through the transition, so a retired name must leave the shipped template set — otherwise
     // the role stays "active", the sweep below is suppressed by dydo's own source, and the stale
     // skill folder outlives the role on both hosts.
@@ -177,6 +177,38 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "issue-captain.toml")));
         Assert.True(File.Exists(Path.Combine(
             _testDir, ".agents", "skills", "issue-captain", "SKILL.md")));
+    }
+
+    [Fact]
+    public void Execute_ManagerToAdmiralMigration_SweepsLegacyArtifactsAndEmitsReplacement()
+    {
+        Assert.Contains("manager", SyncCommand.RetiredManagedRoles);
+
+        var admiral = Assert.Single(
+            RoleDefinitionService.DiscoverRoles(_testDir), role => role.Name == "admiral");
+        Assert.False(admiral.EmitAgent);
+        Assert.True(admiral.ExplicitInvocation);
+
+        var legacyArtifacts = new[]
+        {
+            Path.Combine(_testDir, ".claude", "agents", "manager.md"),
+            Path.Combine(_testDir, ".claude", "skills", "manager", "SKILL.md"),
+            Path.Combine(_testDir, ".codex", "agents", "manager.toml"),
+            Path.Combine(_testDir, ".agents", "skills", "manager", "SKILL.md"),
+        };
+        foreach (var artifact in legacyArtifacts)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(artifact)!);
+            File.WriteAllText(artifact, "legacy generated content");
+        }
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.All(legacyArtifacts, artifact => Assert.False(File.Exists(artifact), artifact));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "admiral", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "admiral", "SKILL.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "admiral.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", "admiral.toml")));
     }
 
     [Fact]
@@ -698,7 +730,7 @@ public class SyncCommandTests : IDisposable
         File.WriteAllText(Path.Combine(templatesDir, fileName), content);
     }
 
-    // DR 045 section 10: the compiler used to drop ## Must-Reads, so every manager skill compiled
+    // DR 045 section 10: the compiler used to drop ## Must-Reads, so every coordinating skill compiled
     // without its context pointers and {{include:extra-must-reads}} silently resolved to nothing.
     // Every authored section now survives into the compiled body.
     [Fact]
@@ -1512,7 +1544,7 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var role in new[] { "co-thinker", "chief-of-staff" })
+            foreach (var role in new[] { "co-thinker", "chief-of-staff", "admiral" })
             {
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")),
                     $"missing coordinating skill: {role}");
@@ -1529,6 +1561,7 @@ public class SyncCommandTests : IDisposable
     [Theory]
     [InlineData("co-thinker")]
     [InlineData("chief-of-staff")]
+    [InlineData("admiral")]
     public void SkillOnlyRoles_CompileWithoutTheRetiredTierDoctrine(string roleName)
     {
         var role = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == roleName);

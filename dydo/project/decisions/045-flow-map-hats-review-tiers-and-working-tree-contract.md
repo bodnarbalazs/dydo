@@ -25,7 +25,7 @@ restoration (Project "Restore skill craftsmanship") and found it clean but unhar
   words that anchored behaviour ("YOU SHALL NOT PASS") were sanded into taglines, skills describe prose
   returns while workflows enforce JSON schemas, and four mechanical defects shipped — `dydo/index.md`
   is off-limits to reads although every entry prompt orders agents to read it; `Commands/SyncCommand.cs`
-  drops `## Must-Reads` from skill-only roles so manager skills compile without their context pointers;
+  drops `## Must-Reads` from skill-only roles so admiral skills compile without their context pointers;
   `workflow-run-sprint.js` cites `references/merge-sprint.md` where the compiler emits
   `resources/merge-sprint.md`; and the locked glossary still defines a Waypoint ontology the rebuilt
   Wayfinder no longer uses.
@@ -50,7 +50,7 @@ types.
 | Chart *(foggy Projects)* | planner, using wayfinder | grilling, research, prototype | Linear Project as map; question Issues | — |
 | Plan | planner | codebase-design, writing-good-briefs | atomic Issue, or Project plan + Issue map | reviewer (plan) → human approval |
 | Implement | issue-captain | code/test/docs-writer as optional workers, tdd, diagnosing-bugs | Issue branch, PR into the feature branch, evidence on the Issue | reviewer PASS (review block) |
-| Coordinate *(optional)* | manager | wayfinder, research | N Issues in flight, serial merges, plan amendments | merge review after every merge |
+| Coordinate *(optional)* | admiral | wayfinder, research | N Issues in flight, serial merges, plan amendments | merge review after every merge |
 | Audit *(rare)* | inquisition workflow | inquisitors × lenses, reviewer as judge, docs-writer | audit + assimilation brief | human confirms before it runs |
 | Land | human | walkthrough | feature → main | human's hands |
 | Harmonize | human on main | walkthrough, teach | improvements; a new feature branch when needed | not a gate: main is THE state |
@@ -60,7 +60,7 @@ self-improvement, writing-for-agents, diagnosing-bugs, bro.
 
 ### 2. Taxonomy
 
-- **Hats** (what a session is doing now): co-thinker · planner · issue-captain · manager · chief-of-staff.
+- **Hats** (what a session is doing now): co-thinker · planner · issue-captain · admiral · chief-of-staff.
 - **Workers** (spawned execution roles, `emit: agent`): code-writer · test-writer · docs-writer · reviewer ·
   inquisitor · research.
 - **Methods** (model-invoked reference and procedure used inside other skills): grilling · wayfinder ·
@@ -76,14 +76,16 @@ The **planner** remains a hat and also compiles as a spawnable agent (`emit: age
 strong tier. Its invoker names exactly one target: `project` for the low-resolution Project route and
 Issue map, or `issue` for the just-in-time route that makes implementation mechanical.
 
-Renames and moves: `orchestrator` retires; **manager** owns one Project's delivery and never
-implements. **Issue Captain** is new: the hat a top-level session wears when it picks an Issue, owning it
-end to end and delegating to workers — one worker by default, fan-out only for disjoint sub-tasks.
-It also compiles as a spawnable agent (`emit: agent`, `delegates: true`) so a manager can keep N
+Renames and moves: `orchestrator` retires; **admiral** owns one Project's delivery from plan approval
+to a human-landable feature branch. One **Issue Captain** owns each Issue end to end: the Issue
+contract is its destination, the reviewed plan its route, and spawned planners, writers, and
+independent reviewers its crew. Admirals coordinate captains; captains direct crews; neither role
+authors production changes or reviews its own candidate.
+It also compiles as a spawnable agent (`emit: agent`, `delegates: true`) so an admiral can keep N
 Issues in flight as sub-agents; a spawned Issue Captain returns `blocked` with its question instead of
 waiting on the human. The same skill serves both spawners; the Issue is the shared state and
 assignment is the claim. **wayfinder** stops
-being an identity and becomes a method consumed by the planner (charting) and the manager (working the
+being an identity and becomes a method consumed by the planner (charting) and the admiral (working the
 map). `run-issues` retires; its loop becomes the Issue Captain's completion criterion. Imported from
 mattpocock/skills at `6654f6b6`, adapted: diagnosing-bugs, research, codebase-design, domain-modeling,
 prototype, handoff, teach, improve-codebase-architecture, and `SKILL-MECHANICS` as a writing-for-agents
@@ -97,7 +99,7 @@ resource. New and dydo-native: Issue Captain, walkthrough, the working-tree cont
    criteria. The former `merge-sprint.md` is this rubric, renamed and narrowed; lens-hunting moves to
    the inquisitor.
 3. **Inquisition** — rare, fan-out across lenses, adversarial verification, reviewer as judge using
-   the `merge` rubric at full scale, docs-writer assimilation. Proposed by the manager with scope and
+   the `merge` rubric at full scale, docs-writer assimilation. Proposed by the admiral with scope and
    cost; runs only after the human confirms, enforced by a `confirmed` argument the workflow refuses
    to run without. Its purpose is to catch what got through, not to prove zero defects.
 
@@ -121,7 +123,7 @@ carry decisions; the two are linked, never copied.
 **Fog** is the leading word for unknown unknowns. The rule is *fog → discovery → question Issue*: an
 agent in fog first runs a bounded discovery (DR index, the Project plan, the Issue's links, the
 glossary, the code); only if that comes up empty does it file a question Issue, listing what it
-searched, wire the blocking relation, and route it — wayfinder-style through the manager when the
+searched, wire the blocking relation, and route it — wayfinder-style through the admiral when the
 Project is foggy, the planner when the plan needs refinement, the human only when HITL. The filing
 test is Grilling's own sentence: facts are the agent's job; choices are the human's. Question Issues
 resolve by either path — the human answering in Linear, or the chief-of-staff surfacing open HITL
@@ -133,8 +135,9 @@ blocking does the pickup.
 - **`project`** — low resolution: destination, scope, acceptance, architecture-level design, an Issue
   map of tracer-bullet vertical slices with blockers (expand–contract for wide refactors), ordering
   and isolation, watch-outs, and — when foggy — a `## Not yet specified` section plus question
-  Issues instead of a pretended-complete route. Reviewed once against the plan rubric. Amended by the
-  manager as fog clears, as dated amendment sections; re-reviewed only when scope, acceptance
+  Issues instead of a pretended-complete route. Perfect plans are fiction: the approved plan fixes
+  the destination, not every turn. The admiral uses wayfinder as fog clears to create, split, or
+  resequence Issues, recording changes as dated amendments; re-reviewed only when scope, acceptance
   criteria or the Issue map change.
 - **`issue`** — high resolution, just in time: files to touch, the pattern to copy with its path,
   steps, edge cases, exact gates — until implementation is mechanical. Authored in the Issue by a
@@ -147,14 +150,14 @@ base branch.
 
 ### 6. Escalation ladder and precedence order
 
-Worker → Issue Captain → manager → human. Agents resolve operational conflicts themselves by this
+Worker → Issue Captain → admiral → human. Agents resolve operational conflicts themselves by this
 precedence: the human's live instruction > DR > reviewed Project plan at its governing commit > Issue
 contract > coding standards > existing code. The human is reached only for a conflict with a DR (which
 is truth, or is the DR obsolete?), live external state agents cannot coordinate, or authority the
 contract cannot supply. Raising a hand means a comment on the Issue and, when blocked, a question
 Issue wired as blocker with the Issue moved to Blocked — never silent waiting. A fifth consecutive
 review FAIL on the same candidate is itself an escalation: stop looping and raise. The retired
-`run-issues` workflow enforced this cap in code; the Issue Captain and manager carry it as prose.
+`run-issues` workflow enforced this cap in code; the Issue Captain and admiral carry it as prose.
 There is no "PASS with notes" — a note is a finding, and a finding is a FAIL; the cap, not a
 softened verdict, is the relief valve.
 
@@ -166,10 +169,10 @@ the feature → main merge. Harmonization happens on main afterwards and is not 
 
 ### 8. Working-tree contract
 
-One guide, `dydo/guides/working-tree-contract.md`, pointed at by issue-captain, manager, chief-of-staff
+One guide, `dydo/guides/working-tree-contract.md`, pointed at by issue-captain, admiral, chief-of-staff
 and the planner's `issue` resource, so no agent invents its own habits:
 
-- At plan approval the manager (or the human when there is no manager) opens the feature: creates
+- At plan approval the admiral (or the human when there is no admiral) opens the feature: creates
   `feature/<project-slug>` from main, writes the wayfinder map into the Project description, confirms
   every Issue carries its base branch. Only then are Issues pickable.
 - Assignment is the claim. An Issue branch is `DYD-123-<slug>` off the feature branch (off main for
@@ -182,7 +185,7 @@ and the planner's `issue` resource, so no agent invents its own habits:
 ### 9. Invocation policy
 
 Explicit-only (`invocation: explicit` → `disable-model-invocation` / `allow_implicit_invocation:
-false`): chief-of-staff, manager, grill-me, bro, handoff, walkthrough, teach,
+false`): chief-of-staff, admiral, grill-me, bro, handoff, walkthrough, teach,
 improve-codebase-architecture. Everything else is model-invoked with a description that carries
 trigger branches, per writing-for-agents. Descriptions state *when to reach for the skill*, not what it
 is; explicit-only descriptions are a punchy human-facing line.
@@ -230,7 +233,7 @@ structure, invocation metadata and role boundaries, never prose.
 - Cross-vendor adversarial review is deferred; a cron-driven cross-vendor reviewer is a FutureFeature
   candidate once stateless spawning is routine.
 - The system described here does not yet exist. The Project that builds it runs hands-on under the
-  current tooling; its own plan must not assume issue-captain, manager or the protected tier are live.
+  current tooling; its own plan must not assume issue-captain, admiral or the protected tier are live.
 
 ## Supersedes and amends
 

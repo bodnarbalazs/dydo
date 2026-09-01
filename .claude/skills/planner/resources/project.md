@@ -52,5 +52,5 @@ working the frontier it leaves is wayfinder's method; the plan links the Project
 
 **Reviewed once, then amended.** A fresh reviewer with the `plan` rubric passes the plan before any
 Issue is pickable; `status` becomes `reviewed` and that commit governs execution. From there the
-manager amends in place as fog clears, as a dated `## Amendment — <YYYY-MM-DD>` section rather than a
+admiral amends in place as fog clears, as a dated `## Amendment — <YYYY-MM-DD>` section rather than a
 rewrite of reviewed text. Re-review only when scope, acceptance criteria or the Issue map change.

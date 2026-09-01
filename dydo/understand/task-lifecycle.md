@@ -22,7 +22,7 @@ blocks planning or implementation and is too big or too uncertain to settle inli
 discovery → question Issue*: an agent in fog first runs a bounded discovery — the Decision index, the
 Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
 the question become an Issue that lists what was searched, wired as a blocker and routed onward: the
-manager when the Project itself is foggy, the planner when the plan needs refinement, the human only
+admiral when the Project itself is foggy, the planner when the plan needs refinement, the human only
 when the question is HITL. Facts are the agent's job; choices are the human's.
 
 Its resolution is an *answer* posted on the Issue. The answer graduates to a Decision Record only when
@@ -35,7 +35,7 @@ Decision Records carry decisions, and the two are linked rather than copied.
   architecture-level design, and an Issue map of tracer bullets that each cut end to end, with
   ordering, isolation and watch-outs. When the route is foggy it says so in a `## Not yet specified`
   section and files question Issues instead of pretending a complete route. A fresh reviewer passes it
-  against the `plan` rubric before any Issue is pickable; the manager then amends it in dated sections
+  against the `plan` rubric before any Issue is pickable; the admiral then amends it in dated sections
   as fog clears, and sends it back for review only when scope, acceptance criteria or the Issue map
   move.
 - **Issue** — high resolution, just in time: files to touch, the pattern to copy with its path, steps,
@@ -66,7 +66,7 @@ the [Work Model](./work-model.md); the review block's fields are locked in the
 
 ## Raising a hand
 
-The ladder runs worker → Issue Captain → manager → human, and agents settle operational conflicts
+The ladder runs worker → Issue Captain → admiral → human, and agents settle operational conflicts
 themselves by precedence, highest first: the human's live instruction, a Decision Record, the reviewed
 Project plan at its governing commit, the Issue contract, coding standards, existing code. The human
 is reached only for a conflict with a Decision Record — is it truth, or is it obsolete? — for live

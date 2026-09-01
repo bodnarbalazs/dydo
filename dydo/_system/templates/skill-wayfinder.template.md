@@ -12,7 +12,7 @@ invocation: automatic
 A Linear Project is too large for one agent session and wrapped in **fog**: the way from here to the
 **destination** is not visible yet. Wayfinding finds that way; it does not charge at the destination.
 The Project is the shared map, and its **question Issues** hold the questions the route waits on. The
-planner charts a foggy Project; the manager works the map afterwards.
+planner charts a foggy Project; the admiral works the map afterwards.
 
 Naming the destination is the first act of charting, because it shapes every question Issue: a spec
 ready for planning, a Decision Record locked before implementation, or a change made in place.
@@ -107,7 +107,7 @@ The test is precision, not answerability:
 
 An agent in fog runs a bounded discovery first: the Decision Record index, the Project plan, the
 Issue's own links, the glossary, then the code. Only when that comes up empty does it file a question
-Issue, listing what it searched, wire the blocking relation, and route it — through the manager when
+Issue, listing what it searched, wire the blocking relation, and route it — through the admiral when
 the Project itself is foggy, the planner when the plan needs refinement, the human only when HITL. The
 filing test is grilling's own sentence: facts are the agent's job, choices are the human's. Native
 blocking does the pickup.

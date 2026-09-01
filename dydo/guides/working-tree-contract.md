@@ -5,7 +5,7 @@ type: guide
 
 # Working-Tree Contract
 
-The bird's-eye view of how a Project moves through branches and worktrees. Managers use it to know
+The bird's-eye view of how a Project moves through branches and worktrees. Admirals use it to know
 what to expect from Issue Captains and their lane workers; Issue Captains use it to know what they own
 and what they hand back. The `chief-of-staff` audits failures of this contract, not routine cleanup.
 
@@ -26,7 +26,7 @@ and what they hand back. The `chief-of-staff` audits failures of this contract, 
 | Work | Branches from | Branch | PR targets | Merger |
 |---|---|---|---|---|
 | Project | `main` | `feature/<project-slug>` | `main` | human |
-| Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | `manager` |
+| Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | `admiral` |
 | Atomic Issue | `main` | `DYD-123-<slug>` | `main` | `issue-captain` |
 | Lane Sub-issue | its parent Issue branch | `DYD-124-<slug>` | its parent Issue branch | `issue-captain` |
 
@@ -38,13 +38,13 @@ provide the Issue worktree; otherwise place it beside the repository at
 
 | Stage | Owner | Required state |
 |---|---|---|
-| Open the Project | `manager`, or the human when there is none | Feature branch exists; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
+| Open the Project | `admiral`, or the human when there is none | Feature branch exists; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
 | Claim the Issue | `issue-captain` | Issue is assigned and In Progress; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. |
 | Resolve the work | `issue-captain` | The Issue-resolution plan makes the work mechanical; workers receive disjoint paths and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries its own status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | workers | Changes stay inside owned paths; exact gates pass; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
-| Integrate a Project Issue | `manager` | Passed PRs merge one at a time, in plan order and with `--no-ff`; each merge is followed by a fresh merge review over the integrated feature branch. |
+| Integrate a Project Issue | `admiral` | Passed PRs merge one at a time, in plan order and with `--no-ff`; each merge is followed by a fresh merge review over the integrated feature branch. |
 | Integrate an Atomic Issue | `issue-captain` | Issue review passes; the PR merges to `main`; a fresh merge review follows over the integrated state. |
 | Land the Project | human | The reviewed feature branch merges to `main`. |
 
@@ -79,9 +79,9 @@ on that work item instead of working around a failure:
 |---|---|---|
 | Parent Issue and lane worktrees | `issue-captain` | Every worktree it or its workers created is removed. A spawned Issue Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-issue branch | `issue-captain` | The branch is deleted after it passes review and is integrated into the parent Issue branch. |
-| Merged Project-Issue branch | `manager` | The branch is deleted after the merge. |
+| Merged Project-Issue branch | `admiral` | The branch is deleted after the merge. |
 | Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the merge. |
-| Merged feature branch | `manager` | The branch is deleted after the human lands it. |
+| Merged feature branch | `admiral` | The branch is deleted after the human lands it. |
 
 The `chief-of-staff` compares `git worktree list` and merged branches with Linear during board hygiene.
 Anything it finds is a contract failure to clear or route with its owner named, not normal cleanup

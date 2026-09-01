@@ -46,7 +46,7 @@ sight, and hand back every judgement call with a recommendation.
    have retired under the working-tree contract. Fix the mechanical drift and surface what needs
    judgement. Linear stays the live truth, so keep the repository free of a second status board. Done
    when the board reads true and every orphan is cleared or named with the reason it survives.
-6. **Route what is not yours.** Delivery goes to the `manager`, staged on its Project so it can be
+6. **Route what is not yours.** Delivery goes to the `admiral`, staged on its Project so it can be
    picked up whole; friction that keeps recurring across sessions goes to `self-improvement` with the
    occurrences named. Done when everything you did not close has a named owner.
 

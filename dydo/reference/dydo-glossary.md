@@ -50,9 +50,9 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 - **Role** — an authored skill source compiled by dydo: a hat, a worker, a method, or a human command.
 - **Skill** — the runtime package of a role's methodology and resources.
-- **Agent** — a native-platform instance of a spawned role: a worker, or an Issue Captain a manager
+- **Agent** — a native-platform instance of a spawned role: a worker, or an Issue Captain that an admiral
   keeps in flight.
-- **Hat** — what a session is doing now: co-thinker, planner, issue-captain, manager, or
+- **Hat** — what a session is doing now: co-thinker, planner, issue-captain, admiral, or
   chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
   spawned it: code-writer, test-writer, docs-writer, reviewer, inquisitor, research.
@@ -96,7 +96,7 @@ These words survive only in older documents. Campaign, Sprint, Slice, Task, Tick
 separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initiative, Project, and
 Issue where work is live, though a slice may still name an implementation technique and a task a
 question Issue's type. Tier-1 manager, orchestrator, and the run-sprint workflow (internally
-run-issues) gave way to the hats — a manager coordinates one Project, an Issue Captain owns one
+run-issues) gave way to the hats — an admiral coordinates one Project, an Issue Captain owns one
 Issue. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the question Issues above. Integrated audit is replaced
 by the three reviews above. None of these words creates a file, command, lifecycle, or Linear type.

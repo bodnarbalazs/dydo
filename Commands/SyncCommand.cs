@@ -32,7 +32,7 @@ public static partial class SyncCommand
     // prunes an already-mirrored copy as stale, and the sweep below removes whatever it last
     // compiled. A project that authors its own skill template of that name keeps the role and
     // suppresses its cleanup. This is deliberately not a generic output-directory cleaner.
-    internal static readonly string[] RetiredManagedRoles = ["sprint-auditor", "orchestrator", "implementer"];
+    internal static readonly string[] RetiredManagedRoles = ["sprint-auditor", "orchestrator", "implementer", "manager"];
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
     // Issue Captain's completion criterion). Claude is the only host with a workflow surface.
@@ -452,7 +452,7 @@ public static partial class SyncCommand
     /// <summary>
     /// Reads the role's skill template, resolves include tags, strips the frontmatter, and
     /// de-personalizes the {{AGENT_NAME}} prose — leaving the whole methodology. Every authored
-    /// section survives, ## Must-Reads included: dropping it compiled manager skills without
+    /// section survives, ## Must-Reads included: dropping it compiled coordinating skills without
     /// their context pointers and silently voided {{include:extra-must-reads}} (DR 045 §10).
     /// </summary>
     internal static string ExtractMethodology(RoleDefinition role, string projectRoot)

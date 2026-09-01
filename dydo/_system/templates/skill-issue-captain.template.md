@@ -34,8 +34,10 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 - **Human loop:** keep active HITL work `In Progress`; use `Waiting for Human` only until the next concrete human contribution arrives, then restore `In Progress`.
 - **Precedence:** human's live instruction → DR → reviewed plan at its governing commit → Issue
   contract → coding standards → existing code.
-- **Fog:** search those sources and the code. If human judgment remains, prepare one Question with the search, facts, options, recommendation, and blocked work. Return it to the admiral to create and wire, or for an atomic Issue create it in `Waiting for Human` with no Mode and close it when answered.
-  Native blockers carry the blocked state; preserve the implementation Issue's status.
+- **Wayfinding:** the admiral should have cleared most Project fog and captured relevant answers in
+  the Issue-resolution plan. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
+  Issues to course-correct. Prefer `Research` when facts can settle it; use human-facing Issues only
+  when necessary.
 - **Escalation:** worker → Issue Captain → `admiral` → human. Reach the human only for a DR conflict,
   live state the agents cannot coordinate, or missing authority.
 
@@ -46,7 +48,9 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Shape.** Keep sequential work on the parent. For disjoint parallel work, create direct lane
    Sub-issues in `Todo`, each with one Type and Mode, bounded outcome, paths, gates, and an isolated branch/worktree off the parent branch.
-   **Done:** every lane tracks status and evidence; split complexity into siblings, never children.
+   Wayfinding Sub-issues are the only other direct children and carry no Mode or delivery artifacts.
+   **Done:** every lane tracks status and evidence; split complexity and local fog into siblings,
+   never children.
 3. **Plan.** Spawn `issue-planner` just in time for each parent or lane. **Done:** patterns, specs,
    seams, files, edge cases, and gates make implementation mechanical; require an `issue-plan` PASS
    before production only when the route's risk warrants it, considering the Issue Planner's
@@ -54,7 +58,9 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    FAIL, and set it `In Progress` only after accepting the plan or its PASS.
 4. **Direct the crew.** Route code, proof, and docs to their named writers; use `diagnosing-bugs` when a defect
    is unclear or lacks a red reproduction. Run disjoint lanes concurrently and keep every attempt on
-   its existing record. **Done:** each candidate accounts for its paths and passes its gates.
+   its existing record. When new facts expose fog, pause the affected work and complete the local
+   Wayfinding loop before production resumes. **Done:** each candidate accounts for its paths, passes
+   its gates, and carries no unresolved choice.
 5. **Review.** Send each candidate to a fresh `reviewer` with one named rubric. Treat FAIL as binding:
    set the record being gated to `In Review`; after FAIL restore `In Progress` and route local
    corrections to the writer, or missing design and specification through `issue-planner` first.
@@ -71,5 +77,6 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 ## Return
 
-- To `admiral`: `done` + PR + final review block, or `blocked` + the prepared Question packet.
+- To `admiral`: `done` + PR + final review block, or `blocked` + the local Wayfinding record or
+  prepared Project-level packet.
 - For an atomic Issue: merge SHA + final review block, posted on the parent Issue.

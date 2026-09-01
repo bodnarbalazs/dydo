@@ -5,8 +5,8 @@ type: reference
 
 # Linear Workspace Standard
 
-The canonical Linear vocabulary for Projects and Issues. Status records where work is now; labels
-record what an Issue is and, for implementation work, how its Issue Captain works with the human.
+The canonical Linear vocabulary for Projects and Issues. Status records where work is now; Type
+records why an Issue exists; Mode records how an Issue Captain works with the human on delivery.
 
 ## Project statuses
 
@@ -30,11 +30,11 @@ its status and Issue graph carry that information without a second taxonomy.
 |---|---|
 | `Backlog` | The Issue is retained but not yet contracted for execution. |
 | `Todo` | The Issue contract is ready and queued; open native blockers still prevent pickup. |
-| `Planning` | The Issue Captain has claimed the Issue and its Issue Planner is making the route mechanical. |
-| `In Progress` | The Issue Captain is directing production or actively working with the human. |
-| `Waiting for Human` | Agents have prepared the next human contribution and cannot advance without it. Question Issues normally enter here. |
+| `Planning` | A delivery Issue is claimed and its Issue Planner is making the route mechanical. |
+| `In Progress` | Production or wayfinding is actively moving. |
+| `Waiting for Human` | Agents have prepared the next human contribution and cannot advance without it. |
 | `In Review` | An independent reviewer is gating the current candidate. A FAIL returns the Issue to `In Progress`. |
-| `Done` | The Issue outcome, required review, integration, and evidence are complete. |
+| `Done` | The Issue outcome and evidence are complete, including review and integration when delivery requires them. |
 | `Canceled` | The Issue will not be completed; the record says why. |
 | `Duplicate` | Another Issue owns the outcome; the record links to it. |
 
@@ -45,20 +45,37 @@ that can drift from Linear's dependency graph.
 
 ### Type group
 
-Every Issue carries exactly one Type label. Type records why the Issue exists and normally remains
-stable throughout its life.
+Every Issue carries exactly one Type label. Type records why the Issue exists, normally remains
+stable throughout its life, and selects one of two control loops.
+
+#### Delivery
 
 | Label | Meaning |
 |---|---|
 | `Feature` | Add a capability. |
 | `Improvement` | Improve existing behaviour, structure, documentation, or maintainability. |
 | `Bug` | Restore intended behaviour. The same Issue records the defect and owns its fix. |
-| `Question` | Ask the human one prepared question whose answer blocks named work. |
+
+Every delivery Issue is owned by one Issue Captain and follows the planning, branch/worktree,
+production, independent-review, and integration loop.
+
+#### Wayfinding
+
+| Label | Meaning | Resolution |
+|---|---|---|
+| `Research` | Establish a factual answer whose investigation needs its own owner, status, blocker, or evidence. | Cited findings recorded on the Issue. |
+| `Prototype` | Raise a design question to concrete fidelity so the human can react to it. | Throwaway artifact linked with what it proved. |
+| `Grilling` | Resolve a tree of related intent or specification choices with the human. | Shared understanding recorded; resulting specification, glossary entries, and Decision Records linked. |
+| `Question` | Ask the human one prepared, discrete question whose answer blocks named work. | The human's answer recorded; a qualifying choice graduates to a linked Decision Record. |
+| `Enablement` | Create access, environment, credentials, or representative material required before other work can proceed. | The required condition exists and its evidence is recorded. |
+
+Small lookups, conversations, and setup stay on the Issue that needs them. Create a Wayfinding Issue
+only when the work needs independent tracking or blocks other work.
 
 ### Mode group
 
-Every non-Question Issue carries exactly one Mode label before it becomes pickable. Question Issues
-carry neither: their operating mode is always a prepared exchange with the human.
+Every delivery Issue carries exactly one Mode label before it becomes pickable. Wayfinding Issues
+carry neither: their Type, assignee, status, and blockers already state how they move.
 
 | Label | Meaning |
 |---|---|
@@ -68,6 +85,37 @@ carry neither: their operating mode is always a prepared exchange with the human
 Human approval or inspection at a universal gate does not make an Issue HITL. `Needs human` is not a
 canonical label: `HITL` describes the Issue's operating mode, while `Waiting for Human` says that the
 human owns the next action now.
+
+## Wayfinding ownership
+
+The current map owner controls Wayfinding Issues directly: the Project Planner while charting the
+first approved map, then the Admiral during delivery. They dispatch Research agents, run Prototype or
+Grilling work with the human, present Questions, and route Enablement to whoever can satisfy it. A
+Wayfinding Issue does not receive an Issue Captain or the delivery branch, worktree, PR, and review
+loop. If it reveals production work, create a delivery Issue for that outcome.
+
+| Type | Normal status path |
+|---|---|
+| `Research` | `Todo` → `In Progress` → `Done` |
+| `Prototype` | `Todo` → `In Progress` ↔ `Waiting for Human` → `Done` |
+| `Grilling` | `Todo` → `In Progress` ↔ `Waiting for Human` → `Done` |
+| `Question` | `Waiting for Human` → `Done` |
+| `Enablement` | `Todo` → `In Progress` or `Waiting for Human` → `Done` |
+
+`Planning` and `In Review` belong to the delivery loop; Wayfinding closes when its recorded
+resolution is true.
+
+An Issue Captain may create direct Wayfinding Sub-issues when newly visible fog blocks only its parent
+delivery Issue or one of its lanes and remains inside the approved Project destination and Issue
+outcome. Even when a lane is blocked, create the Wayfinding record directly under the delivery parent.
+The Captain owns that local map, persists every result on its Sub-issue, and informs the Admiral.
+Escalate the packet instead when the answer can change other Issues, a shared contract, or the
+Project's destination, scope, acceptance criteria, or governing architecture; the Admiral then creates
+and wires a Project-level Wayfinding Issue.
+
+Wayfinding Sub-issues stay one level deep. New local investigations become siblings under the same
+delivery parent; Project-wide discoveries return to the Admiral. Native blocker relations connect
+each Wayfinding Issue to everything waiting on its resolution.
 
 ## Question Issues
 
@@ -85,8 +133,9 @@ Create the Question only when human judgment remains. Its body carries:
 
 If the answer determines what implementation Issue should exist, resolve the Question first. If the
 implementation outcome is already stable, create both records and make the Question a native blocker.
-When a new question surfaces during execution, the Issue Captain prepares the hand-raise and the
-Admiral creates and wires the Question Issue.
+When a new question surfaces during execution, the Issue Captain creates it locally only under the
+scope rule above; otherwise the Captain prepares the hand-raise and the Admiral creates and wires the
+Project-level Question Issue.
 
 ## Related
 

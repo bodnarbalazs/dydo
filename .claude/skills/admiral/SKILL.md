@@ -24,9 +24,12 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
 - **Command:** give each pickable Issue to one `issue-captain`. Captains own their Issues and direct
   their crews; you coordinate the captains rather than their workers.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
-  As fog clears, use `wayfinder` to create, split, or resequence Issues and keep the Project on course.
+  As fog clears, use `Research`, `Prototype`, `Grilling`, `Question`, and `Enablement` Issues directly
+  to settle the visible route before commissioning delivery. Captains may course-correct inside their
+  own outcomes; pull shared or Project-wide discoveries back to the Project map. Wayfinding Issues
+  stay under the current map owner and receive no Mode, Issue Captain, or delivery artifacts.
 - **Board discipline:** keep Project and Issue statuses, labels, blockers, answers, and evidence true
-  to the work. Close answered Question Issues as `Done`; repair stale mechanical state when you see it.
+  to the work. Close resolved Wayfinding Issues as `Done`; repair stale mechanical state when you see it.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Neither role authors
   production changes or reviews its own candidate.
 - **Precedence:** human's live instruction → DR → reviewed plan at its governing commit → Issue
@@ -43,7 +46,8 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
    one Type and Mode. **Done:** the feature is open and unblocked `Todo` Issues are pickable.
 2. **Commission captains.** Spawn one `issue-captain` per pickable Issue as isolation allows;
    assignment is the claim. **Done:** every pickable Issue has a captain or a stated reason, and a
-   blocked captain has returned its question Issue instead of waiting.
+   blocked captain has returned its local Wayfinding record or prepared Project-level packet instead
+   of waiting.
 3. **Integrate serially.** Accept only candidates with an Issue-review PASS and merge them into the
    feature branch one at a time in plan order. **Done:** the integrated state is clean and each Issue
    and PR carries its review block.
@@ -54,10 +58,13 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
    dated plan amendments; give every new implementation Issue one Type, one Mode, and `Todo`; re-review
    changes to destination, scope, acceptance criteria, or governing architecture. **Done:** the
    Project map matches the work in flight.
-6. **Clear fog.** When progress reveals a real decision point, run bounded discovery; create and wire
-   a `Question` Issue only when human judgment remains. Put it in `Waiting for Human` with no Mode,
-   its searched sources, facts, options, and recommendation, and wire it as a blocker. **Done:**
-   nothing waits silently or reaches the human unprepared.
+6. **Clear fog.** Do small discovery inline; create a Wayfinding Issue when the investigation needs
+   its own status, owner, blocker, or evidence. Dispatch Research agents, use Prototype or Grilling
+   with the human, present one prepared Question only when judgment remains, and route Enablement to
+   whoever can satisfy it. Wire every blocker and settle what is visible before commissioning the
+   affected delivery Issue. Accept a Captain's local course correction when later facts expose it;
+   move cross-Issue and Project-wide discoveries back onto your map. **Done:** every visible unknown
+   is resolved or has the right owner, record, and blocker, and nothing reaches the human unprepared.
 7. **Offer the inquisition.** Once the feature is integrated, offer `inquisition` with its scope and
    cost. **Done:** the human confirms or declines; it runs only on that confirmation.
 8. **Close the Project.** Once the feature → main merge and closeout are recorded, set the Project

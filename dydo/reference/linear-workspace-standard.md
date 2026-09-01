@@ -67,8 +67,9 @@ record. At Project or Initiative grain, create and link that record, then mark t
 | `Improvement` | Improve existing behaviour, structure, documentation, or maintainability. |
 | `Bug` | Restore intended behaviour. The same Issue records the defect and owns its fix. |
 
-Every delivery Issue is owned by one Issue Captain and follows the planning, branch/worktree,
-production, independent-review, and integration loop.
+Every delivery Issue is a Task owned by one Issue Captain and follows the planning, branch/worktree,
+production, independent-review, and integration loop. `Task` names its role on the map; its Linear
+Type remains `Feature`, `Improvement`, or `Bug`.
 
 #### Wayfinding
 
@@ -85,8 +86,9 @@ only when the work needs independent tracking or blocks other work.
 
 ### Mode group
 
-Every delivery Issue carries exactly one Mode label before it becomes pickable. FutureFeature and
-Wayfinding Issues carry neither.
+Every Task and Wayfinding Issue carries exactly one Mode label before it becomes pickable:
+Research is `AFK`; Prototype, Grilling, and Question are `HITL`; Enablement may be either.
+FutureFeatures carry neither.
 
 | Label | Meaning |
 |---|---|

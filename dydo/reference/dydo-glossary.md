@@ -16,6 +16,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Milestone** — an optional meaningful checkpoint inside a Linear Project.
 - **Issue** — the only actionable tracked work item. Status, priority, assignment, blockers, updates,
   and current execution evidence live in Linear.
+- **Task** — the implementation or delivery step on a Wayfinder map, represented by a `Feature`,
+  `Improvement`, or `Bug` Issue rather than a separate Linear Type.
 - **Sub-issue** — optional decomposition when child Issues need independent tracking.
 - **Cycle** — an optional team capacity timebox, orthogonal to Projects.
 - **Label** — restrained cross-cutting routing metadata, never a shadow work-type hierarchy.
@@ -94,10 +96,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 ## Retired PM terms
 
-These words survive only in older documents. Campaign, Sprint, Slice, Task, Ticket, backlog item, and the
+These words survive only in older documents. Campaign, Sprint, Slice, Ticket, backlog item, and the
 separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initiative, Project, and
-Issue where work is live, though a slice may still name an implementation technique and a task a
-question Issue's type. Tier-1 manager, orchestrator, and the run-sprint workflow (internally
+Issue where work is live, though a slice may still name an implementation technique. Tier-1
+manager, orchestrator, and the run-sprint workflow (internally
 run-issues) gave way to the hats — an admiral coordinates one Project, an Issue Captain owns one
 Issue. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the question Issues above. Integrated audit is replaced

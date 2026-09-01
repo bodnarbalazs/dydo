@@ -30,7 +30,7 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
   As fog clears, use `Research`, `Prototype`, `Grilling`, `Question`, and `Enablement` Issues directly
   to settle the visible route before commissioning delivery. Captains may course-correct inside their
   own outcomes; pull shared or Project-wide discoveries back to the Project map. Wayfinding Issues
-  stay under the current map owner and receive no Mode, Issue Captain, or delivery artifacts.
+  stay under the current map owner and receive no Issue Captain or delivery artifacts.
 - **Board discipline:** keep Project and Issue statuses, labels, blockers, answers, and evidence true
   to the work. Close resolved Wayfinding Issues as `Done`; repair stale mechanical state when you see it.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Neither role authors

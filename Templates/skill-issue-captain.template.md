@@ -48,7 +48,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Shape.** Keep sequential work on the parent. For disjoint parallel work, create direct lane
    Sub-issues in `Todo`, each with one Type and Mode, bounded outcome, paths, gates, and an isolated branch/worktree off the parent branch.
-   Wayfinding Sub-issues are the only other direct children and carry no Mode or delivery artifacts.
+   Wayfinding Sub-issues are the only other direct children and carry one Type and Mode but no
+   delivery artifacts.
    **Done:** every lane tracks status and evidence; split complexity and local fog into siblings,
    never children.
 3. **Plan.** Spawn `issue-planner` just in time for each parent or lane. **Done:** patterns, specs,

@@ -24,7 +24,7 @@ complete route.
    first work. **Done:** every finding names the exact correction.
 
 **Wayfinding Fog is not a gap.** A sharp blocker left after authoritative homework and requiring
-human judgment is a `Question` Issue in `Waiting for Human`, with no Mode. Dimmer uncertainty stays
+human judgment is a `Question` Issue in `Waiting for Human` with `HITL`. Dimmer uncertainty stays
 in `## Not yet specified`. A plan that pretends either is settled FAILs; honest placement does not.
 
 **Amendments.** Normal creation, splitting, removal, or resequencing of Issues within the approved

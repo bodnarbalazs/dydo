@@ -45,8 +45,8 @@ keep the section numbers — Issue contracts cite them.
    one Mode (`AFK` or `HITL`), and `Todo`; record later work as rough bearings the admiral may
    promote, split, drop, or reorder.
 4. **Expose blocking questions.** Search durable knowledge first. When human judgment still blocks
-   work, file and wire a `Question` Issue in `Waiting for Human`, with the homework already done and
-   no Mode label; when answered, record the answer and mark it `Done`. If the sources settle it,
+   work, file and wire a `Question` Issue in `Waiting for Human` with `HITL`, with the homework already
+   done; when answered, record the answer and mark it `Done`. If the sources settle it,
    record the answer where the work lives without creating a Question.
 5. **Write the plan.** Use the skeleton below and commit it before review.
 6. **Own the review loop.** Spawn a fresh `reviewer(project-plan)`. Resolve every FAIL and rerun a

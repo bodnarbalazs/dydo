@@ -88,7 +88,6 @@ public static class TemplateCommand
 
         var config = configService.LoadConfig()!;
         var dydoRoot = configService.GetDydoRoot();
-        MigrateHashFormat(config, dydoRoot);
 
         var tally = new UpdateTally();
         var legacyConflicts = MigrateLegacyModeTemplates(dydoRoot, config, diff, tally);
@@ -142,21 +141,6 @@ public static class TemplateCommand
         {
             Console.WriteLine($"  Added {nudgesAdded} default nudge(s)");
             updated += nudgesAdded;
-        }
-
-
-        var modelsUpgraded = !diff && ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
-        if (modelsUpgraded)
-        {
-            Console.WriteLine("  Upgraded legacy OpenAI model defaults");
-            updated++;
-        }
-
-        var plannerRolesUpgraded = !diff && ConfigFactory.UpgradeLegacyPlannerRole(config);
-        if (plannerRolesUpgraded)
-        {
-            Console.WriteLine("  Replaced legacy planner model binding with project-planner and issue-planner");
-            updated++;
         }
 
         updated += EnsureScanExcludeWithReport(config, diff);
@@ -724,30 +708,6 @@ public static class TemplateCommand
     {
         var bytes = SHA256.HashData(content);
         return Convert.ToHexStringLower(bytes);
-    }
-
-    /// <summary>
-    /// Migrates stored hashes from pre-normalization format to normalized format.
-    /// Safe to call on every update — no-ops when hashes are already current.
-    /// </summary>
-    public static void MigrateHashFormat(DydoConfig config, string dydoRoot)
-    {
-        foreach (var relativePath in config.FrameworkHashes.Keys.ToList())
-        {
-            var fullPath = Path.Combine(dydoRoot, relativePath);
-            if (!File.Exists(fullPath)) continue;
-
-            var onDisk = File.ReadAllText(fullPath);
-            var normalizedHash = ComputeHash(onDisk);
-            var storedHash = config.FrameworkHashes[relativePath];
-            if (storedHash == normalizedHash) continue;
-
-            // Check if stored hash matches raw (un-normalized) content
-            var rawHash = Convert.ToHexStringLower(
-                SHA256.HashData(Encoding.UTF8.GetBytes(onDisk)));
-            if (storedHash == rawHash)
-                config.FrameworkHashes[relativePath] = normalizedHash;
-        }
     }
 
     internal abstract record UpdateResult

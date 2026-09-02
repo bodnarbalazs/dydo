@@ -107,7 +107,7 @@ which keeps project-specific guidance out of framework text. The
 
 ## Model tier
 
-`models.roles` in `dydo.json` binds a role to a tier and `models.tiers` binds a tier to one concrete
+`models.agents` in `dydo.json` binds an agent to a tier and `models.tiers` binds a tier to one concrete
 model per vendor, so a role never names a model. A role with no binding compiles `model: inherit` on
 Claude — the session's model, never a silent downgrade — and a built-in default model on Codex. See the
 [configuration reference](../reference/configuration.md).
@@ -144,7 +144,7 @@ place of it, so update first, sync second, and read what changed.
 ## Related
 
 - [Templates and Customization](../understand/templates-and-customization.md) — the template pipeline end to end
-- [Configuration Reference](../reference/configuration.md) — `models.roles`, hashes, nudges
+- [Configuration Reference](../reference/configuration.md) — `models.agents`, hashes, nudges
 - [dydo Commands Reference](../reference/dydo-commands.md) — `dydo sync`, `dydo template update`
 - [dydo Glossary](../reference/dydo-glossary.md) — hat, worker, method, and the retired terms
 - [Orientation](../index.md) — the shipped taxonomy and what each role is reached for

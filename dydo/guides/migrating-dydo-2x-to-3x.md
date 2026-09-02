@@ -25,6 +25,8 @@ the upgrade is safe without reading token or rollback data. After confirming no 
 needed, remove that object manually. Do not delete remote Notion content or secret-bearing local
 rollback stores as part of this upgrade.
 
+Rename `models.roles` to `models.agents` in `dydo.json`; dydo 3 does not read the old key.
+
 ## What remains unchanged
 
 FutureFeatures remain repository-native ideas. A human promotes one to a Linear Initiative, Project,

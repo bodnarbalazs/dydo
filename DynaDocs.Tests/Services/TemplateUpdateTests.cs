@@ -150,63 +150,6 @@ public class TemplateUpdateTests : IDisposable
         Assert.Equal(storedHash, onDiskHash);
     }
 
-    [Fact]
-    public void MigrateHashFormat_UpdatesPreNormalizationHash()
-    {
-        // Simulate a hash stored before normalization was added.
-        // Pre-normalization: SHA256 of raw CRLF bytes
-        var crlfContent = "line one\r\nline two\r\n";
-        var preNormHash = ComputeRawHash(crlfContent);
-
-        // Post-normalization ComputeHash should produce a different value
-        var postNormHash = TemplateCommand.ComputeHash(crlfContent);
-
-        // MigrateHashFormat should detect the old format and update
-        var config = new DydoConfig();
-        var relativePath = "_system/templates/test.template.md";
-        config.FrameworkHashes[relativePath] = preNormHash;
-
-        var fullPath = Path.Combine(_dydoRoot, relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-        File.WriteAllText(fullPath, crlfContent);
-
-        TemplateCommand.MigrateHashFormat(config, _dydoRoot);
-
-        Assert.Equal(postNormHash, config.FrameworkHashes[relativePath]);
-    }
-
-    [Fact]
-    public void MigrateHashFormat_LeavesUserEditedFilesAlone()
-    {
-        // Stored hash is from original content, file was user-edited
-        var originalContent = "original content\n";
-        var userEditedContent = "user edited content\n";
-        var storedHash = ComputeRawHash(originalContent);
-
-        var config = new DydoConfig();
-        var relativePath = "_system/templates/test.template.md";
-        config.FrameworkHashes[relativePath] = storedHash;
-
-        var fullPath = Path.Combine(_dydoRoot, relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-        File.WriteAllText(fullPath, userEditedContent);
-
-        TemplateCommand.MigrateHashFormat(config, _dydoRoot);
-
-        // Should not update — file was genuinely user-edited
-        Assert.Equal(storedHash, config.FrameworkHashes[relativePath]);
-    }
-
-    /// <summary>
-    /// Computes SHA256 without normalization — simulates pre-fix hash format.
-    /// </summary>
-    private static string ComputeRawHash(string content)
-    {
-        var bytes = System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(content));
-        return Convert.ToHexStringLower(bytes);
-    }
-
     #endregion
 
     #region GetOldStockContent fallback logic

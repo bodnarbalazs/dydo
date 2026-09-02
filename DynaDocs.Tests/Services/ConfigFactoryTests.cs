@@ -54,37 +54,6 @@ public class ConfigFactoryTests
     }
 
     [Fact]
-    public void UpgradeLegacyOpenAiTierDefaults_PreservesCustomizedTiers()
-    {
-        var config = ConfigFactory.CreateDefault();
-        config.Models!.Tiers["openai"]["strong"] = "custom-strong";
-
-        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
-
-        Assert.False(upgraded);
-        Assert.Equal("custom-strong", config.Models.Tiers["openai"]["strong"]);
-    }
-
-    [Fact]
-    public void UpgradeLegacyOpenAiTierDefaults_RebindsLegacyGpt55Tiers()
-    {
-        var config = ConfigFactory.CreateDefault();
-        config.Models!.Tiers["openai"] = new Dictionary<string, string>
-        {
-            ["strong"] = "gpt-5.5",
-            ["standard"] = "gpt-5.5",
-            ["light"] = "gpt-5.5"
-        };
-
-        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
-
-        Assert.True(upgraded);
-        Assert.Equal("gpt-5.6-sol", config.Models.Tiers["openai"]["strong"]);
-        Assert.Equal("gpt-5.6-terra", config.Models.Tiers["openai"]["standard"]);
-        Assert.Equal("gpt-5.6-luna", config.Models.Tiers["openai"]["light"]);
-    }
-
-    [Fact]
     public void CreateDefault_IncludesDefaultNudges()
     {
         var config = ConfigFactory.CreateDefault();
@@ -179,32 +148,14 @@ public class ConfigFactoryTests
     }
 
     [Fact]
-    public void CreateDefaultModels_BindsTheDr045Roles()
+    public void CreateDefaultModels_BindsTheDr045Agents()
     {
-        var roles = ConfigFactory.CreateDefaultModels().Roles;
+        var agents = ConfigFactory.CreateDefaultModels().Agents;
 
-        Assert.Equal("strong", roles["project-planner"]);
-        Assert.Equal("strong", roles["issue-planner"]);
-        Assert.Equal("strong", roles["issue-captain"]);
-        Assert.Equal("standard", roles["research"]);
-    }
-
-    [Fact]
-    public void UpgradeLegacyPlannerRole_PreservesTheChosenTierAndIsIdempotent()
-    {
-        var config = new DydoConfig
-        {
-            Models = new ModelsConfig
-            {
-                Roles = new Dictionary<string, string> { ["planner"] = "custom-tier" }
-            }
-        };
-
-        Assert.True(ConfigFactory.UpgradeLegacyPlannerRole(config));
-        Assert.False(config.Models.Roles.ContainsKey("planner"));
-        Assert.Equal("custom-tier", config.Models.Roles["project-planner"]);
-        Assert.Equal("custom-tier", config.Models.Roles["issue-planner"]);
-        Assert.False(ConfigFactory.UpgradeLegacyPlannerRole(config));
+        Assert.Equal("strong", agents["project-planner"]);
+        Assert.Equal("strong", agents["issue-planner"]);
+        Assert.Equal("strong", agents["issue-captain"]);
+        Assert.Equal("standard", agents["research"]);
     }
 
     [Fact]

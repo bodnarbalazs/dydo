@@ -93,9 +93,9 @@ broken this).
   bases to surface a fact a decision waits on. Resolved by a subagent that calls the Skill tool with
   "research". Use when knowledge outside the current working directory is required.
 - **Prototype** (HITL): Raise the fidelity of the discussion by making a cheap, rough, concrete
-  artifact to react to (an outline, a rough take, a stub, or UI/logic code) by calling the Skill tool
-  with "prototype". Links the prototype as an asset. Use when "how should it look" or "how should it
-  behave" is the key question.
+  artifact to react to (throwaway UI or logic code) by calling the Skill tool with "prototype". Links
+  the prototype as an asset. Use when "how should it look" or "how should it behave" is the key
+  question.
 - **Grilling** (HITL): Conversation. The default case. Always call the Skill tool twice, for
   "grilling" and "domain-modeling".
 - **Question** (HITL): One prepared human choice that authoritative sources and the other Issue types

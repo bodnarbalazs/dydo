@@ -336,8 +336,7 @@ public static partial class SyncCommand
         // workflows stay tier-blind. An unresolved role emits `model: inherit` — the
         // explicit no-silent-downgrade spelling (an OMITTED model would fall back to
         // Claude Code's default subagent model, not the session model).
-        var (model, effort) = ResolveModel(models, role.Name);
-        var effortLine = model != null && effort != null ? $"\neffort: {effort}" : "";
+        var model = ResolveModel(models, role.Name);
 
         return $"""
             ---
@@ -345,7 +344,7 @@ public static partial class SyncCommand
             description: {role.Description}
             tools: {tools}
             skills: [{role.Name}]
-            model: {model ?? "inherit"}{effortLine}
+            model: {model ?? "inherit"}
             ---
 
             You are {Article(role.Name)} **{role.Name}**. {role.Description} {stance} Your methodology lives in
@@ -360,17 +359,17 @@ public static partial class SyncCommand
     /// missing from the vendor map — and the caller emits <c>model: inherit</c> so the
     /// agent runs on the session model instead of silently downgrading.
     /// </summary>
-    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string agentName)
+    internal static string? ResolveModel(ModelsConfig? models, string agentName)
         => ResolveModel(models, agentName, ClaudeModelVendor);
 
-    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string agentName, string vendor)
+    internal static string? ResolveModel(ModelsConfig? models, string agentName, string vendor)
     {
         if (models == null || !models.Agents.TryGetValue(agentName, out var tier))
-            return (null, null);
+            return null;
         if (!models.Tiers.TryGetValue(vendor, out var vendorTiers)
             || !vendorTiers.TryGetValue(tier, out var model))
-            return (null, null);
-        return (model, models.Efforts.GetValueOrDefault(agentName));
+            return null;
+        return model;
     }
 
     private static string BuildCodexAgent(RoleDefinition role, List<string> mustReads, ModelsConfig? models)
@@ -388,7 +387,7 @@ public static partial class SyncCommand
         var contextBlock = mustReads.Count == 0 ? "" :
             "\n\nRead these for project context before working:\n"
             + string.Join('\n', mustReads.Select(p => $"- {p}"));
-        var (model, _) = ResolveModel(models, role.Name, OpenAiModelVendor);
+        var model = ResolveModel(models, role.Name, OpenAiModelVendor);
         // Codex has no `skills:` preload, so naming the skill to load is the only thing that
         // carries the methodology into a spawned agent (DR 045 §10). A writer role needs the
         // workspace-write sandbox to act on that methodology at all.

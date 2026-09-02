@@ -10,17 +10,8 @@ public class DydoConfig
     [JsonPropertyName("version")]
     public int Version { get; set; } = 1;
 
-    /// <summary>
-    /// Optional project slug for project-specific durable configuration.
-    /// </summary>
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
     [JsonPropertyName("structure")]
     public StructureConfig Structure { get; set; } = new();
-
-    [JsonPropertyName("paths")]
-    public PathsConfig Paths { get; set; } = new();
 
     [JsonPropertyName("integrations")]
     public Dictionary<string, bool> Integrations { get; set; } = new();

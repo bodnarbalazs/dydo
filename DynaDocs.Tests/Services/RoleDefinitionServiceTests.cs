@@ -1,14 +1,11 @@
 namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Commands;
-using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
 public class RoleDefinitionServiceTests
 {
-    private readonly RoleDefinitionService _service = new();
-
     #region DiscoverRoles
 
     [Fact]
@@ -219,63 +216,6 @@ public class RoleDefinitionServiceTests
 
         Assert.Contains("skill-invalid.template.md", error.Message);
         Assert.Contains("expected 'automatic' or 'explicit'", error.Message);
-    }
-
-    #endregion
-
-    #region ResolvePathSets
-
-    [Fact]
-    public void ResolvePathSets_UsesPathSetsWhenPresent()
-    {
-        var config = new DydoConfig
-        {
-            Paths = new PathsConfig
-            {
-                Source = ["src/**"],
-                Tests = ["tests/**"],
-                PathSets = new Dictionary<string, List<string>>
-                {
-                    ["source"] = ["custom-src/**"],
-                    ["tests"] = ["custom-tests/**"],
-                    ["docs"] = ["docs/**"]
-                }
-            }
-        };
-
-        var result = _service.ResolvePathSets(config);
-
-        Assert.Equal(["custom-src/**"], result["source"]);
-        Assert.Equal(["custom-tests/**"], result["tests"]);
-        Assert.Equal(["docs/**"], result["docs"]);
-    }
-
-    [Fact]
-    public void ResolvePathSets_FallsBackToSourceAndTests()
-    {
-        var config = new DydoConfig
-        {
-            Paths = new PathsConfig
-            {
-                Source = ["Commands/**", "Services/**"],
-                Tests = ["DynaDocs.Tests/**"]
-            }
-        };
-
-        var result = _service.ResolvePathSets(config);
-
-        Assert.Equal(["Commands/**", "Services/**"], result["source"]);
-        Assert.Equal(["DynaDocs.Tests/**"], result["tests"]);
-        Assert.Equal(2, result.Count);
-    }
-
-    [Fact]
-    public void ResolvePathSets_NullConfig_UsesDefaults()
-    {
-        var result = _service.ResolvePathSets(null);
-
-        Assert.Equal(["src/**"], result["source"]);
-        Assert.Equal(["tests/**"], result["tests"]);
     }
 
     #endregion

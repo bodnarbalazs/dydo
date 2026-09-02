@@ -21,11 +21,4 @@ public class ModelsConfig
     /// </summary>
     [JsonPropertyName("agents")]
     public Dictionary<string, string> Agents { get; set; } = new();
-
-    /// <summary>
-    /// Optional role → reasoning-effort map (Decision 028 §4): tier picks the brain,
-    /// effort picks how hard it thinks. Only emitted for roles with a resolved model.
-    /// </summary>
-    [JsonPropertyName("efforts")]
-    public Dictionary<string, string> Efforts { get; set; } = new();
 }

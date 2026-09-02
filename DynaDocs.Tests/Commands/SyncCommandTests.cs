@@ -1318,25 +1318,22 @@ public class SyncCommandTests : IDisposable
             ["reviewer"] = "strong",
             ["code-writer"] = "standard",
             ["docs-writer"] = "light" // tier NOT bound in the vendor map
-        },
-        Efforts = new Dictionary<string, string> { ["code-writer"] = "low" }
+        }
     };
 
     [Fact]
     public void ResolveModel_MappedRole_ReturnsConcreteModel()
     {
-        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "reviewer");
+        var model = SyncCommand.ResolveModel(TestModels(), "reviewer");
         Assert.Equal("model-strong", model);
-        Assert.Null(effort);
     }
 
     [Fact]
     public void ResolveModel_OpenAiDefault_ReturnsStrongTierModel()
     {
-        var (model, effort) = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), "reviewer", "openai");
+        var model = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), "reviewer", "openai");
 
         Assert.Equal("gpt-5.6-sol", model);
-        Assert.Null(effort);
     }
 
     [Theory]
@@ -1348,42 +1345,32 @@ public class SyncCommandTests : IDisposable
     [InlineData("docs-writer", "gpt-5.6-terra")]
     public void ResolveModel_OpenAiDefault_UsesRoleTier(string roleName, string expectedModel)
     {
-        var (model, _) = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), roleName, "openai");
+        var model = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), roleName, "openai");
 
         Assert.Equal(expectedModel, model);
-    }
-
-    [Fact]
-    public void ResolveModel_RoleWithEffort_ReturnsBoth()
-    {
-        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "code-writer");
-        Assert.Equal("model-standard", model);
-        Assert.Equal("low", effort);
     }
 
     [Fact]
     public void ResolveModel_UnmappedRole_ReturnsNull()
     {
         // No role → tier entry: inherit the session model (Decision 028 — no silent downgrade).
-        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "project-planner");
+        var model = SyncCommand.ResolveModel(TestModels(), "project-planner");
         Assert.Null(model);
-        Assert.Null(effort);
     }
 
     [Fact]
     public void ResolveModel_TierMissingFromVendorMap_ReturnsNull()
     {
         // docs-writer maps to "light", which the vendor map does not bind → inherit.
-        var (model, _) = SyncCommand.ResolveModel(TestModels(), "docs-writer");
+        var model = SyncCommand.ResolveModel(TestModels(), "docs-writer");
         Assert.Null(model);
     }
 
     [Fact]
     public void ResolveModel_AbsentModelsSection_ReturnsNull()
     {
-        var (model, effort) = SyncCommand.ResolveModel(null, "reviewer");
+        var model = SyncCommand.ResolveModel(null, "reviewer");
         Assert.Null(model);
-        Assert.Null(effort);
     }
 
     [Fact]
@@ -1394,17 +1381,6 @@ public class SyncCommandTests : IDisposable
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
         Assert.Contains("\nmodel: model-strong\n", agent);
         Assert.DoesNotContain("model: inherit", agent);
-        Assert.DoesNotContain("effort:", agent); // no effort configured for reviewer
-    }
-
-    [Fact]
-    public void SyncRole_WithEffort_EmitsEffortLine()
-    {
-        var codeWriter = RoleDefinitionService.DiscoverRoles().First(r => r.Name == "code-writer");
-        SyncCommand.SyncRole(codeWriter, _testDir, TestModels());
-
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
-        Assert.Contains("\nmodel: model-standard\neffort: low\n", agent);
     }
 
     [Fact]
@@ -1465,7 +1441,7 @@ public class SyncCommandTests : IDisposable
         var models = ConfigFactory.CreateDefaultModels();
         foreach (var role in models.Agents.Keys)
         {
-            var (model, _) = SyncCommand.ResolveModel(models, role);
+            var model = SyncCommand.ResolveModel(models, role);
             Assert.False(string.IsNullOrEmpty(model), $"default tier for '{role}' did not resolve");
         }
     }

@@ -116,7 +116,7 @@ Do not hand-edit compiled skills or agents. Change their source templates and ru
 
 ```
 project/
-|-- dydo.json                    # Paths, model tiers, integrations, nudges
+|-- dydo.json                    # Model tiers, integrations, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- .claude/                     # Compiled Claude agents, skills, and workflows
@@ -135,7 +135,7 @@ project/
 ## Command Reference
 
 See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, role-compilation,
-guard, validation, template, model, and utility commands.
+guard, validation, template, and utility commands.
 
 ## License
 

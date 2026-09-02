@@ -8,7 +8,7 @@ is the universal reference in this skill's body.
 
 **The template is the role.** One `skill-<name>.template.md` carries the metadata and the
 methodology; `dydo sync` compiles it for every host and owns every host-specific detail. For where
-sources live and how to add or shadow one, see
+sources live, see
 [customizing-roles.md](../../../../dydo/guides/customizing-roles.md).
 
 ## Frontmatter

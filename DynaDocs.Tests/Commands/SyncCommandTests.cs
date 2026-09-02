@@ -271,6 +271,62 @@ public class SyncCommandTests : IDisposable
         Assert.All(stale, file => Assert.False(File.Exists(file), file));
     }
 
+    // test-writer folded into code-writer at 9875c9a6 but never reached the sweep list, so every
+    // project initialised before that commit still carries its four compiled artifacts.
+    [Fact]
+    public void CleanRetiredArtifacts_RemovesTestWriterArtifactsOnBothHosts()
+    {
+        Assert.Contains("test-writer", SyncCommand.RetiredSkills);
+
+        var stale = new[]
+        {
+            Path.Combine(_testDir, ".claude", "agents", "test-writer.md"),
+            Path.Combine(_testDir, ".claude", "skills", "test-writer", "SKILL.md"),
+            Path.Combine(_testDir, ".codex", "agents", "test-writer.toml"),
+            Path.Combine(_testDir, ".agents", "skills", "test-writer", "SKILL.md"),
+        };
+        foreach (var file in stale)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "stale test-writer artifact");
+        }
+
+        var removed = SyncCommand.CleanRetiredArtifacts(_testDir);
+
+        Assert.All(stale, file => Assert.False(File.Exists(file), file));
+        Assert.Equal(4, removed);
+    }
+
+    // A skill retired after an earlier sweep took its SKILL.md keeps its folder alive through
+    // agents/openai.yaml, which no sweep ever named: the invocation policy and both folders it
+    // holds open have to go, without touching a skill dydo still ships.
+    [Fact]
+    public void CleanRetiredArtifacts_RemovesARetiredSkillsOpenAiMetadata()
+    {
+        var stale = new[] { ".claude", ".agents" }
+            .Select(host => Path.Combine(
+                _testDir, host, "skills", "manager", "agents", "openai.yaml"))
+            .ToList();
+        foreach (var file in stale)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "policy:\n  allow_implicit_invocation: false\n");
+        }
+        var sibling = Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(sibling)!);
+        File.WriteAllText(sibling, "shipped skill");
+
+        SyncCommand.CleanRetiredArtifacts(_testDir);
+
+        Assert.All(stale, file => Assert.False(File.Exists(file), file));
+        Assert.All(stale, file => Assert.False(
+            Directory.Exists(Path.GetDirectoryName(file)!), Path.GetDirectoryName(file)));
+        Assert.All(stale, file => Assert.False(
+            Directory.Exists(Path.GetDirectoryName(Path.GetDirectoryName(file)!)!),
+            Path.GetDirectoryName(Path.GetDirectoryName(file)!)));
+        Assert.True(File.Exists(sibling), "a shipped skill's folder must survive the sweep");
+    }
+
     private void SaveConfigWithIntegrations(bool claude, bool codex)
     {
         var config = ConfigFactory.CreateDefault();

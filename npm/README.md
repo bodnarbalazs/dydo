@@ -54,7 +54,7 @@ templates and run `dydo sync`.
 | `dydo sync` | Compile shared roles, resources, and workflows. |
 | `dydo check`, `dydo fix`, `dydo index`, `dydo graph` | Maintain the documentation tree. |
 | `dydo guard` | Evaluate hook rules and nudges. |
-| `dydo template update` | Update framework-owned templates and docs. |
+| `dydo template update` | Update framework-owned docs. |
 | `dydo validate` | Validate local configuration and nudges. |
 | `dydo completions`, `version`, `help` | Shell and utility commands. |
 

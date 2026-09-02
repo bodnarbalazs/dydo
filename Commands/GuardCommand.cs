@@ -31,7 +31,7 @@ using DynaDocs.Utils;
 public static partial class GuardCommand
 {
     /// <summary>
-    /// Everything the guard needs from the project: the loaded config (nudges, path sets)
+    /// Everything the guard needs from the project: the loaded config (nudges)
     /// and the machine-local directory where warn-nudge pass-through markers live
     /// (dydo/_system/.local/ — gitignored, scan-excluded). Replaces the old AgentRegistry:
     /// with the roster/claim machinery gone (DR-041), the guard only ever needed these two.

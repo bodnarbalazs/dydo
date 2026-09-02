@@ -43,7 +43,7 @@ role's `resources/` reach a spawned agent are in
 `{{include:name}}` inserts `dydo/_system/template-additions/name.md` at a hook in a skill template,
 and resolves to nothing when that file is absent, leaving no trace in the output. Five hooks ship:
 `extra-must-reads`, `extra-verify`, `extra-review-steps`, `extra-review-checklist`, and
-`extra-test-guidance`. A project's own template may define any other name.
+`extra-test-guidance`.
 
 That folder is where durable customization belongs: an addition stays separate from the shipped
 text, is shared by every skill template that names it, and survives the updates below.
@@ -81,7 +81,7 @@ against what is on disk, and takes one of two paths per file:
 Beyond that comparison the same run creates any newly shipped framework-owned document
 missing from disk; tops up `_system/types.json` with frontmatter types added since the project was
 scaffolded, creating it when absent and leaving a malformed one alone with a warning; adds shipped
-nudge and scan-exclusion defaults to `dydo.json` and upgrades legacy OpenAI model defaults there; and
+nudge and scan-exclusion defaults to `dydo.json`; and
 deletes a retired framework asset — today `_assets/dydo-diagram.svg` — when the copy on disk is one
 the framework wrote, keeping a modified copy as the project's own.
 

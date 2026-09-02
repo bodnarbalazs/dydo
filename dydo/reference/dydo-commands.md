@@ -56,8 +56,7 @@ compile into that skill's `resources/`, and workflow harnesses compile into Clau
 
 Only the integrations recorded in `dydo.json` are emitted; a project with neither recorded — `none`,
 or a `dydo.json` from before integrations were recorded — emits for both hosts. Every run also deletes
-outputs dydo no longer ships: retired workflows, resources retired by rename, and retired roles —
-unless a project-local template of that name keeps the role alive.
+outputs dydo no longer ships: retired workflows, resources retired by rename, and retired roles.
 
 Change the source template and re-run this command; never hand-edit a compiled artifact.
 
@@ -150,7 +149,7 @@ wiring keeps resolving.
 
 ### dydo template update
 
-Refresh this project's framework-owned templates and documents to the running dydo version.
+Refresh this project's framework-owned documents to the running dydo version.
 
 ```bash
 dydo template update

@@ -40,7 +40,7 @@ public static class HelpCommand
         Console.WriteLine("  validate               Validate config and templates");
         Console.WriteLine();
         Console.WriteLine("Template Commands:");
-        Console.WriteLine("  template update        Update framework templates and docs");
+        Console.WriteLine("  template update        Update framework docs");
         Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");

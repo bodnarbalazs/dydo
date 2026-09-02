@@ -110,7 +110,8 @@ public static class ConfigFactory
             ["project-planner"] = "strong",
             ["issue-planner"] = "strong",
             ["issue-captain"] = "strong",
-            ["research"] = "standard"
+            ["research"] = "standard",
+            ["scout"] = "standard"
         }
     };
 

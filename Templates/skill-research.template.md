@@ -3,6 +3,7 @@ name: research
 description: Primary sources, cited. Use when a fact a choice waits on could hide in Decision Records, plans, code, history, or outside sources, or when docs, specs, or API behaviour must be established before work depends on them.
 emit: agent
 delegates: true
+web: true
 invocation: automatic
 ---
 
@@ -39,7 +40,7 @@ everything else you read.
    why something changed. Outside sources: official docs, specs, library source, first-party APIs.
    Done when every family is marked in or out with a reason.
 3. **Send scouts.** One scout per family in play, in parallel, each carrying the question, its
-   family, and the brief in [scout](resources/scout.md); when one family alone is in play, read it
+   family, and the brief in the `scout` agent; when one family alone is in play, read it
    yourself. Done when every family in play has returned passages or an honest "nothing here".
 4. **Pool and verify.** Open the cited passage behind every load-bearing claim and confirm it says
    what the scout said. Where sources conflict, name the conflict and which governs; inside the

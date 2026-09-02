@@ -12,7 +12,7 @@ public static class SkillTemplateService
     /// <summary>
     /// Enumerates every shipped skill template. Metadata comes from the template frontmatter:
     /// <c>name</c>, <c>description</c>, <c>emit</c> (agent+skill unless <c>skill</c>),
-    /// <c>read-only</c>, <c>delegates</c>, <c>invocation</c>.
+    /// <c>read-only</c>, <c>delegates</c>, <c>invocation</c>, <c>web</c>, <c>argument-hint</c>.
     ///
     /// The shipped set already excludes retired names, so sync's retired-artifact sweep is
     /// never suppressed by a source dydo still carries through a transition.
@@ -61,8 +61,21 @@ public static class SkillTemplateService
             Delegates = fields.TryGetValue("delegates", out var g)
                 && g.Equals("true", StringComparison.OrdinalIgnoreCase),
             ExplicitInvocation = ParseExplicitInvocation(fields, templateFile),
+            Web = fields.TryGetValue("web", out var w)
+                && w.Equals("true", StringComparison.OrdinalIgnoreCase),
+            ArgumentHint = fields.TryGetValue("argument-hint", out var h) ? Unquote(h) : null,
         };
     }
+
+    /// <summary>
+    /// Strips one surrounding pair of double or single quotes. The frontmatter reader returns the
+    /// raw value, and a hint is authored quoted, so the quotes would otherwise compile into the
+    /// hint the host shows.
+    /// </summary>
+    private static string Unquote(string value) =>
+        value.Length >= 2 && (value[0] == '"' || value[0] == '\'') && value[^1] == value[0]
+            ? value[1..^1]
+            : value;
 
     private static bool ParseExplicitInvocation(
         IReadOnlyDictionary<string, string> fields,

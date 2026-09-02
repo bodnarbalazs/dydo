@@ -250,6 +250,27 @@ public class SyncCommandTests : IDisposable
         Assert.Equal(4, removed);
     }
 
+    // The research scout became a `scout` agent, so the brief it used to compile into
+    // research/resources/ has to leave both hosts — an initialised project would otherwise keep a
+    // resource the skill no longer links, and no later sync would ever touch it.
+    [Fact]
+    public void CleanRetiredArtifacts_RemovesThePromotedResearchScoutResource()
+    {
+        var stale = new[] { ".claude", ".agents" }
+            .Select(host => Path.Combine(
+                _testDir, host, "skills", "research", "resources", "scout.md"))
+            .ToList();
+        foreach (var file in stale)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "stale scout brief");
+        }
+
+        SyncCommand.CleanRetiredArtifacts(_testDir);
+
+        Assert.All(stale, file => Assert.False(File.Exists(file), file));
+    }
+
     private void SaveConfigWithIntegrations(bool claude, bool codex)
     {
         var config = ConfigFactory.CreateDefault();
@@ -349,6 +370,88 @@ public class SyncCommandTests : IDisposable
 
         Assert.False(File.Exists(policyFile));
         Assert.False(Directory.Exists(agentsDir));
+    }
+
+    // The hint is Claude SKILL.md frontmatter; Codex carries the same fact as openai.yaml's
+    // default_prompt, so repeating it in the codex SKILL.md would be the same fact twice, in a
+    // key that host does not read. Which skills carry a hint is their source's business.
+    [Fact]
+    public void SyncSkill_ArgumentHint_CompilesToClaudeFrontmatterOnly()
+    {
+        var hinted = 0;
+
+        foreach (var skill in SkillTemplateService.DiscoverSkills().Where(s => !s.EmitAgent))
+        {
+            SyncCommand.SyncSkill(skill, _testDir);
+            SyncCommand.SyncCodexSkill(skill, _testDir);
+
+            var claude = File.ReadAllText(
+                Path.Combine(_testDir, ".claude", "skills", skill.Name, "SKILL.md"));
+            var codex = File.ReadAllText(
+                Path.Combine(_testDir, ".agents", "skills", skill.Name, "SKILL.md"));
+
+            Assert.Equal(skill.ArgumentHint != null, claude.Contains("\nargument-hint: "));
+            Assert.DoesNotContain("argument-hint", codex);
+            if (skill.ArgumentHint == null)
+                continue;
+
+            Assert.Contains(
+                $"description: {skill.Description}\nargument-hint: \"{skill.ArgumentHint}\"\n",
+                claude);
+            hinted++;
+        }
+
+        Assert.True(hinted > 0, "no shipped skill carried a hint; this fixture would pass vacuously");
+    }
+
+    // Upstream at 6654f6b6 hints exactly these two; the other human commands are the human's to
+    // word, and an invented hint would be dydo speaking in the human's voice.
+    [Fact]
+    public void ShippedSkills_CarryingAnArgumentHint_AreHandoffAndTeach()
+    {
+        var hinted = SkillTemplateService.DiscoverSkills()
+            .Where(skill => skill.ArgumentHint != null)
+            .Select(skill => skill.Name)
+            .OrderBy(name => name, StringComparer.Ordinal);
+
+        Assert.Equal(new[] { "handoff", "teach" }, hinted);
+    }
+
+    // agents/openai.yaml is Codex's expression of the two facts Claude carries in SKILL.md
+    // frontmatter. A skill that declares neither must leave no file behind — including one an
+    // earlier declaration wrote.
+    [Theory]
+    [InlineData(true, null, "policy:\n  allow_implicit_invocation: false\n")]
+    [InlineData(false, "Pick a target.", "interface:\n  default_prompt: \"Pick a target.\"\n")]
+    [InlineData(true, "Pick a target.",
+        "policy:\n  allow_implicit_invocation: false\ninterface:\n  default_prompt: \"Pick a target.\"\n")]
+    [InlineData(false, null, null)]
+    public void SyncCodexSkill_OpenAiMetadata_MatchesWhatTheSkillDeclares(
+        bool explicitInvocation, string? argumentHint, string? expected)
+    {
+        var skill = new SkillTemplate
+        {
+            Name = "metadata-probe",
+            TemplateFile = "skill-reviewer.template.md",
+            Description = "Probes the compiled openai.yaml.",
+            ExplicitInvocation = explicitInvocation,
+            ArgumentHint = argumentHint,
+        };
+        var agentsDir = Path.Combine(_testDir, ".agents", "skills", skill.Name, "agents");
+        Directory.CreateDirectory(agentsDir);
+        var metadataFile = Path.Combine(agentsDir, "openai.yaml");
+        File.WriteAllText(metadataFile, "policy:\n  allow_implicit_invocation: false\n");
+
+        SyncCommand.SyncCodexSkill(skill, _testDir);
+
+        if (expected == null)
+        {
+            Assert.False(File.Exists(metadataFile));
+            Assert.False(Directory.Exists(agentsDir));
+            return;
+        }
+
+        Assert.Equal(expected, File.ReadAllText(metadataFile));
     }
 
     [Fact]
@@ -583,6 +686,48 @@ public class SyncCommandTests : IDisposable
         Assert.Contains("developer_instructions = \"\"\"", agent);
     }
 
+    // Codex expresses web reach as its own toggle struct, and a TOML table header closes the
+    // top-level key section — so the table has to be last or it swallows the keys after it.
+    [Fact]
+    public void SyncCodexAgent_WebSkill_EndsWithTheWebSearchToggle()
+    {
+        var searcher = WebSkill();
+
+        SyncCommand.SyncCodexAgent(searcher, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "searcher.toml"));
+        Assert.EndsWith("\n\n[tools]\nweb_search = true", agent);
+        Assert.Contains("developer_instructions = \"\"\"", agent);
+        Assert.True(
+            agent.IndexOf("developer_instructions", StringComparison.Ordinal)
+                < agent.IndexOf("[tools]", StringComparison.Ordinal),
+            "the toggle table must follow every top-level key");
+    }
+
+    [Fact]
+    public void SyncCodexAgent_NonWebSkill_EmitsNoToolsTable()
+    {
+        Assert.False(_reviewer.Web);
+
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
+        Assert.DoesNotContain("[tools]", agent);
+        Assert.DoesNotContain("web_search", agent);
+    }
+
+    [Fact]
+    public void SyncCodexAgent_Scout_CarriesTheWebSearchToggle()
+    {
+        var scout = SkillTemplateService.DiscoverSkills().Single(skill => skill.Name == "scout");
+
+        SyncCommand.SyncCodexAgent(scout, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "scout.toml"));
+        Assert.Contains("web_search = true", agent);
+        Assert.Contains("sandbox_mode = \"read-only\"", agent);
+    }
+
     [Fact]
     public void SyncAgent_Agent_HasReadOnlyToolProfileAndFrontmatter()
     {
@@ -641,6 +786,62 @@ public class SyncCommandTests : IDisposable
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "delegator.md"));
         Assert.Contains("Agent", ToolsLine(agent));
+    }
+
+    // `web: true` is the only thing that grants the web tools: an agent that can reach outside the
+    // repository when its source never asked to has a capability nobody reviewed. The web tools
+    // come last, so a skill that also writes and delegates keeps one readable profile.
+    [Fact]
+    public void SyncAgent_WebSkill_GetsTheWebToolsAfterEveryOtherGrant()
+    {
+        var searcher = WebSkill();
+
+        SyncCommand.SyncAgent(searcher, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "searcher.md"));
+        Assert.Equal(
+            "tools: Read, Grep, Glob, Bash, Edit, Write, Skill, Agent, WebFetch, WebSearch",
+            ToolsLine(agent));
+    }
+
+    // No shipped skill both writes and searches, so the fixture is constructed; its TemplateFile
+    // names a shipped template because that is where the compiled body comes from.
+    private static SkillTemplate WebSkill() => new()
+    {
+        Name = "searcher",
+        TemplateFile = "skill-reviewer.template.md",
+        Description = "Reads the open web for a question it was handed.",
+        EmitAgent = true,
+        Delegates = true,
+        Web = true,
+    };
+
+    [Fact]
+    public void SyncAgent_NonWebSkill_GetsNoWebTools()
+    {
+        Assert.False(_reviewer.Web);
+
+        SyncCommand.SyncAgent(_reviewer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
+        Assert.DoesNotContain("Web", ToolsLine(agent));
+    }
+
+    // A scout reads the world and reports passages: it writes nothing, and it cannot spawn a
+    // second scout to widen the brief a researcher handed it.
+    [Fact]
+    public void SyncAgent_Scout_IsFencedToReadingAndTheWeb()
+    {
+        var scout = SkillTemplateService.DiscoverSkills().Single(skill => skill.Name == "scout");
+
+        SyncCommand.SyncAgent(scout, _testDir);
+
+        var tools = ToolsLine(File.ReadAllText(
+            Path.Combine(_testDir, ".claude", "agents", "scout.md")));
+        Assert.Equal("tools: Read, Grep, Glob, Bash, Skill, WebFetch, WebSearch", tools);
+        Assert.DoesNotContain("Edit", tools);
+        Assert.DoesNotContain("Write", tools);
+        Assert.DoesNotContain("Agent", tools);
     }
 
     [Theory]

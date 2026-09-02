@@ -1,24 +1,7 @@
 {
   "version": 1,
-  "name": null,
   "structure": {
     "root": "dydo"
-  },
-  "paths": {
-    "source": [
-      "Commands/**",
-      "Services/**",
-      "Models/**",
-      "Rules/**",
-      "Utils/**",
-      "Serialization/**",
-      "Program.cs",
-      "Templates/**"
-    ],
-    "tests": [
-      "DynaDocs.Tests/**"
-    ],
-    "pathSets": null
   },
   "integrations": {
     "claude": true,
@@ -46,8 +29,7 @@
       "issue-planner": "strong",
       "issue-captain": "strong",
       "research": "standard"
-    },
-    "efforts": {}
+    }
   },
   "scanExclude": [
     "_system/.local/",

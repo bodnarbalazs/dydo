@@ -172,7 +172,6 @@ public class ConfigFactoryTests
         var regex = new Regex(nudge.Pattern, RegexOptions.IgnoreCase);
 
         Assert.Equal("warn", nudge.Severity);
-        Assert.Null(nudge.Tools);
         Assert.Matches(regex, "gh pr create --title x --body 'ships the fix'");
         Assert.DoesNotMatch(regex, "gh pr create --body '## Independent review\nverdict: PASS'");
     }

@@ -254,7 +254,6 @@ public class ConfigServiceTests : IDisposable
             {
                 "version": 1,
                 "structure": { "root": "dydo" },
-                "paths": { "source": ["src/**"], "tests": ["tests/**"] },
                 "agents": { "pool": ["Adele", "Brian"], "assignments": { "testuser": ["Adele"] } }
             }
             """);
@@ -262,8 +261,6 @@ public class ConfigServiceTests : IDisposable
         var config = new ConfigService().LoadConfig(_testDir);
 
         Assert.NotNull(config);
-        Assert.Equal(["src/**"], config!.Paths.Source);
-        Assert.Equal(["tests/**"], config.Paths.Tests);
     }
 
     [Fact]

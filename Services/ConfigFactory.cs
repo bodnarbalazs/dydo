@@ -126,7 +126,6 @@ public static class ConfigFactory
                 Pattern = n.Pattern,
                 Message = n.Message,
                 Severity = n.Severity,
-                Tools = n.Tools?.ToList(),
                 Audience = n.Audience
             }).ToList(),
             ScanExclude = DydoInternalScanExclude.ToList(),
@@ -152,7 +151,6 @@ public static class ConfigFactory
                 Pattern = nudge.Pattern,
                 Message = nudge.Message,
                 Severity = nudge.Severity,
-                Tools = nudge.Tools?.ToList(),
                 Audience = nudge.Audience
             });
             added++;

@@ -32,7 +32,7 @@ The guard evaluates the request and returns:
 
 `dydo init` installs the matcher that decides which calls arrive: on Claude `Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion`, on Codex `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec`. A tool outside its host's matcher never reaches the guard.
 
-There is no identity, no staging, no per-role permission matrix: the path tiers, dangerous-command rules and command nudges apply to every caller, every time ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)). One caller *kind* is distinguished, and it is not a role: a call carrying `agent_id` is a sub-agent, which additionally may not run `dydo` commands and sees only file nudges addressed to `worker` or `all`.
+There is no identity, no staging, no per-role permission matrix: the path tiers, dangerous-command rules and command nudges apply to every caller, every time ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)). One caller *kind* is distinguished, and it is not a role: a call carrying `agent_id` is a sub-agent, which additionally may not run `dydo` commands.
 
 ---
 
@@ -92,14 +92,11 @@ Nudges are project-configurable rules in `dydo.json`: a pattern plus a message, 
 | `warn` | Blocks once with "(Run the same command again to proceed anyway.)"; the retry passes. The pass-through marker lives in `dydo/_system/.local/` (gitignored), keyed by pattern hash. |
 | `block` | Always blocks |
 
-Two kinds:
-
 - **Command nudges** — regex matched against bash command text. Capture groups substitute into the message (`$1`, `$2`, …).
-- **File nudges** (`tools` key) — glob patterns matched against direct tool-call paths; `{source}` and `{tests}` expand to the path sets in `dydo.json`, and an `audience` of `manager` or `worker` narrows one to a caller kind. Nothing shipped is tool-scoped: the file-nudge machinery is there for projects to use.
 
 The shipped **review-block nudge** is the one that carries policy: a `gh pr create` whose command text has no `Independent review` in it is warned once, because nothing reaches the human that an independent agent has not reviewed and the PR body is where that proof lands ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §3). At `warn` an honest exception costs one retry; raising it to `block` is a human's edit to `dydo.json`, made only if the discipline erodes.
 
-**Shipped defaults and self-healing:** the indirect-dydo-invocation nudges (`npx dydo`, `dotnet dydo`, `python dydo`, …) are severity-pinned — `MergeSystemNudges` reconciles config against the shipped set on every nudge evaluation, in memory and without rewriting `dydo.json`: a deleted block-default is re-added, a downgraded severity is restored to `block`, and a nudge still carrying a known-stale shipped message is healed to the current text or dropped if its default was retired. A message the user customized matches no known-stale text and is never clobbered. Both kinds go through it — command nudges and file nudges alike — so a retired shipped nudge stops firing in an existing install with no migration step: the Decision 026 source-write reminder, which pointed at a workflow 3.0 deletes, is dropped this way.
+**Shipped defaults and self-healing:** the indirect-dydo-invocation nudges (`npx dydo`, `dotnet dydo`, `python dydo`, …) are severity-pinned — `MergeSystemNudges` reconciles config against the shipped set on every nudge evaluation, in memory and without rewriting `dydo.json`: a deleted block-default is re-added, a downgraded severity is restored to `block`, and a nudge still carrying a known-stale shipped message is healed to the current text or dropped if its default was retired. A message the user customized matches no known-stale text and is never clobbered.
 
 ---
 
@@ -125,6 +122,6 @@ Any coding tool can integrate through two input modes with the same contract (ex
 
 ## Related
 
-- [Configuration Reference](../reference/configuration.md) — nudge format, off-limits, path sets
+- [Configuration Reference](../reference/configuration.md) — nudge format, off-limits
 - [Architecture Overview](./architecture.md) — where the guard sits in the system
 - [Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md) — why identity-gated enforcement left the guard

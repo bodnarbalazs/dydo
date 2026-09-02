@@ -84,27 +84,14 @@ public class ValidationService : IValidationService
                 });
             }
 
-            // Tool-scoped nudges (Decision 026 §4) carry glob patterns, not regexes.
-            if (nudge.Tools is not { Count: > 0 })
+            try { _ = new Regex(nudge.Pattern); }
+            catch (ArgumentException ex)
             {
-                try { _ = new Regex(nudge.Pattern); }
-                catch (ArgumentException ex)
+                issues.Add(new ValidationIssue
                 {
-                    issues.Add(new ValidationIssue
-                    {
-                        Severity = "error", File = "dydo.json",
-                        Message = $"Nudge [{i}] has invalid regex pattern: {ex.Message}"
-                    });
-                }
-
-                if (nudge.HasAudience)
-                {
-                    issues.Add(new ValidationIssue
-                    {
-                        Severity = "error", File = "dydo.json",
-                        Message = $"Nudge [{i}] has audience but no tools. Audience applies only to file nudges."
-                    });
-                }
+                    Severity = "error", File = "dydo.json",
+                    Message = $"Nudge [{i}] has invalid regex pattern: {ex.Message}"
+                });
             }
 
             if (string.IsNullOrWhiteSpace(nudge.Message))

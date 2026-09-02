@@ -5,9 +5,9 @@ using DynaDocs.Utils;
 
 /// <summary>
 /// Discovers roles from the shipped skill templates (the template IS the role — its frontmatter
-/// carries the metadata) and resolves the {source}/{tests} path sets used by tool-scoped nudges.
+/// carries the metadata).
 /// </summary>
-public class RoleDefinitionService : IRoleDefinitionService
+public static class RoleDefinitionService
 {
     /// <summary>
     /// Enumerates every role from the shipped skill templates. Metadata comes from the
@@ -65,17 +65,5 @@ public class RoleDefinitionService : IRoleDefinitionService
         throw new InvalidDataException(
             $"Skill template '{templateFile}' has invalid invocation '{value}'; "
             + "expected 'automatic' or 'explicit'.");
-    }
-
-    public Dictionary<string, List<string>> ResolvePathSets(DydoConfig? config)
-    {
-        if (config?.Paths.PathSets != null)
-            return config.Paths.PathSets;
-
-        return new Dictionary<string, List<string>>
-        {
-            ["source"] = config?.Paths.Source ?? ["src/**"],
-            ["tests"] = config?.Paths.Tests ?? ["tests/**"]
-        };
     }
 }

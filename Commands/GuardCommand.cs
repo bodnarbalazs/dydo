@@ -217,7 +217,6 @@ public static partial class GuardCommand
         var bashAnalyzer = new BashCommandAnalyzer();
 
         RunDailyValidationIfDue();
-        RestoreExpiredModelCapsIfDue();
 
         var sessionId = ctx.SessionId;
 
@@ -916,45 +915,6 @@ public static partial class GuardCommand
         catch
         {
             // Daily validation must never break the guard
-        }
-    }
-
-    // How often the guard checks for expired model caps to restore. The guard self-triggers
-    // it — throttled like daily validation so the hot path stays cheap. A restore only ever
-    // does real work when a cap marker's reset time has actually passed.
-    private const int ModelCapRestoreThrottleMinutes = 5;
-
-    /// <summary>
-    /// Restores any model cap whose reset time has passed, at most once per throttle window.
-    /// Cheap when there is nothing to do (RestoreExpired no-ops without a marker directory),
-    /// and never allowed to break the guard.
-    ///
-    /// Concurrency: two hook processes (main thread + a subagent) can both clear the throttle
-    /// on a stale stamp and race into RestoreExpired → SaveConfig. This is left unserialized on
-    /// purpose — the restore is convergent: both processes rebind the same tiers to the same
-    /// original model, write the same config, and TryDelete the same marker (one wins, the other
-    /// swallows the not-found). Last-writer-wins produces the identical file, so the race is
-    /// benign and a lock would add cleanup/staleness burden for no correctness gain.
-    /// </summary>
-    private static void RestoreExpiredModelCapsIfDue()
-    {
-        try
-        {
-            var basePath = Environment.CurrentDirectory;
-            var stampPath = Path.Combine(basePath, "dydo", "_system", ".local", "last-model-cap-restore");
-
-            if (File.Exists(stampPath)
-                && (DateTime.UtcNow - File.GetLastWriteTimeUtc(stampPath)).TotalMinutes < ModelCapRestoreThrottleMinutes)
-                return;
-
-            ModelCapService.RestoreExpired(DateTimeOffset.Now, basePath);
-
-            PathUtils.EnsureLocalDirExists(Path.Combine(basePath, "dydo"));
-            File.WriteAllText(stampPath, DateTime.UtcNow.ToString("O"));
-        }
-        catch
-        {
-            // Model-cap restore must never break the guard.
         }
     }
 

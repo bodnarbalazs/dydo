@@ -15,7 +15,6 @@ rootCommand.Subcommands.Add(CompletionsCommand.Create());
 rootCommand.Subcommands.Add(CompleteCommand.Create());
 rootCommand.Subcommands.Add(TemplateCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
-rootCommand.Subcommands.Add(ModelCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>

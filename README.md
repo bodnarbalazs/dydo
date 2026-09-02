@@ -173,9 +173,6 @@ work graph in repository files.
 |---|---|
 | `dydo guard` | Evaluate universal hook rules |
 | `dydo template update [--diff]` | Update or preview framework-owned templates and docs |
-| `dydo model cap <model> --until <time>` | Temporarily rebind a model tier |
-| `dydo model status` | Show active model caps |
-| `dydo model uncap <model>` | Restore original model bindings |
 
 See the [complete CLI reference](dydo/reference/dydo-commands.md) for options, examples, transition-only
 commands, and exit codes.

@@ -47,8 +47,7 @@
       "issue-captain": "strong",
       "research": "standard"
     },
-    "efforts": {},
-    "fallback": null
+    "efforts": {}
   },
   "scanExclude": [
     "_system/.local/",
@@ -67,7 +66,7 @@
       "severity": "block"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|validate|inquisition)\\b.*)",
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:check|fix|index|init|graph|guard|sync|completions|complete|template|validate|version|help)\\b.*)",
       "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
       "severity": "block"
     },
@@ -92,11 +91,6 @@
       "severity": "warn"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|roles|validate|inquisition)\\b.*)",
-      "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
-      "severity": "block"
-    },
-    {
       "pattern": "\\btail\\b(?=[^;|\u0026\\r\\n]*(?:\\s-\\S*f\\S*|\\s--follow(?:=\\S\u002B)?)(?:\\s|$))",
       "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes (issue 0177).",
       "severity": "warn"
@@ -114,7 +108,7 @@
   ],
   "frameworkHashes": {
     "reference/about-dynadocs.md": "04af2a9ad18e0e6148fdea93988efa8ee4e05bd351e3fb57ba3f786f05c76d57",
-    "reference/dydo-commands.md": "947343e3a61f0e83b74a0aef305c6cc0fe9eb554b989399eb26988d3211145e8",
+    "reference/dydo-commands.md": "209fd592a2f3cfbbf4e7dd017140ec785de2a04ca6f9d21d510a3e742f1eebb7",
     "reference/dydo-glossary.md": "ddb9336a1bb0318d187523e9d22e2a30bbeaf828f003e39ea0dd204554e24b29",
     "reference/writing-docs.md": "940138b638a1c067e055722e2dbb5b46654372f569f6fe36a4c4d11d7290f0d8",
     "guides/working-tree-contract.md": "156c0c58d3fb9111c36b11fb57eda8097fab31a17a1a8c07648b101fd8b21587",

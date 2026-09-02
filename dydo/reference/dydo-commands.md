@@ -184,40 +184,6 @@ This validates dydo's local configuration. It does not validate or provision Lin
 
 ---
 
-## Model Commands
-
-Temporary model caps keep native agents available during a provider limit or outage. Capping rebinds
-every tier that names the model, re-runs compilation, and records enough local state to restore it;
-the guard lifts an expired cap on a later run, without human intervention.
-
-### dydo model cap
-
-```bash
-dydo model cap <model> --until "08-28 09:00"
-dydo model cap <model> --until "2026-08-28 09:00" --fallback <fallback-model>
-```
-
-`--until` is required and takes `[yyyy-]mm-dd hh:mm` in local time — the reset the limit error states.
-`--fallback` defaults to `models.fallback` in `dydo.json`.
-
-### dydo model status
-
-```bash
-dydo model status
-```
-
-Shows active caps with their fallback and reset time, and expired caps still awaiting restoration.
-
-### dydo model uncap
-
-```bash
-dydo model uncap <model>
-```
-
-Restores the original bindings, clears the cap marker, and re-compiles.
-
----
-
 ## Utility Commands
 
 ### dydo completions

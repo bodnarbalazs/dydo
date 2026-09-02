@@ -32,9 +32,6 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(HookInput))]
 [JsonSerializable(typeof(ToolInputData))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
-[JsonSerializable(typeof(ModelCap))]
-[JsonSerializable(typeof(ModelCapBinding))]
-[JsonSerializable(typeof(List<ModelCapBinding>))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }
 
 /// <summary>

@@ -40,7 +40,14 @@ public class ConfigFactoryTests
         Assert.DoesNotContain("task", nudge.Pattern);
         Assert.DoesNotContain("issue", nudge.Pattern);
         Assert.DoesNotContain("review", nudge.Pattern);
-        Assert.Contains("roles", nudge.Pattern);
+        Assert.DoesNotContain("model", nudge.Pattern);
+        Assert.DoesNotContain("inquisition", nudge.Pattern);
+
+        // The alternation lists exactly the commands Program.cs registers — nothing retired.
+        Assert.Equal(
+            ["check", "fix", "index", "init", "graph", "guard", "sync",
+                "completions", "complete", "template", "validate", "version", "help"],
+            Regex.Match(nudge.Pattern, @"\(\?:([\w|]+)\)\\b").Groups[1].Value.Split('|'));
     }
 
     [Fact]

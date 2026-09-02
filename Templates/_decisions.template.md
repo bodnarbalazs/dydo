@@ -9,13 +9,15 @@ Decision Records documenting choices that required deliberation.
 
 ## When to Write a Decision Record
 
-Write a decision record when:
-- Choosing between viable alternatives (technical, product, or business)
-- Making trade-offs with lasting consequences
-- Reaching conclusions others might revisit or question later
-- Changing an established approach
+Write a decision record only when all three are true:
+- **Hard to reverse**: the cost of changing your mind later is meaningful
+- **Surprising without context**: a future reader will wonder "why did they do it this way?"
+- **The result of a real trade-off**: there were genuine alternatives and you picked one for specific reasons
 
-Skip if the answer is obvious or easily reversible.
+If any of the three is missing, skip it. What qualifies: architectural shape; integration patterns
+between subsystems; technology choices that carry lock-in; boundary and scope choices; deliberate
+deviations from the obvious path; constraints not visible in the code; rejected alternatives when the
+rejection is non-obvious.
 
 ## File Format
 

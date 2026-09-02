@@ -29,6 +29,7 @@ and what they hand back. The `chief-of-staff` audits failures of this contract, 
 | Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | `admiral` |
 | Atomic Issue | `main` | `DYD-123-<slug>` | `main` | `issue-captain` |
 | Lane Sub-issue | its parent Issue branch | `DYD-124-<slug>` | its parent Issue branch | `issue-captain` |
+| Prototype Issue | its feature branch, else `main` | `prototype/<name>` | none; never merges | — |
 
 `DYD-123` is an example: use the Issue's key so Linear attaches the branch and PR. The host may
 provide the Issue worktree; otherwise place it beside the repository at
@@ -82,6 +83,7 @@ on that work item instead of working around a failure:
 | Merged Project-Issue branch | `admiral` | The branch is deleted after the merge. |
 | Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the merge. |
 | Merged feature branch | `admiral` | The branch is deleted after the human lands it. |
+| Prototype branch | `admiral` | Deleted with the feature branch; the verdict is already on the Prototype Issue. |
 
 The `chief-of-staff` compares `git worktree list` and merged branches with Linear during board hygiene.
 Anything it finds is a contract failure to clear or route with its owner named, not normal cleanup

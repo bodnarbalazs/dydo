@@ -8,7 +8,6 @@ Templates ship with `{{include:name}}` tags at natural extension points. Each ta
 
 - Missing file = tag resolves to empty string (no trace in output)
 - Same file referenced from multiple templates = shared content, zero duplication
-- Any `{{include:whatever}}` works — not limited to shipped hooks
 
 ## Shipped Hook Points
 
@@ -23,8 +22,6 @@ Templates ship with `{{include:name}}` tags at natural extension points. Each ta
 
 1. Create a `.md` file here named after the tag (e.g., `extra-verify.md`)
 2. Next time an agent claims, the content appears inline in their mode file
-
-## Custom Tags
 
 ## File Naming
 

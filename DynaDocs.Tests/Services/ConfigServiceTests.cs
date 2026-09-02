@@ -297,4 +297,31 @@ public class ConfigServiceTests : IDisposable
         Assert.Empty(config!.Nudges);
     }
 
+    // The no-shim invariant: 3.0 dropped several dydo.json sections and reads none of them back.
+    // A config file written by 2.x or early 3.0 must still load, with the retired sections ignored
+    // and every surviving section arriving intact. The retired key spellings live only in the
+    // fixture so the residue gates over the test sources stay honest.
+    [Fact]
+    public void LoadConfig_ConfigFromBeforeTheSkillModelSimplification_IgnoresRetiredSections()
+    {
+        File.Copy(
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "config", "dydo-2x-old-keys.json"),
+            Path.Combine(_testDir, "dydo.json"),
+            overwrite: true);
+
+        var config = new ConfigService().LoadConfig(_testDir);
+
+        Assert.NotNull(config);
+        Assert.Equal("dydo", config!.Structure.Root);
+        Assert.Equal(2, config.Nudges.Count);
+        Assert.Equal("dotnet test.*coverlet", config.Nudges[0].Pattern);
+        Assert.Equal("warn", config.Nudges[0].Severity);
+        Assert.Equal("rm -rf", config.Nudges[1].Pattern);
+        Assert.NotNull(config.Models);
+        Assert.Equal("claude-opus-4", config.Models!.Tiers["anthropic"]["strong"]);
+        Assert.Empty(config.Models.Agents);
+        Assert.True(config.Integrations["claude"]);
+        Assert.False(config.Integrations["codex"]);
+    }
+
 }

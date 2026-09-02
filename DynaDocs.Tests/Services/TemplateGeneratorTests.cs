@@ -488,6 +488,38 @@ public class TemplateGeneratorTests
         Assert.NotEmpty(content);
     }
 
+    // Dev-mode parity: run from a source tree and the Templates/ folder on disk is the shipped set,
+    // not the embedded snapshot the running assembly happens to carry. A template added there is
+    // discovered and an embedded one deleted there is gone — otherwise editing a template would
+    // require a rebuild before sync could see it.
+    [Fact]
+    public void GetBuiltInSkillTemplateNames_InASourceTree_FollowsTheTemplatesFolderOnDisk()
+    {
+        var originalDir = Directory.GetCurrentDirectory();
+        var root = Path.Combine(Path.GetTempPath(), "dydo-devmode-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(Path.Combine(root, "Templates"));
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "DynaDocs.csproj"), "<Project />");
+            File.WriteAllText(
+                Path.Combine(root, "Templates", "skill-reviewer.template.md"), "name: reviewer");
+            File.WriteAllText(
+                Path.Combine(root, "Templates", "skill-source-only.template.md"), "name: source-only");
+            Directory.SetCurrentDirectory(root);
+
+            var names = TemplateGenerator.GetBuiltInSkillTemplateNames();
+
+            Assert.Contains("skill-source-only.template.md", names);
+            Assert.Contains("skill-reviewer.template.md", names);
+            Assert.DoesNotContain("skill-code-writer.template.md", names);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
     private static string FindRepositoryRoot()
     {
         for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory != null; directory = directory.Parent)

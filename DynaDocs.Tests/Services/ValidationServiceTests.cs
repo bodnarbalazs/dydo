@@ -99,7 +99,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "[invalid(regex", message = "test", severity = "block" } }
         });
@@ -115,7 +114,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "", message = "test", severity = "block" } }
         });
@@ -131,7 +129,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "test.*pattern", message = "", severity = "block" } }
         });
@@ -147,7 +144,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "test", message = "test", severity = "invalid" } }
         });

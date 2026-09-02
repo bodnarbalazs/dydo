@@ -18,7 +18,7 @@ This folder answers "What IS this?" — the foundational context that agents nee
 - **guard-system.md** - Hook enforcement: off-limits, dangerous bash, nudges
 - **task-lifecycle.md** - Task states from creation through completion
 - **documentation-model.md** - JITI philosophy and doc structure
-- **templates-and-customization.md** - Template overrides, include tags
+- **templates-and-customization.md** - Include tags
 
 ## When to Add Docs Here
 

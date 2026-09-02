@@ -29,7 +29,7 @@ dydo init codex
 # or: dydo init claude / dydo init all / dydo init none
 ```
 
-Every mode creates the documentation tree, source templates, and `CLAUDE.md`. The `claude`, `codex`, and
+Every mode creates the documentation tree, and `CLAUDE.md`. The `claude`, `codex`, and
 `all` modes wire guard hooks only for the selected runtimes; Codex selections also add `AGENTS.md`. The
 `none` mode installs no guard hooks and no `AGENTS.md`. Initialization creates durable Decisions,
 changelog, pitfalls, and FutureFeature idea documentation. It does not scaffold repository folders for

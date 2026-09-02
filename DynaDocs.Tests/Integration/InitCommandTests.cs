@@ -71,6 +71,18 @@ public class InitCommandTests : IntegrationTestBase
         Assert.False(config.ContainsKey("agents"));
     }
 
+    // The next-steps summary used to teach a config key sync no longer reads, so a fresh init
+    // would hand every new project a snippet that does nothing.
+    [Fact]
+    public async Task Init_None_NextStepsDoNotTeachARemovedConfigKey()
+    {
+        var result = await InitProjectAsync("none");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("\"paths\"", result.Stdout);
+        Assert.DoesNotContain("Source and test paths", result.Stdout);
+    }
+
     [Fact]
     public async Task Init_None_UpdatesGitignore()
     {

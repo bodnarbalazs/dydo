@@ -90,8 +90,8 @@
     }
   ],
   "frameworkHashes": {
-    "reference/about-dynadocs.md": "04af2a9ad18e0e6148fdea93988efa8ee4e05bd351e3fb57ba3f786f05c76d57",
-    "reference/dydo-commands.md": "209fd592a2f3cfbbf4e7dd017140ec785de2a04ca6f9d21d510a3e742f1eebb7",
+    "reference/about-dynadocs.md": "2848ecc57f8524de5b7eefe3e154f7082fb0d8a075fd9b55e17856f4c983f633",
+    "reference/dydo-commands.md": "01e641115e48eee9fd945ff6fb30f1c5e741e063aa4fe6fc6eb2209bd47852d2",
     "reference/dydo-glossary.md": "ddb9336a1bb0318d187523e9d22e2a30bbeaf828f003e39ea0dd204554e24b29",
     "reference/writing-docs.md": "940138b638a1c067e055722e2dbb5b46654372f569f6fe36a4c4d11d7290f0d8",
     "guides/working-tree-contract.md": "156c0c58d3fb9111c36b11fb57eda8097fab31a17a1a8c07648b101fd8b21587",

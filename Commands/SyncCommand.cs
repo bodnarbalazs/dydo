@@ -27,7 +27,7 @@ public static partial class SyncCommand
     // (TemplateGenerator.GetBuiltInSkillTemplateNames), so it is never discovered, and the
     // sweep below removes whatever it last compiled. This is deliberately not a generic
     // output-directory cleaner.
-    internal static readonly string[] RetiredSkills = ["sprint-auditor", "orchestrator", "implementer", "manager", "planner"];
+    internal static readonly string[] RetiredSkills = ["sprint-auditor", "orchestrator", "implementer", "manager", "planner", "test-writer"];
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
     // Issue Captain's completion criterion). Claude is the only host with a workflow surface.
@@ -155,9 +155,16 @@ public static partial class SyncCommand
         {
             var skillRemoved = Sweep(
                 Path.Combine(projectRoot, ".claude", "agents", $"{skillName}.md"),
+                Combine(projectRoot, ClaudeSkillRoot, $"{skillName}/agents/openai.yaml"),
                 Combine(projectRoot, ClaudeSkillRoot, $"{skillName}/SKILL.md"),
                 Path.Combine(projectRoot, ".codex", "agents", $"{skillName}.toml"),
+                Combine(projectRoot, CodexSkillRoot, $"{skillName}/agents/openai.yaml"),
                 Combine(projectRoot, CodexSkillRoot, $"{skillName}/SKILL.md"));
+
+            // A skill retired after its SKILL.md was already swept keeps its folder alive through
+            // agents/openai.yaml alone, so the folder outlives the file DeleteIfPresent emptied.
+            DeleteIfEmpty(Combine(projectRoot, ClaudeSkillRoot, skillName));
+            DeleteIfEmpty(Combine(projectRoot, CodexSkillRoot, skillName));
 
             if (skillRemoved > 0)
                 Console.WriteLine($"Removed retired skill artifacts for '{skillName}'.");
@@ -194,6 +201,13 @@ public static partial class SyncCommand
             Directory.Delete(parent);
 
         return true;
+    }
+
+    /// <summary>Removes a retired skill's own folder once the sweep left it empty.</summary>
+    private static void DeleteIfEmpty(string folder)
+    {
+        if (Directory.Exists(folder) && !Directory.EnumerateFileSystemEntries(folder).Any())
+            Directory.Delete(folder);
     }
 
     /// <summary>

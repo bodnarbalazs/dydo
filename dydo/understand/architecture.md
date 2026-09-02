@@ -15,7 +15,7 @@ boundary and remains the sole owner of live project-management state.
 2. The host runtime sends matched tool calls to `dydo guard`.
 3. The guard evaluates path tiers, dangerous commands, and configured nudges.
 4. `dydo sync` compiles skill, resource, and workflow templates into native Claude Code and Codex artifacts.
-5. `dydo template update` refreshes framework-owned documents and the project's template copies.
+5. `dydo template update` refreshes framework-owned documents.
 6. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
 
 No step provisions, polls, caches, or mirrors Linear. Agents reach Linear through its official MCP, UI,

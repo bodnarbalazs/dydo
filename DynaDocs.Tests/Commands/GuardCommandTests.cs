@@ -613,6 +613,24 @@ public class GuardCommandTests : IDisposable
         Assert.Empty(stderr);
     }
 
+    // The third severity: a notice speaks and steps aside. It must never block and never leave a
+    // pass-through marker, or it would behave like a warn on its second encounter.
+    [Fact]
+    public void CheckNudges_NoticeSeverity_AllowsAndWritesTheMessageToStderr()
+    {
+        var pattern = @"noticeable-command";
+        WriteConfigWithNudge(pattern, "Prefer the wrapper script.", "notice");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var markerPath = Path.Combine(
+            env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash(pattern)}");
+
+        var (result, stderr) = RunNudge("noticeable-command --now", env);
+
+        Assert.Null(result);
+        Assert.Contains("NOTICE: Prefer the wrapper script.", stderr);
+        Assert.False(File.Exists(markerPath), "a notice must not create a pass-through marker");
+    }
+
     private static (int? Result, string Stderr) RunNudge(string command, GuardCommand.GuardEnv env)
     {
         var original = Console.Error;

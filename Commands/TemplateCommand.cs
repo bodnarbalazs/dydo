@@ -52,7 +52,7 @@ public static class TemplateCommand
     {
         var diffOption = new Option<bool>("--diff") { Description = "Preview changes without writing" };
 
-        var command = new Command("update", "Update framework templates and docs");
+        var command = new Command("update", "Update framework docs");
         command.Options.Add(diffOption);
 
         command.SetAction(parseResult => ExecuteUpdate(parseResult.GetValue(diffOption)));

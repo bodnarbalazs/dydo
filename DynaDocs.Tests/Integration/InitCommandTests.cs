@@ -671,7 +671,7 @@ public class InitCommandTests : IntegrationTestBase
         var templatesDir = Path.Combine(TestDir, "dydo/_system/templates");
         var skillTemplates = Directory.GetFiles(templatesDir, "skill-*.template.md")
             .Select(Path.GetFileName).ToList();
-        Assert.Contains("skill-code-writer.template.md", skillTemplates);
+        Assert.Contains("skill-implementer.template.md", skillTemplates);
         Assert.Contains("skill-reviewer.template.md", skillTemplates);
         Assert.Contains("skill-chief-of-staff.template.md", skillTemplates);
         Assert.Contains("skill-wayfinder.template.md", skillTemplates);

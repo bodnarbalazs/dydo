@@ -155,7 +155,7 @@ public static class TemplateCommand
         var plannerRolesUpgraded = !diff && ConfigFactory.UpgradeLegacyPlannerRole(config);
         if (plannerRolesUpgraded)
         {
-            Console.WriteLine("  Replaced legacy planner model binding with project-planner and issue-planner");
+            Console.WriteLine("  Replaced legacy planner model bindings with project-planner and specifier");
             updated++;
         }
 

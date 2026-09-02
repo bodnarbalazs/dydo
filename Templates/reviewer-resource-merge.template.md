@@ -28,9 +28,10 @@ the invoker as an observation, outside the findings, and does not bind this verd
    have seen, and they are why this pass exists.
 4. **Rerun the gates on the integrated state.** Run each landed Issue's exact gate commands yourself,
    in the merged tree. Green in an isolated worktree proves nothing here. Record command and result.
-5. **Prove acceptance** (final merge and full scale). Read the reviewed plan at its governing commit
-   and prove each acceptance criterion against the merged tree, one at a time, citing the command
-   output or the file:line that proves it. A criterion you cannot prove is a finding.
+5. **Prove acceptance** (final merge and full scale). Run every feature file the landed Issues wrote,
+   then read the reviewed plan at its governing commit and prove each acceptance criterion against
+   the merged tree, one at a time, citing the scenario, command output or file:line that proves it.
+   A criterion you cannot prove is a finding.
 6. **Judge the findings** (full scale). Resolve every reported finding to `confirmed`, `plausible` or
    `refuted` on evidence you verify yourself. Default to `refuted`; reach for `plausible` only when
    the deciding state is genuinely unavailable, and name the missing fact.

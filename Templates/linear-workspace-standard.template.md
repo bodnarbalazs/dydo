@@ -30,7 +30,7 @@ its status and Issue graph carry that information without a second taxonomy.
 |---|---|
 | `Backlog` | The Issue is retained but not yet contracted for execution. |
 | `Todo` | The Issue contract is ready and queued; open native blockers still prevent pickup. |
-| `Planning` | A delivery Issue is claimed and its Issue Planner is making the route mechanical. |
+| `Planning` | A delivery Issue is claimed and its Specifier is making the contract exact and the route mechanical. |
 | `In Progress` | Production or wayfinding is actively moving. |
 | `Waiting for Human` | Agents have prepared the next human contribution and cannot advance without it. |
 | `In Review` | An independent reviewer is gating the current candidate. A FAIL returns the Issue to `In Progress`. |

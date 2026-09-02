@@ -17,11 +17,11 @@ public class TemplateOverrideTests : IntegrationTestBase
         await InitProjectAsync();
 
         AssertDirectoryExists("dydo/_system/templates");
-        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
+        AssertFileExists("dydo/_system/templates/skill-implementer.template.md");
         AssertFileExists("dydo/_system/templates/skill-reviewer.template.md");
         AssertFileExists("dydo/_system/templates/skill-co-thinker.template.md");
         AssertFileExists("dydo/_system/templates/skill-project-planner.template.md");
-        AssertFileExists("dydo/_system/templates/skill-issue-planner.template.md");
+        AssertFileExists("dydo/_system/templates/skill-specifier.template.md");
         AssertFileExists("dydo/_system/templates/skill-docs-writer.template.md");
         AssertFileExists("dydo/_system/templates/skill-inquisitor.template.md");
         AssertFileExists("dydo/_system/templates/skill-wayfinder.template.md");
@@ -55,7 +55,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         await InitProjectAsync("none");
 
         // Modify a template
-        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-code-writer.template.md");
+        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-implementer.template.md");
         var customContent = "<!-- CUSTOM_CONTENT_PRESERVED -->\nCustom template";
         File.WriteAllText(templatePath, customContent);
 
@@ -72,10 +72,10 @@ public class TemplateOverrideTests : IntegrationTestBase
     {
         var templateNames = TemplateGenerator.GetAllTemplateNames();
 
-        Assert.Contains("skill-code-writer.template.md", templateNames);
+        Assert.Contains("skill-implementer.template.md", templateNames);
         Assert.Contains("skill-reviewer.template.md", templateNames);
         Assert.Contains("skill-project-planner.template.md", templateNames);
-        Assert.Contains("skill-issue-planner.template.md", templateNames);
+        Assert.Contains("skill-specifier.template.md", templateNames);
         Assert.Contains("skill-chief-of-staff.template.md", templateNames);
         Assert.Contains("skill-inquisitor.template.md", templateNames);
         Assert.Contains("skill-self-improvement.template.md", templateNames);
@@ -89,7 +89,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         // template (<role>-resource-<name>.template.md). A hard-coded count would freeze the
         // inventory the DR 045 taxonomy is about to change.
         Assert.Contains("reviewer-resource-project-plan.template.md", templateNames);
-        Assert.Contains("reviewer-resource-issue-plan.template.md", templateNames);
+        Assert.Contains("reviewer-resource-spec.template.md", templateNames);
         Assert.DoesNotContain("reviewer-resource-plan.template.md", templateNames);
         Assert.Equal(ShippedTemplateNames(), templateNames.OrderBy(n => n, StringComparer.Ordinal));
     }
@@ -159,10 +159,10 @@ public class TemplateOverrideTests : IntegrationTestBase
     [Fact]
     public void ReadBuiltInTemplate_ReturnsTemplateContent()
     {
-        var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
+        var content = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("mode: code-writer", content);
+        Assert.Contains("mode: implementer", content);
     }
 
     [Fact]

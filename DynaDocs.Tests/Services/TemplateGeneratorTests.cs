@@ -12,10 +12,10 @@ public class TemplateGeneratorTests
     public void ReadBuiltInTemplate_ReadsFromEmbeddedResources()
     {
         // This should work even without a Templates folder on disk
-        var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
+        var content = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("mode: code-writer", content);
+        Assert.Contains("mode: implementer", content);
     }
 
     [Fact]
@@ -28,11 +28,11 @@ public class TemplateGeneratorTests
     }
 
     [Theory]
-    [InlineData("skill-code-writer.template.md")]
+    [InlineData("skill-implementer.template.md")]
     [InlineData("skill-reviewer.template.md")]
     [InlineData("skill-co-thinker.template.md")]
     [InlineData("skill-project-planner.template.md")]
-    [InlineData("skill-issue-planner.template.md")]
+    [InlineData("skill-specifier.template.md")]
     [InlineData("skill-docs-writer.template.md")]
     [InlineData("skill-self-improvement.template.md")]
     [InlineData("skill-wayfinder.template.md")]
@@ -54,7 +54,7 @@ public class TemplateGeneratorTests
         var resourceNames = assembly.GetManifestResourceNames();
 
         // Verify templates are embedded. The skill templates are the source `dydo sync` compiles.
-        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-code-writer"));
+        Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-implementer"));
         Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-self-improvement"));
         Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-wayfinder"));
         Assert.Contains(resourceNames, r => r.Contains("Templates") && r.Contains("skill-grilling"));
@@ -79,9 +79,9 @@ public class TemplateGeneratorTests
     {
         // Verify structure to ensure templates aren't empty or corrupted. The prose is the
         // source's to write; what the compiler needs is frontmatter, an H1 and a body.
-        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md")
+        var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md")
             .Replace("\r\n", "\n");
-        Assert.Contains("mode: code-writer\n", codeWriterTemplate);
+        Assert.Contains("mode: implementer\n", codeWriterTemplate);
         Assert.Contains("description: ", codeWriterTemplate);
         Assert.Equal(1, SyncCommandTests.H1Count(codeWriterTemplate));
     }
@@ -637,7 +637,7 @@ public class TemplateGeneratorTests
         Assert.Contains("## The Solution", content);
         Assert.Contains("## Agent Roles", content);
         Assert.Contains("Linear owns the live", content);
-        Assert.Contains("code-writer", content);
+        Assert.Contains("implementer", content);
         Assert.Contains("reviewer", content);
         // The fallback role table is documentation of the live roster; a retired name in it sends
         // a reader at a role that no longer compiles.

@@ -7,16 +7,19 @@ governs the work, its reviewed Project plan.
 
 ## Method
 
-1. **Pin the contract before the diff.** Outcome, owned paths, base SHA, acceptance criteria, exact
-   gates, governing plan. Done when you can state what this change had to do without reading it.
-2. **Read the diff, then the code it lands in.** `git diff <base>...HEAD` gives the delta; read
+1. **Pin the contract before the diff.** Outcome, scenarios, owned paths, base SHA, exact gates,
+   governing plan at its SHA. Done when you can state what this change had to do without reading it.
+2. **Read the hops.** `git log <base>..<candidate>` lists the specify, implement, harden and fix
+   commits; read what each changed. A behaviour or test one hop had and a later hop dropped is a
+   finding when the contract needed it. Done when every hop is accounted for.
+3. **Read the diff, then the code it lands in.** `git diff <base>...HEAD` gives the delta; read
    enough of each file to judge the whole. Code that was already bad is a finding when this change
    builds on it. Done when every hunk is accounted for.
-3. **Judge against the standards.** `dydo/guides/coding-standards.md` and any stack-specific
+4. **Judge against the standards.** `dydo/guides/coding-standards.md` and any stack-specific
    standard bind, the anti-slop mandate included; a documented standard beats your taste.
-4. **Weigh the smells.** Work the baseline below across the diff. Done when every smell has been
+5. **Weigh the smells.** Work the baseline below across the diff. Done when every smell has been
    asked and answered, not when the first one is found.
-5. **Rerun the gates yourself.** The Issue's exact commands, plus `dydo check` when the change
+6. **Rerun the gates yourself.** The Issue's exact commands, plus `dydo check` when the change
    touches documentation or validation surfaces. An implementation report is a claim, not evidence.
 
 ## The smell baseline
@@ -27,22 +30,13 @@ here: a reader misled, one logical change forced to scatter, a seam no test can 
 standard overrides the baseline, anything the tooling already enforces is skipped, and smell in code
 this change does not touch belongs to the invoker rather than to this verdict.
 
-- **Mysterious Name** — hides what it does or holds. → rename; no honest name means a murky design.
-- **Duplicated Code** — one logic shape in two hunks or files. → extract it, call it from both.
-- **Feature Envy** — a method using another object's data more than its own. → move it there.
-- **Data Clumps** — the same fields always travelling together. → bundle them into one type.
-- **Primitive Obsession** — a primitive standing in for a domain concept. → give it its own type.
-- **Repeated Switches** — the same cascade on one type, twice. → polymorphism or a shared map.
-- **Shotgun Surgery** — one change forcing scattered edits. → gather what changes together.
-- **Divergent Change** — one file edited for unrelated reasons. → split it by reason.
-- **Speculative Generality** — abstraction for needs the contract does not have. → delete it.
-- **Message Chains** — long `a.b().c().d()` walks the caller depends on. → hide the walk.
-- **Middle Man** — a unit that mostly delegates onward. → cut it; call the target direct.
-- **Refused Bequest** — a subclass ignoring most of what it inherits. → compose instead.
+Work the twelve smells in `dydo/guides/coding-standards.md`, each as a question against the diff.
 
 ## Checklist
 
 - [ ] Candidate matches the governing commit, the owned paths, and the requested outcome
+- [ ] Every scenario stands as the specifier committed it, and every scenario passes
+- [ ] Nothing a hop had that the contract needed was lost by a later hop
 - [ ] Logic holds at the edges: boundaries validated, no fallback masking an impossible state
 - [ ] Tests name the behaviour and would fail if this code broke
 - [ ] Standards hold, and every smell was asked and answered

@@ -54,7 +54,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
 
         // Contrast: worker roles DO get a codex agent role file — sync is emitting codex artifacts,
         // it just never mints a spawnable agent for a skill-only role.
-        AssertFileExists(".codex/agents/code-writer.toml");
+        AssertFileExists(".codex/agents/implementer.toml");
         AssertFileExists(".codex/agents/reviewer.toml");
     }
 

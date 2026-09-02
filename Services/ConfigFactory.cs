@@ -103,12 +103,13 @@ public static class ConfigFactory
         },
         Roles = new Dictionary<string, string>
         {
-            ["code-writer"] = "standard",
+            ["implementer"] = "standard",
+            ["hardener"] = "strong",
             ["docs-writer"] = "standard",
             ["reviewer"] = "strong",
             ["inquisitor"] = "strong",
             ["project-planner"] = "strong",
-            ["issue-planner"] = "strong",
+            ["specifier"] = "strong",
             ["issue-captain"] = "strong",
             ["research"] = "standard"
         },
@@ -120,19 +121,32 @@ public static class ConfigFactory
     };
 
     /// <summary>
-    /// Replaces the retired generic planner binding with both literal planning roles while
-    /// preserving the project's chosen tier. Idempotent and leaves configs without the legacy
-    /// binding untouched.
+    /// Replaces retired planning-role bindings with the current literal roles while preserving
+    /// the project's chosen tier: the generic `planner` split into `project-planner` and
+    /// `issue-planner` (DR 045), and `issue-planner` became `specifier` (DR 046). Idempotent and
+    /// leaves configs without a legacy binding untouched.
     /// </summary>
     public static bool UpgradeLegacyPlannerRole(DydoConfig config)
     {
         var roles = config.Models?.Roles;
-        if (roles == null || !roles.Remove("planner", out var tier))
+        if (roles == null)
             return false;
 
-        roles.TryAdd("project-planner", tier);
-        roles.TryAdd("issue-planner", tier);
-        return true;
+        var upgraded = false;
+        if (roles.Remove("planner", out var plannerTier))
+        {
+            roles.TryAdd("project-planner", plannerTier);
+            roles.TryAdd("specifier", plannerTier);
+            upgraded = true;
+        }
+
+        if (roles.Remove("issue-planner", out var issuePlannerTier))
+        {
+            roles.TryAdd("specifier", issuePlannerTier);
+            upgraded = true;
+        }
+
+        return upgraded;
     }
 
     /// <summary>

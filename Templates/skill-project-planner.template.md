@@ -11,7 +11,7 @@ invocation: automatic
 **Start the map; do not counterfeit the whole voyage.** Ripe intent arrives from Think as a
 destination or specification. Make the first few stable tracer-bullet Issues pickable and sketch
 later bearings only as far as evidence supports. The admiral refines that map as discovery clears
-fog; each Issue Captain sends an Issue Planner ahead of production.
+fog; each Issue Captain sends a Specifier ahead of production.
 
 ## Must-Reads
 
@@ -27,7 +27,7 @@ fog; each Issue Captain sends an Issue Planner ahead of production.
 ## Boundary
 
 Plan only a Project whose destination and product intent are settled enough for delivery to start.
-If the target is an implementation Issue or lane, return it untouched and name `issue-planner`.
+If the target is an implementation Issue or lane, return it untouched and name `specifier`.
 Perfect plans are fiction: expose unknown routes instead of manufacturing certainty or implementation.
 
 The completion bound is a Project the human can approve and the admiral can start: destination,
@@ -72,7 +72,7 @@ linear-project: <the Linear Project URL>
 ### Intent — <what becomes true, and for whom; one paragraph, no file lists>
 ### In scope — <bullets by lane; every bullet is claimed by an Issue in §4>
 ### Out of scope — <what a reader would otherwise assume is included, and why it is not>
-### Acceptance criteria — <numbered; each proved at the final merge by a command, diff or artifact>
+### Acceptance criteria — <numbered; each proved at the final merge by a scenario, command, diff or artifact>
 ### Questions and answers — <every question this plan settled, with its answer>
 ## 2. Prior art — <commits, upstream sources, docs and Decision Records read, and what each gave>
 ## 3. Design — <shape, invariants, hazards, migration and rollback; cite verified paths and patterns>

@@ -38,12 +38,13 @@
       }
     },
     "roles": {
-      "code-writer": "standard",
+      "implementer": "standard",
+      "hardener": "strong",
       "docs-writer": "standard",
       "reviewer": "strong",
       "inquisitor": "strong",
       "project-planner": "strong",
-      "issue-planner": "strong",
+      "specifier": "strong",
       "issue-captain": "strong",
       "research": "standard"
     },
@@ -120,7 +121,7 @@
     "_system/templates/skill-bro.template.md": "ea747df709ad1c8b45849427c1dd44e5b151b7879e909810ccdadeb3a0fbdd4b",
     "_system/templates/skill-chief-of-staff.template.md": "6c9273142514c7d058ea5c2474eb3f167b657be2f28b2d8506a6dc0d18a9fd47",
     "_system/templates/skill-co-thinker.template.md": "f26ad0809085b8aa580749bb4d5d1a30a164dbcc0bb5c0c754225e72a1d990f9",
-    "_system/templates/skill-code-writer.template.md": "338c1223404d0c905e69b725eca6e3d59bbb2473dc6ed27006d8b092ce0607d5",
+    "_system/templates/skill-implementer.template.md": "338c1223404d0c905e69b725eca6e3d59bbb2473dc6ed27006d8b092ce0607d5",
     "_system/templates/skill-docs-writer.template.md": "1932f4edb9efbf013f9c2ff3621dbd93c93de724299b4ff568501e43fe79173d",
     "_system/templates/skill-grilling.template.md": "d9fcc96503cad9c2c7d4722b4a5e62636e7aa19905b63a95c4349c6f516d57eb",
     "_system/templates/skill-inquisitor.template.md": "c123ca125bcb34f3eb371c13891ff4b738006e1549f57f73563b93bc2f0cd8b6",
@@ -148,9 +149,9 @@
     "_system/templates/prototype-resource-ui.template.md": "ccbc47250a62ca1cf96dcb6665e9d53fb997e5105ef4bc80c997366489545818",
     "_system/templates/skill-issue-captain.template.md": "10ad70ffe3e6f9beae46189aa323484271ace4c49ba0e630b56df7275dd43127",
     "_system/templates/skill-admiral.template.md": "30e0d53a7da4117068868b770441665453603d29f968caa7c06e84057a58b2ce",
-    "_system/templates/reviewer-resource-issue-plan.template.md": "30f160180121cd8d6d2490ed2f30c94f1a791d6675d3996b0923c9cc2ecbe4b3",
+    "_system/templates/reviewer-resource-spec.template.md": "30f160180121cd8d6d2490ed2f30c94f1a791d6675d3996b0923c9cc2ecbe4b3",
     "_system/templates/reviewer-resource-project-plan.template.md": "7c34f9acbab0c7b1aaad9c00af684ddf0db8cf61d89dbccc9e497492676f585b",
-    "_system/templates/skill-issue-planner.template.md": "ddda245bec3386796cdd88310c2063651a9cb75698ed3be9bc159cbeb9b810d1",
+    "_system/templates/skill-specifier.template.md": "ddda245bec3386796cdd88310c2063651a9cb75698ed3be9bc159cbeb9b810d1",
     "_system/templates/skill-project-planner.template.md": "bf1b47abf01dcd707b789628fa2b079cd21acc3ef52a75ad32d36500c993d8ef",
     "reference/linear-workspace-standard.md": "e68955cfb1834ed791f5d55f8f06b8acc50d2d82ad9a525e75e20998e1b02b42"
   }

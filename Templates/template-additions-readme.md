@@ -15,7 +15,7 @@ Templates ship with `{{include:name}}` tags at natural extension points. Each ta
 | Tag | Template | Location |
 |-----|----------|----------|
 | `{{include:extra-must-reads}}` | All modes | After must-reads list |
-| `{{include:extra-verify}}` | code-writer | After verify step |
+| `{{include:extra-verify}}` | implementer | After verify step |
 | `{{include:extra-review-steps}}` | reviewer | After "Run tests" step |
 | `{{include:extra-review-checklist}}` | reviewer | End of review checklist |
 

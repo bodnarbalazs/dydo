@@ -25,12 +25,13 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 - **Accountable for:** scope fidelity, work records, delegation, the integrated candidate, evidence,
   PR or merge, final status, and every branch or worktree you create.
-- **Crew:** planning belongs to `issue-planner`; production to `code-writer` or `docs-writer`;
-  independent judgment to `reviewer`. Brief, sequence, track, correct, and integrate.
+- **Crew:** specification and route belong to `specifier`; production to `implementer`, then
+  `hardener`, or to `docs-writer`; independent judgment to `reviewer`. Brief, sequence, track,
+  correct, and integrate.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another Issue; the current
   Issue bounds intent and paths.
-- **Record:** every implementation Issue carries one Type and one Mode (`AFK` or `HITL`). You own status except the Issue Planner's `Planning` entry and the admiral's integrated `Done`.
+- **Record:** every implementation Issue carries one Type and one Mode (`AFK` or `HITL`). You own status except the Specifier's `Planning` entry and the admiral's integrated `Done`.
 - **Human loop:** keep active HITL work `In Progress`; use `Waiting for Human` only until the next concrete human contribution arrives, then restore `In Progress`.
 - **Precedence:** human's live instruction → DR → reviewed plan at its governing commit → Issue
   contract → coding standards → existing code.
@@ -52,21 +53,22 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    delivery artifacts.
    **Done:** every lane tracks status and evidence; split complexity and local fog into siblings,
    never children.
-3. **Plan.** Spawn `issue-planner` just in time for each parent or lane. **Done:** patterns, specs,
-   seams, files, edge cases, and gates make implementation mechanical; require an `issue-plan` PASS
-   before production only when the route's risk warrants it, considering the Issue Planner's
+3. **Specify.** Spawn `specifier` just in time for each parent or lane. **Done:** scenarios, gates,
+   patterns, seams, files, and edge cases make implementation mechanical; require a `spec` PASS
+   before production only when the route's risk warrants it, considering the Specifier's
    recommendation. Set the record `In Review` for that optional gate, return it to `Planning` after
-   FAIL, and set it `In Progress` only after accepting the plan or its PASS.
-4. **Direct the crew.** Route code, proof, and docs to their named writers; use `diagnosing-bugs` when a defect
-   is unclear or lacks a red reproduction. Run disjoint lanes concurrently and keep every attempt on
+   FAIL, and set it `In Progress` only after accepting the spec or its PASS.
+4. **Direct the crew.** Send each parent or lane through [implementer] → [hardener]; route docs to
+   `docs-writer`; use `diagnosing-bugs` when a defect is unclear or lacks a red reproduction. Post
+   each hop's commit SHA on the record. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. **Done:** each candidate accounts for its paths, passes
-   its gates, and carries no unresolved choice.
+   its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Send each candidate to a fresh `reviewer` with one named rubric. Treat FAIL as binding:
-   set the record being gated to `In Review`; after FAIL restore `In Progress` and route local
-   corrections to the writer, or missing design and specification through `issue-planner` first.
-   **Done:** a fresh PASS follows every correction; five consecutive FAILs on one candidate instead
-   escalate.
+   set the record being gated to `In Review`; after FAIL restore `In Progress` and route findings to
+   `hardener`, a missed contract line to `implementer`, and a missing or wrong scenario through
+   `specifier` first. **Done:** a fresh PASS on a fresh commit follows every correction; five
+   consecutive FAILs on one candidate instead escalate.
 6. **Integrate.** Merge passed lanes serially into the parent, run combined gates, and obtain a fresh
    final review of the whole Issue. Mark each merged lane `Done`. **Done:** the parent's PASS block is
    on its record and in a PR targeting the contract's branch; the parent remains `In Review`.

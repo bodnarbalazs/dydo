@@ -112,7 +112,7 @@ public class SummaryRuleTests
         var doc = CreateDoc(
             title: null,
             summary: null,
-            relativePath: "_system/templates/skill-code-writer.template.md");
+            relativePath: "_system/templates/skill-implementer.template.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 

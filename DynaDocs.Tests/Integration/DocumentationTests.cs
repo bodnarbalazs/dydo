@@ -418,14 +418,14 @@ public class DocumentationTests : IntegrationTestBase
 
         // Template files have .template.md suffix which isn't kebab-case
         // Verify they exist and aren't renamed
-        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
+        AssertFileExists("dydo/_system/templates/skill-implementer.template.md");
 
         var result = await FixAsync();
 
         result.AssertSuccess();
         // Template file should still exist with original name
-        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
-        Assert.DoesNotContain("skill-code-writer.template.md", result.Stdout);
+        AssertFileExists("dydo/_system/templates/skill-implementer.template.md");
+        Assert.DoesNotContain("skill-implementer.template.md", result.Stdout);
     }
 
     [Fact]
@@ -436,7 +436,7 @@ public class DocumentationTests : IntegrationTestBase
         // A modes folder with files but no _index.md (by design)
         var modesDir = Path.Combine(TestDir, "dydo/agents/sample/modes");
         Directory.CreateDirectory(modesDir);
-        File.WriteAllText(Path.Combine(modesDir, "code-writer.md"), "# code-writer");
+        File.WriteAllText(Path.Combine(modesDir, "implementer.md"), "# implementer");
 
         AssertDirectoryExists("dydo/agents/sample/modes");
         Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/sample/modes/_index.md")));

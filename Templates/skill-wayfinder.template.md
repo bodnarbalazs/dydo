@@ -146,7 +146,7 @@ Fog can surface through several hands:
 |---|---|
 | Project Planner | create and wire a Project-level Issue while starting the map |
 | admiral | create and wire it as delivery clears Project fog |
-| Issue Planner or worker | return a prepared hand-raise to the Issue Captain |
+| Specifier or worker | return a prepared hand-raise to the Issue Captain |
 | Issue Captain | create a local Sub-issue, or escalate a Project-level packet to the admiral |
 
 An answer graduates to a Decision Record only when it is hard to reverse, surprising later, and the

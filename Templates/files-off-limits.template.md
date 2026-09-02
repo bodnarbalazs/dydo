@@ -163,5 +163,5 @@ Use this for safe template files or test fixtures.
 
 - The `dydo check` command validates that literal paths (without wildcards) exist
 - Add project-specific sensitive files below the default patterns
-- These restrictions apply to ALL agents, including code-writers
+- These restrictions apply to ALL agents, including implementers
 - Configure in this file; the tiers apply to every caller

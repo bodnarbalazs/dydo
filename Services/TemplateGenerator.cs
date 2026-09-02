@@ -859,9 +859,10 @@ public static class TemplateGenerator
             |------|-------|---------|
             | `co-thinker` | skill | Explore ideas, scope requirements |
             | `project-planner` | agent + skill | Start and review the Project map |
-            | `issue-planner` | agent + skill | Remove hidden decisions from one Issue |
+            | `specifier` | agent + skill | Make one Issue exact, then mechanical |
             | `chief-of-staff` | skill | Triage Linear and route work |
-            | `code-writer` | agent + skill | Implement features test-first |
+            | `implementer` | agent + skill | Make one Issue work, test-first |
+            | `hardener` | agent + skill | Make it good: reduce, simplify, kill mutants |
             | `reviewer` | agent + skill (read-only) | Review code |
             | `docs-writer` | agent + skill | Write documentation |
 

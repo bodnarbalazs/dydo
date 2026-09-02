@@ -54,7 +54,7 @@ anything; what reaches him is what he alone has the authority to settle.
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
 | An unscheduled strategic possibility worth preserving | a Linear Issue labelled `FutureFeature` |
 | Ripe Project intent: goal and trade-offs settled | `project-planner` |
-| Ripe atomic Issue intent | `issue-captain`, who sends `issue-planner` ahead of production |
+| Ripe atomic Issue intent | `issue-captain`, who sends `specifier` ahead of production |
 | A Linear Project still foggy after the homework | `project-planner`, who charts it with `wayfinder` |
 
 A FutureFeature stays one until the human promotes it. Hand over what is written down — the Linear

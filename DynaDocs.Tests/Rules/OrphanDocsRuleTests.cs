@@ -276,7 +276,7 @@ public class OrphanDocsRuleTests
     public void Validate_SkipsAgentModeFiles()
     {
         var hub = CreateDoc("guides/_index.md", linksTo: []);
-        var modeDoc = CreateDoc("agents/sample/modes/code-writer.md");
+        var modeDoc = CreateDoc("agents/sample/modes/implementer.md");
         var allDocs = new List<DocFile> { hub, modeDoc };
 
         var violations = _rule.Validate(modeDoc, allDocs, BasePath).ToList();

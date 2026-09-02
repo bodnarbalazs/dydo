@@ -310,7 +310,7 @@ public static partial class GuardCommand
         if (toolName == "enterplanmode" || toolName == "exitplanmode")
         {
             Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
-            Console.Error.WriteLine("  To plan: write a plan record into the repo or Linear, applying the Project Planner or Issue Planner skill.");
+            Console.Error.WriteLine("  To plan: write a plan record into the repo or Linear, applying the Project Planner or Specifier skill.");
             return ExitCodes.ToolError;
         }
 

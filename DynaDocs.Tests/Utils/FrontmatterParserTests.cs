@@ -213,12 +213,12 @@ public class FrontmatterParserTests
     [Fact]
     public void ParseFields_JsonLikeValue_CapturedCorrectly()
     {
-        const string content = "---\ntask-role-history: { \"task1\": [\"code-writer\"] }\n---\n";
+        const string content = "---\ntask-role-history: { \"task1\": [\"implementer\"] }\n---\n";
 
         var fields = FrontmatterParser.ParseFields(content);
 
         Assert.NotNull(fields);
-        Assert.Equal("{ \"task1\": [\"code-writer\"] }", fields!["task-role-history"]);
+        Assert.Equal("{ \"task1\": [\"implementer\"] }", fields!["task-role-history"]);
     }
 
     [Fact]

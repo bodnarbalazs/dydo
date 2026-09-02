@@ -21,7 +21,7 @@ public class TemplateCommandTests : IntegrationTestBase
         await InitProjectAsync();
 
         // Tamper a template to simulate a framework update (on-disk != embedded, but hash matches)
-        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-code-writer.template.md");
+        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-implementer.template.md");
         var originalContent = File.ReadAllText(templatePath);
         var configContent = ReadFile("dydo.json");
 
@@ -32,7 +32,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
         // Update the stored hash to match the tampered file (simulating clean old install)
         var config = new ConfigService().LoadConfig()!;
-        var relativePath = "_system/templates/skill-code-writer.template.md";
+        var relativePath = "_system/templates/skill-implementer.template.md";
         config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(oldContent);
         new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
 
@@ -44,7 +44,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
         // File should now match embedded content
         var updatedContent = File.ReadAllText(templatePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
         Assert.Equal(embeddedContent, updatedContent);
     }
 
@@ -66,8 +66,8 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        const string skillRelativePath = "_system/templates/skill-implementer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-implementer.template.md";
         var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
         var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
         var stockContent = File.ReadAllText(skillPath);
@@ -97,8 +97,8 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        const string skillRelativePath = "_system/templates/skill-implementer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-implementer.template.md";
         var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
         var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
         var stockContent = File.ReadAllText(skillPath);
@@ -115,7 +115,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
         result.AssertExitCode(1);
         result.AssertStderrContains("was kept because it was modified");
-        result.AssertStderrContains("Rename it to _system/templates/skill-code-writer.template.md");
+        result.AssertStderrContains("Rename it to _system/templates/skill-implementer.template.md");
         Assert.Equal(customContent, File.ReadAllText(legacyPath));
         Assert.Equal(stockContent, File.ReadAllText(skillPath));
 
@@ -130,8 +130,8 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        const string skillRelativePath = "_system/templates/skill-implementer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-implementer.template.md";
         var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
         var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
         var stockContent = File.ReadAllText(skillPath);
@@ -180,8 +180,8 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
+        const string skillRelativePath = "_system/templates/skill-implementer.template.md";
+        const string legacyRelativePath = "_system/templates/mode-implementer.template.md";
         var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
         var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
         const string skillContent = "project-owned skill template";
@@ -246,9 +246,9 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/skill-code-writer.template.md";
+        var relativePath = "_system/templates/skill-implementer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
 
         // Find a good anchor point — insert a user include tag in the template
         var lines = embeddedContent.Split('\n').ToList();
@@ -277,9 +277,9 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/skill-code-writer.template.md";
+        var relativePath = "_system/templates/skill-implementer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
 
         // Add a user include with anchors that won't exist in the new template
         var userContent = embeddedContent + "\n{{include:orphan-hook}}\n";
@@ -301,9 +301,9 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/skill-code-writer.template.md";
+        var relativePath = "_system/templates/skill-implementer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
 
         // Add a user include
         var lines = embeddedContent.Split('\n').ToList();
@@ -345,7 +345,7 @@ public class TemplateCommandTests : IntegrationTestBase
         await InitProjectAsync();
 
         // Tamper a template
-        var relativePath = "_system/templates/skill-code-writer.template.md";
+        var relativePath = "_system/templates/skill-implementer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
         var oldContent = "old framework content";
         File.WriteAllText(templatePath, oldContent);
@@ -358,7 +358,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
         // Hash should be updated to match the new embedded content
         var updatedConfig = new ConfigService().LoadConfig()!;
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
+        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
         Assert.Equal(TemplateCommand.ComputeHash(embeddedContent), updatedConfig.FrameworkHashes[relativePath]);
     }
 
@@ -562,7 +562,7 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/skill-code-writer.template.md";
+        var relativePath = "_system/templates/skill-implementer.template.md";
         var templatePath = Path.Combine(TestDir, "dydo", relativePath);
         File.Delete(templatePath);
 

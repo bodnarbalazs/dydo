@@ -23,7 +23,7 @@ discovery → question Issue*: an agent in fog first runs a bounded discovery �
 Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
 the question become an Issue that records what was searched and blocks every named plan or
 implementation Issue awaiting its answer. Project planners create these while starting the map;
-Issue planners and workers prepare a hand-raise for their Issue Captain; admirals create more as
+Specifiers and workers prepare a hand-raise for their Issue Captain; admirals create more as
 forward motion clears fog. The admiral routes AFK homework and sends only HITL judgment to the human.
 Facts are the agent's job; choices are the human's.
 
@@ -39,11 +39,11 @@ Decision Records carry decisions, and the two are linked rather than copied.
   of pretending a complete route. A fresh reviewer passes it against `project-plan` before human
   approval; the admiral then amends the map as fog clears and returns only changes to destination,
   scope, acceptance criteria, or governing architecture for review.
-- **Issue** — high resolution, just in time: files to touch, the pattern to copy with its path, steps,
-  edge cases, exact gates — until building contains no hidden decisions. A spawned `issue-planner`
-  writes it into the parent Issue or direct lane Sub-issue at the Issue Captain's direction. It is
-  reviewed with the code it produced; the Captain may require `issue-plan` before production when
-  route risk warrants it.
+- **Issue** — high resolution, just in time: the scenarios and gates that make the contract exact,
+  then the files to touch, the pattern to copy with its path, steps and edge cases — until building
+  contains no hidden decisions. A spawned `specifier` writes it into the parent Issue or direct lane
+  Sub-issue at the Issue Captain's direction. It is reviewed with the code it produced; the Captain
+  may require `spec` before production when route risk warrants it.
 
 ## Claimed, isolated, executed
 

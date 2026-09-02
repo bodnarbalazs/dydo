@@ -17,6 +17,8 @@ and what they hand back. The `chief-of-staff` audits failures of this contract, 
   become direct Sub-issues, each with an isolated branch and worktree. Workers write only the disjoint
   paths their Issue Captain grants.
 - Commits touch owned paths only. The Issue Captain owns the whole diff, including worker edits.
+- Every worker **hop** ends on a commit: the return names its SHA, the Issue Captain posts it on the
+  record, and the Issue branch keeps its hops unsquashed and unrewritten.
 - Branch, base SHA and worktree path are posted on the relevant Issue or Sub-issue before the first edit.
 - Project Issues integrate serially through their feature branch; the human alone lands the feature on
   `main`/`master` (the repository's default branch, whatever it is named).
@@ -41,9 +43,9 @@ provide the Issue worktree; otherwise place it beside the repository at
 |---|---|---|
 | Open the Project | `admiral`, or the human when there is none | Feature branch exists; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
 | Claim the Issue | `issue-captain` | Issue is assigned and In Progress; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. |
-| Resolve the work | `issue-captain` | The Issue-resolution plan makes the work mechanical; workers receive disjoint paths and exact gates; independently trackable parallel lanes become direct Sub-issues. |
+| Resolve the work | `issue-captain` | The spec and plan make the contract exact and the work mechanical; workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries its own status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
-| Build and prove | workers | Changes stay inside owned paths; exact gates pass; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
+| Build and prove | workers | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `specify`, `implement`, `harden` or `fix`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
 | Integrate a Project Issue | `admiral` | Passed PRs merge one at a time, in plan order and with `--no-ff`; each merge is followed by a fresh merge review over the integrated feature branch. |
 | Integrate an Atomic Issue | `issue-captain` | Issue review passes; the PR merges to `main`; a fresh merge review follows over the integrated state. |
@@ -62,8 +64,8 @@ on that work item instead of working around a failure:
 
 ## Delegation
 
-- Workers inherit the relevant Issue or Sub-issue contract, owned paths and gates. They do not create
-  its branch, open its PR, merge it or review their own work.
+- Workers inherit the relevant Issue or Sub-issue contract, owned paths and gates, and commit their
+  own hop. They do not create its branch, open its PR, merge it or review their own work.
 - Fan-out is safe only across disjoint paths. Each independently trackable parallel lane is a direct
   Sub-issue of the captain's Issue; Sub-issues never have children. If a lane needs splitting, replace
   it with sibling lanes under the parent Issue.

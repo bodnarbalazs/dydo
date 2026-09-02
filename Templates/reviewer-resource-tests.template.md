@@ -51,7 +51,7 @@ Each pattern below is a finding wherever it appears, and one finding decides the
 - [ ] Error paths, boundaries and regressions are covered, not only happy paths
 - [ ] A bug fix carries a test that reproduces the bug
 - [ ] Every judgement call above was applied to every test in the diff
-- [ ] Tests read as code a maintainer keeps: names state scenario and expectation, no unnecessary
+- [ ] Tests read as code a maintainer keeps: names state case and expectation, no unnecessary
       abstraction, no copy-paste sprawl
 - [ ] The Issue's exact gates were rerun here and their results recorded
 

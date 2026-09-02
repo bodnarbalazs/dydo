@@ -249,6 +249,8 @@ are host-native sub-agents of an Issue Captain, not `codex exec` sessions the hu
 rule stands. Amends DR 044: Waypoint is retired rather than optional; the three review tiers replace
 the single "integrated audit" phrase; question Issues are the fog-clearing unit.
 
+Amended by [DR 046](./046-executable-specifications-specifier-and-commit-addressed-hops.md) (2026-09-02): the worker chain becomes specifier · implementer · hardener, the `issue-plan` rubric becomes `spec`, and the review block gains its Contract line.
+
 ---
 
 ## Affects

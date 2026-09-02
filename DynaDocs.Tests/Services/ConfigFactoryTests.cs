@@ -184,7 +184,7 @@ public class ConfigFactoryTests
         var roles = ConfigFactory.CreateDefaultModels().Roles;
 
         Assert.Equal("strong", roles["project-planner"]);
-        Assert.Equal("strong", roles["issue-planner"]);
+        Assert.Equal("strong", roles["specifier"]);
         Assert.Equal("strong", roles["issue-captain"]);
         Assert.Equal("standard", roles["research"]);
     }
@@ -203,7 +203,30 @@ public class ConfigFactoryTests
         Assert.True(ConfigFactory.UpgradeLegacyPlannerRole(config));
         Assert.False(config.Models.Roles.ContainsKey("planner"));
         Assert.Equal("custom-tier", config.Models.Roles["project-planner"]);
-        Assert.Equal("custom-tier", config.Models.Roles["issue-planner"]);
+        Assert.Equal("custom-tier", config.Models.Roles["specifier"]);
+        Assert.False(ConfigFactory.UpgradeLegacyPlannerRole(config));
+    }
+
+    // DR 046: issue-planner became specifier; a 3.0 config bound under the old name keeps its tier.
+    [Fact]
+    public void UpgradeLegacyPlannerRole_RenamesIssuePlannerToSpecifierKeepingItsTier()
+    {
+        var config = new DydoConfig
+        {
+            Models = new ModelsConfig
+            {
+                Roles = new Dictionary<string, string>
+                {
+                    ["project-planner"] = "strong",
+                    ["issue-planner"] = "custom-tier"
+                }
+            }
+        };
+
+        Assert.True(ConfigFactory.UpgradeLegacyPlannerRole(config));
+        Assert.False(config.Models.Roles.ContainsKey("issue-planner"));
+        Assert.Equal("custom-tier", config.Models.Roles["specifier"]);
+        Assert.Equal("strong", config.Models.Roles["project-planner"]);
         Assert.False(ConfigFactory.UpgradeLegacyPlannerRole(config));
     }
 

@@ -13,9 +13,7 @@ using DynaDocs.Utils;
 ///
 /// The skill template IS the role: its frontmatter supplies the metadata (description,
 /// emit shape, invocation policy, delegation, read-only → tool profile) and its body supplies
-/// the whole methodology — context pointers included. Roles are discovered by enumerating
-/// skill-*.template.md — shipped templates plus project-local
-/// dydo/_system/templates/ ones, which is how custom roles compile.
+/// the whole methodology — context pointers included.
 ///
 /// Two emission shapes (Decision 024 native pivot):
 /// - <c>emit: agent</c> roles emit BOTH an agent definition and a skill — they are spawned as
@@ -27,11 +25,9 @@ using DynaDocs.Utils;
 public static partial class SyncCommand
 {
     // Framework roles dydo no longer owns. A retired name leaves the shipped template set
-    // (TemplateGenerator.GetBuiltInSkillTemplateNames), so it is never discovered, never
-    // mirrored into a project by `dydo init`, and never hash-tracked — `dydo template update`
-    // prunes an already-mirrored copy as stale, and the sweep below removes whatever it last
-    // compiled. A project that authors its own skill template of that name keeps the role and
-    // suppresses its cleanup. This is deliberately not a generic output-directory cleaner.
+    // (TemplateGenerator.GetBuiltInSkillTemplateNames), so it is never discovered, and the
+    // sweep below removes whatever it last compiled. This is deliberately not a generic
+    // output-directory cleaner.
     internal static readonly string[] RetiredManagedRoles = ["sprint-auditor", "orchestrator", "implementer", "manager", "planner"];
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
@@ -70,9 +66,8 @@ public static partial class SyncCommand
     internal static int Execute(string? projectRoot = null)
     {
         projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
-        var roles = RoleDefinitionService.DiscoverRoles(projectRoot);
-        WarnAboutLegacyModeTemplates(projectRoot);
-        CleanRetiredArtifacts(projectRoot, roles);
+        var roles = RoleDefinitionService.DiscoverRoles();
+        CleanRetiredArtifacts(projectRoot);
         var config = new ConfigService().LoadConfig(projectRoot);
         var models = config?.Models;
         var (emitClaude, emitCodex) = ResolveIntegrationTargets(config?.Integrations);
@@ -85,17 +80,6 @@ public static partial class SyncCommand
         var workflows = emitClaude ? SyncWorkflows(projectRoot) : 0;
         PrintSyncSummary(workerRoles, skillOnlyRoles, workflows, emitClaude, emitCodex);
         return ExitCodes.Success;
-    }
-
-    private static void WarnAboutLegacyModeTemplates(string projectRoot)
-    {
-        foreach (var legacyTemplate in TemplateGenerator.GetProjectLegacyModeTemplateNames(projectRoot))
-        {
-            var skillTemplate = "skill-" + legacyTemplate["mode-".Length..];
-            Console.Error.WriteLine("Warning: dydo sync ignores "
-                + $"dydo/_system/templates/{legacyTemplate}; rename it to "
-                + $"dydo/_system/templates/{skillTemplate}.");
-        }
     }
 
     /// <summary>
@@ -159,24 +143,15 @@ public static partial class SyncCommand
 
     /// <summary>
     /// Removes compiler-owned files dydo no longer emits: allowlisted retired roles, retired
-    /// workflow harnesses, and resources retired by rename. A project-local skill template makes
-    /// a retired role active again and suppresses its cleanup. Folders are removed only when
+    /// workflow harnesses, and resources retired by rename. Folders are removed only when
     /// empty so project-owned siblings survive.
     /// </summary>
-    internal static int CleanRetiredArtifacts(
-        string projectRoot,
-        IReadOnlyCollection<RoleDefinition> activeRoles)
+    internal static int CleanRetiredArtifacts(string projectRoot)
     {
-        var activeNames = activeRoles
-            .Select(role => role.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var removed = 0;
 
         foreach (var roleName in RetiredManagedRoles)
         {
-            if (activeNames.Contains(roleName))
-                continue;
-
             var roleRemoved = Sweep(
                 Path.Combine(projectRoot, ".claude", "agents", $"{roleName}.md"),
                 Combine(projectRoot, ClaudeSkillRoot, $"{roleName}/SKILL.md"),
@@ -464,7 +439,7 @@ public static partial class SyncCommand
     /// </summary>
     internal static string ExtractMethodology(RoleDefinition role, string projectRoot)
     {
-        var raw = TemplateGenerator.ReadTemplate(role.TemplateFile, projectRoot);
+        var raw = TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile);
         // Resolve includes against the project root so project-local template-additions
         // overrides are honored regardless of the CWD dydo was invoked from.
         var resolved = TemplateGenerator.ResolveIncludes(raw, projectRoot);
@@ -554,7 +529,7 @@ public static partial class SyncCommand
     internal static List<string> ExtractMustReads(RoleDefinition role, string projectRoot)
     {
         var template = TemplateGenerator.ResolveIncludes(
-            TemplateGenerator.ReadTemplate(role.TemplateFile, projectRoot), projectRoot);
+            TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile), projectRoot);
 
         var section = MustReadsSectionRegex().Match(template);
         if (!section.Success)

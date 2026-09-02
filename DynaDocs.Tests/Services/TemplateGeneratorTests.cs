@@ -362,23 +362,6 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void ProjectSubfolderMetas_DoNotReferenceNonExistentTemplates()
-    {
-        // These meta files should NOT reference templates in _system/templates/
-        // because changelog/decision/pitfall templates are not copied there
-        // (only skill-* templates are copied)
-
-        var changelog = TemplateGenerator.GenerateChangelogMetaMd();
-        Assert.DoesNotContain("_system/templates/", changelog);
-
-        var decisions = TemplateGenerator.GenerateDecisionsMetaMd();
-        Assert.DoesNotContain("_system/templates/", decisions);
-
-        var pitfalls = TemplateGenerator.GeneratePitfallsMetaMd();
-        Assert.DoesNotContain("_system/templates/", pitfalls);
-    }
-
-    [Fact]
     public void GenerateReferenceMetaMd_ListsCorrectDefaultFiles()
     {
         var content = TemplateGenerator.GenerateReferenceMetaMd();
@@ -504,9 +487,6 @@ public class TemplateGeneratorTests
         var content = TemplateGenerator.GenerateFutureFeaturesMetaMd();
         Assert.NotEmpty(content);
     }
-
-    private static int CountOccurrences(string content, string value) =>
-        content.Split(value, StringSplitOptions.None).Length - 1;
 
     private static string FindRepositoryRoot()
     {

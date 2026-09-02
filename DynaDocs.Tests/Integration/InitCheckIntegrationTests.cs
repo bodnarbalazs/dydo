@@ -109,23 +109,6 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task FreshInit_TemplatesAreExcludedFromCheck()
-    {
-        // Arrange - Initialize
-        var initResult = await InitProjectAsync("none");
-        initResult.AssertSuccess();
-
-        // Assert - Templates folder exists
-        AssertDirectoryExists("dydo/_system/templates");
-
-        // Act - Run check
-        var checkResult = await CheckAsync();
-
-        // Assert - Check passes despite templates having different naming/frontmatter rules
-        Assert.DoesNotContain("Found errors", checkResult.Stdout);
-    }
-
-    [Fact]
     public async Task FreshInit_WelcomeMdLinksToGlossary()
     {
         // Arrange & Act

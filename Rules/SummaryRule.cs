@@ -12,7 +12,7 @@ public class SummaryRule : RuleBase
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
-        if (RuleSkipPaths.IsTemplateOrAddition(PathUtils.NormalizePath(doc.RelativePath)))
+        if (RuleSkipPaths.IsTemplateAddition(PathUtils.NormalizePath(doc.RelativePath)))
             yield break;
 
         if (string.IsNullOrEmpty(doc.Title))

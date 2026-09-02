@@ -16,39 +16,6 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_CleanProject_UpdatesAllFiles()
-    {
-        await InitProjectAsync();
-
-        // Tamper a template to simulate a framework update (on-disk != embedded, but hash matches)
-        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-code-writer.template.md");
-        var originalContent = File.ReadAllText(templatePath);
-        var configContent = ReadFile("dydo.json");
-
-        // Store current hash, then modify the embedded resource's copy on disk
-        // to simulate "old framework version"
-        var oldContent = originalContent + "\n<!-- old version -->";
-        File.WriteAllText(templatePath, oldContent);
-
-        // Update the stored hash to match the tampered file (simulating clean old install)
-        var config = new ConfigService().LoadConfig()!;
-        var relativePath = "_system/templates/skill-code-writer.template.md";
-        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(oldContent);
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Updated:");
-        result.AssertStdoutContains("Template update complete:");
-
-        // File should now match embedded content
-        var updatedContent = File.ReadAllText(templatePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
-        Assert.Equal(embeddedContent, updatedContent);
-    }
-
-    [Fact]
     public async Task TemplateUpdate_AlreadyCurrent_ReportsNoChanges()
     {
         await InitProjectAsync();
@@ -59,267 +26,6 @@ public class TemplateCommandTests : IntegrationTestBase
         result.AssertStdoutContains("Template update complete:");
         // All files should be "already current"
         Assert.DoesNotContain("Updated:", result.Stdout);
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_TrackedLegacyModeTemplate_IsReplacedBySkillTemplate()
-    {
-        await InitProjectAsync();
-
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
-        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
-        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
-        var stockContent = File.ReadAllText(skillPath);
-        File.Move(skillPath, legacyPath);
-
-        var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes.Remove(skillRelativePath);
-        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(stockContent);
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Migrated legacy:");
-        Assert.True(File.Exists(skillPath));
-        Assert.Equal(stockContent, File.ReadAllText(skillPath));
-        Assert.False(File.Exists(legacyPath));
-
-        var updatedConfig = new ConfigService().LoadConfig()!;
-        Assert.Equal(TemplateCommand.ComputeHash(stockContent),
-            updatedConfig.FrameworkHashes[skillRelativePath]);
-        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(legacyRelativePath));
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_ModifiedTrackedLegacyModeTemplate_IsPreservedAndWarned()
-    {
-        await InitProjectAsync();
-
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
-        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
-        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
-        var stockContent = File.ReadAllText(skillPath);
-        var customContent = stockContent + "\n<!-- keep this custom legacy content -->\n";
-        File.Move(skillPath, legacyPath);
-        File.WriteAllText(legacyPath, customContent);
-
-        var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes.Remove(skillRelativePath);
-        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(stockContent);
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertExitCode(1);
-        result.AssertStderrContains("was kept because it was modified");
-        result.AssertStderrContains("Rename it to _system/templates/skill-code-writer.template.md");
-        Assert.Equal(customContent, File.ReadAllText(legacyPath));
-        Assert.Equal(stockContent, File.ReadAllText(skillPath));
-
-        var updatedConfig = new ConfigService().LoadConfig()!;
-        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(legacyRelativePath));
-        Assert.Equal(TemplateCommand.ComputeHash(stockContent),
-            updatedConfig.FrameworkHashes[skillRelativePath]);
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_Diff_LeavesCleanLegacyModeMigrationUnchanged()
-    {
-        await InitProjectAsync();
-
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
-        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
-        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
-        var stockContent = File.ReadAllText(skillPath);
-        File.Move(skillPath, legacyPath);
-
-        var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes.Remove(skillRelativePath);
-        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(stockContent);
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        var result = await RunTemplateUpdateAsync("--diff");
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Would migrate legacy:");
-        Assert.Equal(stockContent, File.ReadAllText(legacyPath));
-        Assert.False(File.Exists(skillPath));
-
-        var unchangedConfig = new ConfigService().LoadConfig()!;
-        Assert.Equal(TemplateCommand.ComputeHash(stockContent),
-            unchangedConfig.FrameworkHashes[legacyRelativePath]);
-        Assert.False(unchangedConfig.FrameworkHashes.ContainsKey(skillRelativePath));
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_UntrackedLegacyModeTemplate_IsPreservedAndWarned()
-    {
-        await InitProjectAsync();
-
-        var legacyPath = Path.Combine(TestDir, "dydo", "_system", "templates",
-            "mode-my-custom.template.md");
-        const string customContent = "---\nmode: my-custom\n---\n# My Custom\n";
-        File.WriteAllText(legacyPath, customContent);
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertExitCode(1);
-        result.AssertStderrContains("was kept because it is untracked");
-        result.AssertStderrContains("Rename it to _system/templates/skill-my-custom.template.md");
-        Assert.Equal(customContent, File.ReadAllText(legacyPath));
-        Assert.False(File.Exists(Path.Combine(TestDir, "dydo", "_system", "templates",
-            "skill-my-custom.template.md")));
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_LegacyAndSkillTemplatesBothExist_PreservesBothAndWarns()
-    {
-        await InitProjectAsync();
-
-        const string skillRelativePath = "_system/templates/skill-code-writer.template.md";
-        const string legacyRelativePath = "_system/templates/mode-code-writer.template.md";
-        var skillPath = Path.Combine(TestDir, "dydo", skillRelativePath);
-        var legacyPath = Path.Combine(TestDir, "dydo", legacyRelativePath);
-        const string skillContent = "project-owned skill template";
-        const string legacyContent = "legacy template that must not be replaced";
-        File.WriteAllText(skillPath, skillContent);
-        File.WriteAllText(legacyPath, legacyContent);
-
-        var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes[legacyRelativePath] = TemplateCommand.ComputeHash(legacyContent);
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertExitCode(1);
-        result.AssertStderrContains("is already active");
-        result.AssertStderrContains("Merge or rename the legacy file");
-        Assert.Equal(skillContent, File.ReadAllText(skillPath));
-        Assert.Equal(legacyContent, File.ReadAllText(legacyPath));
-
-        var updatedConfig = new ConfigService().LoadConfig()!;
-        Assert.False(updatedConfig.FrameworkHashes.ContainsKey(legacyRelativePath));
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_OldProject_AddsNewSkillTemplatesAndTracksHashes()
-    {
-        await InitProjectAsync();
-
-        var configService = new ConfigService();
-        var configPath = Path.Combine(TestDir, "dydo.json");
-        var config = configService.LoadConfig()!;
-        var templateNames = new[]
-        {
-            "skill-wayfinder.template.md",
-            "skill-grilling.template.md",
-            "skill-bro.template.md",
-        };
-
-        foreach (var templateName in templateNames)
-        {
-            var relativePath = $"_system/templates/{templateName}";
-            File.Delete(Path.Combine(TestDir, "dydo", relativePath));
-            config.FrameworkHashes.Remove(relativePath);
-        }
-        configService.SaveConfig(config, configPath);
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertSuccess();
-        var updatedConfig = configService.LoadConfig()!;
-        foreach (var templateName in templateNames)
-        {
-            var relativePath = $"_system/templates/{templateName}";
-            var content = File.ReadAllText(Path.Combine(TestDir, "dydo", relativePath));
-            Assert.Equal(TemplateGenerator.ReadBuiltInTemplate(templateName), content);
-            Assert.Equal(TemplateCommand.ComputeHash(content), updatedConfig.FrameworkHashes[relativePath]);
-        }
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_UserAddedInclude_Reanchored()
-    {
-        await InitProjectAsync();
-
-        var relativePath = "_system/templates/skill-code-writer.template.md";
-        var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
-
-        // Find a good anchor point — insert a user include tag in the template
-        var lines = embeddedContent.Split('\n').ToList();
-        var verifyIdx = lines.FindIndex(l => l.Contains("{{include:extra-verify}}"));
-        if (verifyIdx >= 0)
-        {
-            lines.Insert(verifyIdx + 1, "{{include:my-custom-step}}");
-        }
-        else
-        {
-            // Fallback: insert after first non-blank line
-            lines.Insert(1, "{{include:my-custom-step}}");
-        }
-        var userContent = string.Join('\n', lines);
-        File.WriteAllText(templatePath, userContent);
-
-        var result = await RunTemplateUpdateAsync();
-
-        // The user-added include should be re-anchored
-        var updatedContent = File.ReadAllText(templatePath);
-        Assert.Contains("{{include:my-custom-step}}", updatedContent);
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_Force_BackupCreated()
-    {
-        await InitProjectAsync();
-
-        var relativePath = "_system/templates/skill-code-writer.template.md";
-        var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
-
-        // Add a user include with anchors that won't exist in the new template
-        var userContent = embeddedContent + "\n{{include:orphan-hook}}\n";
-        File.WriteAllText(templatePath, userContent);
-
-        var result = await RunTemplateUpdateAsync("--force");
-
-        // With --force, backup should be created
-        var backupPath = templatePath + ".backup";
-        if (File.Exists(backupPath))
-        {
-            var backupContent = File.ReadAllText(backupPath);
-            Assert.Equal(userContent, backupContent);
-        }
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_Diff_ShowsReanchorPlacements()
-    {
-        await InitProjectAsync();
-
-        var relativePath = "_system/templates/skill-code-writer.template.md";
-        var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
-
-        // Add a user include
-        var lines = embeddedContent.Split('\n').ToList();
-        var verifyIdx = lines.FindIndex(l => l.Contains("{{include:extra-verify}}"));
-        if (verifyIdx >= 0)
-            lines.Insert(verifyIdx + 1, "{{include:my-diff-hook}}");
-        var userContent = string.Join('\n', lines);
-        File.WriteAllText(templatePath, userContent);
-
-        var result = await RunTemplateUpdateAsync("--diff");
-
-        // --diff should show preview without writing
-        result.AssertStdoutContains("Template update complete:");
-        // Original file should still have user content
-        var afterDiff = File.ReadAllText(templatePath);
-        Assert.Equal(userContent, afterDiff);
     }
 
     [Fact]
@@ -337,29 +43,6 @@ public class TemplateCommandTests : IntegrationTestBase
         // Addition file should be untouched
         Assert.True(File.Exists(customFile));
         Assert.Equal("Custom step content", File.ReadAllText(customFile));
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_UpdatesConfigHashes()
-    {
-        await InitProjectAsync();
-
-        // Tamper a template
-        var relativePath = "_system/templates/skill-code-writer.template.md";
-        var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        var oldContent = "old framework content";
-        File.WriteAllText(templatePath, oldContent);
-
-        var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(oldContent);
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        await RunTemplateUpdateAsync();
-
-        // Hash should be updated to match the new embedded content
-        var updatedConfig = new ConfigService().LoadConfig()!;
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
-        Assert.Equal(TemplateCommand.ComputeHash(embeddedContent), updatedConfig.FrameworkHashes[relativePath]);
     }
 
     [Fact]
@@ -386,48 +69,12 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_StaleTrackedTemplate_Removed()
-    {
-        await InitProjectAsync();
-
-        // A hash-tracked template that is no longer shipped = a stale framework copy.
-        var staleFile = Path.Combine(TestDir, "dydo/_system/templates/skill-old-removed.template.md");
-        File.WriteAllText(staleFile, "stale template");
-        var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes["_system/templates/skill-old-removed.template.md"] =
-            TemplateCommand.ComputeHash("stale template");
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Removed stale:");
-        Assert.False(File.Exists(staleFile));
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_UntrackedCustomSkillTemplate_Kept()
-    {
-        await InitProjectAsync();
-
-        // An untracked skill template is a user's custom role (compiled by dydo sync) —
-        // template update must never delete it.
-        var customFile = Path.Combine(TestDir, "dydo/_system/templates/skill-my-custom.template.md");
-        File.WriteAllText(customFile, "---\nmode: my-custom\n---\n# My Custom\n");
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertSuccess();
-        Assert.True(File.Exists(customFile), "custom skill template must survive template update");
-    }
-
-    [Fact]
     public async Task TemplateUpdate_StaleHash_Pruned()
     {
         await InitProjectAsync();
 
         var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes["_system/templates/skill-deleted.template.md"] = "abc123";
+        config.FrameworkHashes["reference/retired-framework-doc.md"] = "abc123";
         new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
 
         var result = await RunTemplateUpdateAsync();
@@ -436,7 +83,7 @@ public class TemplateCommandTests : IntegrationTestBase
         result.AssertStdoutContains("Pruned stale hash:");
 
         var updatedConfig = new ConfigService().LoadConfig()!;
-        Assert.False(updatedConfig.FrameworkHashes.ContainsKey("_system/templates/skill-deleted.template.md"));
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey("reference/retired-framework-doc.md"));
     }
 
     [Fact]
@@ -562,14 +209,13 @@ public class TemplateCommandTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var relativePath = "_system/templates/skill-code-writer.template.md";
-        var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-        File.Delete(templatePath);
+        var docPath = Path.Combine(TestDir, "dydo/reference/dydo-commands.md");
+        File.Delete(docPath);
 
         var result = await RunTemplateUpdateAsync("--diff");
 
         result.AssertSuccess();
-        Assert.False(File.Exists(templatePath));
+        Assert.False(File.Exists(docPath));
     }
 
     [Fact]
@@ -667,60 +313,16 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task TemplateUpdate_NoStoredHash_UserEditedTemplate_OverwritesCleanly()
-    {
-        // Exercises GetOldStockContent when storedHash is null (legacy install scenario).
-        // With no stored hash, the file is treated as user-edited and GetOldStockContent
-        // returns onDisk as the old stock, so ExtractUserIncludes(onDisk, onDisk) finds
-        // no user includes and the file is overwritten with the new embedded content.
-        await InitProjectAsync();
-
-        var relativePath = TemplateCommand.FrameworkTemplateFiles.First();
-        var templatePath = Path.Combine(TestDir, "dydo", relativePath);
-
-        // Remove the stored hash to simulate legacy install
-        var config = new ConfigService().LoadConfig()!;
-        config.FrameworkHashes.Remove(relativePath);
-        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
-
-        // Modify the template (non-include edit)
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate(Path.GetFileName(templatePath));
-        File.WriteAllText(templatePath, embeddedContent + "\n<!-- user tweak -->");
-
-        var result = await RunTemplateUpdateAsync();
-
-        result.AssertSuccess();
-        // File should be overwritten with embedded content (no includes to preserve)
-        var afterUpdate = File.ReadAllText(templatePath);
-        Assert.DoesNotContain("<!-- user tweak -->", afterUpdate);
-    }
-
-    [Fact]
     public async Task Init_StoresHashesForAllFrameworkFiles()
     {
         await InitProjectAsync();
 
         var config = new ConfigService().LoadConfig()!;
 
-        // Template files should have hashes
-        foreach (var templatePath in TemplateCommand.FrameworkTemplateFiles)
-        {
-            Assert.True(config.FrameworkHashes.ContainsKey(templatePath),
-                $"Expected hash for template file '{templatePath}' but none found");
-        }
-
-        // Doc files should also have hashes
         foreach (var docPath in TemplateCommand.FrameworkDocFiles)
         {
             Assert.True(config.FrameworkHashes.ContainsKey(docPath),
                 $"Expected hash for doc file '{docPath}' but none found");
-        }
-
-        // Binary files should also have hashes
-        foreach (var binaryPath in TemplateCommand.FrameworkBinaryFiles)
-        {
-            Assert.True(config.FrameworkHashes.ContainsKey(binaryPath),
-                $"Expected hash for binary file '{binaryPath}' but none found");
         }
     }
 

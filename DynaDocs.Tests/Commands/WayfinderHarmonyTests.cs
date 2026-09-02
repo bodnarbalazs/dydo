@@ -36,7 +36,7 @@ public class WayfinderHarmonyTests : IDisposable
         var repositoryDydo = Path.Combine(RepositoryRoot(), "dydo");
         var checkedLinks = 0;
 
-        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        foreach (var role in RoleDefinitionService.DiscoverRoles())
         {
             foreach (var target in DydoLinkTargets(File.ReadAllText(CompileSkill(role.Name))))
             {
@@ -78,14 +78,14 @@ public class WayfinderHarmonyTests : IDisposable
     [Fact]
     public void CompiledSkills_CarryNoRetiredWaypointOntology()
     {
-        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        foreach (var role in RoleDefinitionService.DiscoverRoles())
             Assert.DoesNotContain(
                 "Waypoint", File.ReadAllText(CompileSkill(role.Name)), StringComparison.OrdinalIgnoreCase);
     }
 
     private string CompileSkill(string roleName)
     {
-        var role = RoleDefinitionService.DiscoverRoles(_testDir)
+        var role = RoleDefinitionService.DiscoverRoles()
             .Single(candidate => candidate.Name == roleName);
         SyncCommand.SyncSkillOnlyRole(role, _testDir);
         return Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md");

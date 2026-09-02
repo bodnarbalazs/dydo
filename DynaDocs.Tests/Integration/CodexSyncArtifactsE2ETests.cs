@@ -23,7 +23,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        var skillOnly = RoleDefinitionService.DiscoverRoles(TestDir)
+        var skillOnly = RoleDefinitionService.DiscoverRoles()
             .Where(role => !role.EmitAgent)
             .Select(role => role.Name)
             .ToList();
@@ -69,7 +69,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         // Over every skill-only role, not two named ones: which skills are human-only is DR 045
         // section 9's to decide, and a fixture naming today's explicit skill goes red the day it
         // changes, with no later Issue owning this file to fix it.
-        var roles = RoleDefinitionService.DiscoverRoles(TestDir).Where(role => !role.EmitAgent).ToList();
+        var roles = RoleDefinitionService.DiscoverRoles().Where(role => !role.EmitAgent).ToList();
         Assert.Contains(roles, role => role.ExplicitInvocation);
         Assert.Contains(roles, role => !role.ExplicitInvocation);
 
@@ -192,10 +192,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         }
     }
 
-    // The retirement has to survive `dydo init`, not just the shipped set: init mirrors every
-    // shipped template into dydo/_system/templates/, and discovery unions that mirror back in.
-    // While a retired template was still mirrored, sync compiled the retired role on both hosts
-    // in every initialized project and the sweep was suppressed by dydo's own copy.
+    // The retirement has to survive `dydo init`, not just the shipped set.
     [Fact]
     public async Task InitThenSync_NeverCompilesARetiredRole()
     {
@@ -207,7 +204,6 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         Assert.NotEmpty(SyncCommand.RetiredManagedRoles);
         foreach (var retired in SyncCommand.RetiredManagedRoles)
         {
-            AssertFileNotExists($"dydo/_system/templates/skill-{retired}.template.md");
             AssertDirectoryNotExists($".claude/skills/{retired}");
             AssertDirectoryNotExists($".agents/skills/{retired}");
             AssertFileNotExists($".claude/agents/{retired}.md");
@@ -235,7 +231,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        var workers = RoleDefinitionService.DiscoverRoles(TestDir).Where(role => role.EmitAgent).ToList();
+        var workers = RoleDefinitionService.DiscoverRoles().Where(role => role.EmitAgent).ToList();
         Assert.NotEmpty(workers);
 
         foreach (var role in workers)

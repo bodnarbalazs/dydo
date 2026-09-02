@@ -5,37 +5,16 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
-public class RoleDefinitionServiceTests : IDisposable
+public class RoleDefinitionServiceTests
 {
-    private readonly string _testDir;
-    private readonly RoleDefinitionService _service;
-
-    public RoleDefinitionServiceTests()
-    {
-        _testDir = Path.Combine(Path.GetTempPath(), "dydo-roledef-test-" + Guid.NewGuid().ToString("N")[..8]);
-        Directory.CreateDirectory(_testDir);
-        _service = new RoleDefinitionService();
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_testDir))
-            Directory.Delete(_testDir, true);
-    }
-
-    private string CreateProjectTemplatesDir()
-    {
-        var templatesDir = Path.Combine(_testDir, "dydo", "_system", "templates");
-        Directory.CreateDirectory(templatesDir);
-        return templatesDir;
-    }
+    private readonly RoleDefinitionService _service = new();
 
     #region DiscoverRoles
 
     [Fact]
     public void DiscoverRoles_FindsAllShippedRoles()
     {
-        var names = RoleDefinitionService.DiscoverRoles(_testDir).Select(r => r.Name).ToList();
+        var names = RoleDefinitionService.DiscoverRoles().Select(r => r.Name).ToList();
 
         Assert.Contains("code-writer", names);
         Assert.Contains("reviewer", names);
@@ -68,7 +47,7 @@ public class RoleDefinitionServiceTests : IDisposable
             .GetFiles(Path.Combine(RepositoryRoot(), "Templates"), "skill-*.template.md")
             .Select(path => Path.GetFileName(path)!["skill-".Length..^".template.md".Length]);
 
-        var names = RoleDefinitionService.DiscoverRoles(_testDir).Select(r => r.Name).ToList();
+        var names = RoleDefinitionService.DiscoverRoles().Select(r => r.Name).ToList();
 
         Assert.Equal(
             authored.Except(SyncCommand.RetiredManagedRoles).OrderBy(n => n, StringComparer.Ordinal),
@@ -76,9 +55,7 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.NotEmpty(names);
     }
 
-    // A retired name must also leave the set `dydo init` mirrors and `dydo template update`
-    // hash-tracks: a mirrored copy would be unioned back into discovery and revive the role in
-    // every initialized project, and while it stays tracked the stale-copy prune cannot remove it.
+    // A retired name must also leave the shipped inventory.
     [Fact]
     public void ShippedTemplateSet_ExcludesRetiredRoles()
     {
@@ -87,8 +64,6 @@ public class RoleDefinitionServiceTests : IDisposable
             var templateName = $"skill-{retired}.template.md";
             Assert.DoesNotContain(templateName, TemplateGenerator.GetAllTemplateNames());
             Assert.DoesNotContain(templateName, TemplateGenerator.GetBuiltInSkillTemplateNames());
-            Assert.DoesNotContain(
-                $"_system/templates/{templateName}", TemplateCommand.FrameworkTemplateFiles);
         }
     }
 
@@ -103,28 +78,10 @@ public class RoleDefinitionServiceTests : IDisposable
         throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 
-    // A project that wants a retired name back drops in its own template; sync then keeps the
-    // role and its artifacts. The retirement is dydo's default, not the project's ceiling.
-    [Fact]
-    public void DiscoverRoles_ProjectTemplateForARetiredName_RevivesTheRole()
-    {
-        var templatesDir = CreateProjectTemplatesDir();
-        foreach (var retired in SyncCommand.RetiredManagedRoles)
-        {
-            File.WriteAllText(Path.Combine(templatesDir, $"skill-{retired}.template.md"),
-                $"---\nmode: {retired}\ndescription: Project-owned {retired}.\nemit: skill\n---\n\n# Revived\n");
-        }
-
-        var roles = RoleDefinitionService.DiscoverRoles(_testDir).ToDictionary(r => r.Name);
-
-        Assert.All(SyncCommand.RetiredManagedRoles,
-            retired => Assert.Equal($"Project-owned {retired}.", roles[retired].Description));
-    }
-
     [Fact]
     public void DiscoverRoles_EmitShapes_MatchTheNativePivot()
     {
-        var roles = RoleDefinitionService.DiscoverRoles(_testDir).ToDictionary(r => r.Name);
+        var roles = RoleDefinitionService.DiscoverRoles().ToDictionary(r => r.Name);
 
         // Spawnable roles emit agent + skill; Project Planner remains usable as a session hat too.
         Assert.True(roles["project-planner"].EmitAgent);
@@ -156,7 +113,7 @@ public class RoleDefinitionServiceTests : IDisposable
     [Fact]
     public void DiscoverRoles_Flags_MatchEachTemplatesOwnFrontmatter()
     {
-        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        foreach (var role in RoleDefinitionService.DiscoverRoles())
         {
             var fields = FrontmatterParser.ParseFields(
                 TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile)) ?? [];
@@ -177,7 +134,7 @@ public class RoleDefinitionServiceTests : IDisposable
     [Fact]
     public void DiscoverRoles_ReviewerAndInquisitor_AreReadOnlyBaseRoles()
     {
-        var roles = RoleDefinitionService.DiscoverRoles(_testDir);
+        var roles = RoleDefinitionService.DiscoverRoles();
 
         // Read-only is how "reviewers don't write code" is natively enforced, so these two must
         // carry it. Which other roles do is the taxonomy's business, derived from frontmatter by
@@ -191,27 +148,24 @@ public class RoleDefinitionServiceTests : IDisposable
     [Fact]
     public void DiscoverRoles_ShippedRoles_HaveDescriptions()
     {
-        Assert.All(RoleDefinitionService.DiscoverRoles(_testDir),
+        Assert.All(RoleDefinitionService.DiscoverRoles(),
             r => Assert.False(string.IsNullOrWhiteSpace(r.Description),
                 $"role '{r.Name}' has no description"));
     }
 
     [Fact]
-    public void DiscoverRoles_CustomTemplate_ParsesDelegates()
+    public void Parse_ReadsDelegates()
     {
-        var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "skill-fan-out.template.md"),
+        var role = RoleDefinitionService.Parse("skill-fan-out.template.md",
             "---\nmode: fan-out\nemit: agent\ndelegates: true\n---\n\n# Fan Out\n");
 
-        Assert.True(RoleDefinitionService.DiscoverRoles(_testDir)
-            .Single(r => r.Name == "fan-out").Delegates);
+        Assert.True(role.Delegates);
     }
 
     [Fact]
-    public void DiscoverRoles_CustomProjectTemplate_BecomesARole()
+    public void Parse_ReadsDescriptionEmitAndReadOnly()
     {
-        var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "skill-security-auditor.template.md"),
+        var role = RoleDefinitionService.Parse("skill-security-auditor.template.md",
             """
             ---
             mode: security-auditor
@@ -227,99 +181,44 @@ public class RoleDefinitionServiceTests : IDisposable
             Suspicious by default.
             """);
 
-        var roles = RoleDefinitionService.DiscoverRoles(_testDir);
-        var custom = roles.Single(r => r.Name == "security-auditor");
-
-        Assert.Equal("Audits changes for security regressions.", custom.Description);
-        Assert.True(custom.EmitAgent);
-        Assert.True(custom.ReadOnly);
-        Assert.Equal("skill-security-auditor.template.md", custom.TemplateFile);
+        Assert.Equal("security-auditor", role.Name);
+        Assert.Equal("Audits changes for security regressions.", role.Description);
+        Assert.True(role.EmitAgent);
+        Assert.True(role.ReadOnly);
+        Assert.Equal("skill-security-auditor.template.md", role.TemplateFile);
     }
 
     [Fact]
-    public void DiscoverRoles_CustomTemplate_DefaultsToWritableAgent()
+    public void Parse_AbsentKeys_DefaultToWritableAgent()
     {
-        var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "skill-infra-writer.template.md"),
+        var role = RoleDefinitionService.Parse("skill-infra-writer.template.md",
             "---\nmode: infra-writer\n---\n\n# Infra Writer\n");
 
-        var custom = RoleDefinitionService.DiscoverRoles(_testDir)
-            .Single(r => r.Name == "infra-writer");
-
-        Assert.True(custom.EmitAgent);
-        Assert.False(custom.ReadOnly);
-        Assert.False(custom.ExplicitInvocation);
-        Assert.False(custom.Delegates);
-        Assert.Equal("", custom.Description);
+        Assert.True(role.EmitAgent);
+        Assert.False(role.ReadOnly);
+        Assert.False(role.ExplicitInvocation);
+        Assert.False(role.Delegates);
+        Assert.Equal("", role.Description);
     }
 
     [Fact]
-    public void DiscoverRoles_CustomTemplate_ParsesExplicitInvocation()
+    public void Parse_ReadsExplicitInvocation()
     {
-        var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "skill-human-only.template.md"),
+        var role = RoleDefinitionService.Parse("skill-human-only.template.md",
             "---\nmode: human-only\ninvocation: explicit\n---\n\n# Human Only\n");
 
-        var custom = RoleDefinitionService.DiscoverRoles(_testDir)
-            .Single(r => r.Name == "human-only");
-
-        Assert.True(custom.ExplicitInvocation);
+        Assert.True(role.ExplicitInvocation);
     }
 
     [Fact]
-    public void DiscoverRoles_CustomTemplate_RejectsInvalidInvocation()
+    public void Parse_RejectsInvalidInvocation()
     {
-        var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "skill-invalid.template.md"),
-            "---\nmode: invalid\ninvocation: sometimes\n---\n\n# Invalid\n");
-
-        var error = Assert.Throws<InvalidDataException>(
-            () => RoleDefinitionService.DiscoverRoles(_testDir));
+        var error = Assert.Throws<InvalidDataException>(() => RoleDefinitionService.Parse(
+            "skill-invalid.template.md",
+            "---\nmode: invalid\ninvocation: sometimes\n---\n\n# Invalid\n"));
 
         Assert.Contains("skill-invalid.template.md", error.Message);
         Assert.Contains("expected 'automatic' or 'explicit'", error.Message);
-    }
-
-    [Fact]
-    public void DiscoverRoles_ProjectOverride_FrontmatterWinsOverSeed()
-    {
-        var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "skill-reviewer.template.md"),
-            """
-            ---
-            mode: reviewer
-            description: Custom reviewer description.
-            emit: skill
-            read-only: false
-            ---
-
-            # Reviewer
-            """);
-
-        var reviewer = RoleDefinitionService.DiscoverRoles(_testDir)
-            .Single(r => r.Name == "reviewer");
-
-        Assert.Equal("Custom reviewer description.", reviewer.Description);
-        Assert.False(reviewer.EmitAgent);
-        Assert.False(reviewer.ReadOnly);
-    }
-
-    [Fact]
-    public void DiscoverRoles_NoProjectTemplates_StillFindsShippedRoles()
-    {
-        // _testDir has no dydo/_system/templates at all.
-        Assert.NotEmpty(RoleDefinitionService.DiscoverRoles(_testDir));
-    }
-
-    [Fact]
-    public void DiscoverRoles_IgnoresLegacyModeTemplate()
-    {
-        var templatesDir = CreateProjectTemplatesDir();
-        File.WriteAllText(Path.Combine(templatesDir, "mode-legacy-role.template.md"),
-            "---\nmode: legacy-role\n---\n\n# Legacy Role\n");
-
-        Assert.DoesNotContain(RoleDefinitionService.DiscoverRoles(_testDir),
-            role => role.Name == "legacy-role");
     }
 
     #endregion

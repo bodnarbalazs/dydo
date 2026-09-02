@@ -861,8 +861,7 @@ public static class TemplateGenerator
             | `project-planner` | agent + skill | Start and review the Project map |
             | `issue-planner` | agent + skill | Remove hidden decisions from one Issue |
             | `chief-of-staff` | skill | Triage Linear and route work |
-            | `code-writer` | agent + skill | Implement features |
-            | `test-writer` | agent + skill | Write tests, report bugs |
+            | `code-writer` | agent + skill | Implement features test-first |
             | `reviewer` | agent + skill (read-only) | Review code |
             | `docs-writer` | agent + skill | Write documentation |
 

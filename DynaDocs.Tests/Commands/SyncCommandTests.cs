@@ -440,7 +440,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void GetSkillResources_RoleWithoutReferences_IsEmpty()
     {
-        Assert.Empty(TemplateGenerator.GetSkillResources("code-writer"));
+        Assert.Empty(TemplateGenerator.GetSkillResources("docs-writer"));
     }
 
     // Workflow harnesses are dydo-authored (Templates/workflow-<name>.js) and compiled to
@@ -662,7 +662,6 @@ public class SyncCommandTests : IDisposable
     [InlineData("project-planner")]
     [InlineData("issue-planner")]
     [InlineData("code-writer")]
-    [InlineData("test-writer")]
     [InlineData("docs-writer")]
     [InlineData("inquisitor")]
     public void SyncRole_Agent_PreloadsItsOwnSkillAndCarriesTheSkillTool(string roleName)
@@ -1040,7 +1039,7 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var role in new[] { "code-writer", "reviewer", "test-writer", "docs-writer" })
+            foreach (var role in new[] { "code-writer", "reviewer", "docs-writer" })
             {
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")), $"missing agent: {role}");
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")), $"missing skill: {role}");
@@ -1444,7 +1443,7 @@ public class SyncCommandTests : IDisposable
     public void ResolveModel_UnmappedRole_ReturnsNull()
     {
         // No role → tier entry: inherit the session model (Decision 028 — no silent downgrade).
-        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "test-writer");
+        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "project-planner");
         Assert.Null(model);
         Assert.Null(effort);
     }
@@ -1489,10 +1488,10 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncRole_UnmappedRole_FallsBackToInherit()
     {
-        var testWriter = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "test-writer");
-        SyncCommand.SyncRole(testWriter, _testDir, TestModels());
+        var projectPlanner = RoleDefinitionService.DiscoverRoles(_testDir).First(r => r.Name == "project-planner");
+        SyncCommand.SyncRole(projectPlanner, _testDir, TestModels());
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "test-writer.md"));
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "project-planner.md"));
         Assert.Contains("model: inherit", agent);
     }
 

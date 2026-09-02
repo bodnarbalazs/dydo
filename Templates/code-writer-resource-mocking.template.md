@@ -1,3 +1,5 @@
+<!-- Adapted from mattpocock/skills tdd at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
+
 # When to Mock
 
 Mock at **system boundaries** only:
@@ -36,7 +38,8 @@ function processPayment(order) {
 
 **2. Prefer SDK-style interfaces over generic fetchers**
 
-Create specific functions for each external operation instead of one generic function with conditional logic:
+Create specific functions for each external operation instead of one generic function with
+conditional logic:
 
 ```typescript
 // GOOD: Each function is independently mockable

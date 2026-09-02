@@ -23,7 +23,6 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/skill-project-planner.template.md");
         AssertFileExists("dydo/_system/templates/skill-issue-planner.template.md");
         AssertFileExists("dydo/_system/templates/skill-docs-writer.template.md");
-        AssertFileExists("dydo/_system/templates/skill-test-writer.template.md");
         AssertFileExists("dydo/_system/templates/skill-inquisitor.template.md");
         AssertFileExists("dydo/_system/templates/skill-wayfinder.template.md");
         AssertFileExists("dydo/_system/templates/skill-grilling.template.md");

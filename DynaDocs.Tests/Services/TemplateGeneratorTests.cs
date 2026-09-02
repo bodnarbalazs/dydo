@@ -34,7 +34,6 @@ public class TemplateGeneratorTests
     [InlineData("skill-project-planner.template.md")]
     [InlineData("skill-issue-planner.template.md")]
     [InlineData("skill-docs-writer.template.md")]
-    [InlineData("skill-test-writer.template.md")]
     [InlineData("skill-self-improvement.template.md")]
     [InlineData("skill-wayfinder.template.md")]
     [InlineData("skill-grilling.template.md")]

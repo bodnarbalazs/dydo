@@ -104,7 +104,6 @@ public static class ConfigFactory
         Roles = new Dictionary<string, string>
         {
             ["code-writer"] = "standard",
-            ["test-writer"] = "standard",
             ["docs-writer"] = "standard",
             ["reviewer"] = "strong",
             ["inquisitor"] = "strong",

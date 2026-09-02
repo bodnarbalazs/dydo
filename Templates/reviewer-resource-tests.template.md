@@ -56,3 +56,4 @@ Each pattern below is a finding wherever it appears, and one finding decides the
 - [ ] The Issue's exact gates were rerun here and their results recorded
 
 Carry the verdict and every finding in the review block.
+

@@ -46,12 +46,12 @@ Write one when any of these is true:
 3. **A misconception was corrected**: the human previously believed something wrong and now sees why.
    These are high-value: they predict future stumbling blocks for related topics.
 4. **The mission shifted in response to learning**: the human discovered they cared about something
-   different than they thought. Cross-link to [[MISSION.md]] and update it.
+   different than they thought. Cross-link to `MISSION.md` and update it.
 
 ### What does _not_ qualify
 
 - Material that was merely covered. Coverage is not learning. Wait for evidence.
-- Anything already captured tersely in [[GLOSSARY.md]] as a term definition. Don't duplicate.
+- Anything already captured tersely in `GLOSSARY.md` as a term definition. Don't duplicate.
 - Session-by-session activity logs. Learning records are not a journal: they are decision-grade
   insights.
 

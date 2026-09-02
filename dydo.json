@@ -39,7 +39,6 @@
     },
     "roles": {
       "code-writer": "standard",
-      "test-writer": "standard",
       "docs-writer": "standard",
       "reviewer": "strong",
       "inquisitor": "strong",
@@ -130,7 +129,6 @@
     "_system/templates/reviewer-resource-docs.template.md": "05b072d0df9884b33a81b4767a5d27d4c87ba76deed8ff5d3c8b7b5a0607ad90",
     "_system/templates/reviewer-resource-tests.template.md": "d23080d84611f5577e1004e92d1f2087998795e1f904aa6334d0759503310133",
     "_system/templates/skill-self-improvement.template.md": "e847d1528ac4ff3b8065b09234dbc16efcd6b28d59b6cc9f4ba419c539a1e6a6",
-    "_system/templates/skill-test-writer.template.md": "64b208d95ea098b6cb7944c1f7f4861d8604b26e963bf822f9b36c302a721c11",
     "_system/templates/skill-wayfinder.template.md": "b9d8b6f46e7f350c8e0f183e04a15d9b2cfb0c5f9b156af9e32be05d9467b006",
     "_system/templates/skill-grill-me.template.md": "ef74352d035f9e8e1c21978efbfb72b56bf30e290ba2e8cbffc450e5e69adbef",
     "_system/templates/skill-writing-for-agents.template.md": "207959ec8a8b56a7a770808fe9b6b6c6974fd75a7abcb60acb1d07968ea0759b",

@@ -39,7 +39,6 @@ public class RoleDefinitionServiceTests : IDisposable
 
         Assert.Contains("code-writer", names);
         Assert.Contains("reviewer", names);
-        Assert.Contains("test-writer", names);
         Assert.Contains("docs-writer", names);
         Assert.Contains("project-planner", names);
         Assert.Contains("issue-planner", names);
@@ -132,7 +131,6 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.True(roles["issue-planner"].EmitAgent);
         Assert.True(roles["code-writer"].EmitAgent);
         Assert.True(roles["reviewer"].EmitAgent);
-        Assert.True(roles["test-writer"].EmitAgent);
         Assert.True(roles["docs-writer"].EmitAgent);
         // The remaining coordinating methodologies are skill-only.
         Assert.False(roles["co-thinker"].EmitAgent);

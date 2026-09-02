@@ -59,7 +59,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Hat** — what a session is doing now: co-thinker, project-planner, issue-captain, admiral, or
   chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
-  spawned it: issue-planner, code-writer, test-writer, docs-writer, reviewer, inquisitor, research.
+  spawned it: issue-planner, code-writer, docs-writer, reviewer, inquisitor, research.
 - **Method** — a reference or procedure used inside another skill, carrying no identity of its own:
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype,
   writing-for-agents, self-improvement.

@@ -25,8 +25,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 - **Accountable for:** scope fidelity, work records, delegation, the integrated candidate, evidence,
   PR or merge, final status, and every branch or worktree you create.
-- **Crew:** planning belongs to `issue-planner`; production to `code-writer`, `test-writer`, or
-  `docs-writer`; independent judgment to `reviewer`. Brief, sequence, track, correct, and integrate.
+- **Crew:** planning belongs to `issue-planner`; production to `code-writer` or `docs-writer`;
+  independent judgment to `reviewer`. Brief, sequence, track, correct, and integrate.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another Issue; the current
   Issue bounds intent and paths.

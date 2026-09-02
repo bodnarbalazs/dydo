@@ -37,8 +37,9 @@ the file, because that rewrite drops the old keys unread.
    dydo 3 does not have (`dydo dispatch`, `dydo worktree`, `dydo model`), the 2.x blocks that
    guarded `git worktree` and `rm` on a worktree path, any tool-scoped block whose pattern is a
    `{source}` or `{tests}` path-set placeholder (nothing expands it now that `paths` is gone), and
-   the two 2.x `dotnet run` patterns whose command alternation still lists `model` — the shipped
-   `dotnet run` pattern arrives beside them.
+   every `dotnet run` pattern whose command alternation names a retired command — a 2.x config
+   lists `roles`, usually beside `task`, `review`, `dispatch` and `watchdog`; an early-3.0 one lists
+   `model`. The shipped `dotnet run` pattern arrives beside them.
 5. Delete `dydo/_system/templates/`. Nothing reads, updates, or removes it, and `dydo check` reports
    every file in it as missing required frontmatter.
 6. Delete `dydo/_system/.local/model-caps/` and `dydo/_system/.local/last-model-cap-restore`, and

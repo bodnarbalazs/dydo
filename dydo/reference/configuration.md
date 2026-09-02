@@ -40,8 +40,7 @@ through Linear's official surfaces.
       "reviewer": "strong",
       "code-writer": "standard"
     },
-    "efforts": {},
-    "fallback": null
+    "efforts": {}
   },
   "scanExclude": [
     "_system/.local/",
@@ -68,7 +67,6 @@ through Linear's official surfaces.
 | `models.tiers` | object | Vendor-specific model bindings for abstract tiers. |
 | `models.agents` | object | Agent-to-tier bindings resolved by `dydo sync`. |
 | `models.efforts` | object | Optional reasoning-effort overrides. |
-| `models.fallback` | string or null | Optional fallback model for temporary caps. |
 | `scanExclude` | string[] | Paths excluded from documentation scanning. |
 | `nudges` | object[] | Project guard rules. |
 | `frameworkHashes` | object | Product-managed hashes used by `dydo template update`. |
@@ -98,8 +96,6 @@ orchestration to the host runtime.
 
 Agents bind to abstract tiers such as `strong`, `standard`, and `light`; vendor blocks bind those
 tiers to concrete models. `dydo sync` resolves the current bindings when it compiles native artifacts.
-Use `dydo model cap`, `dydo model status`, and `dydo model uncap` for temporary availability caps
-instead of editing compiled agents.
 
 ## Nudges
 

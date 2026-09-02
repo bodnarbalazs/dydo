@@ -54,7 +54,7 @@ BLOCKED: Path is off-limits to all agents.
   Configure exceptions in dydo/files-off-limits.md
 ```
 
-**Protected** patterns (a `## Protected Patterns` section) invert the emphasis: **every agent may read them, none may write or delete them** ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10). Membership is dydo's own system files — `dydo/index.md`, `dydo/files-off-limits.md` and the hardcoded `dydo.json` — because agents read them to orient themselves, `dydo/index.md` on every entry prompt's order. The tier's contract is that no agent writes them *directly*, and a human owns their content; dydo's own commands still rewrite what they manage — `dydo index` regenerates `dydo/index.md`, and `dydo fix`, `dydo template update`, `dydo model cap` and the guard's own model-cap restore (below) write `dydo.json`. Those arrive as `dydo` command lines with no file path to extract, so they pass: the tier stops hand edits, not dydo's tooling. `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard entirely: the harness defends its own files, and off-limits keeps its original meaning of files agents must not even read.
+**Protected** patterns (a `## Protected Patterns` section) invert the emphasis: **every agent may read them, none may write or delete them** ([Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10). Membership is dydo's own system files — `dydo/index.md`, `dydo/files-off-limits.md` and the hardcoded `dydo.json` — because agents read them to orient themselves, `dydo/index.md` on every entry prompt's order. The tier's contract is that no agent writes them *directly*, and a human owns their content; dydo's own commands still rewrite what they manage — `dydo index` regenerates `dydo/index.md`, and `dydo fix`, `dydo template update` write `dydo.json`. Those arrive as `dydo` command lines with no file path to extract, so they pass: the tier stops hand edits, not dydo's tooling. `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard entirely: the harness defends its own files, and off-limits keeps its original meaning of files agents must not even read.
 
 The tier binds on the mutating call only: the `Edit`, `Write` and `NotebookEdit` tools, Codex's `apply_patch`, a CLI `--action` of `edit`, `write` or `delete`, and every operation the bash analyzer extracts from a shell command that is not a read of that path — write, delete, move, copy, permission change. `Read`, `cat`, `head` and search pass. The whitelist does not apply.
 
@@ -110,7 +110,7 @@ The shipped **review-block nudge** is the one that carries policy: a `gh pr crea
 
 ## Housekeeping Rides Along
 
-Because the guard runs on every matched tool call, it carries two throttled maintenance jobs: a **daily validation** (config checks, report-only, never blocks) and **model-cap auto-restore** (expired `dydo model cap` fallbacks are lifted without human intervention).
+Because the guard runs on every matched tool call, it carries throttled maintenance jobs: a **daily validation** (config checks, report-only, never blocks).
 
 ---
 

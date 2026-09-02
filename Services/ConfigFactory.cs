@@ -34,7 +34,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|roles|validate|inquisition)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|sync|completions|complete|template|validate|version|help)\b.*)",
             Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
@@ -111,12 +111,7 @@ public static class ConfigFactory
             ["issue-planner"] = "strong",
             ["issue-captain"] = "strong",
             ["research"] = "standard"
-        },
-        // The declared second-line model `dydo model cap` rebinds to when the strong
-        // tier's model (Fable) hits its spend cap — matches the out-of-band reviewer
-        // workaround (issue #214). Kept in step with FALLBACK_MODEL in the inquisition
-        // harness script, which retries a stage on this same model.
-        Fallback = "claude-sonnet-5"
+        }
     };
 
     public static DydoConfig CreateDefault()

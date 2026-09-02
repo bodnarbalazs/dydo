@@ -1,7 +1,6 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
-using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for the guard command. Post-DR-041 the guard is identity-free: only the
@@ -289,7 +288,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dotnet dydo agent claim auto")]
     [InlineData("dotnet tool run dydo agent claim auto")]
     [InlineData("dotnet run -- guard --action read --path foo.cs")]
-    [InlineData("dotnet run -- roles list")]
+    [InlineData("dotnet run -- sync")]
     [InlineData("dotnet run -- validate")]
     [InlineData("bash dydo agent claim auto")]
     [InlineData("sh dydo agent claim auto")]
@@ -546,85 +545,6 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertSuccess();
         Assert.DoesNotContain("NOTICE", result.Stderr);
-    }
-
-    #endregion
-
-    #region Model-cap restore on guard trigger (DR-041 Part E)
-
-    [Fact]
-    public async Task Guard_RestoresExpiredModelCap_OnTrigger()
-    {
-        await InitProjectAsync("none");
-
-        var previousResync = ModelCapService.ResyncOverride;
-        ModelCapService.ResyncOverride = _ => 0; // don't emit native agents during the test
-        try
-        {
-            // Simulate a strong tier capped with a reset time already in the past.
-            var capDir = Path.Combine(TestDir, "dydo", "_system", ".local", "model-caps");
-            Directory.CreateDirectory(capDir);
-            var marker = Path.Combine(capDir, "claude-fable-5.json");
-            File.WriteAllText(marker,
-                "{\"model\":\"claude-fable-5\",\"fallback\":\"claude-sonnet-5\"," +
-                "\"until\":\"2000-01-01T00:00:00+00:00\"," +
-                "\"reboundTiers\":[{\"vendor\":\"anthropic\",\"tier\":\"strong\"}]}");
-            Assert.True(File.Exists(marker));
-
-            // Any guarded shell call trips the throttled model-cap restore on the guard trigger.
-            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"git status\"}}}}";
-            await GuardWithStdinAsync(json);
-
-            Assert.False(File.Exists(marker),
-                "expired model-cap marker should be restored (deleted) by the guard trigger");
-        }
-        finally
-        {
-            ModelCapService.ResyncOverride = previousResync;
-        }
-    }
-
-    [Fact]
-    public async Task Guard_ModelCapRestore_ThrottledWithinWindow()
-    {
-        await InitProjectAsync("none");
-
-        var previousResync = ModelCapService.ResyncOverride;
-        ModelCapService.ResyncOverride = _ => 0;
-        try
-        {
-            var localDir = Path.Combine(TestDir, "dydo", "_system", ".local");
-            var capDir = Path.Combine(localDir, "model-caps");
-            Directory.CreateDirectory(capDir);
-            var marker = Path.Combine(capDir, "claude-fable-5.json");
-            const string markerJson =
-                "{\"model\":\"claude-fable-5\",\"fallback\":\"claude-sonnet-5\"," +
-                "\"until\":\"2000-01-01T00:00:00+00:00\"," +
-                "\"reboundTiers\":[{\"vendor\":\"anthropic\",\"tier\":\"strong\"}]}";
-            File.WriteAllText(marker, markerJson);
-
-            // A fresh restore stamp inside the throttle window suppresses the restore.
-            var stamp = Path.Combine(localDir, "last-model-cap-restore");
-            File.WriteAllText(stamp, DateTime.UtcNow.ToString("O"));
-
-            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"git status\"}}}}";
-            await GuardWithStdinAsync(json);
-
-            Assert.True(File.Exists(marker),
-                "a restore stamp inside the throttle window must make the guard trigger a no-op");
-
-            // Backdate the stamp past the throttle window; the next trigger restores.
-            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddMinutes(-10));
-
-            await GuardWithStdinAsync(json);
-
-            Assert.False(File.Exists(marker),
-                "once the throttle window has passed the guard trigger restores the expired cap");
-        }
-        finally
-        {
-            ModelCapService.ResyncOverride = previousResync;
-        }
     }
 
     #endregion

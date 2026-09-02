@@ -56,7 +56,6 @@ templates and run `dydo sync`.
 | `dydo guard` | Evaluate hook rules and nudges. |
 | `dydo template update` | Update framework-owned templates and docs. |
 | `dydo validate` | Validate local configuration and nudges. |
-| `dydo model cap`, `uncap`, `status` | Manage temporary native model-tier caps. |
 | `dydo completions`, `version`, `help` | Shell and utility commands. |
 
 See the full [command reference](https://github.com/bodnarbalazs/dydo/blob/master/dydo/reference/dydo-commands.md).

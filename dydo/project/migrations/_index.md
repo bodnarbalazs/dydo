@@ -18,5 +18,6 @@ Index of migrations documentation.
 - [dydo 3.0 Notion Freeze Evidence](./3.0-notion-freeze.md) - The final dydo v2 PM baseline was sealed on 2026-08-27 without mutating remote Notion.
 - [3.0 PM record disposition review](./3.0-pm-records.md) - Generated from committed source ffffc02dcdf92b9677d0eb4f522d1af57a869990.
 - [dydo 3.0 Skill Craftsmanship Assimilation](./3.0-skill-craftsmanship-assimilation.md) - Project 6 restored the shared agent methods before dydo 3.0 ships.
+- [dydo 3.0 Skill Model Simplification Assimilation](./3.0-skill-model-simplification-assimilation.md) - This brief records what the skill-model simplification changed, what its eight Issues taught, and what the human's own pass must still write.
 - [dydo 3.0 v2 Corpus Migration Assimilation](./3.0-v2-corpus-migration-assimilation.md) - This brief seals the deterministic corpus disposition.
 - [Main-project adoption of dydo 3](./dydo-3-main-project-adoption.md) - This record describes the local adoption boundary for dydo 3.0.0.

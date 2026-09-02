@@ -305,163 +305,18 @@ public static class TemplateGenerator
 
     /// <summary>
     /// Architecture overview template.
-    /// Reads from architecture.template.md if available.
     /// </summary>
-    public static string GenerateArchitectureMd()
-    {
-        try
-        {
-            return ReadTemplate("architecture.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackArchitectureMd();
-        }
-    }
-
-    internal static string GenerateFallbackArchitectureMd()
-    {
-        return """
-            ---
-            area: understand
-            type: concept
-            ---
-
-            # Architecture Overview
-
-            > **Fill this in.** This document helps AI agents understand your codebase structure.
-
-            ---
-
-            ## Project Structure
-
-            ```
-            project/
-            ├── src/                  # Source code
-            ├── tests/                # Test files
-            ├── dydo/                 # Documentation
-            └── ...
-            ```
-
-            ---
-
-            ## Key Components
-
-            ### Component A
-
-            *What this component does and its responsibilities.*
-
-            ---
-
-            ## Where to Find Things
-
-            | Looking for... | Location |
-            |----------------|----------|
-            | *[Type of code]* | `path/` |
-
-            ---
-
-            ## Next Steps
-
-            After understanding the architecture:
-            - Read [../guides/coding-standards.md](../guides/coding-standards.md) for code style
-            """;
-    }
+    public static string GenerateArchitectureMd() => ReadTemplate("architecture.template.md");
 
     /// <summary>
     /// Welcome page for humans.
-    /// Reads from welcome.template.md if available.
     /// </summary>
-    public static string GenerateWelcomeMd()
-    {
-        try
-        {
-            return ReadTemplate("welcome.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackWelcomeMd();
-        }
-    }
-
-    internal static string GenerateFallbackWelcomeMd()
-    {
-        return """
-            ---
-            area: general
-            type: hub
-            ---
-
-            # Welcome
-
-            Human-friendly entry point to the project documentation.
-
-            ---
-
-            ## Getting Started
-
-            1. **[About](./understand/about.md)** — What this project is
-            2. **[Architecture](./understand/architecture.md)** — How the system is structured
-            3. **[Coding Standards](./guides/coding-standards.md)** — Read before writing code
-
-            ---
-
-            ## For AI Agents
-
-            See [index.md](./index.md) for the AI agent entry point.
-            """;
-    }
+    public static string GenerateWelcomeMd() => ReadTemplate("welcome.template.md");
 
     /// <summary>
     /// Coding standards template.
-    /// Reads from coding-standards.template.md if available.
     /// </summary>
-    public static string GenerateCodingStandardsMd()
-    {
-        try
-        {
-            return ReadTemplate("coding-standards.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackCodingStandardsMd();
-        }
-    }
-
-    internal static string GenerateFallbackCodingStandardsMd()
-    {
-        return """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            # Coding Standards
-
-            > **TODO:** This is a template. Customize with your project's coding standards.
-
-            ---
-
-            ## General Principles
-
-            1. **Readability over cleverness** — Code is read more than written
-            2. **Consistency** — Follow existing patterns in the codebase
-            3. **Simplicity** — Don't over-engineer; solve the problem at hand
-
-            ---
-
-            ## Naming Conventions
-
-            | Type | Convention | Example |
-            |------|------------|---------|
-            | Files | kebab-case | `user-service.ts` |
-            | Classes | PascalCase | `UserService` |
-            | Functions | camelCase | `getUserById` |
-            | Constants | UPPER_SNAKE | `MAX_RETRY_COUNT` |
-            | Variables | camelCase | `currentUser` |
-
-            """;
-    }
+    public static string GenerateCodingStandardsMd() => ReadTemplate("coding-standards.template.md");
 
     /// <summary>
     /// Generate a hub _index.md file for a folder.
@@ -490,391 +345,39 @@ public static class TemplateGenerator
 
     /// <summary>
     /// Generate the about.md file for understanding the project.
-    /// Reads from about.template.md if available.
     /// </summary>
-    public static string GenerateAboutMd()
-    {
-        try
-        {
-            return ReadTemplate("about.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackAboutMd();
-        }
-    }
-
-    internal static string GenerateFallbackAboutMd()
-    {
-        return """
-            ---
-            area: understand
-            type: context
-            ---
-
-            # About This Project
-
-            > **Fill this in.** This is the first thing AI agents read. Make it count.
-
-            *[Describe the project in 2-3 sentences]*
-
-            ---
-
-            *See [architecture.md](./architecture.md) for technical structure.*
-            """;
-    }
+    public static string GenerateAboutMd() => ReadTemplate("about.template.md");
 
     /// <summary>
     /// Generate the files-off-limits.md template.
     /// This file defines paths that are globally blocked for all agents.
     /// </summary>
-    public static string GenerateFilesOffLimitsMd()
-    {
-        try
-        {
-            return ReadTemplate("files-off-limits.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackFilesOffLimitsMd();
-        }
-    }
-
-    internal static string GenerateFallbackFilesOffLimitsMd()
-    {
-        return """
-            ---
-            type: config
-            ---
-
-            # Files Off-Limits
-
-            Paths listed here are **blocked for ALL agents** regardless of role.
-            These restrictions apply to all operations: read, write, and delete.
-
-            ## Default Patterns
-
-            ```
-            # Environment files
-            .env
-            .env.*
-            secrets.json
-            **/secrets.json
-
-            # Credentials and keys
-            **/credentials.*
-            **/*.pem
-            **/*.key
-            **/*.pfx
-            **/id_rsa
-            **/id_ed25519
-
-            # Cloud configs
-            **/.aws/**
-            **/.azure/**
-
-            # Package manager tokens
-            **/.npmrc
-            **/.pypirc
-            ```
-
-            ---
-
-            Add project-specific sensitive files below.
-            """;
-    }
+    public static string GenerateFilesOffLimitsMd() => ReadTemplate("files-off-limits.template.md");
 
     /// <summary>
     /// Generate the dydo commands reference document.
-    /// Reads from dydo-commands.template.md if available.
     /// </summary>
-    public static string GenerateDydoCommandsMd()
-    {
-        try
-        {
-            return ReadTemplate("dydo-commands.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackDydoCommandsMd();
-        }
-    }
-
-    internal static string GenerateFallbackDydoCommandsMd()
-    {
-        return """
-            ---
-            area: reference
-            type: reference
-            ---
-
-            # CLI Commands Reference
-
-            Reference for dydo's local documentation, compilation, guard, and configuration commands.
-            Live work is managed in Linear; dydo does not provide a second work-record command surface.
-
-            Run `dydo help` for a quick overview of available commands.
-
-            ---
-
-            ## Setup Commands
-
-            | Command | Description |
-            |---------|-------------|
-            | `dydo init <integration>` | Initialize project (claude, codex, none) |
-            | `dydo init <int> --join` | Wire this machine's integration for an existing project |
-            | `dydo sync` | Compile roles + docs into native Claude/Codex agents and skills |
-
-            ## Documentation Commands
-
-            | Command | Description |
-            |---------|-------------|
-            | `dydo check [path]` | Validate docs |
-            | `dydo fix [path]` | Auto-fix issues |
-            | `dydo index [path]` | Regenerate index |
-            | `dydo graph <file>` | Show link graph |
-
-            ## Work Boundary
-
-            Linear owns live Initiatives, Projects, Issues, status, assignment, dependencies, and review
-            state. dydo keeps durable Decisions, reviewed Project plans, audits, and assimilation evidence
-            in Git; no dydo command reads, writes, caches, polls, or mirrors Linear.
-
-            ## Enforcement & Config
-
-            | Command | Description |
-            |---------|-------------|
-            | `dydo guard` | Check permissions (used by hooks) |
-            | `dydo validate` | Validate config, roles, and system integrity |
-            | `dydo template update` | Update framework templates and docs |
-            | `dydo roles list\|reset\|create` | Manage role definitions |
-            | `dydo model cap\|uncap <model>` | Time-boxed model outage swaps |
-
-            ## Utility
-
-            | Command | Description |
-            |---------|-------------|
-            | `dydo completions <shell>` | Generate shell completions |
-            | `dydo version` | Show version |
-            | `dydo help` | Show help |
-
-            ---
-
-            Run `dydo <command> --help` for detailed usage of each command.
-            """;
-    }
+    public static string GenerateDydoCommandsMd() => ReadTemplate("dydo-commands.template.md");
 
     /// <summary>
     /// Generate the dydo glossary reference document.
-    /// Reads from dydo-glossary.template.md if available.
     /// </summary>
-    public static string GenerateDydoGlossaryMd()
-    {
-        try
-        {
-            return ReadTemplate("dydo-glossary.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackDydoGlossaryMd();
-        }
-    }
-
-    internal static string GenerateFallbackDydoGlossaryMd()
-    {
-        return """
-            ---
-            area: reference
-            type: reference
-            ---
-
-            # dydo Glossary
-
-            The dydo system's terms, locked. One meaning per word, used consistently across docs,
-            templates, skills, and records.
-            """;
-    }
+    public static string GenerateDydoGlossaryMd() => ReadTemplate("dydo-glossary.template.md");
 
     /// <summary>
     /// Generate the writing docs reference document.
-    /// Reads from writing-docs.template.md if available.
     /// </summary>
-    public static string GenerateWritingDocsMd()
-    {
-        try
-        {
-            return ReadTemplate("writing-docs.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackWritingDocsMd();
-        }
-    }
-
-    internal static string GenerateFallbackWritingDocsMd()
-    {
-        return """
-            ---
-            area: reference
-            type: reference
-            ---
-
-            # Writing Documentation
-
-            Reference for documentation conventions, structure, and validation rules.
-
-            ---
-
-            ## Frontmatter
-
-            Every document requires YAML frontmatter:
-
-            ```yaml
-            ---
-            area: guides
-            type: guide
-            ---
-            ```
-
-            ### Required Fields
-
-            | Field | Values |
-            |-------|--------|
-            | `area` | `understand`, `guides`, `reference`, `general`, `frontend`, `backend`, `microservices`, `platform` |
-            | `type` | `context`, `concept`, `guide`, `reference`, `hub`, `decision`, `pitfall`, `changelog` |
-
-            ---
-
-            ## Naming Conventions
-
-            - **Files:** `kebab-case.md`
-            - **Folders:** `kebab-case/`
-            - **Hub files:** `_index.md` in each folder
-
-            ---
-
-            ## Validation
-
-            ```bash
-            dydo check              # Find issues
-            dydo fix                # Auto-fix what's possible
-            ```
-            """;
-    }
+    public static string GenerateWritingDocsMd() => ReadTemplate("writing-docs.template.md");
 
     /// <summary>
     /// Generate the glossary.md reference document.
-    /// Reads from glossary.template.md if available.
     /// </summary>
-    public static string GenerateGlossaryMd()
-    {
-        try
-        {
-            return ReadTemplate("glossary.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackGlossaryMd();
-        }
-    }
-
-    internal static string GenerateFallbackGlossaryMd()
-    {
-        return """
-            ---
-            area: general
-            type: reference
-            ---
-
-            # Glossary
-
-            Definitions of domain-specific terms used throughout this project.
-
-            ---
-
-            ## Project Terms
-
-            ### Example Term
-
-            Brief definition. Include context about when/where this concept applies.
-
-            ---
-
-            <!--
-            Add terms alphabetically. Format:
-
-            ### Term Name
-
-            Definition. Context.
-            -->
-            """;
-    }
+    public static string GenerateGlossaryMd() => ReadTemplate("glossary.template.md");
 
     /// <summary>
     /// Generate the about-dynadocs.md reference document.
-    /// Reads from about-dynadocs.template.md if available.
     /// </summary>
-    public static string GenerateAboutDynadocsMd()
-    {
-        try
-        {
-            return ReadTemplate("about-dynadocs.template.md");
-        }
-        catch (FileNotFoundException)
-        {
-            return GenerateFallbackAboutDynadocsMd();
-        }
-    }
-
-    internal static string GenerateFallbackAboutDynadocsMd()
-    {
-        // Keep this aligned with Templates/about-dynadocs.template.md (the embedded template this
-        // falls back for): dydo authors and knows, the platform runs and coordinates (DR-041).
-        return """
-            ---
-            area: reference
-            type: reference
-            ---
-
-            # DynaDocs (dydo)
-
-            Own your project's knowledge, use Linear for live work, and let native coding agents execute.
-
-            ## The Problem
-
-            AI code editors need persistence. Without it, each session starts fresh and the agent has to gather context about the project before it can even begin working on your actual task.
-
-            ## The Solution
-
-            DynaDocs keeps durable project knowledge explicit and versioned, compiles shared role methods
-            for Claude Code and Codex, and enforces project rules through hooks. Linear owns the live
-            Initiative/Project/Issue graph; the coding platform owns sessions, worktrees, delegation, and
-            scheduling.
-
-            ## Agent Roles
-
-            Roles are compiled from skill templates by `dydo sync` into native Claude Code and Codex agents and skills:
-
-            | Role | Shape | Purpose |
-            |------|-------|---------|
-            | `co-thinker` | skill | Explore ideas, scope requirements |
-            | `project-planner` | agent + skill | Start and review the Project map |
-            | `issue-planner` | agent + skill | Remove hidden decisions from one Issue |
-            | `chief-of-staff` | skill | Triage Linear and route work |
-            | `code-writer` | agent + skill | Implement features test-first |
-            | `reviewer` | agent + skill (read-only) | Review code |
-            | `docs-writer` | agent + skill | Write documentation |
-
-            ## More Information
-
-            - **Project Repository**: [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
-            - **Command Reference**: [dydo-commands.md](./dydo-commands.md)
-
-            ## License
-
-            MIT
-            """;
-    }
+    public static string GenerateAboutDynadocsMd() => ReadTemplate("about-dynadocs.template.md");
 
     /// <summary>
     /// Get all asset file names that should be copied to _assets/. Currently empty: the

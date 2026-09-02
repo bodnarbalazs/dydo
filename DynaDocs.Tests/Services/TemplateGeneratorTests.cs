@@ -15,7 +15,7 @@ public class TemplateGeneratorTests
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("mode: code-writer", content);
+        Assert.Contains("name: code-writer", content);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class TemplateGeneratorTests
         // source's to write; what the compiler needs is frontmatter, an H1 and a body.
         var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md")
             .Replace("\r\n", "\n");
-        Assert.Contains("mode: code-writer\n", codeWriterTemplate);
+        Assert.Contains("name: code-writer\n", codeWriterTemplate);
         Assert.Contains("description: ", codeWriterTemplate);
         Assert.Equal(1, SyncCommandTests.H1Count(codeWriterTemplate));
     }

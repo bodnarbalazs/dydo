@@ -1,5 +1,5 @@
 ---
-mode: issue-captain
+name: issue-captain
 description: Use when one reviewed implementation Issue needs a single agent accountable for its planning, delegated production, review, integration, final status, and cleanup.
 emit: agent
 delegates: true

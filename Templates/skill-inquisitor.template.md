@@ -1,5 +1,5 @@
 ---
-mode: inquisitor
+name: inquisitor
 description: Refute-first audit of landed work. Use when the inquisition assigns one lens to sweep across what landed, or hands over one finding to confirm or refute.
 emit: agent
 read-only: true

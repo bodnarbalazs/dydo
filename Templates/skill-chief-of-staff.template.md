@@ -1,5 +1,5 @@
 ---
-mode: chief-of-staff
+name: chief-of-staff
 description: Your attention, triaged — what waits on your answer, your approval, or your call, and what on the board has gone stale.
 emit: skill
 invocation: explicit

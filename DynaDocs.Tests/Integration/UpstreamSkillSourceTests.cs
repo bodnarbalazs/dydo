@@ -24,7 +24,7 @@ public class UpstreamSkillSourceTests
             var source = ReadTemplate(skill);
             var invocation = InvocationValue(source);
 
-            Assert.Contains($"mode: {skill}\n", source);
+            Assert.Contains($"name: {skill}\n", source);
             Assert.Contains("emit: skill\n", source);
             Assert.True(invocation is "explicit" or "automatic",
                 $"{skill}: invocation must be 'explicit' or 'automatic', was '{invocation}'");
@@ -57,7 +57,7 @@ public class UpstreamSkillSourceTests
     {
         var source = ReadTemplate("wayfinder");
 
-        Assert.Contains("mode: wayfinder\n", source);
+        Assert.Contains("name: wayfinder\n", source);
         Assert.DoesNotContain("Waypoint", source, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -1,5 +1,5 @@
 ---
-mode: research
+name: research
 description: Primary sources, cited. Use when a fact a choice waits on could hide in Decision Records, plans, code, history, or outside sources, or when docs, specs, or API behaviour must be established before work depends on them.
 emit: agent
 delegates: true

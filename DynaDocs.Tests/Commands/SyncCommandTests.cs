@@ -877,8 +877,8 @@ public class SyncCommandTests : IDisposable
     public void ExtractMethodology_StripsFrontmatter()
     {
         var methodology = SyncCommand.ExtractMethodology(_reviewer, _testDir);
-        // The skill-template frontmatter (agent:/mode:) must not leak into the skill body
-        Assert.DoesNotContain("mode: reviewer", methodology);
+        // The skill-template frontmatter (agent:/name:) must not leak into the skill body
+        Assert.DoesNotContain("name: reviewer", methodology);
         Assert.Equal(1, H1Count(methodology));
         // No dangling horizontal rule at the end after dropping the trailing section
         Assert.False(methodology.TrimEnd().EndsWith("---"));

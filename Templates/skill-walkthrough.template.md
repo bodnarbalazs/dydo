@@ -1,5 +1,5 @@
 ---
-mode: walkthrough
+name: walkthrough
 description: Before I land it — show me what changed, where to look first, and how to try it.
 emit: skill
 invocation: explicit

@@ -1,5 +1,5 @@
 ---
-mode: code-writer
+name: code-writer
 description: Implements one reviewed Linear Issue test-first, red before green, inside the paths that Issue owns. Use when reviewed intent exists and the work is a behaviour to build, a bug to fix, a claim to pin with tests, or the refactor the Issue names.
 emit: agent
 invocation: automatic

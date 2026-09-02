@@ -1,5 +1,5 @@
 ---
-mode: wayfinder
+name: wayfinder
 description: Plan a huge chunk of work as a shared map of Wayfinding Issues in a Linear Project and resolve them one at a time until the destination is reached.
 emit: skill
 invocation: automatic

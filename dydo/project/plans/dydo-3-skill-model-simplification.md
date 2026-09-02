@@ -201,7 +201,7 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
 
 - **Concurrent template edits.** The human's DYD-64 pass changes prose on `DYD-64-human-pass` while
   S-7 changes line 2 of all 25 skill templates. S-7's template change is exactly
-  `sed -i 's/^mode: /name: /' Templates/skill-*.template.md` followed by `unix2dos` on those files,
+  `sed -i 's/^mode: /name: /; s/^skill: /name: /' Templates/skill-*.template.md` followed by `unix2dos` on those files,
   recorded on the Issue, so a merge conflict on any template is resolved by taking the human's file
   and re-running the line. The compiler check then fails loudly on any template still carrying
   `mode:` — which is the point.
@@ -424,3 +424,24 @@ group each), `SyncCommandTests.cs` (S-1, S-2, S-5, S-6, S-7, S-8), `RoleDefiniti
   are folded in here (S-5 added to the `ConfigFactory.cs` hot-file entry; S-6's no-op
   `architecture.md` entry dropped; S-2's `_README.md` twin noted as never carrying the sentence). The
   human opened delivery on 2026-09-02 before this round returned; S-1 and S-3 branched from `47c10d92`.
+
+## Amendment — 2026-09-02, closeout
+
+- Closeout lane. Gate A returned findings that are straight deletions or Gate R blind spots, not
+  prose, so S-9 grew one code-writer lane (`966525ac`) instead of a new Issue: `InitCommand` still printed
+  `paths` guidance (Gate R7 misses C# `\"paths\"` escapes and unquoted `paths = new {` test literals;
+  the closeout gate runs R7 with `paths\s*=\s*new|\\"paths\\"` added); the "templates and docs" command
+  strings S-2 left behind; `test-writer` missing from `RetiredSkills` (folded into code-writer at
+  `9875c9a6`, before this plan) and the sweep never removing a retired skill's `agents/openai.yaml`;
+  three coverage gaps (an old-key `dydo.json` loads with an empty agent map and no error, a
+  notice-severity nudge, `init` output). Findings that need words go to the assimilation brief, per the
+  human's no-rewrite rule.
+- Merge recipe. The human's uncommitted main-checkout pass writes `skill:`, so §2's recipe maps both
+  `^mode: ` and `^skill: ` to `name: `; a template left with either key stops `dydo sync` with an
+  `InvalidDataException` naming the file.
+- Migration list. The guide follows the order the audit derived, not §3's: rename `models.roles` to
+  `models.agents` before any config-saving command (`template update`, `fix`, and `init --join` when it
+  records an integration), because a save first empties the map silently; the other retired keys are
+  dropped on the first save and need no hand edit (a nudge's `audience` survives but scopes nothing);
+  `frameworkHashes` is pruned by `template update`, never by hand; the `_system/templates/` delete
+  comes before `dydo check`, which now flags every file in it. §3 stands as the set of removed keys.

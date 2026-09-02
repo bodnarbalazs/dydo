@@ -12,50 +12,6 @@ sync again.
 
 ---
 
-## Add a role
-
-1. Write the source at `dydo/_system/templates/skill-<name>.template.md`. The filename names the role.
-2. Run `dydo sync`.
-3. Read the compiled skill on your host before you rely on it — that file is what the model sees.
-
-```markdown
----
-mode: data-migrator
-description: Data or schema has to move — use when a change needs a migration written, ordered, and reversible.
-emit: agent
-read-only: false
-delegates: false
-invocation: automatic
----
-
-# Data Migrator
-
-Move data between shapes without losing a row.
-
-## Must-Reads
-
-1. [architecture.md](../../../understand/architecture.md)
-
-{{include:extra-must-reads}}
-
-## Boundary
-
-What this role decides, and what it leaves to its invoker.
-
-## Method
-
-Numbered steps, each ending on a state someone can check.
-
-## Return
-
-The exact shape the receiver expects.
-```
-
-How the body is written — description as trigger, one anchor, a completion criterion on every step —
-belongs to the `writing-for-agents` skill and its `skill-mechanics` resource, which state these same
-mechanics for the agent doing the writing. This guide covers where the source lives and what the
-compiler does with it.
-
 ## Frontmatter
 
 | Key | Value | Effect |
@@ -95,8 +51,8 @@ own without editing framework text.
 **Resources** — a `<role>-resource-<name>.template.md` is a role's own reference behind a file
 boundary, read only by the branches that need it. A shipped role's body links it as
 `resources/<name>.md`, and the compiler rewrites that to the host's emitted path so even a preloaded
-agent can read it. The set is the one dydo ships: a project-local file of a shipped resource's name
-overrides that resource's content, but a resource name dydo does not ship is never discovered — sync
+agent can read it. The set is the one dydo ships: a resource name dydo does not ship is never
+discovered — sync
 emits nothing, and a body link to it compiles into a path that does not exist. A custom role's own
 reference therefore goes in a `dydo/` document listed under its Must-Reads, and so does reference that
 several roles share, unless it earns a model-invoked method skill of its own.
@@ -112,34 +68,14 @@ model per vendor, so a role never names a model. A role with no binding compiles
 Claude — the session's model, never a silent downgrade — and a built-in default model on Codex. See the
 [configuration reference](../reference/configuration.md).
 
-## Override a shipped role
-
-`dydo template update` mirrors every shipped skill and resource template into `dydo/_system/templates/`
-and records a hash for each in `dydo.json`. Edit a copy and `dydo sync` compiles your version — it reads
-the project-local copy before the shipped source — but only until the next `template update`: once the
-shipped text has moved, that update replaces every edit in the mirrored copy, including any
-`{{include:…}}` hook you added. The only hooks that survive are the ones the shipped template already
-carries.
-
-Durable customization of a shipped role is therefore an addition file under
-`dydo/_system/template-additions/`, filling a hook the shipped template ships, or a role of your own
-under a new name — never an edit to the mirrored copy. The
-[template pipeline](../understand/templates-and-customization.md) carries the update flow in full.
-
-One ordering trap survives either choice: a mirrored copy older than the shipped source compiles in
-place of it, so update first, sync second, and read what changed.
-
 ## What is gone
 
 - The separate role data file and the commands that maintained it. The template is the role, and the
   frontmatter above is the whole schema.
 - Two framework roles from the retired delivery loop, the workflow harness that ran it, and one
   rubric renamed.
-  `dydo sync` sweeps their compiled output from both hosts, `dydo template update` deletes the mirrored
-  copies and prunes their hashes, and `dydo init` never installs them again. The
+  `dydo sync` sweeps their compiled output from both hosts, and `dydo init` never installs them again. The
   [glossary](../reference/dydo-glossary.md)'s retired-terms paragraph carries the words themselves.
-- The sweep has one deliberate escape hatch: a project-local `skill-<name>.template.md` under a retired
-  name defines that role again and suppresses its cleanup.
 
 ## Related
 

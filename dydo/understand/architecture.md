@@ -39,8 +39,7 @@ container. JSON serialization is source-generated for Native AOT compatibility.
 ## The compiler
 
 `Templates/skill-<name>.template.md` is the role: its frontmatter carries the metadata, its body
-carries the whole methodology. `dydo sync` discovers every shipped skill template plus any project-local
-one under `dydo/_system/templates/`, and emits:
+carries the whole methodology. `dydo sync` discovers every shipped skill template, and emits:
 
 | Output | Host | Emitted for |
 |---|---|---|
@@ -53,10 +52,10 @@ one under `dydo/_system/templates/`, and emits:
 The guarantees this compilation owes a spawned agent are
 [Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10's;
 what each frontmatter key compiles to is in [Customizing Roles](../guides/customizing-roles.md), and
-the pipeline — mirroring, update, cleanup — in
+the pipeline — update, cleanup — in
 [Templates and Customization](./templates-and-customization.md).
 
-`dydo template update` mirrors shipped skill and resource templates plus the framework-owned documents
+`dydo template update` installs the framework-owned documents
 into the project and tracks each by content hash. Everything under `.claude/`, `.codex/`, and
 `.agents/` is a build product: change the source template and sync.
 

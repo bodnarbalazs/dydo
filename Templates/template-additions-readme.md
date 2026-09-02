@@ -26,8 +26,6 @@ Templates ship with `{{include:name}}` tags at natural extension points. Each ta
 
 ## Custom Tags
 
-You can add `{{include:whatever}}` anywhere in a template (`dydo/_system/templates/`). Create the matching `whatever.md` file here. On `dydo template update`, user-added tags are re-anchored into updated templates automatically.
-
 ## File Naming
 
 - `name.md` — active, resolved by `{{include:name}}`

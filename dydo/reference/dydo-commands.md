@@ -28,7 +28,7 @@ dydo init <integration> --join       # wire this machine, or an added runtime, i
 ```
 
 Writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents and
-`files-off-limits.md`, mirrors the shipped templates into `dydo/_system/templates/`, updates
+`files-off-limits.md`, updates
 `.gitignore`, and writes the `CLAUDE.md` entry point — plus `AGENTS.md` when `codex` is selected.
 `claude` and `codex` also install that runtime's `PreToolUse` hook, so every matched tool call reaches
 `dydo guard`; `none` creates the documentation framework with no runtime integration. Nothing is
@@ -46,8 +46,7 @@ Compile the authored skill templates into native Claude Code and Codex artifacts
 dydo sync
 ```
 
-Roles are discovered by enumerating `skill-<name>.template.md`: the shipped set plus any project-local
-template in `dydo/_system/templates/`, which is how a project overrides a role or adds one of its own.
+Roles are discovered by enumerating `skill-<name>.template.md`: the shipped set.
 Frontmatter decides each artifact's shape — `emit: agent` (the default) produces an agent definition
 *and* a skill, `emit: skill` produces the skill alone, `read-only: true` withholds the editing tools,
 `delegates: true` grants the `Agent` tool, and `invocation: explicit` disables model invocation on
@@ -156,20 +155,14 @@ Refresh this project's framework-owned templates and documents to the running dy
 ```bash
 dydo template update
 dydo template update --diff
-dydo template update --force
 ```
 
 - `--diff` previews changes without writing.
-- `--force` overwrites when user include hooks cannot be re-anchored, backing the file up first.
 
-The mirrored templates under `dydo/_system/templates/` and the framework documents in
+The framework documents in
 `dydo/reference/` and `dydo/guides/` are compared against the shipped set. An unmodified copy is
-overwritten. An edited template is replaced whenever the update ships new text — your added
-`{{include:...}}` hooks included; those hooks are re-anchored only when the shipped text is
-unchanged. An edited framework document is left alone and reported instead. A mirrored template dydo
-no longer ships is deleted, but only when its stored hash proves the copy is dydo's — a role a
-project authored itself is untracked and survives. The run also tops up default nudges, scan
-exclusions, and frontmatter types. Warnings exit `1` unless `--force` is given.
+overwritten. An edited framework document is left alone and reported instead. The run also tops up
+default nudges, scan exclusions, and frontmatter types. Warnings exit `1`.
 
 Durable customization belongs in the `{{include:...}}` fragments under
 `dydo/_system/template-additions/`, which this command never rewrites; other edits to framework-owned

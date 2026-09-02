@@ -92,7 +92,7 @@ public class DocScannerTests : IDisposable
     [Fact]
     public void ScanDirectory_DoesNotExcludeTemplates()
     {
-        WriteDoc("_system/templates/foo.template.md");
+        WriteDoc("_system/template-additions/foo.template.md");
         WriteDoc("_system/template-additions/extra-x.md");
 
         var docs = NewScanner().ScanDirectory(_tempDir);

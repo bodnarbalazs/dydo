@@ -4,52 +4,49 @@ using DynaDocs.Models;
 using DynaDocs.Utils;
 
 /// <summary>
-/// Discovers roles from skill templates (the template IS the role — its frontmatter carries
-/// the metadata) and resolves the {source}/{tests} path sets used by tool-scoped nudges.
+/// Discovers roles from the shipped skill templates (the template IS the role — its frontmatter
+/// carries the metadata) and resolves the {source}/{tests} path sets used by tool-scoped nudges.
 /// </summary>
 public class RoleDefinitionService : IRoleDefinitionService
 {
     /// <summary>
-    /// Enumerates every role: the shipped skill templates plus any project-local
-    /// <c>dydo/_system/templates/skill-*.template.md</c> — which is how a custom role
-    /// compiles: drop a skill template in, run <c>dydo sync</c>. Metadata comes from the
+    /// Enumerates every role from the shipped skill templates. Metadata comes from the
     /// template frontmatter: <c>description</c>, <c>emit</c> (agent+skill unless <c>skill</c>),
     /// <c>read-only</c>, <c>delegates</c>, <c>invocation</c>.
     ///
     /// The shipped set already excludes retired names, so sync's retired-artifact sweep is
-    /// never suppressed by a source dydo still carries through a transition. A project-local
-    /// template of a retired name still defines the role — that is the deliberate escape hatch.
+    /// never suppressed by a source dydo still carries through a transition.
     /// </summary>
-    public static List<RoleDefinition> DiscoverRoles(string? projectRoot = null)
+    public static List<RoleDefinition> DiscoverRoles()
     {
-        var templateNames = new SortedSet<string>(
-            TemplateGenerator.GetBuiltInSkillTemplateNames(), StringComparer.OrdinalIgnoreCase);
-        templateNames.UnionWith(TemplateGenerator.GetProjectSkillTemplateNames(projectRoot));
+        return TemplateGenerator.GetBuiltInSkillTemplateNames()
+            .Select(templateFile =>
+                Parse(templateFile, TemplateGenerator.ReadBuiltInTemplate(templateFile)))
+            .ToList();
+    }
 
-        var roles = new List<RoleDefinition>();
-        foreach (var templateFile in templateNames)
+    /// <summary>
+    /// Turns one skill template into its role definition. Throws
+    /// <see cref="InvalidDataException"/> naming the file when <c>invocation</c> is neither
+    /// <c>automatic</c> nor <c>explicit</c>.
+    /// </summary>
+    public static RoleDefinition Parse(string templateFile, string content)
+    {
+        var fields = FrontmatterParser.ParseFields(content) ?? [];
+
+        return new RoleDefinition
         {
-            var name = templateFile["skill-".Length..^".template.md".Length];
-            var fields = FrontmatterParser.ParseFields(
-                TemplateGenerator.ReadTemplate(templateFile, projectRoot)) ?? [];
-            var explicitInvocation = ParseExplicitInvocation(fields, templateFile);
-
-            roles.Add(new RoleDefinition
-            {
-                Name = name,
-                TemplateFile = templateFile,
-                Description = fields.TryGetValue("description", out var d) ? d : "",
-                EmitAgent = !fields.TryGetValue("emit", out var e)
-                    || e.Equals("agent", StringComparison.OrdinalIgnoreCase),
-                ReadOnly = fields.TryGetValue("read-only", out var r)
-                    && r.Equals("true", StringComparison.OrdinalIgnoreCase),
-                Delegates = fields.TryGetValue("delegates", out var g)
-                    && g.Equals("true", StringComparison.OrdinalIgnoreCase),
-                ExplicitInvocation = explicitInvocation,
-            });
-        }
-
-        return roles;
+            Name = templateFile["skill-".Length..^".template.md".Length],
+            TemplateFile = templateFile,
+            Description = fields.TryGetValue("description", out var d) ? d : "",
+            EmitAgent = !fields.TryGetValue("emit", out var e)
+                || e.Equals("agent", StringComparison.OrdinalIgnoreCase),
+            ReadOnly = fields.TryGetValue("read-only", out var r)
+                && r.Equals("true", StringComparison.OrdinalIgnoreCase),
+            Delegates = fields.TryGetValue("delegates", out var g)
+                && g.Equals("true", StringComparison.OrdinalIgnoreCase),
+            ExplicitInvocation = ParseExplicitInvocation(fields, templateFile),
+        };
     }
 
     private static bool ParseExplicitInvocation(

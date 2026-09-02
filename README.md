@@ -100,7 +100,7 @@ after current workflow state changes.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`.
-- **Roles** — shipped source templates or project overrides in `dydo/_system/templates/`.
+- **Roles** — shipped source templates.
 - **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks.
 - **Models** — abstract role tiers and vendor bindings in `dydo.json`.
 
@@ -128,7 +128,6 @@ project/
     |   |-- future-features/     # Unscheduled repo-native ideas
     |   |-- changelog/           # Completed change and release history
     |   `-- pitfalls/            # Recurring gotchas and constraints
-    |-- _system/templates/       # Project template overrides
     |-- _system/template-additions/
     `-- _assets/
 ```

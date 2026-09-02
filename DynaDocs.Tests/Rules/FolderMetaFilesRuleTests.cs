@@ -144,13 +144,13 @@ public class FolderMetaFilesRuleTests
     [Fact]
     public void ValidateFolder_SkipsNonMainFolders()
     {
-        // _system/templates/ should not require meta files
+        // _system/template-additions/ should not require meta files
         var docs = new List<DocFile>
         {
-            CreateDoc("_system/templates/some-template.md")
+            CreateDoc("_system/template-additions/some-template.md")
         };
 
-        var violations = _rule.ValidateFolder("/base/_system/templates", docs, "/base").ToList();
+        var violations = _rule.ValidateFolder("/base/_system/template-additions", docs, "/base").ToList();
 
         Assert.Empty(violations);
     }

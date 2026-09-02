@@ -13,7 +13,7 @@ public class NamingRule : RuleBase
     {
         var normalized = PathUtils.NormalizePath(doc.RelativePath);
 
-        if (RuleSkipPaths.IsTemplateOrAddition(normalized))
+        if (RuleSkipPaths.IsTemplateAddition(normalized))
             yield break;
 
         if (!PathUtils.IsKebabCase(doc.FileName))

@@ -55,8 +55,7 @@ what each frontmatter key compiles to is in [Customizing Roles](../guides/custom
 the pipeline — update, cleanup — in
 [Templates and Customization](./templates-and-customization.md).
 
-`dydo template update` installs the framework-owned documents
-into the project and tracks each by content hash. Everything under `.claude/`, `.codex/`, and
+Everything under `.claude/`, `.codex/`, and
 `.agents/` is a build product: change the source template and sync.
 
 ## Knowledge and work boundary

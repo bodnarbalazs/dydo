@@ -101,7 +101,7 @@ public static class ConfigFactory
                 ["light"] = "gpt-5.6-luna"
             }
         },
-        Roles = new Dictionary<string, string>
+        Agents = new Dictionary<string, string>
         {
             ["code-writer"] = "standard",
             ["docs-writer"] = "standard",
@@ -118,43 +118,6 @@ public static class ConfigFactory
         // harness script, which retries a stage on this same model.
         Fallback = "claude-sonnet-5"
     };
-
-    /// <summary>
-    /// Replaces the retired generic planner binding with both literal planning roles while
-    /// preserving the project's chosen tier. Idempotent and leaves configs without the legacy
-    /// binding untouched.
-    /// </summary>
-    public static bool UpgradeLegacyPlannerRole(DydoConfig config)
-    {
-        var roles = config.Models?.Roles;
-        if (roles == null || !roles.Remove("planner", out var tier))
-            return false;
-
-        roles.TryAdd("project-planner", tier);
-        roles.TryAdd("issue-planner", tier);
-        return true;
-    }
-
-    /// <summary>
-    /// Upgrades the exact OpenAI tier block emitted by older versions. A project that
-    /// customized any tier is left untouched.
-    /// </summary>
-    public static bool UpgradeLegacyOpenAiTierDefaults(DydoConfig config)
-    {
-        var models = config.Models;
-        if (models == null
-            || !models.Tiers.TryGetValue("openai", out var openAi)
-            || openAi.Count != 3
-            || !openAi.All(pair => pair.Key is "strong" or "standard" or "light"
-                && pair.Value == "gpt-5.5"))
-            return false;
-
-        openAi["strong"] = "gpt-5.6-sol";
-        openAi["standard"] = "gpt-5.6-terra";
-        openAi["light"] = "gpt-5.6-luna";
-
-        return true;
-    }
 
     public static DydoConfig CreateDefault()
     {

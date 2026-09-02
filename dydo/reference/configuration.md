@@ -36,7 +36,7 @@ through Linear's official surfaces.
       "anthropic": { "strong": "claude-fable-5" },
       "openai": { "strong": "gpt-5.6-sol" }
     },
-    "roles": {
+    "agents": {
       "reviewer": "strong",
       "code-writer": "standard"
     },
@@ -66,7 +66,7 @@ through Linear's official surfaces.
 | `integrations.claude` | boolean | Whether Claude Code integration is wired. |
 | `integrations.codex` | boolean | Whether Codex integration is wired. |
 | `models.tiers` | object | Vendor-specific model bindings for abstract tiers. |
-| `models.roles` | object | Role-to-tier bindings resolved by `dydo sync`. |
+| `models.agents` | object | Agent-to-tier bindings resolved by `dydo sync`. |
 | `models.efforts` | object | Optional reasoning-effort overrides. |
 | `models.fallback` | string or null | Optional fallback model for temporary caps. |
 | `scanExclude` | string[] | Paths excluded from documentation scanning. |
@@ -96,7 +96,7 @@ orchestration to the host runtime.
 
 ## Model tiers
 
-Roles bind to abstract tiers such as `strong`, `standard`, and `light`; vendor blocks bind those
+Agents bind to abstract tiers such as `strong`, `standard`, and `light`; vendor blocks bind those
 tiers to concrete models. `dydo sync` resolves the current bindings when it compiles native artifacts.
 Use `dydo model cap`, `dydo model status`, and `dydo model uncap` for temporary availability caps
 instead of editing compiled agents.

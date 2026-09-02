@@ -65,8 +65,10 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
         AssertFileContains("dydo.json", "\"version\": 1");
-        // New inits no longer emit an agents/pool/assignments section (DR-041).
-        Assert.DoesNotContain("\"agents\"", ReadFile("dydo.json"));
+        // New inits no longer emit an agents/pool/assignments section (DR-041). The nested
+        // models.agents tier bindings are a different key and must not trip this.
+        var config = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile("dydo.json")));
+        Assert.False(config.ContainsKey("agents"));
     }
 
     [Fact]

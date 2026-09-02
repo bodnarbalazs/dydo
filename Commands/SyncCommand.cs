@@ -380,22 +380,22 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// Resolves role → tier → concrete model for the compile vendor (Decision 028).
-    /// Null model means "no binding" — unmapped role, absent models section, or a tier
+    /// Resolves agent → tier → concrete model for the compile vendor (Decision 028).
+    /// Null model means "no binding" — unmapped agent, absent models section, or a tier
     /// missing from the vendor map — and the caller emits <c>model: inherit</c> so the
     /// agent runs on the session model instead of silently downgrading.
     /// </summary>
-    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string roleName)
-        => ResolveModel(models, roleName, ClaudeModelVendor);
+    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string agentName)
+        => ResolveModel(models, agentName, ClaudeModelVendor);
 
-    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string roleName, string vendor)
+    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string agentName, string vendor)
     {
-        if (models == null || !models.Roles.TryGetValue(roleName, out var tier))
+        if (models == null || !models.Agents.TryGetValue(agentName, out var tier))
             return (null, null);
         if (!models.Tiers.TryGetValue(vendor, out var vendorTiers)
             || !vendorTiers.TryGetValue(tier, out var model))
             return (null, null);
-        return (model, models.Efforts.GetValueOrDefault(roleName));
+        return (model, models.Efforts.GetValueOrDefault(agentName));
     }
 
     private static string BuildCodexAgent(RoleDefinition role, List<string> mustReads, ModelsConfig? models)

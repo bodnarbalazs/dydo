@@ -1391,7 +1391,7 @@ public class SyncCommandTests : IDisposable
         {
             ["anthropic"] = new() { ["strong"] = "model-strong", ["standard"] = "model-standard" }
         },
-        Roles = new Dictionary<string, string>
+        Agents = new Dictionary<string, string>
         {
             ["reviewer"] = "strong",
             ["code-writer"] = "standard",
@@ -1515,7 +1515,7 @@ public class SyncCommandTests : IDisposable
                   "version": 1,
                   "models": {
                     "tiers": { "anthropic": { "strong": "vendor-strong-model" } },
-                    "roles": { "reviewer": "strong" }
+                    "agents": { "reviewer": "strong" }
                   }
                 }
                 """);
@@ -1541,7 +1541,7 @@ public class SyncCommandTests : IDisposable
         // The shipped defaults (Decision 028) must actually bind: every role in the
         // default role → tier map resolves to a concrete model.
         var models = ConfigFactory.CreateDefaultModels();
-        foreach (var role in models.Roles.Keys)
+        foreach (var role in models.Agents.Keys)
         {
             var (model, _) = SyncCommand.ResolveModel(models, role);
             Assert.False(string.IsNullOrEmpty(model), $"default tier for '{role}' did not resolve");

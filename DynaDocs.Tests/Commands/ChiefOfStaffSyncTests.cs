@@ -20,7 +20,7 @@ public class ChiefOfStaffSyncTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
-    // The shipped source carries the role's shape and what the role must never grow: a personal
+    // The shipped source carries the skill's shape and what the skill must never grow: a personal
     // memory store, or the retired tier doctrine.
     [Fact]
     public void AuthoredChiefOfStaffTemplate_HasExpectedShapeAndExcludesPersonalMemoryPolicy()
@@ -40,17 +40,17 @@ public class ChiefOfStaffSyncTests : IDisposable
     [Fact]
     public void SyncChiefOfStaff_EmitsIdenticalSkillsWithoutAgentDefinitions()
     {
-        var role = RoleDefinitionService.DiscoverRoles()
+        var template = SkillTemplateService.DiscoverSkills()
             .Single(candidate => candidate.Name == "chief-of-staff");
         var claudeSkill = Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md");
         var codexSkill = Path.Combine(_testDir, ".agents", "skills", "chief-of-staff", "SKILL.md");
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
 
         // One authored source, so both hosts get the same body. Only the invocation policy is
         // host-shaped — Claude carries it in frontmatter, Codex in a sibling yaml — so comparing
-        // whole files would go red the day this role becomes explicit-only. A link to the role's
+        // whole files would go red the day this skill becomes explicit-only. A link to the skill's
         // own resources carries the host's skill root, so that prefix is normalized away too.
         Assert.Equal(
             SyncCommandTests.NormalizeHostSkillRoot(
@@ -58,7 +58,7 @@ public class ChiefOfStaffSyncTests : IDisposable
             SyncCommandTests.NormalizeHostSkillRoot(
                 FrontmatterParser.StripFrontmatter(File.ReadAllText(codexSkill))));
         Assert.Equal(
-            role.ExplicitInvocation,
+            template.ExplicitInvocation,
             File.ReadAllText(claudeSkill).Contains("disable-model-invocation: true"));
         Assert.DoesNotContain("disable-model-invocation", File.ReadAllText(codexSkill));
         Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "chief-of-staff.md")));
@@ -66,8 +66,8 @@ public class ChiefOfStaffSyncTests : IDisposable
 
         var firstClaude = File.ReadAllBytes(claudeSkill);
         var firstCodex = File.ReadAllBytes(codexSkill);
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
         Assert.Equal(firstClaude, File.ReadAllBytes(claudeSkill));
         Assert.Equal(firstCodex, File.ReadAllBytes(codexSkill));
     }

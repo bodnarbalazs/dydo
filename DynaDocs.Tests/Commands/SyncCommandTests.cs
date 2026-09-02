@@ -12,13 +12,13 @@ using Xunit;
 public class SyncCommandTests : IDisposable
 {
     private readonly string _testDir;
-    private readonly RoleDefinition _reviewer;
+    private readonly SkillTemplate _reviewer;
 
     public SyncCommandTests()
     {
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-sync-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
-        _reviewer = RoleDefinitionService.DiscoverRoles().First(r => r.Name == "reviewer");
+        _reviewer = SkillTemplateService.DiscoverSkills().First(r => r.Name == "reviewer");
     }
 
     public void Dispose()
@@ -27,9 +27,9 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_WritesAgentAndSkillFiles()
+    public void SyncAgent_WritesAgentAndSkillFiles()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
 
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md")));
@@ -121,8 +121,8 @@ public class SyncCommandTests : IDisposable
 
     // DR 045: the orchestrator retires into the admiral hat. Its template file still ships
     // through the transition, so a retired name must leave the shipped template set — otherwise
-    // the role stays "active", the sweep below is suppressed by dydo's own source, and the stale
-    // skill folder outlives the role on both hosts.
+    // the skill stays "active", the sweep below is suppressed by dydo's own source, and the stale
+    // skill folder outlives the skill on both hosts.
     [Fact]
     public void Execute_RetiredOrchestrator_RemovesStaleSkillFoldersOnBothHosts()
     {
@@ -142,16 +142,16 @@ public class SyncCommandTests : IDisposable
         Assert.All(stale, file => Assert.False(File.Exists(file), file));
         Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude", "skills", "orchestrator")));
         Assert.False(Directory.Exists(Path.Combine(_testDir, ".agents", "skills", "orchestrator")));
-        Assert.DoesNotContain(RoleDefinitionService.DiscoverRoles(), r => r.Name == "orchestrator");
+        Assert.DoesNotContain(SkillTemplateService.DiscoverSkills(), s => s.Name == "orchestrator");
     }
 
     [Fact]
     public void Execute_ImplementerToIssueCaptainMigration_SweepsLegacyArtifactsAndEmitsReplacement()
     {
-        Assert.Contains("implementer", SyncCommand.RetiredManagedRoles);
+        Assert.Contains("implementer", SyncCommand.RetiredSkills);
 
         var issueCaptain = Assert.Single(
-            RoleDefinitionService.DiscoverRoles(), role => role.Name == "issue-captain");
+            SkillTemplateService.DiscoverSkills(), skill => skill.Name == "issue-captain");
         Assert.True(issueCaptain.EmitAgent);
         Assert.True(issueCaptain.Delegates);
 
@@ -182,10 +182,10 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void Execute_ManagerToAdmiralMigration_SweepsLegacyArtifactsAndEmitsReplacement()
     {
-        Assert.Contains("manager", SyncCommand.RetiredManagedRoles);
+        Assert.Contains("manager", SyncCommand.RetiredSkills);
 
         var admiral = Assert.Single(
-            RoleDefinitionService.DiscoverRoles(), role => role.Name == "admiral");
+            SkillTemplateService.DiscoverSkills(), skill => skill.Name == "admiral");
         Assert.False(admiral.EmitAgent);
         Assert.True(admiral.ExplicitInvocation);
 
@@ -259,20 +259,20 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCodexRole_WritesAgentAndRepoSkillFiles()
+    public void SyncCodexAgent_WritesAgentAndRepoSkillFiles()
     {
-        SyncCommand.SyncCodexRole(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
 
         Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
         Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
     }
 
-    // DR-039 review-target subskills / DR-042: <role>-resource-<name>.template.md files
+    // DR-039 review-target subskills / DR-042: <skill>-resource-<name>.template.md files
     // compile into the skill's resources/ folder, on both the Claude and Codex emit paths.
     [Fact]
-    public void SyncRole_EmitsSkillReferences_BothPlanRubrics()
+    public void SyncAgent_EmitsSkillReferences_BothPlanRubrics()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
 
         foreach (var name in new[] { "project-plan.md", "issue-plan.md" })
         {
@@ -295,57 +295,57 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncSkillOnlyRole_ExplicitInvocation_EmitsClaudePolicyOnly()
+    public void SyncSkill_ExplicitInvocation_EmitsClaudePolicyOnly()
     {
-        var role = ExplicitRole();
+        var template = ExplicitSkill();
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
 
         var skill = File.ReadAllText(
-            Path.Combine(_testDir, ".claude", "skills", role.Name, "SKILL.md"));
+            Path.Combine(_testDir, ".claude", "skills", template.Name, "SKILL.md"));
         Assert.Contains("\ndisable-model-invocation: true\n", skill);
-        Assert.Equal(1, skill.Split('\n').Count(line => line == $"description: {role.Description}"));
+        Assert.Equal(1, skill.Split('\n').Count(line => line == $"description: {template.Description}"));
     }
 
     [Fact]
-    public void SyncSkillOnlyRole_AutomaticInvocation_OmitsClaudePolicy()
+    public void SyncSkill_AutomaticInvocation_OmitsClaudePolicy()
     {
-        var role = AutomaticSkillOnlyRole();
+        var template = AutomaticSkill();
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
 
         var skill = File.ReadAllText(
-            Path.Combine(_testDir, ".claude", "skills", role.Name, "SKILL.md"));
+            Path.Combine(_testDir, ".claude", "skills", template.Name, "SKILL.md"));
         Assert.DoesNotContain("disable-model-invocation", skill);
-        Assert.Contains($"description: {role.Description}\n", skill);
+        Assert.Contains($"description: {template.Description}\n", skill);
     }
 
     [Fact]
     public void SyncCodexSkill_ExplicitInvocation_EmitsOpenAiPolicy()
     {
-        var role = ExplicitRole();
+        var template = ExplicitSkill();
 
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
 
         var skill = File.ReadAllText(
-            Path.Combine(_testDir, ".agents", "skills", role.Name, "SKILL.md"));
+            Path.Combine(_testDir, ".agents", "skills", template.Name, "SKILL.md"));
         var policy = File.ReadAllText(
-            Path.Combine(_testDir, ".agents", "skills", role.Name, "agents", "openai.yaml"));
+            Path.Combine(_testDir, ".agents", "skills", template.Name, "agents", "openai.yaml"));
         Assert.DoesNotContain("disable-model-invocation", skill);
-        Assert.Contains($"description: {role.Description}\n", skill);
+        Assert.Contains($"description: {template.Description}\n", skill);
         Assert.Equal("policy:\n  allow_implicit_invocation: false\n", policy);
     }
 
     [Fact]
     public void SyncCodexSkill_AutomaticInvocation_RemovesStalePolicy()
     {
-        var role = AutomaticSkillOnlyRole();
-        var agentsDir = Path.Combine(_testDir, ".agents", "skills", role.Name, "agents");
+        var template = AutomaticSkill();
+        var agentsDir = Path.Combine(_testDir, ".agents", "skills", template.Name, "agents");
         Directory.CreateDirectory(agentsDir);
         var policyFile = Path.Combine(agentsDir, "openai.yaml");
         File.WriteAllText(policyFile, "policy:\n  allow_implicit_invocation: false\n");
 
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
 
         Assert.False(File.Exists(policyFile));
         Assert.False(Directory.Exists(agentsDir));
@@ -354,36 +354,36 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncSkill_RepeatEmission_IsByteIdenticalIncludingInvocationPolicy()
     {
-        var role = ExplicitRole();
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        var template = ExplicitSkill();
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
         var files = new[]
         {
-            Path.Combine(_testDir, ".claude", "skills", role.Name, "SKILL.md"),
-            Path.Combine(_testDir, ".agents", "skills", role.Name, "SKILL.md"),
-            Path.Combine(_testDir, ".agents", "skills", role.Name, "agents", "openai.yaml"),
+            Path.Combine(_testDir, ".claude", "skills", template.Name, "SKILL.md"),
+            Path.Combine(_testDir, ".agents", "skills", template.Name, "SKILL.md"),
+            Path.Combine(_testDir, ".agents", "skills", template.Name, "agents", "openai.yaml"),
         };
         var first = files.ToDictionary(path => path, File.ReadAllBytes);
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
 
         Assert.All(files, path => Assert.Equal(first[path], File.ReadAllBytes(path)));
     }
 
-    // Which roles are human-only is DR 045 section 9's to decide and the taxonomy Issues' to set,
-    // so the invocation fixtures take whatever the shipped role set currently declares.
-    private RoleDefinition ExplicitRole() =>
-        RoleDefinitionService.DiscoverRoles().First(role => role.ExplicitInvocation);
+    // Which skills are human-only is DR 045 section 9's to decide and the taxonomy Issues' to set,
+    // so the invocation fixtures take whatever the shipped set currently declares.
+    private SkillTemplate ExplicitSkill() =>
+        SkillTemplateService.DiscoverSkills().First(skill => skill.ExplicitInvocation);
 
-    private RoleDefinition AutomaticSkillOnlyRole() =>
-        RoleDefinitionService.DiscoverRoles()
-            .First(role => !role.ExplicitInvocation && !role.EmitAgent);
+    private SkillTemplate AutomaticSkill() =>
+        SkillTemplateService.DiscoverSkills()
+            .First(skill => !skill.ExplicitInvocation && !skill.EmitAgent);
 
     [Fact]
-    public void SyncRole_DescriptionsPassThroughExactly()
+    public void SyncAgent_DescriptionsPassThroughExactly()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
         var skill = File.ReadAllText(
@@ -393,7 +393,7 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void GetSkillResources_RoleWithoutReferences_IsEmpty()
+    public void GetSkillResources_SkillWithoutReferences_IsEmpty()
     {
         Assert.Empty(TemplateGenerator.GetSkillResources("docs-writer"));
     }
@@ -431,18 +431,18 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCodexRole_EmitsStrongOpenAiModelBinding()
+    public void SyncCodexAgent_EmitsStrongOpenAiModelBinding()
     {
-        SyncCommand.SyncCodexRole(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         Assert.Contains("model = \"gpt-5.6-sol\"", agent);
     }
 
     [Fact]
-    public void SyncCodexRole_WithoutModelBinding_UsesStandardOpenAiFallback()
+    public void SyncCodexAgent_WithoutModelBinding_UsesStandardOpenAiFallback()
     {
-        SyncCommand.SyncCodexRole(_reviewer, _testDir);
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         Assert.Contains("model = \"gpt-5.6-terra\"", agent);
@@ -451,31 +451,31 @@ public class SyncCommandTests : IDisposable
     [Theory]
     [InlineData("reviewer")]
     [InlineData("inquisitor")]
-    public void SyncCodexRole_ReadOnlyWorker_EmitsSingleReadOnlySandboxImmediatelyAfterModel(string roleName)
+    public void SyncCodexAgent_ReadOnlyWorker_EmitsSingleReadOnlySandboxImmediatelyAfterModel(string skillName)
     {
-        var role = RoleDefinitionService.DiscoverRoles().Single(r => r.Name == roleName);
+        var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
 
-        SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
         var lines = agent.Split('\n');
         var modelIndex = Array.FindIndex(lines, line => line.StartsWith("model = \"", StringComparison.Ordinal));
 
-        Assert.StartsWith($"name = \"{roleName}\"\ndescription = \"", agent);
+        Assert.StartsWith($"name = \"{skillName}\"\ndescription = \"", agent);
         Assert.True(modelIndex >= 0, "Codex agent must emit a quoted model line.");
         Assert.Equal("sandbox_mode = \"read-only\"", lines[modelIndex + 1]);
         Assert.Equal(1, lines.Count(line => line == "sandbox_mode = \"read-only\""));
         Assert.DoesNotContain('\r', agent);
     }
 
-    // DR 045 section 10: a Codex writer role needs the workspace-write sandbox, or it cannot act
-    // on the methodology it was told to load. Read-only roles keep their narrower sandbox.
+    // DR 045 section 10: a Codex writing agent needs the workspace-write sandbox, or it cannot act
+    // on the methodology it was told to load. Read-only agents keep their narrower sandbox.
     [Fact]
-    public void SyncCodexRole_WritableWorker_GetsWorkspaceWriteSandbox()
+    public void SyncCodexAgent_WritableWorker_GetsWorkspaceWriteSandbox()
     {
-        var codeWriter = RoleDefinitionService.DiscoverRoles().Single(r => r.Name == "code-writer");
+        var codeWriter = SkillTemplateService.DiscoverSkills().Single(s => s.Name == "code-writer");
 
-        SyncCommand.SyncCodexRole(codeWriter, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(codeWriter, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "code-writer.toml"));
         var lines = agent.Split('\n');
@@ -487,9 +487,9 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCodexRole_ReadOnlyRoleWithQuotedDescription_EscapesTomlAndUsesLf()
+    public void SyncCodexAgent_ReadOnlySkillWithQuotedDescription_EscapesTomlAndUsesLf()
     {
-        var reviewer = new RoleDefinition
+        var reviewer = new SkillTemplate
         {
             Name = "reviewer",
             TemplateFile = "skill-reviewer.template.md",
@@ -498,7 +498,7 @@ public class SyncCommandTests : IDisposable
             ReadOnly = true,
         };
 
-        SyncCommand.SyncCodexRole(reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(reviewer, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         Assert.Contains("description = \"Project \\\"reviewer\\\".\"", agent);
@@ -507,45 +507,45 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCodexRole_SecondIsolatedEmit_IsByteIdentical()
+    public void SyncCodexAgent_SecondIsolatedEmit_IsByteIdentical()
     {
-        var roles = RoleDefinitionService.DiscoverRoles()
-            .Where(role => role.Name is "reviewer" or "inquisitor" or "code-writer")
+        var skills = SkillTemplateService.DiscoverSkills()
+            .Where(skill => skill.Name is "reviewer" or "inquisitor" or "code-writer")
             .ToList();
 
-        foreach (var role in roles)
-            SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+        foreach (var skill in skills)
+            SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
 
-        var firstEmit = roles.ToDictionary(
-            role => role.Name,
-            role => File.ReadAllBytes(Path.Combine(_testDir, ".codex", "agents", $"{role.Name}.toml")));
+        var firstEmit = skills.ToDictionary(
+            skill => skill.Name,
+            skill => File.ReadAllBytes(Path.Combine(_testDir, ".codex", "agents", $"{skill.Name}.toml")));
 
-        foreach (var role in roles)
-            SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+        foreach (var skill in skills)
+            SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
 
-        foreach (var role in roles)
+        foreach (var skill in skills)
         {
-            var path = Path.Combine(_testDir, ".codex", "agents", $"{role.Name}.toml");
-            Assert.Equal(firstEmit[role.Name], File.ReadAllBytes(path));
+            var path = Path.Combine(_testDir, ".codex", "agents", $"{skill.Name}.toml");
+            Assert.Equal(firstEmit[skill.Name], File.ReadAllBytes(path));
         }
     }
 
     [Theory]
     [InlineData("code-writer", "gpt-5.6-terra")]
     [InlineData("docs-writer", "gpt-5.6-terra")]
-    public void SyncCodexRole_DefaultModels_EmitsTierCorrectModel(string roleName, string expectedModel)
+    public void SyncCodexAgent_DefaultModels_EmitsTierCorrectModel(string skillName, string expectedModel)
     {
-        var role = RoleDefinitionService.DiscoverRoles().First(r => r.Name == roleName);
-        SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+        var skill = SkillTemplateService.DiscoverSkills().First(s => s.Name == skillName);
+        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
         Assert.Contains($"model = \"{expectedModel}\"", agent);
     }
 
     [Fact]
-    public void SyncCodexRole_EmitsDeveloperInstructions()
+    public void SyncCodexAgent_EmitsDeveloperInstructions()
     {
-        SyncCommand.SyncCodexRole(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         var mustReads = SyncCommand.ExtractMustReads(_reviewer, _testDir);
@@ -561,40 +561,40 @@ public class SyncCommandTests : IDisposable
     // ToolsToml struct of codex toggles (view_image, web_search), NOT file/shell tool names.
     // The old emitter wrote `tools = "read, grep, glob, bash, ..."` — a bare string codex
     // rejects with 'invalid type: string ... expected struct ToolsToml', silently ignoring
-    // every worker role. The fix drops the field; these pin that no worker role emits it,
+    // every agent. The fix drops the field; these pin that no agent emits it,
     // for either the read-only or the read-write branch.
     [Theory]
     [InlineData("reviewer")]
     [InlineData("project-planner")]
     [InlineData("issue-planner")]
     [InlineData("code-writer")]
-    public void SyncCodexRole_OmitsToolsField(string roleName)
+    public void SyncCodexAgent_OmitsToolsField(string skillName)
     {
-        var role = RoleDefinitionService.DiscoverRoles().First(r => r.Name == roleName);
+        var skill = SkillTemplateService.DiscoverSkills().First(s => s.Name == skillName);
 
-        SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
         Assert.DoesNotContain(agent.Split('\n'), line => line.TrimStart().StartsWith("tools"));
         // Fields codex does accept remain intact — the drop is surgical, not structural.
-        Assert.Contains($"name = \"{roleName}\"", agent);
+        Assert.Contains($"name = \"{skillName}\"", agent);
         Assert.Contains("description = \"", agent);
         Assert.Contains("model = \"", agent);
         Assert.Contains("developer_instructions = \"\"\"", agent);
     }
 
     [Fact]
-    public void SyncRole_Agent_HasReadOnlyToolProfileAndFrontmatter()
+    public void SyncAgent_Agent_HasReadOnlyToolProfileAndFrontmatter()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
 
         Assert.Contains("name: reviewer\n", agent);
-        // Read-only role → no Edit/Write tools (that's how "reviewers don't write code" is native-enforced)
+        // Read-only skill → no Edit/Write tools (that's how "reviewers don't write code" is native-enforced)
         Assert.Contains("tools: Read, Grep, Glob, Bash, Skill\n", agent);
         Assert.DoesNotContain("Edit", ToolsLine(agent));
         Assert.DoesNotContain("Write", ToolsLine(agent));
-        // Carries this role's own project-context must-reads, whatever its source names.
+        // Carries this skill's own project-context must-reads, whatever its source names.
         var mustReads = SyncCommand.ExtractMustReads(_reviewer, _testDir);
         Assert.NotEmpty(mustReads);
         Assert.All(mustReads, path => Assert.Contains($"- {path}", agent));
@@ -610,25 +610,25 @@ public class SyncCommandTests : IDisposable
     [InlineData("code-writer")]
     [InlineData("docs-writer")]
     [InlineData("inquisitor")]
-    public void SyncRole_Agent_PreloadsItsOwnSkillAndCarriesTheSkillTool(string roleName)
+    public void SyncAgent_Agent_PreloadsItsOwnSkillAndCarriesTheSkillTool(string skillName)
     {
-        var role = RoleDefinitionService.DiscoverRoles().Single(r => r.Name == roleName);
+        var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
 
-        SyncCommand.SyncRole(role, _testDir);
+        SyncCommand.SyncAgent(skill, _testDir);
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md"));
-        Assert.Contains($"skills: [{roleName}]\n", agent);
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", $"{skillName}.md"));
+        Assert.Contains($"skills: [{skillName}]\n", agent);
         Assert.Contains("Skill", ToolsLine(agent));
     }
 
     // `delegates: true` is the only thing that grants the Agent tool: a worker that could fan out
     // would turn a reviewed one-writer contract into an unreviewed tree of writers.
     [Fact]
-    public void SyncRole_DelegatingRole_GetsTheAgentTool()
+    public void SyncAgent_DelegatingSkill_GetsTheAgentTool()
     {
-        // No shipped role delegates, so the flag is set on a constructed definition; its
+        // No shipped skill delegates, so the flag is set on a constructed template; its
         // TemplateFile names a shipped template because that is where the body comes from.
-        var delegator = new RoleDefinition
+        var delegator = new SkillTemplate
         {
             Name = "delegator",
             TemplateFile = "skill-reviewer.template.md",
@@ -637,7 +637,7 @@ public class SyncCommandTests : IDisposable
             Delegates = true,
         };
 
-        SyncCommand.SyncRole(delegator, _testDir);
+        SyncCommand.SyncAgent(delegator, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "delegator.md"));
         Assert.Contains("Agent", ToolsLine(agent));
@@ -646,14 +646,14 @@ public class SyncCommandTests : IDisposable
     [Theory]
     [InlineData("reviewer")]
     [InlineData("code-writer")]
-    public void SyncRole_WorkerWithoutDelegation_NeverGetsTheAgentTool(string roleName)
+    public void SyncAgent_WorkerWithoutDelegation_NeverGetsTheAgentTool(string skillName)
     {
-        var role = RoleDefinitionService.DiscoverRoles().Single(r => r.Name == roleName);
-        Assert.False(role.Delegates);
+        var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
+        Assert.False(skill.Delegates);
 
-        SyncCommand.SyncRole(role, _testDir);
+        SyncCommand.SyncAgent(skill, _testDir);
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md"));
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", $"{skillName}.md"));
         Assert.DoesNotContain("Agent", ToolsLine(agent));
     }
 
@@ -662,14 +662,14 @@ public class SyncCommandTests : IDisposable
     [Theory]
     [InlineData("reviewer")]
     [InlineData("code-writer")]
-    public void SyncCodexRole_DeveloperInstructions_NameTheSkillToLoad(string roleName)
+    public void SyncCodexAgent_DeveloperInstructions_NameTheSkillToLoad(string skillName)
     {
-        var role = RoleDefinitionService.DiscoverRoles().Single(r => r.Name == roleName);
+        var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
 
-        SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
 
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
-        Assert.Contains($"Load the `${roleName}` skill before working.", agent);
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
+        Assert.Contains($"Load the `${skillName}` skill before working.", agent);
     }
 
     private static string ToolsLine(string agent) =>
@@ -679,9 +679,9 @@ public class SyncCommandTests : IDisposable
     // without its context pointers and {{include:extra-must-reads}} silently resolved to nothing.
     // Every authored section now survives into the compiled body.
     [Fact]
-    public void SyncRole_Skill_KeepsEveryAuthoredSection_MustReadsIncluded()
+    public void SyncAgent_Skill_KeepsEveryAuthoredSection_MustReadsIncluded()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
         var template = TemplateGenerator.ReadBuiltInTemplate(_reviewer.TemplateFile);
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md"));
 
@@ -699,9 +699,9 @@ public class SyncCommandTests : IDisposable
     [Theory]
     [InlineData(".claude")]
     [InlineData(".agents")]
-    public void SyncRole_Skill_LinksResolveFromTheEmittedSkillFolder(string host)
+    public void SyncAgent_Skill_LinksResolveFromTheEmittedSkillFolder(string host)
     {
-        // Materialize whatever this role actually points at, so the check follows its source.
+        // Materialize whatever this skill actually points at, so the check follows its source.
         var mustReads = SyncCommand.ExtractMustReads(_reviewer, _testDir);
         Assert.NotEmpty(mustReads);
         foreach (var path in mustReads)
@@ -711,8 +711,8 @@ public class SyncCommandTests : IDisposable
             File.WriteAllText(file, "# context");
         }
 
-        if (host == ".claude") SyncCommand.SyncRole(_reviewer, _testDir);
-        else SyncCommand.SyncCodexRole(_reviewer, _testDir);
+        if (host == ".claude") SyncCommand.SyncAgent(_reviewer, _testDir);
+        else SyncCommand.SyncCodexAgent(_reviewer, _testDir);
 
         var skillDir = Path.Combine(_testDir, host, "skills", "reviewer");
         var skill = File.ReadAllText(Path.Combine(skillDir, "SKILL.md"));
@@ -759,9 +759,9 @@ public class SyncCommandTests : IDisposable
     // A resource body is authored one folder deeper than SKILL.md, so its climbs already resolve
     // from resources/. The skill-body rewrite must not reach it.
     [Fact]
-    public void SyncRole_SkillResources_AreCopiedVerbatim()
+    public void SyncAgent_SkillResources_AreCopiedVerbatim()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
 
         foreach (var (fileName, expected) in TemplateGenerator.GetSkillResources("reviewer"))
         {
@@ -774,15 +774,15 @@ public class SyncCommandTests : IDisposable
     // {{include:extra-must-reads}} is the project's hook for adding its own context pointers.
     // While the compiler dropped ## Must-Reads it resolved into a section nobody ever saw.
     [Fact]
-    public void SyncSkillOnlyRole_ResolvesTheExtraMustReadsInclude()
+    public void SyncSkill_ResolvesTheExtraMustReadsInclude()
     {
         var additions = Path.Combine(_testDir, "dydo", "_system", "template-additions");
         Directory.CreateDirectory(additions);
         File.WriteAllText(Path.Combine(additions, "extra-must-reads.md"),
             "9. [house-rules.md](../../../guides/house-rules.md)");
-        var role = RoleDefinitionService.DiscoverRoles().Single(r => r.Name == "chief-of-staff");
+        var template = SkillTemplateService.DiscoverSkills().Single(s => s.Name == "chief-of-staff");
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
 
         var skill = File.ReadAllText(
             Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md"));
@@ -828,10 +828,10 @@ public class SyncCommandTests : IDisposable
 
     /// <summary>
     /// Collapses the two hosts' skill roots to one token so a compiled body can be compared
-    /// across hosts. SyncCommand.RewriteSkillLinks turns a role's own <c>resources/&lt;n&gt;.md</c>
+    /// across hosts. SyncCommand.RewriteSkillLinks turns a skill's own <c>resources/&lt;n&gt;.md</c>
     /// link into the host's emitted path — <c>.claude/skills/…</c> for Claude, <c>.agents/skills/…</c>
     /// for Codex — so a skill that links its own resource legitimately differs at exactly those
-    /// links and nowhere else. Only the prefix is normalized; everything after it, the role name
+    /// links and nowhere else. Only the prefix is normalized; everything after it, the skill name
     /// and the resource file included, still compares byte-exact, so real divergence still fails.
     /// </summary>
     internal static string NormalizeHostSkillRoot(string content) =>
@@ -847,7 +847,7 @@ public class SyncCommandTests : IDisposable
 
         Assert.Equal(NormalizeHostSkillRoot(claude), NormalizeHostSkillRoot(codex));
         // Both segments the summary above enumerates, because this fixture is the only guard on
-        // the helper's width: a normalization that also collapsed the role folder would still
+        // the helper's width: a normalization that also collapsed the skill folder would still
         // pass the resource-file inversion, and would then hide a genuinely divergent link.
         Assert.NotEqual(
             NormalizeHostSkillRoot(claude),
@@ -885,38 +885,38 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_WriterRole_GetsWriterToolsAndStance()
+    public void SyncAgent_WritingSkill_GetsWriterToolsAndStance()
     {
-        var codeWriter = RoleDefinitionService.DiscoverRoles().First(r => r.Name == "code-writer");
-        SyncCommand.SyncRole(codeWriter, _testDir);
+        var codeWriter = SkillTemplateService.DiscoverSkills().First(s => s.Name == "code-writer");
+        SyncCommand.SyncAgent(codeWriter, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
-        // A writer role gets Edit/Write AND writer-stance prose — not the read-only contradiction
+        // A writing agent gets Edit/Write AND writer-stance prose — not the read-only contradiction
         Assert.Contains("Edit, Write", agent);
         Assert.Contains("produce and modify the project's files", agent);
         Assert.DoesNotContain("read-only", agent);
 
-        // The skill description must be role-correct, not reviewer-hardcoded
+        // The skill description must be skill-correct, not reviewer-hardcoded
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "code-writer", "SKILL.md"));
         Assert.DoesNotContain("reviewing a code change", skill);
         Assert.Contains($"description: {codeWriter.Description}\n", skill);
     }
 
-    // Each role points at its own context: the extracted list is normalized to dydo-relative
-    // paths the agent prompt can hand to Read, every entry is named by that role's own template,
-    // and the lists are not one shared default. Which documents a role names is its source's
+    // Each skill points at its own context: the extracted list is normalized to dydo-relative
+    // paths the agent prompt can hand to Read, every entry is named by that skill's own template,
+    // and the lists are not one shared default. Which documents a skill names is its source's
     // business, so nothing here pins a filename.
     [Fact]
-    public void ExtractMustReads_AreRoleSpecific_AndComeFromTheRolesOwnTemplate()
+    public void ExtractMustReads_AreSkillSpecific_AndComeFromTheSkillsOwnTemplate()
     {
-        var roles = RoleDefinitionService.DiscoverRoles();
-        var lists = roles.ToDictionary(
-            role => role.Name, role => SyncCommand.ExtractMustReads(role, _testDir));
+        var skills = SkillTemplateService.DiscoverSkills();
+        var lists = skills.ToDictionary(
+            skill => skill.Name, skill => SyncCommand.ExtractMustReads(skill, _testDir));
 
-        foreach (var role in roles)
+        foreach (var skill in skills)
         {
-            var template = TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile).Replace("\r\n", "\n");
-            foreach (var path in lists[role.Name])
+            var template = TemplateGenerator.ReadBuiltInTemplate(skill.TemplateFile).Replace("\r\n", "\n");
+            foreach (var path in lists[skill.Name])
             {
                 Assert.StartsWith("dydo/", path);
                 Assert.Contains(path["dydo/".Length..], template);
@@ -928,7 +928,7 @@ public class SyncCommandTests : IDisposable
                 .Select(list => string.Join('|', list))
                 .Distinct()
                 .Count() > 1,
-            "must-reads must differ between roles; one shared list is not role-specific");
+            "must-reads must differ between skills; one shared list is not skill-specific");
     }
 
     [Fact]
@@ -951,7 +951,7 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCommand_Run_GeneratesAllWorkerRoles()
+    public void SyncCommand_Run_GeneratesAllAgents()
     {
         var originalDir = Directory.GetCurrentDirectory();
         try
@@ -961,12 +961,12 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var role in new[] { "code-writer", "reviewer", "docs-writer" })
+            foreach (var name in new[] { "code-writer", "reviewer", "docs-writer" })
             {
-                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")), $"missing agent: {role}");
-                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")), $"missing skill: {role}");
-                Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{role}.toml")), $"missing codex agent: {role}");
-                Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", role, "SKILL.md")), $"missing repo skill: {role}");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{name}.md")), $"missing agent: {name}");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", name, "SKILL.md")), $"missing skill: {name}");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{name}.toml")), $"missing codex agent: {name}");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", name, "SKILL.md")), $"missing repo skill: {name}");
             }
             Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "hooks.json")), "missing codex hooks");
             AssertCodexHooksShape();
@@ -1106,7 +1106,7 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCommand_Run_GeneratesBothSpawnablePlanningRoles()
+    public void SyncCommand_Run_GeneratesBothSpawnablePlanningAgents()
     {
         var originalDir = Directory.GetCurrentDirectory();
         try
@@ -1130,12 +1130,12 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var roleName in new[] { "project-planner", "issue-planner" })
+            foreach (var skillName in new[] { "project-planner", "issue-planner" })
             {
-                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md")));
-                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md")));
-                Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", roleName, "SKILL.md")));
-                Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml")));
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", skillName, "SKILL.md")));
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{skillName}.md")));
+                Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", skillName, "SKILL.md")));
+                Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml")));
             }
 
             Assert.All(retiredPlannerArtifacts, artifact => Assert.False(File.Exists(artifact), artifact));
@@ -1147,30 +1147,30 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_PlanningRolesWriteAgentAndSkillForBothHosts()
+    public void SyncAgent_PlanningSkillsWriteAgentAndSkillForBothHosts()
     {
-        foreach (var roleName in new[] { "project-planner", "issue-planner" })
+        foreach (var skillName in new[] { "project-planner", "issue-planner" })
         {
-            var planner = RoleDefinitionService.DiscoverRoles().First(r => r.Name == roleName);
+            var planner = SkillTemplateService.DiscoverSkills().First(s => s.Name == skillName);
             Assert.True(planner.EmitAgent);
 
-            SyncCommand.SyncRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
-            SyncCommand.SyncCodexRole(planner, _testDir, ConfigFactory.CreateDefaultModels());
+            SyncCommand.SyncAgent(planner, _testDir, ConfigFactory.CreateDefaultModels());
+            SyncCommand.SyncCodexAgent(planner, _testDir, ConfigFactory.CreateDefaultModels());
 
-            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md")));
-            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md")));
-            Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", roleName, "SKILL.md")));
-            Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", skillName, "SKILL.md")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{skillName}.md")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", skillName, "SKILL.md")));
+            Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml")));
         }
     }
 
     [Fact]
     public void SelfImprovementSkill_CompilesForBothSurfacesWithoutAgentDefinitions()
     {
-        var role = RoleDefinitionService.DiscoverRoles().First(r => r.Name == "self-improvement");
+        var template = SkillTemplateService.DiscoverSkills().First(s => s.Name == "self-improvement");
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
 
         var claudeSkill = Path.Combine(_testDir, ".claude", "skills", "self-improvement", "SKILL.md");
         var codexSkill = Path.Combine(_testDir, ".agents", "skills", "self-improvement", "SKILL.md");
@@ -1181,7 +1181,7 @@ public class SyncCommandTests : IDisposable
         var codexContent = File.ReadAllText(codexSkill);
         Assert.Equal(
             NormalizeHostSkillRoot(claudeContent), NormalizeHostSkillRoot(codexContent));
-        Assert.Contains($"description: {role.Description}\n", claudeContent);
+        Assert.Contains($"description: {template.Description}\n", claudeContent);
         Assert.Equal(1, H1Count(FrontmatterParser.StripFrontmatter(claudeContent)));
         Assert.DoesNotContain("{{", claudeContent);
 
@@ -1194,46 +1194,46 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void MattDerivedSkills_CompileAsSkills_WithWayfinderSemanticStructure()
     {
-        var roleNames = new[]
+        var skillNames = new[]
         {
             "wayfinder", "grilling", "grill-me", "bro", "writing-for-agents"
         };
         var compiled = new Dictionary<string, string>();
 
-        foreach (var roleName in roleNames)
+        foreach (var skillName in skillNames)
         {
-            var role = RoleDefinitionService.DiscoverRoles().Single(r => r.Name == roleName);
-            SyncCommand.SyncSkillOnlyRole(role, _testDir);
-            SyncCommand.SyncCodexSkill(role, _testDir);
+            var template = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
+            SyncCommand.SyncSkill(template, _testDir);
+            SyncCommand.SyncCodexSkill(template, _testDir);
 
-            var claudeSkill = Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md");
-            var codexSkill = Path.Combine(_testDir, ".agents", "skills", roleName, "SKILL.md");
+            var claudeSkill = Path.Combine(_testDir, ".claude", "skills", skillName, "SKILL.md");
+            var codexSkill = Path.Combine(_testDir, ".agents", "skills", skillName, "SKILL.md");
             var claudeContent = File.ReadAllText(claudeSkill);
             var codexContent = File.ReadAllText(codexSkill);
 
             // One authored source, so both hosts compile the same body — except where the
-            // compiler writes the host's own skill root into a link to the role's resources.
+            // compiler writes the host's own skill root into a link to the skill's resources.
             Assert.Equal(
                 NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(claudeContent)),
                 NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(codexContent)));
-            Assert.Contains($"name: {roleName}", claudeContent);
+            Assert.Contains($"name: {skillName}", claudeContent);
             Assert.Contains("mattpocock/skills", claudeContent);
             Assert.DoesNotContain('\r', claudeContent);
-            Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{roleName}.md")));
-            Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml")));
+            Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{skillName}.md")));
+            Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml")));
 
-            compiled[roleName] = claudeContent;
+            compiled[skillName] = claudeContent;
         }
 
         // The glossary retired the Waypoint ontology (DR 045 section 11); no compiled skill may
         // reintroduce it, and each keeps its own H1 plus the sections its source authored.
-        foreach (var (roleName, content) in compiled)
+        foreach (var (skillName, content) in compiled)
         {
             var body = FrontmatterParser.StripFrontmatter(content);
             Assert.Equal(1, H1Count(body));
             Assert.DoesNotContain("Waypoint", body, StringComparison.OrdinalIgnoreCase);
             Assert.Equal(
-                Headings(TemplateGenerator.ReadBuiltInTemplate($"skill-{roleName}.template.md")).ToList(),
+                Headings(TemplateGenerator.ReadBuiltInTemplate($"skill-{skillName}.template.md")).ToList(),
                 Headings(body).ToList());
         }
     }
@@ -1251,9 +1251,9 @@ public class SyncCommandTests : IDisposable
     // DR-039: the sprint-auditor folded into the reviewer, and DR 045 renamed its rubric to
     // `merge`. The reviewer ships one rubric per review target and nothing under the old name.
     [Fact]
-    public void SyncRole_Reviewer_ShipsOneRubricPerReviewTarget()
+    public void SyncAgent_Reviewer_ShipsOneRubricPerReviewTarget()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
 
         var resources = Path.Combine(_testDir, ".claude", "skills", "reviewer", "resources");
         var emitted = Directory.GetFiles(resources, "*.md")
@@ -1271,12 +1271,12 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_EmitsLfLineEndings()
+    public void SyncAgent_EmitsLfLineEndings()
     {
         // CRLF in .claude/ artifacts makes Claude Code's permission handler reject them
         // ("control characters that would be hidden in the approval dialog"), so sync
         // must emit LF regardless of platform/template line endings.
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md"));
@@ -1322,7 +1322,7 @@ public class SyncCommandTests : IDisposable
     };
 
     [Fact]
-    public void ResolveModel_MappedRole_ReturnsConcreteModel()
+    public void ResolveModel_MappedAgent_ReturnsConcreteModel()
     {
         var model = SyncCommand.ResolveModel(TestModels(), "reviewer");
         Assert.Equal("model-strong", model);
@@ -1343,17 +1343,17 @@ public class SyncCommandTests : IDisposable
     [InlineData("issue-captain", "gpt-5.6-sol")]
     [InlineData("code-writer", "gpt-5.6-terra")]
     [InlineData("docs-writer", "gpt-5.6-terra")]
-    public void ResolveModel_OpenAiDefault_UsesRoleTier(string roleName, string expectedModel)
+    public void ResolveModel_OpenAiDefault_UsesAgentTier(string agentName, string expectedModel)
     {
-        var model = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), roleName, "openai");
+        var model = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), agentName, "openai");
 
         Assert.Equal(expectedModel, model);
     }
 
     [Fact]
-    public void ResolveModel_UnmappedRole_ReturnsNull()
+    public void ResolveModel_UnmappedAgent_ReturnsNull()
     {
-        // No role → tier entry: inherit the session model (Decision 028 — no silent downgrade).
+        // No agent → tier entry: inherit the session model (Decision 028 — no silent downgrade).
         var model = SyncCommand.ResolveModel(TestModels(), "project-planner");
         Assert.Null(model);
     }
@@ -1374,9 +1374,9 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_WithModels_EmitsResolvedModelFrontmatter()
+    public void SyncAgent_WithModels_EmitsResolvedModelFrontmatter()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir, TestModels());
+        SyncCommand.SyncAgent(_reviewer, _testDir, TestModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
         Assert.Contains("\nmodel: model-strong\n", agent);
@@ -1384,19 +1384,19 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncRole_UnmappedRole_FallsBackToInherit()
+    public void SyncAgent_UnmappedAgent_FallsBackToInherit()
     {
-        var projectPlanner = RoleDefinitionService.DiscoverRoles().First(r => r.Name == "project-planner");
-        SyncCommand.SyncRole(projectPlanner, _testDir, TestModels());
+        var projectPlanner = SkillTemplateService.DiscoverSkills().First(s => s.Name == "project-planner");
+        SyncCommand.SyncAgent(projectPlanner, _testDir, TestModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "project-planner.md"));
         Assert.Contains("model: inherit", agent);
     }
 
     [Fact]
-    public void SyncRole_NoModelsSection_FallsBackToInherit()
+    public void SyncAgent_NoModelsSection_FallsBackToInherit()
     {
-        SyncCommand.SyncRole(_reviewer, _testDir);
+        SyncCommand.SyncAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
         Assert.Contains("model: inherit", agent);
@@ -1423,7 +1423,7 @@ public class SyncCommandTests : IDisposable
 
             var reviewer = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
             Assert.Contains("model: vendor-strong-model", reviewer);
-            // Unmapped worker roles inherit the session model
+            // Unmapped agents inherit the session model
             var codeWriter = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
             Assert.Contains("model: inherit", codeWriter);
         }
@@ -1434,24 +1434,24 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void DefaultModels_ResolveForAllTieredWorkerRoles()
+    public void DefaultModels_ResolveForAllTieredAgents()
     {
-        // The shipped defaults (Decision 028) must actually bind: every role in the
-        // default role → tier map resolves to a concrete model.
+        // The shipped defaults (Decision 028) must actually bind: every agent in the
+        // default agent → tier map resolves to a concrete model.
         var models = ConfigFactory.CreateDefaultModels();
-        foreach (var role in models.Agents.Keys)
+        foreach (var agent in models.Agents.Keys)
         {
-            var model = SyncCommand.ResolveModel(models, role);
-            Assert.False(string.IsNullOrEmpty(model), $"default tier for '{role}' did not resolve");
+            var model = SyncCommand.ResolveModel(models, agent);
+            Assert.False(string.IsNullOrEmpty(model), $"default tier for '{agent}' did not resolve");
         }
     }
 
-    // --- Skill-only coordinating roles ---
+    // --- Skill-only coordinating methodologies ---
 
     [Fact]
     public void SyncCommand_Run_GeneratesCoordinatingSkills_ButNoAgents()
     {
-        // Coordinating methodologies are invokable skills, not spawnable worker definitions.
+        // Coordinating methodologies are invokable skills, not spawnable agent definitions.
         var originalDir = Directory.GetCurrentDirectory();
         try
         {
@@ -1460,12 +1460,12 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var role in new[] { "co-thinker", "chief-of-staff", "admiral" })
+            foreach (var name in new[] { "co-thinker", "chief-of-staff", "admiral" })
             {
-                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")),
-                    $"missing coordinating skill: {role}");
-                Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")),
-                    $"coordinating skill '{role}' must NOT get a native agent definition");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", name, "SKILL.md")),
+                    $"missing coordinating skill: {name}");
+                Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{name}.md")),
+                    $"coordinating skill '{name}' must NOT get a native agent definition");
             }
         }
         finally
@@ -1478,13 +1478,13 @@ public class SyncCommandTests : IDisposable
     [InlineData("co-thinker")]
     [InlineData("chief-of-staff")]
     [InlineData("admiral")]
-    public void SkillOnlyRoles_CompileWithoutTheRetiredTierDoctrine(string roleName)
+    public void SkillOnlyTemplates_CompileWithoutTheRetiredTierDoctrine(string skillName)
     {
-        var role = RoleDefinitionService.DiscoverRoles().First(r => r.Name == roleName);
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+        var template = SkillTemplateService.DiscoverSkills().First(s => s.Name == skillName);
+        SyncCommand.SyncSkill(template, _testDir);
 
-        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md"));
-        Assert.Contains($"name: {roleName}\n", skill);
+        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", skillName, "SKILL.md"));
+        Assert.Contains($"name: {skillName}\n", skill);
         Assert.DoesNotContain("Managers Doctrine", skill);
         Assert.DoesNotContain("Tier-1", skill);
     }
@@ -1492,14 +1492,14 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void ChiefOfStaff_Skill_CompilesItsSourceWithoutAPersonalMemoryPolicy()
     {
-        var chief = RoleDefinitionService.DiscoverRoles().First(r => r.Name == "chief-of-staff");
-        SyncCommand.SyncSkillOnlyRole(chief, _testDir);
+        var chief = SkillTemplateService.DiscoverSkills().First(s => s.Name == "chief-of-staff");
+        SyncCommand.SyncSkill(chief, _testDir);
 
         var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md"));
         Assert.Equal(
             Headings(TemplateGenerator.ReadBuiltInTemplate(chief.TemplateFile)).ToList(),
             Headings(skill).ToList());
-        // dydo keeps durable knowledge in documents; a role that carries its own memory policy
+        // dydo keeps durable knowledge in documents; a skill that carries its own memory policy
         // would be a second, unreviewable store.
         Assert.DoesNotContain("memory", skill, StringComparison.OrdinalIgnoreCase);
     }
@@ -1507,13 +1507,13 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void CompiledSkills_CarryNoRetiredRuntimeMachinery()
     {
-        // Decision 026 sweep, widened from one role to every role: worker-tier dispatch,
+        // Decision 026 sweep, widened from one skill to every skill: worker-tier dispatch,
         // .needs-merge markers and worktree-merge flows are dead command surfaces, and a skill
         // that still names one sends its agent at nothing. Retired vocabulary in skill prose is
         // Gate C's rg over Templates/, not this test's.
-        foreach (var role in RoleDefinitionService.DiscoverRoles())
+        foreach (var skill in SkillTemplateService.DiscoverSkills())
         {
-            var methodology = SyncCommand.ExtractMethodology(role, _testDir);
+            var methodology = SyncCommand.ExtractMethodology(skill, _testDir);
 
             foreach (var retired in new[]
             {

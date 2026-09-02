@@ -14,16 +14,16 @@ public static class TemplateGenerator
     private static readonly Assembly _assembly = Assembly.GetExecutingAssembly();
 
     /// <summary>
-    /// Lists a role's skill resource templates — files named
-    /// `&lt;role&gt;-resource-&lt;name&gt;.template.md` ("resource" is the protected word) — as
+    /// Lists a skill's resource templates — files named
+    /// `&lt;skill&gt;-resource-&lt;name&gt;.template.md` ("resource" is the protected word) — as
     /// (fileName, content) pairs. `dydo sync` compiles each into the skill folder as
     /// `resources/&lt;name&gt;.md`.
     /// </summary>
-    public static IEnumerable<(string FileName, string Content)> GetSkillResources(string roleName)
+    public static IEnumerable<(string FileName, string Content)> GetSkillResources(string skillName)
     {
-        foreach (var templateName in GetSkillResourceTemplateNames(roleName))
+        foreach (var templateName in GetSkillResourceTemplateNames(skillName))
         {
-            var name = templateName[$"{roleName}-resource-".Length..^".template.md".Length];
+            var name = templateName[$"{skillName}-resource-".Length..^".template.md".Length];
             yield return ($"{name}.md", ReadBuiltInTemplate(templateName));
         }
     }
@@ -48,11 +48,11 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Embedded template names matching `&lt;role&gt;-resource-*.template.md`.
+    /// Embedded template names matching `&lt;skill&gt;-resource-*.template.md`.
     /// </summary>
-    public static IReadOnlyList<string> GetSkillResourceTemplateNames(string roleName)
+    public static IReadOnlyList<string> GetSkillResourceTemplateNames(string skillName)
     {
-        var prefix = $"DynaDocs.Templates.{roleName}-resource-";
+        var prefix = $"DynaDocs.Templates.{skillName}-resource-";
         return _assembly.GetManifestResourceNames()
             .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md"))
             .Select(r => r["DynaDocs.Templates.".Length..])
@@ -94,11 +94,11 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// The shipped skill templates (skill-*.template.md) — the roles `dydo sync` compiles.
+    /// The shipped skill templates (skill-*.template.md) — the sources `dydo sync` compiles.
     /// Enumerated from embedded resources, plus source Templates/ in dev-mode so a
     /// not-yet-rebuilt template still counts.
     ///
-    /// A retired role's template is excluded even while the file still ships through a
+    /// A retired skill's template is excluded even while the file still ships through a
     /// transition. This is the single place the exclusion has to happen: everything downstream
     /// reads the shipped set, so a retired name is not discovered.
     /// </summary>
@@ -119,14 +119,14 @@ public static class TemplateGenerator
                 names.Add(Path.GetFileName(file));
         }
 
-        names.ExceptWith(SyncCommand.RetiredManagedRoles.Select(role => $"skill-{role}.template.md"));
+        names.ExceptWith(SyncCommand.RetiredSkills.Select(name => $"skill-{name}.template.md"));
         return names.ToList();
     }
 
     /// <summary>
     /// The shipped template inventory: every skill template (skill-*.template.md) — the source
-    /// `dydo sync` compiles into native agents — plus each role's skill resource templates
-    /// (&lt;role&gt;-resource-&lt;name&gt;.template.md).
+    /// `dydo sync` compiles into native agents and skills — plus each skill's resource templates
+    /// (&lt;skill&gt;-resource-&lt;name&gt;.template.md).
     /// </summary>
     public static IReadOnlyList<string> GetAllTemplateNames()
     {
@@ -134,8 +134,8 @@ public static class TemplateGenerator
         foreach (var templateFile in GetBuiltInSkillTemplateNames())
         {
             names.Add(templateFile);
-            var roleName = templateFile["skill-".Length..^".template.md".Length];
-            names.AddRange(GetSkillResourceTemplateNames(roleName));
+            var skillName = templateFile["skill-".Length..^".template.md".Length];
+            names.AddRange(GetSkillResourceTemplateNames(skillName));
         }
         return names;
     }

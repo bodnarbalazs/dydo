@@ -31,7 +31,7 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         Assert.Contains("skill-writing-for-agents.template.md", templateNames);
 
         // The inventory is every skill template plus every skill resource
-        // template (<role>-resource-<name>.template.md). A hard-coded count would freeze the
+        // template (<skill>-resource-<name>.template.md). A hard-coded count would freeze the
         // inventory the DR 045 taxonomy is about to change.
         Assert.Contains("reviewer-resource-project-plan.template.md", templateNames);
         Assert.Contains("reviewer-resource-issue-plan.template.md", templateNames);
@@ -75,17 +75,17 @@ public class TemplateScaffoldingTests : IntegrationTestBase
             "template update must track the Linear workspace standard by hash");
     }
 
-    // The shipped set is the authored set minus retired roles and anything that hangs off them.
+    // The shipped set is the authored set minus retired skills and anything that hangs off them.
     private static IEnumerable<string> ShippedTemplateNames()
     {
         var templates = Path.Combine(FindRepositoryRoot(), "Templates");
-        var retired = SyncCommand.RetiredManagedRoles;
+        var retired = SyncCommand.RetiredSkills;
         return Directory.GetFiles(templates, "skill-*.template.md")
             .Concat(Directory.GetFiles(templates, "*-resource-*.template.md"))
             .Select(path => Path.GetFileName(path)!)
-            .Where(name => !retired.Any(role =>
-                name.Equals($"skill-{role}.template.md", StringComparison.OrdinalIgnoreCase)
-                || name.StartsWith($"{role}-resource-", StringComparison.OrdinalIgnoreCase)))
+            .Where(name => !retired.Any(skill =>
+                name.Equals($"skill-{skill}.template.md", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith($"{skill}-resource-", StringComparison.OrdinalIgnoreCase)))
             .OrderBy(name => name, StringComparer.Ordinal);
     }
 

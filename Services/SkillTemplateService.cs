@@ -4,20 +4,20 @@ using DynaDocs.Models;
 using DynaDocs.Utils;
 
 /// <summary>
-/// Discovers roles from the shipped skill templates (the template IS the role — its frontmatter
-/// carries the metadata).
+/// Reads the shipped skill templates — the template IS the metadata, so there is nothing else
+/// to consult.
 /// </summary>
-public static class RoleDefinitionService
+public static class SkillTemplateService
 {
     /// <summary>
-    /// Enumerates every role from the shipped skill templates. Metadata comes from the
-    /// template frontmatter: <c>description</c>, <c>emit</c> (agent+skill unless <c>skill</c>),
-    /// <c>read-only</c>, <c>delegates</c>, <c>invocation</c>.
+    /// Enumerates every shipped skill template. Metadata comes from the template frontmatter:
+    /// <c>description</c>, <c>emit</c> (agent+skill unless <c>skill</c>), <c>read-only</c>,
+    /// <c>delegates</c>, <c>invocation</c>.
     ///
     /// The shipped set already excludes retired names, so sync's retired-artifact sweep is
     /// never suppressed by a source dydo still carries through a transition.
     /// </summary>
-    public static List<RoleDefinition> DiscoverRoles()
+    public static List<SkillTemplate> DiscoverSkills()
     {
         return TemplateGenerator.GetBuiltInSkillTemplateNames()
             .Select(templateFile =>
@@ -26,15 +26,15 @@ public static class RoleDefinitionService
     }
 
     /// <summary>
-    /// Turns one skill template into its role definition. Throws
+    /// Turns one skill template's source into its <see cref="SkillTemplate"/>. Throws
     /// <see cref="InvalidDataException"/> naming the file when <c>invocation</c> is neither
     /// <c>automatic</c> nor <c>explicit</c>.
     /// </summary>
-    public static RoleDefinition Parse(string templateFile, string content)
+    public static SkillTemplate Parse(string templateFile, string content)
     {
         var fields = FrontmatterParser.ParseFields(content) ?? [];
 
-        return new RoleDefinition
+        return new SkillTemplate
         {
             Name = templateFile["skill-".Length..^".template.md".Length],
             TemplateFile = templateFile,

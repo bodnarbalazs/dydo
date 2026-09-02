@@ -34,14 +34,16 @@ public static partial class SyncCommand
     private static readonly string[] RetiredWorkflows = ["run-sprint.js"];
 
     // Skill resources retired by rename (DR 045: merge-sprint became merge; the broad plan
-    // rubric split into project-plan and issue-plan; the generic planner split into two skills),
-    // swept from both hosts' skill folders.
+    // rubric split into project-plan and issue-plan; the generic planner split into two skills)
+    // or by promotion (the research scout became the `scout` agent), swept from both hosts'
+    // skill folders.
     private static readonly string[] RetiredSkillResources =
     [
         "reviewer/resources/merge-sprint.md",
         "reviewer/resources/plan.md",
         "planner/resources/project.md",
-        "planner/resources/issue.md"
+        "planner/resources/issue.md",
+        "research/resources/scout.md"
     ];
 
     // Where each host emits a skill: <root>/<name>/SKILL.md, three levels below the project
@@ -244,7 +246,7 @@ public static partial class SyncCommand
         WriteLf(
             Path.Combine(skillDir, "SKILL.md"),
             BuildSkill(skill, CompileSkillBody(skill, projectRoot, CodexSkillRoot), emitClaudePolicy: false));
-        WriteCodexInvocationPolicy(skill, skillDir);
+        WriteCodexSkillMetadata(skill, skillDir);
         WriteSkillResources(skill, skillDir);
     }
 
@@ -261,22 +263,34 @@ public static partial class SyncCommand
         WriteSkillResources(skill, skillDir);
     }
 
-    private static void WriteCodexInvocationPolicy(SkillTemplate skill, string skillDir)
+    /// <summary>
+    /// Codex's expression of the two facts Claude carries in SKILL.md frontmatter: the
+    /// explicit-invocation policy and the argument hint. Written when the skill declares either,
+    /// and removed with the folder it empties when it declares neither — a skill that loses a
+    /// declaration must not keep enforcing it from a file no later sync would touch.
+    /// </summary>
+    private static void WriteCodexSkillMetadata(SkillTemplate skill, string skillDir)
     {
         var agentsDir = Path.Combine(skillDir, "agents");
-        var policyFile = Path.Combine(agentsDir, "openai.yaml");
+        var metadataFile = Path.Combine(agentsDir, "openai.yaml");
 
-        if (skill.ExplicitInvocation)
+        var metadata =
+            (skill.ExplicitInvocation ? "policy:\n  allow_implicit_invocation: false\n" : "")
+            + (skill.ArgumentHint == null
+                ? ""
+                : $"interface:\n  default_prompt: \"{EscapeQuoted(skill.ArgumentHint)}\"\n");
+
+        if (metadata.Length > 0)
         {
             Directory.CreateDirectory(agentsDir);
-            WriteLf(policyFile, "policy:\n  allow_implicit_invocation: false\n");
+            WriteLf(metadataFile, metadata);
             return;
         }
 
-        if (!File.Exists(policyFile))
+        if (!File.Exists(metadataFile))
             return;
 
-        File.Delete(policyFile);
+        File.Delete(metadataFile);
         if (!Directory.EnumerateFileSystemEntries(agentsDir).Any())
             Directory.Delete(agentsDir);
     }
@@ -323,6 +337,8 @@ public static partial class SyncCommand
             : "Read, Grep, Glob, Bash, Edit, Write, Skill";
         if (skill.Delegates)
             tools += ", Agent";
+        if (skill.Web)
+            tools += ", WebFetch, WebSearch";
         var stance = readOnly
             ? "You are read-only: you assess and report, you do not modify the project's files."
             : "You produce and modify the project's files as your task requires.";
@@ -372,11 +388,11 @@ public static partial class SyncCommand
 
     private static string BuildCodexAgent(SkillTemplate skill, List<string> mustReads, ModelsConfig? models)
     {
-        // No `tools` field: codex's agent `tools` is a ToolsToml struct of codex-defined
+        // No Claude-style tool list: codex's agent `tools` is a ToolsToml struct of codex-defined
         // toggles (view_image, web_search) — NOT file/shell tool names. Claude's tool names
         // are category-wrong here and have no valid codex representation; codex grants
         // apply_patch/shell/read intrinsically and inherits toggles from the parent when the
-        // field is omitted. Read-only capability is a separate concern (issue 0272,
+        // struct is absent. Read-only capability is a separate concern (issue 0272,
         // sandbox_mode). See issue 0271.
         var readOnly = skill.ReadOnly;
         var stance = readOnly
@@ -390,20 +406,30 @@ public static partial class SyncCommand
         // carries the methodology into a spawned agent (DR 045 §10). A writing agent needs the
         // workspace-write sandbox to act on that methodology at all.
         var sandbox = readOnly ? "read-only" : "workspace-write";
+        // `web: true` sets the one toggle codex owns for it. A TOML table header ends the
+        // top-level key section, so [tools] goes last: any key emitted after it would parse as a
+        // member of the struct instead of a field of the agent.
+        var webTools = skill.Web ? "\n\n[tools]\nweb_search = true" : "";
 
         return $""""
-            name = "{EscapeToml(skill.Name)}"
-            description = "{EscapeToml(skill.Description)}"
-            model = "{EscapeToml(model ?? "gpt-5.6-terra")}"
+            name = "{EscapeQuoted(skill.Name)}"
+            description = "{EscapeQuoted(skill.Description)}"
+            model = "{EscapeQuoted(model ?? "gpt-5.6-terra")}"
             sandbox_mode = "{sandbox}"
 
             developer_instructions = """
             You are {Article(skill.Name)} **{skill.Name}**. {skill.Description} {stance} Load the `${skill.Name}` skill before working.{contextBlock}
-            """
+            """{webTools}
             """";
     }
 
-    private static string EscapeToml(string value) =>
+    /// <summary>
+    /// Escapes an authored value for every quoted scalar it compiles into — the Codex agent's
+    /// TOML basic strings, Codex's openai.yaml, and Claude's SKILL.md frontmatter all take the
+    /// same backslash escape. An unescaped quote or trailing backslash ends the scalar early, and
+    /// the host reads a malformed file rather than reporting one.
+    /// </summary>
+    private static string EscapeQuoted(string value) =>
         value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     private static string BuildSkill(
@@ -411,14 +437,19 @@ public static partial class SyncCommand
         string methodology,
         bool emitClaudePolicy)
     {
+        // Both keys are Claude SKILL.md frontmatter. Codex carries the same two facts in
+        // agents/openai.yaml, so its SKILL.md must not repeat them in keys it does not read.
         var invocationPolicy = emitClaudePolicy && skill.ExplicitInvocation
             ? "\ndisable-model-invocation: true"
+            : "";
+        var argumentHint = emitClaudePolicy && skill.ArgumentHint != null
+            ? $"\nargument-hint: \"{EscapeQuoted(skill.ArgumentHint)}\""
             : "";
 
         return $"""
         ---
         name: {skill.Name}
-        description: {skill.Description}{invocationPolicy}
+        description: {skill.Description}{argumentHint}{invocationPolicy}
         ---
 
         {methodology}

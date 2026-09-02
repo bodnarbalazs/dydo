@@ -37,4 +37,18 @@ public class SkillTemplate
     /// preserves the native default: automatic discovery.
     /// </summary>
     public bool ExplicitInvocation { get; init; }
+
+    /// <summary>
+    /// A web-enabled skill reaches outside the repository — sync grants its compiled agent
+    /// Claude's <c>WebFetch</c>/<c>WebSearch</c> and flips Codex's <c>web_search</c> toggle.
+    /// Frontmatter key: <c>web: true</c>.
+    /// </summary>
+    public bool Web { get; init; }
+
+    /// <summary>
+    /// What the human is expected to type after the skill's name, shown by the host as the
+    /// prompt for that argument. Frontmatter key: <c>argument-hint: "&lt;hint&gt;"</c>; null
+    /// when the source declares none, and the hosts show nothing.
+    /// </summary>
+    public string? ArgumentHint { get; init; }
 }

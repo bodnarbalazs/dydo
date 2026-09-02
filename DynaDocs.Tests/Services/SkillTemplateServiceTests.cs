@@ -119,6 +119,7 @@ public class SkillTemplateServiceTests
             Assert.Equal(Declares(fields, "read-only", "true"), skill.ReadOnly);
             Assert.Equal(Declares(fields, "delegates", "true"), skill.Delegates);
             Assert.Equal(Declares(fields, "invocation", "explicit"), skill.ExplicitInvocation);
+            Assert.Equal(Declares(fields, "web", "true"), skill.Web);
         }
     }
 
@@ -230,6 +231,74 @@ public class SkillTemplateServiceTests
 
         Assert.Contains("skill-nameless.template.md", error.Message);
         Assert.Contains("expected 'name: nameless'", error.Message);
+    }
+
+    [Theory]
+    [InlineData("web: true", true)]
+    [InlineData("web: false", false)]
+    [InlineData("", false)]
+    public void Parse_ReadsWeb(string webLine, bool expected)
+    {
+        var skill = SkillTemplateService.Parse("skill-searcher.template.md",
+            $"""
+            ---
+            name: searcher
+            {webLine}
+            ---
+
+            # Searcher
+            """);
+
+        Assert.Equal(expected, skill.Web);
+    }
+
+    // The frontmatter reader hands values back raw and the upstream sources quote the hint, so an
+    // unstripped pair would compile into a doubly quoted frontmatter value the host shows verbatim.
+    [Theory]
+    [InlineData("\"What are we shipping?\"")]
+    [InlineData("'What are we shipping?'")]
+    [InlineData("What are we shipping?")]
+    public void Parse_ArgumentHint_StripsOneSurroundingQuotePair(string authored)
+    {
+        var skill = SkillTemplateService.Parse("skill-ship.template.md",
+            $"""
+            ---
+            name: ship
+            argument-hint: {authored}
+            ---
+
+            # Ship
+            """);
+
+        Assert.Equal("What are we shipping?", skill.ArgumentHint);
+    }
+
+    [Fact]
+    public void Parse_NoArgumentHint_IsNull()
+    {
+        var skill = SkillTemplateService.Parse("skill-ship.template.md",
+            """
+            ---
+            name: ship
+            ---
+
+            # Ship
+            """);
+
+        Assert.Null(skill.ArgumentHint);
+    }
+
+    // The scout is fenced by its frontmatter alone: an agent that reads the world, writes nothing,
+    // and cannot spawn a second scout to widen the brief a researcher gave it.
+    [Fact]
+    public void DiscoverSkills_Scout_IsAReadOnlyWebAgentThatDoesNotDelegate()
+    {
+        var scout = SkillTemplateService.DiscoverSkills().Single(skill => skill.Name == "scout");
+
+        Assert.True(scout.EmitAgent);
+        Assert.True(scout.ReadOnly);
+        Assert.True(scout.Web);
+        Assert.False(scout.Delegates);
     }
 
     [Fact]

@@ -1,16 +1,7 @@
 ---
-mode: grill-me
-description: Grill me relentlessly on my plan, decision, or idea until nothing is left assumed.
-emit: skill
-invocation: explicit
+name: grill-me
+description: A relentless interview to sharpen a plan or design.
+disable-model-invocation: true
 ---
 
-<!-- Adapted from mattpocock/skills grill-me at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
-
-# Grill Me
-
-Load `grilling` on whatever the human typed after the command — and on what is already on the
-table when nothing follows.
-
-This is his handle on Think: the interview starts because he asked for it, not because an agent
-decided he needed it.
+Call the Skill tool with "grilling".

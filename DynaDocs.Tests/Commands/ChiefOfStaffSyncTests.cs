@@ -27,7 +27,7 @@ public class ChiefOfStaffSyncTests : IDisposable
     {
         var source = Normalize(TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"));
 
-        Assert.Contains("mode: chief-of-staff\n", source);
+        Assert.Contains("name: chief-of-staff\n", source);
         Assert.Contains("emit: skill\n", source);
         Assert.Equal(1, SyncCommandTests.H1Count(source));
         Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));

@@ -1,5 +1,5 @@
 ---
-mode: grilling
+name: grilling
 description: Grill the human relentlessly about a plan, decision, or idea. Use when the human wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 emit: skill
 invocation: automatic

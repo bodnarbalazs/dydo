@@ -1,5 +1,5 @@
 ---
-mode: prototype
+name: prototype
 description: Build a throwaway prototype to answer a design question. Use when the human wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.
 emit: skill
 invocation: automatic

@@ -1,5 +1,5 @@
 ---
-mode: bro
+name: bro
 description: "Stop. That last message did not land: re-pitch it."
 emit: skill
 invocation: explicit

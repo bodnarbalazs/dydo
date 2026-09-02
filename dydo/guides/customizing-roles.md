@@ -16,7 +16,7 @@ sync again.
 
 | Key | Value | Effect |
 |---|---|---|
-| `mode` | the role name | Keep it equal to the filename, which is what the compiler actually reads. |
+| `name` | the role name | Keep it equal to the filename, which is what the compiler actually reads. |
 | `description` | one line | Becomes the skill's and the agent's description — the only text a model weighs before reaching for the role. |
 | `emit` | `agent` \| `skill` | `agent` (also the default when the key is absent) adds a spawnable agent that preloads this skill; `skill` is methodology a session applies in its own thread. |
 | `read-only` | `true` | The compiled agent assesses and reports; it gets no editing tools. |

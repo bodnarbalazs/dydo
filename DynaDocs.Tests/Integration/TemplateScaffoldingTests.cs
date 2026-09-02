@@ -106,7 +106,7 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-code-writer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("mode: code-writer", content);
+        Assert.Contains("name: code-writer", content);
     }
 
     [Fact]

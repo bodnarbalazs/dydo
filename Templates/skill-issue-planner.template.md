@@ -1,5 +1,5 @@
 ---
-mode: issue-planner
+name: issue-planner
 description: One approved implementation Issue or direct lane still hides choices. Remove them just in time so production can follow established patterns mechanically.
 emit: agent
 invocation: automatic

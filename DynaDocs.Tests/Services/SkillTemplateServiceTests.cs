@@ -154,7 +154,7 @@ public class SkillTemplateServiceTests
     public void Parse_ReadsDelegates()
     {
         var skill = SkillTemplateService.Parse("skill-fan-out.template.md",
-            "---\nmode: fan-out\nemit: agent\ndelegates: true\n---\n\n# Fan Out\n");
+            "---\nname: fan-out\nemit: agent\ndelegates: true\n---\n\n# Fan Out\n");
 
         Assert.True(skill.Delegates);
     }
@@ -165,7 +165,7 @@ public class SkillTemplateServiceTests
         var skill = SkillTemplateService.Parse("skill-security-auditor.template.md",
             """
             ---
-            mode: security-auditor
+            name: security-auditor
             description: Audits changes for security regressions.
             emit: agent
             read-only: true
@@ -189,7 +189,7 @@ public class SkillTemplateServiceTests
     public void Parse_AbsentKeys_DefaultToWritableAgent()
     {
         var skill = SkillTemplateService.Parse("skill-infra-writer.template.md",
-            "---\nmode: infra-writer\n---\n\n# Infra Writer\n");
+            "---\nname: infra-writer\n---\n\n# Infra Writer\n");
 
         Assert.True(skill.EmitAgent);
         Assert.False(skill.ReadOnly);
@@ -202,7 +202,7 @@ public class SkillTemplateServiceTests
     public void Parse_ReadsExplicitInvocation()
     {
         var skill = SkillTemplateService.Parse("skill-human-only.template.md",
-            "---\nmode: human-only\ninvocation: explicit\n---\n\n# Human Only\n");
+            "---\nname: human-only\ninvocation: explicit\n---\n\n# Human Only\n");
 
         Assert.True(skill.ExplicitInvocation);
     }
@@ -212,10 +212,36 @@ public class SkillTemplateServiceTests
     {
         var error = Assert.Throws<InvalidDataException>(() => SkillTemplateService.Parse(
             "skill-invalid.template.md",
-            "---\nmode: invalid\ninvocation: sometimes\n---\n\n# Invalid\n"));
+            "---\nname: invalid\ninvocation: sometimes\n---\n\n# Invalid\n"));
 
         Assert.Contains("skill-invalid.template.md", error.Message);
         Assert.Contains("expected 'automatic' or 'explicit'", error.Message);
+    }
+
+    // The compiled SKILL.md emits the name, so a template that never got the key — or got a
+    // different one — would ship an identity the filename contradicts. Failing the sync by file
+    // name is cheaper than finding it in a compiled artifact.
+    [Fact]
+    public void Parse_MissingName_ThrowsNamingTheFile()
+    {
+        var error = Assert.Throws<InvalidDataException>(() => SkillTemplateService.Parse(
+            "skill-nameless.template.md",
+            "---\nmode: nameless\n---\n\n# Nameless\n"));
+
+        Assert.Contains("skill-nameless.template.md", error.Message);
+        Assert.Contains("expected 'name: nameless'", error.Message);
+    }
+
+    [Fact]
+    public void Parse_NameDifferentFromFilename_ThrowsNamingBoth()
+    {
+        var error = Assert.Throws<InvalidDataException>(() => SkillTemplateService.Parse(
+            "skill-drift.template.md",
+            "---\nname: drifted\n---\n\n# Drift\n"));
+
+        Assert.Contains("skill-drift.template.md", error.Message);
+        Assert.Contains("'name: drifted'", error.Message);
+        Assert.Contains("expected 'drift'", error.Message);
     }
 
     #endregion

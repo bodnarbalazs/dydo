@@ -1,27 +1,23 @@
 ---
-mode: teach
-description: Teach me something properly, over many sessions — lessons, references, and a record of what stuck.
-emit: skill
-invocation: explicit
+name: teach
+description: Teach the user a new skill or concept, within this workspace.
+disable-model-invocation: true
+argument-hint: "What would you like to learn about?"
 ---
 
-<!-- Adapted from mattpocock/skills teach at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
-
-# Teach
-
-The user has asked you to teach them something. This is a stateful request - they intend to learn the topic over multiple sessions. On the flow map it sits with the human at Harmonize, beside delivery rather than inside it: nothing hands work to this skill, and it hands work to nothing.
+The user has asked you to teach them something. This is a stateful request - they intend to learn the topic over multiple sessions.
 
 ## Teaching Workspace
 
-Treat the current directory as the teaching workspace. There is no separate workspace path to create or move to: every file below is written and read here, in the directory the user already started you in. The state of their learning is captured in these files:
+Treat the current directory as a teaching workspace. The state of their learning is captured in this directory in several files:
 
-- `MISSION.md`: A document capturing the _reason_ the user is interested in the topic. This should be used to ground all teaching. One mission per workspace, kept to a screen: why they want this, what success looks like, the constraints, and what is out of scope.
+- `MISSION.md`: A document capturing the _reason_ the user is interested in the topic. This should be used to ground all teaching. Use the format in [MISSION-FORMAT.md](./MISSION-FORMAT.md).
 - `./reference/*.html`: A directory of reference materials. These are the compressed learnings from the lessons - cheat sheets, reference algorithms, syntax, yoga poses, glossaries. They are the raw units of learning. They should be beautiful documents which print out well, and are designed for quick reference.
-- `RESOURCES.md`: A list of resources which can be explored to ground your teaching in contextual knowledge, or to acquire knowledge and wisdom. Group it into Knowledge and Wisdom (communities), annotate every entry with what it covers and when to reach for it, and prune anything that turns out to be shallow or off-mission.
-- `./learning-records/*.md`: A directory of learning records, which capture what the user has learned. They are used to calculate the zone of proximal development. See [Learning Records](#learning-records).
+- `RESOURCES.md`: A list of resources which can be explored to ground your teaching in contextual knowledge, or to acquire knowledge and wisdom. Use the format in [RESOURCES-FORMAT.md](./RESOURCES-FORMAT.md).
+- `./learning-records/*.md`: A directory of learning records, which capture what the user has learned. These are loosely equivalent to architectural decision records in software development - they capture non-obvious lessons and key insights that may need to be revised later, or drive future sessions. These should be used to calculate the zone of proximal development. They are titled `0001-<dash-case-name>.md`, where the number increments each time. Use the format in [LEARNING-RECORD-FORMAT.md](./LEARNING-RECORD-FORMAT.md).
 - `./lessons/*.html`: A directory of lessons. A **lesson** is a single, self-contained HTML output that teaches one tightly-scoped thing tied to the mission. This is the primary unit of teaching in this workspace.
 - `./assets/*`: Reusable **components** shared across lessons. See [Assets](#assets).
-- `NOTES.md`: A scratchpad for the preferences the user states about how they want to be taught, and for your own working notes. Read it back when you design a lesson.
+- `NOTES.md`: A scratchpad for you to jot down user preferences, or working notes.
 
 ## Philosophy
 
@@ -32,6 +28,8 @@ To learn at a deep level, the user needs three things:
 - **Wisdom**, which comes from interacting with other learners and practitioners
 
 Before the `RESOURCES.md` is well-populated, your focus should be to find high-quality resources which will help the user acquire knowledge. Never trust your parametric knowledge.
+
+Some topics may require more skills than knowledge. Learning more about theoretical physics might be more knowledge-based. For yoga, more skills-based.
 
 ### Fluency vs Storage Strength
 
@@ -113,7 +111,11 @@ For quizzes, each answer should be exactly the same number of words (and charact
 
 ## Acquiring Wisdom
 
-When the user asks a question that appears to require wisdom, your default posture should be to attempt to answer - but to ultimately delegate to a **community**: a place, online or offline, where the user can test their skills in the real world. This might be a forum, a subreddit, a real-world class (budget permitting) or a local interest group.
+Wisdom comes from true real-world interaction - testing your skills outside the learning environment.
+
+When the user asks a question that appears to require wisdom, your default posture should be to attempt to answer - but to ultimately delegate to a **community**.
+
+A community is a place (online or offline) where the user can test their skills in the real world. This might be a forum, a subreddit, a real-world class (budget permitting) or a local interest group.
 
 You should attempt to find high-reputation communities the user can join. If the user expresses a preference that they don't want to join a community, respect it.
 
@@ -121,39 +123,18 @@ You should attempt to find high-reputation communities the user can join. If the
 
 While creating lessons, you should also create reference documents. Lessons can reference these documents - they are useful for tracking raw units of knowledge useful across lessons.
 
-Lessons will rarely be revisited later - reference documents will be. They should be the compressed essence of the lesson, in a format designed for quick reference: syntax and code snippets for programming, algorithms and flowcharts for processes, poses and sequences for yoga, routines for fitness.
+Lessons will rarely be revisited later - reference documents will be. They should be the compressed essence of the lesson, in a format designed for quick reference.
 
-### The Glossary
+Some learning topics lend themselves to reference:
 
-`GLOSSARY.md`, at the root of the workspace, is the canonical language for this topic, and every lesson, reference document and learning record adheres to it once it exists. Building it is itself part of learning: compressing a concept into a tight definition is evidence the user understands it.
+- Syntax and code snippets for programming
+- Algorithms and flowcharts for processes
+- Yoga poses and sequences for yoga
+- Exercises and routines for fitness
+- Glossaries for any topic with its own nomenclature
 
-```md
-**Progressive overload**:
-Systematically increasing the demand on a muscle over time, via load, volume, or intensity.
-_Avoid_: Pushing harder, levelling up
-```
+Glossaries, in particular, are an essential reference. Once one is created, it should be adhered to in every lesson.
 
-- **Add a term only when the user understands it.** The glossary is a record of compressed knowledge, not a dictionary the user reads to learn. Wait until they can use the concept correctly before promoting it here.
-- **Be opinionated.** When several words exist for the same concept, pick the best one and list the rest as aliases to avoid. This is how language compresses.
-- **Keep definitions tight.** One or two sentences. Define what the term IS, not what it does or how to do it.
-- **Use the glossary's own terms inside definitions.** Once a term is in the glossary, prefer it everywhere, including inside other definitions. This is what makes complex terms easier to grasp later.
-- **Revise as understanding deepens.** A definition the user wrote in week one may be wrong by week six. Update in place; do not leave stale entries.
+## `NOTES.md`
 
-## Learning Records
-
-A learning record is the teaching equivalent of an architectural decision record: it captures a non-obvious lesson, a key insight, or stated prior knowledge that will steer future sessions. Records live in `./learning-records/`, a directory created lazily with the first record, titled `0001-<dash-case-name>.md`; scan for the highest existing number and increment by one.
-
-```md
-# {Short title of what was learned or established}
-
-{1-3 sentences: what was learned (or what prior knowledge was established), and why it matters for future sessions.}
-```
-
-That is the whole format. The value is in recording _that_ this is now known and _why_ it changes what to teach next. Write one when any of these is true:
-
-1. **The user demonstrated genuine understanding of something non-trivial**: not just exposure, but evidence they can use the concept correctly. This sets a new floor for what to teach next.
-2. **The user disclosed prior knowledge**: "I already know X." Record it, with the _depth_ claimed, so future sessions don't re-teach it.
-3. **A misconception was corrected**: the user previously believed something wrong and now sees why. These are high-value: they predict future stumbling blocks for related topics.
-4. **The mission shifted in response to learning**: the user discovered they cared about something different than they thought. Update `MISSION.md` as well.
-
-Coverage is not learning: material that was merely covered, a term already captured tersely in `GLOSSARY.md`, and session-by-session activity logs all stay out. When a later record contradicts an earlier one, mark the old record `Status: superseded by LR-NNNN` rather than deleting it. The history of how understanding evolved is itself useful signal.
+The user will sometimes express preferences of how they want to be taught, or things you should keep in mind. This is the place to record those preferences, so you can refer back to them when designing lessons or working with the user.

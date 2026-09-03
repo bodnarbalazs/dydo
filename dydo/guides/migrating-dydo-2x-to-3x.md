@@ -22,9 +22,10 @@ the file, because that rewrite drops the old keys unread.
    rewrite it whenever they change it, and a rewrite keeps only the keys 3.0 names, without a
    warning. Renaming afterwards means recovering the map from version control: the rewrite leaves
    `models.agents` empty and every compiled agent then carries `model: inherit`.
-   In the renamed map, delete `planner` and `test-writer` (no such agents) and add
-   a tier for `project-planner`, `issue-planner`, `issue-captain`, `research`, and `scout` — nothing
-   merges the shipped defaults into an existing config.
+   In the renamed map, delete `planner`, `test-writer`, `code-writer` and `issue-planner` (no such
+   agents: `code-writer` became `implementer` and `issue-planner` became `specifier` in DR 046) and
+   add a tier for `implementer`, `hardener`, `specifier`, `project-planner`, `issue-captain`,
+   `research`, and `scout` — nothing merges the shipped defaults into an existing config.
 3. Delete the rest of the retired configuration in the same pass, since the first rewrite drops it
    silently: `name`, `paths` (with its `pathSets`), `structure.tasks`, `structure.issues`,
    `models.efforts`, `models.fallback`, `notion`, and every nudge's `tools`. A nudge's `audience` key

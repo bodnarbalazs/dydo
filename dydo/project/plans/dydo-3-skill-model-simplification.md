@@ -445,3 +445,15 @@ group each), `SyncCommandTests.cs` (S-1, S-2, S-5, S-6, S-7, S-8), `RoleDefiniti
   dropped on the first save and need no hand edit (a nudge's `audience` survives but scopes nothing);
   `frameworkHashes` is pruned by `template update`, never by hand; the `_system/templates/` delete
   comes before `dydo check`, which now flags every file in it. §3 stands as the set of removed keys.
+
+## Amendment — 2026-09-03, landing
+
+- S-10 landed the branch: `8c93c610` merges `653960ef` into `DYD-64-human-pass` at `4fa34c01`, on
+  `landing/s10-simplify-into-dyd-64`, resolved as the simplification's structure carrying DR 046's
+  agent set — `implementer`, `hardener` and `specifier` replace `code-writer` and `issue-planner` in
+  `ConfigFactory`, `dydo.json`'s `models.agents` and every renamed test.
+- `code-writer` and `issue-planner` joined `RetiredSkills` and `implementer` left it (DR 046 ships it
+  again, and a shipped name in that list makes every sync sweep its own output);
+  `reviewer/resources/issue-plan.md` joined `RetiredSkillResources`.
+- The planner shim DR 046 re-added was dropped with both of its tests — §6's no-shim rule holds, and
+  the migration guide carries the `code-writer` and `issue-planner` renames instead.

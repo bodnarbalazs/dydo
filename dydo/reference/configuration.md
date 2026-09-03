@@ -32,7 +32,7 @@ through Linear's official surfaces.
     },
     "agents": {
       "reviewer": "strong",
-      "code-writer": "standard"
+      "implementer": "standard"
     }
   },
   "scanExclude": [

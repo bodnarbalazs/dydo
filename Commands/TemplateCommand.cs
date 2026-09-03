@@ -9,12 +9,7 @@ using DynaDocs.Utils;
 
 public static class TemplateCommand
 {
-    // Framework-owned files relative to the dydo root — derived from role definitions
-    public static readonly string[] FrameworkTemplateFiles =
-        TemplateGenerator.GetAllTemplateNames()
-            .Select(name => $"_system/templates/{name}")
-            .ToArray();
-
+    // Framework-owned files relative to the dydo root
     public static readonly string[] FrameworkDocFiles =
     [
         "reference/about-dynadocs.md",
@@ -24,8 +19,6 @@ public static class TemplateCommand
         "reference/writing-docs.md",
         "guides/working-tree-contract.md"
     ];
-
-    public static readonly string[] FrameworkBinaryFiles = [];
 
     // Binary assets retired from the framework, deleted from projects on update — but only
     // when the on-disk copy is a known framework version (stored hash, or a shipped hash
@@ -48,8 +41,6 @@ public static class TemplateCommand
         ("guides/how-to-use-docs.md", []),
     ];
 
-    public static readonly string[] FrameworkGeneratedFiles = [];
-
     public static Command Create()
     {
         var command = new Command("template", "Manage templates");
@@ -60,23 +51,16 @@ public static class TemplateCommand
     private static Command CreateUpdateCommand()
     {
         var diffOption = new Option<bool>("--diff") { Description = "Preview changes without writing" };
-        var forceOption = new Option<bool>("--force") { Description = "Overwrite even if re-anchoring fails (backs up first)" };
 
-        var command = new Command("update", "Update framework templates and docs");
+        var command = new Command("update", "Update framework docs");
         command.Options.Add(diffOption);
-        command.Options.Add(forceOption);
 
-        command.SetAction(parseResult =>
-        {
-            var diff = parseResult.GetValue(diffOption);
-            var force = parseResult.GetValue(forceOption);
-            return ExecuteUpdate(diff, force);
-        });
+        command.SetAction(parseResult => ExecuteUpdate(parseResult.GetValue(diffOption)));
 
         return command;
     }
 
-    private static int ExecuteUpdate(bool diff, bool force)
+    private static int ExecuteUpdate(bool diff)
     {
         var configService = new ConfigService();
         var configPath = configService.FindConfigFile();
@@ -88,13 +72,11 @@ public static class TemplateCommand
 
         var config = configService.LoadConfig()!;
         var dydoRoot = configService.GetDydoRoot();
-        MigrateHashFormat(config, dydoRoot);
 
         var tally = new UpdateTally();
-        var legacyConflicts = MigrateLegacyModeTemplates(dydoRoot, config, diff, tally);
-        UpdateFrameworkFiles(dydoRoot, config, diff, force, tally, legacyConflicts);
+        foreach (var relativePath in FrameworkDocFiles)
+            AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff), tally);
 
-        tally.Updated += CleanStaleTemplates(dydoRoot, config, diff);
         tally.Updated += CleanRetiredBinaries(dydoRoot, config, diff);
         tally.Updated += CleanRetiredDocs(dydoRoot, config, diff);
         PruneStaleHashes(config, diff);
@@ -107,30 +89,7 @@ public static class TemplateCommand
 
         ReportSummary(tally);
 
-        return tally.Warnings.Count > 0 && !force ? 1 : 0;
-    }
-
-    private static void UpdateFrameworkFiles(
-        string dydoRoot, DydoConfig config, bool diff, bool force, UpdateTally tally,
-        ISet<string> legacyConflicts)
-    {
-        foreach (var relativePath in FrameworkTemplateFiles)
-        {
-            if (legacyConflicts.Contains(relativePath))
-            {
-                tally.Skipped++;
-                continue;
-            }
-
-            AccumulateResult(UpdateTemplateFile(relativePath, dydoRoot, config, diff, force),
-                tally, forceCountWarning: force);
-        }
-
-        foreach (var relativePath in FrameworkDocFiles)
-            AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff), tally);
-
-        foreach (var relativePath in FrameworkBinaryFiles)
-            AccumulateResult(UpdateBinaryFile(relativePath, dydoRoot, config, diff), tally);
+        return tally.Warnings.Count > 0 ? 1 : 0;
     }
 
     private static int ApplyConfigDefaults(DydoConfig config, bool diff)
@@ -142,21 +101,6 @@ public static class TemplateCommand
         {
             Console.WriteLine($"  Added {nudgesAdded} default nudge(s)");
             updated += nudgesAdded;
-        }
-
-
-        var modelsUpgraded = !diff && ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
-        if (modelsUpgraded)
-        {
-            Console.WriteLine("  Upgraded legacy OpenAI model defaults");
-            updated++;
-        }
-
-        var plannerRolesUpgraded = !diff && ConfigFactory.UpgradeLegacyPlannerRole(config);
-        if (plannerRolesUpgraded)
-        {
-            Console.WriteLine("  Replaced legacy planner model bindings with project-planner and specifier");
-            updated++;
         }
 
         updated += EnsureScanExcludeWithReport(config, diff);
@@ -174,8 +118,7 @@ public static class TemplateCommand
             Console.Error.WriteLine($"  Warning: {warning}");
     }
 
-    private static void AccumulateResult(
-        UpdateResult result, UpdateTally tally, bool forceCountWarning = false)
+    private static void AccumulateResult(UpdateResult result, UpdateTally tally)
     {
         switch (result)
         {
@@ -188,109 +131,8 @@ public static class TemplateCommand
             case UpdateResult.Warning warning:
                 tally.Warnings.Add(warning.Message);
                 tally.Warned++;
-                if (forceCountWarning) tally.Updated++;
                 break;
         }
-    }
-
-    private static int CleanStaleTemplates(string dydoRoot, DydoConfig config, bool diff)
-    {
-        var validSet = new HashSet<string>(FrameworkTemplateFiles);
-        var templatesDir = Path.Combine(dydoRoot, "_system", "templates");
-        if (!Directory.Exists(templatesDir))
-            return 0;
-
-        var removed = 0;
-        foreach (var file in Directory.GetFiles(templatesDir, "*.template.md"))
-        {
-            var relative = "_system/templates/" + Path.GetFileName(file);
-            if (validSet.Contains(relative)) continue;
-
-            // A mode-* file is legacy user data. The migration pass above either moved a
-            // hash-clean shipped copy or warned the user; never delete the retained file.
-            if (TryGetLegacySkillPath(relative, out _)) continue;
-
-            // Only remove files we know we own (hash-tracked framework copies that are no
-            // longer shipped). An untracked skill-*.template.md is a user's custom role —
-            // dydo sync compiles it — and any other untracked template is user data too.
-            if (!config.FrameworkHashes.ContainsKey(relative)) continue;
-
-            if (!diff)
-                File.Delete(file);
-            Console.WriteLine($"  Removed stale: {relative}");
-            removed++;
-        }
-        return removed;
-    }
-
-    private static HashSet<string> MigrateLegacyModeTemplates(
-        string dydoRoot, DydoConfig config, bool diff, UpdateTally tally)
-    {
-        var conflicts = new HashSet<string>();
-        var templatesDir = Path.Combine(dydoRoot, "_system", "templates");
-        if (!Directory.Exists(templatesDir))
-            return conflicts;
-
-        foreach (var legacyPath in Directory.GetFiles(templatesDir, "mode-*.template.md"))
-        {
-            var legacyRelativePath = "_system/templates/" + Path.GetFileName(legacyPath);
-            if (!TryGetLegacySkillPath(legacyRelativePath, out var skillRelativePath))
-                continue;
-
-            var skillPath = Path.Combine(templatesDir, Path.GetFileName(skillRelativePath));
-            if (File.Exists(skillPath))
-            {
-                if (FrameworkTemplateFiles.Contains(skillRelativePath))
-                    conflicts.Add(skillRelativePath);
-
-                AccumulateResult(new UpdateResult.Warning(
-                    $"{legacyRelativePath} was kept because {skillRelativePath} is already active; "
-                    + $"dydo sync ignores mode-* files. Merge or rename the legacy file after resolving "
-                    + $"the active {skillRelativePath} template."), tally);
-                continue;
-            }
-
-            var storedHash = config.FrameworkHashes.GetValueOrDefault(legacyRelativePath);
-            var isCleanShippedCopy = FrameworkTemplateFiles.Contains(skillRelativePath)
-                && storedHash != null
-                && storedHash == ComputeHash(File.ReadAllText(legacyPath));
-            if (isCleanShippedCopy)
-            {
-                if (!diff)
-                {
-                    File.Move(legacyPath, skillPath);
-                    config.FrameworkHashes.Remove(legacyRelativePath);
-                    config.FrameworkHashes[skillRelativePath] = storedHash!;
-                }
-
-                Console.WriteLine($"  {(diff ? "Would migrate" : "Migrated")} legacy: "
-                    + $"{legacyRelativePath} -> {skillRelativePath}");
-                continue;
-            }
-
-            var reason = storedHash == null ? "it is untracked" : "it was modified";
-            AccumulateResult(new UpdateResult.Warning(
-                $"{legacyRelativePath} was kept because {reason}; dydo sync ignores mode-* files. "
-                + $"Rename it to {skillRelativePath}."), tally);
-        }
-
-        return conflicts;
-    }
-
-    private static bool TryGetLegacySkillPath(string relativePath, out string skillRelativePath)
-    {
-        const string legacyPrefix = "_system/templates/mode-";
-        const string suffix = ".template.md";
-        if (!relativePath.StartsWith(legacyPrefix, StringComparison.Ordinal)
-            || !relativePath.EndsWith(suffix, StringComparison.Ordinal))
-        {
-            skillRelativePath = "";
-            return false;
-        }
-
-        skillRelativePath = "_system/templates/skill-"
-            + relativePath[legacyPrefix.Length..];
-        return true;
     }
 
     /// <summary>Deletes retired framework binaries from the project when the on-disk copy is a
@@ -352,10 +194,7 @@ public static class TemplateCommand
 
     private static void PruneStaleHashes(DydoConfig config, bool diff)
     {
-        var validKeys = new HashSet<string>(FrameworkTemplateFiles
-            .Concat(FrameworkDocFiles)
-            .Concat(FrameworkGeneratedFiles)
-            .Concat(FrameworkBinaryFiles));
+        var validKeys = new HashSet<string>(FrameworkDocFiles);
         var staleKeys = config.FrameworkHashes.Keys
             .Where(k => !validKeys.Contains(k))
             .ToList();
@@ -474,109 +313,6 @@ public static class TemplateCommand
         return sb.ToString();
     }
 
-    private static UpdateResult UpdateTemplateFile(
-        string relativePath, string dydoRoot, DydoConfig config, bool diff, bool force)
-    {
-        var fullPath = Path.Combine(dydoRoot, relativePath);
-        var templateName = Path.GetFileName(relativePath);
-        var embeddedContent = TemplateGenerator.ReadBuiltInTemplate(templateName);
-
-        if (!File.Exists(fullPath))
-            return CreateFile(fullPath, relativePath, embeddedContent, config, diff);
-
-        var onDisk = File.ReadAllText(fullPath);
-
-        if (NormalizeForHash(onDisk) == NormalizeForHash(embeddedContent))
-        {
-            config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
-            return new UpdateResult.Skipped();
-        }
-
-        var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
-        var onDiskHash = ComputeHash(onDisk);
-        var isUserEdited = storedHash != null ? storedHash != onDiskHash : true;
-
-        if (!isUserEdited)
-            return WriteUpdate(fullPath, relativePath, embeddedContent, config, diff);
-
-        return HandleUserEditedTemplate(
-            fullPath, relativePath, embeddedContent, onDisk, config, diff, force);
-    }
-
-    private static UpdateResult HandleUserEditedTemplate(
-        string fullPath, string relativePath, string embeddedContent,
-        string onDisk, DydoConfig config, bool diff, bool force)
-    {
-        var oldStock = GetOldStockContent(relativePath, config, onDisk, embeddedContent);
-        var userIncludes = IncludeReanchor.ExtractUserIncludes(oldStock, onDisk);
-
-        if (userIncludes.Count == 0)
-        {
-            if (!diff)
-            {
-                File.WriteAllText(fullPath, embeddedContent);
-                config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
-            }
-            Console.WriteLine($"  Updated: {relativePath} (user edits were non-include changes, overwritten)");
-            return new UpdateResult.Updated();
-        }
-
-        var reanchorResult = IncludeReanchor.Reanchor(embeddedContent, userIncludes);
-
-        if (diff)
-            return ReportReanchorDiff(relativePath, reanchorResult);
-
-        if (reanchorResult.Unplaced.Count > 0 && !force)
-            return HandleUnplacedTags(fullPath, relativePath, reanchorResult);
-
-        if (reanchorResult.Unplaced.Count > 0)
-            BackupAndSaveUnplaced(fullPath, relativePath, reanchorResult);
-
-        File.WriteAllText(fullPath, reanchorResult.Content);
-        config.FrameworkHashes[relativePath] = ComputeHash(reanchorResult.Content);
-
-        foreach (var tag in reanchorResult.Placed)
-            Console.WriteLine($"    Re-anchored: {tag}");
-        foreach (var tag in reanchorResult.Unplaced)
-            Console.Error.WriteLine($"    UNPLACED: {tag}");
-
-        Console.WriteLine($"  Updated: {relativePath}");
-        return new UpdateResult.Updated();
-    }
-
-    private static UpdateResult ReportReanchorDiff(
-        string relativePath, IncludeReanchor.ReanchorResult result)
-    {
-        Console.WriteLine($"  Would update: {relativePath}");
-        foreach (var tag in result.Placed)
-            Console.WriteLine($"    Re-anchor: {tag}");
-        foreach (var tag in result.Unplaced)
-            Console.WriteLine($"    UNPLACED: {tag}");
-        return result.Unplaced.Count > 0
-            ? new UpdateResult.Warning($"{relativePath}: {result.Unplaced.Count} tag(s) could not be re-anchored")
-            : new UpdateResult.Updated();
-    }
-
-    private static UpdateResult HandleUnplacedTags(
-        string fullPath, string relativePath, IncludeReanchor.ReanchorResult result)
-    {
-        Console.Error.WriteLine($"  Skipped: {relativePath} — {result.Unplaced.Count} tag(s) could not be re-anchored. Use --force to override.");
-        var unplacedPath = fullPath + ".unplaced";
-        File.WriteAllText(unplacedPath, string.Join("\n", result.Unplaced));
-        return new UpdateResult.Warning($"{relativePath}: unplaced tags saved to {Path.GetFileName(unplacedPath)}");
-    }
-
-    private static void BackupAndSaveUnplaced(
-        string fullPath, string relativePath, IncludeReanchor.ReanchorResult result)
-    {
-        var backupPath = fullPath + ".backup";
-        File.Copy(fullPath, backupPath, overwrite: true);
-        Console.WriteLine($"  Backed up: {relativePath} -> {Path.GetFileName(backupPath)}");
-
-        var unplacedPath = fullPath + ".unplaced";
-        File.WriteAllText(unplacedPath, string.Join("\n", result.Unplaced));
-    }
-
     private static UpdateResult CreateFile(
         string fullPath, string relativePath, string content, DydoConfig config, bool diff)
     {
@@ -643,68 +379,6 @@ public static class TemplateCommand
         _ => null
     };
 
-    private static UpdateResult UpdateBinaryFile(
-        string relativePath, string dydoRoot, DydoConfig config, bool diff)
-    {
-        var fullPath = Path.Combine(dydoRoot, relativePath);
-        var fileName = Path.GetFileName(relativePath);
-        var embeddedBytes = TemplateGenerator.ReadEmbeddedAsset(fileName);
-        if (embeddedBytes == null)
-            return new UpdateResult.Skipped();
-
-        if (!File.Exists(fullPath))
-        {
-            if (!diff)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-                File.WriteAllBytes(fullPath, embeddedBytes);
-                config.FrameworkHashes[relativePath] = ComputeHashBytes(embeddedBytes);
-            }
-            Console.WriteLine($"  Created: {relativePath}");
-            return new UpdateResult.Updated();
-        }
-
-        var onDiskBytes = File.ReadAllBytes(fullPath);
-        var embeddedHash = ComputeHashBytes(embeddedBytes);
-        var onDiskHash = ComputeHashBytes(onDiskBytes);
-
-        if (onDiskHash == embeddedHash)
-        {
-            config.FrameworkHashes[relativePath] = embeddedHash;
-            return new UpdateResult.Skipped();
-        }
-
-        var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
-
-        if (storedHash != null && storedHash != onDiskHash)
-        {
-            Console.Error.WriteLine($"  Skipped: {relativePath} — user-edited (hash mismatch)");
-            return new UpdateResult.Warning($"{relativePath}: user-edited, skipped");
-        }
-
-        if (!diff)
-        {
-            File.WriteAllBytes(fullPath, embeddedBytes);
-            config.FrameworkHashes[relativePath] = embeddedHash;
-        }
-        Console.WriteLine($"  Updated: {relativePath}");
-        return new UpdateResult.Updated();
-    }
-
-    private static string GetOldStockContent(
-        string relativePath, DydoConfig config, string onDisk, string embeddedContent)
-    {
-        var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
-        if (storedHash == null)
-            return onDisk;
-
-        if (ComputeHash(embeddedContent) == storedHash)
-            return embeddedContent;
-
-        // Both user and framework changed — old stock irrecoverable
-        return onDisk;
-    }
-
     public static string NormalizeForHash(string content)
     {
         // Strip UTF-8 BOM
@@ -724,30 +398,6 @@ public static class TemplateCommand
     {
         var bytes = SHA256.HashData(content);
         return Convert.ToHexStringLower(bytes);
-    }
-
-    /// <summary>
-    /// Migrates stored hashes from pre-normalization format to normalized format.
-    /// Safe to call on every update — no-ops when hashes are already current.
-    /// </summary>
-    public static void MigrateHashFormat(DydoConfig config, string dydoRoot)
-    {
-        foreach (var relativePath in config.FrameworkHashes.Keys.ToList())
-        {
-            var fullPath = Path.Combine(dydoRoot, relativePath);
-            if (!File.Exists(fullPath)) continue;
-
-            var onDisk = File.ReadAllText(fullPath);
-            var normalizedHash = ComputeHash(onDisk);
-            var storedHash = config.FrameworkHashes[relativePath];
-            if (storedHash == normalizedHash) continue;
-
-            // Check if stored hash matches raw (un-normalized) content
-            var rawHash = Convert.ToHexStringLower(
-                SHA256.HashData(Encoding.UTF8.GetBytes(onDisk)));
-            if (storedHash == rawHash)
-                config.FrameworkHashes[relativePath] = normalizedHash;
-        }
     }
 
     internal abstract record UpdateResult

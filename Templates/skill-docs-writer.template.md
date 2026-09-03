@@ -1,5 +1,5 @@
 ---
-mode: docs-writer
+name: docs-writer
 description: Documentation the repository can witness. Use when a reviewed change needs documentation written or corrected, when a claim in the docs no longer matches the code, or when an audit needs its assimilation brief.
 emit: agent
 invocation: automatic

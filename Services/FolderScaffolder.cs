@@ -19,7 +19,6 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/releases", "Release records and durable release evidence", "project"),
         new("project/future-features", "Ideas not in scope for current version", "project"),
         new("_system", "System configuration (committed)", "_system"),
-        new("_system/templates", "Project-local template overrides", "_system"),
         new("_system/.local", "Machine-local runtime state (not committed)", "_system"),
         new("_assets", "Documentation assets (images, diagrams)", "_assets")
     ];
@@ -58,7 +57,6 @@ public class FolderScaffolder : IFolderScaffolder
         // is assigned at spawn, nothing owns a named workspace).
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
-        CopyBuiltInTemplates(basePath);
         ScaffoldTemplateAdditions(basePath);
         ScaffoldTypesJson(basePath);
         CopyBuiltInAssets(basePath);
@@ -91,17 +89,6 @@ public class FolderScaffolder : IFolderScaffolder
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
             File.WriteAllText(fullPath, content);
         }
-    }
-
-    public void CopyBuiltInTemplates(string basePath)
-    {
-        var destPath = Path.Combine(basePath, "_system", "templates");
-        Directory.CreateDirectory(destPath);
-
-        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
-            WriteIfNotExists(
-                Path.Combine(destPath, templateName),
-                TemplateGenerator.ReadBuiltInTemplate(templateName));
     }
 
     private void CopyBuiltInAssets(string basePath)
@@ -144,19 +131,11 @@ public class FolderScaffolder : IFolderScaffolder
 
     public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
     {
-        foreach (var relativePath in TemplateCommand.FrameworkTemplateFiles
-            .Concat(TemplateCommand.FrameworkDocFiles))
+        foreach (var relativePath in TemplateCommand.FrameworkDocFiles)
         {
             var fullPath = Path.Combine(basePath, relativePath);
             if (File.Exists(fullPath))
                 config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
-        }
-
-        foreach (var relativePath in TemplateCommand.FrameworkBinaryFiles)
-        {
-            var fullPath = Path.Combine(basePath, relativePath);
-            if (File.Exists(fullPath))
-                config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHashBytes(File.ReadAllBytes(fullPath));
         }
     }
 

@@ -6,8 +6,6 @@ using Xunit;
 public class RuleSkipPathsTests
 {
     [Theory]
-    [InlineData("_system/templates/foo.md", true)]
-    [InlineData("_system/templates/skill-implementer.template.md", true)]
     [InlineData("_system/template-additions/extra-y.md", true)]
     [InlineData("_system/template-additions/_README.md", true)]
     [InlineData("understand/about.md", false)]
@@ -16,15 +14,14 @@ public class RuleSkipPathsTests
     [InlineData("_system/.local/worktrees/foo/bar.md", false)]
     [InlineData("project/decisions/foo.md", false)]
     [InlineData("", false)]
-    public void IsTemplateOrAddition_ClassifiesPaths(string path, bool expected)
+    public void IsTemplateAddition_ClassifiesPaths(string path, bool expected)
     {
-        Assert.Equal(expected, RuleSkipPaths.IsTemplateOrAddition(path));
+        Assert.Equal(expected, RuleSkipPaths.IsTemplateAddition(path));
     }
 
     [Fact]
-    public void IsTemplateOrAddition_IsCaseInsensitive()
+    public void IsTemplateAddition_IsCaseInsensitive()
     {
-        Assert.True(RuleSkipPaths.IsTemplateOrAddition("_SYSTEM/TEMPLATES/foo.md"));
-        Assert.True(RuleSkipPaths.IsTemplateOrAddition("_System/Template-Additions/foo.md"));
+        Assert.True(RuleSkipPaths.IsTemplateAddition("_System/Template-Additions/foo.md"));
     }
 }

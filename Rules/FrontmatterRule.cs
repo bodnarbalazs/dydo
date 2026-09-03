@@ -21,7 +21,7 @@ public class FrontmatterRule : RuleBase
         var normalized = PathUtils.NormalizePath(doc.RelativePath);
 
         // Skip template files and template additions
-        if (RuleSkipPaths.IsTemplateOrAddition(normalized))
+        if (RuleSkipPaths.IsTemplateAddition(normalized))
         {
             yield break;
         }

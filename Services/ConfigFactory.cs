@@ -34,7 +34,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|roles|validate|inquisition)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|sync|completions|complete|template|validate|version|help)\b.*)",
             Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
@@ -101,7 +101,7 @@ public static class ConfigFactory
                 ["light"] = "gpt-5.6-luna"
             }
         },
-        Roles = new Dictionary<string, string>
+        Agents = new Dictionary<string, string>
         {
             ["implementer"] = "standard",
             ["hardener"] = "strong",
@@ -111,64 +111,10 @@ public static class ConfigFactory
             ["project-planner"] = "strong",
             ["specifier"] = "strong",
             ["issue-captain"] = "strong",
-            ["research"] = "standard"
-        },
-        // The declared second-line model `dydo model cap` rebinds to when the strong
-        // tier's model (Fable) hits its spend cap — matches the out-of-band reviewer
-        // workaround (issue #214). Kept in step with FALLBACK_MODEL in the inquisition
-        // harness script, which retries a stage on this same model.
-        Fallback = "claude-sonnet-5"
+            ["research"] = "standard",
+            ["scout"] = "standard"
+        }
     };
-
-    /// <summary>
-    /// Replaces retired planning-role bindings with the current literal roles while preserving
-    /// the project's chosen tier: the generic `planner` split into `project-planner` and
-    /// `issue-planner` (DR 045), and `issue-planner` became `specifier` (DR 046). Idempotent and
-    /// leaves configs without a legacy binding untouched.
-    /// </summary>
-    public static bool UpgradeLegacyPlannerRole(DydoConfig config)
-    {
-        var roles = config.Models?.Roles;
-        if (roles == null)
-            return false;
-
-        var upgraded = false;
-        if (roles.Remove("planner", out var plannerTier))
-        {
-            roles.TryAdd("project-planner", plannerTier);
-            roles.TryAdd("specifier", plannerTier);
-            upgraded = true;
-        }
-
-        if (roles.Remove("issue-planner", out var issuePlannerTier))
-        {
-            roles.TryAdd("specifier", issuePlannerTier);
-            upgraded = true;
-        }
-
-        return upgraded;
-    }
-
-    /// <summary>
-    /// Upgrades the exact OpenAI tier block emitted by older versions. A project that
-    /// customized any tier is left untouched.
-    /// </summary>
-    public static bool UpgradeLegacyOpenAiTierDefaults(DydoConfig config)
-    {
-        var models = config.Models;
-        if (models == null
-            || !models.Tiers.TryGetValue("openai", out var openAi)
-            || openAi.Count != 3
-            || !openAi.All(pair => pair.Key is "strong" or "standard" or "light"
-                && pair.Value == "gpt-5.5"))
-            return false;
-
-        openAi["strong"] = "gpt-5.6-sol";
-        openAi["standard"] = "gpt-5.6-terra";
-        openAi["light"] = "gpt-5.6-luna";
-
-        return true;
-    }
 
     public static DydoConfig CreateDefault()
     {
@@ -182,7 +128,6 @@ public static class ConfigFactory
                 Pattern = n.Pattern,
                 Message = n.Message,
                 Severity = n.Severity,
-                Tools = n.Tools?.ToList(),
                 Audience = n.Audience
             }).ToList(),
             ScanExclude = DydoInternalScanExclude.ToList(),
@@ -208,7 +153,6 @@ public static class ConfigFactory
                 Pattern = nudge.Pattern,
                 Message = nudge.Message,
                 Severity = nudge.Severity,
-                Tools = nudge.Tools?.ToList(),
                 Audience = nudge.Audience
             });
             added++;

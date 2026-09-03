@@ -6,45 +6,46 @@ using DynaDocs.Tests.Commands;
 using DynaDocs.Utils;
 
 /// <summary>
-/// c1-7 / issue 0233 (ask 4): `dydo sync` emits a skill for every skill-only role without minting
-/// an agent definition. Existing sync tests pin the ABSENCE of a <c>.claude/agents/&lt;role&gt;.md</c>;
-/// this one closes the codex-side gap: a spawnable <c>.codex/agents/&lt;role&gt;.toml</c> for any
-/// skill-only role would be artifact drift. Driven through the real sync command on an
-/// initialized project, over the discovered role set rather than a hand-kept list.
+/// c1-7 / issue 0233 (ask 4): `dydo sync` emits a skill for every skill-only template without
+/// minting an agent definition. Existing sync tests pin the ABSENCE of a
+/// <c>.claude/agents/&lt;name&gt;.md</c>; this one closes the codex-side gap: a spawnable
+/// <c>.codex/agents/&lt;name&gt;.toml</c> for a skill-only template would be artifact drift. Driven
+/// through the real sync command on an initialized project, over the discovered set rather than a
+/// hand-kept list.
 /// </summary>
 [Collection("Integration")]
 public class CodexSyncArtifactsE2ETests : IntegrationTestBase
 {
     [Fact]
-    public async Task Sync_AllShippedSkillOnlyRoles_EmitSkillsWithoutAgentDefinitions()
+    public async Task Sync_AllShippedSkillOnlyTemplates_EmitSkillsWithoutAgentDefinitions()
     {
         await InitProjectAsync("none");
 
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        var skillOnly = RoleDefinitionService.DiscoverRoles(TestDir)
-            .Where(role => !role.EmitAgent)
-            .Select(role => role.Name)
+        var skillOnly = SkillTemplateService.DiscoverSkills()
+            .Where(skill => !skill.EmitAgent)
+            .Select(skill => skill.Name)
             .ToList();
         Assert.NotEmpty(skillOnly);
 
-        foreach (var role in skillOnly)
+        foreach (var name in skillOnly)
         {
-            // Skill on both surfaces: the methodology the skill-only role applies in its thread.
-            AssertFileExists($".claude/skills/{role}/SKILL.md");
-            AssertFileExists($".agents/skills/{role}/SKILL.md");
+            // Skill on both surfaces: the methodology a session applies in its own thread.
+            AssertFileExists($".claude/skills/{name}/SKILL.md");
+            AssertFileExists($".agents/skills/{name}/SKILL.md");
             // But NO spawnable agent definition on either host.
-            AssertFileNotExists($".claude/agents/{role}.md");
-            AssertFileNotExists($".codex/agents/{role}.toml");
+            AssertFileNotExists($".claude/agents/{name}.md");
+            AssertFileNotExists($".codex/agents/{name}.toml");
         }
 
-        foreach (var role in new[] { "wayfinder", "grilling", "grill-me", "bro", "writing-for-agents" })
+        foreach (var name in new[] { "wayfinder", "grilling", "grill-me", "bro", "writing-for-agents" })
         {
-            var claude = ReadFile($".claude/skills/{role}/SKILL.md");
-            var codex = ReadFile($".agents/skills/{role}/SKILL.md");
+            var claude = ReadFile($".claude/skills/{name}/SKILL.md");
+            var codex = ReadFile($".agents/skills/{name}/SKILL.md");
             // Same body on both hosts, modulo the host skill root the compiler writes into a
-            // link to the role's own resources.
+            // link to the skill's own resources.
             Assert.Equal(
                 SyncCommandTests.NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(claude)),
                 SyncCommandTests.NormalizeHostSkillRoot(FrontmatterParser.StripFrontmatter(codex)));
@@ -52,8 +53,8 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
             Assert.DoesNotContain('\r', codex);
         }
 
-        // Contrast: worker roles DO get a codex agent role file — sync is emitting codex artifacts,
-        // it just never mints a spawnable agent for a skill-only role.
+        // Contrast: agent-emitting skills DO get a codex agent file — sync is emitting codex
+        // artifacts, it just never mints a spawnable agent for a skill-only template.
         AssertFileExists(".codex/agents/implementer.toml");
         AssertFileExists(".codex/agents/reviewer.toml");
     }
@@ -66,28 +67,28 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        // Over every skill-only role, not two named ones: which skills are human-only is DR 045
+        // Over every skill-only template, not two named ones: which skills are human-only is DR 045
         // section 9's to decide, and a fixture naming today's explicit skill goes red the day it
         // changes, with no later Issue owning this file to fix it.
-        var roles = RoleDefinitionService.DiscoverRoles(TestDir).Where(role => !role.EmitAgent).ToList();
-        Assert.Contains(roles, role => role.ExplicitInvocation);
-        Assert.Contains(roles, role => !role.ExplicitInvocation);
+        var skills = SkillTemplateService.DiscoverSkills().Where(skill => !skill.EmitAgent).ToList();
+        Assert.Contains(skills, skill => skill.ExplicitInvocation);
+        Assert.Contains(skills, skill => !skill.ExplicitInvocation);
 
-        foreach (var role in roles)
+        foreach (var skill in skills)
         {
-            var claude = ReadFile($".claude/skills/{role.Name}/SKILL.md");
-            var codex = ReadFile($".agents/skills/{role.Name}/SKILL.md");
-            var policy = $".agents/skills/{role.Name}/agents/openai.yaml";
+            var claude = ReadFile($".claude/skills/{skill.Name}/SKILL.md");
+            var codex = ReadFile($".agents/skills/{skill.Name}/SKILL.md");
+            var policy = $".agents/skills/{skill.Name}/agents/openai.yaml";
 
             // The description survives compilation unchanged on both hosts — it is what routes.
-            Assert.Contains($"description: {role.Description}\n", claude);
-            Assert.Contains($"description: {role.Description}\n", codex);
+            Assert.Contains($"description: {skill.Description}\n", claude);
+            Assert.Contains($"description: {skill.Description}\n", codex);
 
             // Each host expresses the same policy its own way, and never the other host's way.
-            Assert.Equal(role.ExplicitInvocation, claude.Contains("disable-model-invocation: true"));
+            Assert.Equal(skill.ExplicitInvocation, claude.Contains("disable-model-invocation: true"));
             Assert.DoesNotContain("disable-model-invocation", codex);
 
-            if (role.ExplicitInvocation)
+            if (skill.ExplicitInvocation)
                 AssertFileContains(policy, "allow_implicit_invocation: false");
             else
                 AssertFileNotExists(policy);
@@ -95,9 +96,9 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
     }
 
     /// <summary>
-    /// Issue 0271: every compiled codex worker role must parse for codex. The old emitter wrote
+    /// Issue 0271: every compiled codex agent must parse for codex. The old emitter wrote
     /// <c>tools = "read, grep, ..."</c> — a bare string codex rejects ('invalid type: string ...
-    /// expected struct ToolsToml'), so it silently ignored ALL six worker roles and the DR-024
+    /// expected struct ToolsToml'), so it silently ignored ALL six agents and the DR-024
     /// dual-compilation codex leg was non-functional. This drives the real sync command and pins
     /// the wire shape of every emitted <c>.codex/agents/*.toml</c>: no <c>tools</c> field, and the
     /// fields codex does accept present. The prior sync tests validated content, not codex-parseability.
@@ -117,9 +118,9 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         foreach (var toml in tomls)
         {
             var content = File.ReadAllText(toml);
-            var role = Path.GetFileNameWithoutExtension(toml);
+            var name = Path.GetFileNameWithoutExtension(toml);
             Assert.DoesNotContain(content.Split('\n'), line => line.TrimStart().StartsWith("tools"));
-            Assert.Contains($"name = \"{role}\"", content);
+            Assert.Contains($"name = \"{name}\"", content);
             Assert.Contains("model = \"", content);
             Assert.Contains("developer_instructions = \"\"\"", content);
         }
@@ -192,29 +193,25 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         }
     }
 
-    // The retirement has to survive `dydo init`, not just the shipped set: init mirrors every
-    // shipped template into dydo/_system/templates/, and discovery unions that mirror back in.
-    // While a retired template was still mirrored, sync compiled the retired role on both hosts
-    // in every initialized project and the sweep was suppressed by dydo's own copy.
+    // The retirement has to survive `dydo init`, not just the shipped set.
     [Fact]
-    public async Task InitThenSync_NeverCompilesARetiredRole()
+    public async Task InitThenSync_NeverCompilesARetiredSkill()
     {
         await InitProjectAsync("none");
 
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        Assert.NotEmpty(SyncCommand.RetiredManagedRoles);
-        foreach (var retired in SyncCommand.RetiredManagedRoles)
+        Assert.NotEmpty(SyncCommand.RetiredSkills);
+        foreach (var retired in SyncCommand.RetiredSkills)
         {
-            AssertFileNotExists($"dydo/_system/templates/skill-{retired}.template.md");
             AssertDirectoryNotExists($".claude/skills/{retired}");
             AssertDirectoryNotExists($".agents/skills/{retired}");
             AssertFileNotExists($".claude/agents/{retired}.md");
             AssertFileNotExists($".codex/agents/{retired}.toml");
         }
 
-        // The sweep is not vacuous: the surviving roles still compile on both hosts.
+        // The sweep is not vacuous: the surviving skills still compile on both hosts.
         AssertFileExists(".claude/skills/reviewer/SKILL.md");
         AssertFileExists(".agents/skills/reviewer/SKILL.md");
     }
@@ -235,21 +232,21 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
         var sync = await RunAsync(SyncCommand.Create());
         sync.AssertSuccess();
 
-        var workers = RoleDefinitionService.DiscoverRoles(TestDir).Where(role => role.EmitAgent).ToList();
+        var workers = SkillTemplateService.DiscoverSkills().Where(skill => skill.EmitAgent).ToList();
         Assert.NotEmpty(workers);
 
-        foreach (var role in workers)
+        foreach (var skill in workers)
         {
-            var claude = ReadFile($".claude/agents/{role.Name}.md");
+            var claude = ReadFile($".claude/agents/{skill.Name}.md");
             var toolsLine = claude.Split('\n').Single(line => line.StartsWith("tools: ", StringComparison.Ordinal));
-            Assert.Contains($"skills: [{role.Name}]", claude);
+            Assert.Contains($"skills: [{skill.Name}]", claude);
             Assert.Contains("Skill", toolsLine);
-            Assert.Equal(role.Delegates, toolsLine.Contains("Agent", StringComparison.Ordinal));
+            Assert.Equal(skill.Delegates, toolsLine.Contains("Agent", StringComparison.Ordinal));
 
-            var codex = ReadFile($".codex/agents/{role.Name}.toml");
-            Assert.Contains($"Load the `${role.Name}` skill before working.", codex);
+            var codex = ReadFile($".codex/agents/{skill.Name}.toml");
+            Assert.Contains($"Load the `${skill.Name}` skill before working.", codex);
             Assert.Contains(
-                role.ReadOnly ? "sandbox_mode = \"read-only\"" : "sandbox_mode = \"workspace-write\"",
+                skill.ReadOnly ? "sandbox_mode = \"read-only\"" : "sandbox_mode = \"workspace-write\"",
                 codex);
         }
     }

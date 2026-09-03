@@ -46,7 +46,7 @@ commands hard-block; project nudges add configurable notices, warnings, and bloc
 
 ### An opinionated scaffold
 
-Every `dydo init` mode creates the knowledge tree, source role templates, and `CLAUDE.md`. The `claude`,
+Every `dydo init` mode creates the knowledge tree, and `CLAUDE.md`. The `claude`,
 `codex`, and `all` modes wire guard hooks only for the selected runtimes; Codex selections also add
 `AGENTS.md`. The `none` mode installs no guard hooks and no `AGENTS.md`. A new project contains durable
 Decisions, changelog, pitfalls, and FutureFeature idea documentation. It creates no repository-backed
@@ -100,7 +100,7 @@ after current workflow state changes.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`.
-- **Roles** — shipped source templates or project overrides in `dydo/_system/templates/`.
+- **Roles** — shipped source templates.
 - **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks.
 - **Models** — abstract role tiers and vendor bindings in `dydo.json`.
 
@@ -111,7 +111,7 @@ Do not hand-edit compiled skills, agents, or workflows. Change their source temp
 
 ```text
 project/
-|-- dydo.json                    # Paths, model tiers, integrations, nudges
+|-- dydo.json                    # Model tiers, integrations, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- .claude/                     # Compiled Claude agents, skills, and workflows
@@ -128,7 +128,6 @@ project/
     |   |-- future-features/     # Unscheduled repo-native ideas
     |   |-- changelog/           # Completed change and release history
     |   `-- pitfalls/            # Recurring gotchas and constraints
-    |-- _system/templates/       # Project template overrides
     |-- _system/template-additions/
     `-- _assets/
 ```
@@ -168,15 +167,12 @@ work graph in repository files.
 | `dydo graph stats [--top N]` | Summarize graph connectivity |
 | `dydo validate` | Validate local configuration and nudges |
 
-### Guard, templates, and models
+### Guard, templates
 
 | Command | Description |
 |---|---|
 | `dydo guard` | Evaluate universal hook rules |
-| `dydo template update [--diff]` | Update or preview framework-owned templates and docs |
-| `dydo model cap <model> --until <time>` | Temporarily rebind a model tier |
-| `dydo model status` | Show active model caps |
-| `dydo model uncap <model>` | Restore original model bindings |
+| `dydo template update [--diff]` | Update or preview framework-owned docs |
 
 See the [complete CLI reference](dydo/reference/dydo-commands.md) for options, examples, transition-only
 commands, and exit codes.

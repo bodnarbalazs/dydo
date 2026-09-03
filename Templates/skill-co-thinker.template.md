@@ -1,5 +1,5 @@
 ---
-mode: co-thinker
+name: co-thinker
 description: An idea that is not ripe yet. Use when a thought, a doubt or a preference is still open; when a question surfaces that is not yet an Issue; when trade-offs need testing before intent hardens into a plan or a Decision Record.
 emit: skill
 invocation: automatic

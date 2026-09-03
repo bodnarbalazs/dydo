@@ -8,14 +8,14 @@ is the universal reference in this skill's body.
 
 **The template is the role.** One `skill-<name>.template.md` carries the metadata and the
 methodology; `dydo sync` compiles it for every host and owns every host-specific detail. For where
-sources live and how to add or shadow one, see
+sources live, see
 [customizing-roles.md](../../../../dydo/guides/customizing-roles.md).
 
 ## Frontmatter
 
 | Key | Value | What the compiler does with it |
 |---|---|---|
-| `mode` | the role name | Read by nothing: the filename `skill-<name>.template.md` names the role. Keep the two equal. |
+| `name` | the role name | The filename `skill-<name>.template.md` names the role. Keep the two equal. |
 | `description` | one line | Becomes the skill's and the agent's description. |
 | `emit` | `agent` \| `skill` | `agent` also compiles a spawnable agent that preloads this skill (`skills: [<name>]`) and carries the `Skill` tool; `skill` is methodology a session applies in its own thread. |
 | `read-only` | `true` | The compiled agent gets no `Edit`/`Write`: it assesses and reports. |

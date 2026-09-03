@@ -1,5 +1,5 @@
 ---
-mode: diagnosing-bugs
+name: diagnosing-bugs
 description: Diagnosis loop for hard bugs and performance regressions. Use when the human says "diagnose"/"debug this", or an Issue reports something broken/throwing/failing/slow.
 emit: skill
 invocation: automatic

@@ -36,16 +36,16 @@ public class WayfinderHarmonyTests : IDisposable
         var repositoryDydo = Path.Combine(RepositoryRoot(), "dydo");
         var checkedLinks = 0;
 
-        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        foreach (var skill in SkillTemplateService.DiscoverSkills())
         {
-            foreach (var target in DydoLinkTargets(File.ReadAllText(CompileSkill(role.Name))))
+            foreach (var target in DydoLinkTargets(File.ReadAllText(CompileSkill(skill.Name))))
             {
                 Assert.StartsWith(climb, target);
 
                 var document = target[climb.Length..].Replace('/', Path.DirectorySeparatorChar);
                 var resolved = Path.Combine(repositoryDydo, document);
                 Assert.True(File.Exists(resolved),
-                    $"{role.Name}: compiled link '{target}' names no document ({resolved})");
+                    $"{skill.Name}: compiled link '{target}' names no document ({resolved})");
                 checkedLinks++;
             }
         }
@@ -73,21 +73,21 @@ public class WayfinderHarmonyTests : IDisposable
 
     // DR 045 section 11 retires the Waypoint ontology from the vocabulary, and nothing else in
     // the navigation wording: the same DR calls the Issue Captain the hat a top-level session
-    // wears, and makes wayfinder a method other roles invoke. Banning those phrases would fail
+    // wears, and makes wayfinder a method other skills invoke. Banning those phrases would fail
     // DR-conformant prose.
     [Fact]
     public void CompiledSkills_CarryNoRetiredWaypointOntology()
     {
-        foreach (var role in RoleDefinitionService.DiscoverRoles(_testDir))
+        foreach (var skill in SkillTemplateService.DiscoverSkills())
             Assert.DoesNotContain(
-                "Waypoint", File.ReadAllText(CompileSkill(role.Name)), StringComparison.OrdinalIgnoreCase);
+                "Waypoint", File.ReadAllText(CompileSkill(skill.Name)), StringComparison.OrdinalIgnoreCase);
     }
 
-    private string CompileSkill(string roleName)
+    private string CompileSkill(string skillName)
     {
-        var role = RoleDefinitionService.DiscoverRoles(_testDir)
-            .Single(candidate => candidate.Name == roleName);
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        return Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md");
+        var template = SkillTemplateService.DiscoverSkills()
+            .Single(candidate => candidate.Name == skillName);
+        SyncCommand.SyncSkill(template, _testDir);
+        return Path.Combine(_testDir, ".claude", "skills", skillName, "SKILL.md");
     }
 }

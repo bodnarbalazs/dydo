@@ -1,5 +1,5 @@
 ---
-mode: hardener
+name: hardener
 description: A working candidate, not yet good. Make it smaller, simpler, standard and mutant-free without changing what it does.
 emit: agent
 invocation: automatic

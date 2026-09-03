@@ -1,5 +1,5 @@
 ---
-mode: reviewer
+name: reviewer
 description: YOU SHALL NOT PASS — one candidate, one named rubric, one binding verdict. Use for production review, Project-plan approval, Captain-requested spec review, post-merge review, or an audit's judge.
 emit: agent
 read-only: true

@@ -123,10 +123,10 @@ public class HubFilesRuleTests
     {
         var docs = new List<DocFile>
         {
-            CreateDoc("_system/templates/agent-workflow.template.md")
+            CreateDoc("_system/template-additions/agent-workflow.template.md")
         };
 
-        var violations = _rule.ValidateFolder("/base/_system/templates", docs, "/base").ToList();
+        var violations = _rule.ValidateFolder("/base/_system/template-additions", docs, "/base").ToList();
 
         Assert.Empty(violations);
     }

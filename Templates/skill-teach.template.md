@@ -1,6 +1,7 @@
 ---
-mode: teach
+name: teach
 description: Teach the human a new skill or concept, within this workspace.
+argument-hint: "What would you like to learn about?"
 emit: skill
 invocation: explicit
 ---

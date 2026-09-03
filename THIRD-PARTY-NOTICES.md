@@ -5,7 +5,7 @@
 Several dydo skill templates contain adaptations of material from
 [mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
 `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
-header, as do the copies installed under `dydo/_system/templates/` and the skills `dydo sync` compiles
+header, as do the skills `dydo sync` compiles
 into `.claude/skills/` and `.agents/skills/`.
 
 | Upstream skill | Adapted in |

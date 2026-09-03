@@ -1,5 +1,5 @@
 ---
-mode: self-improvement
+name: self-improvement
 description: Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 emit: skill
 invocation: automatic

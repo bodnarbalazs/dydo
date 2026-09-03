@@ -4,69 +4,14 @@ using DynaDocs.Commands;
 using DynaDocs.Services;
 
 /// <summary>
-/// Integration tests for project-local template overrides in _system/templates/.
+/// Integration tests for the shipped template inventory, framework-doc hash tracking and the
+/// template-additions scaffold.
 /// The claim-time skill-template generation tests were removed with the claim ceremony (DR-041) —
 /// skills are compiled by <c>dydo sync</c>, not created at claim.
 /// </summary>
 [Collection("Integration")]
-public class TemplateOverrideTests : IntegrationTestBase
+public class TemplateScaffoldingTests : IntegrationTestBase
 {
-    [Fact]
-    public async Task Init_CopiesTemplatesToSystemFolder()
-    {
-        await InitProjectAsync();
-
-        AssertDirectoryExists("dydo/_system/templates");
-        AssertFileExists("dydo/_system/templates/skill-implementer.template.md");
-        AssertFileExists("dydo/_system/templates/skill-reviewer.template.md");
-        AssertFileExists("dydo/_system/templates/skill-co-thinker.template.md");
-        AssertFileExists("dydo/_system/templates/skill-project-planner.template.md");
-        AssertFileExists("dydo/_system/templates/skill-specifier.template.md");
-        AssertFileExists("dydo/_system/templates/skill-docs-writer.template.md");
-        AssertFileExists("dydo/_system/templates/skill-inquisitor.template.md");
-        AssertFileExists("dydo/_system/templates/skill-wayfinder.template.md");
-        AssertFileExists("dydo/_system/templates/skill-grilling.template.md");
-        AssertFileExists("dydo/_system/templates/skill-grill-me.template.md");
-        AssertFileExists("dydo/_system/templates/skill-bro.template.md");
-        AssertFileExists("dydo/_system/templates/skill-writing-for-agents.template.md");
-    }
-
-    [Fact]
-    public async Task Init_SystemTemplatesMatchEveryBuiltInTemplate()
-    {
-        await InitProjectAsync();
-
-        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
-        {
-            var copiedContent = ReadFile($"dydo/_system/templates/{templateName}");
-            var builtInContent = TemplateGenerator.ReadBuiltInTemplate(templateName);
-
-            Assert.Equal(builtInContent, copiedContent);
-        }
-
-        AssertFileNotExists("dydo/_system/templates/_tasks.template.md");
-        AssertFileNotExists("dydo/_system/templates/_issues.template.md");
-        AssertFileNotExists("dydo/_system/templates/_backlog.template.md");
-    }
-
-    [Fact]
-    public async Task Join_DoesNotOverwriteExistingTemplates()
-    {
-        await InitProjectAsync("none");
-
-        // Modify a template
-        var templatePath = Path.Combine(TestDir, "dydo/_system/templates/skill-implementer.template.md");
-        var customContent = "<!-- CUSTOM_CONTENT_PRESERVED -->\nCustom template";
-        File.WriteAllText(templatePath, customContent);
-
-        // Join as another user
-        await JoinProjectAsync("none");
-
-        // Verify custom template was NOT overwritten
-        var contentAfterJoin = File.ReadAllText(templatePath);
-        Assert.Contains("CUSTOM_CONTENT_PRESERVED", contentAfterJoin);
-    }
-
     [Fact]
     public void GetAllTemplateNames_ReturnsExpectedTemplates()
     {
@@ -85,8 +30,8 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("skill-bro.template.md", templateNames);
         Assert.Contains("skill-writing-for-agents.template.md", templateNames);
 
-        // The mirrored set IS the shipped set: every skill template plus every skill resource
-        // template (<role>-resource-<name>.template.md). A hard-coded count would freeze the
+        // The inventory is every skill template plus every skill resource
+        // template (<skill>-resource-<name>.template.md). A hard-coded count would freeze the
         // inventory the DR 045 taxonomy is about to change.
         Assert.Contains("reviewer-resource-project-plan.template.md", templateNames);
         Assert.Contains("reviewer-resource-spec.template.md", templateNames);
@@ -130,18 +75,17 @@ public class TemplateOverrideTests : IntegrationTestBase
             "template update must track the Linear workspace standard by hash");
     }
 
-    // The mirrored set is the authored set minus retired roles and anything that hangs off
-    // them: a retired template mirrored into a project revives the role there.
+    // The shipped set is the authored set minus retired skills and anything that hangs off them.
     private static IEnumerable<string> ShippedTemplateNames()
     {
         var templates = Path.Combine(FindRepositoryRoot(), "Templates");
-        var retired = SyncCommand.RetiredManagedRoles;
+        var retired = SyncCommand.RetiredSkills;
         return Directory.GetFiles(templates, "skill-*.template.md")
             .Concat(Directory.GetFiles(templates, "*-resource-*.template.md"))
             .Select(path => Path.GetFileName(path)!)
-            .Where(name => !retired.Any(role =>
-                name.Equals($"skill-{role}.template.md", StringComparison.OrdinalIgnoreCase)
-                || name.StartsWith($"{role}-resource-", StringComparison.OrdinalIgnoreCase)))
+            .Where(name => !retired.Any(skill =>
+                name.Equals($"skill-{skill}.template.md", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith($"{skill}-resource-", StringComparison.OrdinalIgnoreCase)))
             .OrderBy(name => name, StringComparer.Ordinal);
     }
 
@@ -162,7 +106,7 @@ public class TemplateOverrideTests : IntegrationTestBase
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("mode: implementer", content);
+        Assert.Contains("name: implementer", content);
     }
 
     [Fact]
@@ -209,37 +153,16 @@ public class TemplateOverrideTests : IntegrationTestBase
         var config = System.Text.Json.JsonSerializer.Deserialize(json,
             DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
 
-        // Must have a hash for every framework template file
-        foreach (var templateFile in TemplateCommand.FrameworkTemplateFiles)
-            Assert.True(config.FrameworkHashes.ContainsKey(templateFile),
-                $"Missing hash for framework template: {templateFile}");
+        // Must have a hash for every framework doc file
+        foreach (var docFile in TemplateCommand.FrameworkDocFiles)
+            Assert.True(config.FrameworkHashes.ContainsKey(docFile),
+                $"Missing hash for framework doc: {docFile}");
 
         // Each hash must be a non-empty SHA256 hex string (64 chars)
         foreach (var (key, hash) in config.FrameworkHashes)
         {
             Assert.False(string.IsNullOrWhiteSpace(hash), $"Empty hash for {key}");
             Assert.Equal(64, hash.Length);
-        }
-    }
-
-    [Fact]
-    public async Task Init_FrameworkHashes_MatchEmbeddedTemplateContent()
-    {
-        // Regression for Slice 3: when embedded templates change and dydo.json
-        // hashes are bumped to the new content, init must produce the same hash
-        // — guaranteeing no false-positive override detection downstream.
-        await InitProjectAsync();
-
-        var json = ReadFile("dydo.json");
-        var config = System.Text.Json.JsonSerializer.Deserialize(json,
-            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
-
-        foreach (var name in TemplateGenerator.GetAllTemplateNames())
-        {
-            var relativePath = $"_system/templates/{name}";
-            var embedded = TemplateGenerator.ReadBuiltInTemplate(name);
-            var expectedHash = TemplateCommand.ComputeHash(embedded);
-            Assert.Equal(expectedHash, config.FrameworkHashes[relativePath]);
         }
     }
 

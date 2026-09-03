@@ -1,5 +1,5 @@
 ---
-mode: domain-modeling
+name: domain-modeling
 description: Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing the glossary, or recording or editing a Decision Record.
 emit: skill
 invocation: automatic

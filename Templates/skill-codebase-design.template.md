@@ -1,5 +1,5 @@
 ---
-mode: codebase-design
+name: codebase-design
 description: Shared vocabulary for designing deep modules. Use when the human wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary.
 emit: skill
 invocation: automatic

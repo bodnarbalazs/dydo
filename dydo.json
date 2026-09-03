@@ -1,24 +1,7 @@
 {
   "version": 1,
-  "name": null,
   "structure": {
     "root": "dydo"
-  },
-  "paths": {
-    "source": [
-      "Commands/**",
-      "Services/**",
-      "Models/**",
-      "Rules/**",
-      "Utils/**",
-      "Serialization/**",
-      "Program.cs",
-      "Templates/**"
-    ],
-    "tests": [
-      "DynaDocs.Tests/**"
-    ],
-    "pathSets": null
   },
   "integrations": {
     "claude": true,
@@ -37,7 +20,7 @@
         "light": "gpt-5.6-luna"
       }
     },
-    "roles": {
+    "agents": {
       "implementer": "standard",
       "hardener": "strong",
       "docs-writer": "standard",
@@ -46,10 +29,9 @@
       "project-planner": "strong",
       "specifier": "strong",
       "issue-captain": "strong",
-      "research": "standard"
-    },
-    "efforts": {},
-    "fallback": null
+      "research": "standard",
+      "scout": "standard"
+    }
   },
   "scanExclude": [
     "_system/.local/",
@@ -68,7 +50,7 @@
       "severity": "block"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|validate|inquisition)\\b.*)",
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:check|fix|index|init|graph|guard|sync|completions|complete|template|validate|version|help)\\b.*)",
       "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
       "severity": "block"
     },
@@ -93,11 +75,6 @@
       "severity": "warn"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|roles|validate|inquisition)\\b.*)",
-      "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
-      "severity": "block"
-    },
-    {
       "pattern": "\\btail\\b(?=[^;|\u0026\\r\\n]*(?:\\s-\\S*f\\S*|\\s--follow(?:=\\S\u002B)?)(?:\\s|$))",
       "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes (issue 0177).",
       "severity": "warn"
@@ -114,45 +91,11 @@
     }
   ],
   "frameworkHashes": {
-    "reference/about-dynadocs.md": "e531b2c57330184673d4afe0b665b70ada4c11996b30af6ca307c18d2da962a1",
-    "reference/dydo-commands.md": "73f6178fb59a258ca7a39db021cf3c0ce4d01a34682d06361955a8c6eb03e4ac",
+    "reference/about-dynadocs.md": "2848ecc57f8524de5b7eefe3e154f7082fb0d8a075fd9b55e17856f4c983f633",
+    "reference/dydo-commands.md": "01e641115e48eee9fd945ff6fb30f1c5e741e063aa4fe6fc6eb2209bd47852d2",
     "reference/dydo-glossary.md": "ddb9336a1bb0318d187523e9d22e2a30bbeaf828f003e39ea0dd204554e24b29",
     "reference/writing-docs.md": "940138b638a1c067e055722e2dbb5b46654372f569f6fe36a4c4d11d7290f0d8",
-    "_system/templates/skill-bro.template.md": "ea747df709ad1c8b45849427c1dd44e5b151b7879e909810ccdadeb3a0fbdd4b",
-    "_system/templates/skill-chief-of-staff.template.md": "6c9273142514c7d058ea5c2474eb3f167b657be2f28b2d8506a6dc0d18a9fd47",
-    "_system/templates/skill-co-thinker.template.md": "f26ad0809085b8aa580749bb4d5d1a30a164dbcc0bb5c0c754225e72a1d990f9",
-    "_system/templates/skill-implementer.template.md": "338c1223404d0c905e69b725eca6e3d59bbb2473dc6ed27006d8b092ce0607d5",
-    "_system/templates/skill-docs-writer.template.md": "1932f4edb9efbf013f9c2ff3621dbd93c93de724299b4ff568501e43fe79173d",
-    "_system/templates/skill-grilling.template.md": "d9fcc96503cad9c2c7d4722b4a5e62636e7aa19905b63a95c4349c6f516d57eb",
-    "_system/templates/skill-inquisitor.template.md": "c123ca125bcb34f3eb371c13891ff4b738006e1549f57f73563b93bc2f0cd8b6",
-    "_system/templates/skill-reviewer.template.md": "64eba05561c6253db6f0995df84cef82ccc83d608ad840edd3b5d0095c24f754",
-    "_system/templates/reviewer-resource-code.template.md": "346fcfc4bb84636fbdf93435cc580c7f26d1c18f3f44c8b2b7d282ebc3403e26",
-    "_system/templates/reviewer-resource-docs.template.md": "05b072d0df9884b33a81b4767a5d27d4c87ba76deed8ff5d3c8b7b5a0607ad90",
-    "_system/templates/reviewer-resource-tests.template.md": "d23080d84611f5577e1004e92d1f2087998795e1f904aa6334d0759503310133",
-    "_system/templates/skill-self-improvement.template.md": "e847d1528ac4ff3b8065b09234dbc16efcd6b28d59b6cc9f4ba419c539a1e6a6",
-    "_system/templates/skill-wayfinder.template.md": "b9d8b6f46e7f350c8e0f183e04a15d9b2cfb0c5f9b156af9e32be05d9467b006",
-    "_system/templates/skill-grill-me.template.md": "ef74352d035f9e8e1c21978efbfb72b56bf30e290ba2e8cbffc450e5e69adbef",
-    "_system/templates/skill-writing-for-agents.template.md": "207959ec8a8b56a7a770808fe9b6b6c6974fd75a7abcb60acb1d07968ea0759b",
-    "_system/templates/skill-codebase-design.template.md": "1926964f907775ef321b1eff93ebb32f111c483ee246c57c1b04f3d60ae5d2db",
-    "_system/templates/skill-diagnosing-bugs.template.md": "f762ad738579c3424695cdb6fed21b8b52a85824eb60b5f3df8638b958dc7751",
-    "_system/templates/skill-domain-modeling.template.md": "18e7f20c131b04fff873f0403c00d4a7078181ef444e1f1214a6b9c2916b8caa",
-    "_system/templates/skill-handoff.template.md": "63471134c253ec4a1435ca7532fbb8382ea74b52fd8f93db5454be5b2cf990b1",
-    "_system/templates/skill-improve-codebase-architecture.template.md": "cc13c0b0af2f7dc5be8a6ef0cb804bc67359f8af4f9f136e1ee741561f961dc4",
-    "_system/templates/skill-prototype.template.md": "ac5673da9f52be634df07963493ca3e862b5969a1f74d63dbb4572c57723f23b",
-    "_system/templates/skill-research.template.md": "4e5d4f9258fcbdc898986da79ea8f651220aaaa5a3784feef36ae1db8779c127",
-    "_system/templates/reviewer-resource-merge.template.md": "d8f3b568f997af355987acc2b8a061f435a518907ba00c71269a523935695e4c",
-    "_system/templates/skill-teach.template.md": "f8ef7ef850c5a4fd926142f6e9db59f5c8d09531adef09e7ef194b2698699295",
-    "_system/templates/skill-walkthrough.template.md": "0ee58efc870a05714921081cf0a397f2ccbd988d5fe1eb1615f0e6449e22d547",
-    "_system/templates/writing-for-agents-resource-skill-mechanics.template.md": "b3f015f0690a6a10c9097cd909881c3f04de7938cac1e554091acb591c1e828a",
     "guides/working-tree-contract.md": "156c0c58d3fb9111c36b11fb57eda8097fab31a17a1a8c07648b101fd8b21587",
-    "_system/templates/prototype-resource-logic.template.md": "7aa2d559820c32989a8f4a4230f4608481b1f30d7898e7e2f9910c2aaeb13685",
-    "_system/templates/prototype-resource-ui.template.md": "ccbc47250a62ca1cf96dcb6665e9d53fb997e5105ef4bc80c997366489545818",
-    "_system/templates/skill-issue-captain.template.md": "10ad70ffe3e6f9beae46189aa323484271ace4c49ba0e630b56df7275dd43127",
-    "_system/templates/skill-admiral.template.md": "30e0d53a7da4117068868b770441665453603d29f968caa7c06e84057a58b2ce",
-    "_system/templates/reviewer-resource-spec.template.md": "30f160180121cd8d6d2490ed2f30c94f1a791d6675d3996b0923c9cc2ecbe4b3",
-    "_system/templates/reviewer-resource-project-plan.template.md": "7c34f9acbab0c7b1aaad9c00af684ddf0db8cf61d89dbccc9e497492676f585b",
-    "_system/templates/skill-specifier.template.md": "ddda245bec3386796cdd88310c2063651a9cb75698ed3be9bc159cbeb9b810d1",
-    "_system/templates/skill-project-planner.template.md": "bf1b47abf01dcd707b789628fa2b079cd21acc3ef52a75ad32d36500c993d8ef",
     "reference/linear-workspace-standard.md": "e68955cfb1834ed791f5d55f8f06b8acc50d2d82ad9a525e75e20998e1b02b42"
   }
 }

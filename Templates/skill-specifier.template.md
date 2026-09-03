@@ -1,5 +1,5 @@
 ---
-mode: specifier
+name: specifier
 description: A claimed Issue or lane: contract not yet exact, route still hiding choices. Write its spec and plan just in time, never its code.
 emit: agent
 invocation: automatic

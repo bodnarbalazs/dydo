@@ -409,14 +409,6 @@ public class CommandDocConsistencyTests
         var templatesDir = FindRepoDir("Templates");
         files.AddRange(Directory.GetFiles(templatesDir, "*.template.md"));
 
-        // Override templates in _system/templates/ (canonical source for generated mode files)
-        try
-        {
-            var systemTemplatesDir = FindRepoDir(Path.Combine("dydo", "_system", "templates"));
-            files.AddRange(Directory.GetFiles(systemTemplatesDir, "*.template.md"));
-        }
-        catch (DirectoryNotFoundException) { }
-
         var codeBlockPattern = new Regex(@"```[\w]*\r?\n(.*?)```", RegexOptions.Singleline);
         var missing = new List<string>();
 

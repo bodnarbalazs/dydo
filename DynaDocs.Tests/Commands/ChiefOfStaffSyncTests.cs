@@ -13,10 +13,6 @@ public class ChiefOfStaffSyncTests : IDisposable
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-chief-of-staff-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
         new FolderScaffolder().Scaffold(Path.Combine(_testDir, "dydo"));
-        File.Copy(
-            Path.Combine(FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md"),
-            Path.Combine(_testDir, "dydo", "_system", "templates", "skill-chief-of-staff.template.md"),
-            overwrite: true);
     }
 
     public void Dispose()
@@ -24,24 +20,19 @@ public class ChiefOfStaffSyncTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
-    // The shipped source and the installed copy are one role, so they must agree on shape and on
-    // what the role must never grow: a personal memory store, or the retired tier doctrine.
+    // The shipped source carries the skill's shape and what the skill must never grow: a personal
+    // memory store, or the retired tier doctrine.
     [Fact]
-    public void AuthoredChiefOfStaffTemplates_AgreeOnShapeAndExcludePersonalMemoryPolicy()
+    public void AuthoredChiefOfStaffTemplate_HasExpectedShapeAndExcludesPersonalMemoryPolicy()
     {
-        var shipped = Normalize(TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"));
-        var installed = Normalize(File.ReadAllText(Path.Combine(
-            FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md")));
+        var source = Normalize(TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"));
 
-        foreach (var source in new[] { shipped, installed })
-        {
-            Assert.Contains("mode: chief-of-staff\n", source);
-            Assert.Contains("emit: skill\n", source);
-            Assert.Equal(1, SyncCommandTests.H1Count(source));
-            Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));
-            Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("Managers Doctrine", source);
-        }
+        Assert.Contains("name: chief-of-staff\n", source);
+        Assert.Contains("emit: skill\n", source);
+        Assert.Equal(1, SyncCommandTests.H1Count(source));
+        Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));
+        Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Managers Doctrine", source);
     }
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n");
@@ -49,17 +40,17 @@ public class ChiefOfStaffSyncTests : IDisposable
     [Fact]
     public void SyncChiefOfStaff_EmitsIdenticalSkillsWithoutAgentDefinitions()
     {
-        var role = RoleDefinitionService.DiscoverRoles(_testDir)
+        var template = SkillTemplateService.DiscoverSkills()
             .Single(candidate => candidate.Name == "chief-of-staff");
         var claudeSkill = Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md");
         var codexSkill = Path.Combine(_testDir, ".agents", "skills", "chief-of-staff", "SKILL.md");
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
 
         // One authored source, so both hosts get the same body. Only the invocation policy is
         // host-shaped — Claude carries it in frontmatter, Codex in a sibling yaml — so comparing
-        // whole files would go red the day this role becomes explicit-only. A link to the role's
+        // whole files would go red the day this skill becomes explicit-only. A link to the skill's
         // own resources carries the host's skill root, so that prefix is normalized away too.
         Assert.Equal(
             SyncCommandTests.NormalizeHostSkillRoot(
@@ -67,7 +58,7 @@ public class ChiefOfStaffSyncTests : IDisposable
             SyncCommandTests.NormalizeHostSkillRoot(
                 FrontmatterParser.StripFrontmatter(File.ReadAllText(codexSkill))));
         Assert.Equal(
-            role.ExplicitInvocation,
+            template.ExplicitInvocation,
             File.ReadAllText(claudeSkill).Contains("disable-model-invocation: true"));
         Assert.DoesNotContain("disable-model-invocation", File.ReadAllText(codexSkill));
         Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "chief-of-staff.md")));
@@ -75,20 +66,9 @@ public class ChiefOfStaffSyncTests : IDisposable
 
         var firstClaude = File.ReadAllBytes(claudeSkill);
         var firstCodex = File.ReadAllBytes(codexSkill);
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
         Assert.Equal(firstClaude, File.ReadAllBytes(claudeSkill));
         Assert.Equal(firstCodex, File.ReadAllBytes(codexSkill));
-    }
-
-    private static string FindRepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory != null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
-                return directory.FullName;
-        }
-
-        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 }

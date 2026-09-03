@@ -238,62 +238,6 @@ public class CliEndToEndTests : IDisposable
         Assert.True(File.Exists(Path.Combine(additionsPath, "extra-verify.md")));
     }
 
-    [Fact]
-    public async Task TemplateUpdate_EndToEnd_UserAddedInclude()
-    {
-        var initResult = await RunDydoAsync("init none");
-        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
-
-        // Add a custom include tag to a template between known lines
-        var templatePath = Path.Combine(_testDir, "dydo", "_system", "templates", "skill-implementer.template.md");
-        var content = File.ReadAllText(templatePath);
-        var lines = content.Split('\n').ToList();
-        var verifyIdx = lines.FindIndex(l => l.Contains("{{include:extra-verify}}"));
-        if (verifyIdx >= 0)
-        {
-            lines.Insert(verifyIdx + 1, "{{include:my-project-step}}");
-            File.WriteAllText(templatePath, string.Join('\n', lines));
-        }
-
-        // Run template update
-        var updateResult = await RunDydoAsync("template update");
-        Assert.True(updateResult.ExitCode == 0,
-            $"template update failed: {updateResult.Stderr}\nStdout: {updateResult.Stdout}");
-
-        // User-added include should survive in the updated template
-        var updatedContent = File.ReadAllText(templatePath);
-        Assert.Contains("{{include:my-project-step}}", updatedContent);
-    }
-
-    [Fact]
-    public async Task TemplateUpdate_EndToEnd_RepeatedUserEdits()
-    {
-        var initResult = await RunDydoAsync("init none");
-        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
-
-        var templatePath = Path.Combine(_testDir, "dydo", "_system", "templates", "skill-implementer.template.md");
-
-        // First round: user adds a custom include
-        var content = File.ReadAllText(templatePath);
-        var lines = content.Split('\n').ToList();
-        var verifyIdx = lines.FindIndex(l => l.Contains("{{include:extra-verify}}"));
-        if (verifyIdx >= 0)
-            lines.Insert(verifyIdx + 1, "{{include:my-step}}");
-        File.WriteAllText(templatePath, string.Join('\n', lines));
-
-        // First update — re-anchors the user include
-        var update1 = await RunDydoAsync("template update");
-        Assert.True(update1.ExitCode == 0, $"first update failed: {update1.Stderr}");
-
-        var content1 = File.ReadAllText(templatePath);
-        Assert.Contains("{{include:my-step}}", content1);
-
-        // Second update with no changes — file is treated as clean (hash matches stored)
-        var update2 = await RunDydoAsync("template update");
-        Assert.True(update2.ExitCode == 0, $"second update failed: {update2.Stderr}");
-        Assert.Contains("Template update complete:", update2.Stdout);
-    }
-
     #endregion
 
     private async Task<CliResult> RunDydoAsync(string args)

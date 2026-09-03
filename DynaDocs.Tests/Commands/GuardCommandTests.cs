@@ -492,187 +492,6 @@ public class GuardCommandTests : IDisposable
     }
 
     [Fact]
-    public void DefaultNudges_ShipNoToolScopedNudge()
-    {
-        // The Decision 026 source-write reminder retired with the workflow it pointed at
-        // (DR 045): nothing shipped is tool-scoped or audience-scoped any more.
-        Assert.DoesNotContain(ConfigFactory.DefaultNudges, n => n.Tools is { Count: > 0 });
-        Assert.DoesNotContain(ConfigFactory.DefaultNudges, n => n.Pattern == "{source}|{tests}");
-    }
-
-    #endregion
-
-    #region Tool-Scoped File Nudges (Decision 026 §4)
-
-    private static (int? Result, string Stderr) RunFileNudge(
-        string toolName, string filePath, GuardCommand.GuardEnv env, string audience = "manager")
-    {
-        var original = Console.Error;
-        var capture = new StringWriter();
-        Console.SetError(capture);
-        try
-        {
-            return (GuardCommand.CheckFileNudges(toolName, filePath, env, audience), capture.ToString());
-        }
-        finally
-        {
-            Console.SetError(original);
-        }
-    }
-
-    [Fact]
-    public void CheckFileNudges_SourcePath_EmitsNoticeAndAllows()
-    {
-        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
-
-        Assert.Null(result);
-        Assert.Contains("NOTICE: delegate to a workflow", stderr);
-    }
-
-    [Fact]
-    public void CheckFileNudges_AbsoluteSourcePath_Matches()
-    {
-        // Claude Code delivers absolute paths — they must relativize to the project root
-        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-        var absolute = Path.Combine(_testDir, "tests", "FooTests.cs");
-
-        var (result, stderr) = RunFileNudge("write", absolute, env);
-
-        Assert.Null(result);
-        Assert.Contains("NOTICE: delegate to a workflow", stderr);
-    }
-
-    [Fact]
-    public void CheckFileNudges_NonSourcePath_Silent()
-    {
-        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("edit", "dydo/project/decisions/099-x.md", env);
-
-        Assert.Null(result);
-        Assert.Empty(stderr);
-    }
-
-    [Fact]
-    public void CheckFileNudges_ToolNotInList_Silent()
-    {
-        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("read", "src/Foo.cs", env);
-
-        Assert.Null(result);
-        Assert.Empty(stderr);
-    }
-
-    [Fact]
-    public void CheckFileNudges_BlockSeverity_Blocks()
-    {
-        WriteConfigWithFileNudge("{source}|{tests}", "hands off", "block");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
-
-        Assert.Equal(ExitCodes.ToolError, result);
-        Assert.Contains("BLOCKED: hands off", stderr);
-    }
-
-    [Theory]
-    [InlineData("all", "manager", true)]
-    [InlineData("all", "worker", true)]
-    [InlineData("manager", "manager", true)]
-    [InlineData("manager", "worker", false)]
-    [InlineData("worker", "manager", false)]
-    [InlineData("worker", "worker", true)]
-    public void CheckFileNudges_AppliesOnlyToItsAudience(string nudgeAudience, string callAudience, bool applies)
-    {
-        WriteConfigWithFileNudge("{source}", "audience nudge", "notice", nudgeAudience);
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("write", "src/Foo.cs", env, callAudience);
-
-        Assert.Null(result);
-        Assert.Equal(applies, stderr.Contains("NOTICE: audience nudge"));
-    }
-
-    [Fact]
-    public void CheckFileNudges_WarnSeverity_BlocksOnceThenAllows()
-    {
-        WriteConfigWithFileNudge("src/warn.cs", "warn nudge", "warn", "worker");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (firstResult, firstStderr) = RunFileNudge("write", "src/warn.cs", env, "worker");
-        var (secondResult, secondStderr) = RunFileNudge("write", "src/warn.cs", env, "worker");
-
-        Assert.Equal(ExitCodes.ToolError, firstResult);
-        Assert.Contains("BLOCKED: warn nudge", firstStderr);
-        Assert.Null(secondResult);
-        Assert.Empty(secondStderr);
-    }
-
-    [Fact]
-    public void CheckFileNudges_WarnSeverity_SuppressesNonApplicableAudience()
-    {
-        WriteConfigWithFileNudge("src/suppressed-warn.cs", "warn nudge", "warn", "manager");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("write", "src/suppressed-warn.cs", env, "worker");
-
-        Assert.Null(result);
-        Assert.Empty(stderr);
-    }
-
-    // The exact text shipped before DR 045 retired it. An install materialized under 2.x
-    // still carries it in dydo.json, so the guard has to drop it rather than keep pointing
-    // agents at the run-sprint workflow 3.0 deletes.
-    private const string RetiredDoctrineMessage =
-        "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint "
-        + "workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.";
-
-    [Fact]
-    public void CheckFileNudges_RetiredDoctrineNudgeInConfig_NoLongerFires()
-    {
-        WriteConfigWithFileNudge("{source}|{tests}", RetiredDoctrineMessage, "notice");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
-
-        Assert.Null(result);
-        Assert.Empty(stderr);
-    }
-
-    [Fact]
-    public void CheckFileNudges_UserEditedMessageOnTheSamePattern_StillFires()
-    {
-        // Only the shipped text self-heals; docs promise the message stays editable.
-        WriteConfigWithFileNudge("{source}|{tests}", "our own house rule", "notice");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", env);
-
-        Assert.Null(result);
-        Assert.Contains("NOTICE: our own house rule", stderr);
-    }
-
-    [Fact]
-    public void CheckNudges_SkipsToolScopedNudges()
-    {
-        // A tool-scoped nudge's pattern is a glob, not a regex — bash evaluation must skip
-        // it even when the pattern text would match the command.
-        WriteConfigWithFileNudge("dangerous-command", "file nudge", "block");
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-
-        var result = GuardCommand.CheckNudges("dangerous-command", env);
-
-        Assert.Null(result);
-    }
-
-    [Fact]
     public void MergeSystemNudges_PreservesAudienceWhenRestoringBlockSeverity()
     {
         var systemNudge = ConfigFactory.DefaultNudges.First(n => n.Severity == "block");
@@ -681,7 +500,6 @@ public class GuardCommandTests : IDisposable
             Pattern = systemNudge.Pattern,
             Message = "custom message",
             Severity = "warn",
-            Tools = ["Write"],
             Audience = "worker"
         };
 
@@ -690,21 +508,6 @@ public class GuardCommandTests : IDisposable
 
         Assert.Equal("block", restored.Severity);
         Assert.Equal("worker", restored.Audience);
-        Assert.Equal(["Write"], restored.Tools);
-    }
-
-    private void WriteConfigWithFileNudge(string pattern, string message, string severity, string? audience = null)
-    {
-        var audienceProperty = audience == null ? "" : $", \"audience\": \"{audience}\"";
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
-            {
-                "version": 1,
-                "structure": { "root": "dydo" },
-                "nudges": [
-                  {"pattern": "{{pattern}}", "message": "{{message}}", "severity": "{{severity}}", "tools": ["Edit", "Write", "NotebookEdit"]{{audienceProperty}}}
-                ]
-            }
-            """);
     }
 
     #endregion
@@ -808,6 +611,24 @@ public class GuardCommandTests : IDisposable
 
         Assert.Null(result);
         Assert.Empty(stderr);
+    }
+
+    // The third severity: a notice speaks and steps aside. It must never block and never leave a
+    // pass-through marker, or it would behave like a warn on its second encounter.
+    [Fact]
+    public void CheckNudges_NoticeSeverity_AllowsAndWritesTheMessageToStderr()
+    {
+        var pattern = @"noticeable-command";
+        WriteConfigWithNudge(pattern, "Prefer the wrapper script.", "notice");
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var markerPath = Path.Combine(
+            env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash(pattern)}");
+
+        var (result, stderr) = RunNudge("noticeable-command --now", env);
+
+        Assert.Null(result);
+        Assert.Contains("NOTICE: Prefer the wrapper script.", stderr);
+        Assert.False(File.Exists(markerPath), "a notice must not create a pass-through marker");
     }
 
     private static (int? Result, string Stderr) RunNudge(string command, GuardCommand.GuardEnv env)

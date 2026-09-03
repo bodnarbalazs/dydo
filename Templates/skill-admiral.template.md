@@ -1,5 +1,5 @@
 ---
-mode: admiral
+name: admiral
 description: Run one approved Project from plan approval to a human-landable feature branch through Issue Captains, serial integration, and reviewed course corrections.
 emit: skill
 invocation: explicit

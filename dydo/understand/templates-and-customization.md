@@ -11,8 +11,7 @@ a project hooks into it, and what `dydo template update` does to a file dydo has
 
 ## Sources and outputs
 
-Shipped sources live in `Templates/`. A project's mirrored copies, and any role it authors itself,
-live in `dydo/_system/templates/`.
+Shipped sources live in `Templates/`.
 
 | Pattern | Becomes |
 |---|---|
@@ -21,7 +20,7 @@ live in `dydo/_system/templates/`.
 | `workflow-<name>.js` | `.claude/workflows/<name>.js` |
 | framework `*.template.md` | a project document `dydo init` writes: the `dydo/` tree, and the runtime entry files at the repository root |
 
-Skill and resource templates are mirrored into the project; workflow sources are not. Five of the
+Five of the
 installed documents stay framework-owned, and they are the only documents a later update compares
 against a stored hash: `reference/about-dynadocs.md`, `reference/dydo-commands.md`,
 `reference/dydo-glossary.md`, `reference/writing-docs.md` and
@@ -35,8 +34,8 @@ rather than compared.
 
 ## Authoring a role
 
-The frontmatter keys, what each of them compiles to on each host, how `## Must-Reads` and a role's
-`resources/` reach a spawned agent, and how to add or override a role are in
+The frontmatter keys, what each of them compiles to on each host, and how `## Must-Reads` and a
+role's `resources/` reach a spawned agent are in
 [Customizing Roles](../guides/customizing-roles.md).
 
 ## Include tags
@@ -44,7 +43,7 @@ The frontmatter keys, what each of them compiles to on each host, how `## Must-R
 `{{include:name}}` inserts `dydo/_system/template-additions/name.md` at a hook in a skill template,
 and resolves to nothing when that file is absent, leaving no trace in the output. Five hooks ship:
 `extra-must-reads`, `extra-verify`, `extra-review-steps`, `extra-review-checklist`, and
-`extra-test-guidance`. A project's own template may define any other name.
+`extra-test-guidance`.
 
 That folder is where durable customization belongs: an addition stays separate from the shipped
 text, is shared by every skill template that names it, and survives the updates below.
@@ -68,40 +67,28 @@ remove, or their descriptions keep loading every turn.
 ```bash
 dydo template update --diff
 dydo template update
-dydo template update --force
 ```
 
-`dydo init` mirrors the shipped skill and resource templates and installs the six framework-owned
+`dydo init` installs the six framework-owned
 documents, recording a content hash for each of them in `dydo.json`. An update compares those hashes
-against what is on disk, and takes one of four paths per file:
+against what is on disk, and takes one of two paths per file:
 
 | The file on disk | What the update does |
 |---|---|
 | still matching its stored hash | replaced with the new shipped text |
-| a mirrored template the project has edited | replaced outright by an update that ships new text, the project's added `{{include:…}}` tags with it; those tags are carried into the new text only while the shipped text itself is unchanged |
 | one of the six framework-owned documents, edited | left alone, and reported as user-edited |
-| a mirrored copy of a template dydo has retired | deleted; a role the project authored itself is untracked, and is kept |
 
-Beyond that comparison the same run creates any newly shipped template or framework-owned document
+Beyond that comparison the same run creates any newly shipped framework-owned document
 missing from disk; tops up `_system/types.json` with frontmatter types added since the project was
 scaffolded, creating it when absent and leaving a malformed one alone with a warning; adds shipped
-nudge and scan-exclusion defaults to `dydo.json` and upgrades legacy OpenAI model defaults there; and
+nudge and scan-exclusion defaults to `dydo.json`; and
 deletes a retired framework asset — today `_assets/dydo-diagram.svg` — when the copy on disk is one
 the framework wrote, keeping a modified copy as the project's own.
 
 `--diff` previews the file changes without writing; the `dydo.json` defaults are neither previewed
-nor applied under `--diff`. `--force` overrides one skip: when a carried-over tag finds no place in
-the new text, the update skips that file and names the tag, and `--force` writes anyway — backing the
-file up first and saving what it could not place. Every other skip the run reports — an edited
-framework-owned document, a kept legacy file — stays skipped under `--force`; the flag only lets the
-run exit 0 past it. A hash-clean copy left over from the 2.x `mode-<name>.template.md` naming is
-moved to its `skill-<name>.template.md` replacement, while a modified legacy file is kept and
-reported for you to rename, because `dydo sync` compiles only `skill-*` sources.
+nor applied under `--diff`.
 
-That carry-over is not a durability mechanism: it runs only while the shipped text is unchanged, and
-it stores the hash of what it wrote, so the next update replaces the file and those tags with it. Two
-things do survive — content in `dydo/_system/template-additions/`, reached through a hook the shipped
-template already carries, and a role the project authored itself, which no update tracks. Review the
+Review the
 diff after an update, run `dydo sync`, and finish with `dydo check`; flags and exit codes are in the
 [dydo Commands Reference](../reference/dydo-commands.md).
 

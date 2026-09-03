@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "name": "legacy-project",
+  "structure": {
+    "root": "dydo",
+    "tasks": "custom/tasks"
+  },
+  "integrations": {
+    "claude": true,
+    "codex": false
+  },
+  "paths": {
+    "source": ["Commands/**", "Services/**"],
+    "tests": ["DynaDocs.Tests/**"],
+    "pathSets": {
+      "backend": ["Services/**"]
+    }
+  },
+  "models": {
+    "tiers": {
+      "anthropic": {
+        "strong": "claude-opus-4",
+        "standard": "claude-sonnet-4",
+        "light": "claude-haiku-4"
+      }
+    },
+    "roles": {
+      "reviewer": "strong",
+      "code-writer": "standard"
+    },
+    "efforts": {
+      "reviewer": "high"
+    },
+    "fallback": {
+      "strong": "claude-sonnet-4"
+    }
+  },
+  "scanExclude": ["node_modules"],
+  "nudges": [
+    {
+      "pattern": "dotnet test.*coverlet",
+      "message": "Use gap_check.py.",
+      "severity": "warn",
+      "tools": ["Bash"]
+    },
+    {
+      "pattern": "rm -rf",
+      "message": "Don't do that.",
+      "severity": "block"
+    }
+  ],
+  "notion": {
+    "databaseId": "1f2e3d4c5b6a",
+    "enabled": true
+  },
+  "frameworkHashes": {
+    "reference/dydo-commands.md": "0123456789abcdef"
+  }
+}

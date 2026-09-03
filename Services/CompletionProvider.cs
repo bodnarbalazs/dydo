@@ -9,7 +9,7 @@ public static class CompletionProvider
         "check", "fix", "index", "init", "graph", "guard",
         "sync",
         "completions", "complete", "template", "validate",
-        "model", "version", "help"
+        "version", "help"
     ];
 
     private static readonly string[] GuardActions = ["edit", "write", "delete", "read"];
@@ -21,7 +21,6 @@ public static class CompletionProvider
         ["completions"] = ["bash", "zsh", "powershell"],
         ["graph"] = ["stats"],
         ["template"] = ["update"],
-        ["model"] = ["cap", "uncap", "status"],
     };
 
     private static readonly Dictionary<string, Func<IEnumerable<string>>> OptionValueHandlers = new()

@@ -1,5 +1,5 @@
 ---
-mode: grill-me
+name: grill-me
 description: A relentless interview to sharpen a plan or design, which also creates docs (Decision Records and glossary) as we go.
 emit: skill
 invocation: explicit

@@ -1,5 +1,5 @@
 ---
-mode: project-planner
+name: project-planner
 description: Ripe Project intent, no reliable route. Start a low-resolution map, prove it through independent review, and bring it to human approval without pretending the fog is gone.
 emit: agent
 delegates: true

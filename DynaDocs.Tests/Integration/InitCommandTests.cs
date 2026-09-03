@@ -65,8 +65,22 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
         AssertFileContains("dydo.json", "\"version\": 1");
-        // New inits no longer emit an agents/pool/assignments section (DR-041).
-        Assert.DoesNotContain("\"agents\"", ReadFile("dydo.json"));
+        // New inits no longer emit an agents/pool/assignments section (DR-041). The nested
+        // models.agents tier bindings are a different key and must not trip this.
+        var config = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile("dydo.json")));
+        Assert.False(config.ContainsKey("agents"));
+    }
+
+    // The next-steps summary used to teach a config key sync no longer reads, so a fresh init
+    // would hand every new project a snippet that does nothing.
+    [Fact]
+    public async Task Init_None_NextStepsDoNotTeachARemovedConfigKey()
+    {
+        var result = await InitProjectAsync("none");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("\"paths\"", result.Stdout);
+        Assert.DoesNotContain("Source and test paths", result.Stdout);
     }
 
     [Fact]
@@ -657,31 +671,15 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     // The role.json layer is gone (DR-041 residue hunt): the skill template IS the role,
-    // so init scaffolds skill templates — not role definition files — and sync discovers
-    // roles by enumerating them.
+    // and sync discovers roles by enumerating the shipped skill templates.
     [Fact]
-    public async Task Init_GeneratesSkillTemplates_NotRoleFiles()
+    public async Task Init_DoesNotScaffoldTheRemovedRoleLayer()
     {
         var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/_system/roles")),
             "init must not scaffold the removed dydo/_system/roles layer");
-
-        var templatesDir = Path.Combine(TestDir, "dydo/_system/templates");
-        var skillTemplates = Directory.GetFiles(templatesDir, "skill-*.template.md")
-            .Select(Path.GetFileName).ToList();
-        Assert.Contains("skill-implementer.template.md", skillTemplates);
-        Assert.Contains("skill-reviewer.template.md", skillTemplates);
-        Assert.Contains("skill-chief-of-staff.template.md", skillTemplates);
-        Assert.Contains("skill-wayfinder.template.md", skillTemplates);
-        Assert.Contains("skill-grilling.template.md", skillTemplates);
-        Assert.Contains("skill-grill-me.template.md", skillTemplates);
-        Assert.Contains("skill-bro.template.md", skillTemplates);
-        Assert.Contains("skill-writing-for-agents.template.md", skillTemplates);
-        // The scaffolded inventory IS the shipped inventory; a hard-coded count freezes it.
-        Assert.Equal(ShippedSkillTemplateNames(), skillTemplates.OrderBy(n => n, StringComparer.Ordinal));
-        Assert.DoesNotContain("skill-sprint-auditor.template.md", skillTemplates);
     }
 
     [Fact]
@@ -858,29 +856,6 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     #endregion
-
-    // What init mirrors is the shipped set minus retired names: mirroring a retired template
-    // would union it straight back into role discovery.
-    private static IEnumerable<string> ShippedSkillTemplateNames()
-    {
-        var retired = SyncCommand.RetiredManagedRoles
-            .Select(role => $"skill-{role}.template.md")
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
-            {
-                return Directory
-                    .GetFiles(Path.Combine(directory.FullName, "Templates"), "skill-*.template.md")
-                    .Select(path => Path.GetFileName(path)!)
-                    .Where(name => !retired.Contains(name))
-                    .OrderBy(name => name, StringComparer.Ordinal);
-            }
-        }
-
-        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
-    }
 
     private static List<string> HookCommands(JsonNode? entry)
     {

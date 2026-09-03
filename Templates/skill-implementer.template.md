@@ -1,5 +1,5 @@
 ---
-mode: implementer
+name: implementer
 description: A specified Issue, not yet working. Write the tests and the code that make it pass, red before green, inside its owned paths.
 emit: agent
 invocation: automatic

@@ -107,7 +107,7 @@ runtime or machine into an existing project.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`
-- **Roles** — shipped source templates or project overrides in `dydo/_system/templates/`
+- **Roles** — shipped source templates
 - **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks
 
 Do not hand-edit compiled skills or agents. Change their source templates and run `dydo sync`.
@@ -116,7 +116,7 @@ Do not hand-edit compiled skills or agents. Change their source templates and ru
 
 ```
 project/
-|-- dydo.json                    # Paths, model tiers, integrations, nudges
+|-- dydo.json                    # Model tiers, integrations, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- .claude/                     # Compiled Claude agents, skills, and workflows
@@ -128,7 +128,6 @@ project/
     |-- guides/                  # How-to guidance
     |-- reference/               # Exact commands and specifications
     |-- project/                 # Durable knowledge and delivery proof
-    |-- _system/templates/       # Project template overrides
     |-- _system/template-additions/
     `-- _assets/
 ```
@@ -136,7 +135,7 @@ project/
 ## Command Reference
 
 See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, role-compilation,
-guard, validation, template, model, and utility commands.
+guard, validation, template, and utility commands.
 
 ## License
 

@@ -24,7 +24,7 @@ public class UpstreamSkillSourceTests
             var source = ReadTemplate(skill);
             var invocation = InvocationValue(source);
 
-            Assert.Contains($"mode: {skill}\n", source);
+            Assert.Contains($"name: {skill}\n", source);
             Assert.Contains("emit: skill\n", source);
             Assert.True(invocation is "explicit" or "automatic",
                 $"{skill}: invocation must be 'explicit' or 'automatic', was '{invocation}'");
@@ -57,8 +57,26 @@ public class UpstreamSkillSourceTests
     {
         var source = ReadTemplate("wayfinder");
 
-        Assert.Contains("mode: wayfinder\n", source);
+        Assert.Contains("name: wayfinder\n", source);
         Assert.DoesNotContain("Waypoint", source, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Upstream at 6654f6b6 carries argument-hint on handoff and teach and on none of the other
+    // human commands dydo ships. The hint is the wording a host shows the human, so dydo copies
+    // the two upstream texts and invents none: the rest are the human's to word.
+    [Fact]
+    public void HumanCommandTemplates_CarryTheUpstreamArgumentHintsAndNoOthers()
+    {
+        Assert.Contains(
+            "argument-hint: \"What will the next session be used for?\"\n", ReadTemplate("handoff"));
+        Assert.Contains(
+            "argument-hint: \"What would you like to learn about?\"\n", ReadTemplate("teach"));
+
+        foreach (var skill in new[]
+                 { "grill-me", "bro", "walkthrough", "improve-codebase-architecture" })
+        {
+            Assert.DoesNotContain("argument-hint", ReadTemplate(skill));
+        }
     }
 
     [Fact]

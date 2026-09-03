@@ -15,7 +15,7 @@ public class TemplateGeneratorTests
         var content = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md");
 
         Assert.NotEmpty(content);
-        Assert.Contains("mode: implementer", content);
+        Assert.Contains("name: implementer", content);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class TemplateGeneratorTests
         // source's to write; what the compiler needs is frontmatter, an H1 and a body.
         var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("skill-implementer.template.md")
             .Replace("\r\n", "\n");
-        Assert.Contains("mode: implementer\n", codeWriterTemplate);
+        Assert.Contains("name: implementer\n", codeWriterTemplate);
         Assert.Contains("description: ", codeWriterTemplate);
         Assert.Equal(1, SyncCommandTests.H1Count(codeWriterTemplate));
     }
@@ -362,23 +362,6 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void ProjectSubfolderMetas_DoNotReferenceNonExistentTemplates()
-    {
-        // These meta files should NOT reference templates in _system/templates/
-        // because changelog/decision/pitfall templates are not copied there
-        // (only skill-* templates are copied)
-
-        var changelog = TemplateGenerator.GenerateChangelogMetaMd();
-        Assert.DoesNotContain("_system/templates/", changelog);
-
-        var decisions = TemplateGenerator.GenerateDecisionsMetaMd();
-        Assert.DoesNotContain("_system/templates/", decisions);
-
-        var pitfalls = TemplateGenerator.GeneratePitfallsMetaMd();
-        Assert.DoesNotContain("_system/templates/", pitfalls);
-    }
-
-    [Fact]
     public void GenerateReferenceMetaMd_ListsCorrectDefaultFiles()
     {
         var content = TemplateGenerator.GenerateReferenceMetaMd();
@@ -458,7 +441,7 @@ public class TemplateGeneratorTests
 
     #endregion
 
-    #region Hub and Fallback Tests
+    #region Hub Tests
 
     [Fact]
     public void GenerateHubIndex_ReturnsValidContent()
@@ -499,164 +482,43 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateFallbackArchitectureMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackArchitectureMd();
-
-        Assert.Contains("# Architecture Overview", content);
-        Assert.Contains("area: understand", content);
-        Assert.Contains("type: concept", content);
-        Assert.Contains("## Project Structure", content);
-        Assert.Contains("## Key Components", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackWelcomeMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackWelcomeMd();
-
-        Assert.Contains("# Welcome", content);
-        Assert.Contains("area: general", content);
-        Assert.Contains("type: hub", content);
-        Assert.Contains("## Getting Started", content);
-        Assert.Contains("about.md", content);
-        Assert.Contains("architecture.md", content);
-        Assert.Contains("coding-standards.md", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackCodingStandardsMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackCodingStandardsMd();
-
-        Assert.Contains("# Coding Standards", content);
-        Assert.Contains("area: guides", content);
-        Assert.Contains("type: guide", content);
-        Assert.Contains("## General Principles", content);
-        Assert.Contains("## Naming Conventions", content);
-        Assert.Contains("PascalCase", content);
-        Assert.Contains("camelCase", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackFilesOffLimitsMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackFilesOffLimitsMd();
-
-        Assert.Contains("# Files Off-Limits", content);
-        Assert.Contains("type: config", content);
-        Assert.Contains(".env", content);
-        Assert.Contains("secrets.json", content);
-        Assert.Contains("*.pem", content);
-        Assert.Contains("*.key", content);
-        Assert.Contains(".aws", content);
-    }
-
-    [Fact]
     public void GenerateFutureFeaturesMetaMd_ReturnsValidContent()
     {
         var content = TemplateGenerator.GenerateFutureFeaturesMetaMd();
         Assert.NotEmpty(content);
     }
 
+    // Dev-mode parity: run from a source tree and the Templates/ folder on disk is the shipped set,
+    // not the embedded snapshot the running assembly happens to carry. A template added there is
+    // discovered and an embedded one deleted there is gone — otherwise editing a template would
+    // require a rebuild before sync could see it.
     [Fact]
-    public void GenerateFallbackAboutMd_ReturnsValidContent()
+    public void GetBuiltInSkillTemplateNames_InASourceTree_FollowsTheTemplatesFolderOnDisk()
     {
-        var content = TemplateGenerator.GenerateFallbackAboutMd();
+        var originalDir = Directory.GetCurrentDirectory();
+        var root = Path.Combine(Path.GetTempPath(), "dydo-devmode-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(Path.Combine(root, "Templates"));
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "DynaDocs.csproj"), "<Project />");
+            File.WriteAllText(
+                Path.Combine(root, "Templates", "skill-reviewer.template.md"), "name: reviewer");
+            File.WriteAllText(
+                Path.Combine(root, "Templates", "skill-source-only.template.md"), "name: source-only");
+            Directory.SetCurrentDirectory(root);
 
-        Assert.Contains("# About This Project", content);
-        Assert.Contains("area: understand", content);
-        Assert.Contains("type: context", content);
-        Assert.Contains("architecture.md", content);
+            var names = TemplateGenerator.GetBuiltInSkillTemplateNames();
+
+            Assert.Contains("skill-source-only.template.md", names);
+            Assert.Contains("skill-reviewer.template.md", names);
+            Assert.DoesNotContain("skill-implementer.template.md", names);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+            try { Directory.Delete(root, true); } catch { }
+        }
     }
-
-    [Fact]
-    public void GenerateFallbackDydoCommandsMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackDydoCommandsMd();
-
-        Assert.Contains("# CLI Commands Reference", content);
-        Assert.Contains("area: reference", content);
-        Assert.Contains("type: reference", content);
-        Assert.Contains("## Setup Commands", content);
-        Assert.Contains("## Documentation Commands", content);
-        Assert.Contains("## Work Boundary", content);
-        Assert.Contains("dydo init", content);
-        Assert.Contains("dydo sync", content);
-        Assert.Contains("dydo check", content);
-        Assert.Contains("dydo guard", content);
-        Assert.Contains("dydo model", content);
-        Assert.Contains("Live work is managed in Linear", content);
-        Assert.DoesNotContain("dydo task", content, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("dydo issue", content, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("dydo review", content, StringComparison.OrdinalIgnoreCase);
-        // The fallback must track the current command surface, not the retired 1.0 table.
-        Assert.DoesNotContain("dydo dispatch", content);
-        Assert.DoesNotContain("dydo whoami", content);
-        Assert.DoesNotContain("dydo agent", content);
-        Assert.DoesNotContain("dydo inbox", content);
-        Assert.DoesNotContain("dydo workspace", content);
-        Assert.DoesNotContain("dydo audit", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackWritingDocsMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackWritingDocsMd();
-
-        Assert.Contains("# Writing Documentation", content);
-        Assert.Contains("area: reference", content);
-        Assert.Contains("type: reference", content);
-        Assert.Contains("## Frontmatter", content);
-        Assert.Contains("## Naming Conventions", content);
-        Assert.Contains("kebab-case", content);
-        Assert.Contains("## Validation", content);
-        Assert.Contains("dydo check", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackGlossaryMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackGlossaryMd();
-
-        Assert.Contains("# Glossary", content);
-        Assert.Contains("area: general", content);
-        Assert.Contains("type: reference", content);
-        Assert.Contains("## Project Terms", content);
-    }
-
-    [Fact]
-    public void GenerateFallbackAboutDynadocsMd_ReturnsValidContent()
-    {
-        var content = TemplateGenerator.GenerateFallbackAboutDynadocsMd();
-
-        Assert.Contains("# DynaDocs (dydo)", content);
-        Assert.Contains("area: reference", content);
-        Assert.Contains("type: reference", content);
-        Assert.Contains("## The Problem", content);
-        Assert.Contains("## The Solution", content);
-        Assert.Contains("## Agent Roles", content);
-        Assert.Contains("Linear owns the live", content);
-        Assert.Contains("implementer", content);
-        Assert.Contains("reviewer", content);
-        // The fallback role table is documentation of the live roster; a retired name in it sends
-        // a reader at a role that no longer compiles.
-        Assert.All(SyncCommand.RetiredManagedRoles.Where(retired => retired != "planner"),
-            retired => Assert.DoesNotContain(retired, content));
-        Assert.DoesNotContain("| `planner` |", content);
-        Assert.Contains("github.com/bodnarbalazs/dydo", content);
-        Assert.DoesNotContain("PM system that lives in your repo", content);
-        Assert.DoesNotContain("backlog", content, StringComparison.OrdinalIgnoreCase);
-
-        // Pre-DR-041 leftovers must not resurface (issue 0301): no retired diagram embed,
-        // no --inbox workflow flags.
-        Assert.DoesNotContain("dydo-diagram.svg", content);
-        Assert.DoesNotContain("Workflow Flags", content);
-        Assert.DoesNotContain("--inbox", content);
-    }
-
-    private static int CountOccurrences(string content, string value) =>
-        content.Split(value, StringSplitOptions.None).Length - 1;
 
     private static string FindRepositoryRoot()
     {

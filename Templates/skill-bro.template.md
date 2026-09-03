@@ -1,6 +1,6 @@
 ---
-mode: bro
-description: Explicitly invoked by the human when the immediately previous response did not land and needs a clearer re-pitch.
+name: bro
+description: "Stop. That last message did not land: re-pitch it."
 emit: skill
 invocation: explicit
 ---
@@ -9,7 +9,7 @@ invocation: explicit
 
 # Bro
 
-Re-pitch only the immediately previous response. Supply the missing context, use ASD-STE100 Simplified
-Technical English, and use the project's ubiquitous language from `dydo/glossary.md` and the locked
-`dydo/reference/dydo-glossary.md`. Preserve the technical meaning, constraints, conclusions, and
-uncertainty. Add no new analysis or recommendation.
+Wait, I don't understand where you've got to here. Re-pitch that: give me a little bit of context,
+talk in ASD-STE100 Simplified Technical English, and use the ubiquitous language from the project
+[glossary](../../../glossary.md) for domain terms and the locked
+[dydo glossary](../../../reference/dydo-glossary.md) for work-model terms.

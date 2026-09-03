@@ -1,9 +1,12 @@
 # {{PROJECT_NAME}}
 
-Read [dydo/index.md](dydo/index.md) before working. It is the entry point for this project's
-documentation and working conventions.
-
 Linear owns live work. Git and dydo own durable knowledge and evidence.
+[dydo/index.md](dydo/index.md) is the root of the documentation.
 
-Shared agent methods are authored in dydo and compiled into platform-native skills and agents.
-Change their source, not generated output.
+## Sort yourself
+
+- Thinking with the human? Load `co-thinker`. Hats change as work ripens; each skill names the next.
+- Working a Linear Issue? Load `issue-captain` — own it from branch to merged PR.
+- Spawned with a skill already loaded? That skill is your brief.
+
+The human hands out every other hat by name.

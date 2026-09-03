@@ -147,5 +147,4 @@ This shows incoming and outgoing links - useful when updating docs to ensure you
 
 ## Related
 
-- [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating the documentation
 - [dydo Commands Reference](./dydo-commands.md) — Full command documentation

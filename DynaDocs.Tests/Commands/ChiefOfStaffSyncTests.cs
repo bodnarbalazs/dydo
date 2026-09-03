@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public class ChiefOfStaffSyncTests : IDisposable
 {
@@ -12,10 +13,6 @@ public class ChiefOfStaffSyncTests : IDisposable
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-chief-of-staff-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
         new FolderScaffolder().Scaffold(Path.Combine(_testDir, "dydo"));
-        File.Copy(
-            Path.Combine(FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md"),
-            Path.Combine(_testDir, "dydo", "_system", "templates", "skill-chief-of-staff.template.md"),
-            overwrite: true);
     }
 
     public void Dispose()
@@ -23,57 +20,55 @@ public class ChiefOfStaffSyncTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
+    // The shipped source carries the skill's shape and what the skill must never grow: a personal
+    // memory store, or the retired tier doctrine.
     [Fact]
-    public void AuthoredChiefOfStaffTemplates_KeepBoardRoleAndExcludePersonalMemoryPolicy()
+    public void AuthoredChiefOfStaffTemplate_HasExpectedShapeAndExcludesPersonalMemoryPolicy()
     {
-        foreach (var source in new[]
-        {
-            TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"),
-            File.ReadAllText(Path.Combine(
-                FindRepositoryRoot(), "dydo", "_system", "templates", "skill-chief-of-staff.template.md")),
-        })
-        {
-            Assert.Contains("### Triage", source);
-            Assert.Contains("### Report", source);
-            Assert.Contains("### Mediate", source);
-            Assert.Contains("### Keep the board honest", source);
-            Assert.Contains("self-improvement", source);
-            Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("Managers Doctrine", source);
-        }
+        var source = Normalize(TemplateGenerator.ReadBuiltInTemplate("skill-chief-of-staff.template.md"));
+
+        Assert.Contains("name: chief-of-staff\n", source);
+        Assert.Contains("emit: skill\n", source);
+        Assert.Equal(1, SyncCommandTests.H1Count(source));
+        Assert.Contains(source.Split('\n'), line => line.StartsWith("## ", StringComparison.Ordinal));
+        Assert.DoesNotContain("memory", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Managers Doctrine", source);
     }
+
+    private static string Normalize(string value) => value.Replace("\r\n", "\n");
 
     [Fact]
     public void SyncChiefOfStaff_EmitsIdenticalSkillsWithoutAgentDefinitions()
     {
-        var role = RoleDefinitionService.DiscoverRoles(_testDir)
+        var template = SkillTemplateService.DiscoverSkills()
             .Single(candidate => candidate.Name == "chief-of-staff");
         var claudeSkill = Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md");
         var codexSkill = Path.Combine(_testDir, ".agents", "skills", "chief-of-staff", "SKILL.md");
 
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
 
-        Assert.Equal(File.ReadAllBytes(claudeSkill), File.ReadAllBytes(codexSkill));
+        // One authored source, so both hosts get the same body. Only the invocation policy is
+        // host-shaped — Claude carries it in frontmatter, Codex in a sibling yaml — so comparing
+        // whole files would go red the day this skill becomes explicit-only. A link to the skill's
+        // own resources carries the host's skill root, so that prefix is normalized away too.
+        Assert.Equal(
+            SyncCommandTests.NormalizeHostSkillRoot(
+                FrontmatterParser.StripFrontmatter(File.ReadAllText(claudeSkill))),
+            SyncCommandTests.NormalizeHostSkillRoot(
+                FrontmatterParser.StripFrontmatter(File.ReadAllText(codexSkill))));
+        Assert.Equal(
+            template.ExplicitInvocation,
+            File.ReadAllText(claudeSkill).Contains("disable-model-invocation: true"));
+        Assert.DoesNotContain("disable-model-invocation", File.ReadAllText(codexSkill));
         Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "chief-of-staff.md")));
         Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", "chief-of-staff.toml")));
 
         var firstClaude = File.ReadAllBytes(claudeSkill);
         var firstCodex = File.ReadAllBytes(codexSkill);
-        SyncCommand.SyncSkillOnlyRole(role, _testDir);
-        SyncCommand.SyncCodexSkill(role, _testDir);
+        SyncCommand.SyncSkill(template, _testDir);
+        SyncCommand.SyncCodexSkill(template, _testDir);
         Assert.Equal(firstClaude, File.ReadAllBytes(claudeSkill));
         Assert.Equal(firstCodex, File.ReadAllBytes(codexSkill));
-    }
-
-    private static string FindRepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory != null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
-                return directory.FullName;
-        }
-
-        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 }

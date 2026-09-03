@@ -10,7 +10,7 @@ participants: [balazs, Codex]
 # 044 — Linear-Canonical PM and the dydo Knowledge Boundary
 
 Defines the canonical boundary between Linear's live work graph and dydo's durable repository knowledge,
-including the retained FutureFeature concept and the dydo 3.0 migration posture.
+including FutureFeature intake and the dydo 3.0 migration posture.
 
 ## Decision
 
@@ -45,20 +45,24 @@ navigation term and is not a Linear entity.
 
 ### dydo/Git
 
-The repository owns Decisions; architecture and product doctrine; reviewed Project plans/specifications;
-audit and inquisition reports; assimilation briefs; changelog and Git-tag release history; and optional
-Wayfinding maps while committed work still contains Fog.
+The repository owns Decision Records; architecture and product doctrine; reviewed Project
+plans/specifications; audit and inquisition reports; assimilation briefs; changelog and Git-tag
+release history; and optional Wayfinding maps while committed work still contains Fog. Decision
+Records remain canonical in dydo: Linear carries the question and links to the resulting record rather
+than copying it.
 
 Linear links to these artifacts. New durable knowledge discovered during work must flow back into dydo
 rather than remain trapped in a Linear comment or agent session.
 
-## FutureFeature is retained
+## FutureFeature is retained in Linear
 
-FutureFeature remains a repo-native idea record. It represents an unscheduled hypothetical and only the
-human may promote it. Promotion creates a Linear Initiative, Project, or Issue at the grain the shaped
-idea has earned, records the stable Linear reference on the FutureFeature, and changes the idea to a
-terminal promoted state. Its later delivery status exists only in Linear; the FutureFeature remains
-provenance, not a synchronized duplicate.
+FutureFeature remains a distinct record type for an unscheduled strategic possibility; it is not a
+generic idea or delivery contract. Its canonical record is a Linear Issue labelled `FutureFeature`,
+kept in `Backlog` without a Mode or Issue Captain until the human promotes or cancels it.
+
+Promotion preserves one source of truth. An Issue-sized FutureFeature becomes the delivery Issue by
+changing its Type and entering the delivery loop. A Project- or Initiative-sized FutureFeature creates
+and links that native Linear record, then closes as promoted provenance. Only the human may promote it.
 
 ## Planning and acceptance
 
@@ -87,6 +91,8 @@ plan supports them, never a dydo dependency.
 
 - Reconcile Notion one final time and resolve pending writes/conflict shadows before cutover.
 - Import only live, human-ratified work; do not bulk-import completed history or stale runtime Tasks.
+- Migrate each retained repository FutureFeature to one Linear Issue before removing its source file;
+  preserve any durable knowledge separately rather than copying the FutureFeature body into dydo.
 - Keep completed plans, decisions, reports, and changelog in Git.
 - Do not delete the remote Notion workspace during migration; retain it as rollback evidence until the
   Linear pilot is accepted.
@@ -97,6 +103,8 @@ plan supports them, never a dydo dependency.
 
 - The Notion adapter, generic sync engine with no remaining consumer, watchdog, token/vault surface,
   sync schema, and their tests become deletion candidates.
+- The repository FutureFeature folder, template, validator, and promotion fields become deletion
+  candidates after the retained records have migrated to Linear.
 - The planner, orchestrator, reviewer, Wayfinder, chief-of-staff, and co-thinker methodologies must adopt
   Linear-native work nouns and the new reviewed-intent gate.
 - The current final-audit workflow must receive the linked Project plan; passing only leaf briefs and a
@@ -108,5 +116,6 @@ plan supports them, never a dydo dependency.
 
 This decision supersedes DR 025, 029, 030, 033, 035, and 043, plus the Notion-as-view and repo-PM-record
 parts of DR 041. It supersedes DR 042's mandatory Sprint-root/Slice shape while retaining its plan gate
-as the reviewed-intent rule above. It retains Wayfinding's Fog/frontier distinction and the human-only
-promotion rule for FutureFeatures.
+as the reviewed-intent rule above. Its 2026-09-01 amendment moves FutureFeatures from dydo to Linear,
+superseding the repository-home rulings in DR 023, 034, and 040 while retaining the distinct
+FutureFeature type and human-only promotion rule. Wayfinding's Fog/frontier distinction remains.

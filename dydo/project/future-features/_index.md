@@ -13,4 +13,6 @@ Index of future-features documentation.
 
 - [Agent Graph Metrics](./agent-graph-metrics.md) - Explore a lightweight graph over supported task and thread execution evidence to measure whether prompt, template, and guardrail changes improve...
 - [Default Per-Method Bottleneck Detail for gap_check.py](./coverage.py-update.md) - `gap_check.py --inspect PATTERN --methods` already reports per-method CC, coverage, and CRAP for the relevant failing methods.
+- [Cross-Vendor Review](./cross-vendor-review.md) - Bind the reviewer to a different vendor's model than the writer, so a candidate written on Claude is judged on Codex and the reverse.
 - [Documentation Coverage Estimation](./doc-coverage.md) - Static analysis that estimates how well the documentation workspace covers the concepts that matter in the codebase.
+- [Routine Admiral](./routine-admiral.md) - An admiral that wakes on a cadence and keeps a Project moving while nobody is watching, instead of only for as long as a human keeps a session open.

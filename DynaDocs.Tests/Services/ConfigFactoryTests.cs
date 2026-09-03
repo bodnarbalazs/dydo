@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Services;
 
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 using DynaDocs.Services;
@@ -39,7 +40,14 @@ public class ConfigFactoryTests
         Assert.DoesNotContain("task", nudge.Pattern);
         Assert.DoesNotContain("issue", nudge.Pattern);
         Assert.DoesNotContain("review", nudge.Pattern);
-        Assert.Contains("roles", nudge.Pattern);
+        Assert.DoesNotContain("model", nudge.Pattern);
+        Assert.DoesNotContain("inquisition", nudge.Pattern);
+
+        // The alternation lists exactly the commands Program.cs registers — nothing retired.
+        Assert.Equal(
+            ["check", "fix", "index", "init", "graph", "guard", "sync",
+                "completions", "complete", "template", "validate", "version", "help"],
+            Regex.Match(nudge.Pattern, @"\(\?:([\w|]+)\)\\b").Groups[1].Value.Split('|'));
     }
 
     [Fact]
@@ -50,37 +58,6 @@ public class ConfigFactoryTests
         Assert.Equal("gpt-5.6-sol", openAi["strong"]);
         Assert.Equal("gpt-5.6-terra", openAi["standard"]);
         Assert.Equal("gpt-5.6-luna", openAi["light"]);
-    }
-
-    [Fact]
-    public void UpgradeLegacyOpenAiTierDefaults_PreservesCustomizedTiers()
-    {
-        var config = ConfigFactory.CreateDefault();
-        config.Models!.Tiers["openai"]["strong"] = "custom-strong";
-
-        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
-
-        Assert.False(upgraded);
-        Assert.Equal("custom-strong", config.Models.Tiers["openai"]["strong"]);
-    }
-
-    [Fact]
-    public void UpgradeLegacyOpenAiTierDefaults_RebindsLegacyGpt55Tiers()
-    {
-        var config = ConfigFactory.CreateDefault();
-        config.Models!.Tiers["openai"] = new Dictionary<string, string>
-        {
-            ["strong"] = "gpt-5.5",
-            ["standard"] = "gpt-5.5",
-            ["light"] = "gpt-5.5"
-        };
-
-        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
-
-        Assert.True(upgraded);
-        Assert.Equal("gpt-5.6-sol", config.Models.Tiers["openai"]["strong"]);
-        Assert.Equal("gpt-5.6-terra", config.Models.Tiers["openai"]["standard"]);
-        Assert.Equal("gpt-5.6-luna", config.Models.Tiers["openai"]["light"]);
     }
 
     [Fact]
@@ -105,12 +82,14 @@ public class ConfigFactoryTests
     }
 
     [Fact]
-    public void CreateDefault_SerializesOnlyTheManagersDoctrineAudience()
+    public void CreateDefault_SerializesNoAudienceScopedOrRetiredNudge()
     {
+        // The Decision 026 managers-doctrine nudge was the only audience-scoped shipped nudge
+        // and the last mention of the retired workflow; both leave with it (DR 045).
         var json = JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig);
 
-        Assert.Equal(1, json.Split("\"audience\"").Length - 1);
-        Assert.Contains("\"audience\": \"manager\"", json);
+        Assert.DoesNotContain("\"audience\"", json);
+        Assert.DoesNotContain("run-sprint", json);
     }
 
     [Fact]
@@ -173,47 +152,29 @@ public class ConfigFactoryTests
         ConfigFactory.EnsureDefaultNudges(config);
 
         Assert.Equal("worker", config.Nudges.Single(n => n.Pattern == "custom-pattern").Audience);
-        Assert.Equal("manager", config.Nudges.Single(n => n.Tools is { Count: > 0 }).Audience);
     }
 
     [Fact]
-    public void EnsureDefaultNudges_MigratesExactLegacyManagersDoctrineNudge()
+    public void CreateDefaultModels_BindsTheDr045Agents()
     {
-        var shipped = ConfigFactory.DefaultNudges.Single(n => n.Audience == "manager");
-        var legacy = new NudgeConfig
-        {
-            Pattern = shipped.Pattern,
-            Message = shipped.Message,
-            Severity = shipped.Severity,
-            Tools = shipped.Tools!.ToList()
-        };
-        var config = new DydoConfig { Nudges = [legacy] };
+        var agents = ConfigFactory.CreateDefaultModels().Agents;
 
-        var added = ConfigFactory.EnsureDefaultNudges(config);
-
-        Assert.Equal(ConfigFactory.DefaultNudges.Count - 1, added);
-        Assert.Equal("manager", legacy.Audience);
+        Assert.Equal("strong", agents["project-planner"]);
+        Assert.Equal("strong", agents["specifier"]);
+        Assert.Equal("strong", agents["issue-captain"]);
+        Assert.Equal("standard", agents["research"]);
     }
 
     [Fact]
-    public void EnsureDefaultNudges_PreservesCustomManagersDoctrineNudge()
+    public void DefaultNudges_ReviewBlockNudge_WarnsOnlyWhenThePrCarriesNoBlock()
     {
-        var shipped = ConfigFactory.DefaultNudges.Single(n => n.Audience == "manager");
-        var custom = new NudgeConfig
-        {
-            Pattern = shipped.Pattern,
-            Message = "custom doctrine",
-            Severity = shipped.Severity,
-            Tools = shipped.Tools!.ToList()
-        };
-        var config = new DydoConfig { Nudges = [custom] };
+        var nudge = Assert.Single(ConfigFactory.DefaultNudges, n => n.Pattern.Contains(@"pr\s+create"));
+        var regex = new Regex(nudge.Pattern, RegexOptions.IgnoreCase);
 
-        ConfigFactory.EnsureDefaultNudges(config);
-
-        Assert.Equal("all", custom.Audience);
+        Assert.Equal("warn", nudge.Severity);
+        Assert.Matches(regex, "gh pr create --title x --body 'ships the fix'");
+        Assert.DoesNotMatch(regex, "gh pr create --body '## Independent review\nverdict: PASS'");
     }
-
-
 
 
 

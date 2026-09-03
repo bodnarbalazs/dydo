@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Explicitly invoked by the human for a relentless interview that sharpens a plan, decision, or idea.
+description: Grill me relentlessly on my plan, decision, or idea until nothing is left assumed.
 disable-model-invocation: true
 ---
 
@@ -8,5 +8,8 @@ disable-model-invocation: true
 
 # Grill Me
 
-Load the separately generated `grilling` skill and apply it to the current topic. Do not act on the
-result until the Grilling completion criterion is satisfied and the human confirms shared understanding.
+Load `grilling` on whatever the human typed after the command — and on what is already on the
+table when nothing follows.
+
+This is his handle on Think: the interview starts because he asked for it, not because an agent
+decided he needed it.

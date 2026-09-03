@@ -1,31 +1,50 @@
+<!-- Adapted from mattpocock/skills code-review at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
+
 # Reviewing Code
 
-Target: one implemented Linear Issue. An atomic Issue may be the reviewed contract itself; coordinated
-work is also governed by the reviewed Git Project plan linked from its Linear Project.
+Target: the code one Linear Issue delivered, judged against that Issue's contract and, when one
+governs the work, its reviewed Project plan.
 
 ## Method
 
-1. **Read the reviewed intent first** — resolve the Issue, its governing commit, and any linked
-   Project plan. Verify the intended outcome, owned files, dependencies, acceptance criteria, and gates.
-2. **Review the diff — and the code it lands in.** The git diff shows what changed; read enough of the
-   surrounding code to judge the whole, not just the delta. Code that was bad before the change is
-   still a finding when the change builds on it. Check the general and stack-specific coding standards.
-3. **Run the Issue's gate commands** — verify green yourself; do not trust the implementation report.
-4. **Run `dydo check`** when the change touches documentation or project-wide validation surfaces.
-   Errors must be clean; new warnings are findings and existing warnings are called out in the verdict.
-5. **Return an independent verdict** — PASS means no findings. Record the verdict and exact evidence
-   on the Linear Issue before human harmonization; durable knowledge belongs in dydo/Git, not only in
-   the review comment.
+1. **Pin the contract before the diff.** Outcome, scenarios, owned paths, base SHA, exact gates,
+   governing plan at its SHA. Done when you can state what this change had to do without reading it.
+2. **Read the hops.** `git log <base>..<candidate>` lists the specify, implement, harden and fix
+   commits; read what each changed. A behaviour or test one hop had and a later hop dropped is a
+   finding when the contract needed it. Done when every hop is accounted for.
+3. **Read the diff, then the code it lands in.** `git diff <base>...HEAD` gives the delta; read
+   enough of each file to judge the whole. Code that was already bad is a finding when this change
+   builds on it. Done when every hunk is accounted for.
+4. **Judge against the standards.** `dydo/guides/coding-standards.md` and any stack-specific
+   standard bind, the anti-slop mandate included; a documented standard beats your taste.
+5. **Weigh the smells.** Work the baseline below across the diff. Done when every smell has been
+   asked and answered, not when the first one is found.
+6. **Rerun the gates yourself.** The Issue's exact commands, plus `dydo check` when the change
+   touches documentation or validation surfaces. An implementation report is a claim, not evidence.
+
+## The smell baseline
+
+A **smell** is a question, not a verdict. Name it as a possibility ("possible Feature Envy"), quote
+the hunk, answer it — and it becomes a finding only once you can state the concrete consequence
+here: a reader misled, one logical change forced to scatter, a seam no test can reach. A documented
+standard overrides the baseline, anything the tooling already enforces is skipped, and smell in code
+this change does not touch belongs to the invoker rather than to this verdict.
+
+Work the twelve smells in `dydo/guides/coding-standards.md`, each as a question against the diff.
 
 ## Checklist
 
-- [ ] Reviewed intent resolved from the Issue and, when applicable, its linked Project plan
-- [ ] Governing commit and reviewed contract match the implementation under review
-- [ ] Code follows coding standards (general + stack-specific)
-- [ ] Logic is correct and handles edge cases
-- [ ] Tests exist, are meaningful, and would fail if the code were broken
-- [ ] No security vulnerabilities introduced
-- [ ] No unnecessary complexity — anti-slop applies to reviews too
-- [ ] Changes match the Issue's owned paths and requested outcome; unrelated improvements are findings
-- [ ] Reported plan or Issue deviations are each justified or raised as findings
-- [ ] Verdict is strict and includes reproducible gate evidence
+- [ ] Candidate matches the governing commit, the owned paths, and the requested outcome
+- [ ] Every scenario stands as the specifier committed it, and every scenario passes
+- [ ] Nothing a hop had that the contract needed was lost by a later hop
+- [ ] Logic holds at the edges: boundaries validated, no fallback masking an impossible state
+- [ ] Tests name the behaviour and would fail if this code broke
+- [ ] Standards hold, and every smell was asked and answered
+- [ ] Nothing beyond the contract — an unrelated improvement is scope creep and a finding
+- [ ] Every deviation the implementation reported is justified or raised
+- [ ] Gates rerun by you, with their output
+
+## Verdict
+
+Fill the review block the reviewer skill defines, each finding in the shape it gives, and return
+nothing else. PASS means no findings: a note is a finding, and a finding is a FAIL.

@@ -14,7 +14,6 @@ This folder answers "How do I DO this?" — step-by-step instructions for common
 ## Contents
 
 - **coding-standards.md** - Code conventions and style rules
-- **how-to-use-docs.md** - Navigating this documentation
 - **getting-started.md** - First-time setup walkthrough
 - **customizing-roles.md** - Creating custom roles and permission sets
 - **writing-good-briefs.md** - How to write effective dispatch briefs
@@ -35,7 +34,6 @@ For conceptual background, use `understand/`. For reference specs, use `referenc
 ## Related
 
 - [About DynaDocs](../reference/about-dynadocs.md)
-- [How to Use These Docs](./how-to-use-docs.md)
 - [Writing Documentation](../reference/writing-docs.md)
 - [Understand](../understand/_index.md)
 - [Reference](../reference/_index.md)

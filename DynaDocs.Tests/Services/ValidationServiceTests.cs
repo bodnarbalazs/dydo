@@ -26,7 +26,7 @@ public class ValidationServiceTests : IDisposable
     {
         var json = config != null
             ? JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
-            : """{"version":1,"structure":{"root":"dydo"},"paths":{"source":["src/**"],"tests":["tests/**"]},"integrations":{"claude":true},"dispatch":{"launchInTab":false,"autoClose":false}}""";
+            : """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":true},"dispatch":{"launchInTab":false,"autoClose":false}}""";
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);
     }
 
@@ -99,7 +99,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "[invalid(regex", message = "test", severity = "block" } }
         });
@@ -115,7 +114,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "", message = "test", severity = "block" } }
         });
@@ -131,7 +129,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "test.*pattern", message = "", severity = "block" } }
         });
@@ -147,7 +144,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = "test", message = "test", severity = "invalid" } }
         });
@@ -163,7 +159,6 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
             agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
             nudges = new[] { new { pattern = @"dotnet test.*coverlet", message = "Use gap_check.py instead.", severity = "warn" } }
         });
@@ -174,30 +169,12 @@ public class ValidationServiceTests : IDisposable
     }
 
     [Fact]
-    public void ValidateSystem_ToolScopedNoticeNudge_NoNudgeErrors()
-    {
-        // Decision 026 §4 shipped nudge: glob pattern (not a valid-regex concern),
-        // tools list, "notice" severity — all must validate clean.
-        CreateDydoJson(new
-        {
-            version = 1, structure = new { root = "dydo" },
-            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
-            agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
-            nudges = new[] { new { pattern = "{source}|{tests}", message = "Delegate to a workflow.", severity = "notice", tools = new[] { "Edit", "Write", "NotebookEdit" } } }
-        });
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.DoesNotContain(issues, i => i.Message.Contains("Nudge"));
-    }
-
-    [Fact]
-    public void ValidateSystem_ToolScopedNudge_NormalizesAudience()
+    public void ValidateSystem_Nudge_NormalizesAudience()
     {
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            nudges = new[] { new { pattern = "src/**", message = "test", severity = "notice", tools = new[] { "Write" }, audience = "WORKER" } }
+            nudges = new[] { new { pattern = "src/**", message = "test", severity = "notice", audience = "WORKER" } }
         });
 
         var issues = _service.ValidateSystem(_testDir);
@@ -211,7 +188,7 @@ public class ValidationServiceTests : IDisposable
         CreateDydoJson(new
         {
             version = 1, structure = new { root = "dydo" },
-            nudges = new[] { new { pattern = "src/**", message = "test", severity = "notice", tools = new[] { "Write" }, audience = "team" } }
+            nudges = new[] { new { pattern = "src/**", message = "test", severity = "notice", audience = "team" } }
         });
 
         var issues = _service.ValidateSystem(_testDir);
@@ -220,29 +197,15 @@ public class ValidationServiceTests : IDisposable
     }
 
     [Fact]
-    public void ValidateSystem_ToolScopedNudgeWithNullAudience_ReportsError()
+    public void ValidateSystem_NudgeWithNullAudience_ReportsError()
     {
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
-            {"version":1,"structure":{"root":"dydo"},"nudges":[{"pattern":"src/**","message":"test","severity":"notice","tools":["Write"],"audience":null}]}
+            {"version":1,"structure":{"root":"dydo"},"nudges":[{"pattern":"src/**","message":"test","severity":"notice","audience":null}]}
             """);
 
         var issues = _service.ValidateSystem(_testDir);
 
         Assert.Contains(issues, i => i.Message.Contains("invalid audience"));
-    }
-
-    [Fact]
-    public void ValidateSystem_BashNudgeWithAudience_ReportsError()
-    {
-        CreateDydoJson(new
-        {
-            version = 1, structure = new { root = "dydo" },
-            nudges = new[] { new { pattern = "test", message = "test", severity = "block", audience = "all" } }
-        });
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.Message.Contains("audience but no tools"));
     }
 
     #endregion

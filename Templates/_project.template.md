@@ -37,5 +37,4 @@ For technical specifications, use `reference/`. For how-to guides, use `guides/`
 
 - [dydo Glossary](../reference/dydo-glossary.md)
 - [About DynaDocs](../reference/about-dynadocs.md)
-- [How to Use These Docs](../guides/how-to-use-docs.md)
 - [Writing Documentation](../reference/writing-docs.md)

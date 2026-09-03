@@ -4,63 +4,79 @@ public class UpstreamSkillSourceTests
 {
     private const string UpstreamCommit = "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76";
 
-    private static readonly IReadOnlyDictionary<string, string> ExpectedInvocation =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["wayfinder"] = "explicit",
-            ["grilling"] = "automatic",
-            ["grill-me"] = "explicit",
-            ["bro"] = "explicit",
-            ["writing-for-agents"] = "automatic"
-        };
+    private static readonly string[] MattDerivedSkills =
+        ["wayfinder", "grilling", "grill-me", "bro", "writing-for-agents"];
 
+    // DR 045 section 9's explicit-only list, narrowed to the skills this file covers. Every other
+    // invocation value belongs to the source that authors it, so it is validated, not pinned.
+    private static readonly string[] ExplicitOnlySkills = ["grill-me", "bro"];
+
+    // The invocation metadata is a routing contract, not prose: a skill with a missing or invalid
+    // value routes by accident. Which model-invoked skills exist is the taxonomy's business; that
+    // the human-only ones stay human-only is this test's. Shipped-vs-installed parity lives in
+    // InstalledTemplateParityTests, and the metadata-to-compiled-policy correspondence in
+    // CodexSyncArtifactsE2ETests.
     [Fact]
-    public void MattDerivedTemplates_ExistInBothSourceLocations_WithNeutralInvocationMetadata()
+    public void MattDerivedTemplates_CarryValidInvocationMetadataAndAttribution()
     {
-        var root = FindRepositoryRoot();
-
-        foreach (var (skill, invocation) in ExpectedInvocation)
+        foreach (var skill in MattDerivedSkills)
         {
-            var shippedPath = Path.Combine(root, "Templates", $"skill-{skill}.template.md");
-            var installedPath = Path.Combine(
-                root, "dydo", "_system", "templates", $"skill-{skill}.template.md");
+            var source = ReadTemplate(skill);
+            var invocation = InvocationValue(source);
 
-            Assert.True(File.Exists(shippedPath), $"Missing shipped source for {skill}");
-            Assert.True(File.Exists(installedPath), $"Missing installed source for {skill}");
-
-            var shipped = Normalize(File.ReadAllText(shippedPath));
-            var installed = Normalize(File.ReadAllText(installedPath));
-
-            Assert.Equal(shipped, installed);
-            Assert.Contains($"mode: {skill}\n", shipped);
-            Assert.Contains($"invocation: {invocation}\n", shipped);
-            Assert.Contains("emit: skill\n", shipped);
-            Assert.Contains("mattpocock/skills", shipped);
-            Assert.Contains(UpstreamCommit, shipped);
-            Assert.Contains("(MIT)", shipped);
+            Assert.Contains($"name: {skill}\n", source);
+            Assert.Contains("emit: skill\n", source);
+            Assert.True(invocation is "explicit" or "automatic",
+                $"{skill}: invocation must be 'explicit' or 'automatic', was '{invocation}'");
+            if (ExplicitOnlySkills.Contains(skill))
+                Assert.Equal("explicit", invocation);
+            Assert.Contains("mattpocock/skills", source);
+            Assert.Contains(UpstreamCommit, source);
+            Assert.Contains("(MIT)", source);
         }
     }
 
+    // grill-me is the human's explicit entry to the grilling method; it must stay explicit-only
+    // and must point at the method rather than restating it.
     [Fact]
-    public void GrillMe_IsAnExplicitAliasForTheGeneratedGrillingSkill()
+    public void GrillMe_IsAnExplicitEntryPointThatDefersToTheGrillingSkill()
     {
         var source = ReadTemplate("grill-me");
 
-        Assert.Contains("invocation: explicit", source);
-        Assert.Contains("separately generated `grilling` skill", source);
-        Assert.Contains("human confirms shared understanding", source);
+        Assert.Contains("invocation: explicit\n", source);
+        Assert.Contains("grilling", source);
+        Assert.True(NonBlankLines(source) < NonBlankLines(ReadTemplate("grilling")),
+            "grill-me must stay thinner than the method it defers to");
     }
 
+    // DR 045 section 11 retires the Waypoint ontology from the vocabulary; the rebuilt wayfinder
+    // navigates the Linear Project itself. Its invocation value is section 9's to set, not this
+    // test's to freeze.
     [Fact]
-    public void Wayfinder_UsesLinearProjectMap_WithoutInventedWaypointOntology()
+    public void Wayfinder_CarriesNoRetiredWaypointOntology()
     {
         var source = ReadTemplate("wayfinder");
 
-        Assert.Contains("Linear Project is the canonical map", source);
-        Assert.Contains("native dependency relations", source);
-        Assert.Contains("Assignment is the claim", source);
-        Assert.Contains("Fog of war", source);
+        Assert.Contains("name: wayfinder\n", source);
         Assert.DoesNotContain("Waypoint", source, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Upstream at 6654f6b6 carries argument-hint on handoff and teach and on none of the other
+    // human commands dydo ships. The hint is the wording a host shows the human, so dydo copies
+    // the two upstream texts and invents none: the rest are the human's to word.
+    [Fact]
+    public void HumanCommandTemplates_CarryTheUpstreamArgumentHintsAndNoOthers()
+    {
+        Assert.Contains(
+            "argument-hint: \"What will the next session be used for?\"\n", ReadTemplate("handoff"));
+        Assert.Contains(
+            "argument-hint: \"What would you like to learn about?\"\n", ReadTemplate("teach"));
+
+        foreach (var skill in new[]
+                 { "grill-me", "bro", "walkthrough", "improve-codebase-architecture" })
+        {
+            Assert.DoesNotContain("argument-hint", ReadTemplate(skill));
+        }
     }
 
     [Fact]
@@ -88,6 +104,15 @@ public class UpstreamSkillSourceTests
 
     private static string ReadTemplate(string skill) => Normalize(File.ReadAllText(Path.Combine(
         FindRepositoryRoot(), "Templates", $"skill-{skill}.template.md")));
+
+    private static string InvocationValue(string source) =>
+        source.Split('\n')
+            .Single(line => line.StartsWith("invocation:", StringComparison.Ordinal))
+            ["invocation:".Length..]
+            .Trim();
+
+    private static int NonBlankLines(string value) =>
+        value.Split('\n').Count(line => !string.IsNullOrWhiteSpace(line));
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n");
 

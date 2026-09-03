@@ -239,7 +239,7 @@ public class FrontmatterRuleTests
     [Fact]
     public void Validate_SkipsTemplateFiles()
     {
-        var doc = CreateDocWithFrontmatter(null, "_system/templates/skill-code-writer.template.md");
+        var doc = CreateDocWithFrontmatter(null, "_system/template-additions/skill-implementer.template.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 

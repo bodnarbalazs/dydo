@@ -61,7 +61,7 @@ evidence is needed; do not recreate repository work records to address a current
 
 ## Compiled artifact drift
 
-Change the source under `Templates/` or `dydo/_system/templates/`, then run:
+Change the source under `Templates/`, then run:
 
 ```bash
 dydo template update --diff
@@ -69,8 +69,7 @@ dydo sync
 dydo check
 ```
 
-Do not patch `.claude/`, `.codex/`, or `.agents/skills/` by hand. If an update skips a customized
-file, reconcile the source or include hook deliberately and preview again before using `--force`.
+Do not patch `.claude/`, `.codex/`, or `.agents/skills/` by hand.
 
 ## Linear boundary mistakes
 

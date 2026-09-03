@@ -1,13 +1,12 @@
 ---
-mode: grill-me
-description: Explicitly invoked by the human for a relentless interview that sharpens a plan, decision, or idea.
+name: grill-me
+description: A relentless interview to sharpen a plan or design, which also creates docs (Decision Records and glossary) as we go.
 emit: skill
 invocation: explicit
 ---
 
-<!-- Adapted from mattpocock/skills grill-me at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
+<!-- Adapted from mattpocock/skills grill-me and grill-with-docs at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
 
 # Grill Me
 
-Load the separately generated `grilling` skill and apply it to the current topic. Do not act on the
-result until the Grilling completion criterion is satisfied and the human confirms shared understanding.
+Call the Skill tool twice, for "grilling" and "domain-modeling".

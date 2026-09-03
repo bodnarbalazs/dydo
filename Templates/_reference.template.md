@@ -15,6 +15,7 @@ This folder answers "What are the exact specs?" — detailed reference material 
 
 - **writing-docs.md** - Documentation conventions and validation rules
 - **dydo-commands.md** - CLI command reference
+- **linear-workspace-standard.md** - Canonical Linear workspace setup (reserved for its HITL pass)
 - **about-dynadocs.md** - About the DynaDocs system
 
 ## When to Add Docs Here
@@ -32,7 +33,6 @@ For conceptual explanations, use `understand/`. For how-to guides, use `guides/`
 ## Related
 
 - [About DynaDocs](./about-dynadocs.md)
-- [How to Use These Docs](../guides/how-to-use-docs.md)
 - [Writing Documentation](./writing-docs.md)
 - [Understand](../understand/_index.md)
 - [Guides](../guides/_index.md)

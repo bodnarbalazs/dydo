@@ -193,7 +193,7 @@ public class NamingRuleTests
     [Fact]
     public void Validate_SkipsTemplateFiles()
     {
-        var doc = CreateDoc("agent-workflow.template.md", "_system/templates/agent-workflow.template.md");
+        var doc = CreateDoc("agent-workflow.template.md", "_system/template-additions/agent-workflow.template.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 

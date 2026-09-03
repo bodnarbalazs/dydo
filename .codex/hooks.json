@@ -2,7 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion|apply_patch|shell_command|exec|local_shell|unified_exec",
+        "matcher": "Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec",
         "hooks": [
           {
             "type": "command",

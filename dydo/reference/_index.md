@@ -17,4 +17,5 @@ Index of reference documentation.
 - [Coverage Tools](./coverage-tools.md) - An in-house Python script for measuring and enforcing test coverage.
 - [CLI Commands Reference](./dydo-commands.md) - Complete reference for dydo's local documentation, compilation, guard, and configuration commands.
 - [dydo Glossary](./dydo-glossary.md) - The locked vocabulary for dydo's Linear-native work model, durable knowledge, and agent execution.
+- [Linear Workspace Standard](./linear-workspace-standard.md) - The canonical Linear vocabulary for Projects and Issues.
 - [Writing Documentation](./writing-docs.md) - Reference for documentation conventions, structure, and validation rules.

@@ -252,7 +252,7 @@ public class OrphanDocsRuleTests
     public void Validate_SkipsTemplateFiles()
     {
         var hub = CreateDoc("guides/_index.md", linksTo: []);
-        var template = CreateDoc("_system/templates/agent-workflow.template.md");
+        var template = CreateDoc("_system/template-additions/agent-workflow.template.md");
         var allDocs = new List<DocFile> { hub, template };
 
         var violations = _rule.Validate(template, allDocs, BasePath).ToList();
@@ -276,7 +276,7 @@ public class OrphanDocsRuleTests
     public void Validate_SkipsAgentModeFiles()
     {
         var hub = CreateDoc("guides/_index.md", linksTo: []);
-        var modeDoc = CreateDoc("agents/sample/modes/code-writer.md");
+        var modeDoc = CreateDoc("agents/sample/modes/implementer.md");
         var allDocs = new List<DocFile> { hub, modeDoc };
 
         var violations = _rule.Validate(modeDoc, allDocs, BasePath).ToList();

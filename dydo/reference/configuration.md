@@ -18,14 +18,8 @@ through Linear's official surfaces.
 ```json
 {
   "version": 1,
-  "name": "optional-project-slug",
   "structure": {
     "root": "dydo"
-  },
-  "paths": {
-    "source": ["src/**"],
-    "tests": ["tests/**"],
-    "pathSets": null
   },
   "integrations": {
     "claude": true,
@@ -36,12 +30,10 @@ through Linear's official surfaces.
       "anthropic": { "strong": "claude-fable-5" },
       "openai": { "strong": "gpt-5.6-sol" }
     },
-    "roles": {
+    "agents": {
       "reviewer": "strong",
-      "code-writer": "standard"
-    },
-    "efforts": {},
-    "fallback": null
+      "implementer": "standard"
+    }
   },
   "scanExclude": [
     "_system/.local/",
@@ -58,17 +50,11 @@ through Linear's official surfaces.
 | Field | Type | Purpose |
 |---|---|---|
 | `version` | integer | Configuration schema version. |
-| `name` | string or null | Optional project slug used by temporary migration compatibility where documented. |
 | `structure.root` | string | Documentation root; defaults to `dydo`. |
-| `paths.source` | string[] | Source globs exposed to role compilation and project guidance. |
-| `paths.tests` | string[] | Test globs exposed to role compilation and project guidance. |
-| `paths.pathSets` | object or null | Custom named path groups for roles. |
 | `integrations.claude` | boolean | Whether Claude Code integration is wired. |
 | `integrations.codex` | boolean | Whether Codex integration is wired. |
 | `models.tiers` | object | Vendor-specific model bindings for abstract tiers. |
-| `models.roles` | object | Role-to-tier bindings resolved by `dydo sync`. |
-| `models.efforts` | object | Optional reasoning-effort overrides. |
-| `models.fallback` | string or null | Optional fallback model for temporary caps. |
+| `models.agents` | object | Agent-to-tier bindings resolved by `dydo sync`. |
 | `scanExclude` | string[] | Paths excluded from documentation scanning. |
 | `nudges` | object[] | Project guard rules. |
 | `frameworkHashes` | object | Product-managed hashes used by `dydo template update`. |
@@ -96,23 +82,22 @@ orchestration to the host runtime.
 
 ## Model tiers
 
-Roles bind to abstract tiers such as `strong`, `standard`, and `light`; vendor blocks bind those
+Agents bind to abstract tiers such as `strong`, `standard`, and `light`; vendor blocks bind those
 tiers to concrete models. `dydo sync` resolves the current bindings when it compiles native artifacts.
-Use `dydo model cap`, `dydo model status`, and `dydo model uncap` for temporary availability caps
-instead of editing compiled agents.
 
 ## Nudges
 
 Each nudge has a regular-expression `pattern`, a `message`, a `severity` (`notice`, `warn`, or
-`block`), and optionally a `tools` allow-set. Notices inform, warnings require a deliberate retry,
+`block`). Notices inform, warnings require a deliberate retry,
 and blocks reject the action. Nudges enforce project process; they do not create or update work records.
 
 ## Customization points
 
-- `dydo/_system/templates/` — project-local role, resource, workflow, and framework template overrides.
 - `dydo/_system/template-additions/` — durable `{{include:name}}` fragments.
-- `dydo/files-off-limits.md` — universal protected path patterns and narrow whitelist entries.
-- `paths.pathSets` — named source/test groupings available to compiled methods.
+- `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
+  read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.
+  Whitelist entries lift off-limits patterns only; [Guard System](../understand/guard-system.md) owns
+  how each tier binds.
 
 Change source templates and run `dydo sync`; never hand-edit compiled `.claude/`, `.codex/`, or
 `.agents/skills/` artifacts.

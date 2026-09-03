@@ -362,7 +362,6 @@ public class CommandDocConsistencyTests
             Path.Combine("dydo", "guides", "testing-strategy.md"),
             Path.Combine("dydo", "guides", "troubleshooting.md"),
             Path.Combine("dydo", "guides", "adding-a-command.md"),
-            Path.Combine("dydo", "guides", "how-to-use-docs.md"),
         };
         var forbidden = new Regex(
             @"\bdydo\s+(task|issue|review)\b|project[\\/](tasks|issues|campaigns|sprints|slices|backlog)\b",
@@ -409,14 +408,6 @@ public class CommandDocConsistencyTests
         // Template files
         var templatesDir = FindRepoDir("Templates");
         files.AddRange(Directory.GetFiles(templatesDir, "*.template.md"));
-
-        // Override templates in _system/templates/ (canonical source for generated mode files)
-        try
-        {
-            var systemTemplatesDir = FindRepoDir(Path.Combine("dydo", "_system", "templates"));
-            files.AddRange(Directory.GetFiles(systemTemplatesDir, "*.template.md"));
-        }
-        catch (DirectoryNotFoundException) { }
 
         var codeBlockPattern = new Regex(@"```[\w]*\r?\n(.*?)```", RegexOptions.Singleline);
         var missing = new List<string>();

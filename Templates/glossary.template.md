@@ -17,6 +17,7 @@ Keep it around 15-20 terms max, don't make this an encylopedia, the rest of the 
 - Link to specific terms using the format: `[Term](./glossary.md#term-name)`
 - Terms are alphabetized
 - Each term has an anchor matching its kebab-case name
+- When several words exist for one concept, pick one and list the others on an `_Avoid_:` line under the term
 
 ---
 
@@ -29,6 +30,7 @@ _Add your project-specific terms below, alphabetized._
 ### Term Name
 
 Brief definition (1-2 sentences). Include context about when/where this concept applies.
+_Avoid_: Synonym, other synonym
 
 **See also:** Related Doc (link to relevant documentation)
 

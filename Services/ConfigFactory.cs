@@ -34,7 +34,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:guard|template|init|check|fix|index|graph|completions|complete|model|version|help|roles|validate|inquisition)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|sync|completions|complete|template|validate|version|help)\b.*)",
             Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
@@ -68,16 +68,14 @@ public static class ConfigFactory
             Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).",
             Severity = "warn"
         },
-        // Decision 026 §4: Tier-1 agents are managers — soft reminder on direct source
-        // writes. Notice severity = exit-0 stderr warning, never a block, so the
-        // trivial-edit exception stays frictionless.
+        // DR 045 §3: nothing reaches the human that an independent agent has not reviewed, and
+        // the PR body is where that proof lands. Warn = block once, run again to proceed, so an
+        // honest exception costs one retry; DR 042's rule escalates it to block if discipline erodes.
         new()
         {
-            Tools = ["Edit", "Write", "NotebookEdit"],
-            Audience = "manager",
-            Pattern = "{source}|{tests}",
-            Message = "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
-            Severity = "notice"
+            Pattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",
+            Message = "This PR carries no review block. Paste the independent reviewer's block under an 'Independent review' heading in the body — rubric, reviewer and model, candidate and base SHA, verdict, gates rerun, findings.",
+            Severity = "warn"
         },
     ];
 
@@ -103,42 +101,20 @@ public static class ConfigFactory
                 ["light"] = "gpt-5.6-luna"
             }
         },
-        Roles = new Dictionary<string, string>
+        Agents = new Dictionary<string, string>
         {
-            ["code-writer"] = "standard",
-            ["test-writer"] = "standard",
+            ["implementer"] = "standard",
+            ["hardener"] = "strong",
             ["docs-writer"] = "standard",
             ["reviewer"] = "strong",
             ["inquisitor"] = "strong",
-            ["planner"] = "strong"
-        },
-        // The declared second-line model `dydo model cap` rebinds to when the strong
-        // tier's model (Fable) hits its spend cap — matches the out-of-band reviewer
-        // workaround (issue #214). Kept in step with FALLBACK_MODEL in the run-sprint /
-        // inquisition harness scripts, which retry a stage on this same model.
-        Fallback = "claude-sonnet-5"
+            ["project-planner"] = "strong",
+            ["specifier"] = "strong",
+            ["issue-captain"] = "strong",
+            ["research"] = "standard",
+            ["scout"] = "standard"
+        }
     };
-
-    /// <summary>
-    /// Upgrades the exact OpenAI tier block emitted by older versions. A project that
-    /// customized any tier is left untouched.
-    /// </summary>
-    public static bool UpgradeLegacyOpenAiTierDefaults(DydoConfig config)
-    {
-        var models = config.Models;
-        if (models == null
-            || !models.Tiers.TryGetValue("openai", out var openAi)
-            || openAi.Count != 3
-            || !openAi.All(pair => pair.Key is "strong" or "standard" or "light"
-                && pair.Value == "gpt-5.5"))
-            return false;
-
-        openAi["strong"] = "gpt-5.6-sol";
-        openAi["standard"] = "gpt-5.6-terra";
-        openAi["light"] = "gpt-5.6-luna";
-
-        return true;
-    }
 
     public static DydoConfig CreateDefault()
     {
@@ -152,7 +128,6 @@ public static class ConfigFactory
                 Pattern = n.Pattern,
                 Message = n.Message,
                 Severity = n.Severity,
-                Tools = n.Tools?.ToList(),
                 Audience = n.Audience
             }).ToList(),
             ScanExclude = DydoInternalScanExclude.ToList(),
@@ -170,20 +145,14 @@ public static class ConfigFactory
 
         foreach (var nudge in DefaultNudges)
         {
-            var existing = config.Nudges.FirstOrDefault(current => current.Pattern == nudge.Pattern);
-            if (existing != null)
-            {
-                if (IsLegacyDefaultNudge(existing, nudge))
-                    existing.Audience = nudge.Audience;
+            if (config.Nudges.Any(current => current.Pattern == nudge.Pattern))
                 continue;
-            }
 
             config.Nudges.Add(new NudgeConfig
             {
                 Pattern = nudge.Pattern,
                 Message = nudge.Message,
                 Severity = nudge.Severity,
-                Tools = nudge.Tools?.ToList(),
                 Audience = nudge.Audience
             });
             added++;
@@ -191,16 +160,6 @@ public static class ConfigFactory
 
         return added;
     }
-
-    private static bool IsLegacyDefaultNudge(NudgeConfig current, NudgeConfig shipped) =>
-        shipped.Audience == "manager"
-        && current.Audience == "all"
-        && !current.HasAudience
-        && current.Message == shipped.Message
-        && current.Severity == shipped.Severity
-        && current.Tools is not null
-        && shipped.Tools is not null
-        && current.Tools.SequenceEqual(shipped.Tools);
 
     /// <summary>
     /// Adds any dydo-internal scan-exclude entries missing from the config.

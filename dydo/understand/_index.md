@@ -12,9 +12,10 @@ Index of understand documentation.
 ## Contents
 
 - [About This Project](./about.md) - DynaDocs (dydo) is a documentation, skill-authoring, and guardrail framework for AI coding assistants.
-- [Architecture Overview](./architecture.md) - DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles native agent methods, and enforces universal guard rules.
+- [Architecture Overview](./architecture.md) - DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles shared agent methods into native host artifacts, and...
+- [Control Flow](./control-flow.md) - Every handoff in the dydo 3 operating model, drawn from [DR...
 - [Documentation Model](./documentation-model.md) - dydo uses JITI (Just-In-Time Information) so agents load only the durable knowledge relevant to the current Linear Issue or conversation.
 - [Guard System](./guard-system.md) - How dydo enforces boundaries through the PreToolUse hook.
-- [Linear Issue Lifecycle](./task-lifecycle.md) - Actionable work lives in Linear Issues.
-- [Templates and Customization](./templates-and-customization.md) - dydo authors role methodologies, skill resources, workflows, and framework documents as templates, then uses product commands to compile or...
-- [Work Model](./work-model.md) - Linear owns dydo's live work graph; Git owns durable knowledge and proof.
+- [Linear Issue Lifecycle](./task-lifecycle.md) - An Issue is the only actionable work item, and Linear owns every field on it that moves.
+- [Templates and Customization](./templates-and-customization.md) - dydo ships every role, skill resource, workflow, and project document as a template, then compiles or installs it with a product command.
+- [Work Model](./work-model.md) - How work moves here: Linear owns the live work graph, Git and dydo own durable knowledge and proof, and every session places itself on one flow...

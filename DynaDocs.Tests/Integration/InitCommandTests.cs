@@ -42,7 +42,6 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileExists("dydo/understand/about.md");
         AssertFileExists("dydo/understand/architecture.md");
         AssertFileExists("dydo/guides/coding-standards.md");
-        AssertFileExists("dydo/guides/how-to-use-docs.md");
         AssertFileExists("dydo/reference/writing-docs.md");
     }
 
@@ -66,8 +65,22 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
         AssertFileContains("dydo.json", "\"version\": 1");
-        // New inits no longer emit an agents/pool/assignments section (DR-041).
-        Assert.DoesNotContain("\"agents\"", ReadFile("dydo.json"));
+        // New inits no longer emit an agents/pool/assignments section (DR-041). The nested
+        // models.agents tier bindings are a different key and must not trip this.
+        var config = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile("dydo.json")));
+        Assert.False(config.ContainsKey("agents"));
+    }
+
+    // The next-steps summary used to teach a config key sync no longer reads, so a fresh init
+    // would hand every new project a snippet that does nothing.
+    [Fact]
+    public async Task Init_None_NextStepsDoNotTeachARemovedConfigKey()
+    {
+        var result = await InitProjectAsync("none");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("\"paths\"", result.Stdout);
+        Assert.DoesNotContain("Source and test paths", result.Stdout);
     }
 
     [Fact]
@@ -195,24 +208,11 @@ public class InitCommandTests : IntegrationTestBase
         var preToolUseEntry = Assert.Single(preToolUse);
         Assert.NotNull(preToolUseEntry);
         var matcher = preToolUseEntry["matcher"]?.GetValue<string>();
-        Assert.NotNull(matcher);
-        Assert.Contains("Edit", matcher);
-        Assert.Contains("Write", matcher);
-        Assert.Contains("Read", matcher);
-        Assert.Contains("Bash", matcher);
-        Assert.Contains("PowerShell", matcher);
-        Assert.Contains("Agent", matcher);
-        Assert.Contains("EnterPlanMode", matcher);
-        Assert.Contains("ExitPlanMode", matcher);
-        Assert.Contains("NotebookEdit", matcher);
-        Assert.Contains("AskUserQuestion", matcher);
-        Assert.Contains("apply_patch", matcher);
-        // Codex shell tool names (issue 0295) — without these the guard never sees codex shell
-        // commands, so off-limits/dangerous-bash/git-safety don't bind on the codex shell lane.
-        Assert.Contains("shell_command", matcher);
-        Assert.Contains("exec", matcher);
-        Assert.Contains("local_shell", matcher);
-        Assert.Contains("unified_exec", matcher);
+        // The documented Codex tool names first, then the legacy shell names kept from issue
+        // 0295 (without them the guard never sees Codex shell commands, so off-limits and
+        // dangerous-bash don't bind on that lane). Claude-only UI names are dropped: Codex
+        // never emits them, and a matcher entry that can never fire is dead configuration.
+        Assert.Equal("Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec", matcher);
 
         var guardHooks = Assert.IsType<JsonArray>(preToolUseEntry["hooks"]);
         var guardHook = Assert.Single(guardHooks);
@@ -671,30 +671,15 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     // The role.json layer is gone (DR-041 residue hunt): the skill template IS the role,
-    // so init scaffolds skill templates — not role definition files — and sync discovers
-    // roles by enumerating them.
+    // and sync discovers roles by enumerating the shipped skill templates.
     [Fact]
-    public async Task Init_GeneratesSkillTemplates_NotRoleFiles()
+    public async Task Init_DoesNotScaffoldTheRemovedRoleLayer()
     {
         var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/_system/roles")),
             "init must not scaffold the removed dydo/_system/roles layer");
-
-        var templatesDir = Path.Combine(TestDir, "dydo/_system/templates");
-        var skillTemplates = Directory.GetFiles(templatesDir, "skill-*.template.md")
-            .Select(Path.GetFileName).ToList();
-        Assert.Contains("skill-code-writer.template.md", skillTemplates);
-        Assert.Contains("skill-reviewer.template.md", skillTemplates);
-        Assert.Contains("skill-chief-of-staff.template.md", skillTemplates);
-        Assert.Contains("skill-wayfinder.template.md", skillTemplates);
-        Assert.Contains("skill-grilling.template.md", skillTemplates);
-        Assert.Contains("skill-grill-me.template.md", skillTemplates);
-        Assert.Contains("skill-bro.template.md", skillTemplates);
-        Assert.Contains("skill-writing-for-agents.template.md", skillTemplates);
-        Assert.Equal(15, skillTemplates.Count);
-        Assert.DoesNotContain("skill-sprint-auditor.template.md", skillTemplates);
     }
 
     [Fact]

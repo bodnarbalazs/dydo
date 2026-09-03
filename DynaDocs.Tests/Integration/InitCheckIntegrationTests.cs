@@ -53,7 +53,6 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         AssertFileExists("dydo/understand/about.md");
         AssertFileExists("dydo/understand/architecture.md");
         AssertFileExists("dydo/guides/coding-standards.md");
-        AssertFileExists("dydo/guides/how-to-use-docs.md");
         AssertFileExists("dydo/reference/writing-docs.md");
         AssertFileExists("dydo/reference/about-dynadocs.md");
 
@@ -107,23 +106,6 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         // root but no per-agent workspaces.
         AssertDirectoryExists("dydo/agents");
         Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/sample")));
-    }
-
-    [Fact]
-    public async Task FreshInit_TemplatesAreExcludedFromCheck()
-    {
-        // Arrange - Initialize
-        var initResult = await InitProjectAsync("none");
-        initResult.AssertSuccess();
-
-        // Assert - Templates folder exists
-        AssertDirectoryExists("dydo/_system/templates");
-
-        // Act - Run check
-        var checkResult = await CheckAsync();
-
-        // Assert - Check passes despite templates having different naming/frontmatter rules
-        Assert.DoesNotContain("Found errors", checkResult.Stdout);
     }
 
     [Fact]

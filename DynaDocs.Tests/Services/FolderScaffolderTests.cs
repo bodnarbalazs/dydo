@@ -72,7 +72,6 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "about.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "architecture.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "guides", "coding-standards.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, "guides", "how-to-use-docs.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "reference", "writing-docs.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "files-off-limits.md")));
     }
@@ -91,6 +90,11 @@ public class FolderScaffolderTests : IDisposable
         Assert.Contains("type: reference", content);
     }
 
+    // The scaffolder's contract here is to plant the shipped dydo vocabulary at reference/, not a
+    // stub, so this proves the glossary's structure: its sections and the terms it defines. DR 045
+    // section 11 locks that vocabulary and directs tests to prove structure, never prose — the
+    // earlier version of this test froze the Waypoint and Review sentences and died when section 11
+    // retired them. A definition may be rewritten freely; a term or section may not go missing.
     [Fact]
     public void Scaffold_CreatesDydoGlossaryMd()
     {
@@ -100,15 +104,38 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(File.Exists(glossaryPath), "dydo-glossary.md should be created in reference/");
 
         var content = File.ReadAllText(glossaryPath);
-        var normalizedProse = string.Join(" ", content.Split((char[]?)null,
-            StringSplitOptions.RemoveEmptyEntries));
+        Assert.Contains("area: reference", content);
+        Assert.Contains("type: reference", content);
         Assert.Contains("# dydo Glossary", content);
-        Assert.Contains("Linear-native work model", normalizedProse);
-        Assert.Contains("the only actionable tracked work item", normalizedProse);
-        Assert.Contains("an unscheduled repo-native idea", normalizedProse);
-        Assert.Contains("a navigation node, not a work object", normalizedProse);
-        Assert.Contains("an independent examination of one implementation Issue", normalizedProse);
+
+        foreach (var section in new[]
+        {
+            "Linear work graph", "Fog and question Issues", "Durable knowledge",
+            "Roles and skills", "Execution and proof", "Retired PM terms"
+        })
+            Assert.Contains($"## {section}", content);
+
+        var defined = DefinedTerms(content);
+        foreach (var term in new[]
+        {
+            "Initiative", "Project", "Milestone", "Issue", "Sub-issue", "Cycle", "Label",
+            "Fog", "Question Issue", "Frontier",
+            "Decision", "Project plan", "Issue-resolution plan", "FutureFeature", "Assimilation brief",
+            "Role", "Skill", "Agent", "Hat", "Worker", "Method", "Human command", "Workflow", "Rubric",
+            "Reviewed intent", "Gate", "Issue review", "Merge review", "Inquisition", "Review block",
+            "Evidence", "Working-tree contract", "Worktree", "HITL", "AFK"
+        })
+            Assert.Contains(term, defined);
     }
+
+    // A term the glossary defines: bolded inside its own definition bullet. Matching the whole
+    // bolded name rather than a substring keeps "Project plan" from standing in for "Project".
+    private static ISet<string> DefinedTerms(string glossary) =>
+        glossary.Split('\n')
+            .Where(line => line.StartsWith("- **", StringComparison.Ordinal))
+            .SelectMany(line => System.Text.RegularExpressions.Regex.Matches(line, @"\*\*(.+?)\*\*"))
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet();
 
     [Fact]
     public void Scaffold_AboutMd_ContainsProjectPlaceholders()

@@ -1,6 +1,6 @@
 ---
 name: writing-for-agents
-description: Writing documents for agents. Use when creating or editing skills, modifying AGENTS.md or CLAUDE.md, or changing a document reached by an agent pointer.
+description: Pointers and prompt files. Use when creating or editing a skill, an AGENTS.md or CLAUDE.md, or a document an agent reaches by pointer; when one fires at the wrong time or never fires; when a prompt file has sprawled past one sitting.
 ---
 
 <!-- Adapted from mattpocock/skills writing-for-agents at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
@@ -9,7 +9,9 @@ description: Writing documents for agents. Use when creating or editing skills, 
 
 Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
-When the document is a dydo skill, keep the shared method and neutral invocation metadata in its canonical template. The dydo compiler owns runtime-specific frontmatter and invocation policy.
+When the document is a dydo skill, read [`skill-mechanics`](.claude/skills/writing-for-agents/resources/skill-mechanics.md) first: frontmatter keys, the invocation choice, Must-Reads, resources, and what `dydo sync` compiles.
+
+When the same friction returns run after run, the lever is the harness rather than the document in front of you: that is `self-improvement`'s trigger.
 
 ## Context pointers
 
@@ -20,6 +22,12 @@ A pointer does two jobs: state what the material is, and list the **branches** t
 - **Front-load the leading word**: the pointer is where it does its triggering work.
 - **One trigger per branch.** Synonyms that rename a single branch are one branch written twice; collapse them and keep only genuinely distinct branches.
 - **Cut identity the body already carries.**
+
+## The funnel
+
+Every line serves the reader who is actually there: name the reader before the line goes in, and move a fact whose reader is elsewhere into that reader's document — "edit the source, not the build product" lives with the skills that edit skills, not in an entry point every worker loads.
+
+An orientation file is a funnel, not a summary. It sorts its reader toward one next document and stops: sort by the reader's situation (started by the human, working an Issue, spawned with a skill), never by a role catalog, which lands incomplete or inconsistent and drags every reader through every other reader's material. A hole in the sort is a defect in the hub — fix it rather than adding an "if nothing fits" escape line. What a hub names, it does not describe: each entry's own description is its routing.
 
 ## The two loads
 
@@ -64,7 +72,7 @@ The strongest criteria are both checkable and exhaustive.
 Splitting one document into two spends one of the two loads, so split only when the cut earns it:
 
 - **By sequence**: split a run of steps where the post-completion steps tempt the agent to rush the one in front of it. Keeping them out of view drives more legwork on the current task. Beware the reverse: merging sequences exposes each step's later steps to what follows, inviting premature completion.
-- **By invocation**, skill-specific: split when branches have genuinely different triggers or operating methods.
+- **By invocation**, skill-specific: see [`skill-mechanics`](.claude/skills/writing-for-agents/resources/skill-mechanics.md).
 
 ## Leading words
 

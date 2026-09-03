@@ -72,5 +72,4 @@ may change.
 ## Related
 
 - [Writing Documentation](../reference/writing-docs.md)
-- [How to Use These Docs](../guides/how-to-use-docs.md)
 - [Templates and Customization](./templates-and-customization.md)

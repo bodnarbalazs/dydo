@@ -1,6 +1,6 @@
 # Template Additions
 
-This folder contains project-specific content that gets injected into agent mode files via `{{include:name}}` tags.
+This folder holds project-specific content that `dydo sync` injects into compiled skills via `{{include:name}}` tags.
 
 ## How It Works
 
@@ -8,25 +8,21 @@ Templates ship with `{{include:name}}` tags at natural extension points. Each ta
 
 - Missing file = tag resolves to empty string (no trace in output)
 - Same file referenced from multiple templates = shared content, zero duplication
-- Any `{{include:whatever}}` works — not limited to shipped hooks
 
 ## Shipped Hook Points
 
 | Tag | Template | Location |
 |-----|----------|----------|
-| `{{include:extra-must-reads}}` | All modes | After must-reads list |
-| `{{include:extra-verify}}` | code-writer | After verify step |
-| `{{include:extra-review-steps}}` | reviewer | After "Run tests" step |
-| `{{include:extra-review-checklist}}` | reviewer | End of review checklist |
+| `{{include:extra-must-reads}}` | All skills | After the Must-Reads list |
+| `{{include:extra-test-guidance}}` | implementer, hardener | After the method |
+| `{{include:extra-verify}}` | implementer, hardener | After the method |
+| `{{include:extra-review-steps}}` | reviewer | After the method |
+| `{{include:extra-review-checklist}}` | reviewer | After the method |
 
 ## Adding Content
 
 1. Create a `.md` file here named after the tag (e.g., `extra-verify.md`)
-2. Next time an agent claims, the content appears inline in their mode file
-
-## Custom Tags
-
-You can add `{{include:whatever}}` anywhere in a template (`dydo/_system/templates/`). Create the matching `whatever.md` file here. On `dydo template update`, user-added tags are re-anchored into updated templates automatically.
+2. On the next `dydo sync`, the content appears inline in the compiled skill
 
 ## File Naming
 

@@ -5,52 +5,98 @@ type: guide
 
 # Writing Good Briefs
 
-The self-containment bar for a Linear Issue, Project-plan lane, or prompt handed to a fresh agent. A
-brief is good when another agent can execute and review it without reconstructing the author's private
-conversation.
+The self-containment bar for work handed to an agent. A brief is good when a fresh agent can execute it
+and an independent reviewer can decide PASS or FAIL from the same text, without reconstructing the
+conversation that produced it.
 
-## Choose the right contract
+Two things get briefed: a **Linear Issue**, picked up and owned end to end, and a **worker prompt**, one
+bounded job that returns to whoever spawned it. Everything else — a Project plan, a Decision Record, a
+guide — is context the brief links, never a substitute for it.
 
-One atomic, autonomous-ready Issue can be the reviewed contract. Coordinated, cross-cutting, or
-architecture-sensitive work first receives a reviewed repository Project plan, then Issues that link its
-exact governing commit. A mechanical checklist belongs inside an Issue; create Sub-issues only when the
-children need independent ownership, status, dependencies, or evidence.
+---
 
-## Brief anatomy
+## The implementation Issue
 
-1. **Outcome and context** — what must become true and why it matters.
-2. **Scope and ownership** — exact files, systems, or responsibilities in bounds, plus explicit
-   exclusions.
-3. **Dependencies and references** — blockers, governing Decision, reviewed plan, and exact commit.
-4. **Acceptance evidence** — observable behavior, test commands, review expectations, and artifacts to
-   link back to the Issue.
+Every implementation Issue carries five fields. They are the contract; the rest of the body is context.
 
-The receiving agent starts with no memory of the shaping conversation. Avoid “as discussed,” implicit
-file ownership, vague success such as “make it work,” or acceptance that exists only in someone's head.
+| Field | What it settles |
+|---|---|
+| **Outcome** | what becomes true, in observable terms — the result, not the route |
+| **Owned paths** | the exact files this Issue may change; everything else belongs to another Issue |
+| **Blockers** | what must land first, wired as Linear blocking relations rather than described in prose |
+| **Exact gates** | the commands that decide done, verbatim, each with its pass condition |
+| **Base branch** | the branch this one is cut from |
 
-## Keep runtime choices out of prose
+What the Issue deliberately does **not** carry is the route. Pre-writing it ages badly and buys
+nothing: the implementing agent reads the code you were guessing about, and the spec and plan are
+written just in time by `specifier` at the Issue Captain's direction — the two planning
+resolutions are in the [Linear Issue Lifecycle](../understand/task-lifecycle.md). The Specifier names
+route risk; the Captain may require `spec` before production when that extra gate is worth its
+cost.
 
-Do not hard-code a model choice in a durable brief. Runtime configuration and the host platform own
-model availability, permissions, and agent spawning. State the capability, independence, and evidence
-the work requires; escalate a runtime limitation instead of preserving a temporary workaround in the
-Issue.
+Owned paths do double duty. They are the brief's scope and the isolation that lets Issues run in
+parallel, so two Issues in flight together own disjoint files or say plainly that they are serial. The
+[working-tree contract](./working-tree-contract.md) turns those two fields — owned paths and base
+branch — into a branch, a worktree and a claim.
 
-## Link work without mirroring it
+## The worker's brief
 
-A Linear Issue links the relevant durable repository knowledge and its governing commit. Commits and PRs
-reference the Issue key. New reusable knowledge flows back into a Decision, guide, plan, audit, or
-assimilation brief. Do not create a Markdown copy of the Issue or copy Linear workflow fields into
-frontmatter.
+A spawned worker has no memory of the conversation that made it and cannot ask a question and wait.
+Give it five things:
 
-## Review check
+1. **One deliverable**, named by path.
+2. **What to read first**, in order: the governing Decision Record, the section of the plan that binds
+   this deliverable, the file as it stands, and the code or configuration its claims must match.
+3. **The boundary** — what it owns, what it must leave alone, and what it must not run; in a tree
+   several workers share, name the files that are not its own. State the positive target beside each
+   prohibition.
+4. **The return shape** the receiver parses. For a writer: the deliverable, plus a short note naming
+   the choice made, what was cut and why, the links carried, and one open doubt.
+5. **The constraints that decide the verdict** — budget, vocabulary, and the exact gates.
 
-Before execution, ask: could a fresh agent deliver this without making a product decision, and could an
-independent reviewer determine pass or fail from the same text? If either answer is no, the brief is not
-ready.
+The same bar applies as to an Issue. If the worker has to infer which of two files you meant, or invent
+a product decision to finish, the brief is not ready.
+
+## What comes back
+
+The verdict is a fresh reviewer's **review block** — its fields are locked in the
+[dydo Glossary](../reference/dydo-glossary.md) — and PASS means no findings.
+
+Write the brief so every field of that block can be filled from it. Gates that are not commands cannot
+be rerun; an outcome with no observable form cannot be judged; a candidate with no owned paths has no
+boundary to be judged against.
+
+## The escape hatch
+
+A brief does not have to answer every question — it has to leave the open ones askable. What an agent
+does with a question the brief did not settle is the *fog → discovery → question Issue* rule in the
+[Linear Issue Lifecycle](../understand/task-lifecycle.md); what it ends up as is a **question Issue**,
+Linear label `question`, the question itself under a `## Question` heading.
+
+Your part is upstream of that. Name the questions you already know are open, link the question Issues
+that carry them, and wire each as a blocker of the work awaiting its answer. Let the brief say plainly
+what it does not settle. An assumption buried inside an outcome reads as settled, and gets built.
+
+## What does not belong
+
+- **"As discussed."** The receiving agent was not there. Neither was the reviewer.
+- **A model, a host, or a permission.** Runtime configuration owns those. State the capability,
+  independence and evidence the work requires, and escalate a runtime limitation instead of freezing a
+  workaround into a durable brief.
+- **A copy of durable knowledge.** Link the Decision Record, plan or guide at its exact commit. Nothing
+  in Git mirrors an Issue body, and no Linear workflow field belongs in frontmatter.
+- **Success you cannot fail.** "Make it work" passes every review and proves nothing.
+
+## Before you dispatch
+
+Two questions. Could a fresh agent deliver this without making a product decision? Could an independent
+reviewer decide PASS or FAIL from the same text? If either answer is no, the brief is not ready.
 
 ## Related
 
-- [Work Model](../understand/work-model.md)
-- [Linear Issue Lifecycle](../understand/task-lifecycle.md)
-- [Coding Standards](./coding-standards.md)
-- [dydo Glossary](../reference/dydo-glossary.md)
+- [Working-Tree Contract](./working-tree-contract.md) — base branch, owned paths, and the claim
+- [Orchestration Pitfalls](./orchestration-pitfalls.md) — how briefs fail once several are in flight
+- [Linear Issue Lifecycle](../understand/task-lifecycle.md) — where an Issue's state lives
+- [Work Model](../understand/work-model.md) — what Linear owns and what Git owns
+- [dydo Glossary](../reference/dydo-glossary.md) — question Issue, review block, gate
+- [DR 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)

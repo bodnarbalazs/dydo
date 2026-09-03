@@ -40,12 +40,7 @@ public static class HelpCommand
         Console.WriteLine("  validate               Validate config and templates");
         Console.WriteLine();
         Console.WriteLine("Template Commands:");
-        Console.WriteLine("  template update        Update framework templates and docs");
-        Console.WriteLine();
-        Console.WriteLine("Model Commands:");
-        Console.WriteLine("  model cap <model>      Rebind an unavailable model's tiers to a fallback");
-        Console.WriteLine("  model uncap <model>    Restore a capped model's tier bindings");
-        Console.WriteLine("  model status           Show active model caps (target, fallback, reset time)");
+        Console.WriteLine("  template update        Update framework docs");
         Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");

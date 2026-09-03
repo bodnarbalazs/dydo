@@ -5,9 +5,42 @@ type: concept
 
 # Work Model
 
-Linear owns dydo's live work graph; Git owns durable knowledge and proof. The boundary is deliberately
-one-way linking, not synchronization: Linear points to repository plans and evidence, while dydo never
-mirrors workflow status, assignments, or issue bodies.
+How work moves here: Linear owns the live work graph, Git and dydo own durable knowledge and proof,
+and every session places itself on one flow map before it acts. The stages, the hats that wear them,
+and the tiers that gate them are fixed by
+[Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md).
+
+## The flow map
+
+A session is not a type. It wears the hat the work is in now, and changes hats as the work moves.
+
+| Stage | Hat | Output | Gate |
+|---|---|---|---|
+| Think | co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
+| Chart and plan a Project | project-planner, using wayfinder | the first Project map and blocking question Issues | project-plan review, then human approval |
+| Plan an Issue | issue-captain, using specifier | a just-in-time spec and route with no hidden implementation decisions | optional spec review |
+| Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
+| Coordinate (optional) | admiral | several Issues in flight, serial merges, plan amendments | merge review after every merge |
+| Audit (rare) | inquisition workflow | an audit and an assimilation brief | the human confirms before it runs |
+| Land | the human | the feature branch merged into main | the human's own hands |
+| Harmonize | the human, on main | improvements, and a new feature branch when one is needed | none — main is the state |
+
+Some work has no stage of its own: chief-of-staff triages the human's attention and never delivers,
+and any hat may reach for self-improvement, writing-for-agents and diagnosing-bugs; bro is the human's
+corrective for agent-speak, at any stage.
+
+## Hats, workers, and methods
+
+- **Hats** are what a session is doing now, one at a time — the agent hats on the map plus
+  chief-of-staff; the human and the inquisition workflow hold rows but wear no hat.
+- **Workers** are spawned for one bounded job and report back to whoever spawned them. A worker never
+  delegates.
+- **Methods** are reference and procedure a session applies inside its own thread, never a separate
+  session.
+- **Human commands** are invoked by the human typing their name, and by nothing else.
+
+The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them compiles from a template — see
+[Templates and Customization](./templates-and-customization.md).
 
 ## Canonical ownership
 
@@ -15,72 +48,66 @@ mirrors workflow status, assignments, or issue bodies.
 |---|---|
 | Initiatives, Projects, Issues, optional Milestones and Cycles | Linear |
 | Status, priority, assignee, dependencies, updates, review state | Linear |
-| Decisions, doctrine, reviewed Project plans, guides | dydo/Git |
+| Decisions, reviewed Project plans, guides | dydo/Git |
 | Audit, inquisition, migration, and assimilation evidence | dydo/Git |
 | Release tags and changelog | Git |
-| FutureFeatures before and after human promotion | dydo/Git |
+| FutureFeatures and their promotion state | Linear |
 
-An Initiative is an optional workspace-level goal. A Project is one bounded outcome owned by a Linear
-team. An Issue is the only actionable work item; use Sub-issues only when children need independent
-tracking. Milestones are optional checkpoints inside a Project, and Cycles are optional capacity
-timeboxes orthogonal to Projects. Labels provide restrained cross-cutting routing, not a second type
-system.
+dydo has no Linear client, token, schema, poller, webhook receiver, cache, or Markdown mirror. Agents
+reach Linear through its official MCP, UI, API, and integrations, outside the dydo runtime.
 
 ## Reviewed intent
 
 No implementation begins without a contract another agent can review independently.
 
-- One atomic, autonomous-ready Issue can be its own reviewed contract.
-- Coordinated, cross-cutting, or architecture-sensitive work gets one reviewed repository Project plan.
+- One atomic Issue can be its own reviewed contract. Coordinated, cross-cutting, or
+  architecture-sensitive work gets one reviewed Project plan in the repository.
 - The plan carries one `linear-project` URL, and its Linear Project links back to the published plan.
-- Each implementation Issue records the exact governing commit before execution and receives
-  independent review before human harmonization.
-- A Project closes only after an integrated audit against its linked plan and an assimilation brief
-  proportionate to the semantic change.
+- Every implementation Issue records the exact governing commit before execution.
+- The two planning resolutions, the fields an Issue must carry, and the question Issue that clears
+  fog are in the [Linear Issue Lifecycle](./task-lifecycle.md).
 
-Branches, worktrees, sessions, workers, commits, PRs, and reviewer passes are execution evidence linked
+Branches, worktrees, sessions, workers, commits, PRs, and review passes are execution evidence linked
 to an Issue. They are not extra levels in the work graph.
+
+## Three review tiers
+
+1. **Issue review** — a fresh reviewer with the rubric the candidate targets: code, tests, or docs
+   before merge; `project-plan` before Project approval; `spec` before production only when the
+   Issue Captain requires it.
+2. **Merge review** — a reviewer with the `merge` rubric after *every* merge: a mechanical spot check
+   scaled to what landed, which at the final feature merge also proves the plan's acceptance criteria.
+3. **Inquisition** — rare and human-confirmed, fanned out across lenses with the reviewer as judge and
+   a docs-writer assimilating the result. It catches what got through; it never proves zero defects.
+
+Every reviewer verdict, in any tier, is the same **review block**, posted as a comment on the Linear
+Issue and carried in the PR body; its fields are locked in the
+[dydo Glossary](../reference/dydo-glossary.md). Independence here is independence of *context*: the
+reviewer arrives fresh and reads the candidate itself rather than the story told about it. There is
+no PASS with notes; a note is a finding, and a finding is a FAIL.
 
 ## References and evidence
 
-Use a branch-following GitHub URL for current human navigation and an exact commit permalink for the
-governing contract or historical proof. A PR or commit includes its Linear Issue key so Linear's GitHub
-integration can attach native execution evidence. Durable knowledge discovered during work is extracted
-to a Decision, guide, Project plan, audit, or assimilation brief instead of remaining only in comments
-or a session transcript.
-
-dydo has no Linear client, token, schema, poller, webhook receiver, cache, or Markdown mirror. Agents use
-Linear's official MCP, UI, API, and integrations outside the dydo runtime.
+Use a branch-following GitHub URL for current human navigation, and an exact commit permalink for a
+governing contract or historical proof. The Issue branch carries its Linear Issue key, so Linear's
+GitHub integration attaches branch and PR to the Issue natively; the
+[Working-Tree Contract](../guides/working-tree-contract.md) is the procedure. Durable knowledge
+discovered during work is extracted to a Decision, guide, Project plan, audit, or assimilation brief
+rather than left in a comment thread or a session transcript.
 
 ## FutureFeatures
 
-A FutureFeature is an unscheduled, non-actionable repo-native idea. It has `area: project`,
-`type: concept`, and `status: idea` until the human promotes it. Promotion creates exactly one Linear
-Initiative, Project, or Issue, adds its stable URL as `linear-reference`, and changes the status to the
-terminal `promoted`. Subsequent delivery state exists only in Linear. Every idea includes a non-empty
-`## Rationale` and a `## Related` section with at least one resolving, non-Linear durable-knowledge link.
-It carries no assignment, priority, blocker, dependency, Project, Initiative, Cycle, Milestone, due-date,
-estimate, label, parent, Sub-issue, team, workflow, or delivery-state fields.
-
-## Navigating uncertainty
-
-A committed Project may use a low-resolution Wayfinding map when the route cannot yet be planned
-responsibly. Waypoints capture navigation, the Frontier identifies what is actionable, and Fog records
-relevant uncertainty. None is a live work type: when delivery becomes actionable, it enters Linear as
-an Issue or Project.
-
-## Retired repository PM model
-
-Campaign, Sprint, Slice, Task, backlog item, and the separate observed-problem Issue are retired as
-canonical work objects. “Slice” may remain an informal verb for making implementation reviewable; it
-creates no repo record, state machine, command, or Linear type. The v2 corpus has been migrated and
-retired. The former
-[dydo 2.0 Campaign Roadmap](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/backlog/dydo-2-campaign-roadmap.md)
-is frozen historical evidence, not an active work model.
+A FutureFeature is an unscheduled strategic possibility recorded as a Linear Issue, not a generic
+idea or delivery contract. It stays in `Backlog` until the human promotes or cancels it. The
+[Linear Workspace Standard](../reference/linear-workspace-standard.md) defines its Type and
+promotion paths.
 
 ## Related
 
-- [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
-- [Linear Issue Lifecycle](./task-lifecycle.md)
-- [dydo Glossary](../reference/dydo-glossary.md)
-- [Writing Good Briefs](../guides/writing-good-briefs.md)
+- [Control Flow](./control-flow.md) — every handoff drawn: roster, happy path, states, edge contracts, exceptions
+- [Linear Issue Lifecycle](./task-lifecycle.md) — what an Issue carries, and how it is claimed and merged
+- [Working-Tree Contract](../guides/working-tree-contract.md) — branches, worktrees, claims, cleanup
+- [Decision 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
+- [Decision 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
+- [dydo Glossary](../reference/dydo-glossary.md) — the locked vocabulary
+- [Writing Good Briefs](../guides/writing-good-briefs.md) — how a brief is written

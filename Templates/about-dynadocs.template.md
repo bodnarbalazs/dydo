@@ -27,9 +27,8 @@ priority, assignee, dependencies, current updates, and review state. dydo does n
 Markdown. Linear links to durable repository artifacts; knowledge discovered during execution flows
 back into the appropriate Decision, guide, plan, audit, or assimilation brief.
 
-FutureFeatures are the deliberate exception. An unscheduled idea remains repo-native until the human
-promotes it to exactly one Linear Initiative, Project, or Issue. The idea records the stable Linear URL
-once and never mirrors subsequent delivery state.
+FutureFeatures are distinct unscheduled strategic possibilities in Linear. They stay in `Backlog`
+until the human promotes or cancels them; durable knowledge they uncover flows into dydo.
 
 ## Stop Doing Agent Work Yourself
 
@@ -67,7 +66,7 @@ commands hard-block; project nudges add configurable notices, warnings, and bloc
 
 `dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, role templates,
 guard wiring, and runtime entry files. It does not create a second live work graph; use Linear for work
-management and keep FutureFeatures in `dydo/project/future-features/` until human promotion.
+management, including FutureFeatures.
 
 ## How Work Runs
 
@@ -108,7 +107,7 @@ runtime or machine into an existing project.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`
-- **Roles** — shipped source templates or project overrides in `dydo/_system/templates/`
+- **Roles** — shipped source templates
 - **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks
 
 Do not hand-edit compiled skills or agents. Change their source templates and run `dydo sync`.
@@ -117,7 +116,7 @@ Do not hand-edit compiled skills or agents. Change their source templates and ru
 
 ```
 project/
-|-- dydo.json                    # Paths, model tiers, integrations, nudges
+|-- dydo.json                    # Model tiers, integrations, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- .claude/                     # Compiled Claude agents, skills, and workflows
@@ -129,8 +128,6 @@ project/
     |-- guides/                  # How-to guidance
     |-- reference/               # Exact commands and specifications
     |-- project/                 # Durable knowledge and delivery proof
-    |   `-- future-features/     # Unscheduled repo-native ideas
-    |-- _system/templates/       # Project template overrides
     |-- _system/template-additions/
     `-- _assets/
 ```
@@ -138,7 +135,7 @@ project/
 ## Command Reference
 
 See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, role-compilation,
-guard, validation, template, model, and utility commands.
+guard, validation, template, and utility commands.
 
 ## License
 

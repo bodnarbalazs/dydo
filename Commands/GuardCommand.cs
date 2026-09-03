@@ -15,6 +15,7 @@ using DynaDocs.Utils;
 ///
 /// Security layers (checked in order):
 /// 1. Global off-limits patterns (files-off-limits.md) - blocks ALL operations
+/// 1b. Protected patterns (files-off-limits.md) - blocks writes and deletes, allows reads
 /// 2. Dangerous command patterns (for Bash tool) - always blocked
 /// 3. Bash command analysis - extracts file operations and checks each
 /// 4. Role-based permissions - for write operations
@@ -30,7 +31,7 @@ using DynaDocs.Utils;
 public static partial class GuardCommand
 {
     /// <summary>
-    /// Everything the guard needs from the project: the loaded config (nudges, path sets)
+    /// Everything the guard needs from the project: the loaded config (nudges)
     /// and the machine-local directory where warn-nudge pass-through markers live
     /// (dydo/_system/.local/ — gitignored, scan-excluded). Replaces the old AgentRegistry:
     /// with the roster/claim machinery gone (DR-041), the guard only ever needed these two.
@@ -98,6 +99,22 @@ public static partial class GuardCommand
     // lockstep with InitCommand.CodexShellTools, which puts the same names in the hook matcher.
     private static readonly HashSet<string> ShellTools = new(StringComparer.OrdinalIgnoreCase)
         { "bash", "powershell", "shell_command", "exec", "local_shell", "unified_exec" };
+
+    // Actions that mutate the file they name. The protected tier binds on these only, so an
+    // agent can still read its orientation files. The hook maps Edit/Write/NotebookEdit here,
+    // and the CLI lane carries the verb directly (arg mode has no tool name — issue 0302).
+    private static readonly HashSet<string> MutatingActions =
+        new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
+
+    // Codex delivers file edits as apply_patch, which HookInputExtensions maps to no action at
+    // all. It is in the Codex hook matcher precisely as the Codex form of Edit/Write, so it is
+    // named here too — otherwise the protected tier would bind on Claude's lane only.
+    private static readonly HashSet<string> MutatingTools =
+        new(StringComparer.OrdinalIgnoreCase) { "apply_patch" };
+
+    private static bool IsMutatingCall(string? action, string? toolName) =>
+        (action != null && MutatingActions.Contains(action))
+        || (toolName != null && MutatingTools.Contains(toolName));
 
     private static bool ShouldRouteToShellHandler(string? toolName, string? bashCommand)
     {
@@ -200,7 +217,6 @@ public static partial class GuardCommand
         var bashAnalyzer = new BashCommandAnalyzer();
 
         RunDailyValidationIfDue();
-        RestoreExpiredModelCapsIfDue();
 
         var sessionId = ctx.SessionId;
 
@@ -222,25 +238,17 @@ public static partial class GuardCommand
             return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
-        // Native auto-memory (~/.claude/projects/*/memory/) is exempt from off-limits
-        // enforcement, but a matching file nudge still applies.
+        // Native auto-memory (~/.claude/projects/*/memory/) is exempt from off-limits enforcement.
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
-        {
-            var nudged = CheckFileNudges(toolName, filePath, env, "manager");
-            return nudged ?? ExitCodes.Success;
-        }
+            return ExitCodes.Success;
 
         var routed = RouteToolLayers(
             filePath, action, bashCommand, toolName, searchPath,
             sessionId, offLimitsService, bashAnalyzer, env);
         if (routed != null) return routed.Value;
 
-        // Reads are allowed for anyone once past off-limits (checked in RouteToolLayers).
-        if (action == "read" && string.IsNullOrEmpty(bashCommand))
-            return ExitCodes.Success;
-
-        // Writes are allowed once past off-limits; only tool-scoped nudges remain.
-        return HandleWriteOperation(filePath, toolName, env);
+        // Reads and writes are allowed for anyone once past off-limits (checked in RouteToolLayers).
+        return ExitCodes.Success;
     }
 
     /// <summary>
@@ -259,14 +267,21 @@ public static partial class GuardCommand
     private static int? RouteToolLayers(
         string? filePath, string? action, string? bashCommand, string? toolName,
         string? searchPath, string? sessionId,
-        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env)
     {
-        // SECURITY LAYER 1: off-limits patterns for direct file operations.
+        // SECURITY LAYER 1: off-limits patterns for direct file operations, then the protected
+        // tier for the mutating ones.
         if (!string.IsNullOrEmpty(filePath))
         {
             var blocked = BlockIfPathOffLimits(filePath, offLimitsService);
             if (blocked != null) return blocked.Value;
+
+            if (IsMutatingCall(action, toolName))
+            {
+                var protectedBlock = BlockIfPathProtected(filePath, offLimitsService);
+                if (protectedBlock != null) return protectedBlock.Value;
+            }
         }
 
         // SECURITY LAYER 2: Bash tool
@@ -286,22 +301,11 @@ public static partial class GuardCommand
         if (toolName == "enterplanmode" || toolName == "exitplanmode")
         {
             Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
-            Console.Error.WriteLine("  To plan: write a plan file into the repo (e.g. under dydo/project/), applying the planner skill.");
+            Console.Error.WriteLine("  To plan: write a plan record into the repo or Linear, applying the Project Planner or Specifier skill.");
             return ExitCodes.ToolError;
         }
 
         return null;
-    }
-
-    private static int HandleWriteOperation(string? filePath, string? toolName, GuardEnv env)
-    {
-        if (string.IsNullOrEmpty(filePath))
-            return ExitCodes.Success;
-
-        var nudged = CheckFileNudges(toolName, filePath, env, "manager");
-        if (nudged != null) return nudged.Value;
-
-        return ExitCodes.Success;
     }
 
     /// <summary>
@@ -340,7 +344,7 @@ public static partial class GuardCommand
     /// </summary>
     private static int HandleWorkerCall(
         GuardContext ctx, string? filePath, string? searchPath,
-        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
@@ -357,8 +361,11 @@ public static partial class GuardCommand
 
         if (!string.IsNullOrEmpty(filePath))
         {
-            var nudged = CheckFileNudges(ctx.ToolName, filePath, env, "worker");
-            if (nudged != null) return nudged.Value;
+            if (IsMutatingCall(ctx.Action, ctx.ToolName) && !IsNativeMemoryPath(filePath))
+            {
+                var protectedBlock = BlockIfPathProtected(filePath, offLimitsService);
+                if (protectedBlock != null) return protectedBlock.Value;
+            }
         }
 
         return ExitCodes.Success;
@@ -379,6 +386,28 @@ public static partial class GuardCommand
         Console.Error.WriteLine($"  Path: {path}");
         Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
         Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+        return ExitCodes.ToolError;
+    }
+
+    /// <summary>
+    /// Shared protected-tier check (DR 045 §10) for a path the caller is about to change.
+    /// Callers gate on the operation being a write or a delete; this one only decides whether
+    /// the path is protected and reports it. <paramref name="detected"/> carries the bash
+    /// analyzer's op description so a shell block names what it saw.
+    /// </summary>
+    internal static int? BlockIfPathProtected(
+        string path, OffLimitsService offLimitsService, string? detected = null)
+    {
+        var protectedPattern = offLimitsService.IsPathProtected(path);
+        if (protectedPattern == null)
+            return null;
+
+        Console.Error.WriteLine("BLOCKED: Path is protected — every agent may read it, none may write or delete it.");
+        Console.Error.WriteLine($"  Path: {path}");
+        Console.Error.WriteLine($"  Pattern: {protectedPattern}");
+        if (detected != null)
+            Console.Error.WriteLine($"  Detected: {detected}");
+        Console.Error.WriteLine("  This file is human-owned: read it freely, and ask the human for any change.");
         return ExitCodes.ToolError;
     }
 
@@ -410,18 +439,18 @@ public static partial class GuardCommand
     private static int HandleBashCommand(
         string command,
         string? sessionId,
-        IOffLimitsService offLimitsService,
+        OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env,
         bool isWorker = false)
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Tier-2 workers don't run dydo commands — that machinery is the orchestrator's job.
+        // Tier-2 workers don't run dydo commands — that machinery belongs to the admiral.
         if (isDydo && isWorker)
         {
             Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands — that belongs to the");
-            Console.Error.WriteLine("  top-level orchestrator, not a worker.");
+            Console.Error.WriteLine("  admiral who spawned you, not a worker.");
             return ExitCodes.ToolError;
         }
 
@@ -466,10 +495,6 @@ public static partial class GuardCommand
 
         foreach (var nudge in nudges)
         {
-            // Tool-scoped nudges match file paths of direct tool calls (CheckFileNudges),
-            // not bash command text — their patterns are globs, not regexes.
-            if (nudge.Tools is { Count: > 0 }) continue;
-
             Regex regex;
             try { regex = new Regex(nudge.Pattern, RegexOptions.IgnoreCase); }
             catch { continue; }
@@ -524,115 +549,6 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Evaluates tool-scoped nudges (NudgeConfig.Tools) against a direct file-op path.
-    /// Ships the Decision 026 §4 Tier-1 source-write reminder: severity "notice" is an
-    /// exit-0 stderr warning, never a block — the trivial-edit exception stays frictionless.
-    /// Patterns are '|'-separated globs; {source}/{tests} expand to the dydo.json path sets.
-    /// Returns an exit code for block-severity matches and the first warn encounter.
-    /// </summary>
-    internal static int? CheckFileNudges(string? toolName, string filePath, GuardEnv env, string audience = "manager")
-    {
-        if (string.IsNullOrEmpty(toolName))
-            return null;
-
-        var nudges = env.Config?.Nudges;
-        if (nudges == null || nudges.Count == 0)
-            return null;
-
-        // Resolved lazily — most calls have no tool-scoped nudge for this tool.
-        Dictionary<string, List<string>>? pathSets = null;
-        string? relPath = null;
-
-        foreach (var nudge in nudges)
-        {
-            if (nudge.Tools is not { Count: > 0 }) continue;
-            if (!NudgeAppliesToAudience(nudge, audience)) continue;
-            if (!nudge.Tools.Any(t => t.Equals(toolName, StringComparison.OrdinalIgnoreCase))) continue;
-
-            pathSets ??= new RoleDefinitionService().ResolvePathSets(env.Config);
-            relPath ??= RelativizeToProjectRoot(filePath);
-
-            if (!MatchesFileNudgePattern(nudge.Pattern, relPath, pathSets)) continue;
-
-            var result = ApplyFileNudge(nudge, env);
-            if (result != null) return result.Value;
-        }
-
-        return null;
-    }
-
-    private static bool NudgeAppliesToAudience(NudgeConfig nudge, string audience) =>
-        nudge.Audience == "all" || nudge.Audience.Equals(audience, StringComparison.OrdinalIgnoreCase);
-
-    private static int? ApplyFileNudge(NudgeConfig nudge, GuardEnv env)
-    {
-        if (string.Equals(nudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.Error.WriteLine($"BLOCKED: {nudge.Message}");
-            return ExitCodes.ToolError;
-        }
-
-        if (!string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.Error.WriteLine($"NOTICE: {nudge.Message}");
-            return null;
-        }
-
-        var markerPath = Path.Combine(env.MarkerDir, $".nudge-{ComputeNudgeHash(nudge.Pattern)}");
-        Directory.CreateDirectory(env.MarkerDir);
-        if (!File.Exists(markerPath))
-        {
-            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
-            Console.Error.WriteLine($"BLOCKED: {nudge.Message}");
-            Console.Error.WriteLine("  (Run the same command again to proceed anyway.)");
-            return ExitCodes.ToolError;
-        }
-
-        File.Delete(markerPath);
-        return null;
-    }
-
-    /// <summary>
-    /// A tool-scoped nudge pattern is a '|'-separated list of glob patterns;
-    /// a {name} token expands to the corresponding dydo.json path set.
-    /// </summary>
-    private static bool MatchesFileNudgePattern(
-        string pattern, string relPath, Dictionary<string, List<string>> pathSets)
-    {
-        foreach (var token in pattern.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            List<string> globs =
-                token.StartsWith('{') && token.EndsWith('}') && pathSets.TryGetValue(token[1..^1], out var set)
-                    ? set
-                    : [token];
-
-            if (globs.Any(glob => GlobMatcher.IsMatch(relPath, glob)))
-                return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Maps an absolute tool path to a project-root-relative one so it can match the
-    /// repo-relative path-set globs. Paths outside the project stay absolute and
-    /// simply won't match. Mirrors OffLimitsService's relativization.
-    /// </summary>
-    private static string RelativizeToProjectRoot(string path)
-    {
-        if (!Path.IsPathRooted(path))
-            return path;
-
-        var root = PathUtils.FindMainProjectRoot();
-        if (root == null)
-            return path;
-
-        var relative = Path.GetRelativePath(root, path);
-        var firstSegment = relative.Replace('\\', '/').Split('/', 2)[0];
-        return Path.IsPathRooted(relative) || firstSegment == ".." ? path : relative;
-    }
-
-    /// <summary>
     /// Pre-2.1 shipped nudge message texts that must self-heal in existing installs.
     /// EnsureDefaultNudges dedupes by pattern, so a config materialized before 2.1 keeps
     /// these stale messages forever unless we rewrite them here. A message the USER edited
@@ -646,6 +562,9 @@ public static partial class GuardCommand
         "Use dydo worktree commands instead of git worktree directly.",
         "Use dydo worktree cleanup instead of deleting worktree directories directly.",
         "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
+        // Retired Decision 026 managers-doctrine nudge (DR 045): it points at the run-sprint
+        // workflow 3.0 deletes, so an install still carrying it must stop firing it.
+        "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
     ];
 
     /// <summary>
@@ -691,7 +610,6 @@ public static partial class GuardCommand
                     Pattern = existing.Pattern,
                     Message = existing.Message,
                     Severity = "block",
-                    Tools = existing.Tools,
                     Audience = existing.Audience
                 };
             }
@@ -701,7 +619,7 @@ public static partial class GuardCommand
     }
 
     private static int AnalyzeAndCheckBashOperations(
-        string command, IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer)
+        string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer)
     {
         var analysis = bashAnalyzer.Analyze(command);
 
@@ -729,7 +647,7 @@ public static partial class GuardCommand
         return ExitCodes.Success;
     }
 
-    internal static int? CheckBashFileOperation(FileOperation op, IOffLimitsService offLimitsService)
+    internal static int? CheckBashFileOperation(FileOperation op, OffLimitsService offLimitsService)
     {
         // Native memory is exempt for any op type (out of dydo's jurisdiction).
         // Everything else is subject to the universal off-limits check.
@@ -745,6 +663,16 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"  Detected: {op.Type} via {op.Command}");
             return ExitCodes.ToolError;
         }
+
+        // Anything that is not a read of op.Path can leave different bytes or different
+        // permissions there: writes, deletes, moves, copies, chmod/chown/takeown. Stated as an
+        // exclusion so a future op type is guarded by default instead of silently exempt, and
+        // because the analyzer tags a copy's source and destination alike — `cp <protected>
+        // elsewhere` is blocked too. Conservative on purpose: no wider than the off-limits
+        // block these paths carried before, and the content stays readable through
+        // Read, cat and head. Execute names a binary to run, not a file to change.
+        if (op.Type is not (FileOperationType.Read or FileOperationType.Execute))
+            return BlockIfPathProtected(op.Path, offLimitsService, $"{op.Type} via {op.Command}");
 
         return null;
     }
@@ -849,45 +777,6 @@ public static partial class GuardCommand
         catch
         {
             // Daily validation must never break the guard
-        }
-    }
-
-    // How often the guard checks for expired model caps to restore. The guard self-triggers
-    // it — throttled like daily validation so the hot path stays cheap. A restore only ever
-    // does real work when a cap marker's reset time has actually passed.
-    private const int ModelCapRestoreThrottleMinutes = 5;
-
-    /// <summary>
-    /// Restores any model cap whose reset time has passed, at most once per throttle window.
-    /// Cheap when there is nothing to do (RestoreExpired no-ops without a marker directory),
-    /// and never allowed to break the guard.
-    ///
-    /// Concurrency: two hook processes (main thread + a subagent) can both clear the throttle
-    /// on a stale stamp and race into RestoreExpired → SaveConfig. This is left unserialized on
-    /// purpose — the restore is convergent: both processes rebind the same tiers to the same
-    /// original model, write the same config, and TryDelete the same marker (one wins, the other
-    /// swallows the not-found). Last-writer-wins produces the identical file, so the race is
-    /// benign and a lock would add cleanup/staleness burden for no correctness gain.
-    /// </summary>
-    private static void RestoreExpiredModelCapsIfDue()
-    {
-        try
-        {
-            var basePath = Environment.CurrentDirectory;
-            var stampPath = Path.Combine(basePath, "dydo", "_system", ".local", "last-model-cap-restore");
-
-            if (File.Exists(stampPath)
-                && (DateTime.UtcNow - File.GetLastWriteTimeUtc(stampPath)).TotalMinutes < ModelCapRestoreThrottleMinutes)
-                return;
-
-            ModelCapService.RestoreExpired(DateTimeOffset.Now, basePath);
-
-            PathUtils.EnsureLocalDirExists(Path.Combine(basePath, "dydo"));
-            File.WriteAllText(stampPath, DateTime.UtcNow.ToString("O"));
-        }
-        catch
-        {
-            // Model-cap restore must never break the guard.
         }
     }
 

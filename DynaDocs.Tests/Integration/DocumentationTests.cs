@@ -416,16 +416,15 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Template files have .template.md suffix which isn't kebab-case
-        // Verify they exist and aren't renamed
-        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
+        // The additions README isn't kebab-case; verify it exists and isn't renamed
+        AssertFileExists("dydo/_system/template-additions/_README.md");
 
         var result = await FixAsync();
 
         result.AssertSuccess();
-        // Template file should still exist with original name
-        AssertFileExists("dydo/_system/templates/skill-code-writer.template.md");
-        Assert.DoesNotContain("skill-code-writer.template.md", result.Stdout);
+        // The file should still exist with its original name
+        AssertFileExists("dydo/_system/template-additions/_README.md");
+        Assert.DoesNotContain("_README.md", result.Stdout);
     }
 
     [Fact]
@@ -436,7 +435,7 @@ public class DocumentationTests : IntegrationTestBase
         // A modes folder with files but no _index.md (by design)
         var modesDir = Path.Combine(TestDir, "dydo/agents/sample/modes");
         Directory.CreateDirectory(modesDir);
-        File.WriteAllText(Path.Combine(modesDir, "code-writer.md"), "# code-writer");
+        File.WriteAllText(Path.Combine(modesDir, "implementer.md"), "# implementer");
 
         AssertDirectoryExists("dydo/agents/sample/modes");
         Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/sample/modes/_index.md")));
@@ -453,15 +452,15 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // _system/templates has files but no _index.md (by design)
-        AssertDirectoryExists("dydo/_system/templates");
-        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/templates/_index.md")));
+        // _system/template-additions has files but no _index.md (by design)
+        AssertDirectoryExists("dydo/_system/template-additions");
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/template-additions/_index.md")));
 
         var result = await FixAsync();
 
         result.AssertSuccess();
-        // Should NOT create _index.md in _system/templates
-        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/templates/_index.md")));
+        // Should NOT create _index.md in _system/template-additions
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/template-additions/_index.md")));
     }
 
     [Fact]
@@ -472,8 +471,8 @@ public class DocumentationTests : IntegrationTestBase
         var result = await FixAsync();
 
         result.AssertSuccess();
-        // Should not report template files as needing frontmatter fixes
-        Assert.DoesNotContain("_system/templates", result.Stdout);
+        // Should not report template additions as needing frontmatter fixes
+        Assert.DoesNotContain("_system/template-additions", result.Stdout);
     }
 
     [Fact]

@@ -159,13 +159,6 @@ public static class InitCommand
         Console.WriteLine("  1. Customize dydo/understand/architecture.md for your project");
         Console.WriteLine("  2. Customize dydo/guides/coding-standards.md");
         Console.WriteLine();
-        Console.WriteLine("Source and test paths default to src/** and tests/**.");
-        Console.WriteLine("If your project uses a different layout, update dydo.json:");
-        Console.WriteLine();
-        Console.WriteLine("  \"paths\": {");
-        Console.WriteLine("    \"source\": [\"Commands/**\", \"Services/**\", ...],");
-        Console.WriteLine("    \"tests\": [\"YourTests/**\"]");
-        Console.WriteLine("  }");
 
         var completionResult = ShellCompletionInstaller.Install();
         if (completionResult != null)
@@ -303,7 +296,13 @@ public static class InitCommand
     // the shell analyzer once they reach the guard.
     internal const string CodexShellTools = "shell_command|exec|local_shell|unified_exec";
 
-    private const string CodexGuardMatcher = GuardMatcher + "|apply_patch|" + CodexShellTools;
+    // Codex's own matcher, not Claude's: the documented Codex names come first (shell and
+    // unified exec arrive as Bash, apply_patch also as Edit/Write, spawn_agent as Agent), and
+    // the legacy shell names above are retained on purpose — they were added empirically
+    // (issue 0295) and the documentation reading is unproven against the installed Codex.
+    // Claude-only UI names (Read, Glob, Grep, PowerShell, plan mode, AskUserQuestion) are
+    // dropped: Codex never emits them, so they could only ever be dead configuration.
+    private const string CodexGuardMatcher = "Bash|apply_patch|Edit|Write|Agent|" + CodexShellTools;
 
     private static void ConfigureGuardHook(JsonNode settings, string matcher)
     {

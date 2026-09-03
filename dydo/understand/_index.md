@@ -13,6 +13,7 @@ Index of understand documentation.
 
 - [About This Project](./about.md) - DynaDocs (dydo) is a documentation, skill-authoring, and guardrail framework for AI coding assistants.
 - [Architecture Overview](./architecture.md) - DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles shared agent methods into native host artifacts, and...
+- [Control Flow](./control-flow.md) - Every handoff in the dydo 3 operating model, drawn from [DR...
 - [Documentation Model](./documentation-model.md) - dydo uses JITI (Just-In-Time Information) so agents load only the durable knowledge relevant to the current Linear Issue or conversation.
 - [Guard System](./guard-system.md) - How dydo enforces boundaries through the PreToolUse hook.
 - [Linear Issue Lifecycle](./task-lifecycle.md) - An Issue is the only actionable work item, and Linear owns every field on it that moves.

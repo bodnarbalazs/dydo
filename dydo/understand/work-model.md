@@ -104,6 +104,7 @@ promotion paths.
 
 ## Related
 
+- [Control Flow](./control-flow.md) — every handoff drawn: roster, happy path, states, edge contracts, exceptions
 - [Linear Issue Lifecycle](./task-lifecycle.md) — what an Issue carries, and how it is claimed and merged
 - [Working-Tree Contract](../guides/working-tree-contract.md) — branches, worktrees, claims, cleanup
 - [Decision 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)

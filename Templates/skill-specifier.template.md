@@ -73,7 +73,8 @@ question Issue, then raises it to the admiral; never fill the gap with an assump
 
 ## Plan
 
-**Approach** — one sentence: the change's shape and the alternative rejected.
+**Approach** — one sentence: the change's shape and the alternative rejected; a `show-me` diff of
+the tree or call tree when the shape is what changes.
 **Pattern to copy** — `path/to/file.ext:120`, what this mirrors, and where it departs.
 **Files** — every touched path and its one edit.
 **Steps** — ordered; each ends on a checkable state.

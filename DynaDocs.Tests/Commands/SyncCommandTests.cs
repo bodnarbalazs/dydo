@@ -212,16 +212,20 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void Execute_RetiredWorkflow_RemovesTheStaleRunSprintScript()
+    public void Execute_RetiredWorkflows_RemoveTheStaleScripts()
     {
-        var stale = Path.Combine(_testDir, ".claude", "workflows", "run-sprint.js");
-        Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
-        File.WriteAllText(stale, "export const meta = {};");
+        var stale = new[] { "run-sprint.js", "inquisition.js" }
+            .Select(name => Path.Combine(_testDir, ".claude", "workflows", name))
+            .ToList();
+        foreach (var file in stale)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "export const meta = {};");
+        }
 
         SyncCommand.Execute(_testDir);
 
-        Assert.False(File.Exists(stale));
-        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "workflows", "inquisition.js")));
+        Assert.All(stale, file => Assert.False(File.Exists(file), file));
     }
 
     // Renamed and split rubrics are not overwritten by their replacements, so sync has to delete
@@ -571,17 +575,17 @@ public class SyncCommandTests : IDisposable
         var count = SyncCommand.SyncWorkflows(_testDir);
 
         var workflowDir = Path.Combine(_testDir, ".claude", "workflows");
-        var emitted = Directory.GetFiles(workflowDir, "*.js")
+        var emitted = (Directory.Exists(workflowDir) ? Directory.GetFiles(workflowDir, "*.js") : [])
             .Select(path => Path.GetFileName(path)!)
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
 
         Assert.Equal(shipped, emitted);
         Assert.Equal(shipped.Count, count);
-        Assert.Contains("inquisition.js", emitted);
         Assert.DoesNotContain("run-sprint.js", emitted);
+        Assert.DoesNotContain("inquisition.js", emitted);
 
-        foreach (var file in Directory.GetFiles(workflowDir, "*.js"))
+        foreach (var file in emitted.Select(name => Path.Combine(workflowDir, name)))
         {
             var content = File.ReadAllText(file);
             Assert.Contains("export const meta", content);
@@ -1506,7 +1510,8 @@ public class SyncCommandTests : IDisposable
     }
 
     // DR-039: the sprint-auditor folded into the reviewer, and DR 045 renamed its rubric to
-    // `merge`. The reviewer ships one rubric per review target and nothing under the old name.
+    // `merge`; the tests rubric folded into code. The reviewer ships one rubric per review target
+    // and nothing under a retired name.
     [Fact]
     public void SyncAgent_Reviewer_ShipsOneRubricPerReviewTarget()
     {
@@ -1524,7 +1529,7 @@ public class SyncCommandTests : IDisposable
         Assert.DoesNotContain("issue-plan", emitted);
         Assert.DoesNotContain("plan", emitted);
         Assert.Contains("docs", emitted);
-        Assert.Contains("tests", emitted);
+        Assert.DoesNotContain("tests", emitted);
         Assert.All(emitted, name => Assert.NotEmpty(File.ReadAllText(Path.Combine(resources, $"{name}.md"))));
     }
 

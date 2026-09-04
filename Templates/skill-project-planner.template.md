@@ -75,7 +75,7 @@ linear-project: <the Linear Project URL>
 ### Acceptance criteria — <numbered; each proved at the final merge by a scenario, command, diff or artifact>
 ### Questions and answers — <every question this plan settled, with its answer>
 ## 2. Prior art — <commits, upstream sources, docs and Decision Records read, and what each gave>
-## 3. Design — <shape, invariants, hazards, migration and rollback; cite verified paths and patterns>
+## 3. Design — <shape, invariants, hazards, migration and rollback; cite verified paths and patterns; draw the shape by `show-me` when a tree or diagram says it faster than prose>
 ## 4. Implementation Issue map
 ### First pickable Issues
 | Issue | Outcome | Owned paths | Blockers | Gate | Base branch |

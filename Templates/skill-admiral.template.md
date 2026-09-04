@@ -68,8 +68,9 @@ owns one Issue end to end; you own how those Issues move, integrate, and finish 
    affected delivery Issue. Accept a Captain's local course correction when later facts expose it;
    move cross-Issue and Project-wide discoveries back onto your map. **Done:** every visible unknown
    is resolved or has the right owner, record, and blocker, and nothing reaches the human unprepared.
-7. **Offer the inquisition.** Once the feature is integrated, offer `inquisition` with its scope and
-   cost. **Done:** the human confirms or declines; it runs only on that confirmation.
+7. **Offer the inquisition.** Once the feature is integrated, offer an inquisition Issue with its
+   scope and cost. **Done:** the human confirms or declines; a confirmed inquisition gets its own
+   captain.
 8. **Close the Project.** Once the feature → main merge and closeout are recorded, set the Project
    `Completed` and retire its feature artifacts. **Done:** Linear and Git read true; no orphan remains.
 

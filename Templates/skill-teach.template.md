@@ -75,7 +75,8 @@ lesson is one self-contained HTML file, saved to `./lessons/` and titled `0001-<
 where the number increments each time.
 
 A lesson should be **beautiful**, with clean, readable typography and layout, since the human will
-return to these later to review. Think Tufte.
+return to these later to review. Think Tufte. Pick each visual by `show-me`: the smallest view that
+makes the point clear.
 
 The lesson should be short, and completable very quickly. Learners' working memory is very small, and
 we need to stay within it. But each lesson should give the human a single tangible win that they can

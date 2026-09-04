@@ -11,7 +11,7 @@ invocation: automatic
 
 Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
-When the document is a dydo skill, read [`skill-mechanics`](resources/skill-mechanics.md) first: frontmatter keys, the invocation choice, Must-Reads, resources, and what `dydo sync` compiles.
+When the document is a dydo skill, read [`skill-mechanics`](resources/skill-mechanics.md) first: frontmatter keys, the invocation choice, Must-Reads, resources, and what `dydo sync` compiles. When the text is the reply only the human will read, `writing-for-humans` is this skill's pair.
 
 ## Context pointers
 

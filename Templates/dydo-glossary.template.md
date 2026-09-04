@@ -62,7 +62,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
   spawned it: specifier, implementer, hardener, docs-writer, reviewer, inquisitor, research.
 - **Method** — a reference or procedure used inside another skill, carrying no identity of its own:
-  grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype,
+  grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
   writing-for-agents, self-improvement.
 - **Human command** — a skill only the human invokes by name, never reached for by a model:
   grill-me, bro, handoff, walkthrough, teach, improve-codebase-architecture.

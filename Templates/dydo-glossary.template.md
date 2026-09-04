@@ -73,6 +73,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 ## Execution and proof
 
+- **Supersymmetry** — a captain's Issue is a Project one level down: the same Types, statuses and
+  chain hold at both levels, and only the map holder changes.
 - **Reviewed intent** — the rule that implementation begins only from an independently reviewable
   contract: an atomic Issue or a linked reviewed Project plan plus its Issues.
 - **Scenario** — one acceptance criterion at the product's boundary, written in Gherkin in the

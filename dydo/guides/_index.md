@@ -14,7 +14,7 @@ Index of guides documentation.
 - [Adding a dydo Command](./adding-a-command.md) - A new command or required option changes a closed set of code, test, help, and reference surfaces.
 - [Coding Standards](./coding-standards.md) - Rules and conventions for writing code in this project.
 - [Customizing Roles](./customizing-roles.md) - The skill template is the role.
-- [Getting Started](./getting-started.md) - Install dydo, initialize the durable knowledge tree, compile native skills, and connect the resulting project context to work managed in Linear.
+- [Getting Started](./getting-started.md) - The framework setup checklist: how an agent, or a human, builds dydo into a project from install to the first claimable Issue, Linear workspace...
 - [Migrating a Project from dydo 1.x to 2.x](./migrating-dydo-1x-to-2x.md) - A self-contained, ordered procedure for an AI coding agent to migrate an existing project's dydo workspace from the 1.x generation to the current...
 - [Migrate from dydo 2.x to 3.x](./migrating-dydo-2x-to-3x.md) - dydo 3 keeps durable project knowledge in Git and uses Linear for live project management.
 - [Orchestration Pitfalls](./orchestration-pitfalls.md) - Failure modes seen when several agents deliver one Project in parallel.

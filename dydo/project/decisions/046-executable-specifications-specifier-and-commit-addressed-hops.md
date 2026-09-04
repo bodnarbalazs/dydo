@@ -1,8 +1,9 @@
 ---
 area: project
 type: decision
-status: proposed
+status: accepted
 date: 2026-09-02
+accepted: 2026-09-04
 participants: [balazs, Claude (Fable)]
 ---
 
@@ -124,6 +125,8 @@ inquisitor · research, with issue-planner, code-writer and test-writer retired;
 gains the Contract line and the rubric `issue-plan` becomes `spec`; §5 Issue planning becomes
 specification, scenarios and gates before the route. Records the 2026-09-01 hardener decision, which
 reverses DYD-69's resolution.
+
+Amended by [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) (2026-09-04): every delivery Issue has a specify hop, the specifier carries per-kind resources, and the hops are also statuses.
 
 ---
 

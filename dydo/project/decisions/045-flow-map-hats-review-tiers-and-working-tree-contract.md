@@ -251,6 +251,8 @@ the single "integrated audit" phrase; question Issues are the fog-clearing unit.
 
 Amended by [DR 046](./046-executable-specifications-specifier-and-commit-addressed-hops.md) (2026-09-02): the worker chain becomes specifier · implementer · hardener, the `issue-plan` rubric becomes `spec`, and the review block gains its Contract line.
 
+Amended by [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) (2026-09-04): supersymmetry, eleven statuses, merges as Issues, the release protocol, the project-planner as the admiral's worker, the inquisition as an Issue and its workflow retired.
+
 ---
 
 ## Affects

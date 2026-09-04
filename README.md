@@ -92,7 +92,9 @@ dydo fix              # repair supported documentation issues
 
 Fill in `dydo/understand/about.md` and `dydo/understand/architecture.md`, then adapt
 `dydo/guides/coding-standards.md` and `dydo.json` to the project. Use `--join` when wiring another
-runtime or machine into an existing project.
+runtime or machine into an existing project. The full checklist, Linear workspace and host
+configuration included, is [Getting Started](dydo/guides/getting-started.md); point an agent at it
+to set dydo up in a project.
 
 Keep current work in Linear. Put information in Git only when it should remain useful and reviewable
 after current workflow state changes.

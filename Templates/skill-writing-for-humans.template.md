@@ -1,12 +1,18 @@
 ---
-name: unslop
-description: Cut AI tells from any writing. Must always apply.
-disable-model-invocation: true
+name: writing-for-humans
+description: The reply only the human reads. Cut AI tells and add voice in the conversation; a document, record or comment another agent will read is writing-for-agents's.
+emit: skill
+invocation: automatic
 ---
 
-# Unslop
+<!-- Adapted from cursor/plugins pstack/unslop at 7314f723a487ec406b6369fe5865ba034cfed166 (MIT). -->
 
-Edit text to remove AI patterns and add human voice.
+# Writing for Humans
+
+Edit text to remove AI patterns and add human voice. One use: what only the human reads, the reply
+in this conversation, ephemeral and read by nobody else. Anything another agent will read, a
+document, a Decision Record, a plan, a Linear comment, a commit message, is written for that agent
+first, by `writing-for-agents`.
 
 ## Process
 
@@ -70,7 +76,7 @@ Removing patterns is half the job. Sterile, voiceless writing is just as obvious
 
 ### Jargon
 
-26. **Abstract metaphor nouns.** Substrate, wedge, vector, locus, vantage, nexus, primitive (as noun), harness (as metaphor), surface (as in "API surface"), bedrock, scaffolding (as metaphor), modality, paradigm, gold-plating, ratchet (as metaphor), evacuate (for moving code), endgame, north star, flywheel. These read as technical but usually have a plainer concrete word. "Substrate" becomes "base". "Wedge in" becomes "add". "Vector" becomes "way" or "method". "Gold-plating" becomes "more than the job needs". "Ratchet" becomes the mechanism's real name or "a limit that only tightens". "Evacuate" becomes "move out". "Endgame" becomes "the last phase". Pick the concrete word.
+26. **Abstract metaphor nouns.** Substrate, wedge, vector, locus, vantage, nexus, primitive (as noun), harness (as metaphor), surface (as in "API surface"), bedrock, scaffolding (as metaphor), modality, paradigm, gold-plating, ratchet (as metaphor), evacuate (for moving code), endgame, north star, flywheel. These read as technical but usually have a plainer concrete word. "Substrate" becomes "base". "Wedge in" becomes "add". "Vector" becomes "way" or "method". "Gold-plating" becomes "more than the job needs". "Ratchet" becomes the mechanism's real name or "a limit that only tightens". "Evacuate" becomes "move out". "Endgame" becomes "the last phase". Pick the concrete word. A word the dydo glossary locks is the shared language, not a tell: it stays.
 
 ### Plain speech
 

@@ -1,50 +1,64 @@
-<!-- Adapted from mattpocock/skills code-review at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
+<!-- Adapted from mattpocock/skills code-review and tdd at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
 
 # Reviewing Code
 
-Target: the code one Linear Issue delivered, judged against that Issue's contract and, when one
-governs the work, its reviewed Project plan.
+Target: the code and tests one Issue delivered, judged against its contract and, when one governs,
+its reviewed Project plan, on four axes judged alone, so a clean axis never masks a failed one.
 
 ## Method
 
-1. **Pin the contract before the diff.** Outcome, scenarios, owned paths, base SHA, exact gates,
-   governing plan at its SHA. Done when you can state what this change had to do without reading it.
+1. **Pin the contract.** Outcome, scenarios, owned paths, base SHA, exact gates, tier, governing plan
+   at its SHA. Done when you can state what the change had to do without reading it.
 2. **Read the hops.** `git log <base>..<candidate>` lists the specify, implement, harden and fix
-   commits; read what each changed. A behaviour or test one hop had and a later hop dropped is a
-   finding when the contract needed it. Done when every hop is accounted for.
-3. **Read the diff, then the code it lands in.** `git diff <base>...HEAD` gives the delta; read
-   enough of each file to judge the whole. Code that was already bad is a finding when this change
-   builds on it. Done when every hunk is accounted for.
-4. **Judge against the standards.** `dydo/guides/coding-standards.md` and any stack-specific
-   standard bind, the anti-slop mandate included; a documented standard beats your taste.
-5. **Weigh the smells.** Work the baseline below across the diff. Done when every smell has been
-   asked and answered, not when the first one is found.
-6. **Rerun the gates yourself.** The Issue's exact commands, plus `dydo check` when the change
-   touches documentation or validation surfaces. An implementation report is a claim, not evidence.
+   commits. The implement hop is judged for doing what the contract says; the harden hop for
+   changing only what was warranted, and everything that was. Done when you can say per hop what it
+   changed and why.
+3. **Read the diff, then the code it lands in.** `git diff <base>...<candidate>` gives the delta;
+   read enough of each file to judge the whole. Done when every hunk is accounted for.
+4. **Work the four axes below, each entire**, every item verified against the source or a finding.
 
-## The smell baseline
+## Contract
 
-A **smell** is a question, not a verdict. Name it as a possibility ("possible Feature Envy"), quote
-the hunk, answer it — and it becomes a finding only once you can state the concrete consequence
-here: a reader misled, one logical change forced to scatter, a seam no test can reach. A documented
-standard overrides the baseline, anything the tooling already enforces is skipped, and smell in code
-this change does not touch belongs to the invoker rather than to this verdict.
+- The candidate matches the governing commit, the owned paths and the requested outcome
+- Every scenario stands as the specifier committed it, and every scenario passes
+- Every behaviour, edge case and risk the contract names is claimed by a scenario or a test; a bug
+  fix carries the test that reproduces the bug
+- Nothing the implement hop had that the contract needed was dropped by a later hop
+- Nothing beyond the contract: an unrelated improvement is scope creep and a finding
+- Every deviation the implementation reported is justified or raised
 
-Work the twelve smells in `dydo/guides/coding-standards.md`, each as a question against the diff.
+## Standards
 
-## Checklist
+- [coding-standards.md](../../../../dydo/guides/coding-standards.md) and any stack-specific standard
+  bind, the anti-slop mandate included, with the `codebase-design` lens on every seam the diff
+  touches; a documented standard beats your taste, and a rule the tooling enforces is closed
+- The harden hop changed only what was warranted, and everything that was: smaller, simpler,
+  standard or deeper, with a candidate already good left as it was; an abstraction or optimisation
+  ahead of a need is a finding
+- The twelve smells in the standards, each a question against the diff, the hunk quoted, a finding
+  only with its concrete consequence named; every smell answered, not the first one found
+- Code that was already bad is a finding when this change builds on it
+- Each test is a contract: one claim, named by case and expectation, at a seam a caller observes,
+  that some breach turns red; a test with no such breach is a finding however green it runs
+- Shapes that pass by construction: an expected value recomputed the code's way; a mock inside the
+  unit; a suite where no test was ever red; an assertion on a prompt file's wording; a metric moved
+  with nothing claimed; an unbounded wait or a dependence on order
 
-- [ ] Candidate matches the governing commit, the owned paths, and the requested outcome
-- [ ] Every scenario stands as the specifier committed it, and every scenario passes
-- [ ] Nothing a hop had that the contract needed was lost by a later hop
-- [ ] Logic holds at the edges: boundaries validated, no fallback masking an impossible state
-- [ ] Tests name the behaviour and would fail if this code broke
-- [ ] Standards hold, and every smell was asked and answered
-- [ ] Nothing beyond the contract — an unrelated improvement is scope creep and a finding
-- [ ] Every deviation the implementation reported is justified or raised
-- [ ] Gates rerun by you, with their output
+## Gates rerun
+
+- The Issue's exact commands
+- Coverage and CRAP against the tier the spec names
+- Mutation on the changed files, no survivor; one example value changed per scenario, none left green
+- `dydo check` when the change touches documentation or validation surfaces
+
+## Security and likely bugs
+
+- Every boundary the diff touches validates what crosses it, and the vulnerabilities
+  coding-standards §5 names are asked against every such hunk; secrets stay out of source and logs
+- Logic holds at the edges (empty, null, first, last, off-by-one), no fallback masks an impossible
+  state, and each error path is handled on purpose
+- Ordering, concurrency and resource lifetime, where the diff introduces them
 
 ## Verdict
 
-Fill the review block the reviewer skill defines, each finding in the shape it gives, and return
-nothing else. PASS means no findings: a note is a finding, and a finding is a FAIL.
+Each finding in the review block carries its axis: `contract`, `standards`, `gates` or `security`.

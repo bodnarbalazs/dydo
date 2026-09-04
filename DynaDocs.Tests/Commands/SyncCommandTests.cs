@@ -1506,7 +1506,8 @@ public class SyncCommandTests : IDisposable
     }
 
     // DR-039: the sprint-auditor folded into the reviewer, and DR 045 renamed its rubric to
-    // `merge`. The reviewer ships one rubric per review target and nothing under the old name.
+    // `merge`; the tests rubric folded into code. The reviewer ships one rubric per review target
+    // and nothing under a retired name.
     [Fact]
     public void SyncAgent_Reviewer_ShipsOneRubricPerReviewTarget()
     {
@@ -1524,7 +1525,7 @@ public class SyncCommandTests : IDisposable
         Assert.DoesNotContain("issue-plan", emitted);
         Assert.DoesNotContain("plan", emitted);
         Assert.Contains("docs", emitted);
-        Assert.Contains("tests", emitted);
+        Assert.DoesNotContain("tests", emitted);
         Assert.All(emitted, name => Assert.NotEmpty(File.ReadAllText(Path.Combine(resources, $"{name}.md"))));
     }
 

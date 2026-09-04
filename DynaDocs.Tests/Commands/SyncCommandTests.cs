@@ -212,16 +212,20 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void Execute_RetiredWorkflow_RemovesTheStaleRunSprintScript()
+    public void Execute_RetiredWorkflows_RemoveTheStaleScripts()
     {
-        var stale = Path.Combine(_testDir, ".claude", "workflows", "run-sprint.js");
-        Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
-        File.WriteAllText(stale, "export const meta = {};");
+        var stale = new[] { "run-sprint.js", "inquisition.js" }
+            .Select(name => Path.Combine(_testDir, ".claude", "workflows", name))
+            .ToList();
+        foreach (var file in stale)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "export const meta = {};");
+        }
 
         SyncCommand.Execute(_testDir);
 
-        Assert.False(File.Exists(stale));
-        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "workflows", "inquisition.js")));
+        Assert.All(stale, file => Assert.False(File.Exists(file), file));
     }
 
     // Renamed and split rubrics are not overwritten by their replacements, so sync has to delete
@@ -571,17 +575,17 @@ public class SyncCommandTests : IDisposable
         var count = SyncCommand.SyncWorkflows(_testDir);
 
         var workflowDir = Path.Combine(_testDir, ".claude", "workflows");
-        var emitted = Directory.GetFiles(workflowDir, "*.js")
+        var emitted = (Directory.Exists(workflowDir) ? Directory.GetFiles(workflowDir, "*.js") : [])
             .Select(path => Path.GetFileName(path)!)
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
 
         Assert.Equal(shipped, emitted);
         Assert.Equal(shipped.Count, count);
-        Assert.Contains("inquisition.js", emitted);
         Assert.DoesNotContain("run-sprint.js", emitted);
+        Assert.DoesNotContain("inquisition.js", emitted);
 
-        foreach (var file in Directory.GetFiles(workflowDir, "*.js"))
+        foreach (var file in emitted.Select(name => Path.Combine(workflowDir, name)))
         {
             var content = File.ReadAllText(file);
             Assert.Contains("export const meta", content);

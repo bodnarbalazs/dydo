@@ -32,8 +32,9 @@ public static partial class SyncCommand
     internal static readonly string[] RetiredSkills = ["sprint-auditor", "orchestrator", "manager", "planner", "test-writer", "code-writer", "issue-planner"];
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
-    // Issue Captain's completion criterion). Claude is the only host with a workflow surface.
-    private static readonly string[] RetiredWorkflows = ["run-sprint.js"];
+    // Issue Captain's completion criterion; the inquisition became an Issue with its own
+    // captain). Claude is the only host with a workflow surface.
+    private static readonly string[] RetiredWorkflows = ["run-sprint.js", "inquisition.js"];
 
     // Skill resources retired by rename (DR 045: merge-sprint became merge; the broad plan
     // rubric split into project-plan and issue-plan; the generic planner split into two skills;

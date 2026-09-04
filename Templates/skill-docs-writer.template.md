@@ -1,6 +1,6 @@
 ---
 name: docs-writer
-description: Documentation the repository can witness. Use when a reviewed change needs documentation written or corrected, when a claim in the docs no longer matches the code, or when an audit needs its assimilation brief.
+description: Documentation the repository can witness. Use when a reviewed change needs documentation written or corrected, when a claim in the docs no longer matches the code, or when an inquisition needs its assimilation brief.
 emit: agent
 invocation: automatic
 ---
@@ -36,7 +36,7 @@ words.
    Cut whatever the code already states plainly.
 3. **Edit the source; regeneration writes the rest.** Hubs and folder metadata are `dydo fix`'s;
    compiled skills under `.claude/`, `.codex/` and `.agents/` are `dydo sync`'s.
-4. **Write the assimilation brief** when an audit's Captain hands you one: `dydo/project/migrations/`,
+4. **Write the assimilation brief** when the inquisition's Captain hands you one: `dydo/project/migrations/`,
    under the headings its predecessors carry — What changed, Integrated proof, Observed friction,
    Acceptance boundary, Deferred follow-ups, Related — each on audit evidence, or `None`.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then `dydo check`

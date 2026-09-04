@@ -5,156 +5,152 @@ type: reference
 
 # Linear Workspace Standard
 
-The canonical Linear vocabulary for Projects and Issues. Status records where work is now; Type
-records why an Issue exists; Mode records how an Issue Captain works with the human on delivery.
+The canonical Linear vocabulary for Projects and Issues. Status records where work is now and which
+role is at work; Type records why an Issue exists and who holds it; Mode records how a captain works
+with the human. The model is supersymmetric: a captain's Issue is a Project one level down, and the
+same statuses, Types and chain hold at both levels.
 
 ## Project statuses
 
 | Status | Meaning |
 |---|---|
-| `Backlog` | A possible Project retained for later; planning has not been commissioned. |
-| `Planning` | The Project Planner is charting and reviewing the first low-resolution map. |
-| `Planned` | The Project plan passed independent review and human approval; an Admiral may start delivery. |
-| `In Progress` | The Admiral is working the map and coordinating Issue Captains toward the destination. |
-| `Completed` | The destination landed and the Project's required closeout is complete. |
+| `Backlog` | A possible Project retained for later; no admiral has taken it. |
+| `Planning` | The admiral's project-planner is charting the first low-resolution map, and the review loop runs. |
+| `Planned` | The plan passed independent review and human approval; the admiral opens the feature. |
+| `In Progress` | The admiral is working the map through Issue Captains toward the destination. |
+| `Completed` | The destination landed and a walkthrough found nothing more. |
 | `Canceled` | The destination was consciously abandoned; the Project records why. |
 
-## Project labels
-
-There are no canonical Project labels. A Project can contain mixed Issue types and operating modes;
-its status and Issue graph carry that information without a second taxonomy.
+There are no canonical Project labels: a Project's status and Issue graph carry the information.
 
 ## Issue statuses
 
-| Status | Meaning |
+One set for primary Issues and Sub-issues alike. The captain alone sets a delivery Issue's status;
+the record that runs the chain flips on every spawn, and nothing else flips it.
+
+| Status | Set when |
 |---|---|
-| `Backlog` | The Issue is retained but not yet contracted for execution. |
-| `Todo` | The Issue contract is ready and queued; open native blockers still prevent pickup. |
-| `Planning` | A delivery Issue is claimed and its Issue Planner is making the route mechanical. |
-| `In Progress` | Production or wayfinding is actively moving. |
-| `Waiting for Human` | Agents have prepared the next human contribution and cannot advance without it. |
-| `In Review` | An independent reviewer is gating the current candidate. A FAIL returns the Issue to `In Progress`. |
-| `Done` | The Issue outcome and evidence are complete, including review and integration when delivery requires them. |
+| `FutureFeature` | A backlog-type status: an unscheduled strategic possibility with no Type yet. Only the human promotes it. |
+| `Backlog` | Retained with a Type, not yet queued: no contract yet, or one awaiting the human's go, as an Inquisition's. |
+| `Todo` | Contracted and queued. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
+| `Specifying` | The specifier is spawned. |
+| `Implementing` | The implementer is spawned, a fix hop after a FAIL included. |
+| `Hardening` | The hardener is spawned. |
+| `In Review` | Any reviewer is spawned, spec review included. A FAIL returns the record to the hop that fixes it. |
+| `In Progress` | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, a HITL session. |
+| `Done` | The outcome and its evidence are complete, review and integration included where the Type requires them. |
 | `Canceled` | The Issue will not be completed; the record says why. |
 | `Duplicate` | Another Issue owns the outcome; the record links to it. |
 
-An Issue with an open native blocker is blocked regardless of status. Do not add a `Blocked` status
-that can drift from Linear's dependency graph.
+An Issue with an open native blocker is blocked in any status; do not add a `Blocked` status that
+can drift from Linear's dependency graph. Assignment is the claim: assigned means taken; unassigned,
+`Todo` and unblocked means pickable.
+
+A `FutureFeature` is promoted by the human alone: at Issue grain it gains a Type and moves to `Backlog`
+or `Todo` on the same record; at Project or Initiative grain that record is created and linked and
+the FutureFeature is marked `Done`. A rejected one becomes `Canceled` with the reason recorded.
 
 ## Issue labels
 
-### Type group
+Two label groups, `Type` and `Mode`, because one label per group is the rule Linear enforces. Every
+Issue carries exactly one Type. Mode sits on every Type a captain holds.
 
-Every Issue carries exactly one Type label. Type records why the Issue exists and selects its control
-loop.
+### Type
 
-#### Intake
+| Label | Held by | Level | Meaning | Closes on | Colour |
+|---|---|---|---|---|---|
+| `Feature` | captain | any | Add, improve, refactor or document: an outcome to build. | the outcome merged | `#BB87FC` |
+| `Bug` | captain | any | Restore intended behaviour. The record holds the defect and its fix. | the behaviour restored | `#EB5757` |
+| `Merge` | captain | any; the landing is the only primary one | One merge operation: lanes into a parent, a primary into the feature, the feature into main. | the merge review PASS | `#4EA7FC` |
+| `Enablement` | captain | any | Access, environment, credentials or material other work needs; `wizard` guides the steps only the human can do. | the condition true, with evidence | `#26B5CE` |
+| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses turned into tests; Bugs filed. | the Bugs filed and the record written | `#5E6AD2` |
+| `Prototype` | captain | any | A design question raised to fidelity the human can react to; fast sketches, the human is the review. | the human's verdict on the Issue | `#F2994A` |
+| `Question` | map holder | any | One prepared, discrete question whose answer blocks named work. | the human's answer on the Issue | `#F2C94C` |
+| `Research` | map holder | any | A factual answer whose investigation needs its own owner, status or evidence. | cited findings on the Issue | `#95A2B3` |
+| `Grilling` | map holder | any | A tree of intent or specification choices resolved with the human. | shared understanding recorded, with its Decision Records linked | `#D4A017` |
+| `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
-| Label | Meaning |
-|---|---|
-| `FutureFeature` | Preserve an unscheduled strategic possibility whose delivery grain and commitment remain open. |
+A captain-held Issue runs the chain [specifier] → [implementer] → [hardener] → [reviewer] on its own
+record or on its lanes; the captain decides, through its spec, which hops are empty. A map-holder-held Issue is run
+directly by the admiral or captain whose map it clears; it receives no captain, branch, PR or review
+loop. `Task` names the captain-held Issue's role on a map; it is not a label.
 
-A FutureFeature stays in `Backlog` without a Mode or Issue Captain. Only the human promotes it. At
-Issue grain, replace its Type with `Feature` or `Improvement` and enter the delivery loop on the same
-record. At Project or Initiative grain, create and link that record, then mark the FutureFeature
-`Done`. A rejected FutureFeature becomes `Canceled` with the reason recorded.
+Small lookups, conversations and setup stay on the Issue that needs them. Create a map-holder-held
+Issue only when the work needs independent tracking or blocks other work.
 
-#### Delivery
+### Mode
 
-| Label | Meaning |
-|---|---|
-| `Feature` | Add a capability. |
-| `Improvement` | Improve existing behaviour, structure, documentation, or maintainability. |
-| `Bug` | Restore intended behaviour. The same Issue records the defect and owns its fix. |
-
-Every delivery Issue is a Task owned by one Issue Captain and follows the planning, branch/worktree,
-production, independent-review, and integration loop. `Task` names its role on the map; its Linear
-Type remains `Feature`, `Improvement`, or `Bug`.
-
-#### Wayfinding
-
-| Label | Meaning | Resolution |
+| Label | Meaning | Colour |
 |---|---|---|
-| `Research` | Establish a factual answer whose investigation needs its own owner, status, blocker, or evidence. | Cited findings recorded on the Issue. |
-| `Prototype` | Raise a design question to concrete fidelity so the human can react to it. | Throwaway artifact linked with what it proved. |
-| `Grilling` | Resolve a tree of related intent or specification choices with the human. | Shared understanding recorded; resulting specification, glossary entries, and Decision Records linked. |
-| `Question` | Ask the human one prepared, discrete question whose answer blocks named work. | The human's answer recorded; a qualifying choice graduates to a linked Decision Record. |
-| `Enablement` | Create access, environment, credentials, or representative material required before other work can proceed. | The required condition exists and its evidence is recorded. |
+| `AFK` | The captain reaches reviewed completion without a live conversation. An unexpected human choice becomes a blocking `Question`; the parent stays AFK. | `#30A46C` |
+| `HITL` | The human and the captain work the Issue together in a session the human opened. | `#F76B15` |
 
-Small lookups, conversations, and setup stay on the Issue that needs them. Create a Wayfinding Issue
-only when the work needs independent tracking or blocks other work.
+Human approval or inspection at a universal gate does not make an Issue HITL.
 
-### Mode group
+## Who holds what
 
-Every Task and Wayfinding Issue carries exactly one Mode label before it becomes pickable:
-Research is `AFK`; Prototype, Grilling, and Question are `HITL`; Enablement may be either.
-FutureFeatures carry neither.
-
-| Label | Meaning |
-|---|---|
-| `AFK` | The Issue Captain is expected to reach reviewed completion without an ongoing conversation with the human. An unexpected human choice becomes a blocking Question Issue; the parent remains AFK. |
-| `HITL` | The human and Issue Captain work the Issue together. The Captain turns the human's direction into crew work and brings the result back for another turn. |
-
-Human approval or inspection at a universal gate does not make an Issue HITL. `Needs human` is not a
-canonical label: `HITL` describes the Issue's operating mode, while `Waiting for Human` says that the
-human owns the next action now.
-
-## Wayfinding ownership
-
-The current map owner controls Wayfinding Issues directly: the Project Planner while charting the
-first approved map, then the Admiral during delivery. They dispatch Research agents, run Prototype or
-Grilling work with the human, present Questions, and route Enablement to whoever can satisfy it. A
-Wayfinding Issue does not receive an Issue Captain or the delivery branch, worktree, PR, and review
-loop. If it reveals production work, create a delivery Issue for that outcome.
+The map holder is the admiral for a Project and the captain for an Issue. The map holder writes the
+contracts one level down, sends a planner ahead before dividing, and runs the map-holder-held Issues
+that clear its own fog: it dispatches `research`, runs a Grilling or Walkthrough with the human, and
+files a `Question` only when judgment remains.
 
 | Type | Normal status path |
 |---|---|
 | `Research` | `Todo` → `In Progress` → `Done` |
-| `Prototype` | `Todo` → `In Progress` ↔ `Waiting for Human` → `Done` |
-| `Grilling` | `Todo` → `In Progress` ↔ `Waiting for Human` → `Done` |
-| `Question` | `Waiting for Human` → `Done` |
-| `Enablement` | `Todo` → `In Progress` or `Waiting for Human` → `Done` |
+| `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
+| `Question` | `Todo` → `Done` |
+| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress` → `Done` |
+| captain-held | `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Done`, with `In Progress` while lanes run |
 
-`Planning` and `In Review` belong to the delivery loop; Wayfinding closes when its recorded
-resolution is true.
-
-An Issue Captain may create direct Wayfinding Sub-issues when newly visible fog blocks only its parent
-delivery Issue or one of its lanes and remains inside the approved Project destination and Issue
-outcome. Even when a lane is blocked, create the Wayfinding record directly under the delivery parent.
-The Captain owns that local map, persists every result on its Sub-issue, and informs the Admiral.
-Escalate the packet instead when the answer can change other Issues, a shared contract, or the
-Project's destination, scope, acceptance criteria, or governing architecture; the Admiral then creates
-and wires a Project-level Wayfinding Issue.
-
-Wayfinding Sub-issues stay one level deep. New local investigations become siblings under the same
-delivery parent; Project-wide discoveries return to the Admiral. Native blocker relations connect
-each Wayfinding Issue to everything waiting on its resolution.
+A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
+each carrying its parent's Type,
+a Merge Sub-issue for each merge operation, and a map-holder-held Sub-issue for fog that blocks only
+its parent or a lane and stays inside the approved Project destination and Issue outcome. A lane that
+needs splitting is replaced by sibling lanes. When the answer can change other Issues, a shared
+contract, or the Project's destination, scope, acceptance criteria or governing architecture, the
+captain prepares the packet and the admiral creates and wires the Project-level Issue. Native blocker
+relations connect every waiting record to what it waits on.
 
 ## Question Issues
 
-A Question Issue is the last step of discovery, not its substitute. Before creating one, search the
-governing Decision Records, Project plan, specifications, documentation, standards, code, tests, and
-other authoritative sources. If those sources settle the answer, record it where the work already
-lives and continue.
+A Question is the last step of discovery, not its substitute. Before creating one, search the
+governing Decision Records, Project plan, specifications, documentation, standards, code, tests and
+other authoritative sources; if they settle it, record the answer where the work lives and continue.
 
-Create the Question only when human judgment remains. Its body carries:
+Create the Question only when human judgment remains, in `Todo`, wired as a blocker of everything
+that waits. Its body carries:
 
 1. the one question;
 2. the named work it blocks and why;
 3. the sources searched and facts found;
-4. the credible options, trade-offs, and recommendation when evidence supports one.
+4. the credible options, trade-offs, and the recommendation when evidence supports one.
 
-If the answer determines what implementation Issue should exist, resolve the Question first. If the
-implementation outcome is already stable, create both records and make the Question a native blocker.
-When a new question surfaces during execution, the Issue Captain creates it locally only under the
-scope rule above; otherwise the Captain prepares the hand-raise and the Admiral creates and wires the
-Project-level Question Issue.
+If the answer determines which implementation Issue should exist, resolve the Question first.
+
+## Issue templates
+
+One Linear Issue template per Type, named after it. The human creates them from the bodies below; an
+agent lists and reads them over MCP and fills them in.
+
+| Template | Body |
+|---|---|
+| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`; the specifier adds `## Spec` and `## Plan`. |
+| `Bug` | the five fields, then `## Observed`, `## Expected`, `## Reproduction` (a scenario at the boundary, else the red test); default Sub-issues: *reproduce or identify*, *fix*. |
+| `Merge` | `## Source` and `## Target` at their SHAs, `## Plan order` (the Merge Sub-issue this one is blocked by), `## Combined gates`, `## Conflicts expected`. |
+| `Enablement` | `## Condition` that must become true, `## Steps only the human can do`, `## Evidence` when done. |
+| `Inquisition` | `## Scope`: the feature SHA, the parts and the lenses to sweep, the cost; `## Findings`, `## Hypotheses` with their verdicts, `## Bugs filed`, `## Record` path. |
+| `Prototype` | `## Question` the sketch must settle, `## Variants`, `## Verdict` and the winning commit on `prototype/<name>`. |
+| `Question` | the four items above. |
+| `Research` | `## Question` and `## Destination` for the cited report. |
+| `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
+| `Walkthrough` | `## What landed` (branch, SHA, final PASS), the four-part tour, `## Findings` as linked Issues. |
 
 ## Decision Records
 
 Linear records the decision-making work; dydo records a qualifying decision. Link the Question or
-Grilling Issue to its repository Decision Record and link the record back when it has a Linear origin.
-The Decision Record is canonical: keep its rationale in dydo rather than copying it into Linear.
+Grilling Issue to its repository Decision Record and link the record back when it has a Linear
+origin. The Decision Record is canonical: keep its rationale in dydo rather than copying it into
+Linear.
 
 ## Related
 
@@ -163,3 +159,5 @@ The Decision Record is canonical: keep its rationale in dydo rather than copying
 - [dydo Glossary](./dydo-glossary.md) — Locked definitions for the Linear-native work model.
 - [DR 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) — The
   governing flow map, question model, and human gates.
+- [DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) —
+  Supersymmetry, the eleven statuses, the Type set, merges as Issues.

@@ -42,10 +42,11 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Project plan** — a reviewed repository contract for coordinated, cross-cutting, or
   architecture-sensitive work, at low resolution: destination, acceptance, architecture, and an Issue
   map. Its `linear-project` URL is provenance, not synchronization.
-- **Issue-resolution plan** — the high-resolution plan written into an implementation Issue before
-  its code: files to touch, the pattern to copy, steps, edge cases, exact gates. It is reviewed with
-  the code it governs; the Issue Captain may require a separate pre-code review when route risk
-  warrants the extra gate.
+- **Issue-resolution plan** — the high-resolution spec and plan the specifier writes into an
+  implementation Issue before its code: the scenarios and gates that make the contract exact, then
+  the files to touch, the pattern to copy, steps and edge cases that make the route mechanical. It is
+  reviewed with the code it governs; the Issue Captain may require a separate pre-code `spec` review
+  when route risk warrants the extra gate.
 - **FutureFeature** — an unscheduled strategic possibility recorded as a Linear Issue, distinct from
   a generic idea or delivery contract. It stays in `Backlog` until the human promotes or cancels it.
 - **Assimilation brief** — the durable account of what changed, what was learned, and what remains.
@@ -59,7 +60,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Hat** — what a session is doing now: co-thinker, project-planner, issue-captain, admiral, or
   chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
-  spawned it: issue-planner, code-writer, test-writer, docs-writer, reviewer, inquisitor, research.
+  spawned it: specifier, implementer, hardener, docs-writer, reviewer, inquisitor, research.
 - **Method** — a reference or procedure used inside another skill, carrying no identity of its own:
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype,
   writing-for-agents, self-improvement.
@@ -68,13 +69,20 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Workflow** — a host-executed script for a sequence prose cannot be trusted to hold. The
   inquisition is the only one.
 - **Rubric** — the one named standard a reviewer judges a candidate against: code, tests, docs,
-  project-plan, issue-plan, or merge.
+  project-plan, spec, or merge.
 
 ## Execution and proof
 
+- **Supersymmetry** — a captain's Issue is a Project one level down: the same Types, statuses and
+  chain hold at both levels, and only the map holder changes.
 - **Reviewed intent** — the rule that implementation begins only from an independently reviewable
   contract: an atomic Issue or a linked reviewed Project plan plus its Issues.
+- **Scenario** — one acceptance criterion at the product's boundary, written in Gherkin in the
+  Issue's feature files by the specifier. It is contract: implementation wires it and never edits it;
+  a change to it is a spec amendment.
 - **Gate** — any explicit pass/fail checkpoint.
+- **Hop** — one worker's committed pass over an Issue branch: `specify`, `implement`, `harden`, or
+  `fix`. Its SHA is evidence on the Issue, and the reviewer reads the hops in order.
 - **Issue review** — an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. PASS means no findings; a note is a finding, and a finding is a FAIL.
 - **Merge review** — the `merge` rubric run after every merge: a mechanical spot check of the
@@ -82,9 +90,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Inquisition** — a rare, human-confirmed audit: inquisitors across lenses, the reviewer as judge,
   and an assimilation brief. It catches what got through; it does not prove zero defects.
 - **Review block** — the reviewer's whole return, and the only thing that fills an Issue Captain's
-  review slot: rubric, reviewer label and model, candidate and base SHA, verdict, the gates rerun
-  with their results, and findings as `file:line → consequence → correction`. It is posted as a
-  comment on the Issue and carried in the PR body.
+  review slot: rubric, reviewer label and model, the contract at its governing SHA, candidate and
+  base SHA, verdict, the gates rerun with their results, and findings as
+  `file:line → consequence → correction`. A PASS binds one candidate under one contract; a change to
+  either calls for a fresh review. It is posted as a comment on the Issue and carried in the PR body.
 - **Evidence** — a commit, PR, test result, review verdict, or audit artifact linked to an Issue; it
   is not another work item.
 - **Working-tree contract** — the shared rules for opening a feature branch, claiming an Issue by
@@ -101,7 +110,8 @@ separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initia
 Issue where work is live, though a slice may still name an implementation technique. Tier-1
 manager, orchestrator, and the run-sprint workflow (internally
 run-issues) gave way to the hats — an admiral coordinates one Project, an Issue Captain owns one
-Issue. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
+Issue. Issue planner, code-writer and test-writer gave way to the specifier, implementer and hardener
+chain. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the question Issues above. Integrated audit is replaced
 by the three reviews above. None of these words creates a file, command, lifecycle, or Linear type.
 

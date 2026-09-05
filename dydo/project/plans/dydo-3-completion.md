@@ -1,6 +1,6 @@
 ---
 title: dydo 3.0 / Completion route after beta
-status: draft
+status: reviewed
 area: project
 type: context
 linear-project: https://linear.app/bodnar-balazs/project/dydo-30-consolidate-and-release-54b8939d748e
@@ -333,3 +333,12 @@ feature head, uses its own worktree, preserves unrelated dirty work and hands of
 Exact remediation Issues depend on DYD-96's measured inventory, and exact audit Bugs depend on
 DYD-65's proofs. The admiral creates those only from evidence and wires them before their waiters;
 their absence from this map is not permission to waive a finding.
+
+## Review evidence — 2026-09-05
+
+Independent Project-plan review returned **PASS** for candidate
+`12112f507b4d1726310b96150f385a52bd1986f9`. Reviewer: `completion-route-rereview` (gpt-5).
+The retained evidence is
+`dydo/_system/.local/completion-route-rereview/review.md`, SHA-256
+`61A20F71D15488C02B12B0BB0758684F023D18E17FFB7F03693099A6DEA8C314`; the corresponding Linear
+Project review comment is `e4407b08-6299-458c-ab45-6d959f9c0b0f`.

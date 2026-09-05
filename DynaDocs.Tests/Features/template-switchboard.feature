@@ -144,6 +144,23 @@ Feature: Local skill templates compile through an enabled switchboard
       | claude              |
       | codex               |
 
+  Scenario Outline: Remove Codex metadata after changing explicit invocation to automatic
+    Given an enabled custom skill-only template named "invocation-only" was synchronized to both providers with "invocation: explicit" and no argument hint
+    And its switch records "emitAgent" false and "codexMetadata" true
+    And its valid source now declares "invocation: automatic" and still has no argument hint
+    And "<current-integration>" is now the only selected integration
+    And unrelated sibling files exist beside its native outputs on both provider surfaces
+    When I synchronize the native artifacts
+    Then the prior ".agents/skills/invocation-only/agents/openai.yaml" is removed, including when Codex is the deselected provider
+    And its fixed SKILL.md is current on the selected provider
+    And every unrelated sibling retains its exact path and bytes
+    And its switch records "emitAgent" false and "codexMetadata" false
+
+    Examples:
+      | current-integration |
+      | claude              |
+      | codex               |
+
   Scenario Outline: Remember a switch and output shape when its custom source is temporarily missing
     Given a custom skill with enabled <enabled> previously emitted <prior-shape> and resources to both providers
     And its switch records "emitAgent" <emit-agent>, "codexMetadata" <codex-metadata>, and unique resource slugs

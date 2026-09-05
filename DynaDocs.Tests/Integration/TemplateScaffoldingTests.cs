@@ -106,7 +106,10 @@ public class TemplateScaffoldingTests : IntegrationTestBase
                         ? TestDir
                         : Path.GetDirectoryName(file)!;
                     var target = Path.GetFullPath(Path.Combine(origin, link.Target));
-                    if (!File.Exists(target))
+                    var relativeTarget = Path.GetRelativePath(TestDir, target);
+                    var outsideProject = Path.IsPathRooted(relativeTarget) || relativeTarget == ".." ||
+                        relativeTarget.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+                    if (outsideProject || !File.Exists(target))
                         brokenLinks.Add($"{Path.GetRelativePath(TestDir, file)}:{link.LineNumber} -> {link.Target}");
                 }
             }

@@ -84,7 +84,9 @@ walkthrough remain human actions under DR 047.
    the reviewed feature SHA, local package SHA-256, reported version, installed executable path and
    executable bytes; installs that exact package; then runs template update and sync in the reviewed
    dogfood workspace. A second sync is identical. Any repository output change has an explicit owner,
-   review and commit; the checkpoint never leaves an unexplained generated diff.
+   review and commit; the checkpoint never leaves an unexplained generated diff. Captains already
+   running in this desktop task may continue from explicit briefs pinned to current reviewed template
+   source; a refresh does not claim that their in-memory generated catalog hot-reloaded.
 10. The exact 3.0.0 candidate passes the full isolated tests, documentation check, full static gate,
    mutation gate, Release build, fresh installation flows, local package upgrade/rollback, native
    Windows AOT and non-publishing five-target CI validation. NuGet, npm and both CLI version forms
@@ -170,8 +172,9 @@ changing a threshold or turning absence into success.
 
 The template compiler remains. DYD-111 establishes its local source and switchboard ownership;
 DYD-112 then removes hub machinery; DYD-117 and DYD-86 add configuration only after DYD-111 transfers
-that seam. DYD-91 teaches the resulting update, sync, host and test-adoption flow. DYD-75 is the one
-final reflection owner: it regenerates managed outputs only after every authored source is reviewed.
+that seam. DYD-91 teaches the resulting update, sync, host and test-adoption flow. Each source owner
+may reflect the exact generated outputs its reviewed contract names. DYD-75 owns final integrated
+parity and remaining reflection after all source work, rather than being the only permitted emitter.
 
 Installation is a recurring dogfood checkpoint, not a new subsystem. Whenever a subsequent captain
 needs behavior that has just merged, the admiral first takes the reviewed integration SHA through
@@ -180,6 +183,11 @@ through that installed executable, and proves repeat identity. Use a new prerele
 tool manager cannot distinguish changed package bytes at the same version. Intermediate refreshes
 may use a scratch consumer; using this repository's generated skills requires a clean reviewed
 dogfood checkout and a named owner for every resulting diff.
+
+The first refresh is the bounded DYD-118 immediately after DYD-111: one beta.2 metadata
+change plus the smallest parameterization of the existing beta acceptance script needed to package
+and install an exact reviewed feature SHA. Later refreshes reuse that established checkpoint and do
+not grow a new installer framework or require a whole Feature for every local reinstall.
 
 Every primary source Issue merges into `feature/dydo-3-consolidation` through its own Merge
 Sub-issue and fresh merge review. The feature stays the only integration line. Retained dirty
@@ -190,14 +198,16 @@ cleaned or deleted merely to make the map look tidy.
 
 ### First pickable Issues
 
-DYD-111 is already claimed at `Specifying`; DYD-113 is the second pickable tracer now that DYD-116
-is Done. DYD-112 and DYD-117 are contracted immediate successors and become pickable when DYD-111's
-reviewed merge transfers their shared seams.
+DYD-111 is already in spec review; DYD-113 is the second pickable tracer now that DYD-116 is Done.
+DYD-118 is the bounded refresh record blocked by DYD-111. DYD-112 and DYD-117 are
+contracted immediate successors and become pickable when DYD-111's reviewed merge and refresh
+transfer their shared seams.
 
 | Issue | Type / Mode / status | Outcome | Owned paths | Blockers | Gate | Base branch |
 |---|---|---|---|---|---|---|
-| DYD-111 | Feature / AFK / Specifying | Local shipped templates and a discovered enabled switchboard compile exact managed outputs while preserving extensions and custom variants. | `dydo/_system/templates/**`, template provenance, `dydo.json` skill switches; `Services/TemplateGenerator.cs`, `Services/SkillTemplateService.cs`, `Services/FolderScaffolder.cs`, `Commands/TemplateCommand.cs`, `Commands/SyncCommand.cs`, exact focused tests/docs named by its reviewed spec. | Completed DYD-110; already in flight. | Its Gherkin contract, focused/full isolated tests, build, docs check, update/sync preservation and two-run byte identity. | `feature/dydo-3-consolidation` at `a4916c91`; worktree `.worktrees/dyd111`. |
-| DYD-113 | Feature / AFK / Todo | Stable project-local runner grammar, useful help, faithful portable three-stack example and a real DynaDocs test/capabilities adapter. | `DynaDocs.Tests/coverage/gap_check.py`, its new capability/example data and focused tests; `dydo/guides/testing-strategy.md`, `dydo/reference/coverage-tools.md` and corresponding shipped policy/example sources. It may call but does not replace `run_tests.py`; retained DYD-96 collectors stay owned by DYD-96. | Completed DYD-110 and DYD-116. | Contract tests for operations/help/selection/exit 0/1/2/placeholders; actual isolated .NET plus Python/Node test invocations; full suite, build and docs check. | Fresh branch from `a4916c91`; merge after DYD-111 unless its merge review proves no shared path. |
+| DYD-111 | Feature / AFK / In Review | Local shipped templates and a discovered enabled switchboard compile exact managed outputs while preserving extensions and custom variants. | `dydo/_system/templates/**`, template provenance, `dydo.json` skill switches; `Services/TemplateGenerator.cs`, `Services/SkillTemplateService.cs`, `Services/FolderScaffolder.cs`, `Commands/TemplateCommand.cs`, `Commands/SyncCommand.cs`, exact focused tests/docs named by its reviewed spec. | Completed DYD-110; specify commit `3e707` is under review and its captain is frozen. | Its Gherkin contract, focused/full isolated tests, build, docs check, update/sync preservation and two-run byte identity. | `feature/dydo-3-consolidation` at `a4916c91`; worktree `.worktrees/dyd111`. |
+| DYD-113 | Feature / AFK / Todo | Stable project-local runner grammar, useful help, an honest initial portable three-stack example and a real DynaDocs test/capabilities adapter. | `DynaDocs.Tests/coverage/gap_check.py`, its new capability/example data and focused tests; `dydo/guides/testing-strategy.md`, `dydo/reference/coverage-tools.md` and corresponding shipped policy/example sources. It may call but does not replace `run_tests.py`; retained DYD-96 collectors stay owned by DYD-96. | Completed DYD-110 and DYD-116. | Contract tests for operations/help/selection/exit 0/1/2/placeholders; actual isolated .NET plus Python/Node test invocations; full suite, build and docs check. An initial unavailable hard-gate row is honest but does not satisfy final example adoption. | Fresh branch from `a4916c91`; merge after DYD-111 unless its merge review proves no shared path. |
+| DYD-118 | Feature / AFK / Todo | Install a beta.2 built from the reviewed DYD-111 integration, then update and sync so subsequent dogfood uses its template behavior. | Version metadata in `Program.cs`, `DynaDocs.csproj` and `npm/package.json`; minimal parameterization of `DynaDocs.Tests/Acceptance/RunExperimentalBeta.ps1`; only exact reflected outputs explicitly transferred by DYD-111. | Reviewed DYD-111 merge. | Source/package/executable identity, local install/rollback/reinstall, template update, two identical syncs, clean or explicitly owned generated diff. | Feature head after DYD-111. |
 | DYD-112 | Feature / AFK / Todo | Compulsory per-folder hubs, generation and validation disappear while links and authored navigation remain sound. | `Rules/HubFilesRule.cs`, `Rules/FolderMetaFilesRule.cs`, `Rules/OrphanDocsRule.cs` only as its spec justifies; `Services/HubGenerator.cs`, hub parts of `FolderScaffolder`/`TemplateGenerator`, `Commands/CheckDocValidator.cs`, `FixCommand.cs`, `IndexCommand.cs`, exact generated hubs, incoming links and focused tests/docs. | DYD-111 merge transfers compiler/template paths. | Plain valid docs without hubs pass; broken links fail; init/fix/index do not recreate hubs; custom navigation survives; full suite/build/check pass. | Feature head after DYD-111. |
 | DYD-117 | Feature / AFK / Todo | Thin official launcher resolves `testing.runner`, forwards argv/help/streams/cancellation/exit, and works from nested directories. | New `Commands/GapCheckCommand.cs`; `Program.cs`; `Models/DydoConfig.cs`; `Serialization/DydoJsonContext.cs`; `Services/ConfigService.cs` only if required; command/config references, completion/help seams and narrowly named tests. No runner or stack implementation. | DYD-111 merge transfers configuration seams. Coordinate docs with DYD-113. | Real-process argv/cwd/stream/exit/cancellation/help tests, missing/malformed config errors, full suite/build/docs check. | Feature head after DYD-111. |
 
@@ -214,17 +224,22 @@ reviewed merge transfers their shared seams.
    compatible retained adapters, widen uncertain selection conservatively, and require real C#,
    Python and JavaScript campaigns with no surviving or uncovered changed-code mutant.
 4. **Finish setup surfaces.** After DYD-112 and DYD-117, DYD-86 owns idempotent host configuration
-   and preservation. DYD-91 then ships the local-template, switchboard, `dydo gap-check --help`,
-   portable-adoption and host-setup checklist. No guide may call an unavailable DynaDocs gate green.
+   and preservation. After DYD-96 and DYD-103 supply the real gate commands, DYD-91 owns the final
+   adoption pass over the portable example and ships the local-template, switchboard,
+   `dydo gap-check --help`, portable-adoption and host-setup checklist. It verifies that each
+   applicable example row has a faithful command and evidence contract or a genuinely unavailable
+   mechanism. No guide may call an unavailable DynaDocs gate green; the initial DYD-113 delivery
+   alone does not close this final-example acceptance.
 5. **Reflect and observe.** DYD-75 regenerates the final managed files and proves source/output and
    installed-tool parity. DYD-88 runs its bounded Codex lifecycle canaries on that generated
    candidate and corrects claims to the observations; unsupported host behavior uses DR 047's fresh
    commission fallback.
-6. **Refresh the dogfood tool.** After the first template/testing cluster is merged and independently
-   reviewed, package and install that exact feature SHA, record package and executable hashes, run
-   template update and sync, and open subsequent captain tasks only from the refreshed generated
-   catalog. Repeat at later coherent milestones when a captain needs newer CLI behavior; do not rely
-   on `dydo --version` alone.
+6. **Refresh the dogfood tool.** DYD-118 performs the first refresh immediately after DYD-111.
+   Package and install that exact reviewed feature SHA, record package and executable hashes, and run
+   template update and sync. Captains in the current desktop task may continue with explicit briefs
+   pinned to current reviewed Templates; no checkpoint claims hot reload. Repeat the existing gate at
+   later coherent milestones when a captain needs newer CLI behavior, and do not rely on
+   `dydo --version` alone. The fresh generated-role native canary remains DYD-88 work.
 7. **Audit and fix.** Wire DYD-65 to wait for all source, G and M deliveries, pin the integrated SHA,
    run the confirmed Inquisition, deliver its record through an ordinary reviewed Feature, and
    resolve every release-impacting Bug it files. Proof branches remain reachable until adoption is
@@ -261,15 +276,14 @@ the candidate-specific fresh-init, packaging, AOT and CI commands rather than co
 
 Run at most two production Issues while keeping one independent review slot. Start or continue
 DYD-111 and DYD-113. Merge DYD-111 first because it transfers template and configuration seams;
-then DYD-112 and DYD-117 may run in parallel if their reviewed specs name disjoint files. Merge
+then run DYD-118 before captains rely on the new installed template behavior. DYD-112 and DYD-117
+may run in parallel if their reviewed specs name disjoint files. Merge
 DYD-113 before any DYD-96 facade change. DYD-86 follows the configuration owners. DYD-105 may run
 beside DYD-96 after its spec correction; DYD-103 waits for the accepted inventory/mutation input.
-After DYD-111, DYD-113, DYD-112 and DYD-117 are integrated and merge-reviewed, stop before assigning
-captains that depend on their behavior and perform the first source/package/install/update/sync
-checkpoint. Later refreshes occur only when another merged CLI or template change is needed for the
-next dogfood task.
+After later reviewed CLI or template changes, repeat the established source/package/install/update/
+sync checkpoint only when the next dogfood task needs that behavior.
 
-The default feature merge order is DYD-111, DYD-113, DYD-112, DYD-117, DYD-86, DYD-105, DYD-96,
+The default feature merge order is DYD-111, DYD-118, DYD-113, DYD-112, DYD-117, DYD-86, DYD-105, DYD-96,
 DYD-103, DYD-91, DYD-75, host-observation corrections, audit Bugs and DYD-11. The admiral may move a
 ready independent merge ahead of a stalled predecessor only after wiring the native Merge blockers
 to record the order that actually ran. Each merge receives its own captain and review; the admiral
@@ -294,8 +308,9 @@ feature head, uses its own worktree, preserves unrelated dirty work and hands of
   are examples and are rejected until the adopter replaces them.
 - The root `dydo/index.md` is a durable entry point; generated per-folder `_index.md` files are the
   retired mechanism. Do not turn DYD-112 into broad frontmatter or document-format deletion.
-- Generated files reflect reviewed source once, under DYD-75. Repeated mid-flight regeneration can
-  hide ownership violations and erase useful local evidence.
+- A source owner may reflect only its exact reviewed generated outputs. DYD-75 proves final aggregate
+  parity and handles the remaining final reflection. Unowned regeneration can hide ownership
+  violations and erase useful local evidence.
 - Keep private LC changes out of this repository. Its runner is prior art only.
 - No green build, clean documentation check, installed beta or audit record substitutes for the
   explicit final G, M, merge-review and human gates.

@@ -586,7 +586,7 @@ def restore_tools(context, languages):
         context["python"] = str(interpreter)
         versions["cosmic-ray"] = "8.7.0"
     if "javascript" in languages:
-        tools = root / "DynaDocs.Tests/coverage/tools"
+        tools = root / "DynaDocs.Tests/coverage"
         checked(["npm.cmd" if os.name == "nt" else "npm", "ci", "--ignore-scripts"], tools, folder / "npm-restore", 600)
         manifest = read_json(tools / "node_modules/@stryker-mutator/core/package.json")
         evidence.require(manifest.get("version") == "9.6.1", "Unexpected StrykerJS version")

@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import mutation_results as results
@@ -182,6 +183,26 @@ class BootstrapTests(unittest.TestCase):
 
 
 class NativeConfigurationTests(unittest.TestCase):
+    def test_javascript_restore_uses_declared_package_root_without_legacy_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "DynaDocs.Tests/coverage"
+            manifest = package / "node_modules/@stryker-mutator/core/package.json"
+            manifest.parent.mkdir(parents=True)
+            runner.write_json(manifest, {"version": "9.6.1"})
+            context = {"root": root, "folder": root / "evidence"}
+            with patch.object(runner, "checked") as checked:
+                self.assertEqual({"stryker-js": "9.6.1"}, runner.restore_tools(context, {"javascript"}))
+                self.assertEqual(package, checked.call_args.args[1])
+                self.assertEqual(["ci", "--ignore-scripts"], checked.call_args.args[0][1:])
+                self.assertEqual(manifest.parent / "bin/stryker.js", context["js_tool"])
+                legacy = package / "tools/node_modules/@stryker-mutator/core/package.json"
+                legacy.parent.mkdir(parents=True)
+                runner.write_json(legacy, {"version": "9.6.1"})
+                manifest.unlink()
+                with self.assertRaises(results.Incomplete):
+                    runner.restore_tools(context, {"javascript"})
+
     def test_configured_thresholds_concurrency_reporters_and_exclusions_fail_closed(self):
         good = {"concurrency": 1, "thresholds": {"high": 100, "low": 100, "break": 100}, "reporters": ["json", "html"]}
         runner.validate_settings(good, "cs")

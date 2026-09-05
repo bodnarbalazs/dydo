@@ -81,6 +81,41 @@ public class TemplateScaffoldingTests : IntegrationTestBase
             "template update must track the Linear workspace standard by hash");
     }
 
+    [Fact]
+    public async Task Sync_EmittedSkillAndResourceLinksResolveInFreshProject()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        (await RunAsync(SyncCommand.Create())).AssertSuccess();
+
+        var brokenLinks = new List<string>();
+        foreach (var hostRoot in new[] { ".claude/skills", ".agents/skills" })
+        {
+            var files = Directory.GetFiles(Path.Combine(TestDir, hostRoot), "*.md", SearchOption.AllDirectories);
+            Assert.NotEmpty(files);
+            var localLinkCount = 0;
+            foreach (var file in files)
+            {
+                foreach (var link in LinkExtractor.Extract(File.ReadAllText(file)))
+                {
+                    if (link.Type == DynaDocs.Models.LinkType.External ||
+                        (link.Target.Length == 0 && link.Anchor != null))
+                        continue;
+
+                    localLinkCount++;
+                    var origin = link.Target.StartsWith(hostRoot + "/", StringComparison.Ordinal)
+                        ? TestDir
+                        : Path.GetDirectoryName(file)!;
+                    var target = Path.GetFullPath(Path.Combine(origin, link.Target));
+                    if (!File.Exists(target))
+                        brokenLinks.Add($"{Path.GetRelativePath(TestDir, file)}:{link.LineNumber} -> {link.Target}");
+                }
+            }
+            Assert.True(localLinkCount > 0, $"No local Markdown links were inspected under {hostRoot}");
+        }
+
+        Assert.True(brokenLinks.Count == 0, string.Join(Environment.NewLine, brokenLinks));
+    }
+
     // The shipped set is the authored set minus retired skills and anything that hangs off them.
     private static IEnumerable<string> ShippedTemplateNames()
     {

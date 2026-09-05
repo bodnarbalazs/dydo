@@ -1,0 +1,6 @@
+complexipy==8.0.0
+coverage==7.16.0
+cosmic-ray==8.7.0
+radon==6.0.1
+ruff==0.16.6
+vulture==2.16

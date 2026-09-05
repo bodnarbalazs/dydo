@@ -1,0 +1,10 @@
+{
+  "stryker-config": {
+    "project": "DynaDocs.csproj",
+    "test-projects": ["DynaDocs.Tests/DynaDocs.Tests.csproj"],
+    "concurrency": 1,
+    "thresholds": { "high": 100, "low": 100, "break": 100 },
+    "reporters": ["json", "html"],
+    "break-on-initial-test-failure": true
+  }
+}

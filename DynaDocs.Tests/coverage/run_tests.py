@@ -24,6 +24,25 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 COVERAGE_XML_GLOB = "DynaDocs.Tests/**/coverage.cobertura.xml"
 
 
+def isolated_environment():
+    """Disable implicit shell setup without mutating the caller's environment."""
+    env = {key: value for key, value in os.environ.items() if not key.startswith("DYDO_")}
+    env["SHELL"] = "dydo-test-no-shell"
+    return env
+
+
+def test_command(extra_args=None):
+    arguments = list(extra_args or [])
+    setting = "RunConfiguration.TreatNoTestsAsError=true"
+    if any("treatnotestsaserror" in item.lower() and item != setting for item in arguments):
+        raise ValueError("The isolated runner requires TreatNoTestsAsError=true")
+    if "--" not in arguments:
+        arguments.append("--")
+    if setting not in arguments:
+        arguments.append(setting)
+    return ["dotnet", "test", "DynaDocs.sln", *arguments]
+
+
 def _git(*args, capture=False):
     cmd = ["git", *args]
     if capture:
@@ -46,35 +65,46 @@ def create_worktree():
     return path
 
 
+def _inside(root, relative):
+    target = (root / relative).resolve()
+    if not relative or ".." in Path(relative).parts or not target.is_relative_to(root.resolve()):
+        raise ValueError(f"Path escapes isolated worktree: {relative}")
+    return target
+
+
+def _dirty_entries(stdout):
+    fields = iter(stdout.split("\0"))
+    for field in fields:
+        if not field:
+            continue
+        if len(field) < 4 or field[2] != " " or "U" in field[:2]:
+            raise ValueError(f"Malformed or unresolved Git status: {field!r}")
+        status, relative = field[:2], field[3:]
+        old = None
+        if "R" in status or "C" in status:
+            old = next(fields, None)
+            if not old:
+                raise ValueError("Missing Git rename/copy origin")
+        yield status, relative, old
+
+
 def copy_dirty_files(worktree):
-    """Copy modified, added, and untracked files into the worktree."""
-    stdout, rc = _git("status", "--porcelain", capture=True)
+    """Copy an exact NUL-delimited dirty snapshot, including untracked files."""
+    stdout, rc = _git("status", "--porcelain=v1", "-z", "--untracked-files=all", capture=True)
     if rc != 0:
-        return
-
-    for line in stdout.splitlines():
-        if len(line) < 4:
+        raise ValueError("Cannot read candidate Git status")
+    for status, relative, old in _dirty_entries(stdout):
+        dst = _inside(worktree, relative)
+        if old and "R" in status:
+            _inside(worktree, old).unlink(missing_ok=True)
+        if "D" in status:
+            dst.unlink(missing_ok=True)
             continue
-        status = line[:2]
-        filepath = line[3:].strip()
-
-        # Handle renames: "R  old -> new"
-        if " -> " in filepath:
-            filepath = filepath.split(" -> ", 1)[1]
-
-        # Deleted files: remove from worktree
-        if status.strip() in ("D", "DD"):
-            target = worktree / filepath
-            if target.exists():
-                target.unlink()
-            continue
-
-        # Everything else: copy to worktree
-        src = ROOT / filepath
-        dst = worktree / filepath
-        if src.is_file():
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(str(src), str(dst))
+        src = _inside(ROOT, relative)
+        if not src.is_file():
+            raise ValueError(f"Missing candidate source: {relative}")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
 
 
 def copy_coverage_back(worktree):
@@ -117,12 +147,10 @@ def run_tests(extra_args=None, coverage=False):
 
         copy_dirty_files(worktree)
 
-        cmd = ["dotnet", "test", "DynaDocs.sln"]
-        if extra_args:
-            cmd.extend(extra_args)
+        cmd = test_command(extra_args)
 
         # Strip dydo env vars so tests run in a clean environment
-        env = {k: v for k, v in os.environ.items() if not k.startswith("DYDO_")}
+        env = isolated_environment()
 
         print(f"  Running: {' '.join(cmd)}")
         result = subprocess.run(cmd, cwd=worktree, env=env)

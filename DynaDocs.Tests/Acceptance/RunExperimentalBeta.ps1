@@ -15,16 +15,19 @@ $rollbackVersion = '2.2.9'
 $rollbackHash = 'C60F0D7395B1842DFF22E41914430D884FB7B3CCFF1A1059AE9FE7385695DB14'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $originalLocation = (Get-Location).Path
-$runRoot = Join-Path $root ('dydo\_system\.local\dyd110-beta\' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
+$runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
+$runRoot = Join-Path $root ('dydo\_system\.local\dyd110-beta\' + $runId)
 $packageRoot = Join-Path $runRoot 'packages'
 $toolRoot = Join-Path $runRoot 'tool-path'
-$scratch = Join-Path $runRoot 'scratch project'
+$temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+$scratch = Join-Path $temporaryRoot ('dyd110-beta-' + $runId + '\scratch project')
 $evidence = [ordered]@{
     candidate_sha = $CandidateSha
     beta_version = $betaVersion
     rollback_version = $rollbackVersion
     global_mutation_started = $false
     isolated_install = $false
+    scratch_removed = $false
     rollback_attempted = $false
     final_beta_reinstall = $false
     isolated_only = [bool]$IsolatedOnly
@@ -55,6 +58,10 @@ function Get-StringHash([string]$Value) {
     }
 }
 
+function Write-Json([object]$Value, [string]$Path) {
+    [IO.File]::WriteAllText($Path, ($Value | ConvertTo-Json -Depth 6), [Text.UTF8Encoding]::new($false))
+}
+
 function Get-RelativePath([string]$BasePath, [string]$Path) {
     $base = [IO.Path]::GetFullPath($BasePath).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
     $fullPath = [IO.Path]::GetFullPath($Path)
@@ -72,6 +79,13 @@ function Get-ManagedSnapshot([string]$Project) {
         Get-ChildItem -File -Recurse $_ | ForEach-Object {
             [ordered]@{ path = Get-RelativePath $Project $_.FullName; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash }
         }
+    } | Sort-Object path)
+}
+
+function Get-TemplateSnapshot {
+    $templates = Join-Path $root 'Templates'
+    return @(Get-ChildItem -File -Recurse $templates | ForEach-Object {
+        [ordered]@{ path = Get-RelativePath $root $_.FullName; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash }
     } | Sort-Object path)
 }
 
@@ -107,6 +121,10 @@ try {
     if ($gitStatus) { throw 'Candidate is dirty; refusing package or global mutation.' }
     if ((Get-FileHash $resolvedRollbackPackage -Algorithm SHA256).Hash -ne $rollbackHash) { throw 'Rollback package SHA-256 does not match the retained 2.2.9 package.' }
 
+    $sourceManifest = Join-Path $runRoot 'source-templates.json'
+    Write-Json (Get-TemplateSnapshot) $sourceManifest
+    $evidence.source_template_manifest_sha256 = (Get-FileHash $sourceManifest -Algorithm SHA256).Hash
+
     $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
     $globalCommandPath = $globalCommand.Source
     Assert-Version $globalCommand.Source $rollbackVersion 'preexisting global command'
@@ -126,11 +144,16 @@ try {
     Invoke-Checked { & $isolated init all } 'isolated init'
     Invoke-Checked { & $isolated check } 'isolated check'
     Invoke-Checked { & $isolated sync } 'isolated first sync'
-    $firstSnapshot = Get-ManagedSnapshot $scratch | ConvertTo-Json -Compress
+    $firstSnapshot = @(Get-ManagedSnapshot $scratch)
+    $firstSnapshotJson = $firstSnapshot | ConvertTo-Json -Compress
     Invoke-Checked { & $isolated 'template' 'update' } 'isolated template update'
     Invoke-Checked { & $isolated sync } 'isolated second sync'
-    $secondSnapshot = Get-ManagedSnapshot $scratch | ConvertTo-Json -Compress
-    if ($firstSnapshot -ne $secondSnapshot) { throw 'The isolated second sync changed compiler-owned artifacts.' }
+    $secondSnapshot = @(Get-ManagedSnapshot $scratch)
+    $secondSnapshotJson = $secondSnapshot | ConvertTo-Json -Compress
+    if ($firstSnapshotJson -ne $secondSnapshotJson) { throw 'The isolated second sync changed compiler-owned artifacts.' }
+    $emittedManifest = Join-Path $runRoot 'emitted-artifacts.json'
+    Write-Json $secondSnapshot $emittedManifest
+    $evidence.emitted_artifact_manifest_sha256 = (Get-FileHash $emittedManifest -Algorithm SHA256).Hash
     Set-Location $root
     $evidence.isolated_install = $true
     $evidence.isolated_command_path_sha256 = Get-StringHash $isolated
@@ -161,6 +184,21 @@ catch {
 }
 finally {
     Set-Location $originalLocation
+    if (Test-Path -LiteralPath $scratch) {
+        try {
+            $temporaryPrefix = $temporaryRoot.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+            $scratchPath = [IO.Path]::GetFullPath($scratch)
+            if (-not $scratchPath.StartsWith($temporaryPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Refusing to remove scratch path outside the temporary root: $scratchPath"
+            }
+            Remove-Item -LiteralPath $scratchPath -Recurse -Force
+            $evidence.scratch_removed = $true
+        }
+        catch {
+            $evidence.cleanup_error = $_.Exception.Message
+            if ($null -eq $failure) { $failure = $_ }
+        }
+    }
     $afterPath = @{
         process = [Environment]::GetEnvironmentVariable('PATH', 'Process')
         user = [Environment]::GetEnvironmentVariable('PATH', 'User')
@@ -171,7 +209,7 @@ finally {
         $failure = [InvalidOperationException]::new('PATH bytes changed during beta acceptance.')
         $evidence.error = $failure.Message
     }
-    $evidence | ConvertTo-Json -Depth 4 | Set-Content -NoNewline (Join-Path $runRoot 'evidence.json')
+    Write-Json $evidence (Join-Path $runRoot 'evidence.json')
 }
 
 if ($null -ne $failure) { throw $failure }

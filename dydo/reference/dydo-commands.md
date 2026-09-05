@@ -52,11 +52,14 @@ Frontmatter decides each artifact's shape — `emit: agent` (the default) produc
 `delegates: true` grants the `Agent` tool, and `invocation: explicit` disables model invocation on
 both hosts. A role's `## Must-Reads` links become its agent's context list, links in the compiled body
 are rewritten to resolve from the emitted skill folder, `<role>-resource-<name>.template.md` files
-compile into that skill's `resources/`, and legacy workflow harnesses still compile into Claude's workflow folder pending DYD-92.
+compile into that skill's `resources/`.
 
 Only the integrations recorded in `dydo.json` are emitted; a project with neither recorded — `none`,
 or a `dydo.json` from before integrations were recorded — emits for both hosts. Every run also deletes
 outputs dydo no longer ships: retired workflows, resources retired by rename, and retired roles.
+Workflow cleanup removes only `.claude/workflows/run-sprint.js` and
+`.claude/workflows/inquisition.js`, even for a Codex-only project. Custom siblings and nested files
+keep their paths and bytes; the workflow directory is removed only when empty. Sync emits no workflows.
 
 Change the source template and re-run this command; never hand-edit a compiled artifact.
 

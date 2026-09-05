@@ -731,7 +731,7 @@ Completed rows below name the source, not a claim that generated runtime output 
 | ~~co-thinker~~ | Authored: explicit to-project graduation, atomic five-field contract, FutureFeature status. |
 | ~~wayfinder~~ | Authored: map holder at both levels, local/Project Question scope, Merge order. |
 | ~~to-project, wizard~~ | Authored imports with pinned MIT provenance; wizard shell example shipped through Markdown resource. |
-| workflow-inquisition.js, compiler workflow emission | Deferred to DYD-92; retired from current protocol, remaining compiler behavior labelled as legacy. |
+| compiler workflow emission | Removed in source: no workflow discovery, emission, or summary; the exact retired-file sweep preserves custom siblings and removes empty directories. Generated artifact reflection remains DYD-75. |
 | ~~types.json~~ | Inspected: document vocabulary already has inquisition and no workflow; Linear's ten Types are a separate standard. |
 | dydo init | Deferred to DYD-86: native nesting depth and host setup proof. |
 | ~~working-tree contract~~ | Authored/local twin: captain's Merge at each level, branch exceptions, Specifying, release and merge-commit landing. |

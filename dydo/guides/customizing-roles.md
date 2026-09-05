@@ -84,8 +84,9 @@ delegation/permissions after compiler setup; generated configuration alone is no
   `dydo sync` sweeps their compiled output from both hosts, and `dydo init` never installs them again. The
   [glossary](../reference/dydo-glossary.md)'s retired-terms paragraph carries the words themselves.
 
-Workflow as a delivery concept is retired by DR 047. DYD-92 owns removal of its remaining compiler
-emission; use the Inquisition Issue protocol rather than its old harness.
+Workflow as a delivery concept is retired by DR 047, and sync no longer emits workflow scripts.
+It removes only `run-sprint.js` and `inquisition.js` directly under `.claude/workflows/`, preserving
+custom siblings and nested files. The Inquisition Issue protocol supplies the current audit procedure.
 
 ## Related
 

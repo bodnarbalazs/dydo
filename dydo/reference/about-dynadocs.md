@@ -60,7 +60,7 @@ once; both runtimes receive the same method. The host runtime owns agent identit
 
 ### 3. Enforced project rules
 
-`dydo guard` checks every tool call, including native subagents. Legacy workflow callers are covered while the compiler retirement is pending. Off-limits paths and dangerous
+`dydo guard` checks every tool call, including native subagents. Off-limits paths and dangerous
 commands hard-block; project nudges add configurable notices, warnings, and blocks.
 
 ### 4. An opinionated scaffold
@@ -123,7 +123,7 @@ project/
 |-- dydo.json                    # Model tiers, integrations, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/                     # Compiled Claude agents and skills; legacy workflow output pending retirement
+|-- .claude/                     # Compiled Claude agents, skills, and skill resources
 |-- .codex/agents/               # Compiled Codex agents
 |-- .agents/skills/              # Compiled Codex skills
 `-- dydo/

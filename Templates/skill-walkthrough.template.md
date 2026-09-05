@@ -1,16 +1,16 @@
 ---
 name: walkthrough
-description: Before I land it — show me what changed, where to look first, and how to try it.
+description: Show me what landed, where to look first, and how to try it.
 emit: skill
 invocation: explicit
 ---
 
 # Walkthrough
 
-Give the human the tour of what they are about to land.
+Give the human the tour of what landed.
 
-This is the Land stage: the human reads the tour, then merges the feature into main with their own
-hands. On main afterwards they call the same tour to see what they now own.
+The admiral runs the Walkthrough Issue with the human after landing. Its findings decide whether
+the Project needs another lap.
 
 The argument names what to walk — a feature branch, a Project, an Issue, a diff range. Ask which one
 when it is missing.
@@ -28,8 +28,9 @@ DRs those Issues cite, the returns their workers posted. Then brief the human in
 - **What reviewers flagged or deferred** — the findings the review blocks recorded and where each
   deferred one now lives, reported as they stand.
 
-The tour ends where the human can act: they open the files you named, type the commands you gave, and
-click the merge themselves.
+The tour ends when the human has inspected the files and tried the behavior. Record findings as
+Issues in the same Project; the admiral re-cuts its feature branch from main for fixes and another
+landing/walkthrough. An empty walkthrough lets the Project close.
 
 Keep the brief in the terminal, or in a scratch file when the human wants to read it beside the diff.
 The durable record stays where it already is: the Issues, the review blocks and the DRs the tour

@@ -21,7 +21,7 @@ methodology; `dydo sync` compiles it for every host and owns every host-specific
 | `emit` | `agent` \| `skill` | `agent` also compiles a spawnable agent that preloads this skill (`skills: [<name>]`) and carries the `Skill` tool; `skill` is methodology a session applies in its own thread. Missing means `agent`. |
 | `invocation` | `automatic` \| `explicit` | `explicit` sets `disable-model-invocation: true` on Claude and `allow_implicit_invocation: false` in Codex's `agents/openai.yaml`. Missing means `automatic`. |
 | `read-only` | `true` | The compiled agent gets no `Edit`/`Write` and Codex's read-only sandbox: it assesses and reports. |
-| `delegates` | `true` | Grants the `Agent` tool, so the skill may spawn sub-agents; `research` has it for `scout`, every other worker does its own work. |
+| `delegates` | `true` | Grants the `Agent` tool, so the skill may spawn sub-agents; `issue-captain` directs its crew and `research` sends `scout`; other workers do their own work. |
 | `web` | `true` | Grants Claude's `WebFetch`/`WebSearch` and flips Codex's `web_search` toggle. |
 | `argument-hint` | `"<what to type>"` | Shown by the host after the skill's name: Claude's `argument-hint`, Codex's `interface.default_prompt`. |
 

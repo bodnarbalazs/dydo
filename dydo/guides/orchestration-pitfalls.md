@@ -15,12 +15,11 @@ apart — one writer per worktree, commits touching owned paths only.
 **Symptom:** the session holding the plan makes "one small fix" itself, and the Project's history
 contains a change nobody reviewed independently.
 
-**Mechanism:** coordination and authorship collapse into the same context. The coordinating session is
-the one that judges merges, so anything it writes is judged by its author, and its checkout becomes a
+**Mechanism:** coordination and authorship collapse into the same context. If the coordinating session also judges what it writes, independence is lost, and its checkout becomes a
 second writer in a tree someone else owns.
 
-**Rule:** an admiral sequences, merges, and judges work it did not write. Every edit inside an Issue's
-owned paths belongs to a spawned worker or to the Issue Captain that owns the Issue; the admiral's own pen
+**Rule:** an admiral sequences captains and wires their Merge Issues. Every edit inside an Issue's
+owned paths belongs to its crew; its captain directs, and a fresh reviewer judges; the admiral's own pen
 touches only the plan's dated amendments and the Linear record.
 
 ## 2. A branch cut from the wrong base
@@ -33,8 +32,7 @@ branch cut from a stale base, or from the wrong branch entirely, cannot see a pr
 merged.
 
 **Rule:** cut from the Issue's base branch and post branch, base SHA and worktree path on the Issue
-before the first edit. Keep the Issue blocked in Linear until its blockers land, and rebase onto the
-feature branch when one of them lands late.
+before the first edit. Keep the Issue blocked in Linear until its blockers land, and integrate the later prerequisite through a Merge Issue, preserving existing hop SHAs.
 
 ## 3. A whole-tree `git add`
 
@@ -78,7 +76,7 @@ the integrated state, where it costs more to find. Looping instead is the opposi
 candidate keeps failing because something outside it is wrong.
 
 **Rule:** fix and re-review; there is no verdict between PASS and FAIL. The relief valve is the cap, not
-a softer verdict — a fifth consecutive FAIL on one candidate is itself an escalation.
+a softer verdict — a fifth consecutive FAIL on one review loop is itself an escalation.
 
 ## 7. Silent waiting, and its opposite
 
@@ -89,8 +87,9 @@ answers arrives at the human.
 from skipping the middle: discovery first, then a question that is on the record.
 
 **Rule:** run bounded discovery — the Decision Records, the plan, the Issue's links, the glossary, the
-code — and only when it comes up empty file a question Issue listing what you searched, wire it as a
-blocker, move the Issue to Blocked, and say so in a comment. Settle operational conflicts by
+code — and only when it comes up empty file a Question Issue listing what you searched, wire it as a
+blocker, then release with branch pushed, resume SHA posted, worktree removed, parent Todo and
+unassigned. The admiral resumes blocker-cleared work on the next captain return or human word. Settle operational conflicts by
 precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
 commit, the Issue contract, coding standards, existing code. The ladder is worker → Issue Captain → admiral → human, and the human is
 reached for a conflict with a Decision Record, live external state no agent can coordinate, or authority

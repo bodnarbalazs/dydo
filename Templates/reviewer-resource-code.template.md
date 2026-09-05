@@ -7,7 +7,7 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 ## Method
 
-1. **Pin the contract.** Outcome, scenarios, owned paths, base SHA, exact gates, tier, governing plan
+1. **Pin the contract.** Outcome, scenarios, owned paths, base SHA, exact gates, governing standards and plan
    at its SHA. Done when you can state what the change had to do without reading it.
 2. **Read the hops.** `git log <base>..<candidate>` lists the specify, implement, harden and fix
    commits. The implement hop is judged for doing what the contract says; the harden hop for
@@ -47,7 +47,7 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 ## Gates rerun
 
 - The Issue's exact commands
-- Coverage and CRAP against the tier the spec names
+- Coverage, HCRAP and the one-level static policy in the project's testing guide
 - Mutation on the changed files, no survivor; one example value changed per scenario, none left green
 - `dydo check` when the change touches documentation or validation surfaces
 

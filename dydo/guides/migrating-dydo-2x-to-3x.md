@@ -9,7 +9,7 @@ dydo 3 keeps durable project knowledge in Git and uses Linear for live project m
 longer contains a local Notion provider, watchdog, token store, or external-data sync engine.
 
 Keep active work, status, priority, assignment, and dependencies in Linear; keep Decisions, plans,
-guides, release evidence, and FutureFeatures in the repository.
+guides and release evidence in the repository. FutureFeatures live in Linear.
 
 ## Migrate a project
 
@@ -21,7 +21,8 @@ the file, because that rewrite drops the old keys unread.
    `dydo init <host> --join`, or `dydo fix` — the first always rewrites the file and the other two
    rewrite it whenever they change it, and a rewrite keeps only the keys 3.0 names, without a
    warning. Renaming afterwards means recovering the map from version control: the rewrite leaves
-   `models.agents` empty and every compiled agent then carries `model: inherit`.
+   `models.agents` empty and agents fall back to the compiler's host defaults; final consolidation
+   verifies the intended inherited fallback on both hosts.
    In the renamed map, delete `planner`, `test-writer`, `code-writer` and `issue-planner` (no such
    agents: `code-writer` became `implementer` and `issue-planner` became `specifier` in DR 046) and
    add a tier for `implementer`, `hardener`, `specifier`, `project-planner`, `issue-captain`,
@@ -57,8 +58,8 @@ the file, because that rewrite drops the old keys unread.
    retired skill's artifacts — `agents/openai.yaml` included — from both hosts. Then run `dydo check`
    and resolve what it reports.
 
-## What remains unchanged
+## Live work and host ownership
 
-FutureFeatures remain repository-native ideas. A human promotes one to a Linear Initiative, Project,
-or Issue when it becomes live work. Claude Code and Codex continue to own runtime identity,
+FutureFeatures are Linear Issues in the FutureFeature status. The human promotes a retained
+possibility to contracted work or graduates its intent through `to-project`. Claude Code and Codex continue to own runtime identity,
 permissions, isolation, and native coordination.

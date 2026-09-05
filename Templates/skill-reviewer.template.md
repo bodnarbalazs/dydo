@@ -13,7 +13,7 @@ Gandalf at the bridge: judge one candidate against one rubric, and let nothing f
 ## Must-Reads
 
 1. The contract the candidate must satisfy, at its governing commit: outcome, scenarios, owned paths,
-   gates.
+   gates; the brief's rubric, Contract @ governing SHA, Candidate SHA and Base SHA.
 2. [about.md](../../../understand/about.md)
 3. [architecture.md](../../../understand/architecture.md)
 4. [coding-standards.md](../../../guides/coding-standards.md)
@@ -44,8 +44,10 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 
 ## Return
 
-The block is the return, a line per gate and per finding: a comment on the Linear Issue, and the PR
-body under an `## Independent review` heading.
+The block is the return, a line per gate and per finding. The invoker records it on the work judged:
+a Project update for a project-plan review, the Merge Issue for merge review, otherwise the Issue;
+the PR body carries it under `## Independent review` when a PR exists. Return it to the invoker
+even when a read-only host prevents posting.
 
 ```
 Rubric:    <code | docs | project-plan | spec | merge>

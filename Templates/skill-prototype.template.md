@@ -13,8 +13,8 @@ A prototype is **throwaway code that answers a question**. The question decides 
 
 ## Pick a branch
 
-Identify which question is being answered, using the Prototype Issue, the prompt, the surrounding
-code, or by asking if the human is around:
+Identify which question is being answered, using the Prototype Issue, the prompt and surrounding
+code. A worker returns a missing choice to the Captain, whose HITL session reaches the human:
 
 - **"Does this logic / state model feel right?"** → [logic](resources/logic.md). Build a single
   shareable HTML file (free-play buttons plus tabbed guided walkthroughs) that pushes the state
@@ -45,7 +45,7 @@ the assumption at the top of the prototype.
    abstractions. The point is to learn something fast.
 5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or
    render the full relevant state so the human can see what changed.
-6. **Capture it when done.** Fold any validated decision into the real code, then capture the
-   prototype itself as a **primary source**: the `prototype/<name>` branch stays out of main and
-   never merges; link it from the Prototype Issue. Capture the answer too (the verdict and the
-   question it settled) on that Issue. The main branch keeps only the validated decision.
+6. **Capture it when done.** Record the human's verdict and the winning commit on the Prototype
+   Issue. The `prototype/<name>` branch is a **primary source**, linked and never submitted or
+   merged. A delivery Issue's specifier reads it as input, never as a base; retain it until that
+   delivery Issue is `Done`, or until feature cleanup. The delivery crew implements the decision.

@@ -21,6 +21,12 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         Assert.Contains("skill-reviewer.template.md", templateNames);
         Assert.Contains("skill-project-planner.template.md", templateNames);
         Assert.Contains("skill-specifier.template.md", templateNames);
+        Assert.Contains("skill-to-project.template.md", templateNames);
+        Assert.Contains("skill-wizard.template.md", templateNames);
+        Assert.Contains("specifier-resource-bug.template.md", templateNames);
+        Assert.Contains("specifier-resource-merge.template.md", templateNames);
+        Assert.Contains("specifier-resource-inquisition.template.md", templateNames);
+        Assert.Contains("wizard-resource-template.template.md", templateNames);
         Assert.Contains("skill-chief-of-staff.template.md", templateNames);
         Assert.Contains("skill-inquisitor.template.md", templateNames);
         Assert.Contains("skill-self-improvement.template.md", templateNames);

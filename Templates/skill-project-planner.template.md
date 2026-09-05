@@ -1,12 +1,13 @@
 ---
 name: project-planner
-description: Ripe Project intent, no reliable route. Start a low-resolution map, prove it through independent review, and bring it to human approval without pretending the fog is gone.
+description: Ripe Project intent, no reliable route. Write the first pickable Issues and bearings; return the committed plan to the admiral.
 emit: agent
-delegates: true
 invocation: automatic
 ---
 
 # Project Planner
+
+<!-- Adapted in part from mattpocock/skills to-tickets at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
 
 **Start the map; do not counterfeit the whole voyage.** Ripe intent arrives from Think as a
 destination or specification. Make the first few stable tracer-bullet Issues pickable and sketch
@@ -37,21 +38,24 @@ keep the section numbers — Issue contracts cite them.
 
 ## Method
 
-1. **Enter planning.** Set the Linear Project to `Planning`, then inspect the intent, Decisions,
+1. **Take the Project.** The admiral names it and owns its status. Inspect the intent, Decisions,
    prior art, code, tests, and specifications.
 2. **Fix the destination.** State scope, acceptance, governing design, and settled answers without
    claiming that later bearings are ready work.
 3. **Start the map.** Make the first stable implementation Issues independently pickable: each carries one Type,
    one Mode (`AFK` or `HITL`), and `Todo`; record later work as rough bearings the admiral may
-   promote, split, drop, or reorder.
+   promote, split, drop, or reorder. Each first Issue is a tracer bullet: independently verifiable,
+   narrow enough for one fresh context, with all five contract fields. File blockers before their
+   waiters so native blocking relations name real keys. A mechanical change that cannot stay green
+   in vertical slices uses expand, migrate, contract, with a final integration gate when needed.
 4. **Expose blocking questions.** Search durable knowledge first. When human judgment still blocks
-   work, file and wire a `Question` Issue in `Waiting for Human` with `HITL`, with the homework already
-   done; when answered, record the answer and mark it `Done`. If the sources settle it,
-   record the answer where the work lives without creating a Question.
+   work, prepare a Question packet for the admiral: sources searched, facts, options, recommendation,
+   every waiter and the priority its answer earns. The admiral creates the Project-level Question
+   in `Todo`. If sources settle it, record the answer where the work lives without a Question.
 5. **Write the plan.** Use the skeleton below and commit it before review.
-6. **Own the review loop.** Spawn a fresh `reviewer(project-plan)`. Resolve every FAIL and rerun a
-   fresh review. After PASS, ask the human to approve; on approval set the plan's frontmatter status
-   to `reviewed` and the Linear Project to `Planned`. Only then does the route open to the admiral.
+6. **Return the map.** Send the plan commit, first Issues, later bearings and prepared blockers to
+   the admiral, which owns review and human approval. On a FAIL, read the block and correct the
+   plan at a new commit. Done when the record and return give the admiral everything the review needs.
 
 ## Project plan skeleton
 
@@ -94,7 +98,6 @@ A Question Issue is blocking, carries `Question`, records the authoritative sour
 the facts, options, and recommendation already found, and blocks every plan or implementation Issue
 waiting on its answer. It exists only when that homework leaves human judgment.
 
-After review PASS and human approval, return the passing commit, first pickable Issues, later
-bearings, and blockers to the admiral. The admiral records discoveries in
+Return before review and human approval; a spawned planner never asks the human. The admiral records discoveries in
 dated `## Amendment — <YYYY-MM-DD>` sections. Re-review only when an amendment changes destination,
 scope, acceptance criteria, or governing architecture.

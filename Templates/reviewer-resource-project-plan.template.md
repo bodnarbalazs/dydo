@@ -25,6 +25,7 @@ human approval and open the first work; it certifies a starting route, not a com
    journey without hiding or inventing what comes later.
 
 **Wayfinding fog is not a gap.** A sharp blocker left after authoritative homework and needing human
-judgment is a `Question` Issue in `Waiting for Human` with `HITL`, recording its homework and
-blocking every Issue that waits on it. Dimmer uncertainty stays in `## Not yet specified`. A plan
+judgment is a `Question` Issue in `Todo`, created by the admiral, recording its homework and
+blocking every Issue that waits on it, with priority by the workspace standard.
+The admiral owns the review loop and presents approval to the human; the second FAIL is their choice. Dimmer uncertainty stays in `## Not yet specified`. A plan
 that pretends either is settled FAILs; honest placement passes.

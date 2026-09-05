@@ -151,8 +151,10 @@ If the answer determines which implementation Issue should exist, resolve the Qu
 
 ## Issue templates
 
-One Linear Issue template per Type, named after it. The human creates them from the bodies below; an
-agent lists and reads them over MCP and fills them in.
+One Linear Issue template per Type, named after it, is a workspace-UI convenience. Create it from
+the body below where the connected tools or UI permit. Agents read this standard and the Issue
+contract, then use the capabilities actually available; template listing or retrieval is not a
+required connector capability.
 
 | Template | Body |
 |---|---|

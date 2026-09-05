@@ -28,9 +28,10 @@ and what they hand back. The `chief-of-staff` audits failures of this contract, 
 | Work | Branches from | Branch | PR targets | Merger |
 |---|---|---|---|---|
 | Project | `main` | `feature/<project-slug>` | `main` | human |
-| Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | `admiral` |
-| Atomic Issue | `main` | `DYD-123-<slug>` | `main` | `issue-captain` |
-| Lane Sub-issue | its parent Issue branch | `DYD-124-<slug>` | its parent Issue branch | `issue-captain` |
+| Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | its captain-directed Merge Sub-issue |
+| Atomic Issue | `main` | `DYD-123-<slug>` | `main` | its captain-directed Merge Sub-issue |
+| Lane Sub-issue | its parent Issue branch | `DYD-124-<slug>` | its parent Issue branch | its captain-directed Merge Sub-issue |
+| Inquisition Issue | integrated feature SHA | `inquisition/<slug>` | none; never merges | — |
 | Prototype Issue | its feature branch, else `main` | `prototype/<name>` | none; never merges | — |
 
 `DYD-123` is an example: use the Issue's key so Linear attaches the branch and PR. The host may
@@ -42,14 +43,14 @@ provide the Issue worktree; otherwise place it beside the repository at
 | Stage | Owner | Required state |
 |---|---|---|
 | Open the Project | `admiral`, or the human when there is none | Feature branch exists; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
-| Claim the Issue | `issue-captain` | Issue is assigned and In Progress; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. |
-| Resolve the work | `issue-captain` | The spec and plan make the contract exact and the work mechanical; workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
-| Open a parallel lane | `issue-captain` | The Sub-issue carries its own status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
+| Claim the Issue | `issue-captain` | Issue is assigned; the captain sets `Specifying` when spawning its specifier; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. |
+| Resolve the work | `issue-captain` | The parent spec names the lanes and empty hops; the spec and plan make the contract exact and work mechanical; workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
+| Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | workers | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `specify`, `implement`, `harden` or `fix`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
-| Integrate a Project Issue | `admiral` | Passed PRs merge one at a time, in plan order and with `--no-ff`; each merge is followed by a fresh merge review over the integrated feature branch. |
-| Integrate an Atomic Issue | `issue-captain` | Issue review passes; the PR merges to `main`; a fresh merge review follows over the integrated state. |
-| Land the Project | human | The reviewed feature branch merges to `main`. |
+| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs specifier → implementer → fresh merge reviewer, preserving the merge commit and hop SHAs; the admiral wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
+| Integrate an Atomic Issue | `issue-captain` | The final Merge Sub-issue merges to main, reruns combined gates and obtains fresh merge review, as at every other level. |
+| Land the Project | human | The landing Merge Issue prepares main into feature and obtains acceptance PASS; the human clicks feature into main as a merge commit, never squash. |
 
 ## Before the first edit
 
@@ -67,7 +68,7 @@ on that work item instead of working around a failure:
 - Workers inherit the relevant Issue or Sub-issue contract, owned paths and gates, and commit their
   own hop. They do not create its branch, open its PR, merge it or review their own work.
 - Fan-out is safe only across disjoint paths. Each independently trackable parallel lane is a direct
-  Sub-issue of the captain's Issue; Sub-issues never have children. If a lane needs splitting, replace
+  Sub-issue of the captain's Issue. Lanes have one level; Merge and map-holder-held Sub-issues are the other permitted children. If a lane needs splitting, replace
   it with sibling lanes under the parent Issue.
 - An agent invocation is recorded as comments and evidence on the relevant Issue or Sub-issue, never
   as another child. Successive agents may work through the same record.
@@ -76,16 +77,34 @@ on that work item instead of working around a failure:
 - The Issue Captain consumes every worker return and remains accountable for the Issue, evidence and
   complete diff. After integration it proves the combined state and obtains the final parent review.
 
+## Return and release
+
+The captain offers a PR with its PASS block, sets `Ready to Merge`, and returns
+`done <key>: PR ready`. It resumes when its Merge Sub-issue's native blocker clears, or a fresh
+captain takes the record, and returns `done <key>: merged` after merge PASS and cleanup. The record
+holds the detail; each worker hop posts its SHA. A Merge Sub-issue never enters `Ready to Merge`.
+
+For an uncleared blocker or human takeover: push, post the resume SHA, remove the worktree, set the
+parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
+treated as release from its last recorded hop without a final push. Fresh commission from the
+record works on both hosts. The admiral wakes on a captain's return or the human's word and rereads
+the board, including released and blocker-cleared Issues.
+
+Merge FAIL stays owned: fix integration defects inside Merge; revert a source defect there and
+close Merge `Canceled`, returning the source to `Implementing`. If a later merge depends on it,
+use a following fix Issue. Each corrected candidate gets fresh merge review.
+
 ## Cleanup
 
 | Artifact | Accountable | Completion |
 |---|---|---|
 | Parent Issue and lane worktrees | `issue-captain` | Every worktree it or its workers created is removed. A spawned Issue Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-issue branch | `issue-captain` | The branch is deleted after it passes review and is integrated into the parent Issue branch. |
-| Merged Project-Issue branch | `admiral` | The branch is deleted after the merge. |
+| Merged Project-Issue branch | `issue-captain` | The branch is deleted after the merge. |
 | Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the merge. |
 | Merged feature branch | `admiral` | The branch is deleted after the human lands it. |
-| Prototype branch | `admiral` | Deleted with the feature branch; the verdict is already on the Prototype Issue. |
+| Prototype branch | `issue-captain`, tracked by the admiral | Keep the winning code linked as delivery-spec input; delete when that delivery Issue is Done or with feature cleanup. |
+| Inquisition branch | `issue-captain` | Delete at Done after Bugs and the record exist; never merge it. |
 
 The `chief-of-staff` compares `git worktree list` and merged branches with Linear during board hygiene.
 Anything it finds is a contract failure to clear or route with its owner named, not normal cleanup

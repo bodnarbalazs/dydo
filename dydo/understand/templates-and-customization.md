@@ -17,13 +17,13 @@ Shipped sources live in `Templates/`.
 |---|---|
 | `skill-<name>.template.md` | the `<name>` skill on both hosts, plus an agent definition when the role emits one |
 | `<role>-resource-<name>.template.md` | `resources/<name>.md` beside that role's compiled skill |
-| `workflow-<name>.js` | `.claude/workflows/<name>.js` |
+| `workflow-<name>.js` | legacy `.claude/workflows/<name>.js`, pending DYD-92 retirement |
 | framework `*.template.md` | a project document `dydo init` writes: the `dydo/` tree, and the runtime entry files at the repository root |
 
-Five of the
+Six of the
 installed documents stay framework-owned, and they are the only documents a later update compares
 against a stored hash: `reference/about-dynadocs.md`, `reference/dydo-commands.md`,
-`reference/dydo-glossary.md`, `reference/writing-docs.md` and
+`reference/dydo-glossary.md`, `reference/writing-docs.md`, `reference/linear-workspace-standard.md` and
 `guides/working-tree-contract.md`. Every other document `dydo init` writes — `understand/about.md`,
 `understand/architecture.md`, `guides/coding-standards.md`, `welcome.md`, `glossary.md`,
 `files-off-limits.md`, `index.md`, the hubs and folder meta files, `CLAUDE.md`, `AGENTS.md`, and

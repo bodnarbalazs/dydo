@@ -52,7 +52,8 @@ sight, and hand back every judgement call with a recommendation.
 5. **Sweep the board.** Hunt stale states: a hop status with no worker running, a `Question` without
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
    active. Sweep orphans too: the worktrees and branches a Merge Issue should have retired, and an
-   `inquisition/<slug>` or `prototype/<name>` branch past its Issue's `Done`. Fix the mechanical
+   `inquisition/<slug>` past its Issue's `Done`, or a `prototype/<name>` past its delivery Issue's
+   `Done`. Fix the mechanical
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free
    of a second status board. Done when the board reads true and every orphan is cleared or named
    with the reason it survives.

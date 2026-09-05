@@ -80,18 +80,24 @@ unassigned Issues at the edge of the known.
 The resolution is recorded as a comment. Assets created while resolving an Issue are linked from it,
 not pasted in.
 
+For the admiral, contracts are Issues under the Project; for a captain they are Sub-issues under
+its Issue. The same Types, statuses and chain hold. The captain specifies its parent before naming
+disjoint parallel lanes, and each merging lane or Issue gets its own Merge Sub-issue in order.
+The standard owns the full Type set and status/priority rules: read
+[linear-workspace-standard.md](../../../reference/linear-workspace-standard.md).
+
 ## Issue Types
 
-Every Issue is either **HITL** (human in the loop, worked _with_ a human who speaks for themselves)
+Every captain-held Issue carries Mode **HITL** (human in the loop, worked _with_ a human who speaks for themselves)
 or **AFK**, driven by the agent alone. A HITL Issue only resolves through that live exchange; the
 agent never stands in for the human's side of it (a grilling agent that answers its own questions has
 broken this).
 
-- **Task** (HITL or AFK): A `Feature`, `Improvement`, or `Bug` Issue built by an Issue Captain and
-  crew through planning, production, review, and integration.
+- **Task** (HITL or AFK): A `Feature` or `Bug` Issue built by an Issue Captain and
+  crew through specification, production, review, and its Merge Sub-issue.
 - **Research** (AFK): Reading documentation, third-party APIs, or local resources like knowledge
   bases to surface a fact a decision waits on. Resolved by a subagent that calls the Skill tool with
-  "research". Use when knowledge outside the current working directory is required.
+  "research". Use when authoritative evidence, inside or outside the repository, can settle the fact.
 - **Prototype** (HITL): Raise the fidelity of the discussion by making a cheap, rough, concrete
   artifact to react to (throwaway UI or logic code) by calling the Skill tool with "prototype". Links
   the prototype as an asset. Use when "how should it look" or "how should it behave" is the key
@@ -106,8 +112,9 @@ broken this).
   seen. This is the one Wayfinding type that _does_ rather than decides, and it earns its place by
   unblocking a decision, not by delivering the destination.
 
-The agent drives Enablement alone where it can (AFK); otherwise it hands the human a precise
-checklist (HITL). Resolved when the work is done; the answer records what was done and any resulting
+A captain drives Enablement alone where it can (AFK); for human-only steps it uses `wizard` in
+a top-level HITL session. Prototype also has a captain; Research, Grilling and Question stay with
+the map holder. Resolved when the work is done; the answer records what was done and any resulting
 facts (credentials location, new URLs, row counts) later Issues depend on.
 
 ## Fog of war
@@ -144,7 +151,7 @@ Fog can surface through several hands:
 
 | Found by | Recording path |
 |---|---|
-| Project Planner | create and wire a Project-level Issue while starting the map |
+| Project Planner | return the prepared Question packet and its waiters to the admiral |
 | admiral | create and wire it as delivery clears Project fog |
 | Specifier or worker | return a prepared hand-raise to the Issue Captain |
 | Issue Captain | create a local Sub-issue, or escalate a Project-level packet to the admiral |
@@ -201,11 +208,12 @@ one, take the next Issue rather than asking the human to choose.
 
 1. Load the **map**: the low-resolution view, not every Issue body.
 2. Choose the Issue. If one was named, use it. Otherwise take the first frontier Issue in order.
-   Claim it by assignment before any work. A Task leaves Wayfinder here and goes to an
-   Issue Captain.
+   A captain-held Type goes to its Issue Captain, which claims it. For a map-holder-held Type,
+   claim it before work; a Question still waits for the human's answer.
 3. Resolve a Wayfinding Issue. **Zoom as needed**: fetch the full body of any related or closed Issue
    on demand; use whichever methods the `## Notes` block names. Follow the Issue Type above.
-4. Record the resolution: post the answer as a **resolution comment**, mark the Issue `Done`, and
+4. Record the resolution when the Type's outcome is reached: post the answer as a **resolution
+   comment**, mark the Issue `Done`, and
    append a context pointer to the map's Resolutions so far. For local fog, link the resolution from
    the parent delivery Issue and inform the admiral instead.
 5. Add newly surfaced Issues (create then wire); graduate any fog the answer has made specifiable,

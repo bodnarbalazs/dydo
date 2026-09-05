@@ -7,8 +7,8 @@ type: reference
 
 Complete reference for dydo's local documentation, compilation, guard, and configuration commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-caches, polls, or mirrors a Linear object. FutureFeatures stay repo-native ideas under
-`dydo/project/future-features/` and are promoted only by a human.
+caches, polls, or mirrors a Linear object. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
+durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
 and reads it from the current directory. `dydo help` prints the one-screen summary;
@@ -52,7 +52,7 @@ Frontmatter decides each artifact's shape — `emit: agent` (the default) produc
 `delegates: true` grants the `Agent` tool, and `invocation: explicit` disables model invocation on
 both hosts. A role's `## Must-Reads` links become its agent's context list, links in the compiled body
 are rewritten to resolve from the emitted skill folder, `<role>-resource-<name>.template.md` files
-compile into that skill's `resources/`, and workflow harnesses compile into Claude's workflow folder.
+compile into that skill's `resources/`, and legacy workflow harnesses still compile into Claude's workflow folder pending DYD-92.
 
 Only the integrations recorded in `dydo.json` are emitted; a project with neither recorded — `none`,
 or a `dydo.json` from before integrations were recorded — emits for both hosts. Every run also deletes
@@ -66,8 +66,8 @@ Change the source template and re-run this command; never hand-edit a compiled a
 
 ### dydo check
 
-Validate documentation naming, frontmatter, summaries, links, hub and folder-meta coverage, orphans,
-the off-limits file, FutureFeature shape under `project/future-features/`, retired v2 work records,
+Validate documentation naming, frontmatter, titles, links, hub and folder-meta coverage, orphans,
+the off-limits file, legacy FutureFeature shape under `project/future-features/`, retired v2 work records,
 uncustomized foundation docs (warning), and `dydo.json` itself; config errors count toward exit `1`.
 
 ```bash

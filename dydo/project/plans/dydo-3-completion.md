@@ -196,20 +196,33 @@ cleaned or deleted merely to make the map look tidy.
 
 ## 4. Implementation Issue map
 
-### First pickable Issues
+### In-flight baseline
 
-DYD-111 is already in spec review; DYD-113 is the second pickable tracer now that DYD-116 is Done.
-DYD-118 is the bounded refresh record blocked by DYD-111. DYD-112 and DYD-117 are
-contracted immediate successors and become pickable when DYD-111's reviewed merge and refresh
-transfer their shared seams.
+DYD-111 continues on `codex/DYD-111-switchboard` from governing feature source
+`a4916c9140e70f8c7ddb1dec0df3ba7cdf9cbc2f`. Its outcome, ownership and gates remain the current
+Linear contract and `DynaDocs.Tests/Features/template-switchboard.feature`; this durable map does not
+mirror its volatile hop status or captain state. DYD-112, DYD-117 and DYD-118 stay blocked until a
+corrected DYD-111 specification passes independent review and the resulting implementation receives
+its reviewed merge into `feature/dydo-3-consolidation`.
+
+### First pickable Issue
+
+DYD-113 is the presently commissionable tracer: it is `Todo`, its DYD-110 and DYD-116 blockers are
+complete, and it owns no DYD-111 worktree or template/configuration source.
 
 | Issue | Type / Mode / status | Outcome | Owned paths | Blockers | Gate | Base branch |
 |---|---|---|---|---|---|---|
-| DYD-111 | Feature / AFK / In Review | Local shipped templates and a discovered enabled switchboard compile exact managed outputs while preserving extensions and custom variants. | `dydo/_system/templates/**`, template provenance, `dydo.json` skill switches; `Services/TemplateGenerator.cs`, `Services/SkillTemplateService.cs`, `Services/FolderScaffolder.cs`, `Commands/TemplateCommand.cs`, `Commands/SyncCommand.cs`, exact focused tests/docs named by its reviewed spec. | Completed DYD-110; specify commit `3e707` is under review and its captain is frozen. | Its Gherkin contract, focused/full isolated tests, build, docs check, update/sync preservation and two-run byte identity. | `feature/dydo-3-consolidation` at `a4916c91`; worktree `.worktrees/dyd111`. |
 | DYD-113 | Feature / AFK / Todo | Stable project-local runner grammar, useful help, an honest initial portable three-stack example and a real DynaDocs test/capabilities adapter. | `DynaDocs.Tests/coverage/gap_check.py`, its new capability/example data and focused tests; `dydo/guides/testing-strategy.md`, `dydo/reference/coverage-tools.md` and corresponding shipped policy/example sources. It may call but does not replace `run_tests.py`; retained DYD-96 collectors stay owned by DYD-96. | Completed DYD-110 and DYD-116. | Contract tests for operations/help/selection/exit 0/1/2/placeholders; actual isolated .NET plus Python/Node test invocations; full suite, build and docs check. An initial unavailable hard-gate row is honest but does not satisfy final example adoption. | Fresh branch from `a4916c91`; merge after DYD-111 unless its merge review proves no shared path. |
-| DYD-118 | Feature / AFK / Todo | Install a beta.2 built from the reviewed DYD-111 integration, then update and sync so subsequent dogfood uses its template behavior. | Version metadata in `Program.cs`, `DynaDocs.csproj` and `npm/package.json`; minimal parameterization of `DynaDocs.Tests/Acceptance/RunExperimentalBeta.ps1`; only exact reflected outputs explicitly transferred by DYD-111. | Reviewed DYD-111 merge. | Source/package/executable identity, local install/rollback/reinstall, template update, two identical syncs, clean or explicitly owned generated diff. | Feature head after DYD-111. |
-| DYD-112 | Feature / AFK / Todo | Compulsory per-folder hubs, generation and validation disappear while links and authored navigation remain sound. | `Rules/HubFilesRule.cs`, `Rules/FolderMetaFilesRule.cs`, `Rules/OrphanDocsRule.cs` only as its spec justifies; `Services/HubGenerator.cs`, hub parts of `FolderScaffolder`/`TemplateGenerator`, `Commands/CheckDocValidator.cs`, `FixCommand.cs`, `IndexCommand.cs`, exact generated hubs, incoming links and focused tests/docs. | DYD-111 merge transfers compiler/template paths. | Plain valid docs without hubs pass; broken links fail; init/fix/index do not recreate hubs; custom navigation survives; full suite/build/check pass. | Feature head after DYD-111. |
-| DYD-117 | Feature / AFK / Todo | Thin official launcher resolves `testing.runner`, forwards argv/help/streams/cancellation/exit, and works from nested directories. | New `Commands/GapCheckCommand.cs`; `Program.cs`; `Models/DydoConfig.cs`; `Serialization/DydoJsonContext.cs`; `Services/ConfigService.cs` only if required; command/config references, completion/help seams and narrowly named tests. No runner or stack implementation. | DYD-111 merge transfers configuration seams. Coordinate docs with DYD-113. | Real-process argv/cwd/stream/exit/cancellation/help tests, missing/malformed config errors, full suite/build/docs check. | Feature head after DYD-111. |
+
+### Contracted immediate successors
+
+These records are `Todo` but not pickable while their native DYD-111 blocker remains open.
+
+| Issue | Type / Mode / status | Outcome | Owned paths | Blockers | Gate | Base branch |
+|---|---|---|---|---|---|---|
+| DYD-118 | Feature / AFK / Todo | Install a beta.2 built from the reviewed DYD-111 integration, then update and sync so subsequent dogfood uses its template behavior. | Version metadata in `Program.cs`, `DynaDocs.csproj` and `npm/package.json`; minimal parameterization of `DynaDocs.Tests/Acceptance/RunExperimentalBeta.ps1`; only exact reflected outputs explicitly transferred by DYD-111. | Corrected DYD-111 SPEC PASS and independently reviewed merge. | Source/package/executable identity, local install/rollback/reinstall, template update, two identical syncs, clean or explicitly owned generated diff. | Feature head after DYD-111. |
+| DYD-112 | Feature / AFK / Todo | Compulsory per-folder hubs, generation and validation disappear while links and authored navigation remain sound. | `Rules/HubFilesRule.cs`, `Rules/FolderMetaFilesRule.cs`, `Rules/OrphanDocsRule.cs` only as its spec justifies; `Services/HubGenerator.cs`, hub parts of `FolderScaffolder`/`TemplateGenerator`, `Commands/CheckDocValidator.cs`, `FixCommand.cs`, `IndexCommand.cs`, exact generated hubs, incoming links and focused tests/docs. | Corrected DYD-111 SPEC PASS and independently reviewed merge transfer the compiler/template paths. | Plain valid docs without hubs pass; broken links fail; init/fix/index do not recreate hubs; custom navigation survives; full suite/build/check pass. | Feature head after DYD-111. |
+| DYD-117 | Feature / AFK / Todo | Thin official launcher resolves `testing.runner`, forwards argv/help/streams/cancellation/exit, and works from nested directories. | New `Commands/GapCheckCommand.cs`; `Program.cs`; `Models/DydoConfig.cs`; `Serialization/DydoJsonContext.cs`; `Services/ConfigService.cs` only if required; command/config references, completion/help seams and narrowly named tests. No runner or stack implementation. | Corrected DYD-111 SPEC PASS and independently reviewed merge transfer the configuration seams. Coordinate docs with DYD-113. | Real-process argv/cwd/stream/exit/cancellation/help tests, missing/malformed config errors, full suite/build/docs check. | Feature head after DYD-111. |
 
 ### Later bearings
 

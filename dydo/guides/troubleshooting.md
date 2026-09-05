@@ -50,7 +50,7 @@ dydo fix
 | Error | Recovery |
 |---|---|
 | Missing frontmatter | Add the required `area` and `type` fields. |
-| Missing summary | Add a plain summary paragraph immediately after the H1. |
+| Missing title | Add an H1 title. An opening summary is optional. |
 | Bad filename | Rename to kebab-case, or let `dydo fix` handle a safe rename. |
 | Broken link | Correct or remove the relative target. |
 | Missing hub or folder metadata | Run `dydo fix`, then review its diff. |

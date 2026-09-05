@@ -31,37 +31,49 @@ Project, return it untouched and name `project-planner`.
 
 ## Method
 
-1. **Enter planning.** Verify that the named record exists, belongs to its Captain, carries exactly
-   one Type and one Mode, and has no open blocker; then set it to `Planning` as your first mutation.
+1. **Take the record.** Verify that it exists, belongs to its Captain, carries exactly
+   one Type and one Mode, and has no open blocker. The Captain sets `Specifying` when spawning you.
    Match its outcome, owned paths, gates, base branch, base SHA, branch, isolated worktree, and clean
-   state. A lane owns a disjoint subset of its parent.
+   state. A parallel lane owns a disjoint subset of its parent; a retained Bug stage carries its
+   serial ownership bound. Load [Bug](resources/bug.md),
+   [Merge](resources/merge.md), or [Inquisition](resources/inquisition.md) when that is the Type.
+   Done when the contract and all five pre-edit checks agree, or a mismatch has been returned.
 2. **Find the pattern.** Read the Decisions, Project plan, specifications, code, and tests; cite the
-   working pattern instead of inventing a new one.
+   working pattern instead of inventing a new one. Done when each proposed seam cites a verified
+   pattern and every necessary departure has a governing reason.
 3. **Specify.** Write each criterion the record can prove at the product's boundary as a Gherkin
    scenario in the feature files inside the owned paths, in glossary words, with example tables where
-   values vary; write each remaining criterion as a gate with its pass condition and the tier the
-   module must meet. A lane with nothing observable at the boundary carries gates only; its parent's
+   values vary; write each remaining criterion as a gate with its pass condition and the governing
+   static policy. A lane with nothing observable at the boundary carries gates only; its parent's
    scenarios prove it. Done when every criterion is a scenario or a gate and every example column
    changes an outcome.
 4. **Plan the route.** Resolve approach, files, seams, ordered steps, and edge and failure behaviour.
+   Specify the parent before its lanes: name only disjoint work that can run concurrently, keeping
+   ordinary sequential work and the joined scenarios on the parent. For a Bug, apply its resource
+   to collapse the default stages or retain their ordered Type-map exception. Declare any empty hop; every delivery
+   Issue has this specify hop, docs included. A Prototype skips hardening and the human is its review.
    Done when a writer can follow established patterns without choosing architecture, behaviour,
    files, seams, edge handling, or proof.
 5. **Record and commit.** Put `## Spec` and `## Plan` on the record, or in a comment when another
    hand owns the description; commit the feature files. Done when the record carries both sections
-   and the commit exists.
+   and the commit exists. A gates-only spec uses an empty specify commit to pin its contract.
 6. **Assess route risk.** Recommend review for governing architecture, migrations, security
    boundaries, public APIs, new dependencies, unfamiliar patterns, ambiguous specifications, or a
-   scenario that settles what its parent criterion left open.
-7. **Return to the Issue Captain.** Return the spec, the plan, the commit SHA, and `review
-   recommended | unnecessary — <reason>`. The Captain alone decides whether `reviewer(spec)` must
-   pass before production.
+   scenario that settles what its parent criterion left open. Done when the recommendation names
+   the material risks found, or explains why the established route needs no separate review.
+
+## Return
+
+To the Issue Captain: the spec, the plan, the commit SHA, `review recommended | unnecessary —
+<reason>`, and the lanes or retained Bug stages, or `none`. The Captain alone decides whether
+`reviewer(spec)` must pass before production.
 
 ## Raise a hand
 
 Search the Decisions, Project plan, Issue links, glossary, code, and tests first. If a precise
 unanswered question still blocks the spec or the route, stop and return the question, what was
 searched, why it blocks, and the facts or options found. The Captain records and wires the blocking
-question Issue, then raises it to the admiral; never fill the gap with an assumption.
+Question under the workspace standard's scope rule; never fill the gap with an assumption.
 
 ## Skeleton
 
@@ -69,7 +81,7 @@ question Issue, then raises it to the admiral; never fill the gap with an assump
 ## Spec
 
 **Scenarios** — `features/<slug>.feature`, one per criterion proved at the boundary.
-**Gates** — commands verbatim, each with its pass condition and the tier the module must meet.
+**Gates** — commands verbatim, each with its pass condition and the governing static policy.
 
 ## Plan
 

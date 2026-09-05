@@ -16,7 +16,7 @@ agent coordination.
 ## What dydo does
 
 - **Documentation as memory** — agents onboard from structured, reviewable project knowledge.
-- **Native-runtime compilation** — `dydo sync` compiles shared roles, skills, resources, and workflows.
+- **Native-runtime compilation** — `dydo sync` compiles shared roles, skills and resources; legacy workflow emission retires in DYD-92.
 - **Guard enforcement** — `dydo guard` applies universal off-limits rules and project nudges.
 - **Documentation tooling** — `dydo check`, `dydo fix`, indexes, and graph commands keep knowledge usable.
 - **Reviewed delivery knowledge** — Decisions, Project plans, audits, and assimilation evidence remain in Git.

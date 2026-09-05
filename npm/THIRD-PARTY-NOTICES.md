@@ -23,6 +23,9 @@ into `.claude/skills/` and `.agents/skills/`.
 | `retro` | `Templates/skill-self-improvement.template.md` |
 | `tdd` | `Templates/skill-implementer.template.md`, `Templates/implementer-resource-tests.template.md`, `Templates/implementer-resource-mocking.template.md`, `Templates/reviewer-resource-code.template.md` |
 | `teach` | `Templates/skill-teach.template.md`, `Templates/teach-resource-mission-format.template.md`, `Templates/teach-resource-glossary-format.template.md`, `Templates/teach-resource-learning-record-format.template.md`, `Templates/teach-resource-resources-format.template.md` |
+| `to-spec` | `Templates/skill-to-project.template.md` |
+| `to-tickets` | `Templates/skill-project-planner.template.md` |
+| `wizard` and its `template.sh` | `Templates/skill-wizard.template.md`, `Templates/wizard-resource-template.template.md` |
 | `wait-what` | `Templates/skill-bro.template.md` |
 | `wayfinder` | `Templates/skill-wayfinder.template.md` |
 | `writing-for-agents` | `Templates/skill-writing-for-agents.template.md` |

@@ -5,10 +5,9 @@ between them passed nothing, and neither did the merge itself. Read the integrat
 scale of what landed: a two-file merge is minutes of mechanical checking, a whole feature is not.
 Scope is what this merge created or exposed.
 
-## Scale
-
-- **After every Issue merge** — steps 1–4, sized to the merged diff.
-- **At the final feature merge** — steps 1–5. Plan acceptance is proved here or nowhere.
+Every operation has its own Merge Issue: a lane into its parent, an Issue into the feature, an
+atomic Issue into main, or the landing. Read that record's pinned source, target and combined gates.
+No review at another level substitutes for this one; final landing also proves Project acceptance.
 
 ## Method
 
@@ -31,4 +30,6 @@ Scope is what this merge created or exposed.
    tree, citing the scenario, command output or file:line that proves it. A criterion you cannot
    prove is a finding. Done when every criterion is proved or a finding.
 
-The verdict goes in the review block, naming the merge commit and every gate rerun.
+The verdict goes on the Merge Issue in the review block, naming the merge commit and every gate
+rerun. Distinguish integration defects from defects in the source work so the Captain can route a
+fix here, or a revert and source rework; a later dependent merge requires a following fix Issue.

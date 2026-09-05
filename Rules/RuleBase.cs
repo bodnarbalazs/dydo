@@ -12,7 +12,7 @@ public abstract class RuleBase : IRule
     /// Per-rule opt-in skip. Default false. Rules override this to declare
     /// docs they don't validate (e.g. template files for content-shape rules).
     /// PR2 will move the existing inline path-prefix skips in
-    /// FrontmatterRule/SummaryRule/BrokenLinksRule/NamingRule/OrphanDocsRule
+    /// FrontmatterRule/TitleRule/BrokenLinksRule/NamingRule/OrphanDocsRule
     /// onto this hook.
     /// </summary>
     protected virtual bool ShouldSkip(DocFile doc) => false;

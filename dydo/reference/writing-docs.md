@@ -54,7 +54,7 @@ frontmatter itself does not enforce reads.
 | `decision` | Decision record | Context → Decision → Consequences |
 | `pitfall` | Known gotcha | Problem → Symptom → Solution |
 | `changelog` | Change log entry | What changed → Why → Impact |
-| `folder-meta` | Describe a folder's purpose | Title → Summary paragraph |
+| `folder-meta` | Describe a folder's purpose | Title → Folder description |
 
 ---
 
@@ -74,17 +74,19 @@ Examples:
 
 ## Structure
 
-### Title and Summary
+### Title and Optional Summary
 
-Every doc must start with:
+Every document needs an H1 title. The content after it may begin with a section, a list, or an
+optional summary:
 
 ```markdown
 # Title
 
-A 1-3 sentence summary of what this document covers.
+An optional summary of what this document covers.
 ```
 
-The summary helps agents quickly determine if this doc is relevant.
+When useful, a summary helps agents quickly determine if this doc is relevant. Neither `dydo check`
+nor `dydo fix` requires one.
 
 **Note:** For folder meta files (`_foldername.md`), the first sentence of the summary is automatically extracted and displayed in hub file links.
 
@@ -125,7 +127,7 @@ dydo fix                # Auto-fix what's possible
 |------|----------------|
 | Frontmatter | Required fields present, values valid |
 | Naming | Files and folders are kebab-case |
-| Summary | Title exists, summary paragraph follows |
+| Title | H1 title exists |
 | Links | Relative paths, no broken links |
 | Hub Files | Each folder has `_index.md` |
 | Folder Meta Files | Direct children of main folders have `_foldername.md` |

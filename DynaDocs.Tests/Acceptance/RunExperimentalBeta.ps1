@@ -49,6 +49,18 @@ function Assert-Version([string]$Command, [string]$Expected, [string]$Name) {
     }
 }
 
+function Assert-InstalledPackage([string]$ToolDirectory, [string]$Version, [string]$ExpectedHash, [string]$Name) {
+    $installedPackage = Join-Path $ToolDirectory ".store\dydo\$Version\dydo\$Version\dydo.nupkg"
+    if (-not (Test-Path -LiteralPath $installedPackage)) {
+        throw "$Name package is missing from the installed tool store."
+    }
+    $actualHash = (Get-FileHash $installedPackage -Algorithm SHA256).Hash
+    if ($actualHash -ne $ExpectedHash) {
+        throw "$Name package bytes do not match the reviewed local package."
+    }
+    return $actualHash
+}
+
 function Get-StringHash([string]$Value) {
     $sha256 = [Security.Cryptography.SHA256]::Create()
     try {
@@ -96,6 +108,7 @@ function Restore-Rollback {
     $rollbackCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
     if ($rollbackCommand.Source -cne $globalCommandPath) { throw 'Rollback changed the PATH-resolved dydo command.' }
     Assert-Version $rollbackCommand.Source $rollbackVersion 'rollback command'
+    $evidence.rollback_installed_package_sha256 = Assert-InstalledPackage (Split-Path -Parent $rollbackCommand.Source) $rollbackVersion $rollbackHash 'rollback'
     $evidence.rollback_command_path_sha256 = Get-StringHash $rollbackCommand.Source
 }
 
@@ -140,6 +153,7 @@ try {
     $isolated = Join-Path $toolRoot 'dydo.exe'
     if (!(Test-Path $isolated)) { throw 'The isolated beta command was not created.' }
     Assert-Version $isolated $betaVersion 'isolated beta command'
+    $evidence.isolated_installed_package_sha256 = Assert-InstalledPackage $toolRoot $betaVersion $evidence.package_sha256 'isolated beta'
     Invoke-Checked { & $isolated --help } 'isolated help'
     Set-Location $scratch
     Invoke-Checked { & $isolated init all } 'isolated init'
@@ -166,12 +180,14 @@ try {
         $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
         if ($globalCommand.Source -cne $globalCommandPath) { throw 'Beta update changed the PATH-resolved dydo command.' }
         Assert-Version $globalCommand.Source $betaVersion 'global beta command'
+        $evidence.beta_installed_package_sha256 = Assert-InstalledPackage (Split-Path -Parent $globalCommand.Source) $betaVersion $evidence.package_sha256 'global beta'
         $evidence.beta_command_path_sha256 = Get-StringHash $globalCommand.Source
         Restore-Rollback
         Invoke-Checked { dotnet tool update --global dydo --source $packageRoot --version $betaVersion } 'final global beta install'
         $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
         if ($globalCommand.Source -cne $globalCommandPath) { throw 'Final beta install changed the PATH-resolved dydo command.' }
         Assert-Version $globalCommand.Source $betaVersion 'final global beta command'
+        $evidence.final_installed_package_sha256 = Assert-InstalledPackage (Split-Path -Parent $globalCommand.Source) $betaVersion $evidence.package_sha256 'final global beta'
         $evidence.final_command_path_sha256 = Get-StringHash $globalCommand.Source
         $evidence.final_beta_reinstall = $true
     }

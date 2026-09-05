@@ -12,7 +12,7 @@ Feature: Local skill templates compile through an enabled switchboard
     And "dydo/_system/templates" contains every shipped skill and resource template exactly once
     And every shipped source copy has shipped provenance in "frameworkHashes"
     And "dydo.json" contains one ordinally sorted "skills" entry for every discovered skill
-    And every new entry has "enabled" true, "origin" "shipped", its "emitAgent" and "codexInvocation" booleans, and its ordinally sorted unique resource slugs
+    And every new entry has "enabled" true, "origin" "shipped", its "emitAgent" and "codexMetadata" booleans, and its ordinally sorted unique resource slugs
     And "_system/templates/" is a required scan exclusion
     And no native skill or agent has been compiled yet
     When I synchronize the native artifacts
@@ -45,7 +45,7 @@ Feature: Local skill templates compile through an enabled switchboard
     When I synchronize the native artifacts
     Then the command succeeds
     And "enabled" remains true
-    And "origin", "emitAgent", "codexInvocation", and "resources" are generated from the validated source
+    And "origin", "emitAgent", "codexMetadata", and "resources" are generated from the validated source
     And no permission or methodology metadata is copied into "dydo.json"
 
   Scenario: Update shipped source copies without merging local edits
@@ -99,26 +99,26 @@ Feature: Local skill templates compile through an enabled switchboard
 
   Scenario Outline: Disable a skill and remove only its managed native output
     Given an enabled skill previously emitted <prior-shape> and two resources to both providers
-    And its switch records "emitAgent" <emit-agent>, "codexInvocation" <codex-invocation>, and the two unique resource slugs
+    And its switch records "emitAgent" <emit-agent>, "codexMetadata" <codex-metadata>, and the two unique resource slugs
     And "<current-integration>" is now the only selected integration
     And unrelated files and directories exist beside and inside its provider directories
     When I set that skill's "enabled" switch to false and synchronize
     Then the command succeeds
-    And that skill's fixed SKILL.md paths, recorded agent definitions, Codex invocation metadata, and recorded resource files are absent from Claude and Codex surfaces
+    And that skill's fixed SKILL.md paths, recorded agent definitions, Codex metadata, and recorded resource files are absent from Claude and Codex surfaces
     And every unrelated or custom sibling retains its exact path and bytes
     And only directories made empty by the managed removals are absent
     And the switch remains present with enabled false and its generated cleanup provenance
 
     Examples:
-      | current-integration | prior-shape             | emit-agent | codex-invocation |
-      | claude              | an agent definition     | true       | false            |
-      | claude              | explicit skill metadata | false      | true             |
-      | codex               | an agent definition     | true       | false            |
-      | codex               | explicit skill metadata | false      | true             |
+      | current-integration | prior-shape                       | emit-agent | codex-metadata |
+      | claude              | an agent with an argument hint   | true       | true           |
+      | claude              | explicit skill metadata          | false      | true           |
+      | codex               | an agent with an argument hint   | true       | true           |
+      | codex               | explicit skill metadata          | false      | true           |
 
   Scenario: Remove a resource and agent shape from an enabled skill
     Given an enabled custom agent previously emitted resources "one" and "two" to both providers
-    And its switch records "emitAgent" true, "codexInvocation" false, and resources "one" and "two"
+    And its switch records "emitAgent" true, "codexMetadata" false, and resources "one" and "two"
     And its valid source now emits a skill only with automatic invocation and references only resource "two"
     And one provider is currently deselected
     When I synchronize the native artifacts
@@ -126,25 +126,31 @@ Feature: Local skill templates compile through an enabled switchboard
     And its enabled skill and resource "two" are current on the selected provider
     And tracked output on the deselected provider is cleaned only where the source removed an artifact
     And unrelated sibling files retain their exact paths and bytes
-    And its provenance records "emitAgent" false, "codexInvocation" false, and resource "two"
+    And its provenance records "emitAgent" false, "codexMetadata" false, and resource "two"
 
-  Scenario: Remove Codex invocation metadata from an enabled skill-only template
-    Given an enabled custom skill-only template previously used explicit invocation on both providers
-    And its switch records "emitAgent" false and "codexInvocation" true
-    And its valid source now uses automatic invocation
-    And one provider is currently deselected
+  Scenario Outline: Remove Codex metadata after removing an argument hint
+    Given an enabled custom skill-only template with automatic invocation previously used an argument hint on both providers
+    And its switch records "emitAgent" false and "codexMetadata" true
+    And its valid source still uses automatic invocation but no longer declares an argument hint
+    And "<current-integration>" is now the only selected integration
     When I synchronize the native artifacts
-    Then its recorded Codex invocation metadata is removed from both provider surfaces
+    Then its recorded Codex metadata is removed from both provider surfaces
     And its fixed SKILL.md is current on the selected provider
     And unrelated sibling files retain their exact paths and bytes
-    And its provenance records "emitAgent" false and "codexInvocation" false
+    And its provenance records "emitAgent" false and "codexMetadata" false
+
+    Examples:
+      | current-integration |
+      | claude              |
+      | codex               |
 
   Scenario Outline: Remember a switch and output shape when its custom source is temporarily missing
     Given a custom skill with enabled <enabled> previously emitted <prior-shape> and resources to both providers
-    And its switch records "emitAgent" <emit-agent>, "codexInvocation" <codex-invocation>, and unique resource slugs
+    And its switch records "emitAgent" <emit-agent>, "codexMetadata" <codex-metadata>, and unique resource slugs
+    And "<current-integration>" is now the only selected integration
     And its source and resource templates are absent
     When I synchronize the native artifacts
-    Then its fixed SKILL.md paths and its recorded agent, invocation, and resource output are removed from both provider surfaces
+    Then its fixed SKILL.md paths and its recorded agent, Codex metadata, and resource output are removed from both provider surfaces
     And its switch remains a custom tombstone with enabled <enabled> and its prior generated cleanup provenance
     And unrelated sibling files retain their exact paths and bytes
     And the command <result> because the requested source is <availability>
@@ -153,9 +159,11 @@ Feature: Local skill templates compile through an enabled switchboard
     And the skill is <emission> on the selected providers
 
     Examples:
-      | enabled | prior-shape              | emit-agent | codex-invocation | result   | availability | emission     |
-      | true    | agent definition         | true       | false            | fails    | unavailable  | compiled     |
-      | false   | explicit skill metadata  | false      | true             | succeeds | disabled     | not compiled |
+      | current-integration | enabled | prior-shape                      | emit-agent | codex-metadata | result   | availability | emission     |
+      | claude              | true    | agent with an argument hint      | true       | true           | fails    | unavailable  | compiled     |
+      | codex               | true    | agent with an argument hint      | true       | true           | fails    | unavailable  | compiled     |
+      | claude              | false   | explicit skill metadata          | false      | true           | succeeds | disabled     | not compiled |
+      | codex               | false   | explicit skill metadata          | false      | true           | succeeds | disabled     | not compiled |
 
   Scenario: Intentionally delete a custom skill after cleaning its output
     Given a valid custom skill source and switch exist
@@ -172,21 +180,21 @@ Feature: Local skill templates compile through an enabled switchboard
 
   Scenario Outline: Retire formerly shipped source and native output by persisted provenance
     Given a prior installation recorded a shipped <prior-shape>, its shipped resources, and its switch
-    And its switch records "emitAgent" <emit-agent> and "codexInvocation" <codex-invocation>
+    And its switch records "emitAgent" <emit-agent> and "codexMetadata" <codex-metadata>
     And the current executable no longer ships them
     And their local source and generated output contain hard edits
     And custom siblings exist beside them
     When I update the framework templates and synchronize the native artifacts
     Then the formerly shipped local sources and their provenance hashes are absent
-    And their fixed SKILL.md paths and recorded agent, invocation, and resource output are absent from both provider surfaces
+    And their fixed SKILL.md paths and recorded agent, Codex metadata, and resource output are absent from both provider surfaces
     And their switch remains a shipped tombstone with its explicit enabled value and prior cleanup provenance
     And custom siblings retain their exact paths and bytes
     And no unrecorded template or native path is removed
 
     Examples:
-      | prior-shape             | emit-agent | codex-invocation |
-      | agent definition        | true       | false            |
-      | explicit skill metadata | false      | true             |
+      | prior-shape                       | emit-agent | codex-metadata |
+      | agent with an argument hint       | true       | true           |
+      | explicit skill metadata           | false      | true           |
 
   Scenario Outline: Reject invalid source layouts before changing anything
     Given an initialized project contains "<defect>"
@@ -238,7 +246,7 @@ Feature: Local skill templates compile through an enabled switchboard
       | a switch key contains the protected -resource- delimiter              | synchronize the native artifacts |
       | switch keys or source names collide by ordinal-ignore-case comparison | synchronize the native artifacts |
       | supplied origin is neither shipped nor custom                         | synchronize the native artifacts |
-      | supplied emitAgent or codexInvocation is not a boolean                | synchronize the native artifacts |
+      | supplied emitAgent or codexMetadata is not a boolean                  | synchronize the native artifacts |
       | supplied resources is not a unique lowercase-kebab-case string array  | synchronize the native artifacts |
       | an entry has an unknown property                                      | synchronize the native artifacts |
       | an entry has no source and no prior generated provenance              | synchronize the native artifacts |
@@ -264,9 +272,11 @@ Feature: Local skill templates compile through an enabled switchboard
 
   Scenario Outline: Compile a valid agent with its declared delegation shape
     Given a valid local agent template declares read-only true, web true, delegates <delegates>, automatic invocation, and an argument hint
+    And it does not declare explicit invocation
     And each resource link and Must-Read resolves inside the project after includes
     When I synchronize the native artifacts
     Then its name, description, agent shape, read-only policy, web policy, automatic invocation, argument hint, Must-Reads, and resources have their documented native effect
+    And its switch records "codexMetadata" true because the argument hint alone emits the fixed managed Codex metadata path
     And Claude Agent tool is <claude-agent-tool>
     And Codex V1 agents are <codex-agents> and max depth three is <max-depth>
     And the compiler emits no unsupported permission or dependency claim
@@ -283,7 +293,8 @@ Feature: Local skill templates compile through an enabled switchboard
     When I synchronize the native artifacts
     Then its name, description, skill shape, explicit invocation, argument hint, Must-Reads, and resources have their documented native effect
     And no Claude or Codex agent definition is emitted
-    And Codex invocation metadata is emitted at the fixed managed path
+    And Codex metadata is emitted at the fixed managed path
+    And its switch records "codexMetadata" true because explicit invocation emits that path
     And the compiler emits no unsupported permission or dependency claim
 
   Scenario: Preserve the beta hash observation as field-level migration regression evidence

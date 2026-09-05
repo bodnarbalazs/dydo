@@ -4,7 +4,9 @@ param(
     [string]$CandidateSha,
 
     [Parameter(Mandatory)]
-    [string]$RollbackPackage
+    [string]$RollbackPackage,
+
+    [switch]$IsolatedOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,6 +27,7 @@ $evidence = [ordered]@{
     isolated_install = $false
     rollback_attempted = $false
     final_beta_reinstall = $false
+    isolated_only = [bool]$IsolatedOnly
     generated_role_canary = 'PENDING — fresh task/session required'
     static_gates = 'UNAVAILABLE — DYD-96 remains open'
     mutation = 'UNAVAILABLE — DYD-103 remains open'
@@ -42,26 +45,50 @@ function Assert-Version([string]$Command, [string]$Expected, [string]$Name) {
     }
 }
 
+function Get-StringHash([string]$Value) {
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        return [BitConverter]::ToString($sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($Value))).Replace('-', '')
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+
+function Get-RelativePath([string]$BasePath, [string]$Path) {
+    $base = [IO.Path]::GetFullPath($BasePath).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    $fullPath = [IO.Path]::GetFullPath($Path)
+    if (-not $fullPath.StartsWith($base, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Managed artifact is outside the scratch project: $fullPath"
+    }
+    return $fullPath.Substring($base.Length).Replace('\', '/')
+}
+
 function Get-ManagedSnapshot([string]$Project) {
     $roots = @('.claude\agents', '.claude\skills', '.agents\skills', '.codex\agents') |
         ForEach-Object { Join-Path $Project $_ } |
         Where-Object { Test-Path $_ }
     return @($roots | ForEach-Object {
         Get-ChildItem -File -Recurse $_ | ForEach-Object {
-            [ordered]@{ path = [IO.Path]::GetRelativePath($Project, $_.FullName).Replace('\', '/'); sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash }
+            [ordered]@{ path = Get-RelativePath $Project $_.FullName; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash }
         }
     } | Sort-Object path)
 }
 
 function Restore-Rollback {
     $evidence.rollback_attempted = $true
-    Invoke-Checked { dotnet tool update --global dydo --add-source $rollbackSource --version $rollbackVersion --allow-downgrade --ignore-failed-sources } 'rollback install'
-    Assert-Version $globalCommand.Source $rollbackVersion 'rollback command'
+    Invoke-Checked { dotnet tool update --global dydo --source $rollbackSource --version $rollbackVersion --allow-downgrade } 'rollback install'
+    $rollbackCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
+    if ($rollbackCommand.Source -cne $globalCommandPath) { throw 'Rollback changed the PATH-resolved dydo command.' }
+    Assert-Version $rollbackCommand.Source $rollbackVersion 'rollback command'
+    $evidence.rollback_command_path_sha256 = Get-StringHash $rollbackCommand.Source
 }
 
 New-Item -ItemType Directory -Force -Path $packageRoot, $toolRoot, $scratch | Out-Null
-$rollbackPackage = (Resolve-Path $RollbackPackage).Path
-$rollbackSource = Split-Path -Parent $rollbackPackage
+$rollbackPackage = $null
+$rollbackSource = $null
+$globalCommandPath = $null
+$failure = $null
 $beforePath = @{
     process = [Environment]::GetEnvironmentVariable('PATH', 'Process')
     user = [Environment]::GetEnvironmentVariable('PATH', 'User')
@@ -69,22 +96,28 @@ $beforePath = @{
 }
 
 try {
+    $rollbackPackage = (Resolve-Path $RollbackPackage).Path
+    $rollbackSource = Split-Path -Parent $rollbackPackage
     Set-Location $root
-    $actualSha = (git rev-parse HEAD).Trim()
+    $actualSha = (& git rev-parse HEAD | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'Could not read the candidate Git SHA.' }
     if ($actualSha -ne $CandidateSha) { throw 'Candidate SHA does not match HEAD.' }
-    if (git status --porcelain) { throw 'Candidate is dirty; refusing package or global mutation.' }
+    $gitStatus = & git status --porcelain
+    if ($LASTEXITCODE -ne 0) { throw 'Could not read candidate Git status.' }
+    if ($gitStatus) { throw 'Candidate is dirty; refusing package or global mutation.' }
     if ((Get-FileHash $rollbackPackage -Algorithm SHA256).Hash -ne $rollbackHash) { throw 'Rollback package SHA-256 does not match the retained 2.2.9 package.' }
 
     $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
+    $globalCommandPath = $globalCommand.Source
     Assert-Version $globalCommand.Source $rollbackVersion 'preexisting global command'
-    $evidence.preexisting_command_path_sha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($globalCommand.Source)))
+    $evidence.preexisting_command_path_sha256 = Get-StringHash $globalCommand.Source
 
     Invoke-Checked { dotnet pack DynaDocs.csproj -c Release --no-restore -o $packageRoot } 'beta package'
     $package = Join-Path $packageRoot "dydo.$betaVersion.nupkg"
     if (!(Test-Path $package)) { throw 'Expected beta NuGet package was not produced.' }
     $evidence.package_sha256 = (Get-FileHash $package -Algorithm SHA256).Hash
 
-    Invoke-Checked { dotnet tool install --tool-path $toolRoot dydo --add-source $packageRoot --version $betaVersion --ignore-failed-sources } 'isolated beta install'
+    Invoke-Checked { dotnet tool install --tool-path $toolRoot dydo --source $packageRoot --version $betaVersion } 'isolated beta install'
     $isolated = Join-Path $toolRoot 'dydo.exe'
     if (!(Test-Path $isolated)) { throw 'The isolated beta command was not created.' }
     Assert-Version $isolated $betaVersion 'isolated beta command'
@@ -100,25 +133,31 @@ try {
     if ($firstSnapshot -ne $secondSnapshot) { throw 'The isolated second sync changed compiler-owned artifacts.' }
     Set-Location $root
     $evidence.isolated_install = $true
-    $evidence.isolated_command_path_sha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($isolated)))
+    $evidence.isolated_command_path_sha256 = Get-StringHash $isolated
     $evidence.isolated_sync_idempotent = $true
 
-    $evidence.global_mutation_started = $true
-    Invoke-Checked { dotnet tool update --global dydo --add-source $packageRoot --version $betaVersion --ignore-failed-sources } 'global beta install'
-    $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
-    Assert-Version $globalCommand.Source $betaVersion 'global beta command'
-    Restore-Rollback
-    Invoke-Checked { dotnet tool update --global dydo --add-source $packageRoot --version $betaVersion --ignore-failed-sources } 'final global beta install'
-    $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
-    Assert-Version $globalCommand.Source $betaVersion 'final global beta command'
-    $evidence.final_beta_reinstall = $true
+    if (-not $IsolatedOnly) {
+        $evidence.global_mutation_started = $true
+        Invoke-Checked { dotnet tool update --global dydo --source $packageRoot --version $betaVersion } 'global beta install'
+        $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
+        if ($globalCommand.Source -cne $globalCommandPath) { throw 'Beta update changed the PATH-resolved dydo command.' }
+        Assert-Version $globalCommand.Source $betaVersion 'global beta command'
+        $evidence.beta_command_path_sha256 = Get-StringHash $globalCommand.Source
+        Restore-Rollback
+        Invoke-Checked { dotnet tool update --global dydo --source $packageRoot --version $betaVersion } 'final global beta install'
+        $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
+        if ($globalCommand.Source -cne $globalCommandPath) { throw 'Final beta install changed the PATH-resolved dydo command.' }
+        Assert-Version $globalCommand.Source $betaVersion 'final global beta command'
+        $evidence.final_command_path_sha256 = Get-StringHash $globalCommand.Source
+        $evidence.final_beta_reinstall = $true
+    }
 }
 catch {
+    $failure = $_
     $evidence.error = $_.Exception.Message
-    if ($evidence.global_mutation_started -and -not $evidence.rollback_attempted) {
+    if ($evidence.global_mutation_started) {
         try { Restore-Rollback } catch { $evidence.rollback_error = $_.Exception.Message }
     }
-    throw
 }
 finally {
     Set-Location $originalLocation
@@ -128,6 +167,11 @@ finally {
         machine = [Environment]::GetEnvironmentVariable('PATH', 'Machine')
     }
     $evidence.path_bytes_unchanged = $beforePath.process -ceq $afterPath.process -and $beforePath.user -ceq $afterPath.user -and $beforePath.machine -ceq $afterPath.machine
+    if (-not $evidence.path_bytes_unchanged -and $null -eq $failure) {
+        $failure = [InvalidOperationException]::new('PATH bytes changed during beta acceptance.')
+        $evidence.error = $failure.Message
+    }
     $evidence | ConvertTo-Json -Depth 4 | Set-Content -NoNewline (Join-Path $runRoot 'evidence.json')
-    if (-not $evidence.path_bytes_unchanged) { throw 'PATH bytes changed during beta acceptance.' }
 }
+
+if ($null -ne $failure) { throw $failure }

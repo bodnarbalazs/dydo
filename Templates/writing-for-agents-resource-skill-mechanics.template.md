@@ -9,8 +9,9 @@ is the universal reference in this skill's body.
 **The template is the skill.** One `skill-<name>.template.md` carries the metadata and the
 methodology; `dydo sync` compiles it for every host and owns every host-specific detail. The
 `skill-` prefix makes a skill template, any other `*.template.md` is a document or a resource,
-`emit: agent` adds a spawnable agent, and `name` is the identity. For where sources live, see
-[customizing-roles.md](../../../../dydo/guides/customizing-roles.md).
+`emit: agent` adds a spawnable agent, and `name` is the identity. Framework templates live in dydo's
+own source `Templates/` directory and are embedded in its build; project additions live in
+`dydo/_system/template-additions/`.
 
 ## Frontmatter
 

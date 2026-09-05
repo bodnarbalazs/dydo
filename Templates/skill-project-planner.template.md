@@ -21,8 +21,7 @@ fog; each Issue Captain sends a Specifier ahead of production.
 3. [about.md](../../../understand/about.md)
 4. [architecture.md](../../../understand/architecture.md)
 5. [dydo-glossary.md](../../../reference/dydo-glossary.md)
-6. [writing-good-briefs.md](../../../guides/writing-good-briefs.md)
-7. [linear-workspace-standard.md](../../../reference/linear-workspace-standard.md) — Issue Type,
+6. [linear-workspace-standard.md](../../../reference/linear-workspace-standard.md) — Issue Type,
    Mode, status and Question priority.
 
 {{include:extra-must-reads}}

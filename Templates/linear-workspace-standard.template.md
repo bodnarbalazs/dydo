@@ -122,7 +122,7 @@ files a `Question` only when judgment remains.
 | `Question` | `Todo` → `Done` |
 | `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and the proofs → `Done` |
 | captain-held | `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
-| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
+| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`; it merges, it is never merged |
 
 A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,
@@ -132,6 +132,14 @@ needs splitting is replaced by sibling lanes. When the answer can change other I
 contract, or the Project's destination, scope, acceptance criteria or governing architecture, the
 captain prepares the packet and the admiral creates and wires the Project-level Issue. Native blocker
 relations connect every waiting record to what it waits on.
+
+The Bug Type template is a narrow exception to parallel delivery lanes: its captain may retain
+ordered reproduce-or-identify and fix Sub-issues, with fix natively blocked by reproduction and
+shared paths transferred only after reproduction closes with its evidence recorded. Each stage
+keeps the parent's Type and Mode and has its own contract, chain, branch and worktree; every actual
+integration has a Merge Sub-issue. For a simple Bug, collapse the staged placeholders into parent
+hops and close the unused records `Canceled` with the reason. Joining acceptance and final review
+stay on the parent; the exception creates no overlapping parallel ownership.
 
 ## Question Issues
 

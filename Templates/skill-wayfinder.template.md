@@ -95,16 +95,16 @@ broken this).
 
 - **Task** (HITL or AFK): A `Feature` or `Bug` Issue built by an Issue Captain and
   crew through specification, production, review, and its Merge Sub-issue.
-- **Research** (AFK): Reading documentation, third-party APIs, or local resources like knowledge
+- **Research**: Reading documentation, third-party APIs, or local resources like knowledge
   bases to surface a fact a decision waits on. Resolved by a subagent that calls the Skill tool with
   "research". Use when authoritative evidence, inside or outside the repository, can settle the fact.
 - **Prototype** (HITL): Raise the fidelity of the discussion by making a cheap, rough, concrete
   artifact to react to (throwaway UI or logic code) by calling the Skill tool with "prototype". Links
   the prototype as an asset. Use when "how should it look" or "how should it behave" is the key
   question.
-- **Grilling** (HITL): Conversation. The default case. Always call the Skill tool twice, for
+- **Grilling**: Conversation. The default case. Always call the Skill tool twice, for
   "grilling" and "domain-modeling".
-- **Question** (HITL): One prepared human choice that authoritative sources and the other Issue types
+- **Question**: One prepared human choice that authoritative sources and the other Issue types
   cannot settle. The Issue carries the homework, credible options, trade-offs, and recommendation.
 - **Enablement** (HITL or AFK): Manual work that must happen before a _decision_ can be made:
   nothing to decide, prototype, or research, but the discussion is blocked until it is done. Signing

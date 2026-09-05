@@ -37,7 +37,9 @@ corrective for agent-speak, at any stage.
 - **Workers** are spawned for one bounded job and report back to whoever spawned them. Research delegates to read-only scouts; other workers do their own bounded work.
 - **Methods** are reference and procedure a session applies inside its own thread, never a separate
   session.
-- **Human commands** are invoked by the human typing their name, and by nothing else.
+- **Human commands** are invoked by the human typing their name, and by nothing else. For the
+  post-landing tour, the admiral opens the Walkthrough Issue and asks the human to invoke
+  `walkthrough` in that same session before facilitating it.
 
 The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them compiles from a template — see
 [Templates and Customization](./templates-and-customization.md).

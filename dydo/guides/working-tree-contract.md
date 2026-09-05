@@ -14,8 +14,8 @@ and what they hand back. The `chief-of-staff` audits failures of this contract, 
 - Linear assignment is the **claim**. One Issue Captain owns the parent Issue and its integrated outcome
   end to end.
 - Every parent Issue has an isolated integration worktree. Independently trackable parallel lanes may
-  become direct Sub-issues, each with an isolated branch and worktree. Workers write only the disjoint
-  paths their Issue Captain grants.
+  become direct Sub-issues, each with an isolated branch and worktree. Parallel workers write only the
+  disjoint paths their Issue Captain grants; the Bug Type-map exception below transfers paths serially.
 - Commits touch owned paths only. The Issue Captain owns the whole diff, including worker edits.
 - Every worker **hop** ends on a commit: the return names its SHA, the Issue Captain posts it on the
   record, and the Issue branch keeps its hops unsquashed and unrewritten.
@@ -42,13 +42,13 @@ provide the Issue worktree; otherwise place it beside the repository at
 
 | Stage | Owner | Required state |
 |---|---|---|
-| Open the Project | `admiral`, or the human when there is none | Feature branch exists; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
+| Open the Project | `admiral`, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
 | Claim the Issue | `issue-captain` | Issue is assigned; the captain sets `Specifying` when spawning its specifier; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. |
-| Resolve the work | `issue-captain` | The parent spec names the lanes and empty hops; the spec and plan make the contract exact and work mechanical; workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
+| Resolve the work | `issue-captain` | The parent spec names the lanes and empty hops; the spec and plan make the contract exact and work mechanical; parallel workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | workers | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `specify`, `implement`, `harden` or `fix`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
-| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs specifier → implementer → fresh merge reviewer, preserving the merge commit and hop SHAs; the admiral wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
+| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs specifier → implementer → hardener if resolution refactored → fresh merge reviewer, preserving the merge commit and hop SHAs; the admiral wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
 | Integrate an Atomic Issue | `issue-captain` | The final Merge Sub-issue merges to main, reruns combined gates and obtains fresh merge review, as at every other level. |
 | Land the Project | human | The landing Merge Issue prepares main into feature and obtains acceptance PASS; the human clicks feature into main as a merge commit, never squash. |
 
@@ -66,16 +66,24 @@ on that work item instead of working around a failure:
 ## Delegation
 
 - Workers inherit the relevant Issue or Sub-issue contract, owned paths and gates, and commit their
-  own hop. They do not create its branch, open its PR, merge it or review their own work.
+  own hop. Ordinary workers do not create its branch, open its PR, merge it or review their own
+   work. A captain-directed Merge implementer performs the specified merge and conflict resolutions;
+   a fresh reviewer judges that integrated candidate.
 - Fan-out is safe only across disjoint paths. Each independently trackable parallel lane is a direct
-  Sub-issue of the captain's Issue. Lanes have one level; Merge and map-holder-held Sub-issues are the other permitted children. If a lane needs splitting, replace
+  Sub-issue of the captain's Issue. Lanes have one level; the Bug stages below, Merge and map-holder-held Sub-issues are the other permitted children. If a lane needs splitting, replace
   it with sibling lanes under the parent Issue.
 - An agent invocation is recorded as comments and evidence on the relevant Issue or Sub-issue, never
   as another child. Successive agents may work through the same record.
-- The Issue Captain resolves every collision, integrates review-passed lane branches into the parent
-  Issue branch and stages owned paths by name; a whole-tree add can capture another writer's work.
+- A Bug may retain its Type template's ordered reproduce-or-identify and fix Sub-issues. Fix is
+  natively blocked by reproduction; shared paths transfer only after the reproduction closes with
+  its evidence recorded. Each stage has a contract, branch and worktree; every actual integration
+  has a Merge Sub-issue. A simple Bug collapses the placeholders into parent hops and closes the
+  unused records `Canceled` with the reason. This exception does not permit overlapping parallel lanes.
+- The Issue Captain directs collision resolution and integration of review-passed branches through
+  their Merge implementers, then verifies the integrated result. Each writer stages owned paths by
+  name; a whole-tree add can capture another writer's work.
 - The Issue Captain consumes every worker return and remains accountable for the Issue, evidence and
-  complete diff. After integration it proves the combined state and obtains the final parent review.
+  complete diff. After integration it verifies the crew's combined proof and obtains the final parent review.
 
 ## Return and release
 
@@ -102,7 +110,7 @@ use a following fix Issue. Each corrected candidate gets fresh merge review.
 | Integrated lane Sub-issue branch | `issue-captain` | The branch is deleted after it passes review and is integrated into the parent Issue branch. |
 | Merged Project-Issue branch | `issue-captain` | The branch is deleted after the merge. |
 | Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the merge. |
-| Merged feature branch | `admiral` | The branch is deleted after the human lands it. |
+| Merged feature branch | `admiral`, commissioning the landing Captain | The landing Captain deletes the branch after the human lands it and reports completion. |
 | Prototype branch | `issue-captain`, tracked by the admiral | Keep the winning code linked as delivery-spec input; delete when that delivery Issue is Done or with feature cleanup. |
 | Inquisition branch | `issue-captain` | Delete at Done after Bugs and the record exist; never merge it. |
 

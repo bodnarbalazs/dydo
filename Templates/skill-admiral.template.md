@@ -51,8 +51,9 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
    Base SHA. The block is a Project update. Resolve a FAIL through the planner and review afresh;
    the second FAIL goes to the human as the choice. Put a PASS to the human in this session.
    **Done:** approval is recorded, the plan is `reviewed` and the Project `Planned`.
-3. **Open and commission.** Have `feature/<project-slug>` opened from main after approval; put the
-   map in the Project description and each contract's base branch and blockers on its Issue. Give
+3. **Open and commission.** Commission the first Issue Captain to open
+   `feature/<project-slug>` from the approved main SHA before claiming its Issue; put the map in the
+   Project description and each contract's base branch and blockers on its Issue. Give
    every merging delivery Issue a final Merge Sub-issue, blocked by the previous merge in plan
    order. Set the Project `In Progress`. On every wake commission each pickable AFK Issue, including
    blocker-cleared and released ones, from its record; HITL waits for the human's captain session.
@@ -63,7 +64,9 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
 5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence Issues and record
-   dated plan amendments; give every new implementation Issue one Type, one Mode, and `Todo`; re-review
+   the discoveries on the Project. Commission `project-planner` to commit dated plan amendments
+   on the branch you name and return their SHA; give every new implementation Issue one Type,
+   one Mode, and `Todo`; re-review
    changes to destination, scope, acceptance criteria, or governing architecture and obtain human
    approval before affected work resumes. **Done:** the
    Project map matches the work in flight.
@@ -81,10 +84,11 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
 8. **Land and walk through.** File the landing Merge Issue, blocked by the Project's open delivery
    work: main into feature, combined gates, merge review, then a PR into main. Its `Ready to Merge`
    is the human's click, one Project at a time, as a merge commit. When the human tells you it landed,
-   resume the landing captain to close and open a Walkthrough Issue. Run `walkthrough` here with
-   the human. Findings reopen the lap on the feature re-cut from main under the same name; another
-   inquisition needs confirmation. **Done:** an empty walkthrough closes the Project `Completed`
-   and its captain-owned artifacts have been retired.
+   resume the landing captain to close and clean up the merged feature branch; open a Walkthrough
+   Issue and ask the human to invoke `walkthrough` in this session, then facilitate it here.
+   Findings reopen the lap: commission the first fix Captain to re-cut the feature from main under
+   the same name; another inquisition needs confirmation. **Done:** an empty walkthrough closes
+   the Project `Completed`, and the landing Captain has confirmed artifact cleanup.
 
 A `released <key>: <reason>` points to the record's resume SHA, blocker and prepared packet.
 Treat a dead captain as a release without a final push; preserve the last recorded hop. A human

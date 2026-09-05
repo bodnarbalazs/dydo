@@ -14,6 +14,7 @@ Think alongside the human until the choices in front of them are visible and the
 1. [about.md](../../../understand/about.md)
 2. [architecture.md](../../../understand/architecture.md)
 3. [glossary.md](../../../glossary.md)
+4. [linear-workspace-standard.md](../../../reference/linear-workspace-standard.md)
 
 {{include:extra-must-reads}}
 
@@ -52,7 +53,7 @@ what they alone have the authority to settle.
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
 | An unscheduled strategic possibility worth preserving | a Linear Issue in `FutureFeature` |
 | Project intent after the homework | the human invokes `to-project`, creating a Project in `Backlog` |
-| Ripe atomic Issue intent | file the Issue in `Todo` with outcome, owned paths, blockers, exact gates and base branch; then `issue-captain` |
+| Ripe atomic Issue intent | file the Issue in `Todo` with one Type, one Mode, outcome, owned paths, blockers, exact gates and base branch; then `issue-captain` |
 
 A FutureFeature stays one until the human promotes it. Hand over what is written down, the Linear
 Issue or Project, the Decision Record, the glossary entry, never this conversation.

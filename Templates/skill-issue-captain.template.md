@@ -28,7 +28,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
   PR or merge, final status, and every branch or worktree you create.
 - **Crew:** specification and route belong to `specifier`; production to `implementer`, then
   `hardener`, or to `docs-writer`; independent judgment to `reviewer`. Brief, sequence, track,
-  correct, and integrate.
+  correct, and direct integration.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another Issue; the current
   Issue bounds intent and paths.
@@ -48,7 +48,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 ## Method
 
 1. **Claim.** Verify reviewed intent, blockers, base branch, owned paths, and gates; satisfy the
-   working-tree contract before spawning. **Done:** the parent is assigned and records its Type,
+   working-tree contract before spawning. When the admiral commissions Project setup, open the
+   feature branch from its named approved main SHA before creating the Issue branch. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Specify.** Send `specifier` on the parent first, setting `Specifying`, and post its commit SHA.
    **Done:** scenarios, gates,
@@ -57,12 +58,13 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    recommendation. Set the record `In Review` for that optional gate, return it to `Specifying` after
    FAIL through a fresh specifier. The accepted spec names
    lanes, or none, and declares which hops are empty.
-3. **Shape.** Keep sequential work, joining scenarios and the whole-result review on the parent.
-   Open only the spec's disjoint parallel lanes in `Todo`, with the parent's Type and Mode, bounded
+3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
+   parent; the Bug Type-map exception is below. Open the spec's disjoint parallel lanes in `Todo`, with the parent's Type and Mode, bounded
    outcome, paths, gates and isolated branch/worktree off the parent. Specify each lane and give
    each merge into the parent its own Merge Sub-issue, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
-   becomes siblings; Merge and map-holder-held Sub-issues are the other permitted children.
+   becomes siblings; the Bug stages below, Merge and map-holder-held Sub-issues are the other
+   permitted children.
 4. **Direct the crew.** Send each parent or lane through [implementer] → [hardener]; route docs to
    `docs-writer`; the implementer uses `diagnosing-bugs` when a defect lacks a red reproduction.
    Set `Implementing` or `Hardening` on each spawn and post each hop's commit SHA on the record.
@@ -78,7 +80,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the
    findings and wires a prepared Question through the scope rule below.
 6. **Offer.** Direct each passed lane's Merge Sub-issue in order: specifier maps conflicts and
-   combined gates, implementer merges, fresh `reviewer(merge)` judges the integrated parent. Obtain
+   combined gates, implementer merges, then send `hardener` at `Hardening` if the resolution
+   refactored. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain
    a fresh whole-Issue PASS once all lanes are in. **Done:** push the branch, open the PR with its
    PASS block on the record and in the body, set `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-issue's blocker clears, resume from the record and direct
@@ -86,12 +89,21 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    Sub-issue runs; a Merge Sub-issue never enters that status. A landing Merge instead offers its
    reviewed PR and waits for the human's merge-commit click. **Done:** merge review passes, the
    operation and source Issue close `Done`, captain-owned worktrees/branches are cleaned, and you
-   return `done <key>: merged`.
+   return `done <key>: merged`. On the admiral's landing-cleanup commission, remove the merged
+   feature branch and report completion.
 
 ## Kinds and failure paths
 
 Start from the Type's shape in the workspace standard; the spec makes the map exact. A Bug normally
-reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. A Prototype
+reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
+simple Bug template placeholders into parent hops, recording why and closing the unused records
+`Canceled`. Under DR 047's Type-map exception, the spec may retain reproduce-or-identify and fix
+as direct Bug Sub-issues: fix is natively blocked by reproduction, both carry the parent's Mode,
+and any shared paths transfer only after reproduction closes and its evidence is recorded. Give
+each stage its own contract, chain, branch and worktree; create a Merge Sub-issue for each actual
+integration. Keep the joined acceptance and final review on the parent.
+
+A Prototype
 uses `prototype`, skips hardening, and closes on the human's verdict with its winning branch linked,
 never submitted. Enablement uses `wizard` for the steps only the human can perform.
 

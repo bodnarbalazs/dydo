@@ -39,23 +39,33 @@ keep the section numbers — Issue contracts cite them.
 ## Method
 
 1. **Take the Project.** The admiral names it and owns its status. Inspect the intent, Decisions,
-   prior art, code, tests, and specifications.
+   prior art, code, tests, and specifications. Done when the governing intent and its witnesses
+   are identified, and every unresolved conflict is recorded for the admiral.
 2. **Fix the destination.** State scope, acceptance, governing design, and settled answers without
-   claiming that later bearings are ready work.
+   claiming that later bearings are ready work. Done when each acceptance criterion names its
+   observable proof and every scope or design choice traces to settled intent.
 3. **Start the map.** Make the first stable implementation Issues independently pickable: each carries one Type,
    one Mode (`AFK` or `HITL`), and `Todo`; record later work as rough bearings the admiral may
    promote, split, drop, or reorder. Each first Issue is a tracer bullet: independently verifiable,
    narrow enough for one fresh context, with all five contract fields. File blockers before their
    waiters so native blocking relations name real keys. A mechanical change that cannot stay green
    in vertical slices uses expand, migrate, contract, with a final integration gate when needed.
+   Done when each first Issue has all five fields, Type, Mode and real blocking keys, and the
+   remaining bearings are clearly uncontracted.
 4. **Expose blocking questions.** Search durable knowledge first. When human judgment still blocks
    work, prepare a Question packet for the admiral: sources searched, facts, options, recommendation,
    every waiter and the priority its answer earns. The admiral creates the Project-level Question
    in `Todo`. If sources settle it, record the answer where the work lives without a Question.
-5. **Write the plan.** Use the skeleton below and commit it before review.
-6. **Return the map.** Send the plan commit, first Issues, later bearings and prepared blockers to
-   the admiral, which owns review and human approval. On a FAIL, read the block and correct the
-   plan at a new commit. Done when the record and return give the admiral everything the review needs.
+   Done when each current blocker has either a cited answer or a complete packet naming its waiters.
+5. **Write the plan.** Use the skeleton below and commit it before review. Done when the plan
+   links its first Issues, covers the settled destination and open bearings, passes `dydo check`,
+   and ends on a commit the admiral can send to review. On a FAIL, read the block and correct the
+   plan at a new commit.
+
+## Return
+
+To the admiral: the plan path and commit SHA, first Issue keys, later bearings, prepared Question
+packets, and check results. The admiral owns review and human approval; return before either.
 
 ## Project plan skeleton
 
@@ -98,6 +108,7 @@ A Question Issue is blocking, carries `Question`, records the authoritative sour
 the facts, options, and recommendation already found, and blocks every plan or implementation Issue
 waiting on its answer. It exists only when that homework leaves human judgment.
 
-Return before review and human approval; a spawned planner never asks the human. The admiral records discoveries in
-dated `## Amendment — <YYYY-MM-DD>` sections. Re-review only when an amendment changes destination,
+A spawned planner never asks the human. The admiral records discoveries and commissions you to
+write dated `## Amendment — <YYYY-MM-DD>` sections on its named branch. Commit each amendment and
+return its SHA and the affected Issues; the admiral retains accountability for the map. Re-review only when an amendment changes destination,
 scope, acceptance criteria, or governing architecture.

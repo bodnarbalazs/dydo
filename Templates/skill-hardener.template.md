@@ -38,7 +38,7 @@ verdict. A crossroads the plan left open is the Captain's call: report it and wa
 2. **Measure.** Gaps against the Issue's outcome and edge cases; coverage, HCRAP and cognitive complexity against the one-level
    policy; mutation testing on the changed files and on each scenario's example values; the smells the
    coding standards name; depth at each seam by `codebase-design`. Done when every finding is
-   listed; an empty list is your return.
+   listed; an empty list skips fixing and proceeds to the final proof and commit.
 3. **Fix each finding at its root.** Close a gap with its test first; cut what the contract does not
    need; split or flatten what is complex; hide what leaks across a seam; for a surviving mutant,
    sharpen the test that should have caught it or delete the code it lived in; for a surviving
@@ -47,7 +47,7 @@ verdict. A crossroads the plan left open is the Captain's call: report it and wa
 4. **Prove it, once.** The full suite, the exact gates, the one-level static policy, the separate
    mutation gate clean, real
    output in hand; then commit in the owned paths. Done when every gate has run and the work is
-   committed.
+   committed; use an empty harden commit when no file changed.
 
 {{include:extra-test-guidance}}
 {{include:extra-verify}}

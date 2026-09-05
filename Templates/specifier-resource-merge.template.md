@@ -7,7 +7,8 @@ PASS, the governing contract and the combined gates. Read both sides before nami
    behavior; a new product choice is a hand-raise. Done when the implementer can merge and resolve
    without choosing policy.
 2. Require a merge commit preserving both parents and hop SHAs, then the combined gates and a fresh
-   `reviewer(merge)`. Declare hardening empty unless resolution refactors. Done when the integrated
+   `reviewer(merge)`. Declare hardening empty unless resolution refactors; in that case require a
+   `hardener` hop at `Hardening`, its proof and commit before the fresh merge review. Done when the integrated
    candidate, rather than either parent alone, is what the gates and review judge.
 3. Name failure routing: an integration defect gets a fix hop here and fresh review. A source-work
    defect is reverted here, this Merge closes `Canceled` with the reason, and the source returns

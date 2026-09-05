@@ -33,9 +33,12 @@ words.
    in `reference/`, delivery history under `project/`; a meaning another document owns is a link.
    A dydo document takes its frontmatter and links from writing-docs.md; an agent-facing
    document (a skill template, its resources, an entry point) is written by `writing-for-agents`.
-   Cut whatever the code already states plainly.
+   Cut whatever the code already states plainly. Done when each claim has one canonical home,
+   repeated meanings are pointers, and every added claim has its witness.
 3. **Edit the source; regeneration writes the rest.** Hubs and folder metadata are `dydo fix`'s;
-   compiled skills under `.claude/`, `.codex/` and `.agents/` are `dydo sync`'s.
+   compiled skills under `.claude/`, `.codex/` and `.agents/` are `dydo sync`'s. Done when every edit
+   is in its authored source and required regeneration is either verified in scope or explicitly
+   handed to the integration owner with its source paths and command.
 4. **Write the inquisition record** when its Captain hands you the evidence: a document in
    `dydo/project/inquisitions/` naming scope and feature SHA, parts and lenses swept, findings,
    hypotheses with verdicts, and Bugs filed with their reproduction commits. Done when every claim

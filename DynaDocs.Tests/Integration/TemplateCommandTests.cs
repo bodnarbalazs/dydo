@@ -10,6 +10,28 @@ public class TemplateCommandTests : IntegrationTestBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task TemplateUpdate_InvalidSourceHashPath_CannotClaimOtherProjectFiles(bool diff)
+    {
+        await InitProjectAsync();
+        var sentinel = Path.Combine(TestDir, "dydo/_system/project-owned.md");
+        File.WriteAllText(sentinel, "PROJECT OWNED SENTINEL");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes["_system/templates/../project-owned.md"] = new string('0', 64);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(path => path, File.ReadAllBytes);
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        result.AssertStderrContains("_system/templates/../project-owned.md");
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TemplateUpdate_UntrackedPackagedResourceCollision_IsAtomic(bool diff)
     {
         await InitProjectAsync();

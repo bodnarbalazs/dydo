@@ -164,6 +164,44 @@ public class SyncCommandTests : IDisposable
         Assert.Equal("keep", File.ReadAllText(customSibling));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void Execute_UnreservedShapeSurvivesDisablementAndMissingSource(bool enabled, bool missing)
+    {
+        var source = Path.Combine(_testDir, "dydo/_system/templates/skill-local-only.template.md");
+        File.WriteAllText(source, "---\nname: local-only\ndescription: Local only.\nemit: skill\n---\n\n# Local Only\n");
+        Assert.Equal(0, ConsoleCapture.All(() => SyncCommand.Execute(_testDir)).exitCode);
+        var config = new ConfigService().LoadConfigStrict(_testDir)!;
+        Assert.False(config.Skills["local-only"].EmitAgent);
+        Assert.False(config.Skills["local-only"].CodexMetadata);
+        config.Skills["local-only"].Enabled = enabled;
+        new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
+        if (missing)
+            File.Delete(source);
+        var unreserved = new[]
+        {
+            ".claude/agents/local-only.md",
+            ".codex/agents/local-only.toml",
+            ".agents/skills/local-only/agents/openai.yaml"
+        };
+        foreach (var relative in unreserved)
+        {
+            var path = Path.Combine(_testDir, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "project-owned: " + relative);
+        }
+
+        var result = ConsoleCapture.All(() => SyncCommand.Execute(_testDir));
+
+        Assert.Equal(enabled ? ExitCodes.ToolError : 0, result.exitCode);
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude/skills/local-only/SKILL.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".agents/skills/local-only/SKILL.md")));
+        Assert.All(unreserved, relative =>
+            Assert.Equal("project-owned: " + relative, File.ReadAllText(Path.Combine(_testDir, relative))));
+    }
+
     [Fact]
     public void Execute_EnabledMissingTombstoneCleansRecordedOutputAndFails()
     {

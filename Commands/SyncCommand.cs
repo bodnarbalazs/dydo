@@ -143,13 +143,15 @@ public static partial class SyncCommand
             DeleteManagedFile(Path.Combine(projectRoot, ".agents", "skills", name, "SKILL.md"), projectRoot);
         }
 
-        if (removeEverything || (prior.EmitAgent == true && currentSkill?.EmitAgent != true))
+        if ((prior.EmitAgent == true || currentSwitch.EmitAgent == true)
+            && (removeEverything || currentSkill?.EmitAgent != true))
         {
             DeleteManagedFile(Path.Combine(projectRoot, ".claude", "agents", $"{name}.md"), projectRoot);
             DeleteManagedFile(Path.Combine(projectRoot, ".codex", "agents", $"{name}.toml"), projectRoot);
         }
 
-        if (removeEverything || (prior.CodexMetadata == true && currentSwitch.CodexMetadata != true))
+        if ((prior.CodexMetadata == true || currentSwitch.CodexMetadata == true)
+            && (removeEverything || currentSwitch.CodexMetadata != true))
             DeleteManagedFile(Path.Combine(projectRoot, ".agents", "skills", name, "agents", "openai.yaml"), projectRoot);
 
         var currentResources = removeEverything

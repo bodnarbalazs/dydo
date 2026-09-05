@@ -119,7 +119,7 @@ public static class TemplateCommand
         var sourceRoot = Path.Combine(projectRoot, original.Structure.Root, "_system", "templates");
         var managed = ManagedShippedSourcePaths(original).ToHashSet(StringComparer.Ordinal);
 
-        foreach (var relative in ManagedShippedSourcePaths(original).Where(relative =>
+        foreach (var relative in managed.Where(relative =>
                      !packaged.Contains(Path.GetFileName(relative))
                      && !original.FrameworkHashes.ContainsKey(relative)))
         {
@@ -149,7 +149,7 @@ public static class TemplateCommand
                 CopyDirectory(currentDydo, temporaryDydo);
             Directory.CreateDirectory(Path.Combine(temporaryDydo, "_system", "templates"));
 
-            foreach (var relative in ManagedShippedSourcePaths(original).Where(relative =>
+            foreach (var relative in managed.Where(relative =>
                          !packaged.Contains(Path.GetFileName(relative))))
             {
                 var path = Path.Combine(temporaryDydo, relative.Replace('/', Path.DirectorySeparatorChar));
@@ -269,6 +269,12 @@ public static class TemplateCommand
         var paths = config.FrameworkHashes.Keys
             .Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal))
             .ToHashSet(StringComparer.Ordinal);
+        foreach (var path in paths)
+        {
+            var file = path["_system/templates/".Length..];
+            if (!IsSourceTemplateName(file))
+                throw new InvalidDataException($"Invalid local source hash path: '{path}'.");
+        }
         foreach (var (name, skill) in config.Skills.Where(entry => entry.Value.Origin == "shipped"))
         {
             paths.Add($"_system/templates/skill-{name}.template.md");
@@ -276,6 +282,17 @@ public static class TemplateCommand
                 paths.Add($"_system/templates/{name}-resource-{resource}.template.md");
         }
         return paths;
+    }
+
+    private static bool IsSourceTemplateName(string file)
+    {
+        if (!file.EndsWith(".template.md", StringComparison.Ordinal))
+            return false;
+        var stem = file[..^".template.md".Length];
+        if (stem.StartsWith("skill-", StringComparison.Ordinal) && ConfigService.IsValidSlug(stem["skill-".Length..]))
+            return true;
+        var parts = stem.Split("-resource-", StringSplitOptions.None);
+        return parts.Length == 2 && parts.All(ConfigService.IsValidSlug);
     }
 
     private static void CopyDirectory(string source, string destination)

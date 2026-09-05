@@ -83,6 +83,19 @@ public class ValidateCommandTests : IDisposable
         Assert.Contains("Errors", stderr);
     }
 
+    [Fact]
+    public void Validate_MalformedSwitchboardNamesTheEntryAndField()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},\"skills\":{\"Local\":{\"enabled\":true}}}");
+
+        var (_, stderr) = CaptureOutput(() =>
+            DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
+
+        Assert.Contains("dydo.json", stderr);
+        Assert.Contains("Local", stderr);
+    }
+
     private static (string stdout, string stderr) CaptureOutput(Func<int> action)
     {
         var (_, stdout, stderr) = ConsoleCapture.All(action);

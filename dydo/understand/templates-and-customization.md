@@ -11,7 +11,9 @@ a project hooks into it, and what `dydo template update` does to a file dydo has
 
 ## Sources and outputs
 
-Shipped sources live in `Templates/`.
+The executable ships sources from `Templates/`. `dydo init` and `dydo template update` materialize
+the runnable copies in the project's flat `dydo/_system/templates/` directory. `dydo sync` reads only
+that local directory; it never falls back to the executable's embedded copy.
 
 | Pattern | Becomes |
 |---|---|
@@ -53,16 +55,22 @@ text, is shared by every skill template that names it, and survives the updates 
 dydo sync
 ```
 
-`dydo sync` compiles every source into the native artifacts for both hosts; the output map is in
+`dydo sync` validates the complete local catalog, discovers valid custom sources, reconciles the
+`dydo.json.skills` switchboard, and compiles enabled sources for the selected hosts; the output map is in
 [Architecture Overview](./architecture.md). Compiled files are build products: never edit them
 directly — change the source and sync.
 
-Its cleanup is an allowlist of the roles, workflows, and resources dydo itself has retired.
+Disabling a switch or changing or removing a source cleans only the fixed paths recorded by that
+switch's generated agent, Codex-metadata, and resource shape, across both provider surfaces. Custom
+siblings keep their bytes and directories disappear only when empty. To delete a custom skill
+permanently, disable and sync it first, verify its managed output is gone, then remove its source,
+resource sources, and switch entry.
+
+The remaining legacy cleanup is an allowlist of the roles, workflows, and resources dydo itself has retired.
 Workflow emission is gone; sync removes only `.claude/workflows/run-sprint.js` and
 `.claude/workflows/inquisition.js`, preserving custom siblings and nested files byte-for-byte.
 It removes the workflow directory only when empty, including when it started empty, and performs
-this cleanup even when only Codex is selected. Delete a template of your own and its last artifacts are yours to
-remove, or their descriptions keep loading every turn.
+this cleanup even when only Codex is selected.
 
 ## Template updates
 
@@ -80,6 +88,14 @@ against what is on disk, and takes one of two paths per file:
 | still matching its stored hash | replaced with the new shipped text |
 | one of the six framework-owned documents, edited | left alone, and reported as user-edited |
 
+Skill and resource sources follow a different ownership rule. Every current shipped source is
+unconditionally replaced from the running executable, including a hard-edited copy. Removed shipped
+sources and their hashes are retired while their switch remains a cleanup tombstone. A distinctly
+named custom source is preserved byte-for-byte. If a custom name collides with a newly shipped or
+retired shipped name, preflight fails before any file changes. DR 002 still governs framework
+documents, includes, and project extensions; this shipped-source overwrite rule replaces only its
+direct skill-template preservation behavior.
+
 Beyond that comparison the same run creates any newly shipped framework-owned document
 missing from disk; tops up `_system/types.json` with frontmatter types added since the project was
 scaffolded, creating it when absent and leaving a malformed one alone with a warning; adds shipped
@@ -87,8 +103,8 @@ nudge and scan-exclusion defaults to `dydo.json`; and
 deletes a retired framework asset — today `_assets/dydo-diagram.svg` — when the copy on disk is one
 the framework wrote, keeping a modified copy as the project's own.
 
-`--diff` previews the file changes without writing; the `dydo.json` defaults are neither previewed
-nor applied under `--diff`.
+`--diff` runs the same intended-state validation and collision preflight and reports source,
+switchboard, provenance, retirement, and scan-exclusion changes without writing.
 
 Review the
 diff after an update, run `dydo sync`, and finish with `dydo check`; flags and exit codes are in the

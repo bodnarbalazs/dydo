@@ -3,8 +3,10 @@ namespace DynaDocs.Commands;
 using System.CommandLine;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Services;
+using DynaDocs.Serialization;
 using DynaDocs.Utils;
 
 public static class TemplateCommand
@@ -62,54 +64,213 @@ public static class TemplateCommand
 
     private static int ExecuteUpdate(bool diff)
     {
-        var configService = new ConfigService();
-        var configPath = configService.FindConfigFile();
-        if (configPath == null)
+        try
         {
-            Console.Error.WriteLine("No dydo.json found. Run 'dydo init' first.");
+            var configService = new ConfigService();
+            var configPath = configService.FindConfigFile();
+            if (configPath == null)
+            {
+                Console.Error.WriteLine("No dydo.json found. Run 'dydo init' first.");
+                return 1;
+            }
+
+            var original = configService.LoadConfigStrict()!;
+            var config = PrepareSourceUpdate(original, Path.GetDirectoryName(configPath)!);
+            var dydoRoot = Path.Combine(Path.GetDirectoryName(configPath)!, config.Structure.Root);
+
+            var tally = new UpdateTally();
+            ApplySourceUpdate(original, config, dydoRoot, diff, tally);
+            foreach (var relativePath in FrameworkDocFiles)
+            {
+                var before = config.FrameworkHashes.GetValueOrDefault(relativePath);
+                var result = UpdateDocFile(relativePath, dydoRoot, config, diff);
+                AccumulateResult(result, tally);
+                if (result is UpdateResult.Skipped
+                    && before != config.FrameworkHashes.GetValueOrDefault(relativePath))
+                    tally.MetadataRefreshed++;
+            }
+
+            tally.Updated += CleanRetiredBinaries(dydoRoot, config, diff);
+            tally.Updated += CleanRetiredDocs(dydoRoot, config, diff);
+            PruneStaleHashes(config, diff);
+
+            tally.Updated += ApplyConfigDefaults(config);
+            tally.Updated += EnsureTypesJson(dydoRoot, diff);
+
+            if (!diff)
+                configService.SaveConfig(config, configPath);
+
+            ReportSummary(tally);
+
+            return tally.Warnings.Count > 0 ? 1 : 0;
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException)
+        {
+            Console.Error.WriteLine($"Template update failed: {ex.Message}");
             return 1;
         }
-
-        var config = configService.LoadConfig()!;
-        var dydoRoot = configService.GetDydoRoot();
-
-        var tally = new UpdateTally();
-        foreach (var relativePath in FrameworkDocFiles)
-            AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff), tally);
-
-        tally.Updated += CleanRetiredBinaries(dydoRoot, config, diff);
-        tally.Updated += CleanRetiredDocs(dydoRoot, config, diff);
-        PruneStaleHashes(config, diff);
-
-        tally.Updated += ApplyConfigDefaults(config, diff);
-        tally.Updated += EnsureTypesJson(dydoRoot, diff);
-
-        if (!diff)
-            configService.SaveConfig(config, configPath);
-
-        ReportSummary(tally);
-
-        return tally.Warnings.Count > 0 ? 1 : 0;
     }
 
-    private static int ApplyConfigDefaults(DydoConfig config, bool diff)
+    private static DydoConfig PrepareSourceUpdate(DydoConfig original, string projectRoot)
+    {
+        var json = JsonSerializer.Serialize(original, DydoConfigJsonContext.Default.DydoConfig);
+        var planned = JsonSerializer.Deserialize(json, DydoConfigJsonContext.Default.DydoConfig)!;
+        var packaged = TemplateGenerator.GetAllTemplateNames().ToHashSet(StringComparer.Ordinal);
+        var sourceRoot = Path.Combine(projectRoot, original.Structure.Root, "_system", "templates");
+
+        foreach (var name in packaged)
+        {
+            var path = Path.Combine(sourceRoot, name);
+            if (!File.Exists(path))
+                continue;
+            var relative = $"_system/templates/{name}";
+            var skillName = SkillNameForTemplate(name);
+            var shipped = original.FrameworkHashes.ContainsKey(relative)
+                || (skillName != null
+                    && original.Skills.GetValueOrDefault(skillName)?.Origin == "shipped");
+            if (!shipped)
+                throw new InvalidDataException($"Local custom source '{name}' collides with a shipped template.");
+        }
+
+        var temporaryRoot = Path.Combine(Path.GetTempPath(), "dydo-update-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var currentDydo = Path.Combine(projectRoot, original.Structure.Root);
+            var temporaryDydo = Path.Combine(temporaryRoot, original.Structure.Root);
+            if (Directory.Exists(currentDydo))
+                CopyDirectory(currentDydo, temporaryDydo);
+            Directory.CreateDirectory(Path.Combine(temporaryDydo, "_system", "templates"));
+
+            foreach (var relative in ManagedShippedSourcePaths(original).Where(relative =>
+                         !packaged.Contains(Path.GetFileName(relative))))
+            {
+                var path = Path.Combine(temporaryDydo, relative.Replace('/', Path.DirectorySeparatorChar));
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+
+            var temporarySources = Path.Combine(temporaryDydo, "_system", "templates");
+            foreach (var name in packaged)
+                File.WriteAllText(Path.Combine(temporarySources, name), TemplateGenerator.ReadBuiltInTemplate(name));
+            foreach (var relativePath in FrameworkDocFiles)
+            {
+                var path = Path.Combine(temporaryDydo, relativePath.Replace('/', Path.DirectorySeparatorChar));
+                if (!File.Exists(path) && GetEmbeddedDocContent(relativePath) is { } content)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                    File.WriteAllText(path, content);
+                }
+            }
+
+            foreach (var key in planned.FrameworkHashes.Keys
+                         .Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal))
+                         .ToList())
+                planned.FrameworkHashes.Remove(key);
+            foreach (var name in packaged)
+                planned.FrameworkHashes[$"_system/templates/{name}"] = ComputeHash(TemplateGenerator.ReadBuiltInTemplate(name));
+
+            SkillTemplateService.DiscoverLocalCatalog(temporaryRoot, planned);
+            return planned;
+        }
+        finally
+        {
+            if (Directory.Exists(temporaryRoot))
+                Directory.Delete(temporaryRoot, true);
+        }
+    }
+
+    private static void ApplySourceUpdate(
+        DydoConfig original,
+        DydoConfig planned,
+        string dydoRoot,
+        bool diff,
+        UpdateTally tally)
+    {
+        var sourceRoot = Path.Combine(dydoRoot, "_system", "templates");
+        var packaged = TemplateGenerator.GetAllTemplateNames().ToHashSet(StringComparer.Ordinal);
+        foreach (var relative in ManagedShippedSourcePaths(original)
+                     .Where(relative => !packaged.Contains(Path.GetFileName(relative))))
+        {
+            var path = Path.Combine(dydoRoot, relative.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(path))
+                continue;
+            if (!diff)
+                File.Delete(path);
+            Console.WriteLine($"  Removed retired source: {relative}");
+            tally.Updated++;
+        }
+
+        foreach (var name in packaged.OrderBy(name => name, StringComparer.Ordinal))
+        {
+            var path = Path.Combine(sourceRoot, name);
+            var content = TemplateGenerator.ReadBuiltInTemplate(name);
+            if (File.Exists(path) && File.ReadAllText(path) == content)
+                continue;
+            var action = File.Exists(path) ? "Updated" : "Created";
+            if (!diff)
+            {
+                Directory.CreateDirectory(sourceRoot);
+                File.WriteAllText(path, content);
+            }
+            Console.WriteLine($"  {action} source: _system/templates/{name}");
+            tally.Updated++;
+        }
+
+        original.Skills = planned.Skills;
+        original.FrameworkHashes = planned.FrameworkHashes;
+    }
+
+    private static IEnumerable<string> ManagedShippedSourcePaths(DydoConfig config)
+    {
+        var paths = config.FrameworkHashes.Keys
+            .Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal))
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (var (name, skill) in config.Skills.Where(entry => entry.Value.Origin == "shipped"))
+        {
+            paths.Add($"_system/templates/skill-{name}.template.md");
+            foreach (var resource in skill.Resources ?? [])
+                paths.Add($"_system/templates/{name}-resource-{resource}.template.md");
+        }
+        return paths;
+    }
+
+    private static string? SkillNameForTemplate(string name)
+    {
+        if (name.StartsWith("skill-", StringComparison.Ordinal))
+            return name["skill-".Length..^".template.md".Length];
+        var delimiter = name.IndexOf("-resource-", StringComparison.Ordinal);
+        return delimiter > 0 ? name[..delimiter] : null;
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.GetFiles(source))
+            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
+        foreach (var directory in Directory.GetDirectories(source))
+            CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
+    }
+
+    private static int ApplyConfigDefaults(DydoConfig config)
     {
         var updated = 0;
 
-        var nudgesAdded = diff ? 0 : ConfigFactory.EnsureDefaultNudges(config);
+        var nudgesAdded = ConfigFactory.EnsureDefaultNudges(config);
         if (nudgesAdded > 0)
         {
             Console.WriteLine($"  Added {nudgesAdded} default nudge(s)");
             updated += nudgesAdded;
         }
 
-        updated += EnsureScanExcludeWithReport(config, diff);
+        updated += EnsureScanExcludeWithReport(config);
         return updated;
     }
 
     private static void ReportSummary(UpdateTally tally)
     {
         var summary = $"Template update complete: {tally.Updated} updated, {tally.Skipped} already current";
+        if (tally.MetadataRefreshed > 0)
+            summary += $", {tally.MetadataRefreshed} metadata-only document hash refresh(es)";
         if (tally.Warned > 0)
             summary += $", {tally.Warned} warned";
         Console.WriteLine(summary + ".");
@@ -195,6 +356,8 @@ public static class TemplateCommand
     private static void PruneStaleHashes(DydoConfig config, bool diff)
     {
         var validKeys = new HashSet<string>(FrameworkDocFiles);
+        validKeys.UnionWith(TemplateGenerator.GetAllTemplateNames()
+            .Select(name => $"_system/templates/{name}"));
         var staleKeys = config.FrameworkHashes.Keys
             .Where(k => !validKeys.Contains(k))
             .ToList();
@@ -206,10 +369,8 @@ public static class TemplateCommand
         }
     }
 
-    private static int EnsureScanExcludeWithReport(DydoConfig config, bool diff)
+    private static int EnsureScanExcludeWithReport(DydoConfig config)
     {
-        if (diff) return 0;
-
         var added = ConfigFactory.EnsureDefaultScanExclude(config);
         if (added > 0)
             Console.WriteLine($"  Added {added} default scan-exclude entry(ies)");
@@ -412,6 +573,7 @@ public static class TemplateCommand
         public int Updated;
         public int Skipped;
         public int Warned;
+        public int MetadataRefreshed;
         public List<string> Warnings { get; } = [];
     }
 }

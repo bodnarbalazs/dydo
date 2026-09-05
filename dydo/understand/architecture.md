@@ -39,13 +39,14 @@ container. JSON serialization is source-generated for Native AOT compatibility.
 ## The compiler
 
 `Templates/skill-<name>.template.md` is the role: its frontmatter carries the metadata, its body
-carries the whole methodology. `dydo sync` discovers every shipped skill template, and emits:
+carries the whole methodology. `dydo sync` validates the flat local source catalog and emits every
+enabled shipped or custom skill to the selected providers:
 
 | Output | Host | Emitted for |
 |---|---|---|
 | `.claude/skills/<role>/SKILL.md` and its `resources/` | Claude Code | every role |
 | `.claude/agents/<role>.md` | Claude Code | roles that emit an agent |
-| `.agents/skills/<role>/SKILL.md` and its `resources/` | Codex | every role; an `agents/openai.yaml` policy file joins it for explicit-only ones |
+| `.agents/skills/<role>/SKILL.md` and its `resources/` | Codex | every role; `agents/openai.yaml` joins it for explicit invocation or an argument hint |
 | `.codex/agents/<role>.toml` | Codex | roles that emit an agent |
 
 DR 047 retires Workflow as an operating-model concept. Sync no longer discovers or emits workflows.

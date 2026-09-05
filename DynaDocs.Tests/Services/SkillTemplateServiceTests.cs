@@ -6,6 +6,62 @@ using DynaDocs.Utils;
 
 public class SkillTemplateServiceTests
 {
+    [Fact]
+    public void DiscoverLocalCatalog_AcceptsMinimalCustomSwitchAndReconcilesGeneratedShape()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-my-tool.template.md"),
+            "---\nname: my-tool\ndescription: My local tool.\nemit: skill\ninvocation: explicit\n---\n\n# My Tool\n");
+        var config = new DynaDocs.Models.DydoConfig
+        {
+            Skills = new Dictionary<string, DynaDocs.Models.SkillSwitchConfig>
+            {
+                ["my-tool"] = new() { Enabled = true }
+            }
+        };
+
+        try
+        {
+            var catalog = SkillTemplateService.DiscoverLocalCatalog(root, config);
+
+            Assert.Single(catalog);
+            Assert.Equal("custom", config.Skills["my-tool"].Origin);
+            Assert.False(config.Skills["my-tool"].EmitAgent);
+            Assert.True(config.Skills["my-tool"].CodexMetadata);
+            Assert.NotNull(config.Skills["my-tool"].Resources);
+            Assert.Empty(config.Skills["my-tool"].Resources!);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void DiscoverLocalCatalog_RejectsOrphanResourceAndLeavesSwitchboardUnchanged()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "missing-resource-help.template.md"), "help");
+        var config = new DynaDocs.Models.DydoConfig();
+
+        try
+        {
+            var error = Assert.Throws<InvalidDataException>(
+                () => SkillTemplateService.DiscoverLocalCatalog(root, config));
+
+            Assert.Contains("missing-resource-help.template.md", error.Message);
+            Assert.Empty(config.Skills);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     #region DiscoverSkills
 
     [Fact]

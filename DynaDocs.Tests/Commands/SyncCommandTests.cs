@@ -18,6 +18,11 @@ public class SyncCommandTests : IDisposable
     {
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-sync-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
+        var config = ConfigFactory.CreateDefault();
+        var dydoRoot = Path.Combine(_testDir, config.Structure.Root);
+        new FolderScaffolder().Scaffold(dydoRoot);
+        FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
+        new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
         _reviewer = SkillTemplateService.DiscoverSkills().First(r => r.Name == "reviewer");
     }
 
@@ -70,6 +75,67 @@ public class SyncCommandTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
+    }
+
+    [Fact]
+    public void Execute_DiscoversMinimalCustomSwitchAndCompilesLocalSource()
+    {
+        var source = Path.Combine(_testDir, "dydo", "_system", "templates", "skill-local-only.template.md");
+        File.WriteAllText(source, "---\nname: local-only\ndescription: Local only.\nemit: skill\ninvocation: explicit\n---\n\n# Local Only\n");
+        var config = new ConfigService().LoadConfigStrict(_testDir)!;
+        config.Skills["local-only"] = new SkillSwitchConfig { Enabled = true };
+        new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
+
+        var (result, _, error) = ConsoleCapture.All(() => SyncCommand.Execute(_testDir));
+
+        Assert.True(result == 0, error);
+        Assert.Contains("# Local Only", File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "local-only", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "local-only", "agents", "openai.yaml")));
+        var saved = new ConfigService().LoadConfigStrict(_testDir)!;
+        Assert.Equal("custom", saved.Skills["local-only"].Origin);
+        Assert.False(saved.Skills["local-only"].EmitAgent);
+        Assert.True(saved.Skills["local-only"].CodexMetadata);
+    }
+
+    [Fact]
+    public void Execute_DisabledSkillCleansRecordedShapeAcrossBothProvidersAndPreservesSiblings()
+    {
+        SaveConfigWithIntegrations(claude: true, codex: false);
+        Assert.Equal(0, SyncCommand.Execute(_testDir));
+        var config = new ConfigService().LoadConfigStrict(_testDir)!;
+        config.Skills["reviewer"].Enabled = false;
+        var customSibling = Path.Combine(_testDir, ".agents", "skills", "reviewer", "custom.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(customSibling)!);
+        File.WriteAllText(customSibling, "keep");
+        new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
+
+        var result = SyncCommand.Execute(_testDir);
+
+        Assert.Equal(0, result);
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
+        Assert.Equal("keep", File.ReadAllText(customSibling));
+    }
+
+    [Fact]
+    public void Execute_EnabledMissingTombstoneCleansRecordedOutputAndFails()
+    {
+        Assert.Equal(0, SyncCommand.Execute(_testDir));
+        var sources = Path.Combine(_testDir, "dydo", "_system", "templates");
+        File.Delete(Path.Combine(sources, "skill-reviewer.template.md"));
+        foreach (var resource in Directory.GetFiles(sources, "reviewer-resource-*.template.md"))
+            File.Delete(resource);
+
+        var result = SyncCommand.Execute(_testDir);
+
+        Assert.NotEqual(0, result);
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
+        var config = new ConfigService().LoadConfigStrict(_testDir)!;
+        Assert.True(config.Skills["reviewer"].Enabled);
+        Assert.Equal("shipped", config.Skills["reviewer"].Origin);
     }
 
     [Fact]

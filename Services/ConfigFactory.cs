@@ -13,6 +13,7 @@ public static class ConfigFactory
     [
         "_system/.local/",
         "_system/audit/",
+        "_system/templates/",
         // The shared scratch workspace (dydo/agents/workspace/): agent work products,
         // not documentation — never scanned, never validated, never mirrored.
         "agents/"

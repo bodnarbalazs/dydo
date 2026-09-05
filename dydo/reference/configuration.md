@@ -25,6 +25,15 @@ through Linear's official surfaces.
     "claude": true,
     "codex": true
   },
+  "skills": {
+    "writing-for-humans": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    }
+  },
   "models": {
     "tiers": {
       "anthropic": { "strong": "claude-fable-5" },
@@ -38,6 +47,7 @@ through Linear's official surfaces.
   "scanExclude": [
     "_system/.local/",
     "_system/audit/",
+    "_system/templates/",
     "agents/"
   ],
   "nudges": [],
@@ -53,6 +63,11 @@ through Linear's official surfaces.
 | `structure.root` | string | Documentation root; defaults to `dydo`. |
 | `integrations.claude` | boolean | Whether Claude Code integration is wired. |
 | `integrations.codex` | boolean | Whether Codex integration is wired. |
+| `skills.<name>.enabled` | boolean | The human-authored switch controlling whether the local source emits. |
+| `skills.<name>.origin` | `shipped` \| `custom` | Generated source ownership and retirement provenance. |
+| `skills.<name>.emitAgent` | boolean | Generated prior agent-output shape used for exact cleanup. |
+| `skills.<name>.codexMetadata` | boolean | Generated prior `agents/openai.yaml` shape, emitted by explicit invocation or an argument hint. |
+| `skills.<name>.resources` | string[] | Generated, sorted prior resource-output shape used for exact cleanup. |
 | `models.tiers` | object | Vendor-specific model bindings for abstract tiers. |
 | `models.agents` | object | Agent-to-tier bindings resolved by `dydo sync`. |
 | `scanExclude` | string[] | Paths excluded from documentation scanning. |
@@ -61,7 +76,12 @@ through Linear's official surfaces.
 
 Older 2.x configuration may still contain repository work-path fields. The 3.x runtime ignores those
 unknown properties safely and does not migrate them into another local work model. A fresh
-initialization emits only `structure.root`.
+initialization emits `structure.root` and no retired work-path fields.
+
+`enabled` is the only hand-authored member of a skill switch. A new custom source may begin with the
+minimal `{ "enabled": true }`; the next successful sync fills the generated members. Discovery adds
+a valid source missing from the switchboard as enabled and never changes an existing true or false.
+Malformed switches fail update, sync, check, and validate rather than receiving defaults.
 
 ## Work-management boundary
 
@@ -94,6 +114,7 @@ and blocks reject the action. Nudges enforce project process; they do not create
 ## Customization points
 
 - `dydo/_system/template-additions/` — durable `{{include:name}}` fragments.
+- `dydo/_system/templates/` — flat local skill/resource sources; shipped copies are overwritten on update and distinctly named custom sources survive.
 - `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
   read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.
   Whitelist entries lift off-limits patterns only; [Guard System](../understand/guard-system.md) owns

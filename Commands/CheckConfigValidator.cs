@@ -15,7 +15,11 @@ internal static class CheckConfigValidator
     {
         var errors = new List<string>();
 
-        var missing = ConfigFactory.FindMissingScanExcludeInvariants(config);
+        // A pre-source-layer project remains valid until `template update` migrates it.
+        // Once the switchboard exists, its source directory must stay outside document scans.
+        var missing = config.Skills.Count == 0
+            ? []
+            : ConfigFactory.FindMissingScanExcludeInvariants(config);
         foreach (var entry in missing)
         {
             errors.Add(

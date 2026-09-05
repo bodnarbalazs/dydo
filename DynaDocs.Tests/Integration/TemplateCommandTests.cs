@@ -7,6 +7,94 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateCommandTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task TemplateUpdate_OverwritesShippedSourceButPreservesDistinctCustomSource()
+    {
+        await InitProjectAsync();
+        var root = Path.Combine(TestDir, "dydo", "_system", "templates");
+        var shipped = Path.Combine(root, "skill-reviewer.template.md");
+        var custom = Path.Combine(root, "skill-our-review.template.md");
+        File.WriteAllText(shipped, "broken hard edit");
+        var customContent = "---\nname: our-review\ndescription: Our review.\nemit: skill\ninvocation: automatic\n---\n\n# Our Review\n";
+        File.WriteAllText(custom, customContent);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.Equal(TemplateGenerator.ReadBuiltInTemplate("skill-reviewer.template.md"), File.ReadAllText(shipped));
+        Assert.Equal(customContent, File.ReadAllText(custom));
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.Equal("custom", config.Skills["our-review"].Origin);
+        Assert.True(config.Skills["our-review"].Enabled);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_MigratesProjectWithoutLocalSourceLayer()
+    {
+        await InitProjectAsync();
+        Directory.Delete(Path.Combine(TestDir, "dydo", "_system", "templates"), true);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.Skills.Clear();
+        foreach (var key in config.FrameworkHashes.Keys.Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal)).ToList())
+            config.FrameworkHashes.Remove(key);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        AssertFileExists("dydo/_system/templates/skill-reviewer.template.md");
+        var migrated = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.NotEmpty(migrated.Skills);
+        Assert.Contains("_system/templates/", migrated.ScanExclude);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_DiffPreflightsSourcesWithoutWriting()
+    {
+        await InitProjectAsync();
+        var root = Path.Combine(TestDir, "dydo", "_system", "templates");
+        var shipped = Path.Combine(root, "skill-reviewer.template.md");
+        File.WriteAllText(shipped, "broken hard edit");
+        var configBefore = File.ReadAllText(Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync("--diff");
+
+        result.AssertSuccess();
+        Assert.Equal("broken hard edit", File.ReadAllText(shipped));
+        Assert.Equal(configBefore, File.ReadAllText(Path.Combine(TestDir, "dydo.json")));
+        result.AssertStdoutContains("Updated source: _system/templates/skill-reviewer.template.md");
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_RemovesRetiredShippedSourceAndKeepsCleanupTombstone()
+    {
+        await InitProjectAsync();
+        var source = Path.Combine(TestDir, "dydo", "_system", "templates", "skill-former.template.md");
+        File.WriteAllText(source,
+            "---\nname: former\ndescription: Former shipped skill.\nemit: skill\ninvocation: automatic\n---\n\n# Former\n");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.Skills["former"] = new SkillSwitchConfig
+        {
+            Enabled = false,
+            Origin = "shipped",
+            EmitAgent = false,
+            CodexMetadata = false,
+            Resources = []
+        };
+        config.FrameworkHashes["_system/templates/skill-former.template.md"] = new string('0', 64);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(source));
+        var updated = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.True(updated.Skills.TryGetValue("former", out var tombstone));
+        Assert.False(tombstone.Enabled);
+        Assert.Equal("shipped", tombstone.Origin);
+        Assert.False(updated.FrameworkHashes.ContainsKey("_system/templates/skill-former.template.md"));
+    }
+
     private async Task<CommandResult> RunTemplateUpdateAsync(params string[] extraArgs)
     {
         var command = TemplateCommand.Create();

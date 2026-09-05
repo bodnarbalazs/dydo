@@ -36,7 +36,7 @@ public static partial class SkillTemplateService
             throw new InvalidDataException($"Local template source directory is missing: {sourceRoot}. Run 'dydo template update'.");
 
         var errors = new List<string>();
-        var files = Directory.GetFiles(sourceRoot, "*.template.md", SearchOption.TopDirectoryOnly)
+        var files = Directory.GetFiles(sourceRoot, "*", SearchOption.TopDirectoryOnly)
             .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
             .ToList();
         foreach (var nested in Directory.GetFiles(sourceRoot, "*.template.md", SearchOption.AllDirectories)
@@ -50,6 +50,8 @@ public static partial class SkillTemplateService
         foreach (var path in files)
         {
             var file = Path.GetFileName(path);
+            if (!file.EndsWith(".template.md", StringComparison.Ordinal))
+                continue;
             if (file.StartsWith("skill-", StringComparison.OrdinalIgnoreCase)
                 && !file.StartsWith("skill-", StringComparison.Ordinal))
             {

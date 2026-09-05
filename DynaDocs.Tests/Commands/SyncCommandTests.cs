@@ -142,6 +142,54 @@ public class SyncCommandTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(_testDir, ".agents", "skills")));
     }
 
+    [Theory]
+    [InlineData("skill-case.TEMPLATE.MD", "valid-case")]
+    [InlineData("case-resource-notes.TEMPLATE.MD", "case")]
+    public void Execute_UnsupportedSuffixLeavesSourcesSwitchesAndNativeOutputsUntouched(string fileName, string validName)
+    {
+        var sources = Path.Combine(_testDir, "dydo/_system/templates");
+        File.WriteAllText(Path.Combine(sources, $"skill-{validName}.template.md"),
+            $"---\nname: {validName}\ndescription: Valid local agent.\nemit: agent\nargument-hint: context\n---\n\n# Valid local agent\n\n[Guide](resources/guide.md)\n");
+        File.WriteAllText(Path.Combine(sources, $"{validName}-resource-guide.template.md"), "# Valid guide\n");
+        Assert.Equal(0, ConsoleCapture.All(() => SyncCommand.Execute(_testDir)).exitCode);
+        var configBefore = File.ReadAllBytes(Path.Combine(_testDir, "dydo.json"));
+        var nativeBefore = new[] { ".claude", ".agents", ".codex" }
+            .SelectMany(root => Directory.GetFiles(Path.Combine(_testDir, root), "*", SearchOption.AllDirectories))
+            .ToDictionary(path => path, File.ReadAllBytes);
+        var unsupportedSource = Path.Combine(sources, fileName);
+        var unsupportedBytes = System.Text.Encoding.UTF8.GetBytes(
+            "---\nname: case\ndescription: Unsupported suffix.\nemit: agent\nargument-hint: context\n---\n\n# Unsupported suffix\n");
+        File.WriteAllBytes(unsupportedSource, unsupportedBytes);
+
+        var result = ConsoleCapture.All(() => SyncCommand.Execute(_testDir));
+
+        Assert.Equal(0, result.exitCode);
+        Assert.Equal(unsupportedBytes, File.ReadAllBytes(unsupportedSource));
+        Assert.Equal(configBefore, File.ReadAllBytes(Path.Combine(_testDir, "dydo.json")));
+        var nativeAfter = new[] { ".claude", ".agents", ".codex" }
+            .SelectMany(root => Directory.GetFiles(Path.Combine(_testDir, root), "*", SearchOption.AllDirectories))
+            .Order(StringComparer.Ordinal).ToArray();
+        Assert.Equal(nativeBefore.Keys.Order(StringComparer.Ordinal), nativeAfter);
+        Assert.All(nativeAfter, path => Assert.Equal(nativeBefore[path], File.ReadAllBytes(path)));
+        var saved = new ConfigService().LoadConfigStrict(_testDir)!;
+        Assert.True(saved.Skills[validName].Enabled);
+        Assert.Equal("custom", saved.Skills[validName].Origin);
+        Assert.True(saved.Skills[validName].EmitAgent);
+        Assert.True(saved.Skills[validName].CodexMetadata);
+        Assert.Equal(new[] { "guide" }, saved.Skills[validName].Resources);
+        foreach (var root in new[] { ".claude", ".agents" })
+        {
+            Assert.Contains("# Valid local agent", File.ReadAllText(Path.Combine(_testDir, root, "skills", validName, "SKILL.md")));
+            Assert.Equal("# Valid guide\n", File.ReadAllText(Path.Combine(_testDir, root, "skills", validName, "resources/guide.md")));
+            Assert.False(File.Exists(Path.Combine(_testDir, root, "skills/case/resources/notes.md")));
+        }
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude/agents", $"{validName}.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex/agents", $"{validName}.toml")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents/skills", validName, "agents/openai.yaml")));
+        if (validName != "case")
+            Assert.False(saved.Skills.ContainsKey("case"));
+    }
+
     [Fact]
     public void Execute_DisabledSkillCleansRecordedShapeAcrossBothProvidersAndPreservesSiblings()
     {

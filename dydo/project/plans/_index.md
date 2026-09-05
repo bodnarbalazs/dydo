@@ -11,6 +11,8 @@ Index of plans documentation.
 
 ## Contents
 
+- [dydo 3.0 / Consolidate and release](./dydo-3-consolidation.md) - Reconcile the operating protocol, CLI, local quality gates and generated agents into a reviewed, locally usable 3.0.0 candidate.
+- [dydo 3.0 / Completion route after beta](./dydo-3-completion.md) - Carry the reviewed local beta through template ownership, testing assurance, host integration, audit and stable release gates.
 - [dydo 3.0 Linear PM Migration](./dydo-3-linear-migration.md) - Reviewed rolling-wave plan for establishing the Linear work graph, freezing the v2 PM corpus safely, and preparing the bounded implementation...
 - [dydo 3.0 Linear-Native Work Model](./dydo-3-linear-native-work-model.md) - This plan makes Linear the only live work graph and reduces dydo to its durable knowledge and proof role.
 - [dydo 3.0 Linear PM Dogfood and Acceptance](./dydo-3-linear-pm-dogfood.md) - This Project proves the new operating model through three migrated product Issues and one integrated audit/assimilation Issue.

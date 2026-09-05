@@ -33,7 +33,7 @@ public static partial class SyncCommand
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
     // Issue Captain's completion criterion; the inquisition became an Issue with its own
-    // captain). Claude is the only host with a workflow surface.
+    // captain). These retired files lived only under Claude's workflow directory.
     private static readonly string[] RetiredWorkflows = ["run-sprint.js", "inquisition.js"];
 
     // Skill resources retired by rename (DR 045: merge-sprint became merge; the broad plan
@@ -83,8 +83,7 @@ public static partial class SyncCommand
         if (emitCodex)
             WriteCodexHooks(projectRoot);
 
-        var workflows = emitClaude ? SyncWorkflows(projectRoot) : 0;
-        PrintSyncSummary(agents, skills, workflows, emitClaude, emitCodex);
+        PrintSyncSummary(agents, skills, emitClaude, emitCodex);
         return ExitCodes.Success;
     }
 
@@ -131,7 +130,6 @@ public static partial class SyncCommand
     private static void PrintSyncSummary(
         IReadOnlyCollection<SkillTemplate> agents,
         IReadOnlyCollection<SkillTemplate> skills,
-        int workflows,
         bool emitClaude,
         bool emitCodex)
     {
@@ -139,7 +137,6 @@ public static partial class SyncCommand
         {
             Console.WriteLine($"Synced {agents.Count} agent(s) to .claude/ (agents + skills): {string.Join(", ", agents.Select(s => s.Name))}");
             Console.WriteLine($"Synced {skills.Count} skill(s) to .claude/ (skills only): {string.Join(", ", skills.Select(s => s.Name))}");
-            Console.WriteLine($"Synced {workflows} workflow(s) to .claude/workflows.");
         }
         if (emitCodex)
             Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
@@ -178,6 +175,7 @@ public static partial class SyncCommand
 
         foreach (var workflow in RetiredWorkflows)
             removed += Sweep(Path.Combine(projectRoot, ".claude", "workflows", workflow));
+        DeleteIfEmpty(Path.Combine(projectRoot, ".claude", "workflows"));
 
         foreach (var resource in RetiredSkillResources)
             removed += Sweep(
@@ -208,28 +206,11 @@ public static partial class SyncCommand
         return true;
     }
 
-    /// <summary>Removes a retired skill's own folder once the sweep left it empty.</summary>
+    /// <summary>Removes a retired artifact directory only when it is empty.</summary>
     private static void DeleteIfEmpty(string folder)
     {
         if (Directory.Exists(folder) && !Directory.EnumerateFileSystemEntries(folder).Any())
             Directory.Delete(folder);
-    }
-
-    /// <summary>
-    /// Workflow harnesses (Templates/workflow-&lt;name&gt;.js) → .claude/workflows/&lt;name&gt;.js.
-    /// Claude-only; a codex emit path is added when codex grows an equivalent runner.
-    /// </summary>
-    internal static int SyncWorkflows(string projectRoot)
-    {
-        var count = 0;
-        foreach (var (fileName, content) in TemplateGenerator.GetWorkflowScripts())
-        {
-            var workflowDir = Path.Combine(projectRoot, ".claude", "workflows");
-            Directory.CreateDirectory(workflowDir);
-            WriteLf(Path.Combine(workflowDir, fileName), content);
-            count++;
-        }
-        return count;
     }
 
     internal static void SyncAgent(SkillTemplate skill, string projectRoot, ModelsConfig? models = null)
@@ -366,7 +347,7 @@ public static partial class SyncCommand
             + string.Join('\n', mustReads.Select(p => $"- {p}")) + "\n";
 
         // Decision 028: agent → tier → concrete model, bound here by the compiler so
-        // workflows stay tier-blind. An unresolved agent emits `model: inherit` — the
+        // callers stay tier-blind. An unresolved agent emits `model: inherit` — the
         // explicit no-silent-downgrade spelling (an OMITTED model would fall back to
         // Claude Code's default subagent model, not the session model).
         var model = ResolveModel(models, skill.Name);
@@ -425,20 +406,23 @@ public static partial class SyncCommand
         // carries the methodology into a spawned agent (DR 045 §10). A writing agent needs the
         // workspace-write sandbox to act on that methodology at all.
         var sandbox = readOnly ? "read-only" : "workspace-write";
-        // `web: true` sets the one toggle codex owns for it. A TOML table header ends the
-        // top-level key section, so [tools] goes last: any key emitted after it would parse as a
-        // member of the struct instead of a field of the agent.
-        var webTools = skill.Web ? "\n\n[tools]\nweb_search = true" : "";
+        // Codex V1 reads web reach from the top-level scalar. Omission leaves the host's inherited
+        // setting in force. The final table expresses whether a role may delegate in V1; V2 may
+        // override enabled and ignores max_depth, so the generated shape makes no V2 guarantee.
+        var webSearch = skill.Web ? "\nweb_search = \"live\"" : "";
+        var agents = skill.Delegates
+            ? "\n\n[agents]\nenabled = true\nmax_depth = 3"
+            : "\n\n[agents]\nenabled = false";
 
         return $""""
             name = "{EscapeQuoted(skill.Name)}"
             description = "{EscapeQuoted(skill.Description)}"
             model = "{EscapeQuoted(model ?? "gpt-5.6-terra")}"
-            sandbox_mode = "{sandbox}"
+            sandbox_mode = "{sandbox}"{webSearch}
 
             developer_instructions = """
             You are {Article(skill.Name)} **{skill.Name}**. {skill.Description} {stance} Load the `${skill.Name}` skill before working.{contextBlock}
-            """{webTools}
+            """{agents}
             """";
     }
 
@@ -567,7 +551,7 @@ public static partial class SyncCommand
     /// <summary>
     /// The skill's static must-reads, taken from the [links] in the skill template's
     /// "## Must-Reads" section (normalized to dydo-relative paths) so each skill points at
-    /// its own context. Conditional must-reads are task-runtime and left to the workflow.
+    /// its own context. The agent resolves conditional must-reads for its task at runtime.
     /// </summary>
     internal static List<string> ExtractMustReads(SkillTemplate skill, string projectRoot)
     {

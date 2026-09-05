@@ -1,5 +1,7 @@
 namespace DynaDocs.Services;
 
+using System.Text;
+
 public static class ShellCompletionInstaller
 {
     private const string Marker = "# dydo shell completions";
@@ -31,24 +33,11 @@ public static class ShellCompletionInstaller
     /// </summary>
     public static string? InstallToProfile(string shell, string profilePath)
     {
-        // Check for marker (idempotent)
-        if (File.Exists(profilePath))
-        {
-            var content = File.ReadAllText(profilePath);
-            if (content.Contains(Marker))
-                return null;
-        }
-
-        // Ensure directory exists
-        var dir = Path.GetDirectoryName(profilePath);
-        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            Directory.CreateDirectory(dir);
-
         var sourcingLine = shell switch
         {
             "bash" => "eval \"$(dydo completions bash)\"",
             "zsh" => "eval \"$(dydo completions zsh)\"",
-            "powershell" => "dydo completions powershell | Invoke-Expression",
+            "powershell" => "dydo completions powershell | Out-String | Invoke-Expression",
             _ => null
         };
 
@@ -56,9 +45,88 @@ public static class ShellCompletionInstaller
             return null;
 
         var block = $"\n{Marker}\n{sourcingLine}\n";
-        File.AppendAllText(profilePath, block);
+        if (shell == "powershell")
+        {
+            if (!InstallPowerShellProfile(profilePath, block))
+                return null;
+        }
+        else
+        {
+            if (File.Exists(profilePath) && File.ReadAllText(profilePath).Contains(Marker))
+                return null;
+
+            EnsureProfileDirectory(profilePath);
+            File.AppendAllText(profilePath, block);
+        }
 
         return $"Shell completions installed ({shell} → {Path.GetFileName(profilePath)})";
+    }
+
+    private static bool InstallPowerShellProfile(string profilePath, string block)
+    {
+        var bytes = File.Exists(profilePath) ? File.ReadAllBytes(profilePath) : [];
+        using var reader = new StreamReader(new MemoryStream(bytes), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        reader.Peek();
+        var encoding = reader.CurrentEncoding;
+        var offsets = LegacyInsertionOffsets(bytes, encoding);
+        if (offsets.Count > 0)
+        {
+            // Splice bytes instead of rewriting text: unrelated profile bytes may not decode cleanly.
+            using var migrated = new MemoryStream();
+            var start = 0;
+            foreach (var offset in offsets.Order())
+            {
+                migrated.Write(bytes.AsSpan(start, offset - start));
+                migrated.Write(encoding.GetBytes(" | Out-String"));
+                start = offset;
+            }
+            migrated.Write(bytes.AsSpan(start));
+            File.WriteAllBytes(profilePath, migrated.ToArray());
+            return true;
+        }
+
+        if (bytes.AsSpan().IndexOf(encoding.GetBytes(Marker)) >= 0)
+            return false;
+
+        EnsureProfileDirectory(profilePath);
+        using var profile = new FileStream(profilePath, FileMode.Append, FileAccess.Write);
+        profile.Write(encoding.GetBytes(block));
+        return true;
+    }
+
+    private static List<int> LegacyInsertionOffsets(byte[] bytes, Encoding encoding)
+    {
+        var offsets = new List<int>();
+        var newline = encoding.GetBytes("\n");
+        var crlf = encoding.GetBytes("\r\n");
+        var preamble = encoding.GetPreamble();
+        var contentStart = bytes.AsSpan().StartsWith(preamble) ? preamble.Length : 0;
+        foreach (var ending in new[] { "\n", "\r\n" })
+        {
+            var prefix = encoding.GetBytes($"{Marker}{ending}dydo completions powershell");
+            var legacy = encoding.GetBytes($"{Marker}{ending}dydo completions powershell | Invoke-Expression");
+            var cursor = contentStart;
+            while (cursor <= bytes.Length - legacy.Length)
+            {
+                var relative = bytes.AsSpan(cursor).IndexOf(legacy);
+                if (relative < 0) break;
+                var index = cursor + relative;
+                var startsLine = index == contentStart || bytes.AsSpan(0, index).EndsWith(newline);
+                var remainder = bytes.AsSpan(index + legacy.Length);
+                var endsLine = remainder.IsEmpty || remainder.StartsWith(newline) || remainder.StartsWith(crlf);
+                if (startsLine && endsLine && (index - contentStart) % newline.Length == 0)
+                    offsets.Add(index + prefix.Length);
+                cursor = index + legacy.Length;
+            }
+        }
+        return offsets;
+    }
+
+    private static void EnsureProfileDirectory(string profilePath)
+    {
+        var dir = Path.GetDirectoryName(profilePath);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
     }
 
     public static (string? Shell, string? ProfilePath) DetectShell()

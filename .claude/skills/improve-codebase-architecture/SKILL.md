@@ -1,6 +1,6 @@
 ---
 name: improve-codebase-architecture
-description: Hunt the codebase for deepening opportunities, see them in a visual report, then grill whichever one you pick.
+description: Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.
 disable-model-invocation: true
 ---
 
@@ -13,13 +13,13 @@ modules into deep ones. The aim is testability and AI-navigability.
 
 This command is _informed_ by the project's domain model and built on a shared design vocabulary:
 
-- Call the Skill tool with `codebase-design` for the architecture vocabulary (**module**,
-  **interface**, **depth**, **seam**, **adapter**, **leverage**, **locality**) and its principles
-  (the deletion test, "the interface is the test surface", "one adapter = hypothetical seam, two =
-  real"). Use these terms exactly in every suggestion, and don't drift into "component," "service,"
-  "API," or "boundary."
-- The domain language in `dydo/glossary.md` gives names to good seams; Decision Records record
-  choices this command should not re-litigate.
+- Call the Skill tool with "codebase-design" for the architecture vocabulary (**module**,
+  **interface**, **depth**, **seam**, **adapter**, **leverage**, **locality**) and its principles (the
+  deletion test, "the interface is the test surface", "one adapter = hypothetical seam, two = real").
+  Use these terms exactly in every suggestion, and don't drift into "component," "service," "API," or
+  "boundary."
+- The domain language in [`glossary.md`](../../../dydo/glossary.md) gives names to good seams; the
+  Decision Records in `dydo/project/decisions/` record decisions this command should not re-litigate.
 
 ## Process
 
@@ -35,15 +35,15 @@ before you look:
   codebase's hot spots, the files and areas that keep coming up, and let those paths pull your
   attention first. If the changes are scattered with no clear hot spot, widen the net.
 
-Read `dydo/glossary.md` and the Decision Records covering the area you're touching first.
+Read the glossary and any Decision Records in the area you're touching first.
 
 Then spawn a sub-agent to walk the codebase. Don't follow rigid heuristics; explore organically and
 note where you experience friction:
 
 - Where does understanding one concept require bouncing between many small modules?
 - Where are modules **shallow**, with an interface nearly as complex as the implementation?
-- Where have pure functions been extracted just for testability, but the real bugs hide in how they
-  are called (no **locality**)?
+- Where have pure functions been extracted just for testability, but the real bugs hide in how
+  they're called (no **locality**)?
 - Where do tightly-coupled modules leak across their seams?
 - Which parts of the codebase are untested, or hard to test through their current interface?
 
@@ -52,66 +52,60 @@ complexity, or just move it? A "yes, concentrates" is the signal you want.
 
 ### 2. Present candidates as an HTML report
 
-Write a self-contained HTML file into a scratch directory outside the repository, so nothing lands in
-the repo and nothing is ever committed. Give each run its own
-`architecture-review-<timestamp>.html`, open it for the human, and tell them the absolute path.
+Write a self-contained HTML file to the session's scratch directory when the host names one, otherwise
+to the OS temp directory (`$TMPDIR`, falling back to `/tmp`, or `%TEMP%` on Windows), so nothing
+lands in the repo. Write to `<dir>/architecture-review-<timestamp>.html` so each run gets a fresh
+file. Open it for the human (`xdg-open <path>` on Linux, `open <path>` on macOS, `start <path>` on
+Windows) and tell them the absolute path.
 
-The report uses **Tailwind via CDN** for layout and styling and **Mermaid via CDN** for diagrams.
-Those two are its only scripts; it is otherwise static. Each candidate gets a **before/after
-visualisation**. Be visual: the diagrams carry the weight and the prose stays sparse, so if a diagram
-needs a paragraph to be understood, redraw the diagram.
+The report uses **Tailwind via CDN** for layout and styling, and **Mermaid via CDN** for diagrams where
+a graph/flow/sequence reliably communicates the structure. Mix Mermaid with hand-crafted CSS/SVG
+visuals: use Mermaid when relationships are graph-shaped (call graphs, dependencies, sequences), and
+hand-built divs/SVG when you want something more editorial (mass diagrams, cross-sections, collapse
+animations). Each candidate gets a **before/after visualisation**. Be visual.
 
 For each candidate, render a card with:
 
-- **Files**: which files and modules are involved, monospaced.
-- **Problem**: one sentence. What hurts.
-- **Solution**: one sentence, plain English. What changes.
-- **Wins**: bullets of six words or fewer, named in `codebase-design` terms — "locality: bugs
-  concentrate in one module", "interface shrinks; implementation absorbs the wrappers", "tests hit
-  one interface" — and how tests would improve.
-- **Before / After diagram**: the centrepiece, side by side, illustrating the shallowness and the
-  deepening.
-- **Recommendation strength**: one of `Strong`, `Worth exploring`, `Speculative`, as a badge.
-
-Pick the diagram pattern that fits the candidate and vary it: a Mermaid flowchart or sequence when
-the relationship is graph-shaped (call graphs, dependencies, "before: 6 round-trips; after: 1"),
-hand-built divs and inline SVG when Mermaid's layout fights you or the "after" needs one
-thick-bordered deep module, a cross-section of stacked bands for layered shallowness, a mass diagram
-of interface against implementation, a call-graph collapse for calls that become internal. Lean
-editorial rather than corporate dashboard: colour sparingly, one accent plus red for leakage and
-amber for warnings, diagrams short enough that before and after sit side by side without scrolling.
+- **Files**: which files/modules are involved
+- **Problem**: why the current architecture is causing friction
+- **Solution**: plain English description of what would change
+- **Benefits**: explained in terms of locality and leverage, and how tests would improve
+- **Before / After diagram**: side-by-side, custom-drawn, illustrating the shallowness and the
+  deepening
+- **Recommendation strength**: one of `Strong`, `Worth exploring`, `Speculative`, rendered as a badge
 
 End the report with a **Top recommendation** section: which candidate you'd tackle first and why.
 
-**Use `dydo/glossary.md` vocabulary for the domain, and the `codebase-design` vocabulary for the
+**Use the glossary vocabulary for the domain, and the `codebase-design` vocabulary for the
 architecture.** If the glossary defines "Order," talk about "the Order intake module," not "the
 FooBarHandler," and not "the Order service."
 
-**Decision Record conflicts**: if a candidate contradicts a Decision Record, surface it only when the
-friction is real enough to warrant reopening that decision, and mark it in the card (a warning
-callout: _"contradicts DR 021, but worth reopening because…"_). Don't list every theoretical refactor
-a Decision Record forbids.
+**Decision Record conflicts**: if a candidate contradicts an existing Decision Record, only surface it
+when the friction is real enough to warrant revisiting the record. Mark it clearly in the card (e.g. a
+warning callout: _"contradicts DR 007, but worth reopening because…"_). Don't list every theoretical
+refactor a Decision Record forbids.
+
+See [html-report](.claude/skills/improve-codebase-architecture/resources/html-report.md) for the full HTML scaffold, diagram patterns, and styling
+guidance.
 
 Do NOT propose interfaces yet. After the file is written, ask the human: "Which of these would you
 like to explore?"
 
-### 3. Grill the candidate the human picks
+### 3. Grilling loop
 
-Once the human picks a candidate, call the Skill tool with `grilling` and walk the decision tree with
+Once the human picks a candidate, call the Skill tool with "grilling" to walk the decision tree with
 them: constraints, dependencies, the shape of the deepened module, what sits behind the seam, what
-tests survive. Nothing is planned before the candidate has been through this.
+tests survive.
 
-Side effects happen inline as decisions crystallize:
+Side effects happen inline as decisions crystallize; call the Skill tool with "domain-modeling" to
+keep the domain model current as you go:
 
-- **Naming a deepened module after a concept not in `dydo/glossary.md`?** Add the term there.
-- **Sharpening a fuzzy term during the conversation?** Update `dydo/glossary.md` right there.
+- **Naming a deepened module after a concept not in the glossary?** Add the term there.
+- **Sharpening a fuzzy term during the conversation?** Update the glossary right there.
+- **Human rejects the candidate with a load-bearing reason?** Offer a Decision Record, framed as:
+  _"Want me to record this as a Decision Record so future architecture reviews don't re-suggest
+  it?"_ Only offer when the reason would actually be needed by a future explorer to avoid
+  re-suggesting the same thing; skip ephemeral reasons ("not worth it right now") and self-evident
+  ones.
 - **Want to explore alternative interfaces for the deepened module?** Call the Skill tool with
-  `codebase-design` and use its design-it-twice parallel sub-agent pattern.
-
-### 4. Hand over what survived
-
-The whole command sits at the Think stage: the human calls it, it proposes and stress-tests, and it
-neither plans nor writes code. Call the Skill tool with `co-thinker` and hand it the surviving
-deepening — the seam it moves, what the grilling settled, what is still open, and any candidate the
-human rejected with a load-bearing reason. The co-thinker decides where it goes next: ripe enough
-for a plan, or a decision durable enough to become a DR.
+  "codebase-design" and use its design-it-twice parallel sub-agent pattern.

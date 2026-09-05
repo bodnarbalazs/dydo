@@ -4,7 +4,7 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 
 /// <summary>
-/// Path and content predicates shared by content-shape rules (Frontmatter, Summary,
+/// Path and content predicates shared by content-shape rules (Frontmatter, Title,
 /// BrokenLinks, Naming) so each rule consults the same definition of "framework
 /// scaffolding that shouldn't be validated as a normal doc". PR2 will move
 /// the existing inline checks in those rules onto this helper.

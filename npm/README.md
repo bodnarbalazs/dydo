@@ -12,7 +12,7 @@ identity, delegation, scheduling, and worktree isolation.
 
 - A structured knowledge tree for architecture, decisions, guides, plans, audits, changelog, and
   FutureFeature ideas.
-- `dydo sync` to compile shared role, resource, and workflow sources into native Claude Code and Codex
+- `dydo sync` to compile shared role and resource sources into native Claude Code and Codex
   artifacts.
 - `dydo guard` to apply off-limits paths, dangerous-command checks, and configurable nudges.
 - `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` to maintain the documentation graph.
@@ -51,7 +51,7 @@ templates and run `dydo sync`.
 | Command | Purpose |
 |---|---|
 | `dydo init <integration>` | Scaffold or join a project. |
-| `dydo sync` | Compile shared roles, resources, and workflows. |
+| `dydo sync` | Compile native agents, skills, and resources; clean known retired artifacts. |
 | `dydo check`, `dydo fix`, `dydo index`, `dydo graph` | Maintain the documentation tree. |
 | `dydo guard` | Evaluate hook rules and nudges. |
 | `dydo template update` | Update framework-owned docs. |

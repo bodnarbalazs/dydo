@@ -45,7 +45,8 @@ status remains in Linear.
 
 ## File conventions
 
-Every document begins with YAML frontmatter and an H1 followed immediately by a summary paragraph.
+Every document begins with YAML frontmatter and an H1. An opening summary is optional; a section
+or list may follow the title directly.
 Folder `_index.md` files provide navigation; direct child folders use `_<folder>.md` metadata.
 Relative Markdown links form the durable documentation graph.
 
@@ -65,7 +66,7 @@ dydo check
 dydo fix
 ```
 
-`dydo check` validates frontmatter, summaries, naming, links, hubs, folder metadata, and project rules.
+`dydo check` validates frontmatter, titles, naming, links, hubs, folder metadata, and project rules.
 `dydo fix` applies supported repairs; review its diff because generated hubs and framework-owned files
 may change.
 

@@ -53,7 +53,7 @@ output.
 
 ## Calibration
 
-Each hypothesis costs a proof-only Issue, so weigh each catch against the evidence at hand.
+Each hypothesis costs a proof-only assignment, so weigh each catch against the evidence at hand.
 
 - **Reachable and concrete.** "Under inputs X this returns or corrupts Y": a sequence someone hits
   and a test can pin.
@@ -65,6 +65,7 @@ Each hypothesis costs a proof-only Issue, so weigh each catch against the eviden
 
 ## Return
 
-To the Captain: hypotheses, strongest first, each with a title, `file:line`, `high | medium | low`,
-and the wrong outcome in one sentence a proof-only test can be written from; or an empty list when
+To the inquisition's Captain: findings and hypotheses, strongest first, each with a title,
+`file:line`, `high | medium | low`, evidence and the wrong outcome in one sentence; name the input,
+seam and observation a proof-only test would decide, or return an empty list when
 the scope is clean.

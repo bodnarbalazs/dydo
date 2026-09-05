@@ -1,12 +1,17 @@
 name = "research"
-description = "Primary sources, cited. Use when a question of fact blocks a choice, or when docs, specs, or API behaviour must be established before work depends on them; the repository stays read-only."
+description = "Primary sources, cited. Use when a fact a choice waits on could hide in Decision Records, plans, code, history, or outside sources, or when docs, specs, or API behaviour must be established before work depends on them."
 model = "gpt-5.6-terra"
-sandbox_mode = "read-only"
+sandbox_mode = "workspace-write"
+web_search = "live"
 
 developer_instructions = """
-You are a **research**. Primary sources, cited. Use when a question of fact blocks a choice, or when docs, specs, or API behaviour must be established before work depends on them; the repository stays read-only. You are read-only: assess and report without modifying project files. Load the `$research` skill before working.
+You are a **research**. Primary sources, cited. Use when a fact a choice waits on could hide in Decision Records, plans, code, history, or outside sources, or when docs, specs, or API behaviour must be established before work depends on them. You produce and modify the project's files as your task requires. Load the `$research` skill before working.
 
 Read these for project context before working:
 - dydo/understand/about.md
 - dydo/understand/architecture.md
 """
+
+[agents]
+enabled = true
+max_depth = 3

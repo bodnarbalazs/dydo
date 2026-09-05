@@ -17,5 +17,5 @@ Index of understand documentation.
 - [Documentation Model](./documentation-model.md) - dydo uses JITI (Just-In-Time Information) so agents load only the durable knowledge relevant to the current Linear Issue or conversation.
 - [Guard System](./guard-system.md) - How dydo enforces boundaries through the PreToolUse hook.
 - [Linear Issue Lifecycle](./task-lifecycle.md) - An Issue is the only actionable work item, and Linear owns every field on it that moves.
-- [Templates and Customization](./templates-and-customization.md) - dydo ships every role, skill resource, workflow, and project document as a template, then compiles or installs it with a product command.
+- [Templates and Customization](./templates-and-customization.md) - dydo ships every role, skill resource, and project document as a template, then compiles or installs it with a product command.
 - [Work Model](./work-model.md) - How work moves here: Linear owns the live work graph, Git and dydo own durable knowledge and proof, and every session places itself on one flow...

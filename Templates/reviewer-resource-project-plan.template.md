@@ -16,7 +16,9 @@ human approval and open the first work; it certifies a starting route, not a com
    acceptance criterion names the scenario, command, diff or artifact that proves it at the final
    merge. Done when the human knows what approval fixes.
 4. **Inspect the starting route.** Each first Issue is self-contained and vertical, carries outcome,
-   owned paths, blockers, gate and base branch, and its gate is copy-pasteable; owned paths isolate
+   owned paths, blockers, gate and base branch, exactly one Type, one Mode and `Todo`; its gate is
+   copy-pasteable. Check status and priority against the
+   [workspace standard](../../../../dydo/reference/linear-workspace-standard.md). Owned paths isolate
    parallel work, hot paths are serial, and the first merge order is credible. Done when every
    listed Issue is safe for an Issue Captain to claim.
 5. **Respect the horizon.** Later bearings orient without speculative precision, and every in-scope
@@ -25,6 +27,7 @@ human approval and open the first work; it certifies a starting route, not a com
    journey without hiding or inventing what comes later.
 
 **Wayfinding fog is not a gap.** A sharp blocker left after authoritative homework and needing human
-judgment is a `Question` Issue in `Waiting for Human` with `HITL`, recording its homework and
-blocking every Issue that waits on it. Dimmer uncertainty stays in `## Not yet specified`. A plan
+judgment is a `Question` Issue in `Todo`, created by the admiral, recording its homework and
+blocking every Issue that waits on it, with priority by that standard.
+The admiral owns the review loop and presents approval to the human; the second FAIL is their choice. Dimmer uncertainty stays in `## Not yet specified`. A plan
 that pretends either is settled FAILs; honest placement passes.

@@ -292,16 +292,6 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_ContainsReviewAndAuditContract()
-    {
-        var content = TemplateGenerator.GenerateAboutDynadocsMd();
-
-        Assert.Contains("independently reviews each implementation Issue", content);
-        Assert.Contains("integrated audit against its linked plan", content);
-        Assert.Contains("assimilation brief", content);
-    }
-
-    [Fact]
     public void GenerateAboutDynadocsMd_DoesNotRestoreRetiredWorkModel()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
@@ -488,12 +478,10 @@ public class TemplateGeneratorTests
         Assert.NotEmpty(content);
     }
 
-    // Dev-mode parity: run from a source tree and the Templates/ folder on disk is the shipped set,
-    // not the embedded snapshot the running assembly happens to carry. A template added there is
-    // discovered and an embedded one deleted there is gone — otherwise editing a template would
-    // require a rebuild before sync could see it.
+    // The installed executable's embedded snapshot is the only implicit shipped source. A consumer
+    // directory that merely resembles dydo's source tree cannot alter its template inventory.
     [Fact]
-    public void GetBuiltInSkillTemplateNames_InASourceTree_FollowsTheTemplatesFolderOnDisk()
+    public void GetBuiltInSkillTemplateNames_InASourceLookingDirectory_UsesOnlyEmbeddedInventory()
     {
         var originalDir = Directory.GetCurrentDirectory();
         var root = Path.Combine(Path.GetTempPath(), "dydo-devmode-" + Guid.NewGuid().ToString("N")[..8]);
@@ -509,9 +497,9 @@ public class TemplateGeneratorTests
 
             var names = TemplateGenerator.GetBuiltInSkillTemplateNames();
 
-            Assert.Contains("skill-source-only.template.md", names);
+            Assert.DoesNotContain("skill-source-only.template.md", names);
             Assert.Contains("skill-reviewer.template.md", names);
-            Assert.DoesNotContain("skill-implementer.template.md", names);
+            Assert.Contains("skill-implementer.template.md", names);
         }
         finally
         {

@@ -23,9 +23,8 @@ code. A worker returns a missing choice to the Captain, whose HITL session reach
   UI variations on a single route, switchable via a URL search param and a floating bottom bar.
 
 The two branches produce very different artifacts, so getting this wrong wastes the whole prototype.
-If the question is genuinely ambiguous and the human isn't reachable, default to whichever branch
-better matches the surrounding code (a backend module → logic; a page or component → UI) and state
-the assumption at the top of the prototype.
+If the question is ambiguous, return the missing choice and available evidence to the Captain;
+their HITL session resolves it with the human before the prototype proceeds.
 
 ## Rules that apply to both
 

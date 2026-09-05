@@ -28,7 +28,7 @@ equally valid route are outside this rubric: do not turn them into findings or n
    applicable before code; mark implementation gates `not run — pre-code` after verifying their
    commands and pass conditions. **Done:** the eventual result can fail as well as pass.
 6. **Check the fog.** A missing answer is either found in the searched ground or returned through the
-   Captain as a prepared, blocking question Issue. **Done:** no assumption bridges an unknown route.
+   Captain as a prepared Question packet naming its waiters. **Done:** no assumption bridges an unknown route.
 7. **Return the review block.** PASS only when a writer can implement mechanically without being
    misled. **Done:** every finding states one material correction.
 

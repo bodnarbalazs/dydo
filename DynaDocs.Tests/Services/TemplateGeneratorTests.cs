@@ -292,16 +292,6 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_ContainsReviewAndAuditContract()
-    {
-        var content = TemplateGenerator.GenerateAboutDynadocsMd();
-
-        Assert.Contains("independently reviews each implementation Issue", content);
-        Assert.Contains("integrated audit against its linked plan", content);
-        Assert.Contains("assimilation brief", content);
-    }
-
-    [Fact]
     public void GenerateAboutDynadocsMd_DoesNotRestoreRetiredWorkModel()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();

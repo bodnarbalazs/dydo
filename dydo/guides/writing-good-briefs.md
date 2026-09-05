@@ -41,7 +41,7 @@ branch — into a branch, a worktree and a claim.
 
 ## The worker's brief
 
-A spawned worker has no memory of the conversation that made it and cannot ask a question and wait.
+A spawned worker has no memory of the conversation that made it and returns unanswered choices to its invoker.
 Give it five things:
 
 1. **One deliverable**, named by path.
@@ -50,8 +50,8 @@ Give it five things:
 3. **The boundary** — what it owns, what it must leave alone, and what it must not run; in a tree
    several workers share, name the files that are not its own. State the positive target beside each
    prohibition.
-4. **The return shape** the receiver parses. For a writer: the deliverable, plus a short note naming
-   the choice made, what was cut and why, the links carried, and one open doubt.
+4. **The return shape** the receiver parses. For a writer: the hop SHA, changed paths, contract-to-proof trace,
+   gates and output, and any prepared hand-raise. After FAIL, include its review block in Must-Reads.
 5. **The constraints that decide the verdict** — budget, vocabulary, and the exact gates.
 
 The same bar applies as to an Issue. If the worker has to infer which of two files you meant, or invent
@@ -62,18 +62,19 @@ a product decision to finish, the brief is not ready.
 The verdict is a fresh reviewer's **review block** — its fields are locked in the
 [dydo Glossary](../reference/dydo-glossary.md) — and PASS means no findings.
 
-Write the brief so every field of that block can be filled from it. Gates that are not commands cannot
+Every reviewer brief names four fields: rubric, Contract at its governing SHA, Candidate SHA and
+Base SHA. Write the brief so every field of the block can be filled from it. Gates that are not commands cannot
 be rerun; an outcome with no observable form cannot be judged; a candidate with no owned paths has no
 boundary to be judged against.
 
 ## The escape hatch
 
 A brief does not have to answer every question — it has to leave the open ones askable. What an agent
-does with a question the brief did not settle is the *fog → discovery → question Issue* rule in the
-[Linear Issue Lifecycle](../understand/task-lifecycle.md); what it ends up as is a **question Issue**,
-Linear label `question`, the question itself under a `## Question` heading.
+does with a question the brief did not settle is the *fog → discovery → Question Issue* rule in the
+[Linear Issue Lifecycle](../understand/task-lifecycle.md); what it ends up as is a **Question Issue**,
+Linear Type `Question` in `Todo`, the question itself under a `## Question` heading.
 
-Your part is upstream of that. Name the questions you already know are open, link the question Issues
+Your part is upstream of that. Name the questions you already know are open, link the Question Issues
 that carry them, and wire each as a blocker of the work awaiting its answer. Let the brief say plainly
 what it does not settle. An assumption buried inside an outcome reads as settled, and gets built.
 
@@ -98,5 +99,5 @@ reviewer decide PASS or FAIL from the same text? If either answer is no, the bri
 - [Orchestration Pitfalls](./orchestration-pitfalls.md) — how briefs fail once several are in flight
 - [Linear Issue Lifecycle](../understand/task-lifecycle.md) — where an Issue's state lives
 - [Work Model](../understand/work-model.md) — what Linear owns and what Git owns
-- [dydo Glossary](../reference/dydo-glossary.md) — question Issue, review block, gate
+- [dydo Glossary](../reference/dydo-glossary.md) — Question Issue, review block, gate
 - [DR 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)

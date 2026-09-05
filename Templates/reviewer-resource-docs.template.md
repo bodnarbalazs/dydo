@@ -19,7 +19,7 @@ Every item below is a FAIL when it holds.
 
 ## Human-facing dydo documents
 
-- Frontmatter, naming, summary, hub membership or a link broken against
+- Frontmatter, naming, hub membership or a link broken against
   [writing-docs.md](../../../../dydo/reference/writing-docs.md).
 - Written for a reader its folder does not name (`understand/` vs `guides/` vs `reference/`).
 - A meaning another document already owns, written a second time here.
@@ -52,5 +52,6 @@ Every item below is a FAIL when it holds.
   Captain.
 - **A link that will not exist after regeneration.** Resource bodies are copied verbatim and climb
   from `resources/`; resolve every path from the emitted folder on both hosts.
-- **Compiled output drifted from its template.** Read the source, then confirm the generated skill
-  matches it.
+- **Compiled output drifted from its template** when regeneration is in the candidate's scope.
+  Read the source, then confirm the generated skill matches it; a source-only Issue records the
+  integration owner and leaves generated parity to that gate.

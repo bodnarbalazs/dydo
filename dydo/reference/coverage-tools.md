@@ -35,9 +35,10 @@ complete G or M gate yet.
 DR 048's adopted static policy is: warnings as errors and strict types; no dead code; passing tests
 and a test file for every non-trivial module; 80% line and 60% branch coverage per module; HCRAP and
 cognitive complexity at most 20 per method; at most seven nonconstructor parameters; no supported
-nested ternary; no clone meeting both 15 lines and 100 tokens; and no dependency cycles. Generated,
-vendored, and minified code are excluded. It has no tiers, classic CRAP threshold, registry,
-annotation, suppression, or nesting-depth gate. Mutation is separate.
+nested ternary; no clone meeting both 15 lines and 100 tokens; and no dependency cycles. Only code
+not maintained here (generated, vendored, or minified) is excluded. It has no tiers, classic CRAP
+threshold, registry, annotation, suppression, or nesting-depth gate. Mutation is separate: DynaDocs
+requires no surviving or uncovered changed-code mutants.
 
 The canonical portable runner and manifest are
 `dydo/reference/gap-check.example.py` and

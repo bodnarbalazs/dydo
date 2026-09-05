@@ -192,9 +192,14 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
     public void AssertConcreteManifestShape(string json)
     {
         using var document = JsonDocument.Parse(json);
+        using var active = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepositoryRoot(),
+            "DynaDocs.Tests", "coverage", "gap_check.json")));
         Assert.Equal(1, document.RootElement.GetProperty("schema").GetInt32());
-        Assert.Equal("current-python", document.RootElement.GetProperty("stacks")[0]
-            .GetProperty("capabilities").GetProperty("test").GetProperty("command").GetProperty("kind").GetString());
+        Assert.Equal(active.RootElement.GetProperty("artifactRoot").GetString(),
+            document.RootElement.GetProperty("artifactRoot").GetString());
+        Assert.Single(document.RootElement.GetProperty("stacks").EnumerateArray());
+        Assert.True(JsonElement.DeepEquals(active.RootElement.GetProperty("stacks")[0],
+            document.RootElement.GetProperty("stacks")[0]), "The documented stack must match the active adapter contract");
         AssertNamedFacadeContract();
     }
 

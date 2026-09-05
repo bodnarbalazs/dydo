@@ -1,5 +1,4 @@
 """Behavioral probes shared by unittest and exact Reqnroll scenario bindings."""
-import copy
 import json
 import os
 import queue
@@ -162,6 +161,41 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertIn(name, p.stdout)
         self.assertEqual([], list(root.glob('*.txt')))
         self.assertIsNone(payload)
+
+    def test_capabilities_reports_malformed_rows_without_executing(self):
+        for malformed in [None, [], 4, 'configured']:
+            for whole_container in [False, True]:
+                with self.subTest(value=malformed, whole_container=whole_container):
+                    bad = stack('bad')
+                    if whole_container:
+                        bad['capabilities'] = malformed
+                    else:
+                        bad['capabilities']['test'] = malformed
+                    p, root, payload = self.invoke(['capabilities'], manifest(bad, stack('peer')))
+                    self.assert_exit(p, 2)
+                    self.assertIn('invalid', p.stdout)
+                    self.assertIn('peer:', p.stdout)
+                    self.assertEqual([], list(root.glob('*.txt')))
+                    self.assertIsNone(payload)
+
+    def test_non_utf8_manifest_is_globally_invalid(self):
+        root = self.fixture()
+        (root / 'gap_check.json').write_bytes(b'\xff')
+        p, root, payload = self.invoke(['all'], directory=root)
+        self.assert_exit(p, 2)
+        self.assertIn('invalid JSON manifest', p.stderr)
+        self.assertNotIn('Traceback', p.stderr)
+        self.assertEqual([], list(root.glob('*.txt')))
+        self.assertIsNone(payload)
+
+    def test_nul_command_is_row_invalid_and_valid_peer_runs(self):
+        bad = stack('bad')
+        bad['capabilities']['test']['command']['argv'].append('\x00')
+        p, root, payload = self.invoke(['all'], manifest(bad, stack('peer')))
+        self.assert_exit(p, 2)
+        self.assert_rows(payload, [('bad', 'test', 'invalid'), ('peer', 'test', 'passed')])
+        self.assertIsNone(payload['results'][0]['childExit'])
+        self.assertEqual(['peer-test.txt'], [x.name for x in root.glob('*.txt')])
 
     def test_full_g(self):
         first, second = stack('first'), stack('second')
@@ -436,6 +470,9 @@ class TestingFacadeTests(unittest.TestCase):
                 self.assertIn(expected, text, path)
             for retired in ['T1 | T2 | T3', '@test-tier', '≤ 30']:
                 self.assertNotIn(retired, text, path)
+            normalized = ' '.join(text.split())
+            self.assertTrue('no surviving or uncovered changed-code mutants' in normalized
+                            or 'No changed-code mutant may survive or remain uncovered' in normalized, path)
 
     def test_interrupting_the_real_dotnet_adapter_cleans_its_worktree(self):
         command = [sys.executable, '-u', str(RUNNER), 'test', '--stack', 'dotnet', '--', '--filter', 'FullyQualifiedName~ConsoleCaptureTests.Stderr_RestoresConsoleError_WhenActionSucceeds']

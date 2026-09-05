@@ -51,12 +51,14 @@ facade replaces that one item with `--since`'s value. Isolation is a project ada
 in-place work has direct evidence, while worktree and per-run requirements name a verified adapter.
 The facade does not invent isolation.
 
-DR 048 has one policy for every maintained module: build invariants, no dead code, passing tests,
+DR 048 has one policy for every maintained module: warnings as errors and strict types, no dead code,
+all tests passing and a test file for every non-trivial module,
 line coverage of at least 80%, branch coverage of at least 60%, HCRAP at most 20 per method,
 cognitive complexity at most 20, at most seven parameters outside constructors, no supported nested
 ternary, no clone meeting both 15 lines and 100 tokens, and no namespace or module dependency cycles.
-Generated, vendored, and minified code are excluded. There are no tiers, classic CRAP thresholds,
-registry, annotations, per-file suppressions, or nesting-depth gate. Mutation is separate. A stack
+Only code not maintained here (generated, vendored, or minified) is excluded. There are no tiers, classic CRAP thresholds,
+registry, annotations, per-file suppressions, or nesting-depth gate. Mutation is separate: DynaDocs requires
+no surviving or uncovered changed-code mutants. A stack
 without a reviewed mechanism reports that gate as unavailable until adoption.
 
 Use `dydo/reference/gap-check.example.py` with its adjacent

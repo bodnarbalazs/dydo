@@ -63,7 +63,7 @@ def contained(root, value):
 def read_manifest(path):
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise ContractError(f"invalid JSON manifest: {error}") from error
     if not isinstance(value, dict) or type(value.get("schema")) is not int or value["schema"] != 1:
         raise ContractError("schema must be the integer 1")
@@ -141,6 +141,8 @@ def command_error(capability, config, root, since):
     argv = command["argv"]
     if not isinstance(argv, list) or not argv or not all(isinstance(x, str) and x for x in argv):
         return None, None, "command argv must be a nonempty array of strings"
+    if any("\x00" in item for item in argv):
+        return None, None, "command argv cannot contain NUL"
     if any("<" in x or ">" in x for x in argv):
         return None, None, "command vector contains an angle placeholder"
     artifacts = config["artifacts"]
@@ -235,6 +237,27 @@ def candidate_identity(root):
     return {"commit": git.stdout.strip() if git.returncode == 0 else "unknown", "dirty": bool(dirty.stdout)}
 
 
+def print_capabilities(stacks):
+    exit_code = 0
+    for stack in stacks:
+        print(f"{stack['name']}:")
+        capabilities = stack.get("capabilities")
+        if not isinstance(capabilities, dict) or set(capabilities) != set(CAPS):
+            print("  invalid: capabilities must contain exactly test, static, coverage and mutation")
+            exit_code = 2
+            continue
+        for capability in CAPS:
+            config = capabilities[capability]
+            state = config.get("state") if isinstance(config, dict) else None
+            if state not in ("configured", "unavailable"):
+                print(f"  {capability}: invalid capability state")
+                exit_code = 2
+                continue
+            reason = f": {config['reason']}" if config.get("reason") else ""
+            print(f"  {capability}: {state}{reason}")
+    return exit_code
+
+
 def write_result(root, artifact_root, operation, selected, rows, candidate):
     destination = contained(root, artifact_root)
     if not destination: raise ContractError("artifactRoot must resolve inside repository")
@@ -266,12 +289,7 @@ def main(argv=None):
             raise ContractError("unknown selected stack")
         selected = [item for item in all_stacks if names is None or item["name"] in names]
         if name == "capabilities":
-            for stack in selected:
-                print(f"{stack['name']}:")
-                for capability in CAPS:
-                    config = stack.get("capabilities", {}).get(capability, {})
-                    print(f"  {capability}: {config.get('state', 'invalid')}" + (f": {config['reason']}" if config.get("reason") else ""))
-            return 0
+            return print_capabilities(selected)
         candidate = candidate_identity(root)
         rows = []
         for stack in selected:

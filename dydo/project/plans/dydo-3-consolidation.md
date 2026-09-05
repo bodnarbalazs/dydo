@@ -57,7 +57,8 @@ acceptance evidence are preserved; current documents must identify the governing
    coverage or metrics fail closed. Initial failures have recorded dispositions and valid failures
    are fixed. Genuine unavailable stack mechanisms are documented as DR 048 permits; absent setup
    for an available mechanism is unfinished work. No baseline waiver or per-file suppression passes
-   as adoption.
+   as adoption. The separate mutation assurance command runs on changed code with the existing
+   no-surviving-mutant policy, and its report is part of acceptance evidence.
 5. A second sync changes no compiler-owned output. Both hosts have the new role/resource set and
    retired owned artifacts are removed without deleting user-owned files. Setup claims distinguish
    configured behavior, observed behavior and host limitations.
@@ -137,14 +138,40 @@ Mode `AFK`, and begin `Todo`. Each gets the five-field contract and a specify ho
 
 | Handle / existing Issue | Outcome | Exclusive owned paths | Blockers | Gate | Base branch |
 |---|---|---|---|---|---|
-| P / DYD-90 | Every current protocol contact agrees with DR 047; missing resources exist | `Templates/skill-*.template.md`, `Templates/*-resource-*.template.md`, `Templates/linear-workspace-standard.template.md`, `Templates/dydo-glossary.template.md`, `Templates/working-tree-contract.template.md`, `Templates/types.json.template`, `THIRD-PARTY-NOTICES.md`; current protocol guides/reference docs excluding G/C policy/setup paths; DR 047 metadata | None | A, P | `codex/dydo-3-consolidation` |
-| S / DYD-98 | Summary absence is valid; broken links remain errors | `Rules/SummaryRule.cs`, `Rules/RuleBase.cs`, `Commands/CheckDocValidator.cs`, `Commands/FixFileHandler.cs`; matching rule/check/fix tests; `Templates/writing-docs.template.md`, local writing-docs guide | None | A, S | `codex/dydo-3-consolidation` |
-| G / DYD-96 | Credible DR 048 mechanisms produce the local failure inventory | `DynaDocs.Tests/coverage/**`, new metric/architecture tests and producer directory explicitly named by specify; `.editorconfig`, `Directory.Build.props`, `DynaDocs.csproj`, test project file; gate dependency/config files; `Templates/coding-standards.template.md`, local coding/testing standards, coverage-tools and project glossary | None | A, G-measure | `codex/dydo-3-consolidation` |
+| P / DYD-90 | Every current protocol contact agrees with DR 047; portable standard links and missing resources exist | P boundary below | None | F, P; A before C integration | `feature/dydo-3-consolidation` |
+| S / DYD-98 | Summary absence is valid; broken links remain errors | S boundary below | None | F, S | `feature/dydo-3-consolidation` |
+| G / DYD-96 | Credible DR 048 mechanisms produce the local failure inventory and mutation assurance | G boundary below | None | F, G-measure | `feature/dydo-3-consolidation` |
 
-P owns the hardener's policy wording and takes G's exact threshold/command correction as input.
-G owns runner/policy files, never edits the hardener prompt. S transfers any additional summary
-documentation correction to its owner instead of expanding ownership silently. Before dispatch,
-replace P's narrative-doc group and G's new surfaces with explicit path lists on their Issues.
+**P boundary:** `Templates/skill-*.template.md`, `Templates/*-resource-*.template.md`,
+`Templates/linear-workspace-standard.template.md`, `Templates/dydo-glossary.template.md`,
+`Templates/working-tree-contract.template.md`, `Templates/types.json.template`,
+`THIRD-PARTY-NOTICES.md`; `dydo/understand/about.md`, `architecture.md`, `control-flow.md`,
+`work-model.md`, `task-lifecycle.md`, `templates-and-customization.md`; `dydo/guides/customizing-roles.md`,
+`orchestration-pitfalls.md`, `working-tree-contract.md`, `writing-good-briefs.md`,
+`migrating-dydo-2x-to-3x.md`; `dydo/reference/linear-workspace-standard.md`, `dydo-glossary.md`,
+`about-dynadocs.md`, `dydo-commands.md`, `audit-system.md`; and
+`DynaDocs.Tests/Integration/TemplateScaffoldingTests.cs`. Filenames after a directory-qualified first
+entry in each semicolon group are relative to that same directory. P fixes the standard's three
+consumer-invalid links first, using portable shipped targets; no consumer DR scaffolding is added.
+P's hardener wording uses the already settled DR 048 constants and this plan's stable runner command,
+so it has no dependency on G implementation. G never edits that prompt.
+
+**S boundary:** `Rules/SummaryRule.cs`, `Rules/RuleBase.cs`, `Commands/CheckDocValidator.cs`,
+`Commands/FixFileHandler.cs`, `DynaDocs.Tests/Rules/SummaryRuleTests.cs`,
+`DynaDocs.Tests/Commands/CheckDocValidatorTests.cs`, `DynaDocs.Tests/Commands/FixFileHandlerTests.cs`,
+`Templates/writing-docs.template.md`, `dydo/reference/writing-docs.md`,
+`dydo/understand/documentation-model.md`. Other files require an explicit ownership transfer.
+
+**G boundary:** `DynaDocs.Tests/coverage/**` (the Roslyn producer under `coverage/metrics/`,
+Python/JavaScript producers and gate tests under `coverage/tests/`), `DynaDocs.Tests/Quality/**`
+(metric and namespace-cycle tests), `.editorconfig`, `Directory.Build.props`, `DynaDocs.csproj`,
+`DynaDocs.Tests/DynaDocs.Tests.csproj`, `.config/dotnet-tools.json`, `stryker-config.json`,
+`npm/package.json`, `npm/package-lock.json`, `npm/test/**`, `Templates/coding-standards.template.md`,
+`dydo/guides/coding-standards.md`, `dydo/guides/testing-strategy.md`,
+`dydo/reference/coverage-tools.md`, `dydo/glossary.md`. Gate-specific Python dependency lists,
+JavaScript tool package/lock files, clone/lint/cycle configs and the mutation wrapper live inside
+`DynaDocs.Tests/coverage/`. G owns these new directories now; their internal design is specify work.
+It does not own production source remediation outside this list. I receives npm manifests after G.
 
 The current scratch rebaseline removing compiler-generated/coverage-attribute and maintained-entry-point
 exemptions measured 76 modules, exposing three floor failures: `Program.cs` (0% line/branch),
@@ -160,7 +187,8 @@ scripts and four npm JavaScript files.
 
 | Handle / existing Issues | Outcome and promotion condition | Ownership and blockers |
 |---|---|---|
-| C / DYD-91, DYD-92, DYD-86, DYD-88 | Setup/compiler repair and fresh-install round trip; contracts ready once P source names and links settle | One serial owner for `Commands/SyncCommand.cs`, `Commands/InitCommand.cs`, `Services/TemplateGenerator.cs`, `Services/SkillTemplateService.cs`, compiler/config helpers and matching tests; getting-started source/template. P transfers link-fix ownership if needed. |
+| C / DYD-91, DYD-92, DYD-86 | Setup/compiler repair and fresh-install round trip; contracts ready once P source names and links settle | One serial owner for `Commands/SyncCommand.cs`, `Commands/InitCommand.cs`, `Services/TemplateGenerator.cs`, `Services/SkillTemplateService.cs`, compiler/config helpers and matching tests; getting-started source/template. P's portable-link fix and A green block C integration. |
+| Host proof / DYD-88 | Establish nested delegation, wake/resume and write-boundary behavior separately from bootstrap execution | Root directs bounded host probes after setup; records observations/version on DYD-88 and corrections through C's setup-guide owner. No product source ownership. |
 | G-fix / DYD-96 children | Resolve every measured valid failure and complete missing supported mechanisms | Measured inventory chooses exact source/test files. Wait for P/S/C owners before changing their files; no blanket production ownership. |
 | B / DYD-94 and overlapping records | Correct status/label/template schema and reconcile work | Admiralty owns Linear mutations; no code. Read back settings; preserve DYD-47 historical non-acceptance. Reconcile DYD-66/92 and DYD-70/94; inspect DYD-37/39/40/41 instead of guessing closure. |
 | I / DYD-75, DYD-11 | Generated parity, final protocol review, packages, installed candidate and landing PR | After P/S/C/G-fix: runtime outputs, template hashes, final doc indexes, release/CI workflows, package surfaces and evidence. `DynaDocs.csproj` transfers from G. |
@@ -172,9 +200,15 @@ SHA on the relevant Issue. These commands are required entry points; test names 
 existing suites, which the owning Issue extends with its new scenarios.
 
 ```powershell
-# A: build and entire behavior suite; both exit 0
+# F: first lanes build clean; focused commands below exit 0, with no new suite failures
+dotnet build DynaDocs.sln --warnaserror
+
+# A: all behavior passes before C integration and final acceptance
 dotnet build DynaDocs.sln --warnaserror
 python DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal
+
+# P: portable standard and authored template discovery/scaffolding
+python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~TemplateScaffoldingTests|FullyQualifiedName~SkillTemplateServiceTests"
 
 # S: summary-free valid document passes; broken link still fails; fix preserves optional prose
 python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~CheckDocValidatorTests|FullyQualifiedName~FixFileHandlerTests|FullyQualifiedName~BrokenLinksRuleTests"
@@ -184,6 +218,11 @@ python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~Init
 
 # G: preserve this public runner interface; final exit 0 requires every applicable gate
 python DynaDocs.Tests/coverage/gap_check.py --force-run
+python -m unittest discover -s DynaDocs.Tests/coverage/tests -p "test_*.py"
+python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~DynaDocs.Tests.Quality"
+
+# M: isolated wrapper restores the pinned local mutation tool and enforces its config
+python DynaDocs.Tests/coverage/run_mutation.py --since 2e31b1d0
 
 # I: validate the repository, package and build the local native candidate
 dotnet run --project DynaDocs.csproj --no-build -- check
@@ -191,6 +230,49 @@ dotnet pack DynaDocs.csproj -c Release -o artifacts/consolidation/nupkg
 dotnet publish DynaDocs.csproj -c Release -r win-x64 --self-contained -o artifacts/consolidation/win-x64
 npm pack ./npm --dry-run
 ```
+
+F includes a full-suite before/after comparison on each candidate using the isolated runner with
+`-- --verbosity minimal --logger "trx;LogFileName=consolidation.trx" --results-directory "$PWD/artifacts/consolidation/tests"`.
+The absolute results directory preserves evidence after temporary-tree cleanup. Before P's first
+link fix, only these twelve baseline failures caused by the standard's links to absent
+`task-lifecycle.md`, DR 045 and DR 047 may remain (all classes below are in
+`DynaDocs.Tests.Integration`):
+
+| Class | Failing methods at the baseline |
+|---|---|
+| `InitCheckIntegrationTests` | `FreshInit_OffLimitsFileDoesNotCreateFalsePatterns`, `Check_ExcludesAgentWorkspaceFiles`, `FreshInit_WelcomeMdLinksToGlossary`, `FreshInit_PassesCheck_WithOneWarning` |
+| `FixCommandIntegrationTests` | `Fix_BracketedTitle_RemainsReachableAfterHubRegeneration`, `Fix_AfterInit_ProducesNoChanges`, `Check_IgnoresObsidianFolder`, `Fix_GeneratedHubsPassFrontmatterCheck` |
+| `DocumentationTests` | `Check_FreshLinearNativeScaffold_PassesWithoutRepositoryWorkHierarchy` |
+| `ChangelogStructureTests` | `Check_AcceptsAlternativeChangelogStructure`, `Check_AcceptsFlatChangelogStructure`, `Check_AcceptsMixedChangelogStructure` |
+
+Compare identities and diagnostics, not just counts. No unexplained new failure, newly skipped test
+or weakened behavioral assertion is accepted. S may retire summary-enforcement tests or change
+their names and expectations to prove the approved optional-summary behavior; record those exact
+changes for independent review rather than requiring a fixed total test count.
+P's first portable-link fix must eliminate all twelve. A becomes an
+unconditional exit-0 gate immediately afterward, and always blocks C integration and final
+acceptance. This temporary diagnostic comparison does not waive any static gate or create a release
+baseline allowance.
+
+M implements DR 048 §4 separately from the static runner. The existing authored coding standards
+require changed-code mutation and no surviving mutant; retain that policy. G pins Stryker.NET in
+the local tool manifest, configures `thresholds.high`, `low` and `break` to 100, and writes JSON/HTML
+reports. Its wrapper runs in an isolated worktree and invokes
+`dotnet stryker --config-file stryker-config.json --since:2e31b1d0`; per-Issue runs substitute their
+recorded base SHA, while final acceptance uses the immutable consolidation base shown here.
+The [official configuration contract](https://stryker-mutator.io/docs/stryker-net/configuration/)
+defines the `--since:<committish>` scope and nonzero exit below the break threshold.
+The report must identify candidate/base SHAs, changed files, generated/killed/surviving/uncovered
+mutants and the score. Missing output, tool failure and a zero-mutant run over substantive changed
+behavior do not pass. Surviving mutants call for assertions or deleting dead code, not lower
+thresholds or suppression. The same wrapper dispatches pinned `mutmut` for maintained Python and
+`@stryker-mutator/core` for npm JavaScript, using the new gate/wrapper tests and changed-file scope;
+their configs and dependency locks belong under `DynaDocs.Tests/coverage/`. It normalizes their
+reports and fails on any surviving or uncovered changed-code mutant, so the one M command covers
+all maintained stacks. An unimplemented stack's mutation assurance remains open work, never an
+inferred pass. G's specify hop proves each selected tool supports the current runtime and captures
+its resolved version before implementation; incompatibility is a concrete tool-replacement task,
+not permission to omit the assurance layer.
 
 G-measure is a successful, tested measurement mechanism plus a complete failure inventory; it may
 exit 1 because it exposed legitimate defects. It is an intermediate gate only. G-final is the same
@@ -215,15 +297,24 @@ non-publishing CI matrix evidence before claiming all five targets validated.
 ## 5. Ordering and isolation
 
 The root records the approved decision and plan, owns its independent project-plan review, and fixes
-the feature branch/governing SHA before dispatch. The user's approval already supplies the human
-gate; this planner does not ask again. First commission P, S and G within available agent capacity.
-They may proceed independently, with one writer per worktree. Review each candidate independently.
+`feature/dydo-3-consolidation` and the governing SHA before dispatch. The user's approval already
+supplies the human gate; this planner does not ask again. During this explicit bootstrap the root
+both coordinates the Project and captains the named Issues: it records their contracts/statuses,
+directs bounded specifier/writer/hardener work and commissions fresh independent reviewers. It labels
+which Issue it is captaining on every dispatch and evidence update. This combines coordination
+duties in the current session without claiming the unproven nested host hierarchy already works.
+
+Keep at most two production workers active alongside the root and one fresh-review slot: four
+slots total. Start P and S, then G as a production slot clears; their ownership permits independence,
+but capacity does not permit three simultaneous production workers. One writer owns each worktree.
+The root may perform captain-owned Git operations under the named Merge Issue; when acting solely
+as admiral it only directs. Full native nesting is a separate observed-behavior proof on DYD-88.
 
 Merge through captain-owned Merge Issues, serialize operations on the feature branch, and preserve
 hop SHAs with merge commits. C follows P; measured G-fix lanes can run beside C only on disjoint
 files. B proceeds alongside code. I starts after all required source changes and valid gate failures
 are resolved. A later independent lane may merge first when blockers permit; Linear records the
-actual order. The admiral directs; captains and their workers perform Git operations.
+actual order. This bootstrap does not change the shipped division between admirals and captains.
 
 Only I updates compiler outputs and hashes in the integration checkout. Test builds are serialized
 per worktree to avoid Windows DLL locks. A production defect found in integration goes back to its

@@ -8,7 +8,7 @@ Feature: One project-local interface runs tests and assurance honestly
     When I request the project testing runner help
     Then the command succeeds without running a configured command
     And help names test, all, gate static, gate coverage, gate mutation, capabilities and --force-run
-    And help explains stack selection, defaults, native test arguments, result artifacts and exit codes 0, 1 and 2
+    And help explains stack selection, defaults, native test arguments, result artifacts, exit 0 for pass, 1 for measured failure, 2 for invalid or unavailable work, and 130 for interruption after adapter cleanup
 
   Scenario: Bare invocation is useful but is not a test or gate
     Given a valid project testing manifest
@@ -134,10 +134,11 @@ Feature: One project-local interface runs tests and assurance honestly
       | all configured work passed                                     | 0    |
       | a test or policy measurement failed and no work was unavailable | 1    |
       | invalid, missing, malformed, unsupported or unavailable         | 2    |
+      | an interrupted adapter completed its cleanup                    | 130  |
 
   Scenario: A started operation leaves one machine-readable result
     Given a recognized operation and a valid artifact root
-    When the operation completes with pass, failure or unavailability
+    When the operation completes with pass, failure, unavailability or interruption
     Then one JSON result is written beneath a unique run directory
     And it records schema 1, candidate commit and dirty state, operation, selected stacks, ordered results and aggregate exit
     And each result records stack, capability, state, argv, working directory, isolation requirement, adapter evidence, child exit, artifacts and reason as applicable
@@ -203,7 +204,16 @@ Feature: One project-local interface runs tests and assurance honestly
   Scenario: The portable three-stack example is visibly unfinished
     Given the canonical portable testing manifest
     Then it declares ASP.NET, React/Vite and Python/uv stacks
-    And its prospective test argv vectors show dotnet test, Node with Vitest, and uv run --locked -m pytest
+    And its prospective ASP.NET and React/Vite argv vectors show dotnet test and Node with Vitest
+    And its prospective Python/uv argv vector is exactly these items in order:
+      | item     |
+      | uv       |
+      | run      |
+      | --locked |
+      | --extra  |
+      | dev      |
+      | -m       |
+      | pytest   |
     And ASP.NET requires worktree isolation with copied working changes but its adapter evidence is unavailable
     And the frontend and Python isolation requirements are per-run artifacts and in-place
     And project paths and the frontend artifact variable remain visible angle placeholders

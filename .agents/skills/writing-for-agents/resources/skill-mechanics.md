@@ -6,23 +6,31 @@ The skill-specific branch of writing-for-agents: what changes when the document 
 frontmatter, the invocation choice, and where its reference lives. Everything else about writing it
 is the universal reference in this skill's body.
 
-**The template is the role.** One `skill-<name>.template.md` carries the metadata and the
-methodology; `dydo sync` compiles it for every host and owns every host-specific detail. For where
-sources live and how to add or shadow one, see
-[customizing-roles.md](../../../../dydo/guides/customizing-roles.md).
+**The template is the skill.** One `skill-<name>.template.md` carries the metadata and the
+methodology; `dydo sync` compiles it for every host and owns every host-specific detail. The
+`skill-` prefix makes a skill template, any other `*.template.md` is a document or a resource,
+`emit: agent` adds a spawnable agent, and `name` is the identity. Framework templates live in dydo's
+own source `Templates/` directory and are embedded in its build; project additions live in
+`dydo/_system/template-additions/`.
 
 ## Frontmatter
 
 | Key | Value | What the compiler does with it |
 |---|---|---|
-| `mode` | the role name | Read by nothing: the filename `skill-<name>.template.md` names the role. Keep the two equal. |
+| `name` | the filename slug | Identity on both hosts. `dydo sync` refuses a template whose `name` is missing or differs from its `skill-<name>` filename. |
 | `description` | one line | Becomes the skill's and the agent's description. |
-| `emit` | `agent` \| `skill` | `agent` also compiles a spawnable agent that preloads this skill (`skills: [<name>]`) and carries the `Skill` tool; `skill` is methodology a session applies in its own thread. |
-| `read-only` | `true` | The compiled agent gets no `Edit`/`Write`: it assesses and reports. |
-| `delegates` | `true` | Grants the `Agent` tool, so the role may spawn sub-agents; a worker does its own work and goes without it. |
-| `invocation` | `automatic` \| `explicit` | `explicit` sets `disable-model-invocation: true` on Claude and `allow_implicit_invocation: false` on Codex. |
+| `emit` | `agent` \| `skill` | `agent` also compiles a spawnable agent that preloads this skill (`skills: [<name>]`) and carries the `Skill` tool; `skill` is methodology a session applies in its own thread. Missing means `agent`. |
+| `invocation` | `automatic` \| `explicit` | `explicit` sets `disable-model-invocation: true` on Claude and `allow_implicit_invocation: false` in Codex's `agents/openai.yaml`. Missing means `automatic`. |
+| `read-only` | `true` | The compiled agent gets no `Edit`/`Write` and Codex's read-only sandbox: it assesses and reports. |
+| `delegates` | `true` | Grants the `Agent` tool, so the skill may spawn sub-agents; `issue-captain` directs its crew and `research` sends `scout`; other workers do their own work. Codex writes final V1 `[agents]` values `enabled = true` and `max_depth = 3`; other agents write `enabled = false` without `max_depth`. |
+| `web` | `true` | Grants Claude's `WebFetch`/`WebSearch` and writes Codex's top-level `web_search = "live"`. A role without it omits the key and inherits the host setting. |
+| `argument-hint` | `"<what to type>"` | Shown by the host after the skill's name: Claude's `argument-hint`, Codex's `interface.default_prompt`. |
 
 ## Invocation
+
+Codex's emitted `[agents]` table is a V1 configuration-shape guarantee. Codex V2 may override
+`enabled` and ignores `max_depth`, so the compiler does not claim a universal V2 denial or depth
+limit. Sync does not rewrite a project's `.codex/config.toml`.
 
 Two choices, trading the two loads:
 
@@ -38,7 +46,7 @@ Two choices, trading the two loads:
 
 Pick `automatic` only when the agent must reach the skill on its own, or another skill must. If it
 only ever fires by hand, make it `explicit` and pay no context load — except for an `emit: agent`
-role, which stays `automatic` because the agent's `skills:` preload cannot reach an explicit skill.
+skill, which stays `automatic` because the agent's `skills:` preload cannot reach an explicit skill.
 Split a model-invoked skill off an existing one when it has a distinct leading word that should
 trigger it alone — a word you actually use in your prompts — or when another skill must reach it;
 that independent reach costs a permanently loaded description, so it has to be worth one.
@@ -49,7 +57,7 @@ that independent reach costs a permanently loaded description, so it has to be w
   the compiled skill body, rewritten to resolve from the folder the skill is emitted into, and into
   a spawned agent's context block as repo-relative paths. Close the list with
   `{{include:extra-must-reads}}` so a project can add its own without editing framework text.
-- **Resources** — `<role>-resource-<name>.template.md` compiles to `resources/<name>.md` beside the
+- **Resources** — `<skill>-resource-<name>.template.md` compiles to `resources/<name>.md` beside the
   skill, and the body reaches it by that same path, rewritten to the host's emitted location so even
   a preloaded agent can `Read` it. This is disclosure with a file boundary: one skill's own
   reference, reached only by the branches that need it. Reference several skills share lives
@@ -58,11 +66,8 @@ that independent reach costs a permanently loaded description, so it has to be w
 
 ## Regeneration
 
-`dydo sync` compiles every source. Its cleanup is an allowlist of framework retirements, so output
-orphaned by a source you delete is yours to remove — until then its description loads every turn.
-The template is the role; everything under `.claude/`, `.codex/` and `.agents/` is a build product —
-fix the template and sync again rather than editing what came out.
-
-Two tiers bound what any tool may rewrite: `dydo/index.md`, `dydo/files-off-limits.md` and
-`dydo.json` are **protected** — every tool may read them, the human owns every edit — while
-`dydo/_system/**` and secrets are **off-limits**, left closed.
+`dydo sync` compiles every source. Its cleanup is an allowlist of retirements in `SyncCommand`: a
+template you retire joins it, or its compiled output survives in every installed project and its
+description loads every turn. The template is the skill; everything under `.claude/`, `.codex/` and
+`.agents/` is a build product — fix the template and sync again rather than editing what came out.
+What no tool may rewrite is listed in [files-off-limits.md](../../../../dydo/files-off-limits.md).

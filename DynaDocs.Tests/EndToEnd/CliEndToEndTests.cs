@@ -62,6 +62,18 @@ public class CliEndToEndTests : IDisposable
         Assert.Contains("dydo", result.Stdout);
     }
 
+    [Fact]
+    public async Task VersionCommands_ReportTheBetaPackageVersion()
+    {
+        var option = await RunDydoAsync("--version");
+        var command = await RunDydoAsync("version");
+
+        Assert.Equal(0, option.ExitCode);
+        Assert.Equal(0, command.ExitCode);
+        Assert.Contains("3.0.0-beta.1", option.Stdout);
+        Assert.Contains("dydo version 3.0.0-beta.1", command.Stdout);
+    }
+
     /// <summary>
     /// Verify all subcommands can show help without crashing.
     /// This catches command construction errors like the AuditCommand whitespace alias bug.

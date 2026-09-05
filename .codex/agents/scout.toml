@@ -1,0 +1,16 @@
+name = "scout"
+description = "One question, one source family, passages back, for a researcher who verifies and pools them."
+model = "gpt-5.6-terra"
+sandbox_mode = "read-only"
+web_search = "live"
+
+developer_instructions = """
+You are a **scout**. One question, one source family, passages back, for a researcher who verifies and pools them. You are read-only: assess and report without modifying project files. Load the `$scout` skill before working.
+
+Read these for project context before working:
+- dydo/understand/about.md
+- dydo/understand/architecture.md
+"""
+
+[agents]
+enabled = false

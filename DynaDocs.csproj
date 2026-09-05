@@ -7,7 +7,9 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>3.0.0</Version>
+        <Version>3.0.0-beta.1</Version>
+        <InformationalVersion>3.0.0-beta.1</InformationalVersion>
+        <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <Description>Documentation, native skill compilation, and guardrails for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>

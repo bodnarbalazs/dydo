@@ -339,3 +339,207 @@ owning Issue or a new bounded fix contract; do not hide it in regeneration or re
   Shared terms should have one definition; deleting repetition is often the better correction.
 - Work is ready for the human when its integrated evidence is ready. A locally installed 3.0.0
   binary alone does not mean release acceptance, and no open human gate becomes `Done` overnight.
+
+## Amendment — 2026-09-05: experimental beta dogfood before complete G/M adoption
+
+The human authorized a clearly prerelease local build before the repository completes G-final and
+mutation assurance. This amendment creates a narrow dogfood milestone at `3.0.0-beta.1`; it does not
+change the final 3.0 destination, accept a static or mutation failure, or turn the legacy
+`gap_check.py` result into DR 048 evidence. Final landing, tags, public NuGet/npm publication, release
+assets, five-platform release proof, and the human walkthrough remain reserved.
+
+The beta begins at independently reviewed integration SHA
+`70af4c6e564f8abddd1ac890f9093d4c8419c028`, whose retained evidence records 2,019 full tests, 472
+focused tests, 26 native profile cases, and clean build and documentation checks. GitHub Actions run
+`33965531751` independently passed the same 2,019-test base on 2026-09-05; the pre-code beta hop
+inherits that evidence rather than rerunning it. DYD-110 owns the beta delta and installation
+evidence. DYD-111 owns the discovered-template enabled switchboard and
+local custom-template policy; DYD-112 owns compulsory per-folder hub retirement; DYD-113 owns the
+agent-facing testing facade. Those three Features are intended dogfood follow-ups and do not block
+the first beta.
+
+### DYD-110 specification
+
+The observable scenarios are in `DynaDocs.Tests/Features/experimental-beta.feature`:
+
+1. A consumer directory containing a decoy `DynaDocs.csproj` and conflicting `Templates/` files
+   cannot change the installed executable's shipped template inventory or emitted bytes. The
+   executable always reads its embedded build snapshot; source editing takes effect after rebuild
+   and reinstall. A future explicit development override would be a separate contract.
+2. `dydo sync` emits the reviewed current skill and agent set to both native hosts, removes only the
+   allowlisted retired compiler outputs, remains byte-idempotent, and preserves unrecognized native
+   siblings, project documents, `.claude/settings.json`, and `.codex/config.toml`. Existing custom
+   hook entries in `.codex/hooks.json` remain semantically intact.
+3. Codex agent TOML writes top-level `web_search = "live"` for a role with `web: true` and omits
+   `web_search` otherwise, leaving the inherited host setting in force for a non-web role. Every
+   generated Codex agent ends with an `[agents]` table: a role with `delegates: true` writes
+   `enabled = true` and `max_depth = 3`; a non-delegating role writes `enabled = false` and omits
+   `max_depth`. These are explicit V1 intent and configuration-shape guarantees. Codex V2 may
+   override `enabled` and ignores `max_depth`, so this beta makes no universal denial or depth claim
+   for V2 and does not modify the consumer's project `.codex/config.toml`. The already observed
+   three-edge nesting is positive host evidence; the generated-role canary in criterion 6 remains
+   pending.
+4. A clean package from the accepted candidate has NuGet version, npm metadata, `dydo --version`,
+   and `dydo version` agreeing on `3.0.0-beta.1`. The package SHA-256 and candidate Git SHA are
+   retained. An isolated tool-path install runs `--help`, `init all`, `check`, `sync`, template
+   update, and a second byte-identical sync through that installed executable.
+5. Before changing the global tool, acceptance verifies the retained `dydo.2.2.9.nupkg` SHA-256
+   `C60F0D7395B1842DFF22E41914430D884FB7B3CCFF1A1059AE9FE7385695DB14` and reads back the existing
+   2.2.9 executable resolved by PATH. It then performs beta update, actual rollback to 2.2.9, and
+   final beta reinstall from network-free local package sources. Each transition verifies PATH,
+   command path, and version; user, machine, and process PATH bytes are unchanged. A failed run
+   attempts the verified rollback before returning nonzero.
+6. Generated-role runtime evidence can only come from a later fresh Codex task rooted at a clean
+   checkout of the accepted candidate after its generated artifacts are committed. That task's
+   canary is generated `issue-captain` → generated `research` → generated `scout`, with three
+   distinct nonce tokens returned through the chain. DYD-110 defines this canary but does not create
+   or require a new app task before beta installation. The current task's pre-generation role
+   catalog and the earlier generic nesting canary cannot satisfy it, so the beta records the runtime
+   canary as pending and current work continues with explicit crew briefs from the reviewed
+   Templates. No rejected Codex CLI fallback is retried.
+7. The beta evidence names G-final and changed-code mutation as unavailable, links their open
+   Issues and retained branches, and names the actual beta gates below. Agents use this temporary
+   dogfood bootstrap to deliver DYD-111, DYD-112, and DYD-113; they do not reinterpret G/M as a
+   prerequisite for first installation or as having passed.
+
+### DYD-110 plan
+
+**Approach** — retain the compiler, make embedded resources the executable's sole implicit template
+source, correct the two bounded Codex TOML projections and their canonical explanation, stage one
+prerelease version, regenerate the candidate's compiler-owned native artifacts, and install only
+after independent review. Do not add a project-TOML merger, switchboard, hub removal, testing facade,
+release workflow, or publication path to this Feature.
+
+**Patterns to copy** — `Services/TemplateGenerator.cs` already owns embedded resource lookup and
+inventory; remove its current-working-directory branch rather than introducing another source
+resolver. `Commands/SyncCommand.cs` already derives Claude's `Agent` tool from `delegates` and Codex
+web configuration from `web`; compile the same metadata into current Codex top-level/table keys.
+`dydo/guides/customizing-roles.md` and
+`Templates/writing-for-agents-resource-skill-mechanics.template.md` are the canonical public and
+agent-facing explanations of those frontmatter keys; update them with the same exact shape and V2
+limits, then let sync produce the two matching resource artifacts.
+`DynaDocs.Tests/Features/fresh-installation.feature` and `DynaDocs.Tests/Steps/CliScenario.cs` supply
+the isolated process, byte snapshot, idempotence, and cleanup pattern. Section 4's I gate supplies
+the package/scratch/install pattern; this amendment narrows its release claims and adds a real
+rollback round trip.
+
+**Files** — the production hop owns only:
+
+- `Services/TemplateGenerator.cs`: remove implicit source-tree discovery and reads.
+- `Commands/SyncCommand.cs`: emit top-level Codex web configuration and the delegating-role agents
+  table, including explicit V1 disablement for non-delegating roles; keep Claude behavior unchanged.
+- `dydo/guides/customizing-roles.md`: document the exact Codex `web` and `delegates` projection,
+  inherited non-web setting, and V1/V2 capability boundary.
+- `Templates/writing-for-agents-resource-skill-mechanics.template.md`: give agents the same exact
+  projection and capability boundary as the canonical guide.
+- `Program.cs`, `DynaDocs.csproj`, and `npm/package.json`: expose the same beta version; use assembly
+  informational version for the explicit version command without exposing build metadata as the
+  package version.
+- `DynaDocs.Tests/Steps/ExperimentalBetaSteps.cs`,
+  `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`,
+  `DynaDocs.Tests/Commands/SyncCommandTests.cs`,
+  `DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs`, and
+  `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`: bind the feature and pin source selection, TOML
+  shape, both-host inventory, preservation, idempotence, and version behavior.
+- `DynaDocs.Tests/Acceptance/RunExperimentalBeta.ps1`: build a clean recorded candidate, create
+  network-free local package sources, prove package/install/scratch parity, perform the guarded
+  global update/rollback/reinstall, and write redacted evidence under
+  `dydo/_system/.local/dyd110-beta/<run-id>/`.
+- Compiler-owned outputs derived from the embedded inventory under `.agents/skills/`,
+  `.claude/agents/`, `.claude/skills/`, and `.codex/agents/`; `.codex/hooks.json`; and only the
+  allowlisted retired output `.claude/workflows/inquisition.js`. The implementation manifest lists
+  every resulting path and deletion before commit. Unrecognized siblings under those roots are not
+  owned. The explanation change specifically includes
+  `.agents/skills/writing-for-agents/resources/skill-mechanics.md` and
+  `.claude/skills/writing-for-agents/resources/skill-mechanics.md` as sync-generated outputs; no
+  compiled artifact is edited by hand.
+
+The specify hop owns only this amendment and
+`DynaDocs.Tests/Features/experimental-beta.feature`. Evidence under `dydo/_system/.local/` is ignored
+and never committed. No file in the main checkout is edited; the package, regeneration, and dogfood
+work use the DYD-110 candidate branch or a clean checkout at its accepted SHA. Main's authored
+documents and generated catalog remain old, so syncing main is neither part of this Issue nor
+evidence that the whole project is aligned.
+
+**Steps**
+
+1. Add the feature bindings and focused assertions first. The decoy-template scenario must fail
+   against the implicit current-directory source lookup, Codex web tests must fail on `[tools]`,
+   delegate tests must fail on the absent `[agents]` table, and version tests must fail on stable
+   `3.0.0`.
+2. Remove the implicit development lookup from `TemplateGenerator`; enumerate and read embedded
+   resources only. Prove a source-looking consumer with added, removed, and modified decoy
+   templates cannot influence discovery or output.
+3. Change Codex emission mechanically from role metadata. Put all top-level keys before the final
+   `[agents]` table. Emit top-level `web_search = "live"` only for `web: true`; omission inherits
+   host policy and is not an enforced denial. Emit `enabled = true` plus `max_depth = 3` for
+   `delegates: true`, and `enabled = false` without `max_depth` otherwise. Test all four web and
+   delegation combinations and parse or independently validate the TOML values, key locations,
+   table presence, and omitted keys rather than relying on substring presence alone. Update both
+   canonical explanations before regenerating their two resource outputs.
+4. Set `3.0.0-beta.1` on both package surfaces and make both CLI version forms report that
+   prerelease. No tag, release note claiming completion, npm download attempt, or public source is
+   introduced.
+5. Run a source-built sync in the isolated DYD-110 worktree, record the exact compiler-owned
+   manifest, inspect every deletion, and commit the current two-host outputs. A second sync must
+   yield no diff. Existing project documents and unrelated host files remain byte-identical.
+6. Harden source selection against a fake source root, missing/extra decoy skills and resources,
+   mixed web/delegation roles, stale allowlisted outputs, custom siblings, existing custom hooks,
+   repeated sync, package-source ambiguity, partial install failure, rollback failure, and paths
+   containing spaces. The install harness records hashes and equality booleans, not PATH contents,
+   environment values, or credentials.
+7. Obtain fresh independent code review on the committed candidate. Then run the acceptance script
+   from that clean reviewed SHA: isolated tool-path proof first, followed by the guarded global
+   beta/rollback/beta sequence. Retain the package SHA, command output, source-template manifest,
+   emitted-artifact manifest, installed executable path/version, rollback result, scratch result,
+   and explicit G/M limitation report.
+8. Record the captain-to-research-to-scout nonce procedure and `PENDING — fresh task/session
+   required` in the beta limitation report. Do not create a new app task in this Issue and do not
+   claim that this task's already loaded roles were refreshed. The first later task opened on a
+   reviewed synced workspace runs the canary before claiming generated-role runtime acceptance. The
+   captain offers the DYD-110 PR to `feature/dydo-3-consolidation`; its later Merge Issue supplies
+   integration review.
+
+**Edge cases** — an installed beta invoked from a source-looking directory still uses embedded
+resources; absent or unrecognized custom native files survive; only allowlisted retired outputs are
+removed; non-delegating agents receive explicit V1 `enabled = false` without `max_depth`; omitted
+`web_search` inherits host policy and is not reported as denial; V2 precedence over `enabled` and its
+ignoring `max_depth` are reported, not treated as failure; an existing `.codex/config.toml` is never rewritten; a malformed managed
+hook file follows its existing explicit test contract and may not be silently used as evidence of
+settings preservation; dirty or mismatched-SHA packaging fails before global mutation; a missing or
+wrong-hash rollback package fails before global mutation; any transition mismatch triggers rollback
+and preserves diagnostic evidence; npm postinstall is not run because no public beta release asset
+exists; malformed managed hook recovery and general project TOML merging remain DYD-86 work and are
+not represented as beta preservation proof.
+
+**Gates** — use the bundled Python and never invoke `dotnet test` directly:
+
+```powershell
+$BetaPython = 'C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
+& $BetaPython DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~ExperimentalBeta|FullyQualifiedName~TemplateGeneratorTests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~CodexSyncArtifactsE2ETests|FullyQualifiedName~CliEndToEndTests"
+& $BetaPython DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal
+dotnet build DynaDocs.sln -c Release --warnaserror
+dotnet bin/Release/net10.0/dydo.dll check
+& powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File DynaDocs.Tests/Acceptance/RunExperimentalBeta.ps1 -CandidateSha (git rev-parse HEAD) -RollbackPackage 'C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/workspace/v3-rollback/dydo.2.2.9.nupkg'
+git status --short
+```
+
+Focused and full tests, Release build, and source-built documentation check exit zero; the four
+parsed Codex role cases have the exact top-level keys and final `[agents]` values above; both
+generated skill-mechanics resources equal their source template modulo the compiler's defined link
+rewrite; the second sync has no compiler-owned diff; the acceptance script exits zero with beta package, isolated
+scratch, real rollback, final PATH-resolved beta, and preservation proofs; Git is clean except for
+the main checkout's pre-existing Obsidian edit, which is outside this worktree. G-final and M are
+recorded `UNAVAILABLE`, not executed as beta PASS gates. The generated-role runtime canary is
+recorded pending until a later fresh task/session on a reviewed synced workspace runs it.
+
+**Lanes and hops** — no parallel lanes: template ownership, Codex projection, regeneration, version,
+and one package hash join on the parent. Specify, implement, and harden are nonempty. Fresh code
+review is mandatory. The later Merge Sub-issue into `feature/dydo-3-consolidation` has a gates-only
+specify hop, an actual merge implementation hop, an empty hardening hop unless conflict resolution
+changes behavior, and fresh merge review.
+
+**Plan review** — recommended: this amendment changes the accepted Project ordering, temporarily
+removes G/M from a local-install prerequisite, changes package identity and template source
+ownership, emits host configuration, updates global user tooling, and relies on a runtime canary
+whose hot-reload behavior is unknown.

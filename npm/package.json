@@ -1,6 +1,6 @@
 {
   "name": "dydo",
-  "version": "3.0.0",
+  "version": "3.0.0-beta.1",
   "description": "Durable project knowledge and shared role compilation for AI coding assistants.",
   "keywords": [
     "documentation",

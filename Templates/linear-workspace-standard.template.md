@@ -69,7 +69,7 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Bug` | captain | any | Restore intended behaviour. The record holds the defect and its fix. | the behaviour restored | `#EB5757` |
 | `Merge` | captain | any; the landing is the only primary one | One merge operation: lanes into a parent, a primary into the feature, the feature into main. | the merge review PASS | `#4EA7FC` |
 | `Enablement` | captain | any | Access, environment, credentials or material other work needs; `wizard` guides the steps only the human can do. | the condition true, with evidence | `#26B5CE` |
-| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses turned into tests; Bugs filed. | the Bugs filed and the record written | `#5E6AD2` |
+| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses turned into tests; Bugs filed. | Bugs filed, record delivered to the retained feature, exact content and merge reachability verified | `#5E6AD2` |
 | `Prototype` | captain | any | A design question raised to fidelity the human can react to; fast sketches, the human is the review. | the human's verdict on the Issue | `#F2994A` |
 | `Question` | map holder | any | One prepared, discrete question whose answer blocks named work. | the human's answer on the Issue | `#F2C94C` |
 | `Research` | map holder | any | A factual answer whose investigation needs its own owner, status or evidence. | cited findings on the Issue | `#95A2B3` |

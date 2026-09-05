@@ -18,7 +18,7 @@ status circle from its position in its category.
 |---|---|
 | `Backlog` | A possible Project retained for later; no admiral has taken it. |
 | `Planning` | The admiral's project-planner is charting the first low-resolution map, and the review loop runs. |
-| `Planned` | The plan passed independent review and human approval; the admiral opens the feature. |
+| `Planned` | The plan passed independent review and human approval; the admiral commissions the first Issue Captain to open the feature. |
 | `In Progress` | The admiral is working the map through Issue Captains toward the destination. |
 | `Completed` | The destination landed and a walkthrough found nothing more. |
 | `Canceled` | The destination was consciously abandoned; the Project records why. |
@@ -37,7 +37,7 @@ every chain spawn, and nothing else flips it.
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the human's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
 | `Specifying` | started | The specifier is spawned. |
-| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep and proofs. |
+| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep, proofs and final retention verification. |
 | `Implementing` | started | The implementer is spawned, a fix hop after a FAIL included. |
 | `Hardening` | started | The hardener is spawned. |
 | `In Review` | started | Any reviewer is spawned, spec review included. A FAIL returns the record to the hop that fixes it. |
@@ -69,7 +69,7 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Bug` | captain | any | Restore intended behaviour. The record holds the defect and its fix. | the behaviour restored | `#EB5757` |
 | `Merge` | captain | any; the landing is the only primary one | One merge operation: lanes into a parent, a primary into the feature, the feature into main. | the merge review PASS | `#4EA7FC` |
 | `Enablement` | captain | any | Access, environment, credentials or material other work needs; `wizard` guides the steps only the human can do. | the condition true, with evidence | `#26B5CE` |
-| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses turned into tests; Bugs filed. | the Bugs filed and the record written | `#5E6AD2` |
+| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses turned into tests; Bugs filed. | Bugs filed, record delivered to the retained feature, exact content and merge reachability verified | `#5E6AD2` |
 | `Prototype` | captain | any | A design question raised to fidelity the human can react to; fast sketches, the human is the review. | the human's verdict on the Issue | `#F2994A` |
 | `Question` | map holder | any | One prepared, discrete question whose answer blocks named work. | the human's answer on the Issue | `#F2C94C` |
 | `Research` | map holder | any | A factual answer whose investigation needs its own owner, status or evidence. | cited findings on the Issue | `#95A2B3` |
@@ -120,9 +120,9 @@ files a `Question` only when judgment remains.
 | `Research` | `Todo` → `In Progress` → `Done` |
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
-| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and the proofs → `Done` |
-| captain-held | `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
-| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
+| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
+| captain-held default, subject to the Type exceptions | `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
+| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`; it merges, it is never merged |
 
 A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,
@@ -132,6 +132,14 @@ needs splitting is replaced by sibling lanes. When the answer can change other I
 contract, or the Project's destination, scope, acceptance criteria or governing architecture, the
 captain prepares the packet and the admiral creates and wires the Project-level Issue. Native blocker
 relations connect every waiting record to what it waits on.
+
+The Bug Type template is a narrow exception to parallel delivery lanes: its captain may retain
+ordered reproduce-or-identify and fix Sub-issues, with fix natively blocked by reproduction and
+shared paths transferred only after reproduction closes with its evidence recorded. Each stage
+keeps the parent's Type and Mode and has its own contract, chain, branch and worktree; every actual
+integration has a Merge Sub-issue. For a simple Bug, collapse the staged placeholders into parent
+hops and close the unused records `Canceled` with the reason. Joining acceptance and final review
+stay on the parent; the exception creates no overlapping parallel ownership.
 
 ## Question Issues
 
@@ -151,8 +159,10 @@ If the answer determines which implementation Issue should exist, resolve the Qu
 
 ## Issue templates
 
-One Linear Issue template per Type, named after it. The human creates them from the bodies below; an
-agent lists and reads them over MCP and fills them in.
+One Linear Issue template per Type, named after it, is a workspace-UI convenience. Create it from
+the body below where the connected tools or UI permit. Agents read this standard and the Issue
+contract, then use the capabilities actually available; template listing or retrieval is not a
+required connector capability.
 
 | Template | Body |
 |---|---|
@@ -176,10 +186,5 @@ Linear.
 
 ## Related
 
-- [Linear Issue Lifecycle](../understand/task-lifecycle.md) — How Issues move through planning,
-  execution, review, and escalation.
+- [Working-Tree Contract](../guides/working-tree-contract.md) — Branches, hops, review and merge ownership.
 - [dydo Glossary](./dydo-glossary.md) — Locked definitions for the Linear-native work model.
-- [DR 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) — The
-  governing flow map, question model, and human gates.
-- [DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) —
-  Supersymmetry, the twelve statuses and their order, the Type set, priority, merges as Issues.

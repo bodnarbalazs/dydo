@@ -20,12 +20,14 @@ sync again.
 | `description` | one line | Becomes the skill's and the agent's description — the only text a model weighs before reaching for the role. |
 | `emit` | `agent` \| `skill` | `agent` (also the default when the key is absent) adds a spawnable agent that preloads this skill; `skill` is methodology a session applies in its own thread. |
 | `read-only` | `true` | The compiled agent assesses and reports; it gets no editing tools. |
-| `delegates` | `true` | The role may spawn sub-agents. A worker does its own work and goes without it. |
+| `delegates` | `true` | The role may spawn sub-agents: issue-captain directs a crew and Research sends scouts. Other workers do their own work. |
+| `web` | `true` | Grants Claude WebFetch/WebSearch and Codex web_search. |
+| `argument-hint` | one quoted line | Claude argument-hint and Codex interface.default_prompt. |
 | `invocation` | `automatic` \| `explicit` | `explicit` puts the skill out of every model's reach: only the human, by name. Any other value fails the sync. |
 
 `automatic` buys discovery — the model can fire on the description, and other skills can reach the role —
 and costs a description that stays loaded every turn, so write it trigger-first. `explicit` costs no
-context and has to be remembered instead, which is why the [orientation file](../index.md) carries the
+context and has to be remembered instead, which is why the [dydo Glossary](../reference/dydo-glossary.md) carries the
 taxonomy. An `emit: agent` role stays `automatic`: an agent's preload cannot reach an explicit skill.
 
 ## What compiles where
@@ -68,6 +70,11 @@ model per vendor, so a role never names a model. A role with no binding compiles
 Claude — the session's model, never a silent downgrade — and a built-in default model on Codex. See the
 [configuration reference](../reference/configuration.md).
 
+DR 047 uses `standard` for implementer, docs-writer, Research and scout; `strong` for reviewer,
+specifier, hardener, issue-captain, project-planner and inquisitor. `light` remains defined but
+unbound. Effort stays at host defaults. Final consolidation verifies model fallback and native
+delegation/permissions after compiler setup; generated configuration alone is not a runtime proof.
+
 ## What is gone
 
 - The separate role data file and the commands that maintained it. The template is the role, and the
@@ -76,6 +83,9 @@ Claude — the session's model, never a silent downgrade — and a built-in defa
   rubric renamed.
   `dydo sync` sweeps their compiled output from both hosts, and `dydo init` never installs them again. The
   [glossary](../reference/dydo-glossary.md)'s retired-terms paragraph carries the words themselves.
+
+Workflow as a delivery concept is retired by DR 047. DYD-92 owns removal of its remaining compiler
+emission; use the Inquisition Issue protocol rather than its old harness.
 
 ## Related
 

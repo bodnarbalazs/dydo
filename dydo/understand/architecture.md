@@ -47,8 +47,9 @@ carries the whole methodology. `dydo sync` discovers every shipped skill templat
 | `.claude/agents/<role>.md` | Claude Code | roles that emit an agent |
 | `.agents/skills/<role>/SKILL.md` and its `resources/` | Codex | every role; an `agents/openai.yaml` policy file joins it for explicit-only ones |
 | `.codex/agents/<role>.toml` | Codex | roles that emit an agent |
-| `.claude/workflows/<name>.js` from `Templates/workflow-<name>.js` | Claude Code | the only host with a workflow surface |
+| `.claude/workflows/<name>.js` from `Templates/workflow-<name>.js` | Claude Code | legacy compiler output awaiting retirement in DYD-92 |
 
+DR 047 retires Workflow as an operating-model concept; the compiler retirement is DYD-92.
 The guarantees this compilation owes a spawned agent are
 [Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10's;
 what each frontmatter key compiles to is in [Customizing Roles](../guides/customizing-roles.md), and
@@ -83,7 +84,7 @@ follow, not machinery the CLI runs. See [Guard System](./guard-system.md) for th
 ## Documentation graph
 
 Markdown files carry frontmatter and relative links. The scanner builds the document set; validation
-rules check summaries, links, folder metadata, hubs, filenames, and project-specific invariants.
+rules check titles, links, folder metadata, hubs, filenames, and project-specific invariants.
 `dydo fix` applies supported repairs and `dydo graph` exposes navigation relationships.
 
 ## Key design choices

@@ -80,9 +80,15 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
    waiter by the standard's guide; AFK order remains in the map and blockers.
 7. **Offer the inquisition.** Once the feature is integrated, file an Inquisition in `Backlog` with
    its feature SHA, parts, lenses and cost. **Done:** the human moves it to `Todo` and tells you, or
-   cancels it; commission the confirmed Issue and route the Bugs it files.
-8. **Land and walk through.** File the landing Merge Issue, blocked by the Project's open delivery
-   work: main into feature, combined gates, merge review, then a PR into main. Its `Ready to Merge`
+   cancels it; commission the confirmed Issue and route the Bugs it files. Receive its completed
+   evidence packet and contract a separate primary Feature/AFK record-delivery Issue on the retained
+   feature, with the exact record and required hub paths. Commission its own captain and wire only
+   the Inquisition blocked by record delivery; follow the working-tree contract's retention route.
+   On delivery `Done`, resume the released Inquisition captain for durable-evidence verification.
+8. **Land and walk through.** File the landing Merge Issue, blocked by its unresolved prerequisites:
+   delivery, a confirmed Inquisition and its record delivery, and required fixes. Exclude the landing
+   itself and later or deferred work. Its scope is main into feature, combined gates, merge review,
+   then a PR into main. Its `Ready to Merge`
    is the human's click, one Project at a time, as a merge commit. When the human tells you it landed,
    resume the landing captain to close and clean up the merged feature branch; open a Walkthrough
    Issue and ask the human to invoke `walkthrough` in this session, then facilitate it here.

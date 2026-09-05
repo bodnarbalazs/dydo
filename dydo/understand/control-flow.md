@@ -47,7 +47,7 @@ compiles as an agent so an admiral can spawn one per Issue.
 | specifier | worker | agent | issue-captain, on the parent first, then per lane | the Issue branch | spec (scenarios and gates) and plan; names the lanes when the Issue divides; commits the feature files as the `specify` hop; per-kind resource for Bug, Merge, Inquisition | the captain: spec, plan, SHA, review recommendation, lanes (R) |
 | implementer | worker | agent | issue-captain | the Issue branch after the specify hop; a Merge Sub-issue; a proof-only lane | makes it work: scenario red, tests red, green, gates; `implement` hop. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis | the captain: SHA, files, trace of each contract line to its proof, gates (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
 | hardener | worker | agent | issue-captain, unless the captain's spec declares the hop empty | the Issue branch after the implement hop | makes it good: one-level static gates (HCRAP and cognitive complexity), mutation on code and example values, smells, depth; `harden` hop | the captain: SHA, what was cut or closed, gates incl. mutation (R) |
-| docs-writer | worker | agent | issue-captain, for a docs Issue or an inquisition's record | the Issue branch | one documentation change with a witness per claim; the inquisition record | the captain: ending SHA, files, witnesses, `dydo check` (R) |
+| docs-writer | worker | agent | issue-captain, including the separate record Feature's captain for an inquisition | the delivery Issue branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
 | reviewer | worker, read-only | agent | admiral, issue-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
 | scout | worker, read-only, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
 | inquisitor | worker, read-only | agent | an inquisition's issue-captain | reads the inquisition branch | one part or one lens swept, refuting its own catch; hypotheses of what could go wrong | the inquisition captain: findings with proof, hypotheses (R) |
@@ -321,7 +321,9 @@ captain-held Issue normally runs `Todo` → `Specifying` → `Implementing` → 
 `Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`
 and never waits to be merged. An Inquisition
 Issue runs `Backlog` → `Todo` (the human's confirmation) → `Specifying` → `In Progress` for the
-sweep, proofs and record writing → `Done` when its Bugs are filed and its record written. A Merge Sub-issue
+sweep and proofs, releases to `Todo` while the separate record Feature delivers, then resumes
+`In Progress` for retention verification before `Done`. The record Feature runs the normal docs
+delivery chain. A Merge Sub-issue
 whose review fails on the landed work is reverted and closes `Canceled` with the reason.
 
 ## 5. Edges: the contract table
@@ -354,7 +356,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 20 | implementer → issue-captain | R, G | Issue key, implement SHA, files, each scenario and contract line with its proof or gap, tests with claim and seam, gates with output, adjacent findings | — | — |
 | 21 | issue-captain → hardener | R (spawn) | the Issue, the implementer's return; the review block when a FAIL sent it | the Issue with spec and plan and the implementer's return, the block, the plan, standards | `Hardening` |
 | 22 | hardener → issue-captain | R, G | Issue key, harden SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates incl. mutation, out-of-path observations | — | — |
-| 23 | issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan, or the inquisition's evidence | the Issue, about, writing-docs | normal docs delivery `Implementing`; Inquisition retains `In Progress` |
+| 23 | delivery issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan; for a record Feature, its exact owned record/hub paths and the Inquisition's pinned packet | the delivery Issue, packet, about, writing-docs and working-tree retention contract | record Feature or other docs Issue `Implementing` |
 | 24 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | — | — |
 | 25 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, Contract at the specify commit, Candidate SHA, Base SHA | the contract at its governing commit with outcome, scenarios, owned paths, gates; the rubric; the hops | `In Review` |
 | 26 | reviewer → issue-captain, record, PR | R, L, G | the review block: Rubric, Reviewer, Contract, Candidate, Base, Verdict, Gates, Findings; observations after it | — | the fixing hop's status on FAIL |
@@ -373,10 +375,12 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 39 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it | — | — |
 | 40 | inquisition captain → implementer (proof-only) | R (spawn) | one hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | — |
 | 41 | implementer → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | — | — |
-| 42 | inquisition captain → Linear | L | one Bug per confirmed problem, deduplicated, under the Project with the feature as base branch, linking the red test commit and the Inquisition Issue | — | Bugs `Todo` |
-| 43 | inquisition captain → docs-writer | R (spawn) | the evidence: parts and lenses swept, findings, hypotheses and verdicts, Bugs filed | the evidence, writing-docs | retains `In Progress` |
-| 44 | inquisition captain → admiral | R, L | `done <key>`; Bugs and record path on the Issue, branch deleted | — | Inquisition `Done` |
-| 45 | admiral → Linear (landing) | L | the landing Merge Issue: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | — | `Todo`, blocked by every open Issue of the Project |
+| 42 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref, Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
+| 43 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed resume state; `released <key>: record delivery` after the one-way blocker is wired | admiral reads packet and working-tree retention contract to commission delivery | Inquisition released `Todo`, unassigned, worktree removed |
+| 43a | admiral → record Feature captain, Linear | R (spawn), L | separate primary Feature/AFK on retained feature; exact record and individually named required hub paths, pinned packet and ordinary delivery gates; only Inquisition blocked by this Feature | record captain reads contract/packet and directs specify → docs-writer → docs review → final Merge Sub-issue | record Feature `Todo`, pickable from completed packet |
+| 43b | record Feature captain → admiral, Inquisition Issue | R, L, G | `done <key>: merged`; exact record path/blob or digest, delivery merge SHA and retained feature ref, review/gates on delivery records | normal board loop reads delivery `Done` and resumes released Inquisition captain | record Feature `Done`; Inquisition resumes `In Progress` |
+| 44 | inquisition captain → admiral, Linear | R, L | `done <key>` after verifying Bugs, exact record content and delivery merge ancestry/reachability on retained feature; verification on Issue, audit branch deleted, open Bug proof refs retained with named owners | admiral reads durable completion evidence | Inquisition `Done` |
+| 45 | admiral → Linear (landing) | L | the landing Merge Issue: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | — | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
 | 46 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | — | landing `Ready to Merge` |
 | 47 | admiral → human → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the human tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | — | landing `Done`, set by its captain |
 | 48 | admiral → Walkthrough Issue, human | L, C | the Issue; request for the human to invoke `walkthrough` in this session, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | — | `In Progress` → `Done`; findings as Issues; Project `Completed` when none |
@@ -537,9 +541,17 @@ flowchart TD
   P1 & P2 & P3 & P4 -->|findings with proof, and hypotheses of what could go wrong| IC
   IC -->|one hypothesis each, proof-only, on a child branch| IM[implementers: write the test that would catch it]:::worker
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
-  IC -->|dedupe, one Bug per confirmed problem, linking its red test| BUG[(Bug Issues in Todo, under the Project)]
-  IC -->|the inquisition record; retains In Progress| DW[docs-writer]:::worker
-  IC -->|done &lt;key&gt;| AD2[admiral]:::hat
+  IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner| BUG[(Bug Issues in Todo, under the Project)]
+  IC -->|completed pinned packet| AD2[admiral]:::hat
+  AD2 -->|separate primary Feature/AFK, exact record and hub paths| RC[record Feature captain: normal delivery chain]:::hat
+  RC --> SP2[specifier]:::worker
+  SP2 --> DW[docs-writer on the record Feature branch]:::worker
+  DW --> RV[docs review, then final Merge Sub-issue into retained feature]
+  AD2 -->|only Inquisition blocked by record Feature| REL[Inquisition captain: push and release Todo, unassign, remove worktree]:::hat
+  REL -->|released &lt;key&gt;: record delivery| AD2
+  RV -->|delivery Done, exact record and merge evidence; normal board wake| AD2
+  AD2 -->|resume In Progress after delivery Done| VERIFY[Inquisition captain: verify Bugs, record content and merge reachability; preserve open Bug refs]:::hat
+  VERIFY -->|Done, audit branch deleted, done &lt;key&gt;| AD2
   BUG -->|the normal loop, a captain each, before the landing| FIX[fixes through PR, review, Merge Sub-issue]
 ```
 
@@ -552,9 +564,12 @@ hypothesis list; each hypothesis goes to a proof-only implementer whose only out
 the hypothesis holds; a confirmed hypothesis is no longer a hypothesis and joins the findings; the
 captain deduplicates and files one Bug per problem under the Project, with the feature as base branch
 and the red test's commit as reproduction, so each is picked up by a captain and fixed through the
-normal loop; the docs-writer writes the record into `dydo/project/inquisitions/`; the Issue's own
-`Done` is the filed Bugs plus the record, linked on the Inquisition Issue; the return is only
-`done <key>`. There is no PASS or FAIL: Project acceptance is proved by
+normal loop. The completed packet goes to the admiral, whose separate record Feature delivers
+`dydo/project/inquisitions/` through its own captain, docs-writer, reviews and Merge Sub-issue.
+The [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs)
+owns the one-way blocker, release/resume, durable-content checks and independent Bug proof refs.
+The Inquisition closes only after those checks; its return is `done <key>`. There is no PASS or FAIL:
+Project acceptance is proved by
 the landing's merge review, and the Bugs the inquisition filed are landed before the landing.
 
 ### 6.7 An atomic Issue

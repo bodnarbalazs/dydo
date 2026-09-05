@@ -68,7 +68,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 4. **Direct the crew.** Send each parent or lane through [implementer] → [hardener]; route docs to
    `docs-writer`; the implementer uses `diagnosing-bugs` when a defect lacks a red reproduction.
    For normal delivery, set `Implementing` or `Hardening` on each spawn and post each hop's commit
-   SHA on the record. Inquisition sweeps, proofs and record writing stay `In Progress` as below.
+   SHA on the record. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
+   runs the normal docs delivery chain as below.
    Skip only a hop the spec declares empty. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. **Done:** each candidate accounts for its paths, passes
@@ -111,9 +112,13 @@ never submitted. Enablement uses `wizard` for the steps only the human can perfo
 An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. After
 specification, set `In Progress` for read-only inquisitors sweeping parts/lenses and proof-only
 implementers testing hypotheses on child proof branches. Deduplicate confirmed findings into Bugs
-with their red-test SHAs, then send the evidence to `docs-writer` for the inquisition record,
-keeping the Issue `In Progress` until that record is written.
-Close `Done` when Bugs and record exist; delete the inquisition branch. It files, never PASSes or FAILs.
+with their red-test SHAs and pin the completed packet on the Issue. Send it to the admiral to
+commission the separate record Feature; retain each open Bug's reproduction on a pushed independent
+ref. Follow **Retaining an Inquisition's record and proofs** in the working-tree contract: wire the
+record Feature as blocker, release, then resume after its delivery to verify Bugs, the record's
+exact content and merge reachability on the retained feature before closing and audit cleanup.
+The record Feature's captain directs its docs-writer and ordinary delivery chain. The Inquisition
+files, never PASSes or FAILs.
 
 Merge review FAIL has an owner: fix an integration defect inside the Merge Issue, then re-review.
 For a source-work defect, revert inside Merge, close it `Canceled` with the reason, and return the

@@ -102,6 +102,31 @@ Merge FAIL stays owned: fix integration defects inside Merge; revert a source de
 close Merge `Canceled`, returning the source to `Implementing`. If a later merge depends on it,
 use a following fix Issue. Each corrected candidate gets fresh merge review.
 
+## Retaining an Inquisition's record and proofs
+
+The Inquisition captain pins the completed evidence packet on its Issue: audited feature SHA,
+scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
+reproduction SHAs. The admiral uses that packet to contract a separate primary `Feature` / `AFK`
+record-delivery Issue from the retained feature branch. Its ownership names the exact
+`dydo/project/inquisitions/` record file and each required generated hub individually. Its own
+captain directs the ordinary specification, docs-writer, docs review and final Merge Sub-issue
+into the feature. Audit and proof branches never merge.
+
+Wire the Inquisition **blocked by the record Feature**, never the reverse: the completed packet
+makes record delivery pickable. The Inquisition captain pushes its resume state and releases by
+the procedure above, returning `released <key>: record delivery`. On the normal board loop after
+record delivery is `Done`, the admiral resumes that captain from the Issue. It returns to
+`In Progress`, verifies the filed Bugs and the exact record path and blob or content digest on the
+retained feature, and records the delivery merge's ancestry/reachability there. Only then does it
+close `Done`, return `done <key>` and delete the audit branch. A record present only on an unmerged
+audit branch cannot satisfy this check.
+
+Before release or audit cleanup, every open Bug's reproduction SHA must remain reachable from a
+pushed named ref independent of the audit branch, linked on that Bug. The Inquisition captain owns
+that retention until the Bug captain records adoption of the reproduction and transfer of cleanup
+responsibility. Audit cleanup never deletes those refs; they remain input to each Bug's normal
+chain. This is ordinary Feature delivery and release, not a new Type or a serial-lane exception.
+
 ## Cleanup
 
 | Artifact | Accountable | Completion |
@@ -112,7 +137,7 @@ use a following fix Issue. Each corrected candidate gets fresh merge review.
 | Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the merge. |
 | Merged feature branch | `admiral`, commissioning the landing Captain | The landing Captain deletes the branch after the human lands it and reports completion. |
 | Prototype branch | `issue-captain`, tracked by the admiral | Keep the winning code linked as delivery-spec input; delete when that delivery Issue is Done or with feature cleanup. |
-| Inquisition branch | `issue-captain` | Delete at Done after Bugs and the record exist; never merge it. |
+| Inquisition branch | `issue-captain` | Delete at Done after the record/proof retention checks above; never merge it or delete the independently retained Bug refs. |
 
 The `chief-of-staff` compares `git worktree list` and merged branches with Linear during board hygiene.
 Anything it finds is a contract failure to clear or route with its owner named, not normal cleanup

@@ -85,7 +85,10 @@ to an Issue. They are not extra levels in the work graph.
 2. **Merge review** — a reviewer with the `merge` rubric after *every* merge: a mechanical spot check
    scaled to what landed, which at the final feature merge also proves the plan's acceptance criteria.
 3. **Inquisition** — human-confirmed, captain-directed sweeps and proof tests that file Bugs, with
-   a docs-writer recording the evidence. It catches what got through; it never proves zero defects.
+   a separate record Feature's docs-writer preserving the evidence through normal delivery. The
+   Inquisition releases until that delivery lands, then verifies retention before closing; see the
+   [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs).
+   It catches what got through; it never proves zero defects.
 
 Every reviewer verdict is the same **review block**: a Project update for a plan, on the Merge
 Issue for a merge, otherwise on its Issue, and in the PR body when one exists; its fields are locked in the

@@ -1,6 +1,6 @@
 ---
 name: docs-writer
-description: Documentation the repository can witness. Write or correct one reviewed change, or an inquisition's record, for its Issue Captain.
+description: Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Issue Captain.
 emit: agent
 invocation: automatic
 ---
@@ -39,10 +39,13 @@ words.
    compiled skills under `.claude/`, `.codex/` and `.agents/` are `dydo sync`'s. Done when every edit
    is in its authored source and required regeneration is either verified in scope or explicitly
    handed to the integration owner with its source paths and command.
-4. **Write the inquisition record** when its Captain hands you the evidence: a document in
+4. **Write the inquisition record** when the separate record Feature's captain hands you its
+   contract and the Inquisition's pinned evidence packet. Work on that Feature's branch, following
+   the working-tree contract's retention route: a document in
    `dydo/project/inquisitions/` naming scope and feature SHA, parts and lenses swept, findings,
    hypotheses with verdicts, and Bugs filed with their reproduction commits. Done when every claim
-   traces to the Captain's evidence, with an empty section explicitly recorded as such.
+   traces to the packet, with an empty section explicitly recorded as such; return the exact path
+   and blob or content digest for the delivery review and the Inquisition captain's later check.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then `dydo check`
    and the Issue's exact gates until clean; then commit in the owned paths. Done when the work is
    committed.

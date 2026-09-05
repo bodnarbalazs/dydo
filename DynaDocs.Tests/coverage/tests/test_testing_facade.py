@@ -90,7 +90,7 @@ class TestingFacadeTests(unittest.TestCase):
         self.test_targeted_grammar_and_literal_force_flag()
 
     def test_targeted_grammar_and_literal_force_flag(self):
-        for args in [['test'], ['test', '--stack', 'dotnet,peer'], ['all', '--', '--filter'], ['all', '--since', 'BASE']]:
+        for args in [['test'], ['test', '--stack', 'dotnet,peer'], ['all', '--', '--filter'], ['all', '--since', 'BASE'], ['all', '--since', '']]:
             with self.subTest(args=args):
                 p, root, payload = self.invoke(args, manifest(stack('dotnet'), stack('peer')))
                 self.assert_exit(p, 2)

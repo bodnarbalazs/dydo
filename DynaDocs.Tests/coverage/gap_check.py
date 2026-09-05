@@ -227,7 +227,7 @@ def request(args):
     if operation == "test" and (stacks is None or len(stacks) != 1 or not stacks[0]):
         raise ContractError("test requires exactly one --stack NAME")
     if capability == "mutation" and not since: raise ContractError("mutation requires --since BASE")
-    if since and capability != "mutation": raise ContractError("--since is only valid for mutation")
+    if since is not None and capability != "mutation": raise ContractError("--since is only valid for mutation")
     return ("gate " + capability if operation == "gate" else operation), (capability,), since, stacks, forwarded
 
 

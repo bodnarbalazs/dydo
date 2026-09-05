@@ -1,8 +1,9 @@
 ---
 area: project
 type: decision
-status: proposed
+status: accepted
 date: 2026-09-04
+accepted: 2026-09-05
 participants: [balazs, Claude (Fable)]
 ---
 
@@ -278,6 +279,13 @@ otherwise. Hats run on the session's model, which the human sets strong.
 use proves a need.
 
 ## Consequences
+
+The human accepted this record on 2026-09-05 as the governing 3.0 model. The remaining prompt-file
+propagation is delegated to agents with fresh independent review and the coordinating agent's
+review; another human pass may follow. The dedicated model-dogfood acceptance Project is retired
+under section 2, preserving its historical evidence. The 3.0 consolidation produces a reviewed,
+tested, locally usable release candidate; the human retains the final landing, walkthrough and
+publication acceptance.
 
 - Supersymmetry enters the glossary; the map's section 3 says it in one sentence.
 - The standard is rewritten: twelve statuses with their category and order, ten Types in one `Type`

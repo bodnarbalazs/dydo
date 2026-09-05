@@ -1,0 +1,9 @@
+{
+  "testRunner": "command",
+  "coverageAnalysis": "off",
+  "disableBail": true,
+  "concurrency": 1,
+  "thresholds": { "high": 100, "low": 100, "break": 100 },
+  "reporters": ["json", "html"],
+  "plugins": []
+}

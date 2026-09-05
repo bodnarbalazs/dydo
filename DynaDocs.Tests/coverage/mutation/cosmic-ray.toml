@@ -1,0 +1,8 @@
+[cosmic-ray]
+module-path = ""
+timeout = 70.0
+excluded-modules = []
+test-command = ""
+
+[cosmic-ray.distributor]
+name = "local"

@@ -270,3 +270,68 @@ def write_summary(folder, report):
     escaped = html.escape(json.dumps(report, indent=2, ensure_ascii=False))
     (folder / "summary.html").write_text("<!doctype html><meta charset='utf-8'><title>Mutation evidence</title>"
                                          "<h1>Mutation evidence</h1><pre>" + escaped + "</pre>", encoding="utf-8")
+
+
+def python_suite(report, job, expected):
+    require(isinstance(report, dict) and report.get("schema_version") == 1 and report.get("job") == job,
+            "Stale or malformed Python suite receipt")
+    require(report.get("complete") is True and report.get("phase") == "completed"
+            and report.get("discovery_errors") == [], "Python suite did not complete discovery and execution")
+    require(expected and len(set(expected)) == len(expected) and report.get("expected") == expected
+            and report.get("tests_run") == len(expected), "Changed or empty Python case inventory")
+    grouped = {case: [] for case in expected}
+    for event in report.get("events", []):
+        require(isinstance(event, dict) and event.get("id") in grouped, "Unexpected Python case event")
+        grouped[event["id"]].append(event.get("phase"))
+    failed = False
+    for phases in grouped.values():
+        require(len(phases) >= 3 and phases[0] == "start" and phases[-1] == "stop", "Incomplete Python case lifecycle")
+        middle = phases[1:-1]
+        if all(phase in ("subtest-failure", "subtest-error") for phase in middle):
+            failed = True
+        else:
+            require(len(middle) == 1 and middle[0] in ("success", "failure", "error"), "Skipped or malformed Python case lifecycle")
+            failed |= middle[0] != "success"
+    require(report.get("success") is (not failed), "Contradictory Python suite success")
+    return "killed" if failed else "surviving"
+
+
+def node_cases(events):
+    require(isinstance(events, list), "Missing Node event stream")
+    summaries = [event.get("data", {}) for event in events if event.get("type") == "test:summary"]
+    aggregate = [item for item in summaries if not item.get("file")]
+    children = {item.get("file") for item in summaries if item.get("file")}
+    require(len(aggregate) == 1 and children, "Missing Node child or aggregate summary")
+    results = []
+    ancestry = {}
+    occurrences = Counter()
+    for event in events:
+        kind, data = event.get("type"), event.get("data", {})
+        if kind == "test:dequeue":
+            ancestry[data.get("nesting", 0)] = data.get("name")
+        if kind not in ("test:pass", "test:fail") or data.get("file") not in children:
+            continue
+        if data.get("details", {}).get("type") == "suite":
+            continue
+        nesting = data.get("nesting", 0)
+        names = [ancestry.get(level) for level in range(nesting)] + [data.get("name")]
+        key = json.dumps([data.get("file"), names], ensure_ascii=False)
+        occurrences[key] += 1
+        results.append({"id": key + ":" + str(occurrences[key]), "event": event})
+    require(results and len(results) == aggregate[0].get("counts", {}).get("tests"), "Empty or incomplete Node real-case inventory")
+    return [result["id"] for result in results]
+
+
+def node_suite(events, expected):
+    require(expected and node_cases(events) == expected, "Changed Node case inventory")
+    failed = False
+    for event in events:
+        if event.get("type") not in ("test:pass", "test:fail"):
+            continue
+        data = event.get("data", {})
+        require(not data.get("skip") and not data.get("todo"), "Skipped or TODO Node case")
+        if event["type"] == "test:fail":
+            failure = data.get("details", {}).get("error", {}).get("failureType")
+            require(failure in ("testCodeFailure", "subtestsFailed"), "Node timeout, cancellation or suite launch failure")
+            failed = True
+    return "killed" if failed else "surviving"

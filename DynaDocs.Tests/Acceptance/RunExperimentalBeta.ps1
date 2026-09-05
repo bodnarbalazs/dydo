@@ -20,7 +20,8 @@ $runRoot = Join-Path $root ('dydo\_system\.local\dyd110-beta\' + $runId)
 $packageRoot = Join-Path $runRoot 'packages'
 $toolRoot = Join-Path $runRoot 'tool-path'
 $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
-$scratch = Join-Path $temporaryRoot ('dyd110-beta-' + $runId + '\scratch project')
+$scratchRoot = Join-Path $temporaryRoot ('dyd110-beta-' + $runId)
+$scratch = Join-Path $scratchRoot 'scratch project'
 $evidence = [ordered]@{
     candidate_sha = $CandidateSha
     beta_version = $betaVersion
@@ -31,9 +32,9 @@ $evidence = [ordered]@{
     rollback_attempted = $false
     final_beta_reinstall = $false
     isolated_only = [bool]$IsolatedOnly
-    generated_role_canary = 'PENDING — fresh task/session required'
-    static_gates = 'UNAVAILABLE — DYD-96 remains open'
-    mutation = 'UNAVAILABLE — DYD-103 remains open'
+    generated_role_canary = 'PENDING - fresh task/session required'
+    static_gates = 'UNAVAILABLE - DYD-96 remains open'
+    mutation = 'UNAVAILABLE - DYD-103 remains open'
 }
 
 function Invoke-Checked([scriptblock]$Action, [string]$Name) {
@@ -184,14 +185,14 @@ catch {
 }
 finally {
     Set-Location $originalLocation
-    if (Test-Path -LiteralPath $scratch) {
+    if (Test-Path -LiteralPath $scratchRoot) {
         try {
             $temporaryPrefix = $temporaryRoot.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
-            $scratchPath = [IO.Path]::GetFullPath($scratch)
-            if (-not $scratchPath.StartsWith($temporaryPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-                throw "Refusing to remove scratch path outside the temporary root: $scratchPath"
+            $scratchRootPath = [IO.Path]::GetFullPath($scratchRoot)
+            if (-not $scratchRootPath.StartsWith($temporaryPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Refusing to remove scratch path outside the temporary root: $scratchRootPath"
             }
-            Remove-Item -LiteralPath $scratchPath -Recurse -Force
+            Remove-Item -LiteralPath $scratchRootPath -Recurse -Force
             $evidence.scratch_removed = $true
         }
         catch {

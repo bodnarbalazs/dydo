@@ -5,9 +5,10 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
+import shlex
 import shutil
 import signal
-import shlex
 import subprocess
 import sys
 import time
@@ -17,9 +18,41 @@ from pathlib import Path
 
 import mutation_results as evidence
 import run_tests
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 COVERAGE = Path(__file__).resolve().parent
+DOTNET_NON_BLOCK = ("Statement", "Arithmetic", "Equality", "Boolean", "Logical", "Assignment", "Unary", "Update",
+                    "Checked", "Linq", "String", "Bitwise", "Initializer", "Regex", "NullCoalescing", "Math",
+                    "StringMethod", "Conditional", "CollectionExpression")
+
+
+def validate_settings(settings, language):
+    evidence.require(settings.get("concurrency") == 1 and type(settings["concurrency"]) is int,
+                     "Mutation concurrency must be explicitly 1")
+    evidence.require(settings.get("thresholds") == {"high": 100, "low": 100, "break": 100}, "Mutation thresholds must all be 100")
+    evidence.require(settings.get("reporters") == ["json", "html"], "Only local JSON/HTML reporters are allowed")
+    forbidden = ("ignore-mutations", "ignore-methods", "ignore-linq-expressions", "since", "baseline", "with-baseline",
+                 "incremental", "ignorePatterns", "excludedMutations", "dashboard", "testCaseFilter", "test-case-filter")
+    evidence.require(not any(settings.get(key) for key in forbidden), "Mutation configuration suppresses obligations")
+    if language == "javascript":
+        evidence.require(settings.get("coverageAnalysis") == "off" and settings.get("disableBail") is True,
+                         "JS requires full suite execution without fake native coverage")
+
+
+def effective_dotnet(text):
+    evidence.require(re.findall(r"Version: ([0-9.]+)", text) == ["4.16.0"], "Missing or wrong effective Stryker.NET version")
+    evidence.require(re.findall(r"Stryker will use a max of (\d+) parallel testsessions\.", text) == ["1"],
+                     "Missing or conflicting effective .NET concurrency")
+
+
+def native_count(text, language, count):
+    pattern = r"(\d+) mutants created"
+    if language == "javascript":
+        evidence.require(re.findall(r"ProjectReader Found (\d+) of \d+ file\(s\) to be mutated\.", text) == ["1"],
+                         "Native JS exact source selection is incomplete")
+        pattern = r"Instrumenter Instrumented 1 source file\(s\) with (\d+) mutant\(s\)"
+    evidence.require(re.findall(pattern, text) == [str(count)], "Native generated count differs from complete report")
 
 
 def bootstrap(folder, sources):
@@ -63,7 +96,7 @@ def process(argv, cwd, prefix, timeout, manifest=None):
             record["timeout"] = True
             if os.name == "nt":
                 terminated = subprocess.run(["taskkill", "/PID", str(child.pid), "/T", "/F"],
-                                            capture_output=True, timeout=10)
+                                            capture_output=True, timeout=10, check=False)
                 record["termination_exit"] = terminated.returncode
                 if terminated.returncode != 0:
                     record["cleanup_error"] = "Process tree termination could not be confirmed"
@@ -98,6 +131,7 @@ def suite_argv(command, language, harness, output, job):
     evidence.require(language == "javascript" and "--test" in command,
                      "JavaScript test command must select the actual node:test suite")
     evidence.require(not any(arg.startswith("--test-reporter") for arg in command), "Conflicting Node reporter")
+    evidence.require(not any(arg.startswith("--experimental-test-isolation") for arg in command), "Default Node child isolation is required")
     index = command.index("--test") + 1
     return [*command[:index], "--test-reporter=" + (harness / "node-test-reporter.cjs").as_uri(),
             "--test-reporter-destination=" + str(output), *command[index:]]
@@ -123,7 +157,12 @@ def run_suite(job, folder, cwd, expected=None):
         cases = evidence.node_cases(raw)
         state = evidence.node_suite(raw, expected if expected is not None else cases)
     evidence.require(record["returncode"] == (0 if state == "surviving" else 1), "Suite exit contradicts real case events")
-    return {"state": state, "expected": cases, "process": record, "raw": str(output)}
+    result = {"state": state, "expected": cases, "process": record, "raw": str(output)}
+    if job["language"] == "javascript":
+        result["tree"] = sorted(node["id"] for node in evidence.node_tree(raw))
+        if job.get("expected_tree") is not None:
+            evidence.require(result["tree"] == job["expected_tree"], "Changed Node suite tree")
+    return result
 
 
 def normalize_node_paths(events, cwd):
@@ -140,7 +179,7 @@ def execute_job(path, digest):
     evidence.require(hashlib.sha256(path.read_bytes()).hexdigest() == digest, "Changed immutable job envelope")
     job = read_json(path)
     verify_bootstrap(job["bootstrap"])
-    native = os.environ.get("STRYKER_MUTANT") if job["language"] == "javascript" else job.get("native_id")
+    native = os.environ.get("__STRYKER_ACTIVE_MUTANT__") if job["language"] == "javascript" else job.get("native_id")
     key = "baseline" if native is None else str(native)
     evidence.require(key == "baseline" or key.isalnum(), "Malformed native job identity")
     folder = Path(job["receipts"]) / key / uuid.uuid4().hex
@@ -232,8 +271,13 @@ def cosmic_command(request, context, prefix):
 
 
 def cosmic_config(path, module, command):
-    content = "[cosmic-ray]\nmodule-path=" + json.dumps(module) + "\ntimeout=70.0\nexcluded-modules=[]\ntest-command=" + json.dumps(command)
-    path.write_text(content + '\n[cosmic-ray.distributor]\nname="local"\n', encoding="utf-8")
+    template = (COVERAGE / "mutation/cosmic-ray.toml").read_text(encoding="utf-8")
+    settings = tomllib.loads(template).get("cosmic-ray")
+    evidence.require(settings == {"module-path": "", "timeout": 70.0, "excluded-modules": [],
+                                  "test-command": "", "distributor": {"name": "local"}}, "Unexpected CosmicRay template policy")
+    content = template.replace('module-path = ""', "module-path = " + json.dumps(module))
+    content = content.replace('test-command = ""', "test-command = " + json.dumps(command))
+    path.write_text(content, encoding="utf-8")
 
 
 def make_job(context, module, folder, expected=None):
@@ -264,7 +308,8 @@ def python_mutations(context, module, members, folder):
     inventory = cosmic_command({"database": str(database), "output": str(folder / "initialized.json")}, context, folder / "inventory")
     checked([context["python"], "-m", "cosmic_ray.cli", "baseline", str(config), "--session-file", str(folder / "baseline.sqlite")],
             context["root"], folder / "baseline-engine", manifest=context["bootstrap"])
-    receipts(folder / "receipts", ["baseline"], baseline_job["job"])
+    native_baseline = receipts(folder / "receipts", ["baseline"], baseline_job["job"])["baseline"]
+    evidence.require(native_baseline["state"] == "surviving", "Native Python baseline did not pass")
     rows, jobs = [], []
     for item in inventory["items"]:
         evidence.require(item["path"] == module["path"], "Cosmic initialized foreign source")
@@ -330,8 +375,11 @@ def javascript_mutations(context, module, members, folder):
     baseline = run_suite(job, folder, context["root"])
     evidence.require(baseline["state"] == "surviving", "Node baseline has failing real cases")
     job["expected"] = baseline["expected"]
+    job["expected_tree"] = baseline["tree"]
     config = read_json(COVERAGE / "mutation/stryker-js.json")
-    config.update(commandRunner={"command": job_command(job, folder)}, mutate=[js_range(member) for member in members],
+    validate_settings(config, "javascript")
+    source = evidence.Source((context["root"] / module["path"]).read_bytes())
+    config.update(commandRunner={"command": job_command(job, folder)}, mutate=[js_range(member, source.bom) for member in members],
                   jsonReporter={"fileName": str(folder / "mutation.json")},
                   htmlReporter={"fileName": str(folder / "mutation.html")}, tempDirName=str(folder / "sandbox"))
     config_path = folder / "stryker.json"
@@ -339,8 +387,18 @@ def javascript_mutations(context, module, members, folder):
     engine = process(["node", str(context["js_tool"]), "run", str(config_path)], context["root"], folder / "engine", 1800, context["bootstrap"])
     verify_fingerprint(context)
     report = read_json(folder / "mutation.json")
+    observed = Path(engine["stdout"]).read_text(encoding="utf-8", errors="replace")
+    observed = re.sub(r"\x1b\[[0-9;]*m", "", observed)
+    evidence.require(re.findall(r"ConcurrencyTokenProvider Creating (\d+) test runner process\(es\)\.", observed) == ["1"],
+                     "Missing or conflicting effective JS concurrency")
     sources = {module["path"]: evidence.Source((context["root"] / module["path"]).read_bytes())}
-    rows = evidence.stryker_rows(report, sources)
+    evidence.require(report.get("framework", {}).get("version") == "9.6.1", "Missing effective StrykerJS version")
+    effective = report.get("config", {})
+    # The built-in dashboard URL is inert with strictly local reporters.
+    validate_settings({key: value for key, value in effective.items() if key != "dashboard"}, "javascript")
+    evidence.require(effective.get("mutate") == config["mutate"] and effective.get("commandRunner") == config["commandRunner"], "Effective JS scope/launcher mismatch")
+    rows = evidence.stryker_rows(report, sources if report.get("files") else {})
+    native_count(observed, "javascript", len(rows))
     selected = [row for row in rows if evidence.owner(row, members)]
     expected = ["baseline", *(row["native_id"] for row in selected if row["state"] != "invalid")]
     suites = receipts(folder / "receipts", expected, job["job"])
@@ -358,8 +416,10 @@ def javascript_mutations(context, module, members, folder):
     return {**result, "baseline": baseline, "engine": engine, "config": config, "suites": suites}
 
 
-def js_range(member):
-    span = evidence.member_span(member)
+def js_range(member, bom=False):
+    span = list(evidence.member_span(member))
+    span[1] += int(bom and span[0] == 1)
+    span[3] += int(bom and span[2] == 1)
     return f"{glob_literal(member['path'])}:{span[0]}:{span[1]}-{span[2]}:{span[3]}"
 
 
@@ -385,15 +445,14 @@ def dotnet_config(context, module, members, folder):
     source = read_json(context["root"] / "stryker-config.json")
     settings = source.get("stryker-config")
     evidence.require(isinstance(settings, dict), "Missing .NET root mutation configuration")
-    forbidden = {"ignore-mutations", "ignore-methods", "ignore-linq-expressions", "since", "baseline", "with-baseline"}
-    evidence.require(not any(settings.get(key) for key in forbidden), "Root .NET config suppresses mutation obligations")
+    validate_settings(settings, "cs")
     project_dir = Path(module["project"]).parent
     settings.update({"project": str(context["root"] / module["project"]),
                      "test-projects": [str(context["root"] / path) for path in module["test_projects"]],
                      "concurrency": 1, "thresholds": {"high": 100, "low": 100, "break": 100},
                      "reporters": ["json", "html"], "break-on-initial-test-failure": True,
                      "mutation-level": "Complete", "disable-bail": True, "disable-mix-mutants": True,
-                     "output": str(folder), "mutate": []})
+                     "mutate": []})
     for member in members:
         path = member["path"]
         relative = Path(path).relative_to(project_dir).as_posix()
@@ -403,7 +462,7 @@ def dotnet_config(context, module, members, folder):
     return source
 
 
-def dotnet_report(context, module, folder, members):
+def dotnet_report(context, module, folder, members, supplemental=False):
     reports = list(folder.glob("**/mutation-report.json"))
     evidence.require(len(reports) == 1, "Missing or duplicate .NET native report")
     report = read_json(reports[0])
@@ -424,7 +483,10 @@ def dotnet_report(context, module, folder, members):
     selected = []
     for row in rows:
         if evidence.owner(row, members) is None:
-            evidence.require(row["state"] == "ignored" and row["native"].get("statusReason") == "Removed by mutate filter",
+            allowed = {"Removed by mutate filter"}
+            if supplemental:
+                allowed.add("Removed by mutation type filter")
+            evidence.require(row["state"] == "ignored" and row["native"].get("statusReason") in allowed,
                              "Unexpected native mutation outside selected scope")
             continue
         if row["state"] == "killed":
@@ -437,14 +499,19 @@ def dotnet_report(context, module, folder, members):
 def dotnet_batch(context, module, members, folder, config):
     folder.mkdir(parents=True, exist_ok=True)
     baseline = dotnet_baseline(context, module, folder)
-    config["stryker-config"]["output"] = str(folder / "native")
     path = folder / "stryker.json"
     write_json(path, config)
-    record = process(["dotnet", "stryker", "--config-file", str(path), "--concurrency", "1"],
+    record = process(["dotnet", "stryker", "--config-file", str(path), "--concurrency", "1", "--output", str(folder / "native"), "--skip-version-check"],
                      context["root"], folder / "engine", 1800, context["bootstrap"])
     verify_fingerprint(context)
-    evidence.require(not record["timeout"] and not record.get("cleanup_error") and record["returncode"] in (0, 1), "Incomplete .NET engine batch")
-    rows, tests, report = dotnet_report(context, module, folder / "native", members)
+    evidence.require(not record["timeout"] and not record.get("cleanup_error") and record["returncode"] in (0, 2), "Incomplete .NET engine batch")
+    effective_dotnet(Path(record["stdout"]).read_text(encoding="utf-8", errors="replace"))
+    rows, tests, report = dotnet_report(context, module, folder / "native", members,
+                                       config["stryker-config"].get("ignore-mutations") == list(DOTNET_NON_BLOCK))
+    raw_count = sum(len(file["mutants"]) for file in read_json(Path(report))["files"].values())
+    native_count(Path(record["stdout"]).read_text(encoding="utf-8", errors="replace"), "cs", raw_count)
+    evidence.require(sorted(test["name"] for test in tests) == sorted(test["testName"] for test in baseline["cases"]),
+                     "Native .NET test inventory differs from complete baseline")
     return {"rows": rows, "baseline": baseline, "test_identities": tests, "report": report,
             "process": record, "config": config, "source_fingerprint": context["fingerprint"]}
 
@@ -457,7 +524,7 @@ def dotnet_mutations(context, module, members, folder):
         if row["state"] != "ignored":
             continue
         reason = row["native"].get("statusReason", "")
-        evidence.require(row["mutator"] == "Block removal mutation" and "block" in reason.lower(),
+        evidence.require(row["mutator"] == "Block removal mutation" and reason == "Removed by block already covered filter",
                          f"Unexpected selected ignored mutation: {reason}")
         supplement = supplemental_config(context, module, row, primary["rows"], config)
         batch = dotnet_batch(context, module, members, folder / ("block-" + row["native_id"]), supplement)
@@ -470,9 +537,7 @@ def dotnet_mutations(context, module, members, folder):
 def supplemental_config(context, module, row, primary, config):
     config = json.loads(json.dumps(config))
     settings = config["stryker-config"]
-    categories = ["Arithmetic", "Equality", "Boolean", "Logical", "Assignment", "Unary", "Update", "Checked",
-                  "Linq", "String", "Regex", "NullCoalescing", "Initializer", "ObjectCreation", "Statement", "Math"]
-    settings["ignore-mutations"] = categories
+    settings["ignore-mutations"] = list(DOTNET_NON_BLOCK)
     relative = Path(row["path"]).relative_to(Path(module["project"]).parent).as_posix()
     source = evidence.Source((context["root"] / row["path"]).read_bytes())
     span = row["span"]
@@ -524,8 +589,9 @@ def restore_tools(context, languages):
         versions["stryker-js"] = "9.6.1"
     if "cs" in languages:
         checked(["dotnet", "tool", "restore"], root, folder / "dotnet-restore", 600)
-        record = checked(["dotnet", "stryker", "--version"], root, folder / "dotnet-version")
-        evidence.require("4.16.0" in Path(record["stdout"]).read_text(), "Unexpected Stryker.NET version")
+        record = checked(["dotnet", "tool", "list", "--local"], root, folder / "dotnet-version")
+        evidence.require(re.search(r"^dotnet-stryker\s+4\.16\.0\s", Path(record["stdout"]).read_text(), re.MULTILINE),
+                         "Unexpected Stryker.NET version")
         versions["stryker-net"] = "4.16.0"
     return versions
 
@@ -546,13 +612,14 @@ def run_candidate(context):
     report = {"schema_version": 1, "base_sha": context["base"], "candidate_sha": context["candidate"],
               "source_fingerprint": context["fingerprint"], "inventory": str(inventory_file),
               "bootstrap": context["bootstrap"], "modules": [], "non_behavior_changes": data["non_behavior_changes"]}
-    report["versions"] = restore_tools(context, {module["language"] for module in data["modules"]})
+    report["versions"], unavailable = prepare_languages(context, data["modules"])
     engines = {"python": python_mutations, "javascript": javascript_mutations, "cs": dotnet_mutations}
     for index, module in enumerate(data["modules"]):
         folder = context["folder"] / f"module-{index}"
         folder.mkdir()
         members = [member for member in data["changed_members"] if member["path"] == module["path"]]
         try:
+            evidence.require(module["language"] not in unavailable, unavailable.get(module["language"], ""))
             outcome = engines[module["language"]](context, module, members, folder)
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             outcome = {"exit_code": 2, "error": str(error)}
@@ -560,6 +627,16 @@ def run_candidate(context):
     verify_fingerprint(context)
     report["exit_code"] = max((module["exit_code"] for module in report["modules"]), default=0)
     return report
+
+
+def prepare_languages(context, modules):
+    versions, unavailable = {}, {}
+    for language in sorted({module["language"] for module in modules}):
+        try:
+            versions.update(restore_tools(context, {language}))
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            unavailable[language] = str(error)
+    return versions, unavailable
 
 
 def run(since):
@@ -580,13 +657,25 @@ def run(since):
         report["error"] = str(error)
     finally:
         if snapshot is not None:
-            run_tests.remove_worktree(snapshot)
-            if snapshot.exists():
+            unconfirmed = unconfirmed_cleanup(folder)
+            if not unconfirmed:
+                run_tests.remove_worktree(snapshot)
+            if snapshot.exists() or unconfirmed:
                 report.update(exit_code=2, cleanup_error="Retained mutation worktree: " + str(snapshot))
         evidence.write_summary(folder, report)
         print(str(folder / "summary.json"))
         print(str(folder / "summary.html"))
     return report["exit_code"]
+
+
+def unconfirmed_cleanup(folder):
+    for path in folder.rglob("*.process.json"):
+        try:
+            if read_json(path).get("cleanup_error"):
+                return True
+        except (OSError, ValueError):
+            return True
+    return False
 
 
 def main():

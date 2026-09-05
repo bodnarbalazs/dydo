@@ -76,6 +76,25 @@ class MutationPolicyTests(unittest.TestCase):
                    {"scheduled": [results.identity(primary[0])], "rows": [mutant()]}]
         self.assertEqual("surviving", results.reconcile(primary, batches)[0]["state"])
 
+    def test_javascript_needs_actual_callable_hits_and_half_open_body_point(self):
+        value = member()
+        value["coverage"] = {"execution_count": 0, "body_lines": {"2": 9}}
+        self.assertEqual(1, results.evaluate([value], [mutant()])["exit_code"])
+        value["coverage"] = {"execution_count": 1, "body_lines": {"3": 1}}
+        self.assertEqual(1, results.evaluate([value], [mutant(end=(3, 0))])["exit_code"])
+        value["coverage"]["body_lines"] = {"2": 1}
+        self.assertEqual(0, results.evaluate([value], [mutant(end=(3, 0))])["exit_code"])
+
+    def test_cosmic_status_requires_real_case_evidence(self):
+        import run_mutation
+        self.assertEqual("killed", run_mutation.cosmic_state("killed", {"state": "killed"}))
+        self.assertEqual("invalid", run_mutation.cosmic_state("incompetent", {"state": "invalid"}))
+        self.assertEqual("error", run_mutation.cosmic_state("incompetent", {"state": "killed"}))
+        with self.assertRaises(results.Incomplete):
+            run_mutation.cosmic_state("killed", {"state": "surviving"})
+        with self.assertRaises(results.Incomplete):
+            run_mutation.cosmic_state("survived", {"state": "killed"})
+
 
 class CoordinateTests(unittest.TestCase):
     def test_bom_astral_crlf_and_half_open_global_offsets(self):
@@ -97,6 +116,14 @@ class CoordinateTests(unittest.TestCase):
         report["files"]["subject.py"]["source"] += "tamper"
         with self.assertRaises(results.Incomplete):
             results.stryker_rows(report, {"subject.py": source})
+
+    def test_native_javascript_bom_columns_map_back_to_canonical_positions(self):
+        source = results.Source(b"\xef\xbb\xbf" + "/* \U0001f600 */ 1+2\r\n".encode())
+        report = {"schemaVersion": "1.0", "files": {"subject.js": {"source": "\ufeff" + source.text,
+                  "mutants": [{"id": "0", "mutatorName": "ArithmeticOperator", "replacement": "1-2", "status": "Killed",
+                               "location": {"start": {"line": 1, "column": 11}, "end": {"line": 1, "column": 14}}}]}}}
+        row = results.stryker_rows(report, {"subject.js": source})[0]
+        self.assertEqual((1, 9, 1, 12), row["span"])
 
 
 class InventoryTests(unittest.TestCase):

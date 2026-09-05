@@ -1,4 +1,5 @@
 """Exercise actual mutation harness processes and suite accounting in scratch directories."""
+import hashlib
 import json
 import os
 import shutil
@@ -26,7 +27,7 @@ class SuiteEvidenceTests(unittest.TestCase):
         receipt = self.root / "receipt.json"
         result = subprocess.run([sys.executable, str(COVERAGE / "mutation/python-test-adapter.py"),
                                  "--output", str(receipt), "--job", "current", "--", "discover", "-s", "."],
-                                cwd=self.root, capture_output=True, timeout=20)
+                                cwd=self.root, capture_output=True, timeout=20, check=False)
         self.assertTrue(receipt.is_file(), result.stderr.decode(errors="replace"))
         return json.loads(receipt.read_text()), result
 
@@ -64,7 +65,7 @@ class SuiteEvidenceTests(unittest.TestCase):
         environment = dict(os.environ)
         environment.pop("NODE_TEST_CONTEXT", None)
         result = subprocess.run(["node", "--test", "--test-reporter=" + reporter, "test_case.cjs"],
-                                cwd=self.root, env=environment, capture_output=True, timeout=20)
+                                cwd=self.root, env=environment, capture_output=True, timeout=20, check=False)
         return [json.loads(line) for line in result.stdout.splitlines()], result
 
     def test_node_real_case_is_distinct_from_synthetic_file_wrapper(self):
@@ -85,6 +86,20 @@ class SuiteEvidenceTests(unittest.TestCase):
             events, _ = self.node_suite(source)
             with self.assertRaises(results.Incomplete):
                 results.node_suite(events, results.node_cases(events))
+
+    def test_node_nested_duplicate_names_have_stable_leaf_identities_and_complete_tree(self):
+        source = "const {test,describe,it}=require('node:test'); describe('suite',()=>{it('same',()=>{});it('same',()=>{});describe('nested',()=>{it('leaf',()=>{});});}); test('parent',async(t)=>{await t.test('child',()=>{});});"
+        events, _ = self.node_suite(source)
+        identities = results.node_cases(events)
+        self.assertEqual(4, len(identities))
+        self.assertEqual(4, len(set(identities)))
+        self.assertEqual("surviving", results.node_suite(events, identities))
+        for kind in ("test:start", "test:complete", "test:plan", "test:summary"):
+            damaged = list(events)
+            index = next(index for index, event in enumerate(damaged) if event["type"] == kind)
+            del damaged[index]
+            with self.subTest(kind=kind), self.assertRaises(results.Incomplete):
+                results.node_suite(damaged, identities)
 
 
 class BootstrapTests(unittest.TestCase):
@@ -119,6 +134,107 @@ class BootstrapTests(unittest.TestCase):
             record = runner.process([sys.executable, "-c", "import time; time.sleep(30)"], root, root / "run", 0.1)
             self.assertTrue(record["timeout"])
             self.assertIsNotNone(record["returncode"])
+
+    def test_real_job_preserves_environment_and_uses_exact_native_mutant_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            harness = root / "harness"
+            paths = [COVERAGE / name for name in ("run_mutation.py", "mutation_results.py", "run_tests.py",
+                                                "mutation/python-test-adapter.py", "mutation/node-test-reporter.cjs")]
+            manifest = runner.bootstrap(harness, paths)
+            subject = root / "test_case.cjs"
+            subject.write_text("const test=require('node:test'); const assert=require('node:assert/strict'); test('env',()=>{assert.equal(process.env.STRYKER_MUTANT,'caller'); assert.equal(process.env.UNRELATED_MUTATION_TEST,'keep');});", encoding="utf-8")
+            for identity in (None, "17"):
+                folder = root / (identity or "baseline")
+                folder.mkdir()
+                job = {"job": "current", "language": "javascript", "test_command": ["node", "--test", "test_case.cjs"],
+                       "harness": str(harness), "bootstrap": manifest, "receipts": str(folder / "receipts"), "timeout": 10}
+                path = folder / "job.json"
+                runner.write_json(path, job)
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                environment = {**os.environ, "STRYKER_MUTANT": "caller", "UNRELATED_MUTATION_TEST": "keep", "NODE_TEST_CONTEXT": "child-v8"}
+                environment.pop("__STRYKER_ACTIVE_MUTANT__", None)
+                if identity is not None:
+                    environment["__STRYKER_ACTIVE_MUTANT__"] = identity
+                command = [sys.executable, str(harness / "run_mutation.py"), "--job", str(path), "--job-sha256", digest]
+                completed = subprocess.run(command, cwd=root, env=environment, capture_output=True, timeout=20, check=False)
+                self.assertEqual(0, completed.returncode, completed.stderr)
+                records = runner.receipts(folder / "receipts", [identity or "baseline"], "current")
+                self.assertEqual(identity, records[identity or "baseline"]["native_id"])
+                self.assertEqual("child-v8", environment["NODE_TEST_CONTEXT"])
+                with self.assertRaises(results.Incomplete):
+                    runner.receipts(folder / "receipts", [identity or "baseline"], "stale")
+                subprocess.run(command, cwd=root, env=environment, capture_output=True, timeout=20, check=True)
+                with self.assertRaises(results.Incomplete):
+                    runner.receipts(folder / "receipts", [identity or "baseline"], "current")
+
+
+class NativeConfigurationTests(unittest.TestCase):
+    def test_configured_thresholds_concurrency_reporters_and_exclusions_fail_closed(self):
+        good = {"concurrency": 1, "thresholds": {"high": 100, "low": 100, "break": 100}, "reporters": ["json", "html"]}
+        runner.validate_settings(good, "cs")
+        for key, value in (("concurrency", 2), ("concurrency", None), ("thresholds", {"high": 99}),
+                           ("reporters", ["json", "dashboard"]), ("ignore-mutations", ["Arithmetic"]),
+                           ("since", "HEAD"), ("incremental", True)):
+            with self.subTest(key=key), self.assertRaises(results.Incomplete):
+                runner.validate_settings({**good, key: value}, "cs")
+
+    def test_dotnet_block_supplement_uses_the_pinned_enum_without_unsupported_names(self):
+        self.assertEqual({"Statement", "Arithmetic", "Equality", "Boolean", "Logical", "Assignment", "Unary", "Update",
+                          "Checked", "Linq", "String", "Bitwise", "Initializer", "Regex", "NullCoalescing", "Math",
+                          "StringMethod", "Conditional", "CollectionExpression"}, set(runner.DOTNET_NON_BLOCK))
+
+    def test_effective_concurrency_and_version_must_be_observed(self):
+        runner.effective_dotnet("Version: 4.16.0\nStryker will use a max of 1 parallel testsessions.")
+        for text in ("", "Version: 4.16.0\nStryker will use a max of 2 parallel testsessions.",
+                     "Version: 4.17.0\nStryker will use a max of 1 parallel testsessions."):
+            with self.assertRaises(results.Incomplete):
+                runner.effective_dotnet(text)
+
+    def test_partial_native_reports_cannot_hide_generated_mutants(self):
+        for language, output in (("cs", "4 mutants created"),
+                                 ("javascript", "ProjectReader Found 1 of 4 file(s) to be mutated.\nInstrumenter Instrumented 1 source file(s) with 4 mutant(s)")):
+            runner.native_count(output, language, 4)
+            for count in (0, 3, 5):
+                with self.subTest(language=language, count=count), self.assertRaises(results.Incomplete):
+                    runner.native_count(output, language, count)
+
+
+class PublicCommandTests(unittest.TestCase):
+    def test_actual_cli_isolates_dirty_and_nested_untracked_files_and_cleans_up(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "DynaDocs.Tests/coverage"
+            target.mkdir(parents=True)
+            for relative in ("run_mutation.py", "mutation_results.py", "run_tests.py", "mutation/python-test-adapter.py", "mutation/node-test-reporter.cjs"):
+                (target / relative).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(COVERAGE / relative, target / relative)
+            (root / ".gitignore").write_text("dydo/_system/.local/\n**/__pycache__/\n", encoding="utf-8")
+            (target / "inventory.py").write_text("def git_paths(root): return []\ndef fingerprint(root, paths): return 'c'*64\n", encoding="utf-8")
+            (target / "gap_check.py").write_text("import json,subprocess,sys\nfrom pathlib import Path\nroot=Path.cwd()\nassert (root/'dirty.txt').read_text()=='changed'\nassert (root/'nested folder/new file.txt').read_text()=='new'\njson.dump({'schema_version':1,'position_encoding':'utf16','base_sha':sys.argv[2],'candidate_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'source_fingerprint':'c'*64,'modules':[],'changed_members':[],'non_behavior_changes':[{'path':'dirty.txt','reason':'fixture parent confirms documentation-only'}],'observed_root':str(root)},open(sys.argv[4],'w'))\n", encoding="utf-8")
+            (root / "dirty.txt").write_text("before", encoding="utf-8")
+            subprocess.run(["git", "init", "--quiet", str(root)], check=True)
+            subprocess.run(["git", "add", "."], cwd=root, check=True, capture_output=True)
+            subprocess.run(["git", "-c", "user.name=fixture", "-c", "user.email=fixture@localhost", "commit", "--quiet", "-m", "base"], cwd=root, check=True)
+            base = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+            (root / "dirty.txt").write_text("changed", encoding="utf-8")
+            (root / "nested folder").mkdir()
+            (root / "nested folder/new file.txt").write_text("new", encoding="utf-8")
+            result = subprocess.run([sys.executable, str(target / "run_mutation.py"), "--since", base], cwd=root, capture_output=True, timeout=30, check=False)
+            self.assertEqual(0, result.returncode, result.stderr.decode(errors="replace"))
+            summaries = list(root.glob("dydo/_system/.local/mutation/*/summary.json"))
+            self.assertEqual(1, len(summaries))
+            report = json.loads(summaries[0].read_text())
+            observed = Path(json.loads(Path(report["inventory"]).read_text())["observed_root"])
+            self.assertNotEqual(root, observed)
+            self.assertFalse(observed.exists())
+            self.assertEqual("changed", (root / "dirty.txt").read_text())
+            self.assertEqual("new", (root / "nested folder/new file.txt").read_text())
+            (target / "inventory.py").unlink()
+            failed = subprocess.run([sys.executable, str(target / "run_mutation.py"), "--since", base], cwd=root, capture_output=True, timeout=30, check=False)
+            self.assertEqual(2, failed.returncode)
+            reports = [json.loads(path.read_text()) for path in root.glob("dydo/_system/.local/mutation/*/summary.json")]
+            self.assertTrue(any("dependency is not implemented" in report.get("error", "") for report in reports))
 
 
 if __name__ == "__main__":

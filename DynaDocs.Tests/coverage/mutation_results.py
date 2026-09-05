@@ -4,7 +4,8 @@ import html
 import json
 import re
 from collections import Counter
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
+from urllib.parse import quote
 
 
 class Incomplete(ValueError):
@@ -43,6 +44,7 @@ class Source:
 
     def __init__(self, raw):
         self.sha256 = hashlib.sha256(raw).hexdigest()
+        self.bom = raw.startswith(b"\xef\xbb\xbf")
         try:
             self.text = raw.decode("utf-8-sig")
         except UnicodeError as error:
@@ -99,22 +101,8 @@ def validate_inventory(data, root, candidate, base, fingerprint):
     require(all(isinstance(value, list) for value in (modules, members, changes)), "Missing inventory collections")
     by_path = {}
     for module in modules:
-        require(isinstance(module, dict), "Malformed module")
-        path = module.get("path")
-        canonical_file(root, path)
+        path = validate_module(module, root)
         require(path not in by_path, "Duplicate module path")
-        require(module.get("language") in ("cs", "python", "javascript") and module.get("role") == "target", "Unknown module language or role")
-        command = module.get("test_command")
-        require(isinstance(command, list) and command and all(isinstance(arg, str) and arg and "\0" not in arg for arg in command), "Test command must be structured argv")
-        projects = module.get("test_projects")
-        require(isinstance(projects, list), "Missing test projects")
-        if module["language"] == "cs":
-            canonical_file(root, module.get("project"))
-            require(projects and len(set(projects)) == len(projects), "Missing or duplicate test projects")
-            for project in projects:
-                canonical_file(root, project)
-        else:
-            require(module.get("project") is None and projects == [], "Unexpected non-C# project")
         by_path[path] = module
     ids, affected = set(), set()
     for member in members:
@@ -132,6 +120,25 @@ def validate_inventory(data, root, candidate, base, fingerprint):
         require(change["path"] not in affected, "Nonbehavior claim contradicts executable obligation")
     require(members or changes, "Empty inventory proves no scope")
     return data
+
+
+def validate_module(module, root):
+    require(isinstance(module, dict), "Malformed module")
+    path = module.get("path")
+    canonical_file(root, path)
+    require(module.get("language") in ("cs", "python", "javascript") and module.get("role") == "target", "Unknown module language or role")
+    command = module.get("test_command")
+    require(isinstance(command, list) and command and all(isinstance(arg, str) and arg and "\0" not in arg for arg in command), "Test command must be structured argv")
+    projects = module.get("test_projects")
+    require(isinstance(projects, list), "Missing test projects")
+    if module["language"] == "cs":
+        canonical_file(root, module.get("project"))
+        require(projects and all(isinstance(project, str) for project in projects) and len(set(projects)) == len(projects), "Missing or duplicate test projects")
+        for project in projects:
+            canonical_file(root, project)
+    else:
+        require(module.get("project") is None and projects == [], "Unexpected non-C# project")
+    return path
 
 
 def validate_js_coverage(member, fingerprint):
@@ -153,17 +160,18 @@ STRYKER_STATES = {"Killed": "killed", "Survived": "surviving", "NoCoverage": "un
 
 
 def stryker_rows(report, sources):
-    require(isinstance(report, dict) and report.get("schemaVersion") in ("1", "2")
+    require(isinstance(report, dict) and report.get("schemaVersion") in ("1.0", "2")
             and isinstance(report.get("files"), dict), "Malformed Stryker report")
     rows = []
     for path, file in report["files"].items():
         require(path in sources and isinstance(file, dict), f"Unjoined native file: {path}")
         source = sources[path]
-        require(file.get("source") == source.text, f"Native source mismatch: {path}")
+        native_bom = report["schemaVersion"] == "1.0" and source.bom
+        require(file.get("source") == ("\ufeff" if native_bom else "") + source.text, f"Native source mismatch: {path}")
         require(isinstance(file.get("mutants"), list), "Missing native mutants")
         ids = set()
         for native in file["mutants"]:
-            row = stryker_row(native, path, source)
+            row = stryker_row(native, path, source, native_bom)
             require(row["native_id"] not in ids, "Duplicate native mutant ID")
             ids.add(row["native_id"])
             rows.append(row)
@@ -171,11 +179,12 @@ def stryker_rows(report, sources):
     return rows
 
 
-def stryker_row(native, path, source):
+def stryker_row(native, path, source, native_bom=False):
     require(isinstance(native, dict) and isinstance(native.get("id"), str), "Missing native mutant ID")
     try:
         start, end = (native["location"][key] for key in ("start", "end"))
-        span = (start["line"], start["column"] - 1, end["line"], end["column"] - 1)
+        span = (start["line"], start["column"] - 1 - int(native_bom and start["line"] == 1),
+                end["line"], end["column"] - 1 - int(native_bom and end["line"] == 1))
         source.extract(span)
     except (KeyError, TypeError) as error:
         raise Incomplete("Malformed native mutation location") from error
@@ -242,34 +251,47 @@ def evaluate(members, rows):
     for row in rows:
         selected = owner(row, members)
         require(selected is not None, "Native mutation falls outside selected fragments")
-        state = row["state"]
-        coverage = selected.get("coverage")
-        if coverage and state == "killed":
-            lines = coverage["body_lines"]
-            covered = any(int(line) >= row["span"][0] and int(line) <= row["span"][2] and hits > 0 for line, hits in lines.items())
-            if coverage["execution_count"] == 0 or not covered:
-                state = "uncovered"
-        grouped[selected["id"]].append({**row, "state": state})
-    summaries = []
-    for member in members:
-        values = grouped[member["id"]]
-        counts = Counter(row["state"] for row in values)
-        valid = len(values) - counts["invalid"]
-        incomplete = any(counts[state] for state in ("timeout", "error", "unrun", "ignored", "unknown"))
-        code = 2 if incomplete else int(valid == 0 or counts["killed"] != valid)
-        summaries.append({**member, "generated": len(values), "valid": valid,
-                          "score": 100 * counts["killed"] / valid if valid else None,
-                          **{state: counts[state] for state in set(STRYKER_STATES.values()) | {"unknown"}},
-                          "rows": values, "exit_code": code})
+        grouped[selected["id"]].append({**row, "state": measured_state(row, selected)})
+    summaries = [member_summary(member, grouped[member["id"]]) for member in members]
     return {"members": summaries, "exit_code": max((m["exit_code"] for m in summaries), default=0)}
+
+
+def measured_state(row, selected):
+    state = row["state"]
+    require(state in set(STRYKER_STATES.values()) | {"unknown"}, "Unknown normalized mutation state")
+    coverage = selected.get("coverage")
+    if not coverage or state != "killed":
+        return state
+    first, _, last, column = row["span"]
+    if column == 0:
+        last -= 1
+    covered = any(first <= int(line) <= last and hits > 0 for line, hits in coverage["body_lines"].items())
+    return "uncovered" if coverage["execution_count"] == 0 or not covered else state
+
+
+def member_summary(member, values):
+    counts = Counter(row["state"] for row in values)
+    valid = len(values) - counts["invalid"]
+    incomplete = any(counts[state] for state in ("timeout", "error", "unrun", "ignored", "unknown"))
+    code = 2 if incomplete else int(valid == 0 or counts["killed"] != valid)
+    return {**member, "generated": len(values), "valid": valid,
+            "score": 100 * counts["killed"] / valid if valid else None,
+            **{state: counts[state] for state in set(STRYKER_STATES.values()) | {"unknown"}},
+            "rows": values, "exit_code": code}
 
 
 def write_summary(folder, report):
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "summary.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     escaped = html.escape(json.dumps(report, indent=2, ensure_ascii=False))
+    links = []
+    for path in sorted(folder.rglob("*")):
+        if path.is_file() and path.name not in ("summary.html", "summary.json"):
+            relative = path.relative_to(folder).as_posix()
+            links.append('<li><a href="' + quote(relative) + '">' + html.escape(relative) + '</a></li>')
     (folder / "summary.html").write_text("<!doctype html><meta charset='utf-8'><title>Mutation evidence</title>"
-                                         "<h1>Mutation evidence</h1><pre>" + escaped + "</pre>", encoding="utf-8")
+                                         "<h1>Mutation evidence</h1><pre>" + escaped + "</pre><h2>Retained artifacts</h2><ul>"
+                                         + "".join(links) + "</ul>", encoding="utf-8")
 
 
 def python_suite(report, job, expected):
@@ -296,42 +318,113 @@ def python_suite(report, job, expected):
     return "killed" if failed else "surviving"
 
 
-def node_cases(events):
+def node_signature(data):
+    return tuple(data.get(key) for key in ("file", "nesting", "name", "line", "column"))
+
+
+def node_tree(events):
     require(isinstance(events, list), "Missing Node event stream")
     summaries = [event.get("data", {}) for event in events if event.get("type") == "test:summary"]
     aggregate = [item for item in summaries if not item.get("file")]
-    children = {item.get("file") for item in summaries if item.get("file")}
-    require(len(aggregate) == 1 and children, "Missing Node child or aggregate summary")
-    results = []
-    ancestry = {}
-    occurrences = Counter()
+    children = {item.get("file"): item for item in summaries if item.get("file")}
+    require(len(aggregate) == 1 and children and len(children) == len(summaries) - 1,
+            "Missing or duplicate Node child/aggregate summary")
+    state = {"stacks": {}, "nodes": [], "occurrences": Counter(), "complete": Counter(), "plans": []}
     for event in events:
-        kind, data = event.get("type"), event.get("data", {})
-        if kind == "test:dequeue":
-            ancestry[data.get("nesting", 0)] = data.get("name")
-        if kind not in ("test:pass", "test:fail") or data.get("file") not in children:
-            continue
-        if data.get("details", {}).get("type") == "suite":
-            continue
-        nesting = data.get("nesting", 0)
-        names = [ancestry.get(level) for level in range(nesting)] + [data.get("name")]
-        key = json.dumps([data.get("file"), names], ensure_ascii=False)
-        occurrences[key] += 1
-        results.append({"id": key + ":" + str(occurrences[key]), "event": event})
-    require(results and len(results) == aggregate[0].get("counts", {}).get("tests"), "Empty or incomplete Node real-case inventory")
-    return [result["id"] for result in results]
+        node_event(event, state, children)
+    require(all(not stack for stack in state["stacks"].values()), "Node case has no terminal event")
+    validate_node_totals(state, aggregate[0], children)
+    return state["nodes"]
+
+
+def node_event(event, state, children):
+    require(isinstance(event, dict) and isinstance(event.get("data"), dict), "Malformed Node event")
+    kind, data = event.get("type"), event["data"]
+    file = data.get("file")
+    if kind == "test:complete":
+        state["complete"][node_signature(data)] += 1
+        return
+    if kind == "test:plan":
+        node_plan(data, state)
+        return
+    if kind not in ("test:start", "test:pass", "test:fail"):
+        return
+    require(file in children, "Node testcase has no completed child summary")
+    stack = state["stacks"].setdefault(file, [])
+    nesting = data.get("nesting")
+    require(integer(nesting), "Invalid Node nesting")
+    if kind == "test:start":
+        require(nesting == len(stack), "Node ancestry changed or is incomplete")
+        names = [entry["part"] for entry in stack]
+        key = json.dumps([file, names, data.get("name")], ensure_ascii=False)
+        state["occurrences"][key] += 1
+        part = [data.get("name"), state["occurrences"][key]]
+        node = {"id": json.dumps([file, names + [part]], ensure_ascii=False), "part": part,
+                "start": data, "children": 0, "plan": None}
+        if stack:
+            stack[-1]["children"] += 1
+        stack.append(node)
+        return
+    require(len(stack) == nesting + 1 and node_signature(stack[-1]["start"]) == node_signature(data),
+            "Missing, duplicate or mismatched Node start/terminal")
+    node = stack.pop()
+    node.update(event=event, file=file, suite=data.get("details", {}).get("type") == "suite")
+    require(state["complete"][node_signature(data)] == 1, "Missing or duplicate Node completion")
+    state["complete"][node_signature(data)] -= 1
+    if node["children"] or node["suite"]:
+        require(node["plan"] == node["children"], "Node child plan differs from completed tree")
+    state["nodes"].append(node)
+
+
+def node_plan(data, state):
+    require(integer(data.get("count")) and integer(data.get("nesting")), "Malformed Node plan")
+    if data["nesting"] == 0:
+        state["plans"].append(data["count"])
+        return
+    stack = state["stacks"].get(data.get("file"), [])
+    require(len(stack) == data["nesting"] and stack[-1]["plan"] is None,
+            "Missing parent or duplicate Node child plan")
+    stack[-1]["plan"] = data["count"]
+
+
+def validate_node_totals(state, aggregate, children):
+    nodes = state["nodes"]
+    for file, summary in children.items():
+        group = [node for node in nodes if node["file"] == file]
+        validate_node_summary(summary, group)
+    validate_node_summary(aggregate, nodes)
+    top = sum(node["start"]["nesting"] == 0 for node in nodes)
+    require(state["plans"] == [top], "Missing, duplicate or inconsistent Node top-level plan")
+    require(any(not node["suite"] and not node["children"] for node in nodes), "No real Node leaf cases")
+
+
+def validate_node_summary(summary, nodes):
+    counts = summary.get("counts", {})
+    tests = [node for node in nodes if not node["suite"]]
+    require(counts.get("tests") == len(tests) and counts.get("suites") == len(nodes) - len(tests),
+            "Node summary differs from actual completed tree")
+    require(all(counts.get(key) == 0 for key in ("cancelled", "skipped", "todo")), "Node cases skipped/cancelled/TODO")
+    failed = sum(node["event"]["type"] == "test:fail" for node in tests)
+    require(counts.get("failed") == failed and counts.get("passed") == len(tests) - failed
+            and summary.get("success") is (failed == 0), "Contradictory Node summary outcomes")
+
+
+def node_cases(events):
+    return sorted(node["id"] for node in node_tree(events) if not node["suite"] and not node["children"])
 
 
 def node_suite(events, expected):
-    require(expected and node_cases(events) == expected, "Changed Node case inventory")
+    nodes = node_tree(events)
+    actual = sorted(node["id"] for node in nodes if not node["suite"] and not node["children"])
+    require(expected and actual == expected, "Changed Node leaf-case inventory")
     failed = False
-    for event in events:
-        if event.get("type") not in ("test:pass", "test:fail"):
-            continue
-        data = event.get("data", {})
+    for node in nodes:
+        event = node["event"]
+        data = event["data"]
         require(not data.get("skip") and not data.get("todo"), "Skipped or TODO Node case")
         if event["type"] == "test:fail":
             failure = data.get("details", {}).get("error", {}).get("failureType")
-            require(failure in ("testCodeFailure", "subtestsFailed"), "Node timeout, cancellation or suite launch failure")
+            require(failure == "testCodeFailure" or (failure == "subtestsFailed" and node["children"]),
+                    "Node timeout, cancellation or suite launch failure")
             failed = True
     return "killed" if failed else "surviving"

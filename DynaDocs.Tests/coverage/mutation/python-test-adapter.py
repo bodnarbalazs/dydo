@@ -1,6 +1,7 @@
 """Emit actual unittest discovery and lifecycle evidence for one immutable job."""
 import argparse
 import json
+import logging
 import sys
 import unittest
 from pathlib import Path
@@ -85,6 +86,7 @@ def run(arguments, output, job):
                       tests_run=result.testsRun, success=result.wasSuccessful())
         return (0 if result.wasSuccessful() else 1), report
     except (Exception, SystemExit) as error:
+        logging.getLogger(__name__).exception("Python suite discovery or execution did not complete")
         report.update(phase="adapter-error", error={"class": type(error).__name__, "message": str(error)})
         return 2, report
 

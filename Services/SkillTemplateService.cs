@@ -187,38 +187,27 @@ public static partial class SkillTemplateService
 
     internal static string ReadSource(SkillTemplate skill, string projectRoot)
     {
-        var config = new ConfigService().LoadConfig(projectRoot);
-        if (config != null)
-        {
-            var path = Path.Combine(GetSourceRoot(projectRoot, config), skill.TemplateFile);
-            if (File.Exists(path))
-                return File.ReadAllText(path);
-        }
-        return TemplateGenerator.ReadBuiltInTemplate(skill.TemplateFile);
+        var config = new ConfigService().LoadConfigStrict(projectRoot)
+            ?? throw new FileNotFoundException("Local dydo.json is missing; skill emission requires the local catalog.");
+        return File.ReadAllText(Path.Combine(GetSourceRoot(projectRoot, config), skill.TemplateFile));
     }
 
     internal static IEnumerable<(string FileName, string Content)> ReadResources(
         SkillTemplate skill, string projectRoot)
     {
-        var config = new ConfigService().LoadConfig(projectRoot);
-        if (config != null)
+        var config = new ConfigService().LoadConfigStrict(projectRoot)
+            ?? throw new FileNotFoundException("Local dydo.json is missing; resource emission requires the local catalog.");
+        var root = GetSourceRoot(projectRoot, config);
+        var content = ResolveIncludesStrict(ReadSource(skill, projectRoot), projectRoot, skill.TemplateFile);
+        var resources = ResourceLinkRegex().Matches(content)
+            .Select(match => match.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(name => name, StringComparer.Ordinal);
+        foreach (var name in resources)
         {
-            var root = GetSourceRoot(projectRoot, config);
-            var prefix = $"{skill.Name}-resource-";
-            IEnumerable<string> paths = Directory.Exists(root)
-                ? Directory.GetFiles(root, $"{prefix}*.template.md", SearchOption.TopDirectoryOnly)
-                    .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
-                : Array.Empty<string>();
-            foreach (var path in paths)
-            {
-                var file = Path.GetFileName(path);
-                var name = file[prefix.Length..^".template.md".Length];
-                yield return ($"{name}.md", File.ReadAllText(path));
-            }
-            yield break;
+            var path = Path.Combine(root, $"{skill.Name}-resource-{name}.template.md");
+            yield return ($"{name}.md", File.ReadAllText(path));
         }
-        foreach (var resource in TemplateGenerator.GetSkillResources(skill.Name))
-            yield return resource;
     }
 
     private static string GetSourceRoot(string projectRoot, DydoConfig config) =>

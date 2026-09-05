@@ -77,6 +77,39 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
     }
 
+    [Theory]
+    [InlineData("dydo.json")]
+    [InlineData("dydo/_system/templates/skill-reviewer.template.md")]
+    public void SyncSkill_LocalInputLostAfterDiscovery_NeverEmitsEmbeddedContent(string missing)
+    {
+        var config = new ConfigService().LoadConfigStrict(_testDir)!;
+        var skill = SkillTemplateService.DiscoverLocalCatalog(_testDir, config).Single(s => s.Name == "reviewer");
+        File.Delete(Path.Combine(_testDir, missing));
+
+        Assert.ThrowsAny<IOException>(() => SyncCommand.SyncSkill(skill, _testDir));
+        Assert.ThrowsAny<IOException>(() => SyncCommand.SyncCodexSkill(skill, _testDir));
+
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude/skills/reviewer/SKILL.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".agents/skills/reviewer/SKILL.md")));
+        Assert.NotEqual(0, ConsoleCapture.All(() => SyncCommand.Execute(_testDir)).exitCode);
+    }
+
+    [Theory]
+    [InlineData("dydo.json")]
+    [InlineData("dydo/_system/templates/reviewer-resource-code.template.md")]
+    public void ReadResources_LocalInputLostAfterDiscovery_NeverReturnsEmbeddedResource(string missing)
+    {
+        var config = new ConfigService().LoadConfigStrict(_testDir)!;
+        var skill = SkillTemplateService.DiscoverLocalCatalog(_testDir, config).Single(s => s.Name == "reviewer");
+        File.Delete(Path.Combine(_testDir, missing));
+
+        Assert.ThrowsAny<IOException>(() => SkillTemplateService.ReadResources(skill, _testDir).ToList());
+
+        Assert.NotEqual(0, ConsoleCapture.All(() => SyncCommand.Execute(_testDir)).exitCode);
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude/skills/reviewer/resources/code.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".agents/skills/reviewer/resources/code.md")));
+    }
+
     [Fact]
     public void Execute_DiscoversMinimalCustomSwitchAndCompilesLocalSource()
     {
@@ -569,7 +602,7 @@ public class SyncCommandTests : IDisposable
     {
         var skill = new SkillTemplate
         {
-            Name = "metadata-probe",
+            Name = "reviewer",
             TemplateFile = "skill-reviewer.template.md",
             Description = "Probes the compiled openai.yaml.",
             ExplicitInvocation = explicitInvocation,
@@ -927,16 +960,9 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncAgent_DelegatingSkill_GetsTheAgentTool()
     {
-        // No shipped skill delegates, so the flag is set on a constructed template; its
-        // TemplateFile names a shipped template because that is where the body comes from.
-        var delegator = new SkillTemplate
-        {
-            Name = "delegator",
-            TemplateFile = "skill-reviewer.template.md",
-            Description = "Keeps several Issues in flight as sub-agents.",
-            EmitAgent = true,
-            Delegates = true,
-        };
+        const string source = "---\nname: delegator\ndescription: Delegates work.\nemit: agent\ndelegates: true\n---\n\n# Delegator\n";
+        File.WriteAllText(Path.Combine(_testDir, "dydo/_system/templates/skill-delegator.template.md"), source);
+        var delegator = SkillTemplateService.Parse("skill-delegator.template.md", source);
 
         SyncCommand.SyncAgent(delegator, _testDir);
 
@@ -960,17 +986,12 @@ public class SyncCommandTests : IDisposable
             ToolsLine(agent));
     }
 
-    // No shipped skill both writes and searches, so the fixture is constructed; its TemplateFile
-    // names a shipped template because that is where the compiled body comes from.
-    private static SkillTemplate WebSkill() => new()
+    private SkillTemplate WebSkill()
     {
-        Name = "searcher",
-        TemplateFile = "skill-reviewer.template.md",
-        Description = "Reads the open web for a question it was handed.",
-        EmitAgent = true,
-        Delegates = true,
-        Web = true,
-    };
+        const string source = "---\nname: searcher\ndescription: Reads the open web.\nemit: agent\ndelegates: true\nweb: true\n---\n\n# Searcher\n";
+        File.WriteAllText(Path.Combine(_testDir, "dydo/_system/templates/skill-searcher.template.md"), source);
+        return SkillTemplateService.Parse("skill-searcher.template.md", source);
+    }
 
     [Fact]
     public void SyncAgent_NonWebSkill_GetsNoWebTools()

@@ -7,6 +7,68 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateCommandTests : IntegrationTestBase
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TemplateUpdate_UntrackedPackagedResourceCollision_IsAtomic(bool diff)
+    {
+        await InitProjectAsync();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes.Remove("_system/templates/reviewer-resource-code.template.md");
+        config.Skills["reviewer"].Resources!.Remove("code");
+        new ConfigService().SaveConfig(config, configPath);
+        File.WriteAllText(Path.Combine(TestDir, "dydo/_system/templates/reviewer-resource-code.template.md"),
+            "CUSTOM RESOURCE SENTINEL — preserve exactly");
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(path => path, File.ReadAllBytes);
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        result.AssertStderrContains("reviewer-resource-code.template.md");
+        Assert.Contains("collides", result.Stderr);
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
+    [InlineData("skill-reviewer.template.md")]
+    [InlineData("reviewer-resource-code.template.md")]
+    public async Task TemplateUpdate_MissingSourceHash_ReportsPreviewAndAppliedReconciliation(string file)
+    {
+        await InitProjectAsync();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var sourcePath = Path.Combine(TestDir, "dydo", "_system", "templates", file);
+        var sourceBefore = File.ReadAllBytes(sourcePath);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes.Remove($"_system/templates/{file}");
+        new ConfigService().SaveConfig(config, configPath);
+        var before = File.ReadAllBytes(configPath);
+
+        var preview = await RunTemplateUpdateAsync("--diff");
+
+        preview.AssertSuccess();
+        preview.AssertStdoutContains($"Reconciled source hash: _system/templates/{file}");
+        Assert.Equal(before, File.ReadAllBytes(configPath));
+        Assert.Equal(sourceBefore, File.ReadAllBytes(sourcePath));
+
+        var update = await RunTemplateUpdateAsync();
+
+        update.AssertSuccess();
+        update.AssertStdoutContains($"Reconciled source hash: _system/templates/{file}");
+        var expectedHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(File.ReadAllText(sourcePath).Replace("\r\n", "\n")))).ToLowerInvariant();
+        Assert.Equal(expectedHash,
+            new ConfigService().LoadConfigStrict(TestDir)!.FrameworkHashes[$"_system/templates/{file}"]);
+        Assert.Equal(sourceBefore, File.ReadAllBytes(sourcePath));
+        var after = File.ReadAllBytes(configPath);
+        var repeated = await RunTemplateUpdateAsync();
+        repeated.AssertSuccess();
+        Assert.DoesNotContain("Reconciled source hash:", repeated.Stdout);
+        Assert.Equal(after, File.ReadAllBytes(configPath));
+    }
+
     [Fact]
     public async Task TemplateUpdate_OverwritesShippedSourceButPreservesDistinctCustomSource()
     {

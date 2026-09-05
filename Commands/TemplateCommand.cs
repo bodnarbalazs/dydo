@@ -117,6 +117,7 @@ public static class TemplateCommand
         var planned = JsonSerializer.Deserialize(json, DydoConfigJsonContext.Default.DydoConfig)!;
         var packaged = TemplateGenerator.GetAllTemplateNames().ToHashSet(StringComparer.Ordinal);
         var sourceRoot = Path.Combine(projectRoot, original.Structure.Root, "_system", "templates");
+        var managed = ManagedShippedSourcePaths(original).ToHashSet(StringComparer.Ordinal);
 
         foreach (var relative in ManagedShippedSourcePaths(original).Where(relative =>
                      !packaged.Contains(Path.GetFileName(relative))
@@ -135,11 +136,7 @@ public static class TemplateCommand
             if (!File.Exists(path))
                 continue;
             var relative = $"_system/templates/{name}";
-            var skillName = SkillNameForTemplate(name);
-            var shipped = original.FrameworkHashes.ContainsKey(relative)
-                || (skillName != null
-                    && original.Skills.GetValueOrDefault(skillName)?.Origin == "shipped");
-            if (!shipped)
+            if (!managed.Contains(relative))
                 throw new InvalidDataException($"Local custom source '{name}' collides with a shipped template.");
         }
 
@@ -174,7 +171,8 @@ public static class TemplateCommand
             }
 
             foreach (var key in planned.FrameworkHashes.Keys
-                         .Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal))
+                         .Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal)
+                             && !packaged.Contains(Path.GetFileName(key)))
                          .ToList())
                 planned.FrameworkHashes.Remove(key);
             foreach (var name in packaged)
@@ -227,6 +225,17 @@ public static class TemplateCommand
             tally.Updated++;
         }
 
+        foreach (var relative in original.FrameworkHashes.Keys.Union(planned.FrameworkHashes.Keys)
+                     .Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal))
+                     .OrderBy(key => key, StringComparer.Ordinal))
+        {
+            if (original.FrameworkHashes.GetValueOrDefault(relative) == planned.FrameworkHashes.GetValueOrDefault(relative))
+                continue;
+            var action = planned.FrameworkHashes.ContainsKey(relative) ? "Reconciled" : "Removed";
+            Console.WriteLine($"  {action} source hash: {relative}");
+            tally.SourceHashesRefreshed++;
+        }
+
         ReportSwitchboardChanges(original.Skills, planned.Skills, tally);
         original.Skills = planned.Skills;
         original.FrameworkHashes = planned.FrameworkHashes;
@@ -269,14 +278,6 @@ public static class TemplateCommand
         return paths;
     }
 
-    private static string? SkillNameForTemplate(string name)
-    {
-        if (name.StartsWith("skill-", StringComparison.Ordinal))
-            return name["skill-".Length..^".template.md".Length];
-        var delimiter = name.IndexOf("-resource-", StringComparison.Ordinal);
-        return delimiter > 0 ? name[..delimiter] : null;
-    }
-
     private static void CopyDirectory(string source, string destination)
     {
         Directory.CreateDirectory(destination);
@@ -306,6 +307,8 @@ public static class TemplateCommand
         var summary = $"Template update complete: {tally.Updated} updated, {tally.Skipped} already current";
         if (tally.MetadataRefreshed > 0)
             summary += $", {tally.MetadataRefreshed} metadata-only document hash refresh(es)";
+        if (tally.SourceHashesRefreshed > 0)
+            summary += $", {tally.SourceHashesRefreshed} source hash change(s)";
         if (tally.SwitchboardChanges > 0)
             summary += $", {tally.SwitchboardChanges} switchboard change(s)";
         if (tally.Warned > 0)
@@ -611,6 +614,7 @@ public static class TemplateCommand
         public int Skipped;
         public int Warned;
         public int MetadataRefreshed;
+        public int SourceHashesRefreshed;
         public int SwitchboardChanges;
         public List<string> Warnings { get; } = [];
     }

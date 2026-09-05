@@ -561,38 +561,26 @@ public class SyncCommandTests : IDisposable
         Assert.Empty(TemplateGenerator.GetSkillResources("docs-writer"));
     }
 
-    // Workflow harnesses are dydo-authored (Templates/workflow-<name>.js) and compiled to
-    // .claude/workflows — hand-editing the emitted scripts is the drift the compiler ends.
-    // The emitted set IS the shipped set, so retiring a harness retires its output.
     [Fact]
-    public void SyncWorkflows_EmitsExactlyTheShippedHarnessSet()
+    public void Execute_FreshSync_ReportsNativeArtifactsWithoutWorkflowOutput()
     {
-        var shipped = Directory.GetFiles(Path.Combine(RepositoryRoot(), "Templates"), "workflow-*.js")
-            .Select(path => Path.GetFileName(path)!["workflow-".Length..])
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToList();
-
-        var count = SyncCommand.SyncWorkflows(_testDir);
-
-        var workflowDir = Path.Combine(_testDir, ".claude", "workflows");
-        var emitted = (Directory.Exists(workflowDir) ? Directory.GetFiles(workflowDir, "*.js") : [])
-            .Select(path => Path.GetFileName(path)!)
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToList();
-
-        Assert.Equal(shipped, emitted);
-        Assert.Equal(shipped.Count, count);
-        Assert.DoesNotContain("run-sprint.js", emitted);
-        Assert.DoesNotContain("inquisition.js", emitted);
-
-        foreach (var file in emitted.Select(name => Path.Combine(workflowDir, name)))
+        var originalOutput = Console.Out;
+        using var output = new StringWriter();
+        int result;
+        try
         {
-            var content = File.ReadAllText(file);
-            Assert.Contains("export const meta", content);
-            Assert.DoesNotContain("\r", content); // LF-normalized for Claude Code
+            Console.SetOut(output);
+            result = SyncCommand.Execute(_testDir);
         }
-    }
+        finally
+        {
+            Console.SetOut(originalOutput);
+        }
 
+        Steps.WorkflowRetirementSteps.AssertNativeSummary(new Steps.CliResult(result, output.ToString(), ""), "none");
+        Steps.WorkflowRetirementSteps.AssertNativeArtifacts(_testDir, "none");
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude", "workflows")));
+    }
     [Fact]
     public void SyncCodexAgent_EmitsStrongOpenAiModelBinding()
     {
@@ -1116,17 +1104,6 @@ public class SyncCommandTests : IDisposable
         Assert.NotEqual(
             NormalizeHostSkillRoot(claude),
             NormalizeHostSkillRoot(codex.Replace("merge.md", "plan.md")));
-    }
-
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(Environment.CurrentDirectory); directory != null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
-                return directory.FullName;
-        }
-
-        throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 
     private static IEnumerable<string> Headings(string template) =>

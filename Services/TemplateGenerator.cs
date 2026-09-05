@@ -29,25 +29,6 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// The workflow harness scripts dydo ships (Templates/workflow-&lt;name&gt;.js — "workflow-"
-    /// is the protected prefix). `dydo sync` compiles each to `.claude/workflows/&lt;name&gt;.js`.
-    /// Claude-only for now; a codex equivalent gets a matching emit path when one exists.
-    /// </summary>
-    public static IEnumerable<(string FileName, string Content)> GetWorkflowScripts()
-    {
-        const string prefix = "DynaDocs.Templates.workflow-";
-        foreach (var resource in _assembly.GetManifestResourceNames()
-                     .Where(r => r.StartsWith(prefix) && r.EndsWith(".js"))
-                     .OrderBy(r => r, StringComparer.Ordinal))
-        {
-            using var stream = _assembly.GetManifestResourceStream(resource);
-            if (stream == null) continue;
-            using var reader = new StreamReader(stream);
-            yield return (resource[prefix.Length..], reader.ReadToEnd());
-        }
-    }
-
-    /// <summary>
     /// Embedded template names matching `&lt;skill&gt;-resource-*.template.md`.
     /// </summary>
     public static IReadOnlyList<string> GetSkillResourceTemplateNames(string skillName)

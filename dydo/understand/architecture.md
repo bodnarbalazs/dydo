@@ -14,7 +14,7 @@ boundary and remains the sole owner of live project-management state.
 1. `dydo init` scaffolds the documentation tree, template sources, runtime entry files, and guard hooks.
 2. The host runtime sends matched tool calls to `dydo guard`.
 3. The guard evaluates path tiers, dangerous commands, and configured nudges.
-4. `dydo sync` compiles skill, resource, and workflow templates into native Claude Code and Codex artifacts.
+4. `dydo sync` compiles skill and resource templates into native Claude Code and Codex agents and skills.
 5. `dydo template update` refreshes framework-owned documents.
 6. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
 
@@ -28,7 +28,7 @@ Commands/        System.CommandLine factories and handlers
 Services/        Documentation, configuration, template, and guard behavior
 Models/          Configuration and parsing data types
 Rules/           Documentation validation rules
-Templates/       Embedded framework, skill, resource, and workflow sources
+Templates/       Embedded framework, skill, and resource sources
 DynaDocs.Tests/  Unit, integration, E2E, and coverage gates
 npm/             Native-binary npm wrapper
 ```
@@ -47,17 +47,18 @@ carries the whole methodology. `dydo sync` discovers every shipped skill templat
 | `.claude/agents/<role>.md` | Claude Code | roles that emit an agent |
 | `.agents/skills/<role>/SKILL.md` and its `resources/` | Codex | every role; an `agents/openai.yaml` policy file joins it for explicit-only ones |
 | `.codex/agents/<role>.toml` | Codex | roles that emit an agent |
-| `.claude/workflows/<name>.js` from `Templates/workflow-<name>.js` | Claude Code | legacy compiler output awaiting retirement in DYD-92 |
 
-DR 047 retires Workflow as an operating-model concept; the compiler retirement is DYD-92.
+DR 047 retires Workflow as an operating-model concept. Sync no longer discovers or emits workflows.
+It removes only the retired `.claude/workflows/run-sprint.js` and `inquisition.js` root files,
+preserves custom siblings and nested files, and removes the directory only when empty.
 The guarantees this compilation owes a spawned agent are
 [Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10's;
 what each frontmatter key compiles to is in [Customizing Roles](../guides/customizing-roles.md), and
 the pipeline — update, cleanup — in
 [Templates and Customization](./templates-and-customization.md).
 
-Everything under `.claude/`, `.codex/`, and
-`.agents/` is a build product: change the source template and sync.
+The compiler-emitted agents, skills, and resources under `.claude/`, `.codex/`, and
+`.agents/` are build products: change the source template and sync.
 
 ## Knowledge and work boundary
 

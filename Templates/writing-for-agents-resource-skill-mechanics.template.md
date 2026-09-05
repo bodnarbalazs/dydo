@@ -22,11 +22,15 @@ own source `Templates/` directory and are embedded in its build; project additio
 | `emit` | `agent` \| `skill` | `agent` also compiles a spawnable agent that preloads this skill (`skills: [<name>]`) and carries the `Skill` tool; `skill` is methodology a session applies in its own thread. Missing means `agent`. |
 | `invocation` | `automatic` \| `explicit` | `explicit` sets `disable-model-invocation: true` on Claude and `allow_implicit_invocation: false` in Codex's `agents/openai.yaml`. Missing means `automatic`. |
 | `read-only` | `true` | The compiled agent gets no `Edit`/`Write` and Codex's read-only sandbox: it assesses and reports. |
-| `delegates` | `true` | Grants the `Agent` tool, so the skill may spawn sub-agents; `issue-captain` directs its crew and `research` sends `scout`; other workers do their own work. |
-| `web` | `true` | Grants Claude's `WebFetch`/`WebSearch` and flips Codex's `web_search` toggle. |
+| `delegates` | `true` | Grants the `Agent` tool, so the skill may spawn sub-agents; `issue-captain` directs its crew and `research` sends `scout`; other workers do their own work. Codex writes final V1 `[agents]` values `enabled = true` and `max_depth = 3`; other agents write `enabled = false` without `max_depth`. |
+| `web` | `true` | Grants Claude's `WebFetch`/`WebSearch` and writes Codex's top-level `web_search = "live"`. A role without it omits the key and inherits the host setting. |
 | `argument-hint` | `"<what to type>"` | Shown by the host after the skill's name: Claude's `argument-hint`, Codex's `interface.default_prompt`. |
 
 ## Invocation
+
+Codex's emitted `[agents]` table is a V1 configuration-shape guarantee. Codex V2 may override
+`enabled` and ignores `max_depth`, so the compiler does not claim a universal V2 denial or depth
+limit. Sync does not rewrite a project's `.codex/config.toml`.
 
 Two choices, trading the two loads:
 

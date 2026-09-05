@@ -734,26 +734,28 @@ public class SyncCommandTests : IDisposable
         Assert.Contains("developer_instructions = \"\"\"", agent);
     }
 
-    // Codex expresses web reach as its own toggle struct, and a TOML table header closes the
-    // top-level key section — so the table has to be last or it swallows the keys after it.
+    // Codex V1 accepts the web mode as a top-level scalar. The final [agents] table carries
+    // delegation intent, so it must be emitted after every top-level key.
     [Fact]
-    public void SyncCodexAgent_WebSkill_EndsWithTheWebSearchToggle()
+    public void SyncCodexAgent_WebAndDelegatingSkill_EmitsV1TopLevelWebAndFinalAgentsTable()
     {
         var searcher = WebSkill();
 
         SyncCommand.SyncCodexAgent(searcher, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "searcher.toml"));
-        Assert.EndsWith("\n\n[tools]\nweb_search = true", agent);
+        Assert.Contains("\nweb_search = \"live\"\n", agent);
+        Assert.DoesNotContain("[tools]", agent);
         Assert.Contains("developer_instructions = \"\"\"", agent);
         Assert.True(
             agent.IndexOf("developer_instructions", StringComparison.Ordinal)
-                < agent.IndexOf("[tools]", StringComparison.Ordinal),
-            "the toggle table must follow every top-level key");
+                < agent.IndexOf("[agents]", StringComparison.Ordinal),
+            "the agents table must follow every top-level key");
+        Assert.EndsWith("\n\n[agents]\nenabled = true\nmax_depth = 3", agent);
     }
 
     [Fact]
-    public void SyncCodexAgent_NonWebSkill_EmitsNoToolsTable()
+    public void SyncCodexAgent_NonWebNonDelegatingSkill_OmitsWebAndDisablesV1Agents()
     {
         Assert.False(_reviewer.Web);
 
@@ -762,6 +764,8 @@ public class SyncCommandTests : IDisposable
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         Assert.DoesNotContain("[tools]", agent);
         Assert.DoesNotContain("web_search", agent);
+        Assert.EndsWith("\n\n[agents]\nenabled = false", agent);
+        Assert.DoesNotContain("max_depth", agent);
     }
 
     [Fact]
@@ -772,8 +776,34 @@ public class SyncCommandTests : IDisposable
         SyncCommand.SyncCodexAgent(scout, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "scout.toml"));
-        Assert.Contains("web_search = true", agent);
+        Assert.Contains("\nweb_search = \"live\"\n", agent);
         Assert.Contains("sandbox_mode = \"read-only\"", agent);
+    }
+
+    [Theory]
+    [InlineData("issue-captain", true, false)]
+    [InlineData("research", true, true)]
+    [InlineData("scout", false, true)]
+    [InlineData("reviewer", false, false)]
+    public void SyncCodexAgent_ProjectsEveryWebAndDelegationCombination(
+        string skillName,
+        bool delegates,
+        bool web)
+    {
+        var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
+        Assert.Equal(delegates, skill.Delegates);
+        Assert.Equal(web, skill.Web);
+
+        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
+        var table = agent.IndexOf("[agents]", StringComparison.Ordinal);
+        Assert.True(table > 0, agent);
+        Assert.Equal(web, agent[..table].Contains("web_search = \"live\"", StringComparison.Ordinal));
+        Assert.DoesNotContain("web_search", agent[table..]);
+        Assert.Contains($"enabled = {delegates.ToString().ToLowerInvariant()}", agent[table..]);
+        Assert.Equal(delegates, agent[table..].Contains("max_depth = 3", StringComparison.Ordinal));
+        Assert.Equal(table, agent.LastIndexOf("[agents]", StringComparison.Ordinal));
     }
 
     [Fact]

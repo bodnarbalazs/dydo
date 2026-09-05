@@ -406,20 +406,23 @@ public static partial class SyncCommand
         // carries the methodology into a spawned agent (DR 045 §10). A writing agent needs the
         // workspace-write sandbox to act on that methodology at all.
         var sandbox = readOnly ? "read-only" : "workspace-write";
-        // `web: true` sets the one toggle codex owns for it. A TOML table header ends the
-        // top-level key section, so [tools] goes last: any key emitted after it would parse as a
-        // member of the struct instead of a field of the agent.
-        var webTools = skill.Web ? "\n\n[tools]\nweb_search = true" : "";
+        // Codex V1 reads web reach from the top-level scalar. Omission leaves the host's inherited
+        // setting in force. The final table expresses whether a role may delegate in V1; V2 may
+        // override enabled and ignores max_depth, so the generated shape makes no V2 guarantee.
+        var webSearch = skill.Web ? "\nweb_search = \"live\"" : "";
+        var agents = skill.Delegates
+            ? "\n\n[agents]\nenabled = true\nmax_depth = 3"
+            : "\n\n[agents]\nenabled = false";
 
         return $""""
             name = "{EscapeQuoted(skill.Name)}"
             description = "{EscapeQuoted(skill.Description)}"
             model = "{EscapeQuoted(model ?? "gpt-5.6-terra")}"
-            sandbox_mode = "{sandbox}"
+            sandbox_mode = "{sandbox}"{webSearch}
 
             developer_instructions = """
             You are {Article(skill.Name)} **{skill.Name}**. {skill.Description} {stance} Load the `${skill.Name}` skill before working.{contextBlock}
-            """{webTools}
+            """{agents}
             """";
     }
 

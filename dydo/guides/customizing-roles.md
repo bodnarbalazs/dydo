@@ -21,7 +21,7 @@ sync again.
 | `emit` | `agent` \| `skill` | `agent` (also the default when the key is absent) adds a spawnable agent that preloads this skill; `skill` is methodology a session applies in its own thread. |
 | `read-only` | `true` | The compiled agent assesses and reports; it gets no editing tools. |
 | `delegates` | `true` | The role may spawn sub-agents: issue-captain directs a crew and Research sends scouts. Other workers do their own work. |
-| `web` | `true` | Grants Claude WebFetch/WebSearch and Codex web_search. |
+| `web` | `true` | Grants Claude WebFetch/WebSearch and Codex `web_search = "live"`. |
 | `argument-hint` | one quoted line | Claude argument-hint and Codex interface.default_prompt. |
 | `invocation` | `automatic` \| `explicit` | `explicit` puts the skill out of every model's reach: only the human, by name. Any other value fails the sync. |
 
@@ -37,9 +37,16 @@ taxonomy. An `emit: agent` role stays `automatic`: an agent's preload cannot rea
 | the template body | `.claude/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` |
 | `emit: agent` | `.claude/agents/<name>.md`, carrying `skills: [<name>]` and the `Skill` tool | `.codex/agents/<name>.toml`, whose instructions name the skill to load |
 | `read-only: true` | agent tools without `Edit`/`Write` | `sandbox_mode = "read-only"`; a writing role gets `workspace-write` |
-| `delegates: true` | the `Agent` tool on the agent | — (a Codex agent carries no tool list) |
+| `delegates: true` | the `Agent` tool on the agent | final `[agents]` table with `enabled = true` and `max_depth = 3` |
+| no `delegates: true` | no `Agent` tool | final `[agents]` table with `enabled = false` and no `max_depth` |
+| `web: true` | `WebFetch` and `WebSearch` tools | top-level `web_search = "live"` |
 | `invocation: explicit` | `disable-model-invocation: true` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` |
 | a shipped `<role>-resource-<n>.template.md` | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
+
+Codex's generated agent files express the V1 configuration shape. A role without `web: true`
+omits `web_search`, leaving the host setting inherited rather than denying it. Codex V2 may
+override `agents.enabled` and ignores `max_depth`; generated configuration therefore does not claim
+universal V2 denial or depth enforcement. Sync never rewrites the project's `.codex/config.toml`.
 
 ## The context a role carries
 

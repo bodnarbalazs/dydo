@@ -56,17 +56,10 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Reads a shipped template and returns its content: the source Templates/ folder in
-    /// dev-mode, embedded resources otherwise.
+    /// Reads a shipped template from the executable's embedded snapshot.
     /// </summary>
     public static string ReadBuiltInTemplate(string templateName)
     {
-        // Dev-mode: when running within the DynaDocs source tree,
-        // prefer source Templates/ over potentially stale embedded resources
-        var devPath = Path.Combine("Templates", templateName);
-        if (File.Exists(devPath) && File.Exists("DynaDocs.csproj"))
-            return File.ReadAllText(devPath);
-
         var content = ReadEmbeddedTemplate(templateName);
         if (content != null)
             return content;
@@ -76,8 +69,8 @@ public static class TemplateGenerator
 
     /// <summary>
     /// The shipped skill templates (skill-*.template.md) — the sources `dydo sync` compiles.
-    /// Enumerated from embedded resources, plus source Templates/ in dev-mode so a
-    /// not-yet-rebuilt template still counts.
+    /// Enumerated from embedded resources only, so a consumer's working directory cannot
+    /// change the executable's shipped inventory.
     ///
     /// A retired skill's template is excluded even while the file still ships through a
     /// transition. This is the single place the exclusion has to happen: everything downstream
@@ -91,14 +84,6 @@ public static class TemplateGenerator
         foreach (var resource in _assembly.GetManifestResourceNames()
                      .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md")))
             names.Add(resource["DynaDocs.Templates.".Length..]);
-
-        // Dev-mode parity with ReadBuiltInTemplate: prefer the source tree's Templates/.
-        if (File.Exists("DynaDocs.csproj") && Directory.Exists("Templates"))
-        {
-            names.RemoveWhere(n => !File.Exists(Path.Combine("Templates", n)));
-            foreach (var file in Directory.GetFiles("Templates", "skill-*.template.md"))
-                names.Add(Path.GetFileName(file));
-        }
 
         names.ExceptWith(SyncCommand.RetiredSkills.Select(name => $"skill-{name}.template.md"));
         return names.ToList();

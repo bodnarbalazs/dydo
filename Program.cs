@@ -19,8 +19,11 @@ rootCommand.Subcommands.Add(ValidateCommand.Create());
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>
 {
-    var version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
-    Console.WriteLine($"dydo version {version.Major}.{version.Minor}.{version.Build}");
+    var version = Assembly.GetExecutingAssembly()
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)
+        ?? "1.0.0";
+    Console.WriteLine($"dydo version {version}");
     return 0;
 });
 rootCommand.Subcommands.Add(versionCommand);

@@ -224,7 +224,12 @@ def receipts(folder, expected_ids, job):
         records = list(directory.glob("*/terminal.json"))
         starts = list(directory.glob("*/started.json"))
         evidence.require(len(records) == len(starts) == 1, "Missing, partial or duplicate suite sidecar")
+        evidence.require(records[0].parent == starts[0].parent, "Start/terminal sidecars belong to different invocations")
         record = read_json(records[0])
+        start = read_json(starts[0])
+        evidence.require(record.get("invocation") == records[0].parent.name and
+                         all(record.get(key) == value for key, value in start.items() if key != "complete"),
+                         "Changed suite invocation or immutable envelope")
         evidence.require(record.get("job") == job and record.get("native_id") == (None if directory.name == "baseline" else directory.name),
                          "Stale suite sidecar")
         evidence.require(record.get("complete") is True or record.get("state") == "invalid", "Suite sidecar did not complete")

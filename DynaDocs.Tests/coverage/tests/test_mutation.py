@@ -118,6 +118,18 @@ class BootstrapTests(unittest.TestCase):
             with self.assertRaises(results.Incomplete):
                 runner.verify_bootstrap(manifest)
 
+    def test_sidecars_cannot_splice_start_and_terminal_from_different_invocations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first, second = root / "0/first", root / "0/second"
+            first.mkdir(parents=True)
+            second.mkdir()
+            value = {"job": "current", "native_id": "0", "invocation": "second", "complete": True, "state": "killed"}
+            runner.write_json(first / "started.json", {**value, "complete": False})
+            runner.write_json(second / "terminal.json", value)
+            with self.assertRaises(results.Incomplete):
+                runner.receipts(root, ["0"], "current")
+
     def test_process_preserves_literal_argv_and_drains_both_streams(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

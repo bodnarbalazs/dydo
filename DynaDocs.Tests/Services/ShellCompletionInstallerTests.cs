@@ -1,15 +1,20 @@
 namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Services;
+using System.Diagnostics;
 using System.Text;
+using Xunit.Abstractions;
 
 public class ShellCompletionInstallerTests : IDisposable
 {
     private readonly string _testDir;
     private readonly string _profilePath;
+    private readonly ITestOutputHelper _output;
+    private bool _retainScratch;
 
-    public ShellCompletionInstallerTests()
+    public ShellCompletionInstallerTests(ITestOutputHelper output)
     {
+        _output = output;
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-installer-test-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
         _profilePath = Path.Combine(_testDir, ".bashrc");
@@ -17,6 +22,11 @@ public class ShellCompletionInstallerTests : IDisposable
 
     public void Dispose()
     {
+        if (_retainScratch)
+        {
+            _output.WriteLine($"Cleanup was not confirmed; retained scratch directory: {_testDir}");
+            return;
+        }
         if (Directory.Exists(_testDir))
         {
             for (var i = 0; i < 3; i++)
@@ -442,4 +452,202 @@ public class ShellCompletionInstallerTests : IDisposable
 
     private static byte[] EncodeProfile(Encoding encoding, string content) =>
         encoding.GetPreamble().Concat(encoding.GetBytes(content)).ToArray();
+
+    public static IEnumerable<object[]> NativeProfiles()
+    {
+        yield return ["utf8", "missing", ""];
+        yield return ["utf8", "empty", ""];
+        foreach (var name in new[] { "utf8", "utf8-bom", "utf16-le", "utf16-be", "utf32-le", "utf32-be" })
+        foreach (var ending in new[] { "", "\n" })
+        foreach (var kind in new[] { "append", "legacy" })
+            yield return [name, kind, ending];
+    }
+
+    [Theory]
+    [MemberData(nameof(NativeProfiles))]
+    public async Task PowerShellNativeCandidate_SourcesInstalledProfile(string encodingName, string kind, string ending)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var profilePath = Path.Combine(_testDir, "native-profile.ps1");
+        var content = kind == "legacy"
+            ? "# árvíztűrő 日本語\r\n# dydo shell completions\r\ndydo completions powershell | Invoke-Expression" + ending
+            : "# árvíztűrő 日本語" + ending;
+        if (kind != "missing")
+            File.WriteAllBytes(profilePath, kind == "empty" ? [] : EncodeProfile(ProfileEncoding(encodingName), content));
+        Assert.NotNull(ShellCompletionInstaller.InstallToProfile("powershell", profilePath));
+        var installed = File.ReadAllBytes(profilePath);
+        Assert.Null(ShellCompletionInstaller.InstallToProfile("powershell", profilePath));
+        Assert.Equal(installed, File.ReadAllBytes(profilePath));
+
+        var candidate = CandidateApphost();
+        var result = await RunPowerShellAsync("""
+            $ErrorActionPreference = 'Stop'
+            $env:PATH = [IO.Path]::GetDirectoryName($env:COMPLETION_CANDIDATE) + [IO.Path]::PathSeparator + $env:PATH
+            $actual = (Get-Command dydo -CommandType Application | Select-Object -First 1).Source
+            if ($actual -ne $env:COMPLETION_CANDIDATE) { throw "Wrong native executable: $actual" }
+            Write-Output "Candidate: $actual"
+            Write-Output "Version: $(& $actual --version)"
+            . $env:COMPLETION_PROFILE
+            $matches = [System.Management.Automation.CommandCompletion]::CompleteInput('dydo ch', 7, $null).CompletionMatches
+            if (@($matches | Where-Object CompletionText -eq 'check').Count -eq 0) { throw 'Expected check completion was absent' }
+            Write-Output 'PASS: check completion'
+            """, new Dictionary<string, string>
+            {
+                ["COMPLETION_CANDIDATE"] = candidate,
+                ["COMPLETION_PROFILE"] = profilePath
+            });
+
+        _output.WriteLine(result.Stdout);
+        _output.WriteLine($"PROFILE:{encodingName}:{kind}:{ending.Length}:{Convert.ToBase64String(installed)}");
+        Assert.Equal(0, result.ExitCode);
+        Assert.Empty(result.Stderr);
+        Assert.Contains("PASS: check completion", result.Stdout);
+    }
+
+    [Fact]
+    public async Task NativeCapture_DrainsBothPipesBeyondBufferCapacity()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var result = await RunPowerShellAsync("""
+            1..10000 | ForEach-Object { [Console]::Out.WriteLine(('o' * 128)) }
+            1..10000 | ForEach-Object { [Console]::Error.WriteLine(('e' * 128)) }
+            """);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(10000, result.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Equal(10000, result.Stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+        _output.WriteLine($"Captured stdout={result.Stdout.Length}, stderr={result.Stderr.Length} characters concurrently.");
+    }
+
+    [Fact]
+    public async Task NativeTimeout_KillsDescendantAndDrainsBeforeScratchDeletion()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var elapsed = Stopwatch.StartNew();
+        var failure = await Assert.ThrowsAsync<TimeoutException>(() => RunPowerShellAsync("""
+            $child = Start-Process -FilePath (Get-Process -Id $PID).Path -ArgumentList '-NoProfile', '-NonInteractive', '-Command', 'Start-Sleep -Seconds 120' -PassThru -WindowStyle Hidden
+            [Console]::Out.WriteLine("PARENT:$PID")
+            [Console]::Out.WriteLine("CHILD:$($child.Id)")
+            [Console]::Out.Flush()
+            [Console]::Error.WriteLine('stalling')
+            [Console]::Error.Flush()
+            Start-Sleep -Seconds 120
+            """, executionTimeout: TimeSpan.FromSeconds(3)));
+
+        Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(15), failure.Message);
+        Assert.Equal(true, failure.Data["CleanupConfirmed"]);
+        Assert.False(_retainScratch);
+        var stdout = Assert.IsType<string>(failure.Data["Stdout"]);
+        Assert.Contains("stalling", Assert.IsType<string>(failure.Data["Stderr"]));
+        foreach (var prefix in new[] { "PARENT:", "CHILD:" })
+        {
+            var line = Assert.Single(stdout.Split('\n'), line => line.StartsWith(prefix, StringComparison.Ordinal));
+            var pid = int.Parse(line[prefix.Length..].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            try
+            {
+                using var remaining = Process.GetProcessById(pid);
+                Assert.True(remaining.HasExited, $"Native process {pid} is still running.");
+            }
+            catch (ArgumentException) { }
+        }
+        _output.WriteLine(failure.Message);
+        _output.WriteLine(stdout);
+    }
+
+    private static string CandidateApphost()
+    {
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root != null && !File.Exists(Path.Combine(root.FullName, "DynaDocs.csproj")))
+            root = root.Parent;
+        Assert.NotNull(root);
+        var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
+        var candidate = Path.Combine(root.FullName, "bin", configuration, "net10.0", "dydo.exe");
+        Assert.True(File.Exists(candidate), $"Candidate apphost is missing: {candidate}");
+        return candidate;
+    }
+
+    private async Task<(int ExitCode, string Stdout, string Stderr)> RunPowerShellAsync(
+        string command, Dictionary<string, string>? environment = null, TimeSpan? executionTimeout = null)
+    {
+        var startInfo = new ProcessStartInfo("pwsh")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WorkingDirectory = _testDir
+        };
+        foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-Command", command })
+            startInfo.ArgumentList.Add(argument);
+        startInfo.Environment["SHELL"] = "dydo-test-no-shell";
+        foreach (var entry in environment ?? [])
+            startInfo.Environment[entry.Key] = entry.Value;
+        using var process = new Process { StartInfo = startInfo };
+        var elapsed = Stopwatch.StartNew();
+        Assert.True(process.Start());
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        Exception? failure = null;
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(executionTimeout ?? TimeSpan.FromSeconds(30));
+        }
+        catch (Exception error)
+        {
+            failure = error;
+        }
+
+        using var teardown = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var cleanupErrors = new List<string>();
+        if (failure != null && !process.HasExited)
+        {
+            try
+            {
+                await Task.Run(() => process.Kill(entireProcessTree: true)).WaitAsync(teardown.Token);
+            }
+            catch (Exception error)
+            {
+                if (!process.HasExited) cleanupErrors.Add($"Termination: {error.Message}");
+            }
+        }
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(teardown.Token);
+            await Task.WhenAll(stdout, stderr).WaitAsync(teardown.Token);
+        }
+        catch (Exception error)
+        {
+            cleanupErrors.Add($"Exit/drain: {error.Message}");
+        }
+
+        var capturedOut = stdout.IsCompletedSuccessfully ? await stdout : "<stdout capture incomplete>";
+        var capturedErr = stderr.IsCompletedSuccessfully ? await stderr : "<stderr capture incomplete>";
+        var exitCode = process.HasExited ? process.ExitCode : (int?)null;
+        var cleanupConfirmed = process.HasExited && stdout.IsCompleted && stderr.IsCompleted && cleanupErrors.Count == 0;
+        if (!cleanupConfirmed)
+        {
+            _retainScratch = true;
+            ObserveCaptureFailure(stdout);
+            ObserveCaptureFailure(stderr);
+        }
+        if (failure != null || !cleanupConfirmed)
+        {
+            var diagnostic = $"Native process failed after {elapsed.Elapsed}; exit={exitCode}; cleanup={cleanupConfirmed}; " +
+                $"scratch={_testDir}; {string.Join("; ", cleanupErrors)}\nstdout:\n{capturedOut}\nstderr:\n{capturedErr}";
+            Exception reported = failure is TimeoutException
+                ? new TimeoutException(diagnostic, failure)
+                : new InvalidOperationException(diagnostic, failure);
+            reported.Data["CleanupConfirmed"] = cleanupConfirmed;
+            reported.Data["Stdout"] = capturedOut;
+            reported.Data["Stderr"] = capturedErr;
+            throw reported;
+        }
+        _output.WriteLine($"Native exit={exitCode}; elapsed={elapsed.Elapsed}; cleanup confirmed.");
+        return (exitCode!.Value, capturedOut, capturedErr);
+    }
+
+    private static void ObserveCaptureFailure(Task task) =>
+        _ = task.ContinueWith(completed => _ = completed.Exception,
+            CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 }

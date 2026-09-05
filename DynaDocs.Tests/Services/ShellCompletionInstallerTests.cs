@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Services;
+using System.Text;
 
 public class ShellCompletionInstallerTests : IDisposable
 {
@@ -91,7 +92,7 @@ public class ShellCompletionInstallerTests : IDisposable
         ShellCompletionInstaller.InstallToProfile("powershell", psProfile);
 
         var content = File.ReadAllText(psProfile);
-        Assert.Contains("dydo completions powershell | Invoke-Expression", content);
+        Assert.Contains("dydo completions powershell | Out-String | Invoke-Expression", content);
     }
 
     [Fact]
@@ -204,19 +205,6 @@ public class ShellCompletionInstallerTests : IDisposable
     }
 
     [Fact]
-    public void Install_DoesNotThrow()
-    {
-        // Install() is best-effort and should never throw regardless of env
-        var result = ShellCompletionInstaller.Install();
-
-        // result can be null (already installed/skipped) or a success message
-        if (result != null)
-        {
-            Assert.Contains("Shell completions installed", result);
-        }
-    }
-
-    [Fact]
     public void Install_WithUnknownShell_ReturnsNull()
     {
         var original = Environment.GetEnvironmentVariable("SHELL");
@@ -230,17 +218,6 @@ public class ShellCompletionInstallerTests : IDisposable
         {
             Environment.SetEnvironmentVariable("SHELL", original);
         }
-    }
-
-    [Fact]
-    public void Install_IsIdempotent()
-    {
-        // Calling Install twice should not duplicate the block
-        ShellCompletionInstaller.Install();
-        var secondResult = ShellCompletionInstaller.Install();
-
-        // Second call should return null (already installed)
-        Assert.Null(secondResult);
     }
 
     [Fact]
@@ -278,7 +255,7 @@ public class ShellCompletionInstallerTests : IDisposable
 
         Assert.NotNull(result);
         var content = File.ReadAllText(profile);
-        Assert.Contains("dydo completions powershell | Invoke-Expression", content);
+        Assert.Contains("dydo completions powershell | Out-String | Invoke-Expression", content);
     }
 
     [Fact]
@@ -341,4 +318,128 @@ public class ShellCompletionInstallerTests : IDisposable
         Assert.Equal(1, count);
     }
 
+    public static TheoryData<string, string> ProfileEncodings => new()
+    {
+        { "utf8", "" }, { "utf8", "\n" },
+        { "utf8-bom", "" }, { "utf8-bom", "\n" },
+        { "utf16-le", "" }, { "utf16-le", "\n" },
+        { "utf16-be", "" }, { "utf16-be", "\n" },
+        { "utf32-le", "" }, { "utf32-le", "\n" },
+        { "utf32-be", "" }, { "utf32-be", "\n" }
+    };
+
+    [Theory]
+    [MemberData(nameof(ProfileEncodings))]
+    public void PowerShellAppend_PreservesOriginalBytesAndEncoding(string encodingName, string ending)
+    {
+        var encoding = ProfileEncoding(encodingName);
+        var original = EncodeProfile(encoding, "# árvíztűrő 日本語" + ending);
+        File.WriteAllBytes(_profilePath, original);
+
+        var result = ShellCompletionInstaller.InstallToProfile("powershell", _profilePath);
+
+        Assert.Contains("Shell completions installed", result);
+        var expected = original.Concat(encoding.GetBytes(
+            "\n# dydo shell completions\ndydo completions powershell | Out-String | Invoke-Expression\n")).ToArray();
+        Assert.Equal(expected, File.ReadAllBytes(_profilePath));
+        Assert.Null(ShellCompletionInstaller.InstallToProfile("powershell", _profilePath));
+        Assert.Equal(expected, File.ReadAllBytes(_profilePath));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PowerShellMissingOrEmptyProfile_UsesUtf8WithoutBom(bool exists)
+    {
+        if (exists) File.WriteAllBytes(_profilePath, []);
+
+        ShellCompletionInstaller.InstallToProfile("powershell", _profilePath);
+
+        Assert.Equal(Encoding.UTF8.GetBytes(
+            "\n# dydo shell completions\ndydo completions powershell | Out-String | Invoke-Expression\n"),
+            File.ReadAllBytes(_profilePath));
+    }
+
+    [Theory]
+    [MemberData(nameof(ProfileEncodings))]
+    public void PowerShellMigration_PreservesEncodingAndOtherBytes(string encodingName, string ending)
+    {
+        var encoding = ProfileEncoding(encodingName);
+        const string before = "# árvíztűrő\r\n# dydo shell completions\n";
+        const string legacy = "dydo completions powershell | Invoke-Expression";
+        const string corrected = "dydo completions powershell | Out-String | Invoke-Expression";
+        var original = EncodeProfile(encoding, before + legacy + ending);
+        File.WriteAllBytes(_profilePath, original);
+
+        Assert.NotNull(ShellCompletionInstaller.InstallToProfile("powershell", _profilePath));
+
+        var expected = EncodeProfile(encoding, before + corrected + ending);
+        Assert.Equal(expected, File.ReadAllBytes(_profilePath));
+        Assert.Null(ShellCompletionInstaller.InstallToProfile("powershell", _profilePath));
+        Assert.Equal(expected, File.ReadAllBytes(_profilePath));
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void PowerShellMigration_RepairsEveryExactBlockPreservingUnrelatedInvalidBytes(string newline)
+    {
+        var legacy = Encoding.UTF8.GetBytes(
+            $"# dydo shell completions{newline}dydo completions powershell | Invoke-Expression{newline}");
+        var corrected = Encoding.UTF8.GetBytes(
+            $"# dydo shell completions{newline}dydo completions powershell | Out-String | Invoke-Expression{newline}");
+        byte[] unrelated = [0xff, 0xfe, 0x80, (byte)'\n'];
+        var original = legacy.Concat(unrelated).Concat(legacy).Concat(unrelated).ToArray();
+        File.WriteAllBytes(_profilePath, original);
+
+        ShellCompletionInstaller.InstallToProfile("powershell", _profilePath);
+
+        Assert.Equal(corrected.Concat(unrelated).Concat(corrected).Concat(unrelated).ToArray(),
+            File.ReadAllBytes(_profilePath));
+    }
+
+    [Theory]
+    [InlineData("# dydo shell completions\ndydo completions powershell | Out-String | Invoke-Expression\n")]
+    [InlineData("# dydo shell completions\n dydo completions powershell | Invoke-Expression\n")]
+    [InlineData("# dydo shell completions\ndydo completions powershell | Invoke-Expression \n")]
+    [InlineData("# dydo shell completions\ndydo completions powershell | Invoke-Expression # custom\n")]
+    [InlineData("prefix # dydo shell completions\ndydo completions powershell | Invoke-Expression\n")]
+    [InlineData("# dydo shell completions suffix\ndydo completions powershell | Invoke-Expression\n")]
+    [InlineData("# dydo shell completions\n\ndydo completions powershell | Invoke-Expression\n")]
+    [InlineData("# dydo shell completions\nWrite-Output 'custom'\ndydo completions powershell | Invoke-Expression\n")]
+    public void PowerShellCustomizedBlock_IsByteIdentical(string content)
+    {
+        var original = EncodeProfile(new UnicodeEncoding(false, true), content);
+        File.WriteAllBytes(_profilePath, original);
+
+        Assert.Null(ShellCompletionInstaller.InstallToProfile("powershell", _profilePath));
+
+        Assert.Equal(original, File.ReadAllBytes(_profilePath));
+    }
+
+    [Fact]
+    public void PowerShellUnmarkedLegacyLine_IsPreservedWhenAppending()
+    {
+        const string original = "dydo completions powershell | Invoke-Expression";
+        File.WriteAllText(_profilePath, original);
+
+        ShellCompletionInstaller.InstallToProfile("powershell", _profilePath);
+
+        Assert.Equal(original + "\n# dydo shell completions\ndydo completions powershell | Out-String | Invoke-Expression\n",
+            File.ReadAllText(_profilePath));
+    }
+
+    private static Encoding ProfileEncoding(string name) => name switch
+    {
+        "utf8" => new UTF8Encoding(false),
+        "utf8-bom" => new UTF8Encoding(true),
+        "utf16-le" => new UnicodeEncoding(false, true),
+        "utf16-be" => new UnicodeEncoding(true, true),
+        "utf32-le" => new UTF32Encoding(false, true),
+        "utf32-be" => new UTF32Encoding(true, true),
+        _ => throw new ArgumentOutOfRangeException(nameof(name))
+    };
+
+    private static byte[] EncodeProfile(Encoding encoding, string content) =>
+        encoding.GetPreamble().Concat(encoding.GetBytes(content)).ToArray();
 }

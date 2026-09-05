@@ -21,17 +21,19 @@ Feature: An experimental beta can be dogfooded honestly
     And custom native host files outside managed hooks retain their paths and bytes
     And custom Codex hook entries remain semantically intact
 
-  Scenario Outline: Emit Codex capabilities from authored role metadata
+  Scenario Outline: Emit the Codex V1 capability shape from authored role metadata
     Given an empty project directory
     When I initialize dydo with "all"
     Then the command succeeds
     When I synchronize the native artifacts
     Then the command succeeds
-    And the Codex agent "<role>" has delegation <delegation> and web access <web>
+    And the Codex agent "<role>" has agents enabled <agents-enabled>
+    And the Codex agent "<role>" has V1 maximum delegation depth <max-depth>
+    And the Codex agent "<role>" has top-level web search mode <web-search>
 
     Examples:
-      | role          | delegation | web   |
-      | issue-captain | true       | false |
-      | research      | true       | true  |
-      | scout         | false      | true  |
-      | reviewer      | false      | false |
+      | role          | agents-enabled | max-depth | web-search |
+      | issue-captain | true           | 3         | omitted    |
+      | research      | true           | 3         | live       |
+      | scout         | false          | omitted   | live       |
+      | reviewer      | false          | omitted   | omitted    |

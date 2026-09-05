@@ -370,11 +370,15 @@ The observable scenarios are in `DynaDocs.Tests/Features/experimental-beta.featu
    allowlisted retired compiler outputs, remains byte-idempotent, and preserves unrecognized native
    siblings, project documents, `.claude/settings.json`, and `.codex/config.toml`. Existing custom
    hook entries in `.codex/hooks.json` remain semantically intact.
-3. Codex agent TOML writes `web_search = true` as a top-level key for a role with `web: true` and
-   omits it otherwise. A role with `delegates: true` writes `[agents]`, `enabled = true`, and
-   `max_depth = 3`; a non-delegating role omits that table. The depth is V1 compatibility and is
-   explicitly reported as ignored by V2. This beta does not claim a V2 depth ceiling or modify the
-   consumer's project `.codex/config.toml`.
+3. Codex agent TOML writes top-level `web_search = "live"` for a role with `web: true` and omits
+   `web_search` otherwise, leaving the inherited host setting in force for a non-web role. Every
+   generated Codex agent ends with an `[agents]` table: a role with `delegates: true` writes
+   `enabled = true` and `max_depth = 3`; a non-delegating role writes `enabled = false` and omits
+   `max_depth`. These are explicit V1 intent and configuration-shape guarantees. Codex V2 may
+   override `enabled` and ignores `max_depth`, so this beta makes no universal denial or depth claim
+   for V2 and does not modify the consumer's project `.codex/config.toml`. The already observed
+   three-edge nesting is positive host evidence; the generated-role canary in criterion 6 remains
+   pending.
 4. A clean package from the accepted candidate has NuGet version, npm metadata, `dydo --version`,
    and `dydo version` agreeing on `3.0.0-beta.1`. The package SHA-256 and candidate Git SHA are
    retained. An isolated tool-path install runs `--help`, `init all`, `check`, `sync`, template
@@ -401,15 +405,19 @@ The observable scenarios are in `DynaDocs.Tests/Features/experimental-beta.featu
 ### DYD-110 plan
 
 **Approach** — retain the compiler, make embedded resources the executable's sole implicit template
-source, correct the two bounded Codex TOML projections, stage one prerelease version, regenerate the
-candidate's compiler-owned native artifacts, and install only after independent review. Do not add
-a project-TOML merger, switchboard, hub removal, testing facade, release workflow, or publication
-path to this Feature.
+source, correct the two bounded Codex TOML projections and their canonical explanation, stage one
+prerelease version, regenerate the candidate's compiler-owned native artifacts, and install only
+after independent review. Do not add a project-TOML merger, switchboard, hub removal, testing facade,
+release workflow, or publication path to this Feature.
 
 **Patterns to copy** — `Services/TemplateGenerator.cs` already owns embedded resource lookup and
 inventory; remove its current-working-directory branch rather than introducing another source
 resolver. `Commands/SyncCommand.cs` already derives Claude's `Agent` tool from `delegates` and Codex
 web configuration from `web`; compile the same metadata into current Codex top-level/table keys.
+`dydo/guides/customizing-roles.md` and
+`Templates/writing-for-agents-resource-skill-mechanics.template.md` are the canonical public and
+agent-facing explanations of those frontmatter keys; update them with the same exact shape and V2
+limits, then let sync produce the two matching resource artifacts.
 `DynaDocs.Tests/Features/fresh-installation.feature` and `DynaDocs.Tests/Steps/CliScenario.cs` supply
 the isolated process, byte snapshot, idempotence, and cleanup pattern. Section 4's I gate supplies
 the package/scratch/install pattern; this amendment narrows its release claims and adds a real
@@ -419,7 +427,11 @@ rollback round trip.
 
 - `Services/TemplateGenerator.cs`: remove implicit source-tree discovery and reads.
 - `Commands/SyncCommand.cs`: emit top-level Codex web configuration and the delegating-role agents
-  table; keep Claude behavior unchanged.
+  table, including explicit V1 disablement for non-delegating roles; keep Claude behavior unchanged.
+- `dydo/guides/customizing-roles.md`: document the exact Codex `web` and `delegates` projection,
+  inherited non-web setting, and V1/V2 capability boundary.
+- `Templates/writing-for-agents-resource-skill-mechanics.template.md`: give agents the same exact
+  projection and capability boundary as the canonical guide.
 - `Program.cs`, `DynaDocs.csproj`, and `npm/package.json`: expose the same beta version; use assembly
   informational version for the explicit version command without exposing build metadata as the
   package version.
@@ -437,7 +449,10 @@ rollback round trip.
   `.claude/agents/`, `.claude/skills/`, and `.codex/agents/`; `.codex/hooks.json`; and only the
   allowlisted retired output `.claude/workflows/inquisition.js`. The implementation manifest lists
   every resulting path and deletion before commit. Unrecognized siblings under those roots are not
-  owned.
+  owned. The explanation change specifically includes
+  `.agents/skills/writing-for-agents/resources/skill-mechanics.md` and
+  `.claude/skills/writing-for-agents/resources/skill-mechanics.md` as sync-generated outputs; no
+  compiled artifact is edited by hand.
 
 The specify hop owns only this amendment and
 `DynaDocs.Tests/Features/experimental-beta.feature`. Evidence under `dydo/_system/.local/` is ignored
@@ -455,10 +470,13 @@ evidence that the whole project is aligned.
 2. Remove the implicit development lookup from `TemplateGenerator`; enumerate and read embedded
    resources only. Prove a source-looking consumer with added, removed, and modified decoy
    templates cannot influence discovery or output.
-3. Change Codex emission mechanically from role metadata. Put all top-level keys before an optional
-   final `[agents]` table; `web_search` remains top-level. Test the four combinations of web and
-   delegation, and parse or independently validate the resulting TOML shape rather than relying on
-   substring presence alone.
+3. Change Codex emission mechanically from role metadata. Put all top-level keys before the final
+   `[agents]` table. Emit top-level `web_search = "live"` only for `web: true`; omission inherits
+   host policy and is not an enforced denial. Emit `enabled = true` plus `max_depth = 3` for
+   `delegates: true`, and `enabled = false` without `max_depth` otherwise. Test all four web and
+   delegation combinations and parse or independently validate the TOML values, key locations,
+   table presence, and omitted keys rather than relying on substring presence alone. Update both
+   canonical explanations before regenerating their two resource outputs.
 4. Set `3.0.0-beta.1` on both package surfaces and make both CLI version forms report that
    prerelease. No tag, release note claiming completion, npm download attempt, or public source is
    introduced.
@@ -484,8 +502,9 @@ evidence that the whole project is aligned.
 
 **Edge cases** — an installed beta invoked from a source-looking directory still uses embedded
 resources; absent or unrecognized custom native files survive; only allowlisted retired outputs are
-removed; non-delegating agents cannot gain an `[agents]` table; V2 ignoring `max_depth` is reported,
-not treated as failure; an existing `.codex/config.toml` is never rewritten; a malformed managed
+removed; non-delegating agents receive explicit V1 `enabled = false` without `max_depth`; omitted
+`web_search` inherits host policy and is not reported as denial; V2 precedence over `enabled` and its
+ignoring `max_depth` are reported, not treated as failure; an existing `.codex/config.toml` is never rewritten; a malformed managed
 hook file follows its existing explicit test contract and may not be silently used as evidence of
 settings preservation; dirty or mismatched-SHA packaging fails before global mutation; a missing or
 wrong-hash rollback package fails before global mutation; any transition mismatch triggers rollback
@@ -505,8 +524,10 @@ dotnet bin/Release/net10.0/dydo.dll check
 git status --short
 ```
 
-Focused and full tests, Release build, and source-built documentation check exit zero; the second
-sync has no compiler-owned diff; the acceptance script exits zero with beta package, isolated
+Focused and full tests, Release build, and source-built documentation check exit zero; the four
+parsed Codex role cases have the exact top-level keys and final `[agents]` values above; both
+generated skill-mechanics resources equal their source template modulo the compiler's defined link
+rewrite; the second sync has no compiler-owned diff; the acceptance script exits zero with beta package, isolated
 scratch, real rollback, final PATH-resolved beta, and preservation proofs; Git is clean except for
 the main checkout's pre-existing Obsidian edit, which is outside this worktree. G-final and M are
 recorded `UNAVAILABLE`, not executed as beta PASS gates. The generated-role runtime canary is

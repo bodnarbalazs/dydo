@@ -43,7 +43,8 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
 ## Method
 
 1. **Read the board.** Wake on a captain's return or the human's word. Read the Project, its map,
-   blockers, hop SHAs and reviews; resume at the stage the record proves. **Done:** every pickable
+   blockers, hop SHAs and reviews; resume at the stage the record proves. Process a record-delivery
+   release through step7 before generic pickable commissioning. **Done:** every pickable
    Issue and every Merge whose turn came is known. With nothing in flight, wait for the human's word.
 2. **Chart and approve.** When a plan is needed, set the Project `Planning` and send `project-planner`.
    File its prepared Project-level Questions in `Todo`, wired to every waiter. Send its committed
@@ -80,10 +81,12 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
    waiter by the standard's guide; AFK order remains in the map and blockers.
 7. **Offer the inquisition.** Once the feature is integrated, file an Inquisition in `Backlog` with
    its feature SHA, parts, lenses and cost. **Done:** the human moves it to `Todo` and tells you, or
-   cancels it; commission the confirmed Issue and route the Bugs it files. Receive its completed
-   evidence packet and contract a separate primary Feature/AFK record-delivery Issue on the retained
-   feature, with the exact record and required hub paths. Commission its own captain and wire only
-   the Inquisition blocked by record delivery; follow the working-tree contract's retention route.
+   cancels it; commission the confirmed Issue and route the Bugs it files. On its
+   `released <key>: record delivery` wake, read the completed packet and first contract a separate
+   primary Feature/AFK record-delivery Issue on the retained feature with exact record and required
+   hub paths. Wire only the Inquisition blocked by record delivery before generic pickup, then
+   commission the record captain. Do not recommission the audit from its temporary Todo gap; follow
+   the working-tree contract's retention route.
    On delivery `Done`, resume the released Inquisition captain for durable-evidence verification.
 8. **Land and walk through.** File the landing Merge Issue, blocked by its unresolved prerequisites:
    delivery, a confirmed Inquisition and its record delivery, and required fixes. Exclude the landing

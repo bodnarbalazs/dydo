@@ -376,8 +376,8 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 40 | inquisition captain → implementer (proof-only) | R (spawn) | one hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | — |
 | 41 | implementer → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | — | — |
 | 42 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref, Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
-| 43 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed resume state; `released <key>: record delivery` after the one-way blocker is wired | admiral reads packet and working-tree retention contract to commission delivery | Inquisition released `Todo`, unassigned, worktree removed |
-| 43a | admiral → record Feature captain, Linear | R (spawn), L | separate primary Feature/AFK on retained feature; exact record and individually named required hub paths, pinned packet and ordinary delivery gates; only Inquisition blocked by this Feature | record captain reads contract/packet and directs specify → docs-writer → docs review → final Merge Sub-issue | record Feature `Todo`, pickable from completed packet |
+| 43 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed/posted resume state; `released <key>: record delivery` before record Feature/blocker exists | this return wakes admiral to read packet and working-tree retention contract | Inquisition released `Todo`, unassigned, worktree removed; no not-yet-created blocker required |
+| 43a | admiral → record Feature captain, Linear | R (spawn), L | on row43 wake, first contract separate primary Feature/AFK on retained feature with exact record/required hubs, packet and gates; wire only Inquisition blocked by Feature before generic pickup, then commission record captain | record captain reads contract/packet and directs specify → docs-writer → docs review → final Merge Sub-issue | record Feature `Todo`, pickable from packet; audit is not recommissioned from temporary Todo gap |
 | 43b | record Feature captain → admiral, Inquisition Issue | R, L, G | `done <key>: merged`; exact record path/blob or digest, delivery merge SHA and retained feature ref, review/gates on delivery records | normal board loop reads delivery `Done` and resumes released Inquisition captain | record Feature `Done`; Inquisition resumes `In Progress` |
 | 44 | inquisition captain → admiral, Linear | R, L | `done <key>` after verifying Bugs, exact record content and delivery merge ancestry/reachability on retained feature; verification on Issue, audit branch deleted, open Bug proof refs retained with named owners | admiral reads durable completion evidence | Inquisition `Done` |
 | 45 | admiral → Linear (landing) | L | the landing Merge Issue: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | — | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
@@ -542,13 +542,12 @@ flowchart TD
   IC -->|one hypothesis each, proof-only, on a child branch| IM[implementers: write the test that would catch it]:::worker
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
   IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner| BUG[(Bug Issues in Todo, under the Project)]
-  IC -->|completed pinned packet| AD2[admiral]:::hat
-  AD2 -->|separate primary Feature/AFK, exact record and hub paths| RC[record Feature captain: normal delivery chain]:::hat
+  IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::hat
+  REL -->|released &lt;key&gt;: record delivery wakes admiral| AD2[admiral]:::hat
+  AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and hub paths]:::hat
   RC --> SP2[specifier]:::worker
   SP2 --> DW[docs-writer on the record Feature branch]:::worker
   DW --> RV[docs review, then final Merge Sub-issue into retained feature]
-  AD2 -->|only Inquisition blocked by record Feature| REL[Inquisition captain: push and release Todo, unassign, remove worktree]:::hat
-  REL -->|released &lt;key&gt;: record delivery| AD2
   RV -->|delivery Done, exact record and merge evidence; normal board wake| AD2
   AD2 -->|resume In Progress after delivery Done| VERIFY[Inquisition captain: verify Bugs, record content and merge reachability; preserve open Bug refs]:::hat
   VERIFY -->|Done, audit branch deleted, done &lt;key&gt;| AD2

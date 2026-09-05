@@ -16,7 +16,9 @@ sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
 4. Name the completed evidence packet for the admiral: scope, feature SHA, parts/lenses, findings,
    hypotheses/verdicts and Bugs. Follow **Retaining an Inquisition's record and proofs** in the
    working-tree contract: a separate primary Feature/AFK owns record delivery through its own
-   captain and ordinary chain. The Inquisition is blocked by that delivery, releases, and resumes
+   captain and ordinary chain. The Inquisition releases with the completed packet before that
+   Feature/blocker exists; on this return's wake the admiral contracts delivery and wires the
+   one-way blocker before generic pickup. The Inquisition resumes after delivery
    to verify durable record content and merge reachability before Done and audit cleanup. Done
    when the packet, one-way dependency, verification and proof-ref ownership are exact. The sweep
    and proofs stay `In Progress`; the record Feature owns its delivery statuses.

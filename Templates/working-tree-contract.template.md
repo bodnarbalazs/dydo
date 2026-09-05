@@ -106,16 +106,20 @@ use a following fix Issue. Each corrected candidate gets fresh merge review.
 
 The Inquisition captain pins the completed evidence packet on its Issue: audited feature SHA,
 scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
-reproduction SHAs. The admiral uses that packet to contract a separate primary `Feature` / `AFK`
-record-delivery Issue from the retained feature branch. Its ownership names the exact
+reproduction SHAs. The captain pushes and posts its resume state, removes its worktree, sets the
+Inquisition `Todo`, unassigns and returns `released <key>: record delivery`. The record Feature and
+its blocker do not exist yet; this release return is the admiral's ordinary wake.
+
+On that wake, before generic pickable commissioning, the admiral uses the packet to contract a
+separate primary `Feature` / `AFK` record-delivery Issue from the retained feature branch. Its ownership names the exact
 `dydo/project/inquisitions/` record file and each required generated hub individually. Its own
 captain directs the ordinary specification, docs-writer, docs review and final Merge Sub-issue
 into the feature. Audit and proof branches never merge.
 
-Wire the Inquisition **blocked by the record Feature**, never the reverse: the completed packet
-makes record delivery pickable. The Inquisition captain pushes its resume state and releases by
-the procedure above, returning `released <key>: record delivery`. On the normal board loop after
-record delivery is `Done`, the admiral resumes that captain from the Issue. It returns to
+First wire the Inquisition **blocked by the record Feature**, never the reverse, then commission
+record delivery from the completed packet. The admiral does not recommission the Inquisition from
+its temporary `Todo` gap. On the normal board loop after record delivery is `Done`, the admiral
+resumes that captain from the Issue. It returns to
 `In Progress`, verifies the filed Bugs and the exact record path and blob or content digest on the
 retained feature, and records the delivery merge's ancestry/reachability there. Only then does it
 close `Done`, return `done <key>` and delete the audit branch. A record present only on an unmerged

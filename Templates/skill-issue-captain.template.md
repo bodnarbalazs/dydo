@@ -112,10 +112,11 @@ never submitted. Enablement uses `wizard` for the steps only the human can perfo
 An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. After
 specification, set `In Progress` for read-only inquisitors sweeping parts/lenses and proof-only
 implementers testing hypotheses on child proof branches. Deduplicate confirmed findings into Bugs
-with their red-test SHAs and pin the completed packet on the Issue. Send it to the admiral to
-commission the separate record Feature; retain each open Bug's reproduction on a pushed independent
-ref. Follow **Retaining an Inquisition's record and proofs** in the working-tree contract: wire the
-record Feature as blocker, release, then resume after its delivery to verify Bugs, the record's
+with their red-test SHAs and pin the completed packet on the Issue. Retain each open Bug's
+reproduction on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
+in the working-tree contract: record the delivery need, push/post the resume state and release before the record Feature
+or blocker exists. Return `released <key>: record delivery` to wake the admiral, which creates and
+wires that delivery before generic pickup. Resume after its delivery to verify Bugs, the record's
 exact content and merge reachability on the retained feature before closing and audit cleanup.
 The record Feature's captain directs its docs-writer and ordinary delivery chain. The Inquisition
 files, never PASSes or FAILs.

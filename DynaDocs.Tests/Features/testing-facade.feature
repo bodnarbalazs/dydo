@@ -43,7 +43,7 @@ Feature: One project-local interface runs tests and assurance honestly
     Given the selected stack has configured static, coverage and mutation commands
     When I run "<invocation>"
     Then only the "<capability>" command runs for that stack
-    And the result names the candidate, argv, working directory, isolation, artifacts and capability state
+    And the result names the candidate, argv, working directory, isolation requirement, adapter evidence, artifacts and capability state
 
     Examples:
       | invocation                                      | capability |
@@ -57,6 +57,25 @@ Feature: One project-local interface runs tests and assurance honestly
     Then no configured command runs
     And the diagnostic requires --since BASE
     And the command exits 2
+
+  Scenario: A project adapter places the mutation base in its native argv
+    Given the selected mutation command contains exactly one "{base}" token
+    When I run "gate mutation --since BASE --stack dotnet"
+    Then "BASE" replaces "{base}" as one argv item at that position
+    And the runner does not add another --since option
+    And the command runs without a shell
+
+  Scenario Outline: An ambiguous mutation base contract fails closed
+    Given the selected configured mutation command contains "<count>" "{base}" tokens
+    When I run "gate mutation --since BASE --stack dotnet"
+    Then no configured command runs
+    And the diagnostic requires exactly one "{base}" token
+    And the command exits 2
+
+    Examples:
+      | count |
+      | zero  |
+      | two   |
 
   Scenario: Capabilities report configuration without running it
     Given configured and unavailable capabilities in the manifest
@@ -97,7 +116,7 @@ Feature: One project-local interface runs tests and assurance honestly
     When the operation completes with pass, failure or unavailability
     Then one JSON result is written beneath a unique run directory
     And it records schema 1, candidate commit and dirty state, operation, selected stacks, ordered results and aggregate exit
-    And each result records stack, capability, state, argv, working directory, isolation, child exit, artifacts and reason as applicable
+    And each result records stack, capability, state, argv, working directory, isolation requirement, adapter evidence, child exit, artifacts and reason as applicable
     And the human-readable summary prints that result path
 
   Scenario Outline: Invalid requests fail closed before execution
@@ -121,17 +140,28 @@ Feature: One project-local interface runs tests and assurance honestly
   Scenario: The portable three-stack example is visibly unfinished
     Given the canonical portable testing manifest
     Then it declares ASP.NET, React/Vite and Python/uv stacks
-    And its test argv vectors invoke dotnet test, Node with Vitest, and uv run --locked -m pytest
-    And its isolation modes are git-worktree with copied working changes, per-run artifacts, and in-place
+    And its prospective test argv vectors show dotnet test, Node with Vitest, and uv run --locked -m pytest
+    And ASP.NET requires worktree isolation with copied working changes but its adapter evidence is unavailable
+    And the frontend and Python isolation requirements are per-run artifacts and in-place
     And project paths and the frontend artifact variable remain visible angle placeholders
     And static, coverage and mutation are unavailable with adoption reasons
+    And the example manifest remains marked unadapted until every placeholder and required adapter evidence is resolved
     When I run "all" with the untouched portable example
     Then no configured command runs
+    And the command exits 2
+
+  Scenario: A partially adapted portable example cannot become green
+    Given some portable example paths and commands have been adapted
+    And an angle placeholder, unavailable required capability, or unavailable adapter evidence remains
+    When I run an operation from the portable example
+    Then no configured command runs
+    And the remaining adoption work is reported
     And the command exits 2
 
   Scenario: DynaDocs uses its real adapters and admits missing assurance
     Given the DynaDocs project testing manifest
     Then its dotnet test command invokes DynaDocs.Tests/coverage/run_tests.py with the current Python interpreter
+    And dotnet requires worktree isolation with copied working changes and names run_tests.py as verified adapter evidence
     And its Python test command invokes unittest discovery for the facade conformance tests
     And its Node test command invokes node --test for the facade conformance test
     And static and coverage are unavailable pending DYD-96

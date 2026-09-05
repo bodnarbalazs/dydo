@@ -3,169 +3,89 @@ area: guides
 type: guide
 ---
 
-# Testing Strategy — Three-Tier System
+# Testing Strategy
 
-A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested. Every source module is checked against its tier's thresholds.
+Every project exposes one project-local testing facade. It is a small Python runner beside a schema
+1 JSON manifest. The facade selects declared adapters and executes their argv arrays directly: it
+does not construct a shell command, infer an omitted gate, or turn missing assurance into success.
 
----
+Run the project runner:
 
-## The Three Tiers
-
-### T1 — Baseline
-
-**Everything is T1 by default.** No annotation needed.
-
-- **Tests:** Every non-trivial source module must have at least one corresponding test file
-- **Coverage:** ≥ 80% line coverage, ≥ 60% branch coverage
-- **Character:** "Does it work correctly under normal use?"
-- **What to test:** Happy paths, common error states, basic input validation
-- **Examples:** Utility services, standard command handlers, configuration parsing
-
-### T2 — Thorough
-
-For important code that handles significant business logic or user-facing workflows.
-
-- **Coverage:** 100% line coverage, ≥ 80% branch coverage, edge cases systematically covered
-- **Character:** "Does it hold up under pressure?"
-- **What to test:** Boundary conditions, error states, concurrent scenarios, complex state transitions, all error paths
-- **Examples:** Guard enforcement, bash command analysis, sync compilation
-
-No `coverage:ignore` escape hatches. If code is unreachable, delete it. If a guard triggers rarely, that's exactly what T2 testing should catch.
-
-### T3 — Hardened
-
-For mission-critical code where failure has severe consequences. Applied sparingly — expect a handful of classes total.
-
-- **Coverage:** 100% line coverage, 100% branch coverage, adversarial testing
-- **Character:** "Can it be broken?"
-- **What to test:** Everything in T2, plus: security tests (injection, malicious input), fuzzing, abuse scenarios
-- **Examples:** Hook enforcement (PreToolUse guard), permission validation, audit integrity
-
----
-
-## Assigning Tiers
-
-T1 is the default. Only T2 and T3 need explicit marking via a comment annotation in the first 10 lines of the **test file**:
-
-```csharp
-// @test-tier: 2
+```powershell
+py DynaDocs.Tests/coverage/gap_check.py all
+py DynaDocs.Tests/coverage/gap_check.py --force-run
+py DynaDocs.Tests/coverage/gap_check.py gate mutation --since BASE
 ```
 
-The test-file marker is authoritative. A T2 component might have some T1 utility tests alongside T2 edge-case tests — the file-level marker reflects what standard *that specific test file* is held to.
+## Stable grammar
 
----
+`test --stack NAME -- ARGS` runs only one selected test adapter and forwards the arguments
+after `--` as literal argv items. `all` runs every declared test adapter by default, or the
+selected stacks in manifest order. `gate static`, `gate coverage`, and `gate mutation --since
+BASE` run only that capability. `capabilities` reports configuration without running anything.
+`--force-run` selects every test, static, and coverage row; it never runs mutation.
 
-## CRAP Score Thresholds
+Bare invocation prints help, creates no result, and exits 2. A recognized operation writes one
+`result.json` under the manifest's repository-contained `artifactRoot`. It records schema,
+candidate commit and dirty state, operation, selected stacks, ordered rows, and aggregate exit.
+Each row records its stack, capability, state, argv, working directory, isolation requirement and
+evidence, raw child exit, result exit, artifacts, and any reason.
 
-Each tier has a **CRAP score** target — a single metric combining cyclomatic complexity (CC) and code coverage. Formula: `CRAP = CC² × (1 - cov)³ + CC`.
+Exit 0 means every selected configured row passed. Exit 1 means a measurement failed. Exit 2 means
+invalid, missing, malformed, unsupported, or unavailable work. Exit 130 means an interrupted
+adapter completed cleanup. The aggregate preserves that priority: interruption, then unavailable or
+invalid work, then measured failure, then pass.
 
-| Tier | CRAP ≤ | What it takes |
-|------|--------|---------------|
-| **T1** | 30 | Test it or keep it simple. At 80% line coverage, CC up to ~25 passes. |
-| **T2** | 15 | Real testing investment. CC = 10 needs ~80% coverage. |
-| **T3** | 5 | Forced decomposition. Even at 100% coverage, max CC = 4. |
+## Manifest and adaptation
 
-Key properties of CRAP:
-- At 100% coverage, CRAP equals CC — a pure complexity measure.
-- At 0% coverage, CRAP = CC² + CC — untested complex code is severely penalized.
-- The metric rewards either reducing complexity or increasing coverage (ideally both).
+The manifest has schema `1`, a repository-relative artifact root, and an ordered array of uniquely
+named stacks. A stack declares `name`, `kind`, `cwd`, `isolation`, and all four capabilities:
+`test`, `static`, `coverage`, and `mutation`. A configured capability owns an `argv` or
+`current-python` command and artifact declarations; `current-python` prefixes argv with the
+running interpreter. An unavailable capability has a reason and is a failed-closed result, not a
+passing gate.
 
-CRAP uses the **per-method max** cyclomatic complexity, not the class-level sum. See [Decision 009](../project/decisions/009-crap-per-method-metric.md) for why.
+Manifest cwd, adapter and artifact paths are repository-relative and contained. A configured non-test gate must declare and produce a required
+artifact after a successful child exit. Mutation has exactly one argv item equal to `{base}`; the
+facade replaces that one item with `--since`'s value. Isolation is a project adapter claim:
+in-place work has direct evidence, while worktree and per-run requirements name a verified adapter.
+The facade does not invent isolation.
 
-Auto-generated code (e.g., source generators, `obj/` artifacts) is excluded.
+DR 048 has one policy for every maintained module: build invariants, no dead code, passing tests,
+line coverage of at least 80%, branch coverage of at least 60%, HCRAP at most 20 per method,
+cognitive complexity at most 20, at most seven parameters outside constructors, no supported nested
+ternary, no clone meeting both 15 lines and 100 tokens, and no namespace or module dependency cycles.
+Generated, vendored, and minified code are excluded. There are no tiers, classic CRAP thresholds,
+registry, annotations, per-file suppressions, or nesting-depth gate. Mutation is separate. A stack
+without a reviewed mechanism reports that gate as unavailable until adoption.
 
-### Diagnosing a CRAP failure
+Use `dydo/reference/gap-check.example.py` with its adjacent
+`dydo/reference/gap-check.example.json` as a starting point. Rename both together to
+`gap_check.py` and `gap_check.json` at the chosen project location. The runner discovers the enclosing
+Git root; paths in the manifest resolve from that root. Outside Git, they resolve from the runner's
+folder. The two distributed runner sources are byte-identical.
 
-Because the gate is CRAP — not a plain line-% threshold — **adding a few guard branches to a T1 file can tip it red even when every test passes**. At CC = 30, full coverage puts CRAP at exactly 30 (pass); 93% coverage puts it at 30.3 (fail). Conversely, adding tests that only re-cover already-covered lines does nothing.
+Replace each project's cwd and artifact placeholders, supply the real isolation adapter, then enable
+its capability with faithful argv. The ASP.NET example shows `dotnet test` but leaves execution
+unavailable until a worktree adapter copies working changes. The React/Vite example shows Node
+running `node_modules/vitest/vitest.mjs run`; its adapter must arrange per-run artifacts. The Python
+example uses `uv run --locked --extra dev -m pytest` from the adapted Python project directory.
+A fully adapted targeted test can run while other stacks remain unfinished. Default `all` still
+reports every declared test row and returns 2 until all selected tests are available and valid.
 
-Diagnose with:
+Global JSON/schema/request errors start nothing. Row-local defects skip only that row; valid peers
+run before aggregate failure is reported. Configured rows require command and artifacts and forbid a
+reason. Unavailable rows require a reason, forbid executable commands/artifacts, and may carry
+non-executable `exampleArgv` for adoption. Do not relabel an unwired available mechanism as a pass.
+The final operational static/coverage and mutation adoption remains DYD-96/103/91 work.
 
-```bash
-python DynaDocs.Tests/coverage/gap_check.py --inspect <ModuleName>
-```
-
-It prints `lines: x/y`, `branches: %`, `CRAP`, `CC`, the uncovered line numbers, and partial branches.
-
-Two levers to get back under the threshold, best used together:
-
-1. **Cut complexity** — e.g. collapse a dead disjunct like `loaded == null || (models = loaded?.Models) == null` into `if (loaded?.Models is not { } models)`; that removes a branch *and* null-narrows `loaded`. Each −1 CC gives real headroom.
-2. **Cover the error paths** — not-in-project, corrupt-input, and missing-section branches are the usual uncovered culprits in a service.
-
----
-
-## Tier Summary
-
-| Metric               | T1                       | T2               | T3                           |
-| -------------------- | ------------------------ | ---------------- | ---------------------------- |
-| **Line coverage**    | ≥ 80%                    | 100%             | 100%                         |
-| **Branch coverage**  | ≥ 60%                    | ≥ 80%            | 100%                         |
-| **CRAP score**       | ≤ 30                     | ≤ 15             | ≤ 5                          |
-| **Edge cases**       | Key ones                 | Systematic       | Exhaustive + adversarial     |
-| **Security testing** | —                        | Input validation | Injection, escaping, fuzzing |
-
-### What counts as "non-trivial"
-
-Excluded from the "has tests" requirement:
-- Auto-generated code (source generators, EF migrations, `*.g.cs`)
-- Pure data models / record types with no logic (≤ 3 executable lines)
-- Program.cs entry point
-
-Everything else — services, command handlers, validators, utilities — needs a test file.
-
----
-
-## Worktree-isolated execution
-
-Run tests through the repository's isolated runner so concurrent agents cannot contend for build output:
-
-```bash
-py DynaDocs.Tests/coverage/run_tests.py
-py DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~MyTests
-```
-
-Do not invoke `dotnet test` directly during agent work. The runner creates a temporary Git worktree,
-executes the suite there, and preserves the current implementation worktree for review.
-
-## Tooling
-
-`gap_check.py` in `DynaDocs.Tests/coverage/` enforces these tiers:
-
-```bash
-python DynaDocs.Tests/coverage/gap_check.py                    # auto-detect: skip or run tests
-python DynaDocs.Tests/coverage/gap_check.py --force-run        # always run tests
-python DynaDocs.Tests/coverage/gap_check.py --detail           # show uncovered lines
-python DynaDocs.Tests/coverage/gap_check.py --inspect Guard    # inspect matching modules
-```
-
-See [Coverage Tools](../reference/coverage-tools.md) for full usage reference.
-
-### Enforcement status
-
-Tier thresholds are a completion gate for implementation Issues and independent review. A non-zero
-`gap_check.py` result blocks completion even when focused tests pass.
-
----
-
-## Cross-Platform CI: Windows-Only Test Traps
-
-CI (`.github/workflows/ci.yml`) runs `dotnet test` on **ubuntu-latest as a non-root user**, while development happens on Windows — so Windows-only test assumptions pass locally and forever redden CI. When master CI is red but local Windows tests pass, suspect **platform-specific test bugs**, not whatever commit the timeline happens to blame: the same failures are usually red on the prior commit too, with product code correct and cross-platform.
-
-Two recurring traps:
-
-1. **File locking** — holding a `FileStream(..., FileShare.None)` handle to force `File.Delete` to throw only blocks deletion on Windows; POSIX lets you unlink an open file, so the test fails with "No exception was thrown" on Linux. On Unix, unlink permission is governed by the **parent directory** — induce a delete failure by making the parent dir non-writable (`File.SetUnixFileMode`), not by locking the file. Use the cross-platform helper `DynaDocs.Tests/UndeletableFile.cs`.
-2. **Hardcoded `C:\...` path literals** — on Linux `\` is an ordinary filename character, so `Path.GetFileName(@"C:\x\dir")` returns the whole string. Use forward-slash literals; they parse identically on both OSes.
-
-Also: guard Unix-only calls (`File.SetUnixFileMode`) with `OperatingSystem.IsWindows()`, not just a nullness check — the CA1416 analyzer can't correlate `_field != null` with platform, and `TreatWarningsAsErrors=true` (set in `Directory.Build.props`) turns that warning into a CI build break.
-
-### Verifying a Linux fix from Windows
-
-Without burning CI cycles: `git archive HEAD` → overlay your dirty files → run inside `mcr.microsoft.com/dotnet/sdk:10.0` as a **non-root** user (`useradd`, `chown`, `su`). Root would bypass the directory-permission check and mask the lock test. Run plain `dotnet test` (not `--warnaserror`) to avoid a false SourceLink "unable to locate repository" error from the missing `.git`.
-
----
+An interrupt goes to the active adapter process group. The facade grants up to 30 seconds for adapter
+cleanup before escalation, preserves raw child exit when observed, and records exit 130. Adapters
+own cleanup; the router does not invent worktree or artifact isolation. DynaDocs' real cancellation
+probe uses a safe filtered test and verifies its newly observed worktree directory and Git
+registration have disappeared before the result is reported.
 
 ## Related
 
-- [Coverage Tools](../reference/coverage-tools.md) — Tool usage reference (gap_check.py)
-- [CRAP Per-Method Metric](../project/decisions/009-crap-per-method-metric.md) — Why per-method max CC, not class-level sum
-- [Coding Standards](./coding-standards.md) — Code conventions
-- [Orchestration Pitfalls](./orchestration-pitfalls.md) — How concurrent work can collide through global gates
+- [Coverage Tools](../reference/coverage-tools.md)
+- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md)

@@ -98,6 +98,18 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
+    public void Execute_MissingLocalSourceLayerFailsWithoutEmittingEmbeddedTemplates()
+    {
+        Directory.Delete(Path.Combine(_testDir, "dydo", "_system", "templates"), true);
+
+        var result = SyncCommand.Execute(_testDir);
+
+        Assert.NotEqual(0, result);
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude", "skills")));
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".agents", "skills")));
+    }
+
+    [Fact]
     public void Execute_DisabledSkillCleansRecordedShapeAcrossBothProvidersAndPreservesSiblings()
     {
         SaveConfigWithIntegrations(claude: true, codex: false);

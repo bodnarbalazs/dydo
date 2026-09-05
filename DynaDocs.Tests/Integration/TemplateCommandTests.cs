@@ -95,6 +95,36 @@ public class TemplateCommandTests : IntegrationTestBase
         Assert.False(updated.FrameworkHashes.ContainsKey("_system/templates/skill-former.template.md"));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TemplateUpdate_RejectsUntrackedSourceAtRetiredShippedNameWithoutDeletingIt(bool diff)
+    {
+        await InitProjectAsync();
+        var source = Path.Combine(TestDir, "dydo", "_system", "templates", "skill-former.template.md");
+        var customContent =
+            "---\nname: former\ndescription: Custom replacement.\nemit: skill\ninvocation: automatic\n---\n\n# Custom replacement\n";
+        File.WriteAllText(source, customContent);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.Skills["former"] = new SkillSwitchConfig
+        {
+            Enabled = true,
+            Origin = "shipped",
+            EmitAgent = false,
+            CodexMetadata = false,
+            Resources = []
+        };
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+        var configBefore = File.ReadAllText(Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("retired", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(customContent, File.ReadAllText(source));
+        Assert.Equal(configBefore, File.ReadAllText(Path.Combine(TestDir, "dydo.json")));
+    }
+
     private async Task<CommandResult> RunTemplateUpdateAsync(params string[] extraArgs)
     {
         var command = TemplateCommand.Create();

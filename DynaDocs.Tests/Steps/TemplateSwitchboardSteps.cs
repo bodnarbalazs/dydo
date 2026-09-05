@@ -59,7 +59,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
                      || title.StartsWith("Remember a switch", StringComparison.Ordinal)
                      || title.StartsWith("Intentionally delete", StringComparison.Ordinal)
                      || title.StartsWith("Retire formerly", StringComparison.Ordinal))
-                VerifyCleanup(title, prose);
+                await VerifyCleanup(title, prose);
             else if (title.StartsWith("Reject invalid source", StringComparison.Ordinal))
                 await VerifyInvalidSource(prose);
             else if (title.StartsWith("Validate sources against", StringComparison.Ordinal))
@@ -96,10 +96,20 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var actual = Directory.GetFiles(sourceRoot, "*.template.md", SearchOption.TopDirectoryOnly)
             .Select(Path.GetFileName).Order(StringComparer.Ordinal).ToArray();
         Assert.Equal(expected, actual);
+        Assert.Equal(52, actual.Length);
+        Assert.Equal(31, actual.Count(name => name!.StartsWith("skill-", StringComparison.Ordinal)));
+        Assert.Equal(21, actual.Count(name => !name!.StartsWith("skill-", StringComparison.Ordinal)));
 
         var config = Load();
         Assert.Contains("_system/templates/", config.ScanExclude);
-        Assert.Equal(TemplateGenerator.GetBuiltInSkillTemplateNames().Count, config.Skills.Count);
+        Assert.Equal(31, config.Skills.Count);
+        var sourceHashes = config.FrameworkHashes
+            .Where(entry => entry.Key.StartsWith("_system/templates/", StringComparison.Ordinal))
+            .ToDictionary(entry => Path.GetFileName(entry.Key), entry => entry.Value, StringComparer.Ordinal);
+        Assert.Equal(52, sourceHashes.Count);
+        Assert.All(actual, name => Assert.Equal(
+            TemplateCommand.ComputeHash(File.ReadAllText(Path.Combine(sourceRoot, name!))),
+            sourceHashes[name!]));
         Assert.All(config.Skills, entry =>
         {
             Assert.True(entry.Value.Enabled);
@@ -194,6 +204,8 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             var preview = await RunAsync("template", "update", "--diff");
             preview.AssertSuccess();
             Assert.Contains("source", preview.Stdout, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("switch", preview.Stdout, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("team-style", preview.Stdout, StringComparison.Ordinal);
             Assert.Equal(before, Manifest());
             return;
         }
@@ -221,22 +233,46 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         }
     }
 
-    private void VerifyCleanup(string title, string prose)
+    private async Task VerifyCleanup(string title, string prose)
     {
         Initialize();
         var enabled = !prose.Contains("enabled false", StringComparison.OrdinalIgnoreCase);
         var skill = title.StartsWith("Retire formerly", StringComparison.Ordinal) ? "former-skill" : "cleanup-skill";
+        var removesHint = title.StartsWith("Remove Codex metadata", StringComparison.Ordinal)
+                          && prose.Contains("argument hint", StringComparison.OrdinalIgnoreCase);
         var metadataOnly = prose.Contains("explicit skill metadata", StringComparison.OrdinalIgnoreCase)
                            || title.Contains("Codex metadata", StringComparison.Ordinal);
-        WriteCustom(skill, emitAgent: !metadataOnly, hint: metadataOnly ? null : "<arg>",
-            invocation: metadataOnly ? "explicit" : "automatic", resources: ["one", "two"]);
+        WriteCustom(skill, emitAgent: !metadataOnly, hint: removesHint || !metadataOnly ? "<arg>" : null,
+            invocation: metadataOnly && !removesHint ? "explicit" : "automatic", resources: ["one", "two"]);
         Assert.Equal(0, SyncCommand.Execute(_root));
 
         var sibling = Path.Combine(_root, ".agents", "skills", skill, "project.txt");
         Directory.CreateDirectory(Path.GetDirectoryName(sibling)!);
         File.WriteAllBytes(sibling, [0, 1, 255]);
 
-        if (title.StartsWith("Remove a resource", StringComparison.Ordinal))
+        if (title.StartsWith("Retire formerly", StringComparison.Ordinal))
+        {
+            var config = Load();
+            config.Skills[skill].Enabled = false;
+            config.Skills[skill].Origin = "shipped";
+            foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md"))
+            {
+                config.FrameworkHashes[$"_system/templates/{Path.GetFileName(source)}"] =
+                    TemplateCommand.ComputeHash(File.ReadAllText(source));
+                File.AppendAllText(source, "\nhard edit");
+            }
+            Save(config);
+
+            (await RunAsync("template", "update")).AssertSuccess();
+            Assert.Empty(Directory.GetFiles(Sources(), $"*{skill}*.template.md"));
+            Assert.DoesNotContain(Load().FrameworkHashes.Keys, key => key.Contains(skill, StringComparison.Ordinal));
+            Assert.Equal(0, SyncCommand.Execute(_root));
+            Assert.False(File.Exists(Path.Combine(_root, ".claude", "skills", skill, "SKILL.md")));
+            Assert.False(File.Exists(Path.Combine(_root, ".agents", "skills", skill, "SKILL.md")));
+            Assert.Equal("shipped", Load().Skills[skill].Origin);
+            Assert.False(Load().Skills[skill].Enabled);
+        }
+        else if (title.StartsWith("Remove a resource", StringComparison.Ordinal))
         {
             WriteCustom(skill, emitAgent: false, resources: ["two"]);
             File.Delete(Path.Combine(Sources(), $"{skill}-resource-one.template.md"));
@@ -262,11 +298,22 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             var config = Load();
             config.Skills[skill].Enabled = enabled;
             Save(config);
+            var selected = prose.Contains("\"codex\" is now", StringComparison.Ordinal) ? "codex" : "claude";
+            SelectOnly(selected);
             foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md")) File.Delete(source);
             var result = SyncCommand.Execute(_root);
             Assert.Equal(enabled ? 2 : 0, result);
             Assert.True(Load().Skills.ContainsKey(skill));
             Assert.False(File.Exists(Path.Combine(_root, ".agents", "skills", skill, "SKILL.md")));
+
+            WriteCustom(skill, emitAgent: !metadataOnly, hint: metadataOnly ? null : "<arg>",
+                invocation: metadataOnly ? "explicit" : "automatic", resources: ["one", "two"]);
+            Assert.Equal(0, SyncCommand.Execute(_root));
+            Assert.Equal(enabled, Load().Skills[skill].Enabled);
+            var selectedSkill = selected == "codex"
+                ? Path.Combine(_root, ".agents", "skills", skill, "SKILL.md")
+                : Path.Combine(_root, ".claude", "skills", skill, "SKILL.md");
+            Assert.Equal(enabled, File.Exists(selectedSkill));
         }
         else if (title.StartsWith("Intentionally", StringComparison.Ordinal))
         {
@@ -278,8 +325,12 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             config = Load();
             config.Skills.Remove(skill);
             Save(config);
+            var sameNameCustom = Path.Combine(_root, ".agents", "skills", skill, "SKILL.md");
+            Directory.CreateDirectory(Path.GetDirectoryName(sameNameCustom)!);
+            File.WriteAllText(sameNameCustom, "custom native file");
             Assert.Equal(0, SyncCommand.Execute(_root));
             Assert.False(Load().Skills.ContainsKey(skill));
+            Assert.Equal("custom native file", File.ReadAllText(sameNameCustom));
         }
         else
         {

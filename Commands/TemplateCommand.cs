@@ -118,6 +118,17 @@ public static class TemplateCommand
         var packaged = TemplateGenerator.GetAllTemplateNames().ToHashSet(StringComparer.Ordinal);
         var sourceRoot = Path.Combine(projectRoot, original.Structure.Root, "_system", "templates");
 
+        foreach (var relative in ManagedShippedSourcePaths(original).Where(relative =>
+                     !packaged.Contains(Path.GetFileName(relative))
+                     && !original.FrameworkHashes.ContainsKey(relative)))
+        {
+            var path = Path.Combine(projectRoot, original.Structure.Root,
+                relative.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(path))
+                throw new InvalidDataException(
+                    $"Local custom source '{Path.GetFileName(relative)}' collides with a retired shipped template.");
+        }
+
         foreach (var name in packaged)
         {
             var path = Path.Combine(sourceRoot, name);
@@ -216,8 +227,32 @@ public static class TemplateCommand
             tally.Updated++;
         }
 
+        ReportSwitchboardChanges(original.Skills, planned.Skills, tally);
         original.Skills = planned.Skills;
         original.FrameworkHashes = planned.FrameworkHashes;
+    }
+
+    private static void ReportSwitchboardChanges(
+        IReadOnlyDictionary<string, SkillSwitchConfig> current,
+        IReadOnlyDictionary<string, SkillSwitchConfig> planned,
+        UpdateTally tally)
+    {
+        foreach (var (name, next) in planned)
+        {
+            if (!current.TryGetValue(name, out var prior))
+            {
+                Console.WriteLine($"  Added skill switch: {name}");
+                tally.SwitchboardChanges++;
+            }
+            else if (prior.Origin != next.Origin
+                     || prior.EmitAgent != next.EmitAgent
+                     || prior.CodexMetadata != next.CodexMetadata
+                     || !(prior.Resources ?? []).SequenceEqual(next.Resources ?? [], StringComparer.Ordinal))
+            {
+                Console.WriteLine($"  Reconciled skill switch provenance: {name}");
+                tally.SwitchboardChanges++;
+            }
+        }
     }
 
     private static IEnumerable<string> ManagedShippedSourcePaths(DydoConfig config)
@@ -271,6 +306,8 @@ public static class TemplateCommand
         var summary = $"Template update complete: {tally.Updated} updated, {tally.Skipped} already current";
         if (tally.MetadataRefreshed > 0)
             summary += $", {tally.MetadataRefreshed} metadata-only document hash refresh(es)";
+        if (tally.SwitchboardChanges > 0)
+            summary += $", {tally.SwitchboardChanges} switchboard change(s)";
         if (tally.Warned > 0)
             summary += $", {tally.Warned} warned";
         Console.WriteLine(summary + ".");
@@ -574,6 +611,7 @@ public static class TemplateCommand
         public int Skipped;
         public int Warned;
         public int MetadataRefreshed;
+        public int SwitchboardChanges;
         public List<string> Warnings { get; } = [];
     }
 }

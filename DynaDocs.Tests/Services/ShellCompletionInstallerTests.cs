@@ -439,6 +439,43 @@ public class ShellCompletionInstallerTests : IDisposable
             File.ReadAllText(_profilePath));
     }
 
+    [Theory]
+    [MemberData(nameof(ProfileEncodings))]
+    public void PowerShellMigration_MixedExactAndCustomizedBlocks_PreservesEveryOtherByte(string encodingName, string ending)
+    {
+        var encoding = ProfileEncoding(encodingName);
+        const string legacy = "dydo completions powershell | Invoke-Expression";
+        const string corrected = "dydo completions powershell | Out-String | Invoke-Expression";
+        const string marker = "# dydo shell completions";
+        var custom = $"\n# 日本語\r\n{marker}\n {legacy}\n{marker} suffix\n{legacy}\n";
+        var original = EncodeProfile(encoding, $"{marker}\r\n{legacy}{custom}{marker}\n{legacy}{ending}");
+        var expected = EncodeProfile(encoding, $"{marker}\r\n{corrected}{custom}{marker}\n{corrected}{ending}");
+        File.WriteAllBytes(_profilePath, original);
+
+        Assert.NotNull(ShellCompletionInstaller.InstallToProfile("powershell", _profilePath));
+        Assert.Equal(expected, File.ReadAllBytes(_profilePath));
+        Assert.Null(ShellCompletionInstaller.InstallToProfile("powershell", _profilePath));
+        Assert.Equal(expected, File.ReadAllBytes(_profilePath));
+    }
+
+    [Theory]
+    [InlineData("utf16-le")]
+    [InlineData("utf16-be")]
+    [InlineData("utf32-le")]
+    [InlineData("utf32-be")]
+    public void PowerShellMigration_UnalignedLegacyBytes_AreUnchanged(string encodingName)
+    {
+        var encoding = ProfileEncoding(encodingName);
+        var original = EncodeProfile(encoding, "# dydo shell completions\nWrite-Output 'custom'\n")
+            .Concat(new byte[] { 0xff })
+            .Concat(encoding.GetBytes("\n# dydo shell completions\ndydo completions powershell | Invoke-Expression"))
+            .ToArray();
+        File.WriteAllBytes(_profilePath, original);
+
+        Assert.Null(ShellCompletionInstaller.InstallToProfile("powershell", _profilePath));
+        Assert.Equal(original, File.ReadAllBytes(_profilePath));
+    }
+
     private static Encoding ProfileEncoding(string name) => name switch
     {
         "utf8" => new UTF8Encoding(false),
@@ -554,6 +591,25 @@ public class ShellCompletionInstallerTests : IDisposable
         _output.WriteLine(stdout);
     }
 
+    [Fact]
+    public async Task NativeFailure_RetainsBothStreamsAndExitCodeAfterCleanup()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => RunPowerShellAsync("""
+            [Console]::Out.WriteLine('before failure')
+            [Console]::Error.WriteLine('failure detail')
+            exit 23
+            """));
+
+        Assert.Equal(true, failure.Data["CleanupConfirmed"]);
+        Assert.Contains("before failure", Assert.IsType<string>(failure.Data["Stdout"]));
+        Assert.Contains("failure detail", Assert.IsType<string>(failure.Data["Stderr"]));
+        Assert.Contains("exit=23", failure.Message);
+        Assert.Contains("before failure", failure.Message);
+        Assert.Contains("failure detail", failure.Message);
+        Assert.False(_retainScratch);
+    }
+
     private static string CandidateApphost()
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);
@@ -630,7 +686,7 @@ public class ShellCompletionInstallerTests : IDisposable
             ObserveCaptureFailure(stdout);
             ObserveCaptureFailure(stderr);
         }
-        if (failure != null || !cleanupConfirmed)
+        if (failure != null || !cleanupConfirmed || exitCode != 0)
         {
             var diagnostic = $"Native process failed after {elapsed.Elapsed}; exit={exitCode}; cleanup={cleanupConfirmed}; " +
                 $"scratch={_testDir}; {string.Join("; ", cleanupErrors)}\nstdout:\n{capturedOut}\nstderr:\n{capturedErr}";

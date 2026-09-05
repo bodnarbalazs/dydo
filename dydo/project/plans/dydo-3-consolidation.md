@@ -200,29 +200,33 @@ SHA on the relevant Issue. These commands are required entry points; test names 
 existing suites, which the owning Issue extends with its new scenarios.
 
 ```powershell
+# Verified interpreter on this Windows host; keep one command for every Python gate.
+$ConsolidationPython = 'C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
+& $ConsolidationPython --version
+
 # F: first lanes build clean; focused commands below exit 0, with no new suite failures
 dotnet build DynaDocs.sln --warnaserror
 
 # A: all behavior passes before C integration and final acceptance
 dotnet build DynaDocs.sln --warnaserror
-python DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal
+& $ConsolidationPython DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal
 
 # P: portable standard and authored template discovery/scaffolding
-python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~TemplateScaffoldingTests|FullyQualifiedName~SkillTemplateServiceTests"
+& $ConsolidationPython DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~TemplateScaffoldingTests|FullyQualifiedName~SkillTemplateServiceTests"
 
 # S: summary-free valid document passes; broken link still fails; fix preserves optional prose
-python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~CheckDocValidatorTests|FullyQualifiedName~FixFileHandlerTests|FullyQualifiedName~BrokenLinksRuleTests"
+& $ConsolidationPython DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~CheckDocValidatorTests|FullyQualifiedName~FixFileHandlerTests|FullyQualifiedName~BrokenLinksRuleTests"
 
 # C: all integration selections and init/check/sync/update, including preserved custom output
-python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~InitCheckIntegrationTests|FullyQualifiedName~TemplateScaffoldingTests|FullyQualifiedName~CodexSyncArtifactsE2ETests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~TemplateCommandTests"
+& $ConsolidationPython DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~InitCheckIntegrationTests|FullyQualifiedName~TemplateScaffoldingTests|FullyQualifiedName~CodexSyncArtifactsE2ETests|FullyQualifiedName~SyncCommandTests|FullyQualifiedName~TemplateCommandTests"
 
 # G: preserve this public runner interface; final exit 0 requires every applicable gate
-python DynaDocs.Tests/coverage/gap_check.py --force-run
-python -m unittest discover -s DynaDocs.Tests/coverage/tests -p "test_*.py"
-python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~DynaDocs.Tests.Quality"
+& $ConsolidationPython DynaDocs.Tests/coverage/gap_check.py --force-run
+& $ConsolidationPython -m unittest discover -s DynaDocs.Tests/coverage/tests -p "test_*.py"
+& $ConsolidationPython DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~DynaDocs.Tests.Quality"
 
 # M: isolated wrapper restores the pinned local mutation tool and enforces its config
-python DynaDocs.Tests/coverage/run_mutation.py --since 2e31b1d0
+& $ConsolidationPython DynaDocs.Tests/coverage/run_mutation.py --since 2e31b1d0
 
 # I: validate the repository, package and build the local native candidate
 dotnet run --project DynaDocs.csproj --no-build -- check

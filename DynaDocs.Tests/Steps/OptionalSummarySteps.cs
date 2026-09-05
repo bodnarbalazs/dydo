@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Steps;
 
 using Reqnroll;
+using System.Text.RegularExpressions;
 
 [Binding]
 public class OptionalSummarySteps(CliScenario scenario)
@@ -55,11 +56,18 @@ public class OptionalSummarySteps(CliScenario scenario)
 
     [Then("the document has no validation errors or warnings")]
     [Then("the documentation has no validation errors or warnings")]
-    public void ValidDocumentation()
+    public void ValidDocumentation() => AssertValidDocumentation(scenario.Result);
+
+    internal static void AssertValidDocumentation(CliResult result)
     {
-        scenario.Result.AssertSuccess();
-        Assert.Contains("All checks passed.", scenario.Result.Stdout);
-        Assert.Matches(@"Found 0 errors, 0 warnings in [1-9][0-9]* files\.", scenario.Result.Stdout);
+        result.AssertSuccess();
+        Assert.Empty(result.Stderr);
+        var lines = result.Stdout.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(3, lines.Length);
+        Assert.StartsWith("Checking ", lines[0]);
+        Assert.Matches(@"^Found 0 errors, 0 warnings in [1-9][0-9]* files\.$", lines[1]);
+        Assert.Equal("All checks passed.", lines[2]);
     }
 
     [Then("checking fails with {string} for that document")]
@@ -70,7 +78,7 @@ public class OptionalSummarySteps(CliScenario scenario)
         var document = Array.FindIndex(lines, line => line.Trim() == "document.md");
         Assert.True(document >= 0, scenario.Result.Stdout);
         var violations = lines.Skip(document + 1).TakeWhile(line => line.StartsWith("    - ", StringComparison.Ordinal));
-        Assert.Contains(violations, line => line.Contains(message, StringComparison.Ordinal));
+        Assert.Contains(violations, line => Regex.Replace(line[6..], @"^Line [1-9][0-9]*: ", "") == message);
     }
 
     [Then("no manual repair asks for a summary paragraph")]
@@ -80,6 +88,7 @@ public class OptionalSummarySteps(CliScenario scenario)
     public void UnchangedDocument() => Assert.Equal(_beforeFix, File.ReadAllBytes(DocumentPath));
 
     [Then("the manual repairs include {string} for that document")]
-    public void ManualRepair(string repair) => Assert.Contains(scenario.Result.Stdout.Split('\n'),
-        line => line.Contains($"document.md - {repair}", StringComparison.Ordinal));
+    public void ManualRepair(string repair) => Assert.True(
+        scenario.Result.Stdout.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')
+            .Any(line => Regex.IsMatch(line, $@"^  \S document\.md - {Regex.Escape(repair)}$")), scenario.Result.Stdout);
 }

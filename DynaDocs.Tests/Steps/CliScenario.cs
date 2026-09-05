@@ -8,13 +8,18 @@ using Reqnroll;
 [Binding]
 public class CliScenario
 {
+    private bool _cleanupConfirmed = true;
     public string DirectoryPath { get; } = Path.Combine(Path.GetTempPath(), $"dydo-acceptance-{Guid.NewGuid():N}");
     public CliResult Result { get; private set; } = new(-1, "", "");
 
     public CliScenario() => Directory.CreateDirectory(DirectoryPath);
 
     [AfterScenario]
-    public void Cleanup() => Directory.Delete(DirectoryPath, recursive: true);
+    public void Cleanup()
+    {
+        Assert.True(_cleanupConfirmed, $"Child termination is unconfirmed; retained scratch directory: {DirectoryPath}");
+        Directory.Delete(DirectoryPath, recursive: true);
+    }
 
     public async Task RunAsync(params string[] arguments)
     {
@@ -23,23 +28,40 @@ public class CliScenario
             "--depsfile", runtime + ".deps.json", typeof(CheckCommand).Assembly.Location, .. arguments];
         var environment = Environment.GetEnvironmentVariables().Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value);
-        using var process = Process.Start(CreateStartInfo(DirectoryPath, invocation, environment))!;
+        Result = await RunProcessAsync(CreateStartInfo(DirectoryPath, invocation, environment),
+            TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(5));
+    }
+
+    internal async Task<CliResult> RunProcessAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan cleanupTimeout)
+    {
+        Assert.True(_cleanupConfirmed, $"Previous child termination is unconfirmed; retained scratch directory: {DirectoryPath}");
+        using var process = Process.Start(start)!;
+        _cleanupConfirmed = false;
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
+        var completion = Task.WhenAll(stdout, stderr, process.WaitForExitAsync());
         try
         {
-            await Task.WhenAll(stdout, stderr, process.WaitForExitAsync()).WaitAsync(TimeSpan.FromSeconds(60));
+            await completion.WaitAsync(timeout);
+            _cleanupConfirmed = true;
         }
         catch (TimeoutException)
         {
-            if (!process.HasExited)
-                process.Kill(entireProcessTree: true);
-            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            var capturedOutput = stdout.IsCompletedSuccessfully ? stdout.Result : "stdout capture incomplete";
-            var capturedError = stderr.IsCompletedSuccessfully ? stderr.Result : "stderr capture incomplete";
-            throw new TimeoutException($"dydo {string.Join(' ', arguments)} timed out.\n{capturedOutput}\n{capturedError}");
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+                await completion.WaitAsync(cleanupTimeout);
+                _cleanupConfirmed = true;
+            }
+            catch (Exception error)
+            {
+                throw new InvalidOperationException(
+                    $"Could not confirm child termination and output completion; retained scratch directory: {DirectoryPath}", error);
+            }
+            throw new TimeoutException($"{start.FileName} {string.Join(' ', start.ArgumentList)} timed out.\n{await stdout}\n{await stderr}");
         }
-        Result = new CliResult(process.ExitCode, await stdout, await stderr);
+        return new CliResult(process.ExitCode, await stdout, await stderr);
     }
 
     internal static ProcessStartInfo CreateStartInfo(

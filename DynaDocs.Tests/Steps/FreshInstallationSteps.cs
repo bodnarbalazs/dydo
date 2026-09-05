@@ -38,15 +38,15 @@ public class FreshInstallationSteps(CliScenario scenario)
         Assert.True(result.ExitCode == 0 && result.Stderr == "", output);
         Assert.True(expected.Header.SequenceEqual(["document", "warning"]), output);
         var lines = result.Stdout.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
-        Assert.True(lines.Count(line => Regex.IsMatch(line,
-            @"^Found 0 errors, 2 warnings in [1-9][0-9]* files\.$")) == 1, output);
-        Assert.True(lines.Count(line => line == "Found warnings (no errors).") == 1, output);
         Assert.True(lines.Count(line => line == "WARNINGS:") == 1, output);
         var start = Array.IndexOf(lines, "WARNINGS:");
         var end = Array.FindIndex(lines, start + 1, line => line == "");
         Assert.True(end > start, output);
-        Assert.True(lines.Take(start).Concat(lines.Skip(end + 1))
-            .All(line => !line.StartsWith("  ", StringComparison.Ordinal)), output);
+        var outside = lines.Take(start).Concat(lines.Skip(end + 1)).Where(line => line != "").ToArray();
+        Assert.True(outside.Length == 3, output);
+        Assert.True(outside[0].StartsWith("Checking ", StringComparison.Ordinal), output);
+        Assert.True(Regex.IsMatch(outside[1], @"^Found 0 errors, 2 warnings in [1-9][0-9]* files\.$"), output);
+        Assert.True(outside[2] == "Found warnings (no errors).", output);
         var observed = ParseWarningBlock(lines[(start + 1)..end], output);
         var wanted = expected.Rows.Select(row => (Document: row["document"], Warning: row["warning"])).ToList();
         Assert.True(observed.Count == 2 && wanted.Count == 2, output);

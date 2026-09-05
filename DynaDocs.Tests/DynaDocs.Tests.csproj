@@ -5,9 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <ReqnrollUseIntermediateOutputPathForCodeBehind>true</ReqnrollUseIntermediateOutputPathForCodeBehind>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Reqnroll.xUnit" Version="3.3.4" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -18,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="coverage\metrics\**\*.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

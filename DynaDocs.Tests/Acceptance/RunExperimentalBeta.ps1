@@ -85,7 +85,7 @@ function Restore-Rollback {
 }
 
 New-Item -ItemType Directory -Force -Path $packageRoot, $toolRoot, $scratch | Out-Null
-$rollbackPackage = $null
+$resolvedRollbackPackage = $null
 $rollbackSource = $null
 $globalCommandPath = $null
 $failure = $null
@@ -96,8 +96,8 @@ $beforePath = @{
 }
 
 try {
-    $rollbackPackage = (Resolve-Path $RollbackPackage).Path
-    $rollbackSource = Split-Path -Parent $rollbackPackage
+    $resolvedRollbackPackage = (Resolve-Path $RollbackPackage).Path
+    $rollbackSource = Split-Path -Parent $resolvedRollbackPackage
     Set-Location $root
     $actualSha = (& git rev-parse HEAD | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Could not read the candidate Git SHA.' }
@@ -105,7 +105,7 @@ try {
     $gitStatus = & git status --porcelain
     if ($LASTEXITCODE -ne 0) { throw 'Could not read candidate Git status.' }
     if ($gitStatus) { throw 'Candidate is dirty; refusing package or global mutation.' }
-    if ((Get-FileHash $rollbackPackage -Algorithm SHA256).Hash -ne $rollbackHash) { throw 'Rollback package SHA-256 does not match the retained 2.2.9 package.' }
+    if ((Get-FileHash $resolvedRollbackPackage -Algorithm SHA256).Hash -ne $rollbackHash) { throw 'Rollback package SHA-256 does not match the retained 2.2.9 package.' }
 
     $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
     $globalCommandPath = $globalCommand.Source

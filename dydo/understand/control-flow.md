@@ -40,7 +40,7 @@ compiles as an agent so an admiral can spawn one per Issue.
 | human | human | the terminal | — | `main`, where his own commits need no Issue, and any hat | thinks, files Projects, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time, walks through; tells the admiral after each of his board moves | — |
 | co-thinker | hat | top-level session | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic Issue with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic Issue (L) |
 | admiral | hat | top-level session, explicit-only | the human, on a Project at any stage | `feature/<slug>` | wakes on a captain's return or the human's word, reads the Project and acts: sends the planner, owns the plan review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
-| issue-captain | hat, also agent | top-level for an atomic or HITL Issue; spawned by an admiral for an AFK one | the admiral, or the human's session | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, flips the status at every spawn, sends the specifier first, divides when the spec says so, directs [specifier] → [implementer] → [hardener] → [reviewer] on the parent or each lane, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
+| issue-captain | hat, also agent | top-level for an atomic or HITL Issue; spawned by an admiral for an AFK one | the admiral, or the human's session | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, sets the status at every chain spawn, sends the specifier first, divides when the spec says so, directs [specifier] → [implementer] → [hardener] → [reviewer] on the parent or each lane, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
 | chief-of-staff | hat | top-level session, explicit-only | the human | none | the bird's-eye view over the admirals: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the human (C); delivery staged for the admiral (L) |
 | research | worker, delegates, web | agent | co-thinker, admiral, issue-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as Issue comment (L) or scratch file (F) |
 | project-planner | worker | agent | the admiral | the initial plan on `main`; amendments on the branch the admiral names | fixes the destination, writes the plan, the first pickable Issues as tracer bullets with their blocking edges, and prepared blocking Question packets for the admiral to file; commits amendments on commission | the admiral: the plan commit, first Issues, bearings, blockers (R) |
@@ -121,7 +121,7 @@ flowchart TD
 ### 3b. One Issue
 
 The captain is the connector: every worker is briefed by it and returns to it, and it flips the
-Issue's status as it spawns each one. Read the crew left to right for the stages; the status is on
+Issue's status at each chain spawn. Read the crew left to right for the stages; the status is on
 each line.
 
 ```mermaid
@@ -130,7 +130,7 @@ flowchart TD
   classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  AD[admiral]:::hat <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, flips the status at every spawn, posts every SHA]:::hat
+  AD[admiral]:::hat <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::hat
   IC <-->|"1 specify · Specifying"| SP
   IC <-.->|"1b spec review, the captain's call · In Review"| RS
   IC <-->|"2 implement · Implementing"| IM
@@ -316,11 +316,12 @@ stateDiagram-v2
 Who sets what: the captain sets every status of its Issue and Sub-issues; the admiral sets Project
 statuses and its own map-holder-held Issues'. A `Question` runs `Todo` → `Done` and `Todo` on it is
 the human's turn; `Research`, `Grilling` and `Walkthrough` run `Todo` → `In Progress` → `Done`. A
-captain-held Issue runs `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` →
+captain-held Issue normally runs `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` →
 `Ready to Merge` → `Done`, with `In Progress` while its lanes run; a Merge Sub-issue runs `Todo` →
-`Specifying` → `Implementing` → `In Review` → `Done` and never waits to be merged. An Inquisition
+`Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`
+and never waits to be merged. An Inquisition
 Issue runs `Backlog` → `Todo` (the human's confirmation) → `Specifying` → `In Progress` for the
-sweep and the proofs → `Done` when its Bugs are filed and its record written. A Merge Sub-issue
+sweep, proofs and record writing → `Done` when its Bugs are filed and its record written. A Merge Sub-issue
 whose review fails on the landed work is reverted and closes `Canceled` with the reason.
 
 ## 5. Edges: the contract table
@@ -353,7 +354,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 20 | implementer → issue-captain | R, G | Issue key, implement SHA, files, each scenario and contract line with its proof or gap, tests with claim and seam, gates with output, adjacent findings | — | — |
 | 21 | issue-captain → hardener | R (spawn) | the Issue, the implementer's return; the review block when a FAIL sent it | the Issue with spec and plan and the implementer's return, the block, the plan, standards | `Hardening` |
 | 22 | hardener → issue-captain | R, G | Issue key, harden SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates incl. mutation, out-of-path observations | — | — |
-| 23 | issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan, or the inquisition's evidence | the Issue, about, writing-docs | `Implementing` |
+| 23 | issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan, or the inquisition's evidence | the Issue, about, writing-docs | normal docs delivery `Implementing`; Inquisition retains `In Progress` |
 | 24 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | — | — |
 | 25 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, Contract at the specify commit, Candidate SHA, Base SHA | the contract at its governing commit with outcome, scenarios, owned paths, gates; the rubric; the hops | `In Review` |
 | 26 | reviewer → issue-captain, record, PR | R, L, G | the review block: Rubric, Reviewer, Contract, Candidate, Base, Verdict, Gates, Findings; observations after it | — | the fixing hop's status on FAIL |
@@ -373,7 +374,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 40 | inquisition captain → implementer (proof-only) | R (spawn) | one hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | — |
 | 41 | implementer → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | — | — |
 | 42 | inquisition captain → Linear | L | one Bug per confirmed problem, deduplicated, under the Project with the feature as base branch, linking the red test commit and the Inquisition Issue | — | Bugs `Todo` |
-| 43 | inquisition captain → docs-writer | R (spawn) | the evidence: parts and lenses swept, findings, hypotheses and verdicts, Bugs filed | the evidence, writing-docs | — |
+| 43 | inquisition captain → docs-writer | R (spawn) | the evidence: parts and lenses swept, findings, hypotheses and verdicts, Bugs filed | the evidence, writing-docs | retains `In Progress` |
 | 44 | inquisition captain → admiral | R, L | `done <key>`; Bugs and record path on the Issue, branch deleted | — | Inquisition `Done` |
 | 45 | admiral → Linear (landing) | L | the landing Merge Issue: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | — | `Todo`, blocked by every open Issue of the Project |
 | 46 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | — | landing `Ready to Merge` |
@@ -415,13 +416,15 @@ sequenceDiagram
     C->>W: resume
   else human judgment, inside this Issue's outcome and the Project destination
     C->>B: Question Sub-issue under the delivery parent, Todo, wired as blocker, with its priority
-    C->>A: released, blocked by the Question, the parent back in Todo
+    C->>A: released &lt;key&gt;: &lt;reason&gt;
+    Note over C,B: packet and resume SHA on the record; parent Todo, Question wired as blocker
     B-->>H: the chief-of-staff or the board surfaces the Question in Todo
     H->>B: answer on the Issue, Question Done, blocker cleared
     H->>A: tells the admiral
     A->>C: next wake, the parent is pickable, re-commission from the record
   else the answer could change other Issues, a shared contract or the destination
-    C->>A: released key: reason; prepared packet on the record
+    C->>A: released &lt;key&gt;: &lt;reason&gt;
+    Note over C,B: prepared packet and resume SHA on the record
     A->>B: Project-level Question Issue in Todo, wired to every waiter, with its priority
     B-->>H: surfaced
     H->>B: answer, a DR when it qualifies
@@ -535,8 +538,8 @@ flowchart TD
   IC -->|one hypothesis each, proof-only, on a child branch| IM[implementers: write the test that would catch it]:::worker
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
   IC -->|dedupe, one Bug per confirmed problem, linking its red test| BUG[(Bug Issues in Todo, under the Project)]
-  IC -->|the inquisition record| DW[docs-writer]:::worker
-  IC -->|done: Bugs filed, record path| AD2[admiral]:::hat
+  IC -->|the inquisition record; retains In Progress| DW[docs-writer]:::worker
+  IC -->|done &lt;key&gt;| AD2[admiral]:::hat
   BUG -->|the normal loop, a captain each, before the landing| FIX[fixes through PR, review, Merge Sub-issue]
 ```
 
@@ -550,7 +553,8 @@ the hypothesis holds; a confirmed hypothesis is no longer a hypothesis and joins
 captain deduplicates and files one Bug per problem under the Project, with the feature as base branch
 and the red test's commit as reproduction, so each is picked up by a captain and fixed through the
 normal loop; the docs-writer writes the record into `dydo/project/inquisitions/`; the Issue's own
-`Done` is the filed Bugs plus the record. There is no PASS or FAIL: Project acceptance is proved by
+`Done` is the filed Bugs plus the record, linked on the Inquisition Issue; the return is only
+`done <key>`. There is no PASS or FAIL: Project acceptance is proved by
 the landing's merge review, and the Bugs the inquisition filed are landed before the landing.
 
 ### 6.7 An atomic Issue
@@ -567,7 +571,8 @@ raise. The human's own commits on main are outside the model and need no Issue.
 ```mermaid
 flowchart LR
   W[worker] -->|hand-raise on the Issue| C[issue-captain]
-  C -->|released + packet| A[admiral]
+  C -->|released &lt;key&gt;: &lt;reason&gt;| A[admiral]
+  C --> R[(Issue record: prepared packet and resume SHA)]
   A -->|a DR conflict, live external state, missing authority| H[human]
 ```
 

@@ -19,8 +19,8 @@ contains a change nobody reviewed independently.
 second writer in a tree someone else owns.
 
 **Rule:** an admiral sequences captains and wires their Merge Issues. Every edit inside an Issue's
-owned paths belongs to its crew; its captain directs, and a fresh reviewer judges; the admiral's own pen
-touches only the plan's dated amendments and the Linear record.
+owned paths belongs to its crew; its captain directs, and a fresh reviewer judges. The admiral
+updates Linear and commissions project-planner to write and commit the plan's dated amendments.
 
 ## 2. A branch cut from the wrong base
 

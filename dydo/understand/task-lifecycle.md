@@ -36,7 +36,8 @@ Decision Records carry decisions, and the two are linked rather than copied.
   architecture-level design, the first pickable tracer-bullet Issues, and rough later bearings. When
   the route is foggy it says so in `## Not yet specified` and files blocking Question Issues instead
   of pretending a complete route. A fresh reviewer passes it against `project-plan` before human
-  approval; the admiral then amends the map as fog clears and returns only changes to destination,
+  approval; the admiral then updates the Linear map as fog clears and commissions project-planner
+  to commit dated plan amendments, returning only changes to destination,
   scope, acceptance criteria, or governing architecture for fresh review and human approval.
 - **Issue** — high resolution, just in time: the scenarios and gates that make the contract exact,
   then the files to touch, the pattern to copy with its path, steps and edge cases — until building

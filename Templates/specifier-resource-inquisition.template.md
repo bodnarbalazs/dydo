@@ -14,4 +14,5 @@ sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
    confirmed problem has its Bug.
 4. Name the evidence for `docs-writer`: scope, parts/lenses, findings, hypotheses/verdicts and Bugs.
    The record goes in `dydo/project/inquisitions/`; after it and the Bugs exist the Captain closes
-   the Issue and deletes the branch. The sweep and proofs use `In Progress`, not chain-hop statuses.
+   the Issue and deletes the branch. The sweep, proofs and record writing stay `In Progress` until
+   the Type's outcome is complete; they do not run the delivery chain.

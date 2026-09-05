@@ -1,6 +1,6 @@
 ---
 name: wayfinder
-description: Plan a huge chunk of work as a shared map of Wayfinding Issues in a Linear Project and resolve them one at a time until the destination is reached.
+description: Fog in a Project map or inside one Issue. Chart the visible route as Wayfinding Issues and resolve them one at a time until the destination is reached.
 emit: skill
 invocation: automatic
 ---
@@ -63,8 +63,6 @@ resolution to the admiral. Anything that could affect another Issue, a shared co
 Project map is escalated instead.
 
 ## Issues
-
-Tickets in Linear are called Issues. Therefore we'll use Issue across this doc for consitency, but it's interchangeable.
 
 The map contains both Tasks and Wayfinding Issues. Tasks are the route someone builds; an Issue
 Captain owns each one end to end. Wayfinding Issues clear the fog around that route.

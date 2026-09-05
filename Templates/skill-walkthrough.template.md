@@ -29,8 +29,8 @@ DRs those Issues cite, the returns their workers posted. Then brief the human in
   deferred one now lives, reported as they stand.
 
 The tour ends when the human has inspected the files and tried the behavior. Record findings as
-Issues in the same Project; the admiral re-cuts its feature branch from main for fixes and another
-landing/walkthrough. An empty walkthrough lets the Project close.
+Issues in the same Project; the admiral commissions the first fix Captain to re-cut its feature
+branch from main for fixes and another landing/walkthrough. An empty walkthrough lets the Project close.
 
 Keep the brief in the terminal, or in a scratch file when the human wants to read it beside the diff.
 The durable record stays where it already is: the Issues, the review blocks and the DRs the tour

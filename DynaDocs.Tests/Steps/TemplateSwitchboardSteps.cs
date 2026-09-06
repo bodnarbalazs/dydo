@@ -211,7 +211,12 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     public void RecordResourceOwnerCreationOrder() => RecordStep();
 
     [When(@"^I run the filename matrix operation "".+?""$")]
-    public void RecordResourceOwnerOperation() => RecordStep();
+    public void RecordResourceOwnerOperation()
+    {
+        Assert.StartsWith("Resolve resource owners from the complete catalog", context.ScenarioInfo.Title,
+            StringComparison.Ordinal);
+        RecordStep();
+    }
 
     [Then(@"^an update discovers all five custom switches without emitting new native files$")]
     public void RecordResourceOwnerUpdateDiscovery() => RecordStep();

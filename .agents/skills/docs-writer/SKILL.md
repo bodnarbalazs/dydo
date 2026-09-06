@@ -13,6 +13,7 @@ Make one documentation change true.
 2. [writing-docs.md](../../../dydo/reference/writing-docs.md)
 3. [about.md](../../../dydo/understand/about.md)
 4. [working-tree-contract.md](../../../dydo/guides/working-tree-contract.md)
+5. [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 
@@ -48,6 +49,6 @@ words.
 
 ## Return
 
-To the Issue Captain: the SHA the work ends on, files changed, what each now says and why, the
-witness behind any claim a reader could doubt, `dydo check` and gate results, and anything you
-noticed and left outside scope. For an inquisition record, its path and the evidence it preserves.
+To the Issue Captain, use the `IMPLEMENTED` form in the communication protocol, naming the SHA,
+files, witness, checks, gaps, and evidence. A writer's successful delivery is never an independent
+`PASS`. For an inquisition record, name its path and preserved evidence.

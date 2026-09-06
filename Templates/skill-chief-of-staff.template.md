@@ -17,6 +17,7 @@ The human's attention is the scarcest resource in this project: triage everythin
 3. [about.md](../../../understand/about.md)
 4. [architecture.md](../../../understand/architecture.md)
 5. [working-tree-contract.md](../../../guides/working-tree-contract.md)
+6. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 {{include:extra-must-reads}}
 

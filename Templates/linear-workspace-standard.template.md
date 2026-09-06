@@ -177,6 +177,31 @@ required connector capability.
 | `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
 | `Walkthrough` | `## What landed` (branch, SHA, final PASS), the four-part tour, `## Findings` as linked Issues. |
 
+## Communication and evidence
+
+Use metadata first: the current active contract and named evidence only. Keep the stable current
+contract and state in the description. Read comments only for a named missing fact or binding review;
+comments have no assumed order. Filter tool output before it enters model context.
+
+Retain full raw proof and native gate logs once in durable Git, the PR, or the original comment. In
+ordinary updates expose only counts, exits, failure excerpts, and an evidence link. Do not repeat
+contracts, hashes, full returns, passing-test name dumps, unchanged updates, or token, cost, or
+latency claims. Review gates and the Issue-and-PR binding review stay where their workflows require.
+
+Start each post with the applicable form:
+
+- `PASS — candidate <SHA>; verdict: PASS; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
+- `FAIL — candidate <SHA>; verdict: FAIL. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `IMPLEMENTED — <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
+- `HARDENED — probes: <probes> → <outcomes>; gaps: <none or named gaps>; next: <action>; evidence: <link>.`
+- `SPECIFIED` or `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
+- `STATE — <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
+
+Brevity is soft: ordinary events aim for at most 800 characters, descriptions and state for at most
+1,500 characters or 12 lines. A necessary finding, gap, blocker, or evidence may exceed those aims;
+omit narration and repetition either way. A writer's successful delivery is never an independent
+`PASS`.
+
 ## Decision Records
 
 Linear records the decision-making work; dydo records a qualifying decision. Link the Question or

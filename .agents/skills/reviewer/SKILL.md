@@ -14,6 +14,7 @@ Gandalf at the bridge: judge one candidate against one rubric, and let nothing f
 2. [about.md](../../../dydo/understand/about.md)
 3. [architecture.md](../../../dydo/understand/architecture.md)
 4. [coding-standards.md](../../../dydo/guides/coding-standards.md)
+5. [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 
@@ -42,7 +43,7 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 
 ## Return
 
-The block is the return, a line per gate and per finding. The invoker records it on the work judged:
+The block is the return, using the `PASS` or `FAIL` form in the communication protocol. The invoker records it on the work judged:
 a Project update for a project-plan review, the Merge Issue for merge review, otherwise the Issue;
 the PR body carries it under `## Independent review` when a PR exists. Return it to the invoker
 even when a read-only host prevents posting.

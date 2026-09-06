@@ -19,6 +19,7 @@ diff.
 4. [coding-standards.md](../../../guides/coding-standards.md)
 5. [about.md](../../../understand/about.md)
 6. [architecture.md](../../../understand/architecture.md)
+7. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 {{include:extra-must-reads}}
 
@@ -64,9 +65,9 @@ Project, return it untouched and name `project-planner`.
 
 ## Return
 
-To the Issue Captain: the spec, the plan, the commit SHA, `review recommended | unnecessary —
-<reason>`, and the lanes or retained Bug stages, or `none`. The Captain alone decides whether
-`reviewer(spec)` must pass before production.
+To the Issue Captain, use the `SPECIFIED` form in the communication protocol: name the immutable
+contract, plan SHA, review recommendation, and lanes or retained Bug stages, or `none`. The Captain
+alone decides whether `reviewer(spec)` must pass before production.
 
 ## Raise a hand
 

@@ -29,7 +29,7 @@ Feature: Local skill templates compile through an enabled switchboard
   Scenario: Discover and compile a distinctly named custom skill in one synchronization
     Given an initialized project with both providers selected
     And "skill-release-notes.template.md" is a valid custom agent source
-    And "release-notes-resource-style.template.md" is its referenced custom resource
+    And "resource-release-notes-resource-style.template.md" is its referenced custom resource
     And "writing-for-humans" is explicitly disabled
     When I synchronize the native artifacts
     Then "release-notes" is added to "skills" with "enabled" true and generated origin, output-shape, and resource provenance
@@ -335,19 +335,20 @@ Feature: Local skill templates compile through an enabled switchboard
   Scenario Outline: Resolve resource owners from the complete catalog before emitting either provider
     Given an initialized project with both providers selected
     And these valid custom agent sources have automatic invocation, an argument hint, and their listed resource link:
-      | skill             | source                                | resource source                            | resource |
-      | valid             | skill-valid.template.md               | valid-resource-guide.template.md           | guide    |
-      | skill             | skill-skill.template.md               | skill-resource-guide.template.md           | guide    |
-      | skill-owner       | skill-skill-owner.template.md         | skill-owner-resource-guide.template.md     | guide    |
-      | skill-skill-owner | skill-skill-skill-owner.template.md   | skill-skill-owner-resource-guide.template.md | guide   |
+      | skill             | source                                | resource source                                      | resource |
+      | valid             | skill-valid.template.md               | resource-valid-resource-guide.template.md             | guide    |
+      | skill             | skill-skill.template.md               | resource-skill-resource-guide.template.md             | guide    |
+      | skill-owner       | skill-skill-owner.template.md         | resource-skill-owner-resource-guide.template.md       | guide    |
+      | skill-skill-owner | skill-skill-skill-owner.template.md   | resource-skill-skill-owner-resource-guide.template.md | guide    |
+      | resource-guide    | skill-resource-guide.template.md     | resource-resource-guide-resource-guide.template.md   | guide    |
     And each source and resource has distinct sentinel body bytes
     And the source files were created in "<creation-order>" order without a prior custom switch
     When I run the filename matrix operation "<operation>"
     Then the command succeeds
-    And an update discovers all four custom switches without emitting new native files
-    And a preview reports all four discoveries while every project path and byte stays unchanged
+    And an update discovers all five custom switches without emitting new native files
+    And a preview reports all five discoveries while every project path and byte stays unchanged
     When I synchronize the native artifacts
-    Then exactly those four custom skill names are discovered with enabled true, origin custom, emitAgent true, codexMetadata true, and resources exactly guide
+    Then exactly those five custom skill names are discovered with enabled true, origin custom, emitAgent true, codexMetadata true, and resources exactly guide
     And each Claude and Codex skill, agent definition, and Codex metadata file belongs to its exact owner name
     And each provider resource has its owner's exact sentinel bytes at skills/<owner>/resources/guide.md
     And no resource filename is misreported or persisted as a separate skill
@@ -355,36 +356,37 @@ Feature: Local skill templates compile through an enabled switchboard
     Then configuration and native artifacts retain identical paths and bytes
 
     Examples:
-      | operation | creation-order |
-      | sync      | owners first   |
+      | operation | creation-order  |
+      | sync      | owners first    |
       | sync      | resources first |
-      | update    | owners first   |
+      | update    | owners first    |
       | update    | resources first |
-      | preview   | owners first   |
+      | preview   | owners first    |
       | preview   | resources first |
 
   Scenario Outline: Diagnose top-level filename ambiguities without partial catalog changes
     Given a successful independent custom skill and resource baseline on both providers
-    And each following row is exercised in its own otherwise valid project:
-      | source                                         | owner source state       | diagnostic reason                                | forbidden diagnosis       |
-      | skill-bad-resource-name.template.md             | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
-      | skill-owner-resource-guide.template.md          | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
-      | skill-owner-resource-guide.template.md          | disabled tombstone only  | invalid skill name or protected -resource- delimiter | no matching skill source |
-      | ghost-resource-guide.template.md                | absent                   | no matching skill source                         | protected -resource- delimiter |
-      | -resource-guide.template.md                     | absent                   | invalid skill or resource name                   | no matching skill source  |
-      | valid-resource-.template.md                     | valid top-level          | invalid skill or resource name                   | no matching skill source  |
-      | valid-resource-bad-resource-name.template.md     | valid top-level          | invalid skill or resource name                   | no matching skill source  |
-      | skill-owner-resource-.template.md               | valid top-level          | invalid skill or resource name                   | invalid skill name or protected |
-      | skill-owner-resource-bad-resource-name.template.md | valid top-level       | invalid skill or resource name                   | invalid skill name or protected |
-      | skill-owner-resource-Guide.template.md          | valid top-level          | invalid skill or resource name                   | invalid skill name or protected |
-      | skill-Owner-resource-guide.template.md          | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
-      | skill-owner-Resource-guide.template.md          | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
-      | Skill-owner-resource-guide.template.md          | absent                   | invalid skill or resource name                   | no matching skill source  |
+    And each following row is exercised in its own otherwise valid project without prior legacy resource evidence:
+      | source                                                  | owner source state      | diagnostic reason                                     |
+      | skill-bad-resource-name.template.md                      | absent                  | invalid skill name or protected -resource- delimiter   |
+      | skill-owner-resource-guide.template.md                   | absent                  | invalid skill name or protected -resource- delimiter   |
+      | skill-owner-resource-guide.template.md                   | disabled tombstone only | invalid skill name or protected -resource- delimiter   |
+      | skill-Owner-resource-guide.template.md                   | absent                  | invalid skill name or protected -resource- delimiter   |
+      | skill-owner-Resource-guide.template.md                   | absent                  | invalid skill name or protected -resource- delimiter   |
+      | resource-ghost-resource-guide.template.md                | absent                  | no matching skill source                              |
+      | resource--resource-guide.template.md                     | absent                  | invalid skill or resource name                        |
+      | resource-valid-resource-.template.md                    | valid top-level         | invalid skill or resource name                        |
+      | resource-valid-resource-bad-resource-name.template.md    | valid top-level         | invalid skill or resource name                        |
+      | resource-skill-owner-resource-.template.md               | valid top-level         | invalid skill or resource name                        |
+      | resource-skill-owner-resource-bad-resource-name.template.md | valid top-level       | invalid skill or resource name                        |
+      | resource-skill-owner-resource-Guide.template.md           | valid top-level         | invalid skill or resource name                        |
+      | resource-Skill-owner-resource-guide.template.md          | absent                  | invalid skill or resource name                        |
     And the suspect source contains malformed frontmatter bytes that must not supersede its filename diagnosis
     And complete project path and byte snapshots include sources, switches, provenance, and unrelated native siblings
     When I run the filename matrix operation "<operation>" independently for every row
     Then every row exits nonzero and names its exact source path and diagnostic reason
-    And no row reports its forbidden diagnosis for that source path
+    And invalid names are not diagnosed as orphan resources and orphan resources are not diagnosed as invalid names
+    And no suspect path receives a frontmatter diagnosis
     And no source, configuration, or native output path or byte changes
 
     Examples:
@@ -396,7 +398,7 @@ Feature: Local skill templates compile through an enabled switchboard
   Scenario Outline: A present owner source determines resource meaning independently of enablement or body validity
     Given a successful independent custom skill and resource baseline on both providers
     And top-level "skill-skill-owner.template.md" has a valid filename for "skill-owner"
-    And top-level "skill-owner-resource-guide.template.md" contains a resource sentinel
+    And top-level "resource-skill-owner-resource-guide.template.md" contains a resource sentinel
     And the owner is "<owner-state>" and references resources/guide.md when its body is valid
     When I run the filename matrix operation "<operation>"
     Then the command has the "<result>" result
@@ -407,10 +409,10 @@ Feature: Local skill templates compile through an enabled switchboard
     And a subsequent sync of the disabled valid owner succeeds with neither provider emitting that owner's skill, agent, metadata, or resource
 
     Examples:
-      | operation | owner-state                  | result  |
-      | sync      | valid with enabled false     | success |
-      | update    | valid with enabled false     | success |
-      | preview   | valid with enabled false     | success |
+      | operation | owner-state                   | result  |
+      | sync      | valid with enabled false      | success |
+      | update    | valid with enabled false      | success |
+      | preview   | valid with enabled false      | success |
       | sync      | malformed without frontmatter | failure |
       | update    | malformed without frontmatter | failure |
       | preview   | malformed without frontmatter | failure |
@@ -419,14 +421,14 @@ Feature: Local skill templates compile through an enabled switchboard
     Given a successful independent custom skill and resource baseline on both providers
     And the exact top-level owner source for "skill-owner" is "<owner-presence>"
     And each following nested source is exercised alone with malformed content:
-      | source                                               |
-      | nested/skill-owner-resource-guide.template.md          |
-      | nested/skill-skill-owner.template.md                   |
-      | nested/skill-bad-resource-name.template.md              |
-      | nested/-resource-guide.template.md                     |
-      | nested/valid-resource-.template.md                     |
-      | nested/skill-owner-Resource-guide.template.md           |
-      | nested/Skill-owner-resource-guide.template.md           |
+      | source                                                    |
+      | nested/resource-skill-owner-resource-guide.template.md     |
+      | nested/skill-skill-owner.template.md                       |
+      | nested/skill-bad-resource-name.template.md                  |
+      | nested/resource--resource-guide.template.md                |
+      | nested/resource-valid-resource-.template.md               |
+      | nested/skill-owner-Resource-guide.template.md              |
+      | nested/resource-Skill-owner-resource-guide.template.md     |
     When I run the filename matrix operation "<operation>" independently for every row
     Then every row exits nonzero and names its relative nested path with "is nested; local templates must be top-level"
     And that path has no invalid-name, protected-delimiter, orphan, or frontmatter diagnosis
@@ -443,30 +445,40 @@ Feature: Local skill templates compile through an enabled switchboard
 
   Scenario Outline: Unsupported filename shapes remain unread at either location
     Given a successful independent custom skill and resource baseline on both providers
+    And no framework ownership, prior resource provenance, or missing canonical reference identifies any suspect file as a legacy resource
     And each following unsupported filename is exercised alone at "<location>" with invalid source bytes:
-      | filename                                   |
-      | Skill-ghost.template.md                    |
-      | valid-Resource-ghost.template.md            |
-      | skill-ghost.TEMPLATE.MD                     |
-      | skill-ghost.Template.md                     |
-      | skill-ghost.template.Md                     |
-      | valid-resource-ghost.TEMPLATE.MD            |
-      | valid-resource-ghost.Template.md            |
-      | valid-resource-ghost.template.Md            |
-      | skill-ghost.template.md.bak                 |
-      | valid-resource-ghost.template.md.bak        |
-      | skill-owner-resource-guide.TEMPLATE.MD      |
-      | Skill-owner-Resource-guide.template.md      |
-      | arbitrary.template.md                      |
-      | README                                     |
-      | .hidden                                    |
-      | binary.dat                                 |
+      | filename                                             |
+      | Skill-ghost.template.md                              |
+      | Resource-valid-resource-ghost.template.md             |
+      | resource-valid-Resource-ghost.template.md             |
+      | valid-Resource-ghost.template.md                     |
+      | skill-ghost.TEMPLATE.MD                              |
+      | skill-ghost.Template.md                              |
+      | skill-ghost.template.Md                              |
+      | resource-valid-resource-ghost.TEMPLATE.MD             |
+      | resource-valid-resource-ghost.Template.md             |
+      | resource-valid-resource-ghost.template.Md             |
+      | valid-resource-ghost.TEMPLATE.MD                     |
+      | valid-resource-ghost.Template.md                     |
+      | valid-resource-ghost.template.Md                     |
+      | skill-ghost.template.md.bak                          |
+      | resource-valid-resource-ghost.template.md.bak         |
+      | valid-resource-ghost.template.md.bak                  |
+      | skill-owner-resource-guide.TEMPLATE.MD               |
+      | Skill-owner-Resource-guide.template.md               |
+      | resource-valid.template.md                           |
+      | valid-resource-ghost.template.md                     |
+      | -resource-ghost.template.md                          |
+      | arbitrary.template.md                               |
+      | README                                              |
+      | .hidden                                             |
+      | binary.dat                                          |
     When I run the filename matrix operation "<operation>" independently for every row
     Then every row succeeds without a source validation or nested-location diagnostic
     And every project path and byte remains unchanged with no extra switch or native output
 
     Examples:
-      | operation | location |
+      | operation | location  |
       | sync      | top-level |
       | sync      | nested    |
       | update    | top-level |
@@ -477,12 +489,11 @@ Feature: Local skill templates compile through an enabled switchboard
   Scenario Outline: A nested owner cannot confer top-level resource ownership
     Given a successful independent custom skill and resource baseline on both providers
     And only "nested/skill-skill-owner.template.md" declares the otherwise valid custom owner "skill-owner"
-    And top-level "skill-owner-resource-guide.template.md" contains the referenced resource
+    And top-level "resource-skill-owner-resource-guide.template.md" contains the referenced resource
     When I run the filename matrix operation "<operation>"
     Then the command exits nonzero
     And "nested/skill-skill-owner.template.md" is diagnosed only as nested and requiring top-level placement
-    And "skill-owner-resource-guide.template.md" is diagnosed as an invalid skill name or protected -resource- delimiter
-    And neither path is diagnosed as an orphan resource
+    And "resource-skill-owner-resource-guide.template.md" is diagnosed only as having no matching skill source
     And no source, configuration, or native output path or byte changes
 
     Examples:
@@ -490,3 +501,230 @@ Feature: Local skill templates compile through an enabled switchboard
       | sync      |
       | update    |
       | preview   |
+
+  Scenario Outline: Pin canonical slug boundaries without reading invalid source content
+    Given a successful independent custom skill and resource baseline on both providers
+    And each following canonical source component is exercised independently for a skill slug, resource owner slug, and resource slug:
+      | component                                         | valid |
+      | one lowercase letter                              | true  |
+      | sixty-four lowercase letters                      | true  |
+      | resource-guide                                    | true  |
+      | empty                                             | false |
+      | sixty-five lowercase letters                      | false |
+      | a leading hyphen                                  | false |
+      | a trailing hyphen                                 | false |
+      | two consecutive hyphens                           | false |
+      | an uppercase letter                               | false |
+      | an underscore                                     | false |
+      | the protected delimiter inside bad-resource-name   | false |
+    And valid cases have their exact top-level owner, valid source content, and referenced canonical resource
+    And invalid cases contain malformed bytes and no legacy evidence
+    When I run the filename matrix operation "<operation>" independently for every component and source kind
+    Then valid cases succeed and sync emits exactly their canonical skill and resource names to both providers
+    And invalid cases fail on the exact source filename and invalid component before content validation
+    And each failed operation and each preview preserves every project path and byte
+
+    Examples:
+      | operation |
+      | sync      |
+      | update    |
+      | preview   |
+
+  Scenario Outline: Resource content cannot change a canonical source kind
+    Given an initialized project with both providers selected
+    And valid skills "skill" and "resource-guide" coexist and reference their separate canonical guide resources
+    And "resource-skill-resource-guide.template.md" contains "<resource-content>"
+    And "skill-resource-guide.template.md" has valid matching skill frontmatter
+    When I run the filename matrix operation "<operation>"
+    Then the command succeeds
+    When I synchronize the native artifacts
+    Then both skill names have distinct skill outputs on both providers
+    And the skill owner's guide resource retains the exact resource-content bytes including any frontmatter
+    And no resource body contributes a skill name or switch entry
+
+    Examples:
+      | operation | resource-content                                  |
+      | sync      | arbitrary Markdown without frontmatter            |
+      | update    | arbitrary Markdown without frontmatter            |
+      | preview   | arbitrary Markdown without frontmatter            |
+      | sync      | valid skill frontmatter naming resource-guide     |
+      | update    | valid skill frontmatter naming resource-guide     |
+      | preview   | valid skill frontmatter naming resource-guide     |
+
+  Scenario Outline: Identify legacy resources from finite evidence without silently migrating custom bytes
+    Given a successful independent custom skill and resource baseline on both providers
+    And a valid custom owner "<owner>" has the exact old source "<legacy>" with arbitrary sentinel bytes
+    And its canonical source "<canonical>" is absent
+    And legacy intent is established by "<evidence>"
+    And complete project path and byte snapshots include sources, switches, provenance, and unrelated native siblings
+    When I run the filename matrix operation "<operation>"
+    Then the command fails before any mutation
+    And the diagnostic names the exact legacy path, owner, resource, and canonical replacement path
+    And it instructs manual rename after checking ownership and never chooses a source kind from the suspect contents
+    And no source, configuration, or native output path or byte changes
+
+    Examples:
+      | operation | owner       | legacy                                 | canonical                                       | evidence                                      |
+      | sync      | notes       | notes-resource-guide.template.md        | resource-notes-resource-guide.template.md        | missing canonical guide link after includes   |
+      | update    | notes       | notes-resource-guide.template.md        | resource-notes-resource-guide.template.md        | missing canonical guide link after includes   |
+      | preview   | notes       | notes-resource-guide.template.md        | resource-notes-resource-guide.template.md        | missing canonical guide link after includes   |
+      | sync      | skill-owner | skill-owner-resource-guide.template.md | resource-skill-owner-resource-guide.template.md | prior custom resource provenance only         |
+      | update    | skill-owner | skill-owner-resource-guide.template.md | resource-skill-owner-resource-guide.template.md | prior custom resource provenance only         |
+      | preview   | skill-owner | skill-owner-resource-guide.template.md | resource-skill-owner-resource-guide.template.md | prior custom resource provenance only         |
+
+  Scenario Outline: Preserve canonical skills when a legacy spelling overlaps their filename
+    Given a successful independent custom skill and resource baseline on both providers
+    And valid custom skills "skill" and "resource-guide" coexist
+    And "skill-resource-guide.template.md" is the valid source of skill "resource-guide"
+    And skill "skill" has "<guide-state>"
+    When I run the filename matrix operation "<operation>"
+    Then the command has the "<result>" result
+    And "skill-resource-guide.template.md" is never consumed as a resource or diagnosed as an invalid skill
+    And a missing canonical guide is diagnosed at owner skill with the exact target resource-skill-resource-guide.template.md
+    And any diagnostic naming the overlapping file calls it ambiguous and instructs preserving a valid skill while supplying the separate canonical resource
+    And failure or preview preserves every project path and byte
+    And a successful sync emits both skill names separately
+
+    Examples:
+      | operation | guide-state                                               | result  |
+      | sync      | no guide reference and no prior guide provenance           | success |
+      | update    | no guide reference and no prior guide provenance           | success |
+      | preview   | no guide reference and no prior guide provenance           | success |
+      | sync      | a guide reference but no canonical resource                | failure |
+      | update    | a guide reference but no canonical resource                | failure |
+      | preview   | a guide reference but no canonical resource                | failure |
+      | sync      | prior guide provenance and its canonical guide present     | success |
+      | update    | prior guide provenance and its canonical guide present     | success |
+      | preview   | prior guide provenance and its canonical guide present     | success |
+
+  Scenario Outline: Do not steal an old resource whose owner begins with the new prefix
+    Given a successful independent custom skill and resource baseline on both providers
+    And valid custom skills "notes" and "resource-notes" coexist
+    And "resource-notes-resource-guide.template.md" has arbitrary resource sentinel bytes
+    And "resource-resource-notes-resource-guide.template.md" is absent
+    And legacy intent for resource-notes guide is established by "<evidence>"
+    And skill notes references its canonical guide so the overlapping path would otherwise be usable
+    When I run the filename matrix operation "<operation>"
+    Then the command fails before any mutation
+    And the overlapping file is diagnosed as ambiguous legacy ownership for resource-notes guide
+    And the diagnostic names both the old path and resource-resource-notes-resource-guide.template.md and requires manual ownership resolution
+    And neither owner consumes or overwrites the ambiguous bytes
+    And no source, configuration, or native output path or byte changes
+
+    Examples:
+      | operation | evidence                                    |
+      | sync      | missing canonical guide link after includes |
+      | update    | missing canonical guide link after includes |
+      | preview   | missing canonical guide link after includes |
+      | sync      | prior custom guide provenance               |
+      | update    | prior custom guide provenance               |
+      | preview   | prior custom guide provenance               |
+
+  Scenario Outline: Complete canonical resource pairs retain meaning after provenance is saved
+    Given valid custom skills "notes" and "resource-notes" have their separate canonical guide resources
+    And both resource files contain distinct sentinel bytes
+    And no old framework hash claims either canonical path as a different source
+    When I run the filename matrix operation "<operation>"
+    Then the command succeeds
+    When I synchronize both providers twice
+    Then each owner receives only its own canonical resource bytes
+    And both switches record guide without creating a legacy-source error
+    And the second synchronization retains the identical configuration and native path and byte manifest
+
+    Examples:
+      | operation |
+      | sync      |
+      | update    |
+      | preview   |
+
+  Scenario Outline: Legacy diagnostics respect location and complete-catalog atomicity
+    Given a successful independent custom skill and resource baseline on both providers
+    And prior custom provenance records notes guide
+    And an exact legacy source notes-resource-guide.template.md is at "<location>"
+    And its canonical resource is "<canonical-state>"
+    And the suspect legacy file contains malformed frontmatter bytes
+    When I run the filename matrix operation "<operation>"
+    Then the command fails before any mutation
+    And a nested legacy file is diagnosed only as nested and requiring top-level placement
+    And a top-level legacy file is diagnosed with both old and canonical paths and an actionable manual ownership or rename instruction
+    And no source, configuration, or native output path or byte changes
+
+    Examples:
+      | operation | location  | canonical-state |
+      | sync      | top-level | absent          |
+      | update    | top-level | absent          |
+      | preview   | top-level | absent          |
+      | sync      | top-level | present         |
+      | update    | top-level | present         |
+      | preview   | top-level | present         |
+      | sync      | nested    | absent          |
+      | update    | nested    | absent          |
+      | preview   | nested    | absent          |
+
+  Scenario Outline: Replace the positively owned framework resource namespace using the packaged manifest
+    Given the exact twenty-one old shipped resource basenames are recorded under frameworkHashes
+    And the running executable ships their resource-prefixed replacements and no old resource basenames
+    And a pre-transition native baseline was captured before the old shipped copies were hard-edited
+    And old shipped copies contain hard edits while a distinct canonical custom resource and project extension contain sentinel bytes
+    And existing explicit enabled choices and resource slugs are recorded
+    When I run the filename matrix operation "<operation>"
+    Then the command succeeds
+    And it reports every planned old source retirement, canonical replacement, and old and new source hash reconciliation
+    And a preview leaves every project path and byte unchanged
+    And an update removes exactly the twenty-one old local resource paths and hashes and creates the twenty-one canonical local resource paths and truthful LF-normalized hashes
+    And every replacement source equals its packaged bytes and no backup, merge, conflict, or general migration record is created
+    And custom sources, extensions, explicit switches, and resource-slug provenance retain their exact values and bytes
+    When I apply the real template update and synchronize both providers twice
+    Then all native paths and resource bytes equal the pre-transition compiled baseline except the explicitly revised skill-mechanics grammar text
+    And the second source-built update and sync leave the complete managed manifest and working-tree diff unchanged
+
+    Examples:
+      | operation |
+      | update    |
+      | preview   |
+
+  Scenario Outline: Fail framework namespace collisions before retirement or replacement
+    Given an otherwise valid project is ready for the twenty-one framework resource namespace replacements
+    And each following collision is exercised alone with distinct custom sentinel bytes:
+      | occupied path state                                                                 |
+      | a new canonical shipped resource path has no exact framework ownership                |
+      | an old shipped resource path has neither exact framework hash nor its resource provenance |
+      | an old retired resource has only inherited shipped owner identity without its resource provenance |
+      | an old shipped resource path has prior resource provenance but no exact framework hash |
+    When I run the filename matrix operation "<operation>" independently for every collision
+    Then every row fails with the exact colliding path and owner before any retirement, replacement, or native cleanup
+    And no source, configuration, or native output path or byte changes
+
+    Examples:
+      | operation |
+      | update    |
+      | preview   |
+
+  Scenario: Sync requires explicit update for positively owned old framework resources
+    Given old shipped resource files and exact old framework hashes remain from the prior source namespace
+    And the running executable ships only the canonical resource-prefixed replacements
+    When I synchronize the native artifacts
+    Then the command fails with the exact old and canonical source paths and instructions to run dydo template update
+    And no source, configuration, or native output path or byte changes
+
+  Scenario Outline: Reconcile a partially completed owned namespace transition truthfully
+    Given an otherwise valid project has "<pair-state>" for one packaged resource
+    And all other sources and switch provenance use the canonical namespace
+    And any recorded hash proves its exact contained source path
+    When I run the filename matrix operation "<operation>"
+    Then the command succeeds
+    And a preview reports the same source and metadata actions while preserving every project path and byte
+    And an update leaves only the canonical resource source with packaged bytes and its truthful hash
+    And an absent old file is never reported as physically deleted
+    And an already-owned canonical target is not diagnosed as custom merely because the old source also exists
+    And resource slugs and enabled choices retain their values
+    And a subsequent real update followed by a second update has no further source or metadata change
+
+    Examples:
+      | operation | pair-state                                                    |
+      | update    | an absent old file with its old hash and an absent new source  |
+      | preview   | an absent old file with its old hash and an absent new source  |
+      | update    | both old and new files with their own exact framework hashes   |
+      | preview   | both old and new files with their own exact framework hashes   |
+      | update    | only an owned canonical file and its exact framework hash      |
+      | preview   | only an owned canonical file and its exact framework hash      |

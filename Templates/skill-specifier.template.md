@@ -13,7 +13,7 @@ diff.
 
 ## Must-Reads
 
-1. The target Linear Issue or direct lane Sub-issue, including its parent, blockers, and comments.
+1. The target Linear Issue or direct lane Sub-issue: its active contract, parent, and blockers; read comments only for a named missing fact or binding review.
 2. The governing Project-plan section and Decision Records.
 3. [working-tree-contract.md](../../../guides/working-tree-contract.md)
 4. [coding-standards.md](../../../guides/coding-standards.md)

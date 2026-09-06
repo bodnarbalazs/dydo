@@ -16,8 +16,7 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
 2. [working-tree-contract.md](../../../guides/working-tree-contract.md)
 3. [about.md](../../../understand/about.md)
 4. [architecture.md](../../../understand/architecture.md)
-5. [linear-workspace-standard.md](../../../reference/linear-workspace-standard.md)
-6. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
+5. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 {{include:extra-must-reads}}
 

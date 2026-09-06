@@ -15,8 +15,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 3. [working-tree-contract.md](../../../dydo/guides/working-tree-contract.md)
 4. [about.md](../../../dydo/understand/about.md)
 5. [architecture.md](../../../dydo/understand/architecture.md)
-6. [linear-workspace-standard.md](../../../dydo/reference/linear-workspace-standard.md)
-7. [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
+6. [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 

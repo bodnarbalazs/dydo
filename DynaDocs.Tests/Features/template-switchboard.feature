@@ -728,3 +728,34 @@ Feature: Local skill templates compile through an enabled switchboard
       | preview   | both old and new files with their own exact framework hashes   |
       | update    | only an owned canonical file and its exact framework hash      |
       | preview   | only an owned canonical file and its exact framework hash      |
+
+  Scenario Outline: Published notices retain exact source attribution after the resource namespace transition
+    Given the repository source inventory has completed the canonical resource namespace transition
+    And the published notice attribution has these exact source replacements:
+      | old source | canonical source |
+      | Templates/reviewer-resource-code.template.md | Templates/resource-reviewer-resource-code.template.md |
+      | Templates/codebase-design-resource-deepening.template.md | Templates/resource-codebase-design-resource-deepening.template.md |
+      | Templates/codebase-design-resource-design-it-twice.template.md | Templates/resource-codebase-design-resource-design-it-twice.template.md |
+      | Templates/improve-codebase-architecture-resource-html-report.template.md | Templates/resource-improve-codebase-architecture-resource-html-report.template.md |
+      | Templates/prototype-resource-logic.template.md | Templates/resource-prototype-resource-logic.template.md |
+      | Templates/prototype-resource-ui.template.md | Templates/resource-prototype-resource-ui.template.md |
+      | Templates/implementer-resource-tests.template.md | Templates/resource-implementer-resource-tests.template.md |
+      | Templates/implementer-resource-mocking.template.md | Templates/resource-implementer-resource-mocking.template.md |
+      | Templates/teach-resource-mission-format.template.md | Templates/resource-teach-resource-mission-format.template.md |
+      | Templates/teach-resource-glossary-format.template.md | Templates/resource-teach-resource-glossary-format.template.md |
+      | Templates/teach-resource-learning-record-format.template.md | Templates/resource-teach-resource-learning-record-format.template.md |
+      | Templates/teach-resource-resources-format.template.md | Templates/resource-teach-resource-resources-format.template.md |
+      | Templates/wizard-resource-template.template.md | Templates/resource-wizard-resource-template.template.md |
+      | Templates/writing-for-agents-resource-skill-mechanics.template.md | Templates/resource-writing-for-agents-resource-skill-mechanics.template.md |
+    When I read the published notice "<notice>" and its package inclusion declarations in "<package-metadata>"
+    Then every replacement row independently names its exact canonical source in that notice
+    And every occurrence of each old source citation is absent from that notice
+    And every Templates path cited in that notice, including unchanged skill sources, exists in the repository
+    And the two published notices have identical content after line-ending normalization
+    And that package metadata still includes the selected notice in its published files
+    And all upstream attribution, commit pins, and license text remain unchanged
+
+    Examples:
+      | notice                     | package-metadata |
+      | THIRD-PARTY-NOTICES.md      | DynaDocs.csproj   |
+      | npm/THIRD-PARTY-NOTICES.md  | npm/package.json |

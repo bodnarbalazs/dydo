@@ -876,6 +876,88 @@ print('RESTORATION_MATRIX_CASES=' + str(len(observations)))
         self.assertEqual(0, process.returncode, output)
         self.assertIn('RESTORATION_MATRIX_CASES=126' if os.name == 'nt' else 'RESTORATION_MATRIX_CASES=30', output)
 
+    def test_interrupt_between_handler_restoration_iterations(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        harness = r'''
+import importlib.util
+import inspect
+import itertools
+import json
+import signal
+import sys
+from types import SimpleNamespace
+
+spec = importlib.util.spec_from_file_location('adapter', sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+function = module.defer_interruption.__wrapped__
+lines, first = inspect.getsourcelines(function)
+loop_line = first + next(i for i, line in enumerate(lines) if 'for signum, handler in previous.items():' in line)
+native = [signal.SIGINT, *([signal.SIGBREAK] if sys.platform == 'win32' else [])]
+original = {sig: signal.getsignal(sig) for sig in native}
+prior = {sig: (lambda signum, frame: signal.default_int_handler(signum, frame)) for sig in native}
+count = 0
+try:
+    for platform, body, injection in itertools.product(
+            dict.fromkeys([sys.platform, 'linux']), [None, 'signal', 'ValueError'], ['signal', 'KeyboardInterrupt', None]):
+        module.sys = SimpleNamespace(platform=platform)
+        for sig, handler in prior.items():
+            signal.signal(sig, handler)
+        injected = False
+        def trace(frame, event, arg):
+            global injected
+            # The system-call wrapper cannot observe this loop backedge.
+            if (frame.f_code is function.__code__ and event == 'line' and frame.f_lineno == loop_line
+                    and signal.getsignal(signal.SIGINT) is prior[signal.SIGINT]
+                    and injection is not None and not injected):
+                injected = True
+                if injection == 'KeyboardInterrupt':
+                    raise KeyboardInterrupt
+                signal.raise_signal(signal.SIGINT)
+            return trace
+        caught = None
+        restored_at_delivery = None
+        try:
+            with module.defer_interruption():
+                sys.settrace(trace)
+                if body == 'signal':
+                    signal.raise_signal(signal.SIGINT)
+                elif body == 'ValueError':
+                    raise ValueError('body exception')
+        except (KeyboardInterrupt, ValueError) as exc:
+            caught = type(exc).__name__
+            restored_at_delivery = all(signal.getsignal(sig) is handler for sig, handler in prior.items())
+        finally:
+            sys.settrace(None)
+        restored = all(signal.getsignal(sig) is handler for sig, handler in prior.items())
+        subsequent = []
+        for sig in native:
+            try:
+                signal.raise_signal(sig)
+            except KeyboardInterrupt:
+                subsequent.append(sig)
+        row = dict(platform=platform, body=body, injection=injection, injected=injected,
+                   caught=caught, restored=restored, restored_at_delivery=restored_at_delivery,
+                   subsequent=subsequent)
+        print(json.dumps(row), flush=True)
+        expected = 'KeyboardInterrupt' if injection is not None or body == 'signal' else body
+        assert injected == (injection is not None), row
+        assert caught == expected, row
+        assert restored and (restored_at_delivery if caught else restored_at_delivery is None), row
+        assert subsequent == native, row
+        count += 1
+finally:
+    sys.settrace(None)
+    for sig, handler in original.items():
+        signal.signal(sig, handler)
+print('INTER_ITERATION_CASES=' + str(count))
+'''
+        process = subprocess.run([sys.executable, '-u', '-c', harness, str(adapter)], cwd=ROOT,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=30)
+        output = process.stdout + process.stderr
+        self.assertEqual(0, process.returncode, output)
+        self.assertIn('INTER_ITERATION_CASES=18' if os.name == 'nt' else 'INTER_ITERATION_CASES=9', output)
+
     def test_exact_worktree_registration_and_failed_removal_cleanup(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
         for failed_remove in [False, True]:

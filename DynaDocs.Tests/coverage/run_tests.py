@@ -134,14 +134,14 @@ def defer_interruption():
             previous[signum] = signal.signal(signum, remember_interrupt)
         yield
     finally:
-        for signum, handler in previous.items():
-            while True:
-                try:
+        while True:
+            try:
+                for signum, handler in previous.items():
                     signal.signal(signum, handler)
-                    break
-                except KeyboardInterrupt:
-                    # A restored handler can interrupt another handler's restoration.
-                    interrupted = True
+                break
+            except KeyboardInterrupt:
+                # Retry the whole restoration, including its loop bookkeeping.
+                interrupted = True
         if interrupted:
             raise KeyboardInterrupt
 

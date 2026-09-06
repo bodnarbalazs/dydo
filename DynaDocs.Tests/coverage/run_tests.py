@@ -36,15 +36,25 @@ def _git(*args, capture=False):
     return subprocess.run(cmd, cwd=ROOT)
 
 
-def create_worktree():
-    """Create a detached worktree at a temp path. Returns the path."""
-    name = f"dydo-test-{uuid.uuid4().hex[:8]}"
-    path = Path(tempfile.gettempdir()) / name
+def create_worktree(path):
+    """Create a detached worktree at the attributed path."""
     result = _git("worktree", "add", "--detach", str(path), "HEAD")
     if result.returncode != 0:
         print(f"Failed to create worktree at {path}", file=sys.stderr)
-        return None
-    return path
+        return False
+    return True
+
+
+def is_registered_worktree(worktree):
+    """Return whether Git records the exact attributed worktree path."""
+    stdout, rc = _git("worktree", "list", "--porcelain", capture=True)
+    if rc != 0:
+        return False
+    prefix = "worktree "
+    return any(
+        Path(line[len(prefix):]).resolve() == worktree.resolve()
+        for line in stdout.splitlines() if line.startswith(prefix)
+    )
 
 
 def copy_dirty_files(worktree):
@@ -111,8 +121,12 @@ def run_tests(extra_args=None, coverage=False):
     worktree = None
     try:
         print(f"  Creating test worktree...")
-        worktree = create_worktree()
-        if worktree is None:
+        candidate = Path(tempfile.gettempdir()) / f"dydo-test-{uuid.uuid4().hex[:8]}"
+        if candidate.exists() or is_registered_worktree(candidate):
+            print(f"Failed to allocate test worktree path at {candidate}", file=sys.stderr)
+            return 1
+        worktree = candidate
+        if not create_worktree(worktree):
             return 1
         print(f"  Worktree: {worktree}")
 
@@ -133,7 +147,7 @@ def run_tests(extra_args=None, coverage=False):
 
         return result.returncode
     finally:
-        if worktree and worktree.exists():
+        if worktree and (worktree.exists() or is_registered_worktree(worktree)):
             print(f"  Cleaning up worktree...")
             remove_worktree(worktree)
 

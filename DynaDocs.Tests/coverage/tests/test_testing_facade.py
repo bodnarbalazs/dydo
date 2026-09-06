@@ -734,6 +734,49 @@ class TestingFacadeTests(unittest.TestCase):
             reader.join(timeout=5)
             facade.stdout.close()
 
+    def test_interrupt_during_real_worktree_registration_cleans_the_attributed_path(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        for registration_only in [False, True]:
+            with self.subTest(registration_only=registration_only):
+                harness = (
+                    "import importlib.util,shutil,sys\n"
+                    f"spec=importlib.util.spec_from_file_location('run_tests_probe', {str(adapter)!r})\n"
+                    "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
+                    "original=module._git\n"
+                    "def delayed_git(*args, capture=False):\n"
+                    "    result=original(*args, capture=capture)\n"
+                    "    if args[:3] == ('worktree', 'add', '--detach') and result.returncode == 0:\n"
+                    "        listing,rc=original('worktree', 'list', '--porcelain', capture=True)\n"
+                    "        assert rc == 0 and ('worktree ' + args[3].replace('\\\\', '/')) in listing.splitlines()\n"
+                    f"        if {registration_only!r}: shutil.rmtree(args[3])\n"
+                    "        print('REGISTERED: ' + args[3], flush=True)\n"
+                    "        raise KeyboardInterrupt\n"
+                    "    return result\n"
+                    "module._git=delayed_git\n"
+                    "module.main()\n"
+                )
+                process = subprocess.run([sys.executable, '-u', '-c', harness], cwd=ROOT,
+                                         capture_output=True, text=True, encoding='utf-8',
+                                         errors='replace', timeout=30)
+                output = process.stdout + process.stderr
+                registered = next((line[12:] for line in process.stdout.splitlines()
+                                   if line.startswith('REGISTERED: ')), None)
+                attributed = Path(registered) if registered else None
+                try:
+                    self.assertIsNotNone(attributed, output)
+                    self.assertFalse(any(line.strip().startswith('Worktree: ')
+                                         for line in process.stdout.splitlines()), output)
+                    self.assertEqual(130, process.returncode, output)
+                    self.assertFalse(attributed.exists(), output)
+                    listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
+                                             text=True, capture_output=True, check=True).stdout
+                    self.assertNotIn('worktree ' + attributed.as_posix(), listing)
+                finally:
+                    if attributed is not None:
+                        subprocess.run(['git', 'worktree', 'remove', '--force', str(attributed)], cwd=ROOT,
+                                       capture_output=True, text=True)
+                        if attributed.exists(): shutil.rmtree(attributed)
+
     def test_interrupt_stops_later_capabilities_and_stacks(self):
         for operation, block_result in [('all', False), ('--force-run', False), ('all', True)]:
             with self.subTest(operation=operation, block_result=block_result):

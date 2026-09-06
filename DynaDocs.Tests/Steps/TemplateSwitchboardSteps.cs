@@ -231,6 +231,33 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     [Then(@"^no resource filename is misreported or persisted as a separate skill$")]
     public void RecordResourceOwnerNoPhantomSkill() => RecordStep();
 
+    [Given(@"^the repository source inventory has completed the canonical resource namespace transition$")]
+    public void RecordNoticeSourceInventory() => RecordStep();
+
+    [Given(@"^the published notice attribution has these exact source replacements:$")]
+    public void RecordNoticeReplacementTable(Table _) => RecordStep();
+
+    [When(@"^I read the published notice "".+?"" and its package inclusion declarations in "".+?""$")]
+    public void RecordNoticeRead() => RecordStep();
+
+    [Then(@"^every replacement row independently names its exact canonical source in that notice$")]
+    public void RecordNoticeReplacementAssertion() => RecordStep();
+
+    [Then(@"^every occurrence of each old source citation is absent from that notice$")]
+    public void RecordNoticeRetirementAssertion() => RecordStep();
+
+    [Then(@"^every Templates path cited in that notice, including unchanged skill sources, exists in the repository$")]
+    public void RecordNoticePathAssertion() => RecordStep();
+
+    [Then(@"^the two published notices have identical content after line-ending normalization$")]
+    public void RecordNoticeEqualityAssertion() => RecordStep();
+
+    [Then(@"^that package metadata still includes the selected notice in its published files$")]
+    public void RecordNoticePackageAssertion() => RecordStep();
+
+    [Then(@"^all upstream attribution, commit pins, and license text remain unchanged$")]
+    public void RecordNoticeAttributionAssertion() => RecordStep();
+
 
     private void RecordStep() => _steps.Add(context.StepContext.StepInfo.Text);
 
@@ -279,6 +306,8 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
                 await VerifyFixedPoint();
             else if (title.StartsWith("Resolve resource owners from the complete catalog", StringComparison.Ordinal))
                 await VerifyResourceOwnerCatalog(prose);
+            else if (title.StartsWith("Published notices retain exact source attribution", StringComparison.Ordinal))
+                VerifyNoticeAttribution();
             else
                 throw new Xunit.Sdk.XunitException($"No DYD-111 contract probe is bound for '{title}'.");
         }
@@ -454,6 +483,44 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
 
         var secondSynchronization = CaptureSync();
         Assert.True(secondSynchronization.ExitCode == 0, secondSynchronization.Stdout + secondSynchronization.Stderr);
+    }
+
+    private static void VerifyNoticeAttribution()
+    {
+        var root = FindRepositoryRoot();
+        var notices = new[]
+        {
+            Path.Combine(root, "THIRD-PARTY-NOTICES.md"),
+            Path.Combine(root, "npm", "THIRD-PARTY-NOTICES.md")
+        };
+        var mappings = new[]
+        {
+            ("Templates/reviewer-resource-code.template.md", "Templates/resource-reviewer-resource-code.template.md"),
+            ("Templates/codebase-design-resource-deepening.template.md", "Templates/resource-codebase-design-resource-deepening.template.md"),
+            ("Templates/codebase-design-resource-design-it-twice.template.md", "Templates/resource-codebase-design-resource-design-it-twice.template.md"),
+            ("Templates/improve-codebase-architecture-resource-html-report.template.md", "Templates/resource-improve-codebase-architecture-resource-html-report.template.md"),
+            ("Templates/prototype-resource-logic.template.md", "Templates/resource-prototype-resource-logic.template.md"),
+            ("Templates/prototype-resource-ui.template.md", "Templates/resource-prototype-resource-ui.template.md"),
+            ("Templates/implementer-resource-tests.template.md", "Templates/resource-implementer-resource-tests.template.md"),
+            ("Templates/implementer-resource-mocking.template.md", "Templates/resource-implementer-resource-mocking.template.md"),
+            ("Templates/teach-resource-mission-format.template.md", "Templates/resource-teach-resource-mission-format.template.md"),
+            ("Templates/teach-resource-glossary-format.template.md", "Templates/resource-teach-resource-glossary-format.template.md"),
+            ("Templates/teach-resource-learning-record-format.template.md", "Templates/resource-teach-resource-learning-record-format.template.md"),
+            ("Templates/teach-resource-resources-format.template.md", "Templates/resource-teach-resource-resources-format.template.md"),
+            ("Templates/wizard-resource-template.template.md", "Templates/resource-wizard-resource-template.template.md"),
+            ("Templates/writing-for-agents-resource-skill-mechanics.template.md", "Templates/resource-writing-for-agents-resource-skill-mechanics.template.md")
+        };
+        var normalized = notices.Select(path => Normalize(File.ReadAllText(path))).ToArray();
+        Assert.Equal(normalized[0], normalized[1]);
+        foreach (var notice in normalized)
+        foreach (var (oldPath, newPath) in mappings)
+        {
+            Assert.DoesNotContain(oldPath, notice, StringComparison.Ordinal);
+            Assert.Contains(newPath, notice, StringComparison.Ordinal);
+            Assert.True(File.Exists(Path.Combine(root, newPath.Replace('/', Path.DirectorySeparatorChar))), newPath);
+        }
+        Assert.Contains("THIRD-PARTY-NOTICES.md", File.ReadAllText(Path.Combine(root, "DynaDocs.csproj")), StringComparison.Ordinal);
+        Assert.Contains("THIRD-PARTY-NOTICES.md", File.ReadAllText(Path.Combine(root, "npm", "package.json")), StringComparison.Ordinal);
     }
 
     private void VerifyMinimalSwitch()
@@ -1486,6 +1553,17 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     private DydoConfig Load() => new ConfigService().LoadConfigStrict(_root)!;
     private void Save(DydoConfig config) => new ConfigService().SaveConfig(config, Path.Combine(_root, "dydo.json"));
     private string Sources() => Path.Combine(_root, "dydo", "_system", "templates");
+
+    private static string FindRepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj")))
+                return directory.FullName;
+        }
+
+        throw new DirectoryNotFoundException("DynaDocs repository root was not found.");
+    }
 
     private Dictionary<string, string> Manifest() => Directory.GetFiles(_root, "*", SearchOption.AllDirectories)
         .ToDictionary(path => Path.GetRelativePath(_root, path).Replace('\\', '/'),

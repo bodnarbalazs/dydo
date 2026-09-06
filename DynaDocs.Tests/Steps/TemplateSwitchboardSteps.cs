@@ -1165,7 +1165,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         File.WriteAllText(Path.Combine(Sources(), $"skill-{name}.template.md"),
             CustomSource(name, emitAgent, hint, invocation, resources, delegates, web, mustRead));
         foreach (var resource in resources)
-            File.WriteAllText(Path.Combine(Sources(), $"{name}-resource-{resource}.template.md"), $"# {resource}\n");
+            File.WriteAllText(Path.Combine(Sources(), $"resource-{name}-resource-{resource}.template.md"), $"# {resource}\n");
     }
 
     private static string CustomSource(string name, bool emitAgent, string? hint = null,

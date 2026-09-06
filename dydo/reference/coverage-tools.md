@@ -23,9 +23,13 @@ compatibility full-G operation: it selects test, static, and coverage for every 
 while any selected row is unavailable or invalid. Mutation is separate.
 
 The facade runs argv arrays without a shell. It appends native test arguments only after `test ... --`.
+Executable paths in an argv row resolve from that stack's working directory without changing the
+recorded vector; bare executable names use the platform search rules.
 Configured gate rows declare required artifacts. A successful child must create or observably refresh
 every required file or directory; unchanged evidence from an earlier run is invalid. The facade
 compares metadata and file content, including directory descendants, without removing old evidence.
+That comparison proves an observable change during the child-operation interval, while the isolation
+adapter owns protection from concurrent writers at the same evidence path.
 Each execution writes a machine-readable `result.json` below the configured artifact root
 and prints its location. Results preserve raw child exits and aggregate to 0 for pass, 1 for a
 measured failure, 2 for invalid or unavailable work, and 130 after interrupted adapter cleanup.

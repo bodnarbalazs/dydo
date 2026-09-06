@@ -48,10 +48,15 @@ named stacks. A stack declares `name`, `kind`, `cwd`, `isolation`, and all four 
 running interpreter. An unavailable capability has a reason and is a failed-closed result, not a
 passing gate.
 
+An `argv` executable path is resolved from the stack's declared working directory while the argv
+record stays unchanged. Bare executable names use the platform search rules.
+
 Manifest cwd, adapter and artifact paths are repository-relative and contained. A configured non-test
 gate must declare required artifacts and create or observably refresh each one during its successful
 child invocation. The facade compares file metadata and content, recursively for directory artifacts;
 an unchanged old report cannot pass. It never deletes or modifies old evidence to manufacture freshness.
+This comparison establishes an observable change inside the child-operation interval; the isolation
+adapter remains responsible for preventing another process from writing the same evidence path.
 Mutation has exactly one argv item equal to `{base}`; the
 facade replaces that one item with `--since`'s value. Isolation is a project adapter claim:
 in-place work has direct evidence, while worktree and per-run requirements name a verified adapter.

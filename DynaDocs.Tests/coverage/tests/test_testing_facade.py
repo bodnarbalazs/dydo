@@ -243,6 +243,29 @@ class TestingFacadeTests(unittest.TestCase):
                 self.assertFalse((root / 'results').exists())
                 self.assertEqual([], list(root.glob('*.txt')))
 
+    def test_relative_argv_executable_resolves_from_stack_cwd(self):
+        root = self.fixture()
+        working = root / 'working'
+        working.mkdir()
+        relative_python = os.path.relpath(sys.executable, working)
+        data = manifest()
+        data['stacks'][0]['cwd'] = 'working'
+        data['stacks'][0]['capabilities']['test'] = configured(
+            [relative_python, '-c', "print('RELATIVE_EXECUTABLE_RAN')"], kind='argv')
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+
+        inspected, _, payload = self.invoke(['capabilities'], directory=root)
+        self.assert_exit(inspected, 0)
+        self.assertIn('test: configured', inspected.stdout)
+        self.assertIsNone(payload)
+        self.assertFalse((root / 'results').exists())
+
+        executed, _, payload = self.invoke(['all'], directory=root)
+        self.assert_exit(executed, 0)
+        self.assertIn('RELATIVE_EXECUTABLE_RAN', executed.stdout)
+        self.assert_rows(payload, [('dotnet', 'test', 'passed')])
+        self.assertEqual(relative_python, payload['results'][0]['argv'][0])
+
     def test_stale_required_gate_artifact_cannot_pass(self):
         for capability in ['static', 'coverage', 'mutation']:
             for directory_artifact in [False, True]:
@@ -603,7 +626,10 @@ class TestingFacadeTests(unittest.TestCase):
 
     def test_interrupting_the_real_dotnet_adapter_cleans_its_worktree(self):
         command = [sys.executable, '-u', str(RUNNER), 'test', '--stack', 'dotnet', '--', '--filter', 'FullyQualifiedName~ConsoleCaptureTests.Stderr_RestoresConsoleError_WhenActionSucceeds']
-        facade = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0, start_new_session=os.name != 'nt')
+        facade = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                  text=True, encoding='utf-8', errors='replace',
+                                  creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
+                                  start_new_session=os.name != 'nt')
         lines, output = queue.Queue(), []
         def collect():
             for line in facade.stdout:

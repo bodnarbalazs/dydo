@@ -127,7 +127,17 @@ def valid_unavailable(config):
                  and all(isinstance(item, str) and item for item in config["exampleArgv"])))
 
 
-def command_error(capability, config, root, since, inspection=False):
+def resolve_executable(value, working_directory):
+    executable = Path(value)
+    if not executable.is_absolute() and executable.parent != Path("."):
+        executable = (working_directory / executable).resolve()
+    search_path = None
+    if sys.platform == "win32" and executable.parent == Path("."):
+        search_path = os.pathsep.join((str(working_directory), os.environ.get("PATH", "")))
+    return shutil.which(str(executable), path=search_path)
+
+
+def command_error(capability, config, root, working_directory, since, inspection=False):
     if not isinstance(config, dict) or config.get("state") not in ("configured", "unavailable"):
         return None, None, "invalid capability state"
     if config["state"] == "unavailable":
@@ -164,7 +174,7 @@ def command_error(capability, config, root, since, inspection=False):
     elif any("{base}" in x for x in argv):
         return None, None, "{base} is only valid for mutation"
     actual = [sys.executable, *argv] if command["kind"] == "current-python" else list(argv)
-    if command["kind"] == "argv" and not shutil.which(actual[0]):
+    if command["kind"] == "argv" and not resolve_executable(actual[0], working_directory):
         return None, None, f"missing executable: {actual[0]}"
     return actual, artifacts, None
 
@@ -174,7 +184,8 @@ def prepare_row(stack, capability, root, since=None, inspection=False):
     if error:
         return None, None, "invalid", error
     config = stack["capabilities"][capability]
-    argv, artifacts, error = command_error(capability, config, root, since, inspection)
+    working_directory = contained(root, stack["cwd"])
+    argv, artifacts, error = command_error(capability, config, root, working_directory, since, inspection)
     if error and not valid_unavailable(config):
         return None, None, "invalid", error
     state, reason = evidence_error(stack, root)
@@ -218,9 +229,10 @@ def run_row(stack, capability, root, since, forwarded):
         argv += forwarded
     child = None
     try:
+        working_directory = contained(root, stack["cwd"])
         before = {item["path"]: artifact_snapshot(root, item["path"]) for item in artifacts
                   if item["required"] and capability != "test"}
-        child = subprocess.Popen(argv, cwd=contained(root, stack["cwd"]), env={**os.environ, "PYTHON": sys.executable}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                                  start_new_session=sys.platform != "win32")
         child.wait()
         if child.returncode == 0:

@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -109,11 +110,34 @@ def remove_worktree(worktree):
         for attempt in range(3):
             try:
                 shutil.rmtree(str(worktree))
-                return
+                break
             except OSError:
                 if attempt < 2:
                     import time
                     time.sleep(1)
+    if is_registered_worktree(worktree):
+        _git("worktree", "remove", "--force", str(worktree))
+
+
+@contextmanager
+def defer_interruption():
+    """Publish directory ownership before delivering a graceful interruption."""
+    interrupted = False
+    previous = {}
+
+    def remember_interrupt(signum, frame):
+        nonlocal interrupted
+        interrupted = True
+
+    try:
+        for signum in [signal.SIGINT, *([signal.SIGBREAK] if sys.platform == "win32" else [])]:
+            previous[signum] = signal.signal(signum, remember_interrupt)
+        yield
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+        if interrupted:
+            raise KeyboardInterrupt
 
 
 def run_tests(extra_args=None, coverage=False):
@@ -125,12 +149,13 @@ def run_tests(extra_args=None, coverage=False):
         if candidate.exists() or is_registered_worktree(candidate):
             print(f"Failed to allocate test worktree path at {candidate}", file=sys.stderr)
             return 1
-        try:
-            candidate.mkdir()
-        except OSError as exc:
-            print(f"Failed to allocate test worktree path at {candidate}: {exc}", file=sys.stderr)
-            return 1
-        worktree = candidate
+        with defer_interruption():
+            try:
+                candidate.mkdir()
+            except OSError as exc:
+                print(f"Failed to allocate test worktree path at {candidate}: {exc}", file=sys.stderr)
+                return 1
+            worktree = candidate
         if not create_worktree(worktree):
             return 1
         print(f"  Worktree: {worktree}")

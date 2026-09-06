@@ -729,6 +729,85 @@ class TestingFacadeTests(unittest.TestCase):
                                      text=True, capture_output=True, check=True).stdout
             self.assertNotIn('worktree ' + candidate.as_posix(), listing)
 
+    def test_interrupt_at_atomic_directory_acquisition_preserves_ownership(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        for collision in [False, True]:
+            for interrupt in ['SIGINT', *(['SIGBREAK'] if os.name == 'nt' else [])]:
+                with self.subTest(collision=collision, interrupt=interrupt), tempfile.TemporaryDirectory(prefix='dydo-acquire-signal-') as temporary:
+                    candidate = Path(temporary) / 'dydo-test-ac0011ed'
+                    harness = (
+                        "import importlib.util,signal\nfrom pathlib import Path\nfrom types import SimpleNamespace\n"
+                        f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
+                        "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
+                        f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
+                        "module.uuid.uuid4=lambda: SimpleNamespace(hex='ac0011ed')\n"
+                        "original=Path.mkdir\n"
+                        "class Collision(FileExistsError):\n"
+                        "    def __str__(self):\n"
+                        f"        signal.raise_signal(signal.{interrupt})\n"
+                        "        return 'foreign collision'\n"
+                        "def interrupted_mkdir(path, *args, **kwargs):\n"
+                        "    original(path, *args, **kwargs)\n"
+                        "    print('DIRECTORY_ACQUIRED', flush=True)\n"
+                        f"    if {collision!r}:\n"
+                        "        (path/'foreign-marker.txt').write_text('foreign owner', encoding='utf-8')\n"
+                        "        raise Collision\n"
+                        f"    signal.raise_signal(signal.{interrupt})\n"
+                        "Path.mkdir=interrupted_mkdir\n"
+                        "try: module.main()\n"
+                        "except SystemExit:\n"
+                        "    assert signal.getsignal(signal.SIGINT) == signal.default_int_handler\n"
+                        "    if hasattr(signal, 'SIGBREAK'): assert signal.getsignal(signal.SIGBREAK) == signal.default_int_handler\n"
+                        "    print('HANDLERS_RESTORED', flush=True)\n"
+                        "    raise\n"
+                    )
+                    process = subprocess.run([sys.executable, '-u', '-c', harness], cwd=ROOT,
+                                             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+                    output = process.stdout + process.stderr
+                    self.assertEqual(130, process.returncode, output)
+                    self.assertIn('DIRECTORY_ACQUIRED', output)
+                    self.assertIn('HANDLERS_RESTORED', output)
+                    self.assertNotIn('Worktree:', output)
+                    self.assertNotIn('Traceback', output)
+                    self.assertEqual(collision, candidate.exists(), output)
+                    if collision:
+                        self.assertEqual('foreign owner', (candidate / 'foreign-marker.txt').read_text(encoding='utf-8'))
+
+    def test_exact_worktree_registration_and_failed_removal_cleanup(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        for failed_remove in [False, True]:
+            with self.subTest(failed_remove=failed_remove), tempfile.TemporaryDirectory(prefix='dydo-registration-audit-') as temporary:
+                candidate = Path(temporary) / 'owned-\u00e1-path'
+                harness = (
+                    "import importlib.util\nfrom pathlib import Path\nfrom types import SimpleNamespace\n"
+                    f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
+                    "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
+                    f"path=Path({str(candidate)!r}); path.mkdir()\n"
+                    "assert module.create_worktree(path)\n"
+                    "original=module._git\n"
+                    "try:\n"
+                    "    assert module.is_registered_worktree(path), 'exact non-ASCII registration not recognized'\n"
+                    "    if module.sys.platform == 'win32': assert module.is_registered_worktree(Path(str(path).upper()))\n"
+                    "    assert not module.is_registered_worktree(Path(str(path)+'-sibling'))\n"
+                    f"    if {failed_remove!r}:\n"
+                    "        def fail_first_remove(*args, capture=False):\n"
+                    "            if args[:3] == ('worktree', 'remove', '--force'):\n"
+                    "                module._git=original\n"
+                    "                print('FIRST_GIT_REMOVE_FAILED', flush=True)\n"
+                    "                return SimpleNamespace(returncode=1)\n"
+                    "            return original(*args, capture=capture)\n"
+                    "        module._git=fail_first_remove\n"
+                    "    module.remove_worktree(path)\n"
+                    "    assert not path.exists(), 'owned directory survived cleanup'\n"
+                    "    assert not module.is_registered_worktree(path), 'owned registration survived fallback cleanup'\n"
+                    "finally:\n"
+                    "    original('worktree', 'remove', '--force', str(path))\n"
+                )
+                process = subprocess.run([sys.executable, '-u', '-c', harness], cwd=ROOT,
+                                         capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+                self.assertEqual(0, process.returncode, process.stdout + process.stderr)
+                self.assertFalse(candidate.exists())
+
     def test_failed_git_add_cleans_only_the_acquired_empty_directory(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
         with tempfile.TemporaryDirectory(prefix='dydo-allocation-failure-') as temporary:

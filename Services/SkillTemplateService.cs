@@ -98,6 +98,8 @@ public static partial class SkillTemplateService
                 resources[resourceName] = path;
         }
 
+        errors.AddRange(FindLegacyResourceDiagnostics(files, sourceRoot, skillFiles, config));
+
         foreach (var (skillName, resources) in resourceFiles)
         {
             if (!skillFiles.ContainsKey(skillName))
@@ -212,6 +214,57 @@ public static partial class SkillTemplateService
 
     private static string GetSourceRoot(string projectRoot, DydoConfig config) =>
         Path.Combine(projectRoot, config.Structure.Root, "_system", "templates");
+
+    private static IEnumerable<string> FindLegacyResourceDiagnostics(
+        IEnumerable<string> files,
+        string sourceRoot,
+        IReadOnlyDictionary<string, string> skillFiles,
+        DydoConfig config)
+    {
+        foreach (var path in files)
+        {
+            var file = Path.GetFileName(path);
+            if (!file.EndsWith(".template.md", StringComparison.Ordinal)
+                || file.StartsWith("skill-", StringComparison.Ordinal)
+                || file.StartsWith("resource-", StringComparison.Ordinal)
+                || !TryParseLegacyResource(file, out var owner, out var resource))
+                continue;
+
+            var canonical = $"resource-{owner}-resource-{resource}.template.md";
+            var canonicalPath = Path.Combine(sourceRoot, canonical);
+            var hasRecordedResource = config.Skills.TryGetValue(owner, out var switchEntry)
+                && switchEntry.Resources?.Contains(resource, StringComparer.Ordinal) == true;
+            var hasMissingReference = skillFiles.TryGetValue(owner, out var ownerPath)
+                && !File.Exists(canonicalPath)
+                && ResourceLinkRegex().Matches(File.ReadAllText(ownerPath))
+                    .Any(match => match.Groups[1].Value.Equals(resource, StringComparison.Ordinal));
+            if (!hasRecordedResource && !hasMissingReference)
+                continue;
+
+            var relative = Path.GetRelativePath(sourceRoot, path).Replace('\\', '/');
+            if (!Path.GetDirectoryName(path)!.Equals(sourceRoot, StringComparison.Ordinal))
+            {
+                yield return $"'{relative}' is nested; local templates must be top-level.";
+                continue;
+            }
+
+            yield return $"'{file}' is a legacy resource source for '{owner}' / '{resource}'. "
+                + $"Use '{canonical}' after checking ownership; run 'dydo template update' for shipped sources.";
+        }
+    }
+
+    private static bool TryParseLegacyResource(string file, out string owner, out string resource)
+    {
+        owner = "";
+        resource = "";
+        var stem = file[..^".template.md".Length];
+        var delimiter = stem.IndexOf("-resource-", StringComparison.Ordinal);
+        if (delimiter < 0)
+            return false;
+        owner = stem[..delimiter];
+        resource = stem[(delimiter + "-resource-".Length)..];
+        return ConfigService.IsValidSlug(owner) && ConfigService.IsValidSlug(resource);
+    }
 
     private static SkillSwitchConfig Clone(SkillSwitchConfig value) => new()
     {

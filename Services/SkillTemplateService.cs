@@ -50,7 +50,7 @@ public static partial class SkillTemplateService
                 continue;
             var isSkill = file.StartsWith("skill-", StringComparison.Ordinal);
             var delimiter = isSkill ? -1 : file.IndexOf("-resource-", StringComparison.Ordinal);
-            if (!isSkill && delimiter < 1)
+            if (!isSkill && delimiter < 0)
                 continue;
             if (Path.GetDirectoryName(path) != sourceRoot)
             {

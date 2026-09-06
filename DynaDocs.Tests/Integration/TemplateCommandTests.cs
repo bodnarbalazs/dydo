@@ -60,6 +60,45 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Theory]
+    [InlineData("sync", false)]
+    [InlineData("update", false)]
+    [InlineData("preview", false)]
+    [InlineData("sync", true)]
+    [InlineData("update", true)]
+    [InlineData("preview", true)]
+    public async Task SourceCommands_RejectEmptyResourceOwnerAtomically(string operation, bool nested)
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var sources = Path.Combine(TestDir, "dydo/_system/templates");
+        File.WriteAllText(Path.Combine(sources, "skill-valid.template.md"),
+            "---\nname: valid\ndescription: Valid source.\nemit: skill\n---\n\n# Valid body\n");
+        (await RunAsync(SyncCommand.Create())).AssertSuccess();
+        Assert.True(new ConfigService().LoadConfigStrict(TestDir)!.Skills["valid"].Enabled);
+        foreach (var provider in new[] { ".claude", ".agents" })
+            Assert.Contains("# Valid body", File.ReadAllText(Path.Combine(TestDir, provider, "skills/valid/SKILL.md")));
+        if (operation != "sync")
+            (await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : [])).AssertSuccess();
+
+        var name = nested ? Path.Combine("nested", "-resource-ghost.template.md") : "-resource-ghost.template.md";
+        var path = Path.Combine(sources, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "# Empty-owner resource\n");
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(file => file, File.ReadAllBytes);
+
+        var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
+            : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains(name, result.Stderr);
+        Assert.Contains(nested ? "is nested; local templates must be top-level" : "invalid skill or resource name", result.Stderr);
+        if (nested)
+            Assert.DoesNotContain("invalid skill or resource name", result.Stderr);
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
     [InlineData("nested/skill-ghost.template.md", "top-level")]
     [InlineData("nested/valid-resource-ghost.template.md", "top-level")]
     [InlineData("skill-Bad.template.md", "invalid skill name")]

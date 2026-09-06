@@ -96,7 +96,7 @@ public class SyncCommandTests : IDisposable
 
     [Theory]
     [InlineData("dydo.json")]
-    [InlineData("dydo/_system/templates/reviewer-resource-code.template.md")]
+    [InlineData("dydo/_system/templates/resource-reviewer-resource-code.template.md")]
     public void ReadResources_LocalInputLostAfterDiscovery_NeverReturnsEmbeddedResource(string missing)
     {
         var config = new ConfigService().LoadConfigStrict(_testDir)!;

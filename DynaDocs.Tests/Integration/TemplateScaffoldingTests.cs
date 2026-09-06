@@ -48,10 +48,10 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         Assert.Contains("skill-specifier.template.md", templateNames);
         Assert.Contains("skill-to-project.template.md", templateNames);
         Assert.Contains("skill-wizard.template.md", templateNames);
-        Assert.Contains("specifier-resource-bug.template.md", templateNames);
-        Assert.Contains("specifier-resource-merge.template.md", templateNames);
-        Assert.Contains("specifier-resource-inquisition.template.md", templateNames);
-        Assert.Contains("wizard-resource-template.template.md", templateNames);
+        Assert.Contains("resource-specifier-resource-bug.template.md", templateNames);
+        Assert.Contains("resource-specifier-resource-merge.template.md", templateNames);
+        Assert.Contains("resource-specifier-resource-inquisition.template.md", templateNames);
+        Assert.Contains("resource-wizard-resource-template.template.md", templateNames);
         Assert.Contains("skill-chief-of-staff.template.md", templateNames);
         Assert.Contains("skill-inquisitor.template.md", templateNames);
         Assert.Contains("skill-self-improvement.template.md", templateNames);
@@ -64,8 +64,8 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         // The inventory is every skill template plus every skill resource
         // template (<skill>-resource-<name>.template.md). A hard-coded count would freeze the
         // inventory the DR 045 taxonomy is about to change.
-        Assert.Contains("reviewer-resource-project-plan.template.md", templateNames);
-        Assert.Contains("reviewer-resource-spec.template.md", templateNames);
+        Assert.Contains("resource-reviewer-resource-project-plan.template.md", templateNames);
+        Assert.Contains("resource-reviewer-resource-spec.template.md", templateNames);
         Assert.DoesNotContain("reviewer-resource-plan.template.md", templateNames);
         Assert.Equal(ShippedTemplateNames(), templateNames.OrderBy(n => n, StringComparer.Ordinal));
     }

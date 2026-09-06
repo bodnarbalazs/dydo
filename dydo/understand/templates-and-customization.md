@@ -18,7 +18,7 @@ that local directory; it never falls back to the executable's embedded copy.
 | Pattern | Becomes |
 |---|---|
 | `skill-<name>.template.md` | the `<name>` skill on both hosts, plus an agent definition when the role emits one |
-| `<role>-resource-<name>.template.md` | `resources/<name>.md` beside that role's compiled skill |
+| `resource-<role>-resource-<name>.template.md` | `resources/<name>.md` beside that role's compiled skill |
 | framework `*.template.md` | a project document `dydo init` writes: the `dydo/` tree, and the runtime entry files at the repository root |
 
 Six of the

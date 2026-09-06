@@ -279,20 +279,42 @@ public static class TemplateCommand
         {
             paths.Add($"_system/templates/skill-{name}.template.md");
             foreach (var resource in skill.Resources ?? [])
-                paths.Add($"_system/templates/{name}-resource-{resource}.template.md");
+                paths.Add($"_system/templates/resource-{name}-resource-{resource}.template.md");
         }
         return paths;
     }
 
     private static bool IsSourceTemplateName(string file)
     {
+        if (IsCanonicalSourceTemplateName(file))
+            return true;
+
+        return TemplateGenerator.GetAllTemplateNames()
+            .Where(name => name.StartsWith("resource-", StringComparison.Ordinal))
+            .Select(LegacyResourceTemplateName)
+            .Contains(file, StringComparer.Ordinal);
+    }
+
+    private static bool IsCanonicalSourceTemplateName(string file)
+    {
         if (!file.EndsWith(".template.md", StringComparison.Ordinal))
             return false;
         var stem = file[..^".template.md".Length];
         if (stem.StartsWith("skill-", StringComparison.Ordinal) && ConfigService.IsValidSlug(stem["skill-".Length..]))
             return true;
-        var parts = stem.Split("-resource-", StringSplitOptions.None);
-        return parts.Length == 2 && parts.All(ConfigService.IsValidSlug);
+        if (!stem.StartsWith("resource-", StringComparison.Ordinal))
+            return false;
+        var remainder = stem["resource-".Length..];
+        var delimiter = remainder.IndexOf("-resource-", StringComparison.Ordinal);
+        return delimiter >= 0
+            && ConfigService.IsValidSlug(remainder[..delimiter])
+            && ConfigService.IsValidSlug(remainder[(delimiter + "-resource-".Length)..]);
+    }
+
+    private static string LegacyResourceTemplateName(string canonical)
+    {
+        var remainder = canonical["resource-".Length..];
+        return remainder;
     }
 
     private static void CopyDirectory(string source, string destination, string dydoRoot)

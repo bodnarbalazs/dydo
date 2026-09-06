@@ -55,7 +55,7 @@ Frontmatter decides each artifact's shape — `emit: agent` (the default) produc
 *and* a skill, `emit: skill` produces the skill alone, `read-only: true` withholds the editing tools,
 `delegates: true` grants the `Agent` tool, and `invocation: explicit` disables model invocation on
 both hosts. A role's `## Must-Reads` links become its agent's context list, links in the compiled body
-are rewritten to resolve from the emitted skill folder, `<role>-resource-<name>.template.md` files
+are rewritten to resolve from the emitted skill folder, `resource-<role>-resource-<name>.template.md` files
 compile into that skill's `resources/`.
 
 Only enabled skills emit, and only to integrations recorded in `dydo.json`; a project with neither recorded — `none`,

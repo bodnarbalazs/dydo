@@ -161,7 +161,7 @@ public class FolderScaffolder : IFolderScaffolder
         foreach (var skill in SkillTemplateService.DiscoverSkills())
         {
             var resources = TemplateGenerator.GetSkillResourceTemplateNames(skill.Name)
-                .Select(name => name[$"{skill.Name}-resource-".Length..^".template.md".Length])
+                .Select(name => name[$"resource-{skill.Name}-resource-".Length..^".template.md".Length])
                 .OrderBy(name => name, StringComparer.Ordinal)
                 .ToList();
             config.Skills[skill.Name] = new SkillSwitchConfig

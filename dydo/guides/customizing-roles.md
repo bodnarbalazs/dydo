@@ -43,7 +43,7 @@ taxonomy. An `emit: agent` role stays `automatic`: an agent's preload cannot rea
 | no `delegates: true` | no `Agent` tool | final `[agents]` table with `enabled = false` and no `max_depth` |
 | `web: true` | `WebFetch` and `WebSearch` tools | top-level `web_search = "live"` |
 | `invocation: explicit` | `disable-model-invocation: true` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` |
-| a shipped `<role>-resource-<n>.template.md` | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
+| a shipped `resource-<role>-resource-<n>.template.md` | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
 
 Codex's generated agent files express the V1 configuration shape. A role without `web: true`
 omits `web_search`, leaving the host setting inherited rather than denying it. Codex V2 may
@@ -59,7 +59,7 @@ spawned agent's context block. Write each target as the document's path under `d
 the compiler normalizes both. Close the list with `{{include:extra-must-reads}}` so a project can add its
 own without editing framework text.
 
-**Resources** — a `<role>-resource-<name>.template.md` is a role's own reference behind a file
+**Resources** — a `resource-<role>-resource-<name>.template.md` is a role's own reference behind a file
 boundary, read only by the branches that need it. A shipped role's body links it as
 `resources/<name>.md`, and the compiler rewrites that to the host's emitted path so even a preloaded
 agent can read it. Shipped roles may use only resources shipped by the running executable. A

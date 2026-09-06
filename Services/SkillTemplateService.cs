@@ -49,8 +49,8 @@ public static partial class SkillTemplateService
             if (!file.EndsWith(".template.md", StringComparison.Ordinal))
                 continue;
             var isSkill = file.StartsWith("skill-", StringComparison.Ordinal);
-            var delimiter = isSkill ? -1 : file.IndexOf("-resource-", StringComparison.Ordinal);
-            if (!isSkill && delimiter < 0)
+            var isResource = file.StartsWith("resource-", StringComparison.Ordinal);
+            if (!isSkill && !isResource)
                 continue;
             if (Path.GetDirectoryName(path) != sourceRoot)
             {
@@ -72,8 +72,15 @@ public static partial class SkillTemplateService
                 continue;
             }
 
-            var skillName = file[..delimiter];
-            var resourceName = file[(delimiter + "-resource-".Length)..^".template.md".Length];
+            var remainder = file["resource-".Length..^".template.md".Length];
+            var delimiter = remainder.IndexOf("-resource-", StringComparison.Ordinal);
+            if (delimiter < 0)
+            {
+                errors.Add($"'{file}' has an invalid skill or resource name.");
+                continue;
+            }
+            var skillName = remainder[..delimiter];
+            var resourceName = remainder[(delimiter + "-resource-".Length)..];
             if (!ConfigService.IsValidSlug(skillName) || !ConfigService.IsValidSlug(resourceName))
             {
                 errors.Add($"'{file}' has an invalid skill or resource name.");
@@ -137,12 +144,12 @@ public static partial class SkillTemplateService
 
             var resources = resourceFiles.GetValueOrDefault(name) ?? new Dictionary<string, string>();
             var embeddedResources = TemplateGenerator.GetSkillResourceTemplateNames(name)
-                .Select(file => file[$"{name}-resource-".Length..^".template.md".Length])
+                .Select(file => file[$"resource-{name}-resource-".Length..^".template.md".Length])
                 .ToHashSet(StringComparer.Ordinal);
             if (shipped)
             {
                 foreach (var resource in resources.Keys.Where(resource => !embeddedResources.Contains(resource)))
-                    errors.Add($"'{name}-resource-{resource}.template.md' adds a resource to shipped skill '{name}'.");
+                    errors.Add($"'resource-{name}-resource-{resource}.template.md' adds a resource to shipped skill '{name}'.");
             }
 
             var contentWithIncludes = ResolveIncludesStrict(File.ReadAllText(path), projectRoot, path);
@@ -198,7 +205,7 @@ public static partial class SkillTemplateService
             .OrderBy(name => name, StringComparer.Ordinal);
         foreach (var name in resources)
         {
-            var path = Path.Combine(root, $"{skill.Name}-resource-{name}.template.md");
+            var path = Path.Combine(root, $"resource-{skill.Name}-resource-{name}.template.md");
             yield return ($"{name}.md", File.ReadAllText(path));
         }
     }

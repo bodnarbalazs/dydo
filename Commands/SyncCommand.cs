@@ -389,7 +389,7 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// Skill resource templates (<skill>-resource-<name>.template.md) compile into the
+    /// Skill resource templates (resource-<skill>-resource-<name>.template.md) compile into the
     /// skill folder's resources/ (DR-039 review-target subskills; DR-042). Resource bodies are
     /// copied verbatim: they are authored one folder deeper than SKILL.md and already carry the
     /// climbs that resolve from resources/, so the skill-body link rewrite must not reach them.

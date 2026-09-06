@@ -28,7 +28,7 @@ public class TemplateCommandTests : IntegrationTestBase
         var sources = Path.Combine(TestDir, "dydo/_system/templates");
         File.WriteAllText(Path.Combine(sources, "skill-valid.template.md"),
             "---\nname: valid\ndescription: Valid source.\nemit: agent\nargument-hint: context\n---\n\n# Valid body\n\n[Guide](resources/guide.md)\n");
-        File.WriteAllText(Path.Combine(sources, "valid-resource-guide.template.md"), "# Valid resource\n");
+        File.WriteAllText(Path.Combine(sources, "resource-valid-resource-guide.template.md"), "# Valid resource\n");
         (await RunAsync(SyncCommand.Create())).AssertSuccess();
         var config = new ConfigService().LoadConfigStrict(TestDir)!;
         Assert.True(config.Skills["valid"].Enabled);
@@ -79,7 +79,7 @@ public class TemplateCommandTests : IntegrationTestBase
         if (operation != "sync")
             (await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : [])).AssertSuccess();
 
-        var name = nested ? Path.Combine("nested", "-resource-ghost.template.md") : "-resource-ghost.template.md";
+        var name = nested ? Path.Combine("nested", "resource--resource-ghost.template.md") : "resource--resource-ghost.template.md";
         var path = Path.Combine(sources, name);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "# Empty-owner resource\n");
@@ -100,11 +100,11 @@ public class TemplateCommandTests : IntegrationTestBase
 
     [Theory]
     [InlineData("nested/skill-ghost.template.md", "top-level")]
-    [InlineData("nested/valid-resource-ghost.template.md", "top-level")]
+    [InlineData("nested/resource-valid-resource-ghost.template.md", "top-level")]
     [InlineData("skill-Bad.template.md", "invalid skill name")]
     [InlineData("skill-bad-resource-name.template.md", "invalid skill name")]
     [InlineData("skill-ghost.template.md", "frontmatter")]
-    [InlineData("valid-resource-ghost.template.md", "no matching skill source")]
+    [InlineData("resource-valid-resource-ghost.template.md", "no matching skill source")]
     public async Task SourceCommands_RejectRecognizedInvalidSourcesAtomically(string name, string reason)
     {
         (await InitProjectAsync()).AssertSuccess();
@@ -157,10 +157,10 @@ public class TemplateCommandTests : IntegrationTestBase
         await InitProjectAsync();
         var configPath = Path.Combine(TestDir, "dydo.json");
         var config = new ConfigService().LoadConfigStrict(TestDir)!;
-        config.FrameworkHashes.Remove("_system/templates/reviewer-resource-code.template.md");
+        config.FrameworkHashes.Remove("_system/templates/resource-reviewer-resource-code.template.md");
         config.Skills["reviewer"].Resources!.Remove("code");
         new ConfigService().SaveConfig(config, configPath);
-        File.WriteAllText(Path.Combine(TestDir, "dydo/_system/templates/reviewer-resource-code.template.md"),
+        File.WriteAllText(Path.Combine(TestDir, "dydo/_system/templates/resource-reviewer-resource-code.template.md"),
             "CUSTOM RESOURCE SENTINEL — preserve exactly");
         var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
             .ToDictionary(path => path, File.ReadAllBytes);
@@ -168,7 +168,7 @@ public class TemplateCommandTests : IntegrationTestBase
         var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
 
         Assert.NotEqual(0, result.ExitCode);
-        result.AssertStderrContains("reviewer-resource-code.template.md");
+        result.AssertStderrContains("resource-reviewer-resource-code.template.md");
         Assert.Contains("collides", result.Stderr);
         Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
         Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
@@ -176,7 +176,7 @@ public class TemplateCommandTests : IntegrationTestBase
 
     [Theory]
     [InlineData("skill-reviewer.template.md")]
-    [InlineData("reviewer-resource-code.template.md")]
+    [InlineData("resource-reviewer-resource-code.template.md")]
     public async Task TemplateUpdate_MissingSourceHash_ReportsPreviewAndAppliedReconciliation(string file)
     {
         await InitProjectAsync();

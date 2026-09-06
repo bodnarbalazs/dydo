@@ -22,7 +22,10 @@ py DynaDocs.Tests/coverage/gap_check.py gate mutation --since BASE
 `test --stack NAME -- ARGS` runs only one selected test adapter and forwards the arguments
 after `--` as literal argv items. `all` runs every declared test adapter by default, or the
 selected stacks in manifest order. `gate static`, `gate coverage`, and `gate mutation --since
-BASE` run only that capability. `capabilities` reports configuration without running anything.
+BASE` run only that capability. `capabilities` checks the same stack, isolation, command and path
+contracts without running children or creating result artifacts. Valid configuration, including
+declared unavailable capabilities, returns 0; malformed entries are reported as invalid alongside
+valid peers and return 2. Mutation's argv structure is checked without requiring `--since` for inspection.
 `--force-run` selects every test, static, and coverage row; it never runs mutation.
 
 Bare invocation prints help, creates no result, and exits 2. A recognized operation writes one
@@ -45,8 +48,11 @@ named stacks. A stack declares `name`, `kind`, `cwd`, `isolation`, and all four 
 running interpreter. An unavailable capability has a reason and is a failed-closed result, not a
 passing gate.
 
-Manifest cwd, adapter and artifact paths are repository-relative and contained. A configured non-test gate must declare and produce a required
-artifact after a successful child exit. Mutation has exactly one argv item equal to `{base}`; the
+Manifest cwd, adapter and artifact paths are repository-relative and contained. A configured non-test
+gate must declare required artifacts and create or observably refresh each one during its successful
+child invocation. The facade compares file metadata and content, recursively for directory artifacts;
+an unchanged old report cannot pass. It never deletes or modifies old evidence to manufacture freshness.
+Mutation has exactly one argv item equal to `{base}`; the
 facade replaces that one item with `--since`'s value. Isolation is a project adapter claim:
 in-place work has direct evidence, while worktree and per-run requirements name a verified adapter.
 The facade does not invent isolation.

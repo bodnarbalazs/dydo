@@ -161,6 +161,7 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertIn(name, p.stdout)
         self.assertEqual([], list(root.glob('*.txt')))
         self.assertIsNone(payload)
+        self.assertFalse((root / 'results').exists())
 
     def test_capabilities_reports_malformed_rows_without_executing(self):
         for malformed in [None, [], 4, 'configured']:
@@ -177,6 +178,132 @@ class TestingFacadeTests(unittest.TestCase):
                     self.assertIn('peer:', p.stdout)
                     self.assertEqual([], list(root.glob('*.txt')))
                     self.assertIsNone(payload)
+
+    def test_capabilities_validates_configuration_without_execution(self):
+        cases = [
+            (('kind',), ''),
+            (('cwd',), '../outside'),
+            (('isolation',), {}),
+            (('isolation',), {'requirement': 'per-run-artifacts', 'evidence': {'state': 'verified', 'kind': 'adapter', 'path': '../adapter.py'}}),
+            (('isolation', 'evidence'), {'state': 'unavailable', 'reason': ''}),
+            (('capabilities', 'test', 'reason'), 'forbidden'),
+            (('capabilities', 'test', 'command', 'kind'), 'shell'),
+            (('capabilities', 'test', 'command', 'argv'), []),
+            (('capabilities', 'test', 'command'), {'kind': 'argv', 'argv': ['dydo-no-such-executable-5f71']}),
+            (('capabilities', 'test'), {'state': 'unavailable', 'reason': ''}),
+            (('capabilities', 'test'), {'state': 'unavailable', 'reason': 'pending', 'command': {'kind': 'current-python', 'argv': ['-c', 'pass']}}),
+            (('capabilities', 'test'), {'state': 'unavailable', 'reason': 'pending', 'artifacts': []}),
+            (('capabilities', 'coverage', 'artifacts'), [{'path': '../old-report', 'required': True}]),
+            (('capabilities', 'mutation', 'command', 'argv'), ['-c', 'pass']),
+            (('capabilities', 'mutation', 'command', 'argv'), ['-c', 'pass', '{base}', '{base}']),
+            (('capabilities', 'mutation', 'command', 'argv'), ['-c', 'pass', '--base={base}']),
+        ]
+        for keys, value in cases:
+            with self.subTest(keys=keys, value=value):
+                bad = stack('bad')
+                target = bad
+                for key in keys[:-1]:
+                    target = target[key]
+                target[keys[-1]] = value
+                p, root, payload = self.invoke(['capabilities'], manifest(bad, stack('peer')))
+                self.assert_exit(p, 2)
+                bad_output, peer_output = p.stdout.split('peer:')
+                self.assertIn('invalid', bad_output)
+                for capability in CAPABILITIES:
+                    self.assertIn(f'{capability}: configured', peer_output)
+                self.assertIsNone(payload)
+                self.assertFalse((root / 'results').exists())
+                self.assertEqual([], list(root.glob('*.txt')))
+
+    def test_capabilities_rejects_escaping_result_root_without_execution(self):
+        data = manifest()
+        data['artifactRoot'] = '../escaped-results'
+        p, root, payload = self.invoke(['capabilities'], data)
+        self.assert_exit(p, 2)
+        self.assertIn('artifactRoot', p.stderr)
+        self.assertIsNone(payload)
+        self.assertFalse((root / 'results').exists())
+        self.assertEqual([], list(root.glob('*.txt')))
+
+    def test_capabilities_rejects_missing_absolute_executable_and_unavailable_masking(self):
+        for unavailable_isolation in [False, True]:
+            with self.subTest(unavailable_isolation=unavailable_isolation):
+                root = self.fixture()
+                bad = stack('bad')
+                bad['capabilities']['test']['command'] = {'kind': 'argv', 'argv': [str(root / 'missing.exe')]}
+                if unavailable_isolation:
+                    bad['isolation']['evidence'] = {'state': 'unavailable', 'reason': 'adapter pending'}
+                (root / 'gap_check.json').write_text(json.dumps(manifest(bad, stack('peer'))), encoding='utf-8')
+                p, _, payload = self.invoke(['capabilities'], directory=root)
+                self.assert_exit(p, 2)
+                self.assertIn('test: invalid', p.stdout)
+                self.assertIn('missing executable', p.stdout)
+                self.assertIn('peer:', p.stdout)
+                self.assertIsNone(payload)
+                self.assertFalse((root / 'results').exists())
+                self.assertEqual([], list(root.glob('*.txt')))
+
+    def test_stale_required_gate_artifact_cannot_pass(self):
+        for capability in ['static', 'coverage', 'mutation']:
+            for directory_artifact in [False, True]:
+                with self.subTest(capability=capability, directory_artifact=directory_artifact):
+                    data = manifest(stack('stale'), stack('peer'))
+                    argv = ['-c', 'pass'] + (['{base}'] if capability == 'mutation' else [])
+                    data['stacks'][0]['capabilities'][capability] = configured(argv, [{'path': 'old-report', 'required': True}])
+                    root = self.fixture(data)
+                    report = root / 'old-report'
+                    if directory_artifact:
+                        report.mkdir()
+                        report = report / 'evidence.txt'
+                    report.write_bytes(b'old candidate evidence')
+                    before = report.stat()
+                    p, _, payload = self.invoke(['gate', capability] + (['--since', 'BASE'] if capability == 'mutation' else []), directory=root)
+                    self.assert_exit(p, 2)
+                    self.assert_rows(payload, [('stale', capability, 'invalid'), ('peer', capability, 'passed')])
+                    self.assertEqual(0, payload['results'][0]['childExit'])
+                    self.assertEqual(2, payload['results'][0]['resultExit'])
+                    self.assertEqual(2, payload['aggregateExit'])
+                    self.assertEqual(b'old candidate evidence', report.read_bytes())
+                    self.assertEqual((before.st_mtime_ns, before.st_ino), (report.stat().st_mtime_ns, report.stat().st_ino))
+
+    def test_new_or_refreshed_required_artifact_passes(self):
+        for directory_artifact in [False, True]:
+            for change in ['new', 'content', 'timestamp']:
+                with self.subTest(directory_artifact=directory_artifact, change=change):
+                    target = 'report/nested/evidence.txt' if directory_artifact else 'report'
+                    code = f"import os; from pathlib import Path; p=Path({target!r}); p.parent.mkdir(parents=True, exist_ok=True); "
+                    if change == 'timestamp':
+                        code += 's=p.stat(); os.utime(p, ns=(s.st_atime_ns, s.st_mtime_ns+1000000000))'
+                    elif change == 'content':
+                        code += "s=p.stat(); p.write_bytes(b'new evidence'); os.utime(p, ns=(s.st_atime_ns, s.st_mtime_ns))"
+                    else:
+                        code += "p.write_bytes(b'new evidence')"
+                    data = manifest()
+                    data['stacks'][0]['capabilities']['static'] = configured(['-c', code], [{'path': 'report', 'required': True}])
+                    root = self.fixture(data)
+                    report = root / target
+                    if change != 'new':
+                        report.parent.mkdir(parents=True, exist_ok=True)
+                        report.write_bytes(b'old evidence')
+                    p, _, payload = self.invoke(['gate', 'static'], directory=root)
+                    self.assert_exit(p, 0)
+                    self.assert_rows(payload, [('dotnet', 'static', 'passed')])
+                    self.assertEqual(0, payload['aggregateExit'])
+                    self.assertEqual(b'old evidence' if change == 'timestamp' else b'new evidence', report.read_bytes())
+
+    def test_every_required_artifact_must_be_refreshed(self):
+        data = manifest()
+        data['stacks'][0]['capabilities']['coverage'] = configured(
+            ['-c', "from pathlib import Path; Path('new-report').write_text('fresh')"],
+            [{'path': 'new-report', 'required': True}, {'path': 'old-report', 'required': True}])
+        root = self.fixture(data)
+        (root / 'old-report').write_bytes(b'old evidence')
+        p, _, payload = self.invoke(['gate', 'coverage'], directory=root)
+        self.assert_exit(p, 2)
+        self.assertEqual('invalid', payload['results'][0]['state'])
+        self.assertEqual(0, payload['results'][0]['childExit'])
+        self.assertEqual(b'old evidence', (root / 'old-report').read_bytes())
+        self.assertEqual('fresh', (root / 'new-report').read_text())
 
     def test_non_utf8_manifest_is_globally_invalid(self):
         root = self.fixture()

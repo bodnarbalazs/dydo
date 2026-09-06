@@ -23,10 +23,17 @@ compatibility full-G operation: it selects test, static, and coverage for every 
 while any selected row is unavailable or invalid. Mutation is separate.
 
 The facade runs argv arrays without a shell. It appends native test arguments only after `test ... --`.
-Configured gate rows declare required artifacts, which must exist before a successful child becomes a
-passing gate. Each run writes a machine-readable `result.json` below the configured artifact root
+Configured gate rows declare required artifacts. A successful child must create or observably refresh
+every required file or directory; unchanged evidence from an earlier run is invalid. The facade
+compares metadata and file content, including directory descendants, without removing old evidence.
+Each execution writes a machine-readable `result.json` below the configured artifact root
 and prints its location. Results preserve raw child exits and aggregate to 0 for pass, 1 for a
 measured failure, 2 for invalid or unavailable work, and 130 after interrupted adapter cleanup.
+
+`capabilities` uses the same non-executing stack, isolation, command and path validation. It reports
+invalid entries alongside valid peers and returns 2 for malformed configuration; a valid manifest
+returns 0 even when capabilities are declared unavailable. Inspection needs no mutation comparison
+base and creates neither child processes nor result artifacts.
 
 DynaDocs currently has a verified worktree-isolated .NET test adapter, Python and Node conformance
 adapters, and unavailable static/coverage (DYD-96) and mutation (DYD-103) rows. It does not claim a

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run this project's declared tests and assurance gates without a shell."""
+import hashlib
 import json
 import os
 import signal
@@ -126,7 +127,7 @@ def valid_unavailable(config):
                  and all(isinstance(item, str) and item for item in config["exampleArgv"])))
 
 
-def command_error(capability, config, root, since):
+def command_error(capability, config, root, since, inspection=False):
     if not isinstance(config, dict) or config.get("state") not in ("configured", "unavailable"):
         return None, None, "invalid capability state"
     if config["state"] == "unavailable":
@@ -156,38 +157,81 @@ def command_error(capability, config, root, since):
     if capability == "mutation":
         if argv.count("{base}") != 1 or any("{base}" in x and x != "{base}" for x in argv):
             return None, None, "mutation requires exactly one argv element equal to {base} and no substring occurrence"
-        if not since:
+        if not since and not inspection:
             return None, None, "mutation requires --since BASE"
-        argv = [since if x == "{base}" else x for x in argv]
+        if since is not None:
+            argv = [since if x == "{base}" else x for x in argv]
     elif any("{base}" in x for x in argv):
         return None, None, "{base} is only valid for mutation"
     actual = [sys.executable, *argv] if command["kind"] == "current-python" else list(argv)
-    if command["kind"] == "argv" and not Path(actual[0]).is_absolute() and not shutil.which(actual[0]):
+    if command["kind"] == "argv" and not shutil.which(actual[0]):
         return None, None, f"missing executable: {actual[0]}"
     return actual, artifacts, None
 
 
-def run_row(stack, capability, root, since, forwarded):
+def prepare_row(stack, capability, root, since=None, inspection=False):
     error = stack_error(stack, root)
     if error:
-        return result(stack, capability, "invalid", reason=error)
+        return None, None, "invalid", error
+    config = stack["capabilities"][capability]
+    argv, artifacts, error = command_error(capability, config, root, since, inspection)
+    if error and not valid_unavailable(config):
+        return None, None, "invalid", error
     state, reason = evidence_error(stack, root)
     if state != "passed":
-        return result(stack, capability, state, reason=reason)
-    config = stack["capabilities"][capability]
-    argv, artifacts, error = command_error(capability, config, root, since)
+        return None, None, state, reason
     if error:
-        return result(stack, capability, "unavailable" if valid_unavailable(config) else "invalid", reason=error)
+        return None, None, "unavailable", error
+    return argv, artifacts, "configured", None
+
+
+def artifact_snapshot(root, value):
+    path = contained(root, value)
+    if path is None:
+        raise ContractError(f"artifact escapes repository: {value}")
+    if not path.exists():
+        return None
+    entries = [path, *sorted(path.rglob("*"))] if path.is_dir() else [path]
+    snapshot = []
+    for entry in entries:
+        if not entry.resolve().is_relative_to(root):
+            raise ContractError(f"artifact entry escapes repository: {entry}")
+        info = entry.stat()
+        digest = None
+        if entry.is_file():
+            hasher = hashlib.sha256()
+            with entry.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(65536), b""):
+                    hasher.update(chunk)
+            digest = hasher.digest()
+        elif not entry.is_dir():
+            raise ContractError(f"artifact is not a file or directory: {entry}")
+        snapshot.append((str(entry.relative_to(path)), info.st_mode, info.st_ino, info.st_size, info.st_mtime_ns, digest))
+    return snapshot
+
+
+def run_row(stack, capability, root, since, forwarded):
+    argv, artifacts, state, reason = prepare_row(stack, capability, root, since)
+    if state != "configured":
+        return result(stack, capability, state, reason=reason)
     if capability == "test":
         argv += forwarded
+    child = None
     try:
+        before = {item["path"]: artifact_snapshot(root, item["path"]) for item in artifacts
+                  if item["required"] and capability != "test"}
         child = subprocess.Popen(argv, cwd=contained(root, stack["cwd"]), env={**os.environ, "PYTHON": sys.executable}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                                  start_new_session=sys.platform != "win32")
         child.wait()
-        if child.returncode == 0 and capability != "test" and any(x["required"] and not contained(root, x["path"]).exists() for x in artifacts):
-            return result(stack, capability, "invalid", argv=argv, childExit=child.returncode, artifacts=artifacts, reason="required artifact was not produced")
+        if child.returncode == 0:
+            for path, previous in before.items():
+                current = artifact_snapshot(root, path)
+                if current is None or current == previous:
+                    return result(stack, capability, "invalid", argv=argv, childExit=0, artifacts=artifacts, reason=f"required artifact was not produced or refreshed: {path}")
         return result(stack, capability, "passed" if child.returncode == 0 else "failed", argv=argv, childExit=child.returncode, artifacts=artifacts)
     except KeyboardInterrupt:
+        if child is None:
+            return result(stack, capability, "interrupted", argv=argv, artifacts=artifacts, reason="interrupted before adapter launch")
         try:
             if sys.platform == "win32":
                 child.send_signal(signal.CTRL_BREAK_EVENT)
@@ -198,8 +242,8 @@ def run_row(stack, capability, root, since, forwarded):
             child.kill()
             child.wait()
         return result(stack, capability, "interrupted", argv=argv, childExit=child.returncode, artifacts=artifacts, reason="adapter interrupted after cleanup window")
-    except OSError as error:
-        return result(stack, capability, "invalid", argv=argv, artifacts=artifacts, reason=f"unable to start adapter: {error}")
+    except (OSError, ContractError) as error:
+        return result(stack, capability, "invalid", argv=argv, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
 
 
 def request(args):
@@ -237,23 +281,15 @@ def candidate_identity(root):
     return {"commit": git.stdout.strip() if git.returncode == 0 else "unknown", "dirty": bool(dirty.stdout)}
 
 
-def print_capabilities(stacks):
+def print_capabilities(stacks, root):
     exit_code = 0
     for stack in stacks:
         print(f"{stack['name']}:")
-        capabilities = stack.get("capabilities")
-        if not isinstance(capabilities, dict) or set(capabilities) != set(CAPS):
-            print("  invalid: capabilities must contain exactly test, static, coverage and mutation")
-            exit_code = 2
-            continue
         for capability in CAPS:
-            config = capabilities[capability]
-            state = config.get("state") if isinstance(config, dict) else None
-            if state not in ("configured", "unavailable"):
-                print(f"  {capability}: invalid capability state")
+            _, _, state, diagnostic = prepare_row(stack, capability, root, inspection=True)
+            if state == "invalid":
                 exit_code = 2
-                continue
-            reason = f": {config['reason']}" if config.get("reason") else ""
+            reason = f": {diagnostic}" if diagnostic else ""
             print(f"  {capability}: {state}{reason}")
     return exit_code
 
@@ -289,7 +325,7 @@ def main(argv=None):
             raise ContractError("unknown selected stack")
         selected = [item for item in all_stacks if names is None or item["name"] in names]
         if name == "capabilities":
-            return print_capabilities(selected)
+            return print_capabilities(selected, root)
         candidate = candidate_identity(root)
         rows = []
         for stack in selected:

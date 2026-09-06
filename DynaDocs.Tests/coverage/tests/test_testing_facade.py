@@ -773,6 +773,109 @@ class TestingFacadeTests(unittest.TestCase):
                     if collision:
                         self.assertEqual('foreign owner', (candidate / 'foreign-marker.txt').read_text(encoding='utf-8'))
 
+    def test_interruption_restores_all_handlers_before_delivery(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        harness = r'''
+import importlib.util
+import itertools
+import json
+import signal
+import sys
+from types import SimpleNamespace
+
+spec = importlib.util.spec_from_file_location('adapter', sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+native = [signal.SIGINT, *([signal.SIGBREAK] if sys.platform == 'win32' else [])]
+original_signal = signal.signal
+original_handlers = {sig: signal.getsignal(sig) for sig in native}
+observations = []
+
+def prior_int(signum, frame):
+    signal.default_int_handler(signum, frame)
+
+def prior_break(signum, frame):
+    signal.default_int_handler(signum, frame)
+
+try:
+    for platform in dict.fromkeys([sys.platform, 'linux']):
+        module.sys = SimpleNamespace(platform=platform)
+        installed = native if platform == 'win32' else [signal.SIGINT]
+        prior = {sig: prior_int if sig == signal.SIGINT else prior_break for sig in native}
+        bodies = [[], *[[sig] for sig in installed], installed * 2, ['KeyboardInterrupt'], ['ValueError']]
+        for body, position, phase, injection in itertools.product(
+                bodies, installed, ['after', 'before'], [*installed, 'KeyboardInterrupt', None]):
+            for sig, handler in prior.items():
+                original_signal(sig, handler)
+            remaining = 2
+            restoration_calls = []
+
+            def restoring_signal(signum, handler):
+                global remaining
+                restoring = handler is prior[signum]
+                if restoring:
+                    restoration_calls.append(signal.Signals(signum).name)
+                inject = restoring and signum == position and remaining > 0 and injection is not None
+                if inject:
+                    remaining -= 1
+                if phase == 'after' or not inject:
+                    result = original_signal(signum, handler)
+                if inject:
+                    if injection == 'KeyboardInterrupt':
+                        raise KeyboardInterrupt
+                    signal.raise_signal(injection)
+                if phase == 'before' and inject:
+                    result = original_signal(signum, handler)
+                return result
+
+            signal.signal = restoring_signal
+            caught = None
+            restored_at_delivery = None
+            try:
+                with module.defer_interruption():
+                    for pending in body:
+                        if pending == 'KeyboardInterrupt':
+                            raise KeyboardInterrupt
+                        if pending == 'ValueError':
+                            raise ValueError('body exception')
+                        signal.raise_signal(pending)
+            except (KeyboardInterrupt, ValueError) as exc:
+                caught = type(exc).__name__
+                restored_at_delivery = all(signal.getsignal(sig) is handler for sig, handler in prior.items())
+            finally:
+                signal.signal = original_signal
+            restored = all(signal.getsignal(sig) is handler for sig, handler in prior.items())
+            subsequent = []
+            for sig in installed:
+                try:
+                    signal.raise_signal(sig)
+                except KeyboardInterrupt:
+                    subsequent.append(signal.Signals(sig).name)
+            row = dict(platform=platform, body=[str(item) for item in body],
+                       position=signal.Signals(position).name, phase=phase, injection=str(injection),
+                       caught=caught, restored_at_delivery=restored_at_delivery,
+                       restored=restored, subsequent=subsequent, restoration_calls=restoration_calls)
+            observations.append(row)
+            print(json.dumps(row), flush=True)
+            expected = 'KeyboardInterrupt' if injection is not None or body else None
+            if injection is None and body == ['ValueError']:
+                expected = 'ValueError'
+            assert caught == expected, row
+            assert restored, row
+            assert restored_at_delivery if caught else restored_at_delivery is None, row
+            assert subsequent == [signal.Signals(sig).name for sig in installed], row
+finally:
+    signal.signal = original_signal
+    for sig, handler in original_handlers.items():
+        original_signal(sig, handler)
+print('RESTORATION_MATRIX_CASES=' + str(len(observations)))
+'''
+        process = subprocess.run([sys.executable, '-u', '-c', harness, str(adapter)], cwd=ROOT,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=30)
+        output = process.stdout + process.stderr
+        self.assertEqual(0, process.returncode, output)
+        self.assertIn('RESTORATION_MATRIX_CASES=126' if os.name == 'nt' else 'RESTORATION_MATRIX_CASES=30', output)
+
     def test_exact_worktree_registration_and_failed_removal_cleanup(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
         for failed_remove in [False, True]:

@@ -183,27 +183,22 @@ When uncertain about security implications, stop and research or ask.
 
 An acceptance criterion is a scenario when it can be one, else a gate.
 
-Every module carries a **tier**. T1 is the default. T2 and T3 are declared by a comment in the first
-ten lines of the module's test file, and the Issue's plan says which tier the work must meet.
+Every maintained module has one assurance policy. Build warnings and stack strictness are errors; no
+unused locals, parameters, private members, exports, or files remain; all tests pass and every
+non-trivial module has a test file. Per module, line coverage is at least 80% and branch coverage is
+at least 60%. Per method, HCRAP (`CC² × (1 − coverage)³ + cognitive`) and cognitive complexity are
+at most 20. Functions have at most seven parameters outside constructors. Nested ternaries are forbidden where a stack has a
+mechanism; clones of at least 15 lines and 100 tokens are forbidden, and namespace or module
+dependency cycles are forbidden.
 
-| Metric | T1 | T2 | T3 |
-|---|---|---|---|
-| Line coverage | ≥ 80% | 100% | 100% |
-| Branch coverage | ≥ 60% | ≥ 80% | 100% |
-| CRAP score, per method | ≤ 30 | ≤ 15 | ≤ 5 |
-| Edge cases | key ones | systematic | exhaustive and adversarial |
+Only code not maintained here (generated, vendored, or minified) is excluded. There are no tiers, tier annotations, tier
+registries, classic CRAP thresholds, per-file suppressions, or nesting-depth gate. Mutation is a
+separate assurance gate. A stack that lacks a reviewed mechanism reports the capability unavailable;
+absence cannot become a pass. No changed-code mutant may survive or remain uncovered. A survivor
+requires a sharper assertion or dead-code deletion, never a lower threshold. Acceptance mutation
+changes one example value at a time; a scenario still green marks a step that asserts nothing.
 
-**CRAP** = CC² × (1 − coverage)³ + CC, on the method's cyclomatic complexity. At full coverage it is
-pure complexity, so a red T3 forces decomposition rather than more tests. No `coverage:ignore`: if a
-line is unreachable, delete it.
-
-**Mutation testing** runs on the changed files only (Stryker's `--since`), and no mutant survives. A
-survivor is a missing assertion or dead code; the fix is a sharper test or a deletion, never a lower
-threshold. Acceptance mutation changes one example value at a time; a scenario still green marks a
-step that asserts nothing.
-
-The project's test runner, acceptance runner, coverage gate and mutation command are named in its
-testing guide and in each Issue's gates.
+The project's testing guide names its facade, acceptance runner, adopted gates, and mutation command.
 
 ---
 
@@ -293,5 +288,5 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 Add stack-specific standards as your project grows:
 - guides/backend/_index.md — Backend patterns
 - guides/frontend/_index.md — Frontend patterns
-- guides/testing-strategy.md — test runner, coverage gate, mutation command, tier assignments
+- guides/testing-strategy.md — testing facade, adopted gates, and mutation command
 -->

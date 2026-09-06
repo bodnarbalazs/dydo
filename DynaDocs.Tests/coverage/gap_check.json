@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "artifactRoot": "DynaDocs.Tests/coverage/results",
+  "stacks": [
+    {
+      "name": "dotnet",
+      "kind": "aspnet",
+      "cwd": ".",
+      "isolation": {
+        "requirement": "git-worktree-copy-working-changes",
+        "evidence": {
+          "state": "verified",
+          "kind": "adapter",
+          "path": "DynaDocs.Tests/coverage/run_tests.py"
+        }
+      },
+      "capabilities": {
+        "test": {"state": "configured", "command": {"kind": "current-python", "argv": ["-u", "DynaDocs.Tests/coverage/run_tests.py", "--"]}, "artifacts": []},
+        "static": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "coverage": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
+      }
+    },
+    {
+      "name": "python",
+      "kind": "python-unittest",
+      "cwd": ".",
+      "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
+      "capabilities": {
+        "test": {"state": "configured", "command": {"kind": "current-python", "argv": ["-m", "unittest", "discover", "-s", "DynaDocs.Tests/coverage/tests", "-p", "test_*.py"]}, "artifacts": []},
+        "static": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "coverage": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
+      }
+    },
+    {
+      "name": "node",
+      "kind": "node-test",
+      "cwd": ".",
+      "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
+      "capabilities": {
+        "test": {"state": "configured", "command": {"kind": "argv", "argv": ["node", "--test", "DynaDocs.Tests/coverage/tests/testing_facade.test.mjs"]}, "artifacts": []},
+        "static": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "coverage": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
+      }
+    }
+  ]
+}

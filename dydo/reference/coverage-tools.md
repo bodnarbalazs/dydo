@@ -3,73 +3,61 @@ area: reference
 type: reference
 ---
 
-# Coverage Tools
+# Coverage and Assurance Tools
 
-An in-house Python script for measuring and enforcing test coverage. Located in `DynaDocs.Tests/coverage/`.
+`DynaDocs.Tests/coverage/gap_check.py` is the project testing facade. Its adjacent
+`gap_check.json` is the schema 1 manifest that declares each stack's test, static, coverage, and
+mutation adapters.
 
----
-
-## `gap_check.py` — Tier Compliance
-
-Self-contained tier compliance checker. Runs tests via `dotnet test`, collects Cobertura XML coverage from Coverlet, and checks every source module against its tier's requirements. Exits with code 0 (all pass) or 1 (failures).
-
-```bash
-python DynaDocs.Tests/coverage/gap_check.py                    # auto-detect: skip or run tests
-python DynaDocs.Tests/coverage/gap_check.py --force-run        # always run tests
-python DynaDocs.Tests/coverage/gap_check.py --detail           # show uncovered lines in failures
-python DynaDocs.Tests/coverage/gap_check.py --inspect Guard    # inspect modules matching 'Guard'
+```powershell
+py DynaDocs.Tests/coverage/gap_check.py --help
+py DynaDocs.Tests/coverage/gap_check.py all
+py DynaDocs.Tests/coverage/gap_check.py test --stack dotnet -- --filter FullyQualifiedName~ParserTests
+py DynaDocs.Tests/coverage/gap_check.py gate static --stack dotnet
+py DynaDocs.Tests/coverage/gap_check.py gate mutation --since BASE --stack dotnet
+py DynaDocs.Tests/coverage/gap_check.py --force-run
 ```
 
-**Auto-skip:** gap_check automatically skips tests when no source or test files have changed since the last coverage run. When skipping, it reuses existing coverage data. Use `--force-run` to override this and always run tests. A plain `dotnet test` does not produce coverage data — only gap_check's own test invocation (with Coverlet flags) does.
+`all` runs tests only. The three `gate` operations remain explicit. `--force-run` is the
+compatibility full-G operation: it selects test, static, and coverage for every stack, and exits 2
+while any selected row is unavailable or invalid. Mutation is separate.
 
-### What it checks (per module, against assigned tier)
+The facade runs argv arrays without a shell. It appends native test arguments only after `test ... --`.
+Executable paths in an argv row resolve from that stack's working directory without changing the
+recorded vector; bare executable names use the platform search rules.
+Configured gate rows declare required artifacts. A successful child must create or observably refresh
+every required file or directory; unchanged evidence from an earlier run is invalid. The facade
+compares metadata and file content, including directory descendants, without removing old evidence.
+That comparison proves an observable change during the child-operation interval, while the isolation
+adapter owns protection from concurrent writers at the same evidence path.
+Each execution writes a machine-readable `result.json` below the configured artifact root
+and prints its location. Results preserve raw child exits and aggregate to 0 for pass, 1 for a
+measured failure, 2 for invalid or unavailable work, and 130 after interrupted adapter cleanup.
 
-| Metric | T1 | T2 | T3 |
-|--------|----|----|-----|
-| Has test file | required | required | required |
-| Line coverage | >= 80% | 100% | 100% |
-| Branch coverage | >= 60% | >= 80% | 100% |
-| CRAP score | <= 30 | <= 15 | <= 5 |
+`capabilities` uses the same non-executing stack, isolation, command and path validation. It reports
+invalid entries alongside valid peers and returns 2 for malformed configuration; a valid manifest
+returns 0 even when capabilities are declared unavailable. Inspection needs no mutation comparison
+base and creates neither child processes nor result artifacts.
 
-### Tier detection
+DynaDocs currently has a verified worktree-isolated .NET test adapter, Python and Node conformance
+adapters, and unavailable static/coverage (DYD-96) and mutation (DYD-103) rows. It does not claim a
+complete G or M gate yet.
 
-All modules default to T1. Higher tiers are declared with a comment annotation in the first 10 lines of the **test file**:
+DR 048's adopted static policy is: warnings as errors and strict types; no dead code; passing tests
+and a test file for every non-trivial module; 80% line and 60% branch coverage per module; HCRAP and
+cognitive complexity at most 20 per method; at most seven nonconstructor parameters; no supported
+nested ternary; no clone meeting both 15 lines and 100 tokens; and no dependency cycles. Only code
+not maintained here (generated, vendored, or minified) is excluded. It has no tiers, classic CRAP
+threshold, registry, annotation, suppression, or nesting-depth gate. Mutation is separate: DynaDocs
+requires no surviving or uncovered changed-code mutants.
 
-```csharp
-// @test-tier: 2
-```
-
-### Tier registry
-
-Promotions are tracked in `DynaDocs.Tests/coverage/tier_registry.json` (committed to git). Adding a `@test-tier` annotation auto-registers the module. Removing an annotation without manually editing the registry produces an error — this prevents accidental demotions.
-
-### Exclusions
-
-The following are excluded from compliance checks:
-- Generated code (`/obj/`, `*.g.cs`, `*.generated.cs`)
-- The `Program` class (entry point)
-- Pure data models with ≤ 3 executable lines and no test coverage
-
-### CRAP calculation
-
-`CRAP = CC² × (1 - line_coverage)³ + CC`
-
-Cyclomatic complexity is the **per-method maximum** extracted from Cobertura XML `<method>` elements, not the class-level sum. This avoids penalizing classes that have many simple methods.
-
----
-
-## Directory Structure
-
-```
-DynaDocs.Tests/coverage/
-├── gap_check.py              # Tier compliance checker
-├── tier_registry.json        # Tracks T2/T3 promotions (committed to git)
-└── coverage.runsettings      # .NET Coverlet configuration
-```
-
----
+The canonical portable runner and manifest are
+`dydo/reference/gap-check.example.py` and
+`dydo/reference/gap-check.example.json`. The source files are byte-identical; the example
+is intentionally unfinished until its ASP.NET, React/Vite, and Python/uv rows have real project paths
+and verified evidence.
 
 ## Related
 
-- [Testing Strategy](../guides/testing-strategy.md) — Tier definitions and thresholds
-- [CRAP Per-Method Metric](../project/decisions/009-crap-per-method-metric.md) — Why per-method max CC
+- [Testing Strategy](../guides/testing-strategy.md)
+- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md)

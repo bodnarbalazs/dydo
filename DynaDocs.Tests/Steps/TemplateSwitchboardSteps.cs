@@ -198,6 +198,39 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     [Then(@"^validation\ and\ collision\ preflight\ are\ the\ same\ as\ a\ real\ update$")]
     public void RecordThenStep() => RecordStep();
 
+    // The resource-owner matrix is a public catalog operation.  Its bindings are deliberately
+    // exact rather than a catch-all: the table's five collision-prone names must continue to
+    // exercise the classifier and both provider emitters as one scenario family.
+    [Given(@"^these valid custom agent sources have automatic invocation, an argument hint, and their listed resource link:$")]
+    public void RecordResourceOwnerCatalog(Table _) => RecordStep();
+
+    [Given(@"^each source and resource has distinct sentinel body bytes$")]
+    public void RecordResourceOwnerSentinels() => RecordStep();
+
+    [Given(@"^the source files were created in "".+?"" order without a prior custom switch$")]
+    public void RecordResourceOwnerCreationOrder() => RecordStep();
+
+    [When(@"^I run the filename matrix operation "".+?""$")]
+    public void RecordResourceOwnerOperation() => RecordStep();
+
+    [Then(@"^an update discovers all five custom switches without emitting new native files$")]
+    public void RecordResourceOwnerUpdateDiscovery() => RecordStep();
+
+    [Then(@"^a preview reports all five discoveries while every project path and byte stays unchanged$")]
+    public void RecordResourceOwnerPreviewDiscovery() => RecordStep();
+
+    [Then(@"^exactly those five custom skill names are discovered with enabled true, origin custom, emitAgent true, codexMetadata true, and resources exactly guide$")]
+    public void RecordResourceOwnerSwitches() => RecordStep();
+
+    [Then(@"^each Claude and Codex skill, agent definition, and Codex metadata file belongs to its exact owner name$")]
+    public void RecordResourceOwnerArtifacts() => RecordStep();
+
+    [Then(@"^each provider resource has its owner's exact sentinel bytes at skills/<owner>/resources/guide\.md$")]
+    public void RecordResourceOwnerResourceBytes() => RecordStep();
+
+    [Then(@"^no resource filename is misreported or persisted as a separate skill$")]
+    public void RecordResourceOwnerNoPhantomSkill() => RecordStep();
+
 
     private void RecordStep() => _steps.Add(context.StepContext.StepInfo.Text);
 
@@ -244,6 +277,8 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
                 await VerifyHashRefresh();
             else if (title.StartsWith("Reach a post-migration fixed point", StringComparison.Ordinal))
                 await VerifyFixedPoint();
+            else if (title.StartsWith("Resolve resource owners from the complete catalog", StringComparison.Ordinal))
+                await VerifyResourceOwnerCatalog(prose);
             else
                 throw new Xunit.Sdk.XunitException($"No DYD-111 contract probe is bound for '{title}'.");
         }
@@ -304,7 +339,8 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var beforeSwitches = config.Skills.ToDictionary(entry => entry.Key,
             entry => (entry.Value.Enabled, entry.Value.Origin, entry.Value.EmitAgent,
                 entry.Value.CodexMetadata, Resources: entry.Value.Resources!.ToArray()), StringComparer.Ordinal);
-        Assert.Equal(0, SyncCommand.Execute(_root));
+        var synchronized = CaptureSync();
+        Assert.True(synchronized.ExitCode == 0, synchronized.Stdout + synchronized.Stderr);
         var claude = integration is "none" or "all" or "claude";
         var codex = integration is "none" or "all" or "codex";
         foreach (var skill in discovered.Values)
@@ -334,7 +370,8 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         config.Skills["writing-for-humans"].Enabled = false;
         Save(config);
 
-        Assert.Equal(0, SyncCommand.Execute(_root));
+        var secondSynchronization = CaptureSync();
+        Assert.True(secondSynchronization.ExitCode == 0, secondSynchronization.Stdout + secondSynchronization.Stderr);
         var saved = Load().Skills["release-notes"];
         Assert.True(saved.Enabled);
         Assert.Equal("custom", saved.Origin);
@@ -360,6 +397,63 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var before = Manifest();
         Assert.Equal(0, SyncCommand.Execute(_root));
         Assert.Equal(before, Manifest());
+    }
+
+    private async Task VerifyResourceOwnerCatalog(string prose)
+    {
+        Initialize();
+        var names = new[] { "valid", "skill", "skill-owner", "skill-skill-owner", "resource-guide" };
+        var resourcesFirst = prose.Contains("resources first", StringComparison.Ordinal);
+        foreach (var name in resourcesFirst ? names.Reverse() : names)
+        {
+            var resource = Path.Combine(Sources(), $"resource-{name}-resource-guide.template.md");
+            var source = Path.Combine(Sources(), $"skill-{name}.template.md");
+            if (resourcesFirst)
+            {
+                File.WriteAllText(resource, $"resource sentinel for {name}\n");
+                File.WriteAllText(source, CustomSource(name, emitAgent: true, hint: "<guide>", resources: ["guide"]));
+            }
+            else
+            {
+                File.WriteAllText(source, CustomSource(name, emitAgent: true, hint: "<guide>", resources: ["guide"]));
+                File.WriteAllText(resource, $"resource sentinel for {name}\n");
+            }
+        }
+
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var beforePreview = Manifest();
+        var result = operation switch
+        {
+            "sync" => CaptureSync(),
+            "update" => await RunAsync("template", "update"),
+            "preview" => await RunAsync("template", "update", "--diff"),
+            _ => throw new Xunit.Sdk.XunitException($"Unknown filename matrix operation '{operation}'.")
+        };
+        result.AssertSuccess();
+        if (operation == "preview")
+            Assert.Equal(beforePreview, Manifest());
+
+        var synchronized = CaptureSync();
+        Assert.True(synchronized.ExitCode == 0, synchronized.Stdout + synchronized.Stderr);
+        var saved = Load();
+        Assert.Equal(names.Order(StringComparer.Ordinal), saved.Skills.Where(entry => entry.Value.Origin == "custom")
+            .Select(entry => entry.Key).Order(StringComparer.Ordinal));
+        foreach (var name in names)
+        {
+            var entry = saved.Skills[name];
+            Assert.True(entry.Enabled);
+            Assert.Equal("custom", entry.Origin);
+            Assert.True(entry.EmitAgent);
+            Assert.True(entry.CodexMetadata);
+            Assert.Equal(["guide"], entry.Resources);
+            AssertManagedArtifacts(name, emitAgent: true, codexMetadata: true, ["guide"], claude: true, codex: true);
+            var expected = $"resource sentinel for {name}\n";
+            Assert.Equal(expected, File.ReadAllText(Path.Combine(_root, ".claude", "skills", name, "resources", "guide.md")));
+            Assert.Equal(expected, File.ReadAllText(Path.Combine(_root, ".agents", "skills", name, "resources", "guide.md")));
+        }
+
+        var secondSynchronization = CaptureSync();
+        Assert.True(secondSynchronization.ExitCode == 0, secondSynchronization.Stdout + secondSynchronization.Stderr);
     }
 
     private void VerifyMinimalSwitch()

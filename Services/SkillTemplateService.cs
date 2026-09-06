@@ -232,6 +232,13 @@ public static partial class SkillTemplateService
                 || !TryParseLegacyResource(file, out var owner, out var resource))
                 continue;
 
+            // `skill-resource-guide` is a valid canonical skill named `resource-guide`.
+            // Its old-looking suffix never changes that structural identity, even after the
+            // separate skill's resource provenance has been recorded on a prior pass.
+            if (file.StartsWith("skill-", StringComparison.Ordinal)
+                && ConfigService.IsValidSlug(file["skill-".Length..^".template.md".Length]))
+                continue;
+
             var canonical = $"resource-{owner}-resource-{resource}.template.md";
             var canonicalPath = Path.Combine(sourceRoot, canonical);
             var hasRecordedResource = config.Skills.TryGetValue(owner, out var switchEntry)

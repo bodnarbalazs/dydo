@@ -10,6 +10,8 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
+import runpy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -265,6 +267,72 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertIn('RELATIVE_EXECUTABLE_RAN', executed.stdout)
         self.assert_rows(payload, [('dotnet', 'test', 'passed')])
         self.assertEqual(relative_python, payload['results'][0]['argv'][0])
+
+    def test_dot_relative_executable_and_bare_path_lookup_are_distinct(self):
+        root = self.fixture()
+        working = root / 'working'
+        working.mkdir()
+        shell = Path(os.environ['COMSPEC']) if os.name == 'nt' else Path('/bin/sh')
+        tool = working / ('facade-tool.exe' if os.name == 'nt' else 'facade-tool')
+        shutil.copy2(shell, tool)
+        argv = ['./' + tool.name, '/c' if os.name == 'nt' else '-c', 'echo DOT_RELATIVE_RAN']
+        data = manifest()
+        data['stacks'][0]['cwd'] = 'working'
+        data['stacks'][0]['capabilities']['test'] = configured(argv, kind='argv')
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        executed, _, payload = self.invoke(['all'], directory=root)
+        self.assert_exit(executed, 0)
+        self.assertIn('DOT_RELATIVE_RAN', executed.stdout)
+        self.assertEqual(argv, payload['results'][0]['argv'])
+
+        resolver = runpy.run_path(str(self.runner))['resolve_executable']
+        # On Windows this is POSIX control-flow evidence, not a native Linux run.
+        with mock.patch.object(sys, 'platform', 'linux'), mock.patch('shutil.which') as which:
+            which.side_effect = lambda value, path=None: str(tool) if value == str(tool) else None
+            self.assertEqual(str(tool), resolver('./' + tool.name, working))
+            self.assertIsNone(resolver(tool.name, working))
+            self.assertEqual(str(tool), resolver(str(tool), working))
+            self.assertEqual([mock.call(str(tool), path=None), mock.call(tool.name, path=None),
+                              mock.call(str(tool), path=None)], which.call_args_list)
+
+    def test_unusable_result_destination_starts_no_child(self):
+        for destination in ['results', 'results/nested']:
+            with self.subTest(destination=destination):
+                data = manifest()
+                data['artifactRoot'] = destination
+                root = self.fixture(data)
+                (root / 'results').write_text('unrelated file', encoding='utf-8')
+                p, _, payload = self.invoke(['all'], directory=root)
+                self.assert_exit(p, 2)
+                self.assertIn('artifactRoot', p.stderr)
+                self.assertNotIn('Traceback', p.stderr)
+                self.assertIsNone(payload)
+                self.assertFalse((root / 'dotnet-test.txt').exists())
+                self.assertEqual('unrelated file', (root / 'results').read_text())
+
+    def test_result_destination_is_prepared_before_dispatch(self):
+        data = manifest()
+        data['artifactRoot'] = 'nested/results'
+        data['stacks'][0]['capabilities']['test'] = configured(['-c',
+            "from pathlib import Path; assert len(list(Path('nested/results').glob('run-*/result.tmp'))) == 1"])
+        p, _, payload = self.invoke(['all'], data)
+        self.assert_exit(p, 0)
+        self.assertEqual('passed', payload['results'][0]['state'])
+
+    def test_result_write_failure_is_a_controlled_exit(self):
+        data = manifest()
+        data['stacks'][0]['capabilities']['test'] = configured(['-c',
+            "from pathlib import Path; root=Path('results'); root.mkdir(exist_ok=True); "
+            "paths=list(root.glob('run-*/result.tmp')); "
+            "[(p.unlink(), p.mkdir()) for p in paths]; "
+            "root.rmdir() if not paths else None; "
+            "root.write_text('blocked') if not paths else None; print('CHILD_RAN')"])
+        p, _, payload = self.invoke(['all'], data)
+        self.assert_exit(p, 2)
+        self.assertIn('CHILD_RAN', p.stdout)
+        self.assertIn('artifact', p.stderr)
+        self.assertNotIn('Traceback', p.stderr)
+        self.assertIsNone(payload)
 
     def test_stale_required_gate_artifact_cannot_pass(self):
         for capability in ['static', 'coverage', 'mutation']:
@@ -573,14 +641,14 @@ class TestingFacadeTests(unittest.TestCase):
             for capability in ['static', 'coverage', 'mutation']:
                 self.assertEqual('unavailable', item['capabilities'][capability]['state'])
                 self.assertTrue(item['capabilities'][capability]['reason'])
-        data['artifactRoot'] = 'results'
+        self.assertEqual('results', data['artifactRoot'])
         p, root, payload = self.invoke(['all'], data)
         self.assert_exit(p, 2)
         self.assertEqual(['unavailable', 'invalid', 'invalid'], [r['state'] for r in payload['results']])
         self.assertEqual([None, None, None], [r['childExit'] for r in payload['results']])
 
     def partial(self, targeted):
-        data = self.portable_data(); data['artifactRoot'] = 'results'
+        data = self.portable_data()
         data['stacks'][1] = stack('frontend')
         data['stacks'][1]['isolation'] = {'requirement': 'per-run-artifacts', 'evidence': {'state': 'verified', 'kind': 'adapter', 'path': 'gap_check.py'}}
         p, root, payload = self.invoke(['test', '--stack', 'frontend'] if targeted else ['all'], data)
@@ -657,7 +725,7 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertEqual(130, payload['aggregateExit'])
             row = payload['results'][0]
             self.assertEqual(('interrupted', 130), (row['state'], row['resultExit']))
-            self.assertTrue(row['childExit'] is None or type(row['childExit']) is int)
+            self.assertEqual(130, row['childExit'])
             self.assertLess(next(i for i,x in enumerate(output) if 'Cleaning up worktree' in x), next(i for i,x in enumerate(output) if x.startswith('Result: ')))
         finally:
             if facade.poll() is None:
@@ -665,6 +733,59 @@ class TestingFacadeTests(unittest.TestCase):
                 facade.wait(timeout=35)
             reader.join(timeout=5)
             facade.stdout.close()
+
+    def test_interrupt_stops_later_capabilities_and_stacks(self):
+        for operation, block_result in [('all', False), ('--force-run', False), ('all', True)]:
+            with self.subTest(operation=operation, block_result=block_result):
+                data = manifest(stack('first'), stack('later'))
+                root = self.fixture(data)
+                (root / 'wait.py').write_text(
+                    "import signal,sys,time\nfrom pathlib import Path\n"
+                    "def interrupted(signum, frame):\n    raise KeyboardInterrupt\n"
+                    "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, interrupted)\n"
+                    "try:\n    print('WAITING_FOR_INTERRUPT', flush=True)\n    deadline=time.monotonic()+60\n"
+                    "    while time.monotonic()<deadline:\n        time.sleep(0.05)\n"
+                    "except KeyboardInterrupt:\n    print('ADAPTER_INTERRUPTED', flush=True)\n    sys.exit(130)\n"
+                    "finally:\n    Path('cleanup.txt').write_text('complete')\n"
+                    + ("    for p in Path('results').glob('run-*/result.tmp'):\n        p.unlink()\n        p.mkdir()\n"
+                       if block_result else ''), encoding='utf-8')
+                data['stacks'][0]['capabilities']['test'] = configured(['-u', 'wait.py'])
+                (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+                facade = subprocess.Popen([sys.executable, '-u', str(root / 'gap_check.py'), operation],
+                    cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8',
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
+                    start_new_session=os.name != 'nt')
+                lines, output = queue.Queue(), []
+                def collect():
+                    for line in facade.stdout:
+                        output.append(line); lines.put(line)
+                reader = threading.Thread(target=collect, daemon=True); reader.start()
+                try:
+                    self.assertEqual('WAITING_FOR_INTERRUPT', lines.get(timeout=15).strip())
+                    interrupted_at = time.monotonic()
+                    facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
+                    facade.wait(timeout=35); reader.join(timeout=5)
+                    self.assertLess(time.monotonic() - interrupted_at, 10)
+                    self.assertEqual(130, facade.returncode, ''.join(output))
+                    self.assertIn('ADAPTER_INTERRUPTED', ''.join(output))
+                    self.assertEqual('complete', (root / 'cleanup.txt').read_text())
+                    self.assertEqual(['cleanup.txt'], [p.name for p in root.glob('*.txt')])
+                    if block_result:
+                        self.assertFalse(any(line.startswith('Result: ') for line in output))
+                        self.assertIn('artifact destination', ''.join(output))
+                        self.assertNotIn('Traceback', ''.join(output))
+                        continue
+                    result_path = next(line.strip()[8:] for line in output if line.startswith('Result: '))
+                    payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
+                    self.assert_rows(payload, [('first', 'test', 'interrupted')])
+                    self.assertEqual(130, payload['aggregateExit'])
+                    self.assertEqual(['first', 'later'], payload['selectedStacks'])
+                finally:
+                    if facade.poll() is None:
+                        facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
+                        facade.wait(timeout=35)
+                    reader.join(timeout=5)
+                    facade.stdout.close()
 
 
 class PortableTestingFacadeTests(TestingFacadeTests):

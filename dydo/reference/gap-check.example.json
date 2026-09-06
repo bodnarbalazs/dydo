@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "artifactRoot": "DynaDocs.Tests/coverage/results",
+  "artifactRoot": "results",
   "stacks": [
     {
       "name": "dotnet",

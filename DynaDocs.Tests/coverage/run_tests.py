@@ -14,6 +14,7 @@ Usage:
 import argparse
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -138,6 +139,8 @@ def run_tests(extra_args=None, coverage=False):
 
 
 def main():
+    if sys.platform == "win32":
+        signal.signal(signal.SIGBREAK, signal.default_int_handler)
     parser = argparse.ArgumentParser(description="Run dotnet test in a git worktree")
     parser.add_argument(
         "--coverage", action="store_true",
@@ -150,7 +153,10 @@ def main():
         extra = extra[1:]
 
     print("\n--- Running tests (worktree-isolated) ---")
-    rc = run_tests(extra_args=extra or None, coverage=args.coverage)
+    try:
+        rc = run_tests(extra_args=extra or None, coverage=args.coverage)
+    except KeyboardInterrupt:
+        rc = 130
 
     if rc != 0:
         print(f"\n  Tests failed (exit code {rc})")

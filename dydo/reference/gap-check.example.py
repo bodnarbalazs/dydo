@@ -129,7 +129,7 @@ def valid_unavailable(config):
 
 def resolve_executable(value, working_directory):
     executable = Path(value)
-    if not executable.is_absolute() and executable.parent != Path("."):
+    if not executable.is_absolute() and ("/" in value or os.sep in value):
         executable = (working_directory / executable).resolve()
     search_path = None
     if sys.platform == "win32" and executable.parent == Path("."):
@@ -234,7 +234,11 @@ def run_row(stack, capability, root, since, forwarded):
                   if item["required"] and capability != "test"}
         child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                                  start_new_session=sys.platform != "win32")
-        child.wait()
+        while child.poll() is None:
+            try:
+                child.wait(timeout=0.2)
+            except subprocess.TimeoutExpired:
+                pass
         if child.returncode == 0:
             for path, previous in before.items():
                 current = artifact_snapshot(root, path)
@@ -306,10 +310,29 @@ def print_capabilities(stacks, root):
     return exit_code
 
 
-def write_result(root, artifact_root, operation, selected, rows, candidate):
-    destination = contained(root, artifact_root)
-    if not destination: raise ContractError("artifactRoot must resolve inside repository")
-    run = destination / f"run-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"; run.mkdir(parents=True)
+def artifact_destination(root, value):
+    destination = contained(root, value)
+    if not destination:
+        raise ContractError("artifactRoot must be repository-relative and contained")
+    for entry in (destination, *destination.parents):
+        if entry.exists() and not entry.is_dir():
+            raise ContractError("artifactRoot requires a usable directory destination")
+        if entry == root:
+            break
+    return destination
+
+
+def prepare_result(destination):
+    run = destination / f"run-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
+    run.mkdir(parents=True)
+    with (run / "result.tmp").open("x", encoding="utf-8"):
+        pass
+    return run
+
+
+def write_result(root, run, operation, selected, rows, candidate):
+    if not run.resolve().is_relative_to(root):
+        raise ContractError("result artifact escapes repository")
     exit_code = max((EXITS[row["state"]] for row in rows), default=0)
     payload = {"schema": 1, "candidate": candidate,
                "operation": operation, "selectedStacks": [x["name"] for x in selected], "results": rows, "aggregateExit": exit_code}
@@ -325,13 +348,14 @@ def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
     root = next((parent for parent in Path(__file__).resolve().parents if (parent / ".git").exists()), path.parent)
+    rows = []
     try:
         parsed = request(args)
         if parsed is None: print(HELP); return 2
         if parsed == "help": print(HELP); return 0
         name, capabilities, since, names, forwarded = parsed
         data = read_manifest(path)
-        if not contained(root, data["artifactRoot"]): raise ContractError("artifactRoot must be repository-relative and contained")
+        destination = artifact_destination(root, data["artifactRoot"])
         all_stacks = data["stacks"]
         if names is not None and (not names or any(not x or x not in [item["name"] for item in all_stacks] for x in names)):
             raise ContractError("unknown selected stack")
@@ -339,14 +363,19 @@ def main(argv=None):
         if name == "capabilities":
             return print_capabilities(selected, root)
         candidate = candidate_identity(root)
-        rows = []
+        run = prepare_result(destination)
         for stack in selected:
             for capability in capabilities:
                 current = run_row(stack, capability, root, since, forwarded); rows.append(current)
                 print(f"{current['stack']} {capability}: {current['state'].upper()}" + (f" (child exit {current['childExit']})" if current["childExit"] is not None else "") + (f": {current['reason']}" if current.get("reason") else ""), flush=True)
-        return write_result(root, data["artifactRoot"], {"name": name, **({"since": since} if since else {})}, selected, rows, candidate)
-    except ContractError as error:
-        print(f"Invalid request: {error}", file=sys.stderr); return 2
+                if current["state"] == "interrupted":
+                    break
+            if rows[-1]["state"] == "interrupted":
+                break
+        return write_result(root, run, {"name": name, **({"since": since} if since else {})}, selected, rows, candidate)
+    except (ContractError, OSError) as error:
+        print(f"Invalid request or artifact destination: {error}", file=sys.stderr)
+        return 130 if any(row["state"] == "interrupted" for row in rows) else 2
 
 
 if __name__ == "__main__":

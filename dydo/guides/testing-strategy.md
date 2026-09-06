@@ -33,6 +33,8 @@ Bare invocation prints help, creates no result, and exits 2. A recognized operat
 candidate commit and dirty state, operation, selected stacks, ordered rows, and aggregate exit.
 Each row records its stack, capability, state, argv, working directory, isolation requirement and
 evidence, raw child exit, result exit, artifacts, and any reason.
+The result destination is prepared before dispatch. An unusable destination starts no adapter;
+filesystem failures are reported as exit 2, while an already interrupted operation retains exit 130.
 
 Exit 0 means every selected configured row passed. Exit 1 means a measurement failed. Exit 2 means
 invalid, missing, malformed, unsupported, or unavailable work. Exit 130 means an interrupted
@@ -93,7 +95,8 @@ non-executable `exampleArgv` for adoption. Do not relabel an unwired available m
 The final operational static/coverage and mutation adoption remains DYD-96/103/91 work.
 
 An interrupt goes to the active adapter process group. The facade grants up to 30 seconds for adapter
-cleanup before escalation, preserves raw child exit when observed, and records exit 130. Adapters
+cleanup before escalation, preserves raw child exit when observed, stops all remaining rows, and
+records exit 130. Adapters
 own cleanup; the router does not invent worktree or artifact isolation. DynaDocs' real cancellation
 probe uses a safe filtered test and verifies its newly observed worktree directory and Git
 registration have disappeared before the result is reported.

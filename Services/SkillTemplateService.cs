@@ -62,7 +62,11 @@ public static partial class SkillTemplateService
                 var slug = file["skill-".Length..^".template.md".Length];
                 if (!ConfigService.IsValidSlug(slug))
                 {
-                    errors.Add($"'{file}' has an invalid skill name or protected -resource- delimiter.");
+                    // A historic resource owner may itself begin with `skill-`.  Its exact
+                    // recorded resource provenance settles that finite legacy spelling before
+                    // the modern skill grammar gets a chance to reject the filename.
+                    if (!HasRecordedLegacyResource(file, config))
+                        errors.Add($"'{file}' has an invalid skill name or protected -resource- delimiter.");
                     continue;
                 }
                 if (!allNames.Add(slug))
@@ -225,8 +229,6 @@ public static partial class SkillTemplateService
         {
             var file = Path.GetFileName(path);
             if (!file.EndsWith(".template.md", StringComparison.Ordinal)
-                || file.StartsWith("skill-", StringComparison.Ordinal)
-                || file.StartsWith("resource-", StringComparison.Ordinal)
                 || !TryParseLegacyResource(file, out var owner, out var resource))
                 continue;
 
@@ -248,10 +250,22 @@ public static partial class SkillTemplateService
                 continue;
             }
 
+            if (file.StartsWith("resource-", StringComparison.Ordinal))
+            {
+                yield return $"'{file}' is ambiguous legacy ownership for '{owner}' / '{resource}'. "
+                    + $"Preserve the existing canonical candidate and supply '{canonical}' after manual ownership resolution.";
+                continue;
+            }
+
             yield return $"'{file}' is a legacy resource source for '{owner}' / '{resource}'. "
                 + $"Use '{canonical}' after checking ownership; run 'dydo template update' for shipped sources.";
         }
     }
+
+    private static bool HasRecordedLegacyResource(string file, DydoConfig config) =>
+        TryParseLegacyResource(file, out var owner, out var resource)
+        && config.Skills.TryGetValue(owner, out var switchEntry)
+        && switchEntry.Resources?.Contains(resource, StringComparer.Ordinal) == true;
 
     private static bool TryParseLegacyResource(string file, out string owner, out string resource)
     {

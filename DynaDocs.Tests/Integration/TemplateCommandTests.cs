@@ -7,6 +7,87 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateCommandTests : IntegrationTestBase
 {
+    public static IEnumerable<object[]> UnsupportedSourceShapes()
+    {
+        string[] names = ["Skill-ghost.template.md", "valid-Resource-ghost.template.md",
+            "skill-ghost.TEMPLATE.MD", "skill-ghost.Template.md", "skill-ghost.template.Md",
+            "valid-resource-ghost.TEMPLATE.MD", "valid-resource-ghost.Template.md",
+            "valid-resource-ghost.template.Md", "skill-ghost.template.md.bak",
+            "valid-resource-ghost.template.md.bak", "arbitrary.template.md", "README", ".hidden", "binary.dat"];
+        foreach (var name in names)
+        foreach (var directory in new[] { "", "nested/" })
+        foreach (var operation in new[] { "sync", "update", "preview" })
+            yield return [directory + name, operation];
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsupportedSourceShapes))]
+    public async Task SourceCommands_IgnoreUnsupportedShapesBeforeCheckingLocation(string name, string operation)
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var sources = Path.Combine(TestDir, "dydo/_system/templates");
+        File.WriteAllText(Path.Combine(sources, "skill-valid.template.md"),
+            "---\nname: valid\ndescription: Valid source.\nemit: agent\nargument-hint: context\n---\n\n# Valid body\n\n[Guide](resources/guide.md)\n");
+        File.WriteAllText(Path.Combine(sources, "valid-resource-guide.template.md"), "# Valid resource\n");
+        (await RunAsync(SyncCommand.Create())).AssertSuccess();
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.True(config.Skills["valid"].Enabled);
+        Assert.Equal("custom", config.Skills["valid"].Origin);
+        Assert.True(config.Skills["valid"].EmitAgent);
+        Assert.True(config.Skills["valid"].CodexMetadata);
+        Assert.Equal(["guide"], config.Skills["valid"].Resources);
+        foreach (var provider in new[] { ".claude", ".agents" })
+        {
+            Assert.Contains("# Valid body", File.ReadAllText(Path.Combine(TestDir, provider, "skills/valid/SKILL.md")));
+            Assert.Equal("# Valid resource\n", File.ReadAllText(Path.Combine(TestDir, provider, "skills/valid/resources/guide.md")));
+        }
+        AssertFileExists(".claude/agents/valid.md");
+        AssertFileExists(".codex/agents/valid.toml");
+        AssertFileExists(".agents/skills/valid/agents/openai.yaml");
+        var path = Path.Combine(sources, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        // Invalid source content also proves that these files never enter source validation.
+        File.WriteAllBytes(path, [0xff, 0x00, 0x81]);
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(file => file, File.ReadAllBytes);
+
+        var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
+            : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+
+        result.AssertSuccess();
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
+    [InlineData("nested/skill-ghost.template.md", "top-level")]
+    [InlineData("nested/valid-resource-ghost.template.md", "top-level")]
+    [InlineData("skill-Bad.template.md", "invalid skill name")]
+    [InlineData("skill-bad-resource-name.template.md", "invalid skill name")]
+    [InlineData("skill-ghost.template.md", "frontmatter")]
+    [InlineData("valid-resource-ghost.template.md", "no matching skill source")]
+    public async Task SourceCommands_RejectRecognizedInvalidSourcesAtomically(string name, string reason)
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        (await RunAsync(SyncCommand.Create())).AssertSuccess();
+        var path = Path.Combine(TestDir, "dydo/_system/templates", name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "Malformed recognized source");
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(file => file, File.ReadAllBytes);
+
+        foreach (var operation in new[] { "sync", "update", "preview" })
+        {
+            var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
+                : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains(Path.GetFileName(path), result.Stderr);
+            Assert.Contains(reason, result.Stderr);
+            Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+            Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

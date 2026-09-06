@@ -36,12 +36,8 @@ public static partial class SkillTemplateService
             throw new InvalidDataException($"Local template source directory is missing: {sourceRoot}. Run 'dydo template update'.");
 
         var errors = new List<string>();
-        var files = Directory.GetFiles(sourceRoot, "*", SearchOption.TopDirectoryOnly)
-            .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
-            .ToList();
-        foreach (var nested in Directory.GetFiles(sourceRoot, "*.template.md", SearchOption.AllDirectories)
-                     .Except(files, StringComparer.OrdinalIgnoreCase))
-            errors.Add($"'{Path.GetRelativePath(sourceRoot, nested)}' is nested; local templates must be top-level.");
+        var files = Directory.GetFiles(sourceRoot, "*", SearchOption.AllDirectories)
+            .OrderBy(path => path, StringComparer.Ordinal);
 
         var skillFiles = new Dictionary<string, string>(StringComparer.Ordinal);
         var resourceFiles = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
@@ -52,13 +48,16 @@ public static partial class SkillTemplateService
             var file = Path.GetFileName(path);
             if (!file.EndsWith(".template.md", StringComparison.Ordinal))
                 continue;
-            if (file.StartsWith("skill-", StringComparison.OrdinalIgnoreCase)
-                && !file.StartsWith("skill-", StringComparison.Ordinal))
+            var isSkill = file.StartsWith("skill-", StringComparison.Ordinal);
+            var delimiter = isSkill ? -1 : file.IndexOf("-resource-", StringComparison.Ordinal);
+            if (!isSkill && delimiter < 1)
+                continue;
+            if (Path.GetDirectoryName(path) != sourceRoot)
             {
-                errors.Add($"'{file}' has an invalid case-sensitive skill source prefix.");
+                errors.Add($"'{Path.GetRelativePath(sourceRoot, path)}' is nested; local templates must be top-level.");
                 continue;
             }
-            if (file.StartsWith("skill-", StringComparison.Ordinal))
+            if (isSkill)
             {
                 var slug = file["skill-".Length..^".template.md".Length];
                 if (!ConfigService.IsValidSlug(slug))
@@ -73,14 +72,6 @@ public static partial class SkillTemplateService
                 continue;
             }
 
-            var delimiter = file.IndexOf("-resource-", StringComparison.Ordinal);
-            if (delimiter < 1 && file.IndexOf("-resource-", StringComparison.OrdinalIgnoreCase) >= 1)
-            {
-                errors.Add($"'{file}' has an invalid case-sensitive resource delimiter.");
-                continue;
-            }
-            if (delimiter < 1)
-                continue;
             var skillName = file[..delimiter];
             var resourceName = file[(delimiter + "-resource-".Length)..^".template.md".Length];
             if (!ConfigService.IsValidSlug(skillName) || !ConfigService.IsValidSlug(resourceName))

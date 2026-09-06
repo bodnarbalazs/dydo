@@ -209,6 +209,26 @@ public class TemplateCommandTests : IntegrationTestBase
         Assert.Equal(configBefore, File.ReadAllText(Path.Combine(TestDir, "dydo.json")));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TemplateUpdate_IgnoresLockedAgentWorkspaceEvidence(bool diff)
+    {
+        await InitProjectAsync();
+        var workspace = Path.Combine(TestDir, "dydo", "agents", "workspace");
+        Directory.CreateDirectory(workspace);
+        var evidence = Path.Combine(workspace, "active-agent-evidence.bin");
+        await File.WriteAllTextAsync(evidence, "volatile evidence");
+        await using var locked = new FileStream(evidence, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        result.AssertSuccess();
+        locked.Position = 0;
+        using var reader = new StreamReader(locked, leaveOpen: true);
+        Assert.Equal("volatile evidence", await reader.ReadToEndAsync());
+    }
+
     private async Task<CommandResult> RunTemplateUpdateAsync(params string[] extraArgs)
     {
         var command = TemplateCommand.Create();

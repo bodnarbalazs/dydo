@@ -146,7 +146,7 @@ public static class TemplateCommand
             var currentDydo = Path.Combine(projectRoot, original.Structure.Root);
             var temporaryDydo = Path.Combine(temporaryRoot, original.Structure.Root);
             if (Directory.Exists(currentDydo))
-                CopyDirectory(currentDydo, temporaryDydo);
+                CopyDirectory(currentDydo, temporaryDydo, currentDydo);
             Directory.CreateDirectory(Path.Combine(temporaryDydo, "_system", "templates"));
 
             foreach (var relative in managed.Where(relative =>
@@ -295,13 +295,19 @@ public static class TemplateCommand
         return parts.Length == 2 && parts.All(ConfigService.IsValidSlug);
     }
 
-    private static void CopyDirectory(string source, string destination)
+    private static void CopyDirectory(string source, string destination, string dydoRoot)
     {
         Directory.CreateDirectory(destination);
         foreach (var file in Directory.GetFiles(source))
             File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
         foreach (var directory in Directory.GetDirectories(source))
-            CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
+        {
+            var relative = Path.GetRelativePath(dydoRoot, directory)
+                .Replace(Path.DirectorySeparatorChar, '/');
+            if (relative.Equals("agents/workspace", StringComparison.OrdinalIgnoreCase))
+                continue;
+            CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)), dydoRoot);
+        }
     }
 
     private static int ApplyConfigDefaults(DydoConfig config)

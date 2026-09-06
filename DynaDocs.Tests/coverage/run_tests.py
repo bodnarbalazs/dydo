@@ -125,6 +125,11 @@ def run_tests(extra_args=None, coverage=False):
         if candidate.exists() or is_registered_worktree(candidate):
             print(f"Failed to allocate test worktree path at {candidate}", file=sys.stderr)
             return 1
+        try:
+            candidate.mkdir()
+        except OSError as exc:
+            print(f"Failed to allocate test worktree path at {candidate}: {exc}", file=sys.stderr)
+            return 1
         worktree = candidate
         if not create_worktree(worktree):
             return 1

@@ -288,5 +288,5 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 Add stack-specific standards as your project grows:
 - guides/backend/_index.md — Backend patterns
 - guides/frontend/_index.md — Frontend patterns
-- guides/testing-strategy.md — test runner, coverage gate, mutation command, tier assignments
+- guides/testing-strategy.md — testing facade, adopted gates, and mutation command
 -->

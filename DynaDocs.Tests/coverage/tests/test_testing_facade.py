@@ -691,6 +691,75 @@ class TestingFacadeTests(unittest.TestCase):
             normalized = ' '.join(text.split())
             self.assertTrue('no surviving or uncovered changed-code mutants' in normalized
                             or 'No changed-code mutant may survive or remain uncovered' in normalized, path)
+            if path == 'Templates/coding-standards.template.md':
+                prohibition = ('There are no tiers, tier annotations, tier registries, classic CRAP '
+                               'thresholds, per-file suppressions, or nesting-depth gate.')
+                self.assertNotRegex(normalized.replace(prohibition, ''), r'(?i)\btiers?\b', path)
+
+    def test_worktree_collision_preserves_the_foreign_directory(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        with tempfile.TemporaryDirectory(prefix='dydo-allocation-race-') as temporary:
+            candidate = Path(temporary) / 'dydo-test-c0111de0'
+            harness = (
+                "import importlib.util\nfrom pathlib import Path\nfrom types import SimpleNamespace\n"
+                f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
+                "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
+                f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
+                "module.uuid.uuid4=lambda: SimpleNamespace(hex='c0111de0')\n"
+                "original=module.is_registered_worktree\n"
+                "def collide_after_preflight(path):\n"
+                "    registered=original(path)\n"
+                "    assert not registered and not path.exists()\n"
+                "    path.mkdir()\n"
+                "    (path/'foreign-marker.txt').write_text('foreign owner', encoding='utf-8')\n"
+                "    print('FOREIGN_DIRECTORY_CREATED', flush=True)\n"
+                "    return registered\n"
+                "module.is_registered_worktree=collide_after_preflight\n"
+                "module.main()\n"
+            )
+            process = subprocess.run([sys.executable, '-u', '-c', harness], cwd=ROOT,
+                                     capture_output=True, text=True, encoding='utf-8', timeout=30)
+            output = process.stdout + process.stderr
+            self.assertEqual(1, process.returncode, output)
+            self.assertIn('FOREIGN_DIRECTORY_CREATED', output)
+            self.assertNotIn('Traceback', output)
+            self.assertTrue(candidate.is_dir(), output)
+            self.assertEqual('foreign owner', (candidate / 'foreign-marker.txt').read_text(encoding='utf-8'))
+            listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
+                                     text=True, capture_output=True, check=True).stdout
+            self.assertNotIn('worktree ' + candidate.as_posix(), listing)
+
+    def test_failed_git_add_cleans_only_the_acquired_empty_directory(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        with tempfile.TemporaryDirectory(prefix='dydo-allocation-failure-') as temporary:
+            candidate = Path(temporary) / 'dydo-test-fa11ed00'
+            harness = (
+                "import importlib.util\nfrom pathlib import Path\nfrom types import SimpleNamespace\n"
+                f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
+                "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
+                f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
+                "module.uuid.uuid4=lambda: SimpleNamespace(hex='fa11ed00')\n"
+                "original=module._git\n"
+                "def failed_git(*args, capture=False):\n"
+                "    if args[:3] == ('worktree', 'add', '--detach'):\n"
+                "        path=Path(args[3])\n"
+                "        assert path.is_dir() and not list(path.iterdir())\n"
+                "        print('OWNED_EMPTY_DIRECTORY', flush=True)\n"
+                "        return SimpleNamespace(returncode=1)\n"
+                "    return original(*args, capture=capture)\n"
+                "module._git=failed_git\n"
+                "module.main()\n"
+            )
+            process = subprocess.run([sys.executable, '-u', '-c', harness], cwd=ROOT,
+                                     capture_output=True, text=True, encoding='utf-8', timeout=30)
+            output = process.stdout + process.stderr
+            self.assertEqual(1, process.returncode, output)
+            self.assertIn('OWNED_EMPTY_DIRECTORY', output)
+            self.assertNotIn('Traceback', output)
+            self.assertFalse(candidate.exists(), output)
+            listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
+                                     text=True, capture_output=True, check=True).stdout
+            self.assertNotIn('worktree ' + candidate.as_posix(), listing)
 
     def test_interrupting_the_real_dotnet_adapter_cleans_its_worktree(self):
         command = [sys.executable, '-u', str(RUNNER), 'test', '--stack', 'dotnet', '--', '--filter', 'FullyQualifiedName~ConsoleCaptureTests.Stderr_RestoresConsoleError_WhenActionSucceeds']
@@ -739,11 +808,13 @@ class TestingFacadeTests(unittest.TestCase):
         for registration_only in [False, True]:
             with self.subTest(registration_only=registration_only):
                 harness = (
-                    "import importlib.util,shutil,sys\n"
+                    "import importlib.util,shutil,sys\nfrom pathlib import Path\n"
                     f"spec=importlib.util.spec_from_file_location('run_tests_probe', {str(adapter)!r})\n"
                     "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
                     "original=module._git\n"
                     "def delayed_git(*args, capture=False):\n"
+                    "    if args[:3] == ('worktree', 'add', '--detach'):\n"
+                    "        assert Path(args[3]).is_dir() and not list(Path(args[3]).iterdir())\n"
                     "    result=original(*args, capture=capture)\n"
                     "    if args[:3] == ('worktree', 'add', '--detach') and result.returncode == 0:\n"
                     "        listing,rc=original('worktree', 'list', '--porcelain', capture=True)\n"

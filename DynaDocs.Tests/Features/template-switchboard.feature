@@ -331,3 +331,162 @@ Feature: Local skill templates compile through an enabled switchboard
     Then the second command pair succeeds without a content, metadata, discovery, retirement, or cleanup change
     And the post-migration manifest retains identical relative paths and bytes
     And the working-tree diff is unchanged by the second command pair
+
+  Scenario Outline: Resolve resource owners from the complete catalog before emitting either provider
+    Given an initialized project with both providers selected
+    And these valid custom agent sources have automatic invocation, an argument hint, and their listed resource link:
+      | skill             | source                                | resource source                            | resource |
+      | valid             | skill-valid.template.md               | valid-resource-guide.template.md           | guide    |
+      | skill             | skill-skill.template.md               | skill-resource-guide.template.md           | guide    |
+      | skill-owner       | skill-skill-owner.template.md         | skill-owner-resource-guide.template.md     | guide    |
+      | skill-skill-owner | skill-skill-skill-owner.template.md   | skill-skill-owner-resource-guide.template.md | guide   |
+    And each source and resource has distinct sentinel body bytes
+    And the source files were created in "<creation-order>" order without a prior custom switch
+    When I run the filename matrix operation "<operation>"
+    Then the command succeeds
+    And an update discovers all four custom switches without emitting new native files
+    And a preview reports all four discoveries while every project path and byte stays unchanged
+    When I synchronize the native artifacts
+    Then exactly those four custom skill names are discovered with enabled true, origin custom, emitAgent true, codexMetadata true, and resources exactly guide
+    And each Claude and Codex skill, agent definition, and Codex metadata file belongs to its exact owner name
+    And each provider resource has its owner's exact sentinel bytes at skills/<owner>/resources/guide.md
+    And no resource filename is misreported or persisted as a separate skill
+    When I synchronize the native artifacts again
+    Then configuration and native artifacts retain identical paths and bytes
+
+    Examples:
+      | operation | creation-order |
+      | sync      | owners first   |
+      | sync      | resources first |
+      | update    | owners first   |
+      | update    | resources first |
+      | preview   | owners first   |
+      | preview   | resources first |
+
+  Scenario Outline: Diagnose top-level filename ambiguities without partial catalog changes
+    Given a successful independent custom skill and resource baseline on both providers
+    And each following row is exercised in its own otherwise valid project:
+      | source                                         | owner source state       | diagnostic reason                                | forbidden diagnosis       |
+      | skill-bad-resource-name.template.md             | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
+      | skill-owner-resource-guide.template.md          | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
+      | skill-owner-resource-guide.template.md          | disabled tombstone only  | invalid skill name or protected -resource- delimiter | no matching skill source |
+      | ghost-resource-guide.template.md                | absent                   | no matching skill source                         | protected -resource- delimiter |
+      | -resource-guide.template.md                     | absent                   | invalid skill or resource name                   | no matching skill source  |
+      | valid-resource-.template.md                     | valid top-level          | invalid skill or resource name                   | no matching skill source  |
+      | valid-resource-bad-resource-name.template.md     | valid top-level          | invalid skill or resource name                   | no matching skill source  |
+      | skill-owner-resource-.template.md               | valid top-level          | invalid skill or resource name                   | invalid skill name or protected |
+      | skill-owner-resource-bad-resource-name.template.md | valid top-level       | invalid skill or resource name                   | invalid skill name or protected |
+      | skill-owner-resource-Guide.template.md          | valid top-level          | invalid skill or resource name                   | invalid skill name or protected |
+      | skill-Owner-resource-guide.template.md          | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
+      | skill-owner-Resource-guide.template.md          | absent                   | invalid skill name or protected -resource- delimiter | no matching skill source |
+      | Skill-owner-resource-guide.template.md          | absent                   | invalid skill or resource name                   | no matching skill source  |
+    And the suspect source contains malformed frontmatter bytes that must not supersede its filename diagnosis
+    And complete project path and byte snapshots include sources, switches, provenance, and unrelated native siblings
+    When I run the filename matrix operation "<operation>" independently for every row
+    Then every row exits nonzero and names its exact source path and diagnostic reason
+    And no row reports its forbidden diagnosis for that source path
+    And no source, configuration, or native output path or byte changes
+
+    Examples:
+      | operation |
+      | sync      |
+      | update    |
+      | preview   |
+
+  Scenario Outline: A present owner source determines resource meaning independently of enablement or body validity
+    Given a successful independent custom skill and resource baseline on both providers
+    And top-level "skill-skill-owner.template.md" has a valid filename for "skill-owner"
+    And top-level "skill-owner-resource-guide.template.md" contains a resource sentinel
+    And the owner is "<owner-state>" and references resources/guide.md when its body is valid
+    When I run the filename matrix operation "<operation>"
+    Then the command has the "<result>" result
+    And the resource path is never diagnosed as an invalid protected-delimiter skill or an orphan resource
+    And a malformed owner is reported at skill-skill-owner.template.md for missing frontmatter before any project mutation
+    And a disabled valid owner's successful non-preview operation records enabled false and resources exactly guide
+    And a successful preview leaves every project path and byte unchanged
+    And a subsequent sync of the disabled valid owner succeeds with neither provider emitting that owner's skill, agent, metadata, or resource
+
+    Examples:
+      | operation | owner-state                  | result  |
+      | sync      | valid with enabled false     | success |
+      | update    | valid with enabled false     | success |
+      | preview   | valid with enabled false     | success |
+      | sync      | malformed without frontmatter | failure |
+      | update    | malformed without frontmatter | failure |
+      | preview   | malformed without frontmatter | failure |
+
+  Scenario Outline: Recognized nested filenames fail on location before competing diagnoses
+    Given a successful independent custom skill and resource baseline on both providers
+    And the exact top-level owner source for "skill-owner" is "<owner-presence>"
+    And each following nested source is exercised alone with malformed content:
+      | source                                               |
+      | nested/skill-owner-resource-guide.template.md          |
+      | nested/skill-skill-owner.template.md                   |
+      | nested/skill-bad-resource-name.template.md              |
+      | nested/-resource-guide.template.md                     |
+      | nested/valid-resource-.template.md                     |
+      | nested/skill-owner-Resource-guide.template.md           |
+      | nested/Skill-owner-resource-guide.template.md           |
+    When I run the filename matrix operation "<operation>" independently for every row
+    Then every row exits nonzero and names its relative nested path with "is nested; local templates must be top-level"
+    And that path has no invalid-name, protected-delimiter, orphan, or frontmatter diagnosis
+    And no source, configuration, or native output path or byte changes
+
+    Examples:
+      | operation | owner-presence |
+      | sync      | present        |
+      | sync      | absent         |
+      | update    | present        |
+      | update    | absent         |
+      | preview   | present        |
+      | preview   | absent         |
+
+  Scenario Outline: Unsupported filename shapes remain unread at either location
+    Given a successful independent custom skill and resource baseline on both providers
+    And each following unsupported filename is exercised alone at "<location>" with invalid source bytes:
+      | filename                                   |
+      | Skill-ghost.template.md                    |
+      | valid-Resource-ghost.template.md            |
+      | skill-ghost.TEMPLATE.MD                     |
+      | skill-ghost.Template.md                     |
+      | skill-ghost.template.Md                     |
+      | valid-resource-ghost.TEMPLATE.MD            |
+      | valid-resource-ghost.Template.md            |
+      | valid-resource-ghost.template.Md            |
+      | skill-ghost.template.md.bak                 |
+      | valid-resource-ghost.template.md.bak        |
+      | skill-owner-resource-guide.TEMPLATE.MD      |
+      | Skill-owner-Resource-guide.template.md      |
+      | arbitrary.template.md                      |
+      | README                                     |
+      | .hidden                                    |
+      | binary.dat                                 |
+    When I run the filename matrix operation "<operation>" independently for every row
+    Then every row succeeds without a source validation or nested-location diagnostic
+    And every project path and byte remains unchanged with no extra switch or native output
+
+    Examples:
+      | operation | location |
+      | sync      | top-level |
+      | sync      | nested    |
+      | update    | top-level |
+      | update    | nested    |
+      | preview   | top-level |
+      | preview   | nested    |
+
+  Scenario Outline: A nested owner cannot confer top-level resource ownership
+    Given a successful independent custom skill and resource baseline on both providers
+    And only "nested/skill-skill-owner.template.md" declares the otherwise valid custom owner "skill-owner"
+    And top-level "skill-owner-resource-guide.template.md" contains the referenced resource
+    When I run the filename matrix operation "<operation>"
+    Then the command exits nonzero
+    And "nested/skill-skill-owner.template.md" is diagnosed only as nested and requiring top-level placement
+    And "skill-owner-resource-guide.template.md" is diagnosed as an invalid skill name or protected -resource- delimiter
+    And neither path is diagnosed as an orphan resource
+    And no source, configuration, or native output path or byte changes
+
+    Examples:
+      | operation |
+      | sync      |
+      | update    |
+      | preview   |

@@ -12,11 +12,11 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
 
 ## Must-Reads
 
-1. The Linear Project's metadata-first map, each current active contract, and named evidence only.
+1. The Linear Project, its plan at the governing commit when one exists, and every Issue's contract.
 2. [working-tree-contract.md](../../../guides/working-tree-contract.md)
 3. [about.md](../../../understand/about.md)
 4. [architecture.md](../../../understand/architecture.md)
-5. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+5. [linear-workspace-standard.md](../../../reference/linear-workspace-standard.md)
 
 {{include:extra-must-reads}}
 

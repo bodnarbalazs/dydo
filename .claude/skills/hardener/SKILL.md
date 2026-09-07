@@ -17,7 +17,6 @@ mutant alive.
 4. [about.md](../../../dydo/understand/about.md)
 5. [architecture.md](../../../dydo/understand/architecture.md)
 6. [working-tree-contract.md](../../../dydo/guides/working-tree-contract.md)
-7. [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 
@@ -70,6 +69,7 @@ command and acceptance-example checks; a missing mechanism or report is a gap, n
 
 ## Return
 
-To the Issue Captain, use the `HARDENED` form in the communication protocol. Name changes, probe
-outcomes, gaps, next action, and evidence; retain full gate and mutation output once as linked
-evidence. Route anything outside the owned paths to the Captain.
+To the Issue Captain: the Issue key; the SHA the work ends on; the changed files; what was cut,
+simplified or closed, with lines and HCRAP before and after; each test added or sharpened, with its
+claim; every gate's command and real output, the mutation run included; and anything seen but out of
+the owned paths, for the Captain to route.

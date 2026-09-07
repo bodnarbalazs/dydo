@@ -13,7 +13,7 @@ The human's attention is the scarcest resource in this project: triage everythin
 
 1. The human's Linear board: the open `Question` Issues, every Project in flight, and every Issue
    in `Ready to Merge`.
-2. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+2. [linear-workspace-standard.md](../../../reference/linear-workspace-standard.md)
 3. [about.md](../../../understand/about.md)
 4. [architecture.md](../../../understand/architecture.md)
 5. [working-tree-contract.md](../../../guides/working-tree-contract.md)

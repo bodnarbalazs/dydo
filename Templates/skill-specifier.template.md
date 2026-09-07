@@ -13,13 +13,12 @@ diff.
 
 ## Must-Reads
 
-1. The target Linear Issue or direct lane Sub-issue: its active contract, parent, and blockers; read comments only for a named missing fact or binding review.
+1. The target Linear Issue or direct lane Sub-issue, including its parent, blockers, and comments.
 2. The governing Project-plan section and Decision Records.
 3. [working-tree-contract.md](../../../guides/working-tree-contract.md)
 4. [coding-standards.md](../../../guides/coding-standards.md)
 5. [about.md](../../../understand/about.md)
 6. [architecture.md](../../../understand/architecture.md)
-7. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 {{include:extra-must-reads}}
 
@@ -65,9 +64,9 @@ Project, return it untouched and name `project-planner`.
 
 ## Return
 
-To the Issue Captain, use the `SPECIFIED` form in the communication protocol: name the immutable
-contract, plan SHA, review recommendation, and lanes or retained Bug stages, or `none`. The Captain
-alone decides whether `reviewer(spec)` must pass before production.
+To the Issue Captain: the spec, the plan, the commit SHA, `review recommended | unnecessary —
+<reason>`, and the lanes or retained Bug stages, or `none`. The Captain alone decides whether
+`reviewer(spec)` must pass before production.
 
 ## Raise a hand
 

@@ -86,7 +86,7 @@
     },
     {
       "pattern": "(?:^|[;\u0026|]\\s*)gh\\s\u002Bpr\\s\u002Bcreate\\b(?![\\s\\S]*Independent review)",
-      "message": "This PR carries no review block. Add the independent review under an \u0027Independent review\u0027 heading and follow this project\u0027s shared Communication and evidence standard.",
+      "message": "This PR carries no review block. Paste the independent reviewer\u0027s block under an \u0027Independent review\u0027 heading in the body \u2014 rubric, reviewer and model, candidate and base SHA, verdict, gates rerun, findings.",
       "severity": "warn"
     }
   ],

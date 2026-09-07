@@ -1458,7 +1458,15 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
                 "---\nname: no-body\ndescription: blank body\nemit: skill\n---\n");
         }
         else if (defect.Contains("disagrees with its filename", StringComparison.Ordinal))
-            File.WriteAllText(Path.Combine(sourceRoot, "skill-bad.template.md"), CustomSource("other", false));
+        {
+            var additions = Path.Combine(_root, "dydo", "_system", "template-additions");
+            Directory.CreateDirectory(additions);
+            File.WriteAllText(Path.Combine(additions, "mismatched-owner-link.md"),
+                "- [Guide](resources/guide.md)\n");
+            File.WriteAllText(Path.Combine(sourceRoot, "skill-bad.template.md"),
+                CustomSource("other", false) + "\n{{include:mismatched-owner-link}}\n");
+            File.WriteAllBytes(Path.Combine(sourceRoot, "bad-resource-guide.template.md"), [0, 1, 254, 255]);
+        }
         else if (defect.Contains("unknown frontmatter", StringComparison.Ordinal))
         {
             File.WriteAllText(Path.Combine(sourceRoot, "skill-bad.template.md"), CustomSource("bad", false).Replace("emit: skill", "emit: skill\nunknown: value"));
@@ -1482,9 +1490,13 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             var additions = Path.Combine(_root, "dydo", "_system", "template-additions");
             Directory.CreateDirectory(additions);
             File.WriteAllText(Path.Combine(additions, "missing-must-read.md"),
-                "## Must-Reads\n\n- [Missing](../../../understand/missing.md)\n");
-            File.WriteAllText(Path.Combine(sourceRoot, "skill-included-missing.template.md"),
+                "## Must-Reads\n\n- [Missing](../../../understand/missing.md)\n\n"
+                + "## Resources\n\n- [Guide](resources/guide.md)\n");
+            var ownerPath = Path.Combine(sourceRoot, "skill-included-missing.template.md");
+            File.WriteAllText(ownerPath,
                 CustomSource("included-missing", false) + "\n{{include:missing-must-read}}\n");
+            File.WriteAllBytes(Path.Combine(sourceRoot, "included-missing-resource-guide.template.md"), [0, 1, 254, 255]);
+            Assert.DoesNotContain("resources/guide.md", File.ReadAllText(ownerPath), StringComparison.Ordinal);
         }
         else
             throw new Xunit.Sdk.XunitException("Invalid-source example was not recognized.");
@@ -1499,6 +1511,9 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         Assert.True(result.ExitCode != 0, $"Expected invalid source rejection. Output: {diagnostic}");
         foreach (var token in InvalidSourceDiagnosticTokens(defect))
             Assert.Contains(token, diagnostic, StringComparison.OrdinalIgnoreCase);
+        if (defect.Contains("Must-Read", StringComparison.Ordinal)
+            || defect.Contains("disagrees with its filename", StringComparison.Ordinal))
+            Assert.DoesNotContain("legacy resource source", diagnostic, StringComparison.Ordinal);
         Assert.Equal(before, Manifest());
 
         if (defect.Contains("newly shipped or retired", StringComparison.Ordinal))

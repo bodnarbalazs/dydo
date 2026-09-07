@@ -249,11 +249,9 @@ public static partial class SkillTemplateService
                 continue;
             var hasRecordedResource = config.Skills.TryGetValue(owner, out var switchEntry)
                 && switchEntry.Resources?.Contains(resource, StringComparer.Ordinal) == true;
-            var hasMissingReference = skillFiles.TryGetValue(owner, out var ownerPath)
-                && !File.Exists(canonicalPath)
-                && ResourceLinkRegex().Matches(
-                    ResolveIncludesStrict(File.ReadAllText(ownerPath), projectRoot, ownerPath))
-                    .Any(match => match.Groups[1].Value.Equals(resource, StringComparison.Ordinal));
+            var hasMissingReference = !File.Exists(canonicalPath)
+                && skillFiles.TryGetValue(owner, out var ownerPath)
+                && HasValidResourceReference(ownerPath, projectRoot, resource);
             if (!hasRecordedResource && !hasMissingReference)
                 continue;
 
@@ -274,6 +272,22 @@ public static partial class SkillTemplateService
             yield return $"'{file}' is a legacy resource source for '{owner}' / '{resource}'. "
                 + $"Manually rename it to '{canonical}' after checking ownership; do not infer its kind from contents. "
                 + "Run 'dydo template update' for shipped sources.";
+        }
+    }
+
+    private static bool HasValidResourceReference(string ownerPath, string projectRoot, string resource)
+    {
+        try
+        {
+            var content = File.ReadAllText(ownerPath);
+            var resolved = ValidateTemplate(ownerPath, content, projectRoot);
+            Parse(Path.GetFileName(ownerPath), content);
+            return ResourceLinkRegex().Matches(resolved)
+                .Any(match => match.Groups[1].Value.Equals(resource, StringComparison.Ordinal));
+        }
+        catch (InvalidDataException)
+        {
+            return false;
         }
     }
 
@@ -304,7 +318,7 @@ public static partial class SkillTemplateService
         Resources = value.Resources?.ToList()
     };
 
-    private static void ValidateTemplate(string path, string content, string projectRoot)
+    private static string ValidateTemplate(string path, string content, string projectRoot)
     {
         var fields = FrontmatterParser.ParseFields(content)
             ?? throw new InvalidDataException($"Skill template '{Path.GetFileName(path)}' has no frontmatter.");
@@ -332,6 +346,7 @@ public static partial class SkillTemplateService
 
         var resolved = ResolveIncludesStrict(content, projectRoot, path);
         ValidateMustReads(resolved, projectRoot, path);
+        return resolved;
     }
 
     private static string ResolveIncludesStrict(string content, string projectRoot, string sourcePath)

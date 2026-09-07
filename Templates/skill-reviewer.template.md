@@ -45,22 +45,12 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 
 ## Return
 
-The block is the return, using the `PASS` or `FAIL` form in the communication protocol. The invoker records it on the work judged:
+The block is the return, using the `PASS` or `FAIL` form in the communication protocol; its
+`reviewer/model` field is the reviewer's signature. The invoker records it on the work judged:
 a Project update for a project-plan review, the Merge Issue for merge review, otherwise the Issue;
 the PR body carries it under `## Independent review` when a PR exists. Return it to the invoker
 even when a read-only host prevents posting.
 
-```
-Rubric:    <code | docs | project-plan | spec | merge>
-Reviewer:  <label> (<model>)
-Contract:  <Issue key or plan path> @ <governing SHA>
-Candidate: <ref> @ <SHA>    Base: <SHA>
-Verdict:   <PASS | FAIL>
-Gates:     <command> → <result>
-Findings:  <file:line> → <consequence> → <correction>
-```
-
 PASS means no findings, and binds this candidate under this contract. There is no PASS with notes: a
 note is a finding, and a finding is a FAIL — YOU SHALL NOT PASS. A defect the candidate neither
-created nor exposed is one line after the block, `Observation (out of scope, non-binding):`. Name the
-model every time, so who judged what stays observable later.
+created nor exposed is one line after the block, `Observation (out of scope, non-binding):`.

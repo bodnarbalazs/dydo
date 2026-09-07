@@ -215,8 +215,8 @@ signature, so do not add a second or conflicting one. Historical comments stay u
 Examples:
 
 - `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
-- `PASS — rubric/type: docs; candidate <SHA>; reviewer/model: gpt-5.6-sol; posted by issue-captain/model: gpt-5.6-terra.`
-- `IMPLEMENTED — hop/candidate <SHA>; implementer/model: gpt-5.6-luna; proof: <evidence>; blocker: none.`
+- `PASS — rubric/type: docs; candidate <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
+- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
 - `STATE — Implementing; owner: implementer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
 
 ## Decision Records

@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "issue": "DYD-96",
+  "state": "UNREVIEWED_WIP",
+  "model": "gpt-5.6-sol",
+  "retainedInputs": {
+    "matched": 82,
+    "mismatched": 0
+  },
+  "staticMeasurement": [
+    {
+      "stack": "python",
+      "status": "fail",
+      "findings": 48,
+      "errors": 0,
+      "localPath": "DynaDocs.Tests/coverage/results/static-python-probe-2/latest.json",
+      "sha256": "E71E6FB1C54DF71E4413E782AD8EE778CF922C4F9664B85A9190C7FE9EACCD9B"
+    },
+    {
+      "stack": "dotnet",
+      "status": "fail",
+      "findings": 67,
+      "errors": 0,
+      "localPath": "DynaDocs.Tests/coverage/results/static-dotnet-probe-2/latest.json",
+      "sha256": "331307F6E3775E1BE3CC260EC622D7BB500DFF8E2185431E1D4842DE3C17AEE2"
+    },
+    {
+      "stack": "node",
+      "status": "error",
+      "findings": 19,
+      "errors": 1,
+      "gap": "Unsupported maintained extensionless JavaScript npm/bin/dydo; pending DYD-105",
+      "localPath": "DynaDocs.Tests/coverage/results/static-node-probe-2/latest.json",
+      "sha256": "9870D39E0802D5BCF702FEADC99C2ED970425CD63336C799EE15B972E207A723"
+    }
+  ],
+  "csharpCoverageProbe": {
+    "status": "incomplete",
+    "ownerComplete": true,
+    "cleanupConfirmed": true,
+    "jobEmpty": true,
+    "jobTotal": 43,
+    "subjectExit": 1,
+    "mechanismError": "Missing physical method coverage: System.Int32 Program/<>c::<<Main>$>b__0_0(System.CommandLine.ParseResult)",
+    "functionalCaveat": "The probe filter Category=Unit matched no tests; this is not full-suite proof.",
+    "ownerResultLocalPath": "DynaDocs.Tests/coverage/results/csharp-probe-adoption-7/owner/result.json",
+    "ownerResultSha256": "288CDF6F99CF3D61596CD150FBE83D25E357A012E9F75C955A50148152C75A24",
+    "stderrLocalPath": "DynaDocs.Tests/coverage/results/csharp-probe-adoption-7/owner/stderr.log",
+    "stderrSha256": "C043EED2A2FDD2F04E197973ADB2D66492DA62618135379FE0D1AF54FBD876C9"
+  }
+}

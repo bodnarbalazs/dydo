@@ -1,0 +1,527 @@
+{
+  "schema": 1,
+  "issue": "DYD-96",
+  "base": "37acc1f3706bf925e5230fb58c4a790dba769d62",
+  "status": "proposed full contract, production pending captain posting and independent SPEC PASS",
+  "paths": [
+    {
+      "path": ".config/dotnet-tools.json",
+      "action": "Local coverlet.console6.0.4 tool manifest only; mutation tooling remains DYD-103",
+      "phase": "production"
+    },
+    {
+      "path": ".editorconfig",
+      "action": "Selected error severities and explicit unrelated Sonar rule deactivation only",
+      "phase": "production"
+    },
+    {
+      "path": "Directory.Build.props",
+      "action": "Private analyzer reference, effective strictness and AdditionalFiles; no version fields",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/glossary.md",
+      "action": "DR048 HCRAP term if current text needs correction; no unrelated terms",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/guides/testing-strategy.md",
+      "action": "Actual static/coverage setup, gates, unavailable distinctions and assertion-role policy",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/reference/coverage-tools.md",
+      "action": "Concrete adapter commands, source/report schemas, provenance and tool restoration",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/reference/gap-check.example.py",
+      "action": "Mechanically derived exact facade copy, no separate maintained edits",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/.gitignore",
+      "action": "Only assurance local dependency/raw output locations",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/associations.py",
+      "action": "Replace selected-case witnesses with simple exact source/test file relations",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/coverage.runsettings",
+      "action": "Pinned JSON/OpenCover/Cobertura reports, complete target inclusion without compiler-generated async omission",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/csharp_coverage.py",
+      "action": "Single isolated native full-suite/CLI/producer collection via run_tests.py",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/csharp_join.py",
+      "action": "Retain exact native/PDB join, remove shadow manifests",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gap_check.json",
+      "action": "Configure static/coverage adapters and full Node test adapter; preserve mutation unavailable and public shape",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gap_check.py",
+      "action": "Bounded non-test native2/130 protocol amendment and help; preserve all other reviewed behavior",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_adapter.py",
+      "action": "Private stack/gate adapter, isolated campaign and exact report publication",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_clones.py",
+      "action": "Native clone accounting and simultaneous15-line100-token threshold",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_collect.py",
+      "action": "Adopt native static collectors and wire complete current inventory, no pending placeholders",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_diagnostics.py",
+      "action": "Native diagnostics normalization and explicit suppression/gap failures",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_inventory.py",
+      "action": "Current source roles and input artifact contract; remove retired workflow exception",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_knip.py",
+      "action": "Native entrypoint and unused-export/source accounting",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_policy.py",
+      "action": "Extract retained DR048 policy only; no old facade",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_run.py",
+      "action": "Adopt command evidence and independent aggregation, current environment API and130 cleanup",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_versions.py",
+      "action": "Exact G dependency locks/runtime evidence; remove mutation and receipt coupling",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/inventory.py",
+      "action": "NUL-safe tracked/untracked/deletion identity and strict complete fingerprint",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/javascript_coverage.cjs",
+      "action": "Ordinary c8/V8 report and exact source/callable join",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_metrics.cjs",
+      "action": "Official SonarJS per-callable metrics, exact source identity and diagnostics",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/knip_reporter.mjs",
+      "action": "Pinned native Knip structured report",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/AssemblyFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/AssemblyMetrics.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/BehaviorFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/BehaviorFragment.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/CompiledMethod.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ConstructorFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/FileFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/MethodIdentity.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/NamespaceDependencies.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/packages.lock.json",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/Program.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ProjectFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ProjectMetrics.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SemanticMethod.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceBehavior.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceMember.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceMetrics.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourcePoint.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceToken.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/StructuralMethod.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/node_tests.cjs",
+      "action": "Discover all maintained Node test files and preserve caller native args",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package-lock.json",
+      "action": "Exact G tool closure",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package.json",
+      "action": "Private G-only Node tools, no npm product metadata",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/positions.py",
+      "action": "Exact UTF-16 source spans",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_coverage.py",
+      "action": "Ordinary full-suite coverage.py plus flat callable counters and invocation-local startup",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_join.py",
+      "action": "Replace receipt imports with ordinary flat counters and native coverage data",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_metrics.py",
+      "action": "Existing exact AST/complexipy/radon callable and dependency facts",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_runtime.py",
+      "action": "Only exact ordinary-process CallableWitness; no logical session/receipt broker",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/report.py",
+      "action": "Render current normalized report; remove retired CRAP/tier and direct-dotnet-test path",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/requirements.lock",
+      "action": "Complete resolved G Python dependency lock",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/requirements.txt",
+      "action": "G-only exact direct Python dependencies",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/run_tests.py",
+      "action": "Preserve reviewed lifecycle; add internal assurance output, NUL-safe snapshot and exact assembly/report collection",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/SonarLint.xml",
+      "action": "S3776 threshold20/propertyThreshold20",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/source_tokens.py",
+      "action": "Validated cross-stack native token streams for clones",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/sync_testing_example.py",
+      "action": "One exact canonical-to-derived copy plus read-only --check",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test-associations.json",
+      "action": "Exact current maintained target-to-test-file intention map",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/javascript_coverage.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/js_metrics.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/knip_reporter.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/node_tests.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_analyzer_configuration.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_associations.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_assurance_adoption.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_clones.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_coverage.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_diagnostics.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_gate_adapter.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_gate_inventory.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_gate_versions.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_inventory.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_knip.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_orchestration.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_policy.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_positions.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_coverage.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_join.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_metrics.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_runtime.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_report.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_runner.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_source_tokens.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_sync_testing_example.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_testing_facade.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_windows_job.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/testing_facade.test.mjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tier_registry.json",
+      "action": "Delete obsolete tier policy source from this adopted branch",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/windows_job.py",
+      "action": "Retained narrow campaign containment with finite1800s bound, owned cleanup and no process adoption",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/DynaDocs.Tests.csproj",
+      "action": "Only explicit coverage/producer fixture integration if needed; preserve CompileRemove and all package/version/Reqnroll behavior",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/Features/assurance-adoption.feature",
+      "action": "Specifier-only additive @DYD-96 gate-adapter completion scenarios; contract immutable during production",
+      "phase": "specification"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/AssuranceAdoptionSteps.cs",
+      "action": "Exact bindings to independently checked real subprocess observations for each new scenario",
+      "phase": "production"
+    }
+  ],
+  "excludedOwnership": [
+    "Active DYD-111 compiler/config/templates/native outputs",
+    "DYD-118 DynaDocs.csproj/npm/package.json/version E2E tests",
+    "DYD-105 npm/bin/dydo rename and npm/test/launcher.test.cjs",
+    "DYD-103 run_mutation.py/semantic selection/mutation configs",
+    "DYD-91 portable example JSON/onboarding",
+    "All retained worktree source and evidence"
+  ],
+  "serialTransfers": [
+    "DynaDocs.Tests/DynaDocs.Tests.csproj after DYD-99 Done; no concurrent source owner may edit the same file",
+    "Shared testing docs before later DYD-117/91 edits",
+    "gate inventory interface to DYD-103 after reviewed implemented shape; no parent-Done dependency",
+    "Shipped policy template/native reflection only through a later exact owner transfer"
+  ]
+}

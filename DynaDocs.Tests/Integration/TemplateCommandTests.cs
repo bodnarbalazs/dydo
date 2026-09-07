@@ -90,7 +90,7 @@ public class TemplateCommandTests : IntegrationTestBase
             : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
 
         Assert.NotEqual(0, result.ExitCode);
-        Assert.Contains(name, result.Stderr);
+        Assert.Contains(name.Replace('\\', '/'), result.Stderr.Replace('\\', '/'), StringComparison.Ordinal);
         Assert.Contains(nested ? "is nested; local templates must be top-level" : "invalid skill or resource name", result.Stderr);
         if (nested)
             Assert.DoesNotContain("invalid skill or resource name", result.Stderr);

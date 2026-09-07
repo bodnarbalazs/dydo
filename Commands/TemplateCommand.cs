@@ -119,6 +119,22 @@ public static class TemplateCommand
         var sourceRoot = Path.Combine(projectRoot, original.Structure.Root, "_system", "templates");
         var managed = ManagedShippedSourcePaths(original).ToHashSet(StringComparer.Ordinal);
 
+        foreach (var canonical in packaged.Where(name => name.StartsWith("resource-", StringComparison.Ordinal)))
+        {
+            var legacy = LegacyResourceTemplateName(canonical);
+            var canonicalRelative = $"_system/templates/{canonical}";
+            var legacyRelative = $"_system/templates/{legacy}";
+            var canonicalPath = Path.Combine(sourceRoot, canonical);
+            var legacyPath = Path.Combine(sourceRoot, legacy);
+            var ownsLegacy = original.FrameworkHashes.ContainsKey(legacyRelative);
+            var ownsCanonical = original.FrameworkHashes.ContainsKey(canonicalRelative);
+
+            if (File.Exists(legacyPath) && !ownsLegacy)
+                throw new InvalidDataException($"Local custom source '{legacy}' collides with a retired shipped template.");
+            if (ownsLegacy && File.Exists(canonicalPath) && !ownsCanonical)
+                throw new InvalidDataException($"Local custom source '{canonical}' collides with a shipped template.");
+        }
+
         foreach (var relative in managed.Where(relative =>
                      !packaged.Contains(Path.GetFileName(relative))
                      && !original.FrameworkHashes.ContainsKey(relative)))

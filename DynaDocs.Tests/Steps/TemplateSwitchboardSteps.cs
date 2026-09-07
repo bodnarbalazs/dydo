@@ -21,10 +21,10 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"dydo-switchboard-{Guid.NewGuid():N}");
     private readonly List<string> _steps = [];
+    private readonly List<Table> _tables = [];
 
     [Given(@"^"".+?""\ is\ now\ the\ only\ selected\ integration$")]
     [Given(@"^""dydo\.json""\ contains\ "".+?""$")]
-    [Given(@"^""release-notes-resource-style\.template\.md""\ is\ its\ referenced\ custom\ resource$")]
     [Given(@"^""skill-release-notes\.template\.md""\ is\ a\ valid\ custom\ agent\ source$")]
     [Given(@"^""skill-release-notes\.template\.md""\ is\ a\ valid\ custom\ skill\ source$")]
     [Given(@"^""skill-writing-for-our-team\.template\.md""\ is\ a\ valid\ custom\ skill\ with\ enabled\ true$")]
@@ -211,12 +211,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     public void RecordResourceOwnerCreationOrder() => RecordStep();
 
     [When(@"^I run the filename matrix operation "".+?""$")]
-    public void RecordResourceOwnerOperation()
-    {
-        Assert.StartsWith("Resolve resource owners from the complete catalog", context.ScenarioInfo.Title,
-            StringComparison.Ordinal);
-        RecordStep();
-    }
+    public void RecordResourceOwnerOperation() => RecordStep();
 
     [Then(@"^an update discovers all five custom switches without emitting new native files$")]
     public void RecordResourceOwnerUpdateDiscovery() => RecordStep();
@@ -262,6 +257,30 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
 
     [Then(@"^all upstream attribution, commit pins, and license text remain unchanged$")]
     public void RecordNoticeAttributionAssertion() => RecordStep();
+
+    [Given(@"^(?:a successful independent custom skill and resource baseline on both providers|a pre-transition native baseline was captured before the old shipped copies were hard-edited|all other sources and switch provenance use the canonical namespace|an otherwise valid project is ready for the twenty-one framework resource namespace replacements|any recorded hash proves its exact contained source path|both resource files contain distinct sentinel bytes|complete project path and byte snapshots include sources, switches, provenance, and unrelated native siblings|existing explicit enabled choices and resource slugs are recorded|invalid cases contain malformed bytes and no legacy evidence|no framework ownership, prior resource provenance, or missing canonical reference identifies any suspect file as a legacy resource|no old framework hash claims either canonical path as a different source|old shipped copies contain hard edits while a distinct canonical custom resource and project extension contain sentinel bytes|old shipped resource files and exact old framework hashes remain from the prior source namespace|prior custom provenance records notes guide|skill notes references its canonical guide so the overlapping path would otherwise be usable|the exact twenty-one old shipped resource basenames are recorded under frameworkHashes|the running executable ships only the canonical resource-prefixed replacements|the running executable ships their resource-prefixed replacements and no old resource basenames|the suspect legacy file contains malformed frontmatter bytes|the suspect source contains malformed frontmatter bytes that must not supersede its filename diagnosis|valid cases have their exact top-level owner, valid source content, and referenced canonical resource)$")]
+    [Given("""^(?:\"resource-skill-resource-guide\.template\.md\" contains \"[^\"]+\"|\"[^\"]+\" has arbitrary resource sentinel bytes|\"[^\"]+\" has valid matching skill frontmatter|\"[^\"]+\" is absent|\"[^\"]+\" is its referenced custom resource|\"[^\"]+\" is the valid source of skill \"[^\"]+\"|a valid custom owner \"[^\"]+\" has the exact old source \"[^\"]+\" with arbitrary sentinel bytes|an exact legacy source notes-resource-guide\.template\.md is at \"[^\"]+\"|an otherwise valid project has \"[^\"]+\" for one packaged resource|its canonical resource is \"[^\"]+\"|its canonical source \"[^\"]+\" is absent|legacy intent for resource-notes guide is established by \"[^\"]+\"|legacy intent is established by \"[^\"]+\"|only \"[^\"]+\" declares the otherwise valid custom owner \"[^\"]+\"|skill \"[^\"]+\" has \"[^\"]+\"|the exact top-level owner source for \"[^\"]+\" is \"[^\"]+\"|the owner is \"[^\"]+\" and references resources/guide\.md when its body is valid|top-level \"[^\"]+\" contains a resource sentinel|top-level \"[^\"]+\" contains the referenced resource|top-level \"[^\"]+\" has a valid filename for \"[^\"]+\"|valid custom skills \"[^\"]+\" and \"[^\"]+\" coexist|valid custom skills \"[^\"]+\" and \"[^\"]+\" have their separate canonical guide resources|valid skills \"[^\"]+\" and \"[^\"]+\" coexist and reference their separate canonical guide resources)$""")]
+    public void RecordNamespaceGiven() => RecordStep();
+
+    [Given(@"^each following canonical source component is exercised independently for a skill slug, resource owner slug, and resource slug:$")]
+    [Given(@"^each following collision is exercised alone with distinct custom sentinel bytes:$")]
+    [Given(@"^each following nested source is exercised alone with malformed content:$")]
+    [Given(@"^each following row is exercised in its own otherwise valid project without prior legacy resource evidence:$")]
+    [Given("""^each following unsupported filename is exercised alone at \"[^\"]+\" with invalid source bytes:$""")]
+    public void RecordNamespaceTable(Table table)
+    {
+        _tables.Add(table);
+        RecordStep();
+    }
+
+    [When("""^I run the filename matrix operation \"[^\"]+\" independently for every (?:row|component and source kind|collision)$""")]
+    [When(@"^I apply the real template update and synchronize both providers twice$")]
+    [When(@"^I synchronize both providers twice$")]
+    public void RecordNamespaceWhen() => RecordStep();
+
+    [Then(@"^(?:a disabled valid owner's successful non-preview operation records enabled false and resources exactly guide|a malformed owner is reported at skill-skill-owner\.template\.md for missing frontmatter before any project mutation|a missing canonical guide is diagnosed at owner skill with the exact target resource-skill-resource-guide\.template\.md|a nested legacy file is diagnosed only as nested and requiring top-level placement|a preview leaves every project path and byte unchanged|a preview reports the same source and metadata actions while preserving every project path and byte|a subsequent real update followed by a second update has no further source or metadata change|a subsequent sync of the disabled valid owner succeeds with neither provider emitting that owner's skill, agent, metadata, or resource|a successful preview leaves every project path and byte unchanged|a successful sync emits both skill names separately|a top-level legacy file is diagnosed with both old and canonical paths and an actionable manual ownership or rename instruction|all native paths and resource bytes equal the pre-transition compiled baseline except the explicitly revised skill-mechanics grammar text|an absent old file is never reported as physically deleted|an already-owned canonical target is not diagnosed as custom merely because the old source also exists|an update leaves only the canonical resource source with packaged bytes and its truthful hash|an update removes exactly the twenty-one old local resource paths and hashes and creates the twenty-one canonical local resource paths and truthful LF-normalized hashes|any diagnostic naming the overlapping file calls it ambiguous and instructs preserving a valid skill while supplying the separate canonical resource|both skill names have distinct skill outputs on both providers|both switches record guide without creating a legacy-source error|custom sources, extensions, explicit switches, and resource-slug provenance retain their exact values and bytes|each failed operation and each preview preserves every project path and byte|each owner receives only its own canonical resource bytes|every project path and byte remains unchanged with no extra switch or native output|every replacement source equals its packaged bytes and no backup, merge, conflict, or general migration record is created|every row exits nonzero and names its exact source path and diagnostic reason|every row fails with the exact colliding path and owner before any retirement, replacement, or native cleanup|every row succeeds without a source validation or nested-location diagnostic|failure or preview preserves every project path and byte|invalid cases fail on the exact source filename and invalid component before content validation|invalid names are not diagnosed as orphan resources and orphan resources are not diagnosed as invalid names|it instructs manual rename after checking ownership and never chooses a source kind from the suspect contents|it reports every planned old source retirement, canonical replacement, and old and new source hash reconciliation|neither owner consumes or overwrites the ambiguous bytes|no resource body contributes a skill name or switch entry|no suspect path receives a frontmatter diagnosis|resource slugs and enabled choices retain their values|that path has no invalid-name, protected-delimiter, orphan, or frontmatter diagnosis|the command fails before any mutation|the command fails with the exact old and canonical source paths and instructions to run dydo template update|the diagnostic names both the old path and resource-resource-notes-resource-guide\.template\.md and requires manual ownership resolution|the diagnostic names the exact legacy path, owner, resource, and canonical replacement path|the overlapping file is diagnosed as ambiguous legacy ownership for resource-notes guide|the resource path is never diagnosed as an invalid protected-delimiter skill or an orphan resource|the second source-built update and sync leave the complete managed manifest and working-tree diff unchanged|the second synchronization retains the identical configuration and native path and byte manifest|the skill owner's guide resource retains the exact resource-content bytes including any frontmatter|valid cases succeed and sync emits exactly their canonical skill and resource names to both providers)$")]
+    [Then("""^(?:\"[^\"]+\" is diagnosed only as having no matching skill source|\"[^\"]+\" is diagnosed only as nested and requiring top-level placement|\"[^\"]+\" is never consumed as a resource or diagnosed as an invalid skill|every row exits nonzero and names its relative nested path with \"[^\"]+\"|the command has the \"[^\"]+\" result)$""")]
+    public void RecordNamespaceThen() => RecordStep();
 
 
     private void RecordStep() => _steps.Add(context.StepContext.StepInfo.Text);
@@ -313,6 +332,38 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
                 await VerifyResourceOwnerCatalog(prose);
             else if (title.StartsWith("Published notices retain exact source attribution", StringComparison.Ordinal))
                 VerifyNoticeAttribution();
+            else if (title.StartsWith("Identify legacy resources from finite evidence", StringComparison.Ordinal))
+                await VerifyLegacyEvidence(prose);
+            else if (title.StartsWith("Complete canonical resource pairs retain meaning", StringComparison.Ordinal))
+                await VerifyCanonicalPairs(prose);
+            else if (title.StartsWith("Diagnose top-level filename ambiguities", StringComparison.Ordinal))
+                await VerifyFilenameAmbiguities(prose);
+            else if (title.StartsWith("A present owner source determines", StringComparison.Ordinal))
+                await VerifyOwnerState(prose);
+            else if (title.StartsWith("Recognized nested filenames", StringComparison.Ordinal))
+                await VerifyNestedFilenames(prose);
+            else if (title.StartsWith("Unsupported filename shapes", StringComparison.Ordinal))
+                await VerifyUnsupportedFilenames(prose);
+            else if (title.StartsWith("A nested owner cannot confer", StringComparison.Ordinal))
+                await VerifyNestedOwner(prose);
+            else if (title.StartsWith("Pin canonical slug boundaries", StringComparison.Ordinal))
+                await VerifySlugBoundaries(prose);
+            else if (title.StartsWith("Resource content cannot change", StringComparison.Ordinal))
+                await VerifyResourceContent(prose);
+            else if (title.StartsWith("Preserve canonical skills when", StringComparison.Ordinal))
+                await VerifySkillResourceOverlap(prose);
+            else if (title.StartsWith("Do not steal an old resource", StringComparison.Ordinal))
+                await VerifyAmbiguousResourceOwner(prose);
+            else if (title.StartsWith("Legacy diagnostics respect", StringComparison.Ordinal))
+                await VerifyLegacyLocation(prose);
+            else if (title.StartsWith("Replace the positively owned", StringComparison.Ordinal))
+                await VerifyFrameworkTransition(prose);
+            else if (title.StartsWith("Fail framework namespace collisions", StringComparison.Ordinal))
+                await VerifyFrameworkCollisions(prose);
+            else if (title.StartsWith("Sync requires explicit update", StringComparison.Ordinal))
+                await VerifySyncRequiresUpdate();
+            else if (title.StartsWith("Reconcile a partially completed", StringComparison.Ordinal))
+                await VerifyPartialTransition(prose);
             else
                 throw new Xunit.Sdk.XunitException($"No DYD-111 contract probe is bound for '{title}'.");
         }
@@ -528,6 +579,431 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         Assert.Contains("THIRD-PARTY-NOTICES.md", File.ReadAllText(Path.Combine(root, "npm", "package.json")), StringComparison.Ordinal);
     }
 
+    private async Task VerifyLegacyEvidence(string prose)
+    {
+        Initialize();
+        var owner = QuotedValueAfter(prose, "valid custom owner ");
+        var legacy = QuotedValueAfter(prose, "exact old source ");
+        var canonical = QuotedValueAfter(prose, "canonical source ");
+        WriteCustom(owner, emitAgent: false, resources: ["guide"]);
+        Assert.Equal(0, SyncCommand.Execute(_root));
+
+        var canonicalPath = Path.Combine(Sources(), canonical);
+        File.Delete(canonicalPath);
+        File.WriteAllBytes(Path.Combine(Sources(), legacy), [0, 1, 254, 255]);
+        var before = Manifest();
+        var result = await RunFilenameOperation(QuotedValueAfter(prose, "filename matrix operation "));
+        Assert.NotEqual(0, result.ExitCode);
+        var diagnostic = result.Stdout + result.Stderr;
+        Assert.Contains(legacy, diagnostic, StringComparison.Ordinal);
+        Assert.Contains(owner, diagnostic, StringComparison.Ordinal);
+        Assert.Contains("guide", diagnostic, StringComparison.Ordinal);
+        Assert.Contains(canonical, diagnostic, StringComparison.Ordinal);
+        Assert.Contains("manual", diagnostic, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, Manifest());
+    }
+
+    private async Task VerifyCanonicalPairs(string prose)
+    {
+        Initialize();
+        WriteCustom("notes", emitAgent: false, resources: ["guide"]);
+        WriteCustom("resource-notes", emitAgent: false, resources: ["guide"]);
+        File.WriteAllText(Path.Combine(Sources(), "resource-notes-resource-guide.template.md"), "notes guide\n");
+        File.WriteAllText(Path.Combine(Sources(), "resource-resource-notes-resource-guide.template.md"), "resource-notes guide\n");
+
+        var before = Manifest();
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var result = await RunFilenameOperation(operation);
+        result.AssertSuccess();
+        if (operation == "preview")
+            Assert.Equal(before, Manifest());
+
+        var initialSync = CaptureSync();
+        Assert.True(initialSync.ExitCode == 0, initialSync.Stdout + initialSync.Stderr);
+        Assert.Equal("notes guide\n", File.ReadAllText(Path.Combine(_root, ".claude", "skills", "notes", "resources", "guide.md")));
+        Assert.Equal("resource-notes guide\n", File.ReadAllText(Path.Combine(_root, ".claude", "skills", "resource-notes", "resources", "guide.md")));
+        Assert.Equal(["guide"], Load().Skills["notes"].Resources);
+        Assert.Equal(["guide"], Load().Skills["resource-notes"].Resources);
+        var afterFirstSync = Manifest();
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        Assert.Equal(afterFirstSync, Manifest());
+    }
+
+    private void Reset()
+    {
+        if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
+    }
+
+    private async Task VerifyFilenameAmbiguities(string prose)
+    {
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        foreach (var row in _tables.Single().Rows)
+        {
+            Reset(); Initialize();
+            WriteCustom("valid", emitAgent: false);
+            WriteCustom("skill-owner", emitAgent: false);
+            var source = row["source"];
+            File.WriteAllBytes(Path.Combine(Sources(), source), [0, 1, 254, 255]);
+            var before = Manifest();
+            var result = await RunFilenameOperation(operation);
+            Assert.NotEqual(0, result.ExitCode);
+            var diagnostic = result.Stdout + result.Stderr;
+            Assert.Contains(source, diagnostic, StringComparison.Ordinal);
+            Assert.DoesNotContain("frontmatter", diagnostic, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(before, Manifest());
+        }
+    }
+
+    private async Task VerifyOwnerState(string prose)
+    {
+        Reset(); Initialize();
+        var malformed = prose.Contains("malformed without frontmatter", StringComparison.Ordinal);
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var owner = Path.Combine(Sources(), "skill-skill-owner.template.md");
+        File.WriteAllText(owner, malformed ? "malformed" : CustomSource("skill-owner", false, resources: ["guide"]));
+        File.WriteAllText(Path.Combine(Sources(), "resource-skill-owner-resource-guide.template.md"), "owner guide\n");
+        if (!malformed)
+        {
+            var config = Load();
+            config.Skills["skill-owner"] = new SkillSwitchConfig { Enabled = false };
+            Save(config);
+        }
+        var before = Manifest();
+        var result = await RunFilenameOperation(operation);
+        if (malformed)
+        {
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("skill-skill-owner.template.md", result.Stdout + result.Stderr, StringComparison.Ordinal);
+            Assert.Contains("frontmatter", result.Stdout + result.Stderr, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(before, Manifest());
+            return;
+        }
+        result.AssertSuccess();
+        if (operation == "preview") Assert.Equal(before, Manifest());
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        var entry = Load().Skills["skill-owner"];
+        Assert.False(entry.Enabled);
+        Assert.Equal(["guide"], entry.Resources);
+        AssertAllManagedAbsent("skill-owner", ["guide"]);
+    }
+
+    private async Task VerifyNestedFilenames(string prose)
+    {
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var ownerPresent = prose.Contains("\"present\"", StringComparison.Ordinal);
+        foreach (var row in _tables.Single().Rows)
+        {
+            Reset(); Initialize();
+            if (ownerPresent) WriteCustom("skill-owner", emitAgent: false, resources: ["guide"]);
+            var relative = row["source"];
+            var path = Path.Combine(Sources(), relative.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "malformed");
+            var before = Manifest();
+            var result = await RunFilenameOperation(operation);
+            Assert.NotEqual(0, result.ExitCode);
+            var diagnostic = result.Stdout + result.Stderr;
+            Assert.Contains(relative, diagnostic, StringComparison.Ordinal);
+            Assert.Contains("nested", diagnostic, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(before, Manifest());
+        }
+    }
+
+    private async Task VerifyUnsupportedFilenames(string prose)
+    {
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var nested = prose.Contains("\"nested\"", StringComparison.Ordinal);
+        foreach (var row in _tables.Single().Rows)
+        {
+            Reset(); Initialize();
+            Assert.Equal(0, CaptureSync().ExitCode);
+            var directory = nested ? Path.Combine(Sources(), "nested") : Sources();
+            Directory.CreateDirectory(directory);
+            File.WriteAllBytes(Path.Combine(directory, row["filename"]), [0, 1, 254, 255]);
+            var before = Manifest();
+            var result = await RunFilenameOperation(operation);
+            result.AssertSuccess();
+            Assert.Equal(before, Manifest());
+        }
+    }
+
+    private async Task VerifyNestedOwner(string prose)
+    {
+        Reset(); Initialize();
+        var nested = Path.Combine(Sources(), "nested", "skill-skill-owner.template.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(nested)!);
+        File.WriteAllText(nested, CustomSource("skill-owner", false, resources: ["guide"]));
+        File.WriteAllText(Path.Combine(Sources(), "resource-skill-owner-resource-guide.template.md"), "guide\n");
+        var before = Manifest();
+        var result = await RunFilenameOperation(QuotedValueAfter(prose, "filename matrix operation "));
+        Assert.NotEqual(0, result.ExitCode);
+        var diagnostic = result.Stdout + result.Stderr;
+        Assert.Contains("nested/skill-skill-owner.template.md", diagnostic, StringComparison.Ordinal);
+        Assert.Contains("resource-skill-owner-resource-guide.template.md", diagnostic, StringComparison.Ordinal);
+        Assert.Equal(before, Manifest());
+    }
+
+    private async Task VerifySlugBoundaries(string prose)
+    {
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        foreach (var row in _tables.Single().Rows)
+        foreach (var kind in new[] { "skill", "owner", "resource" })
+        {
+            Reset(); Initialize();
+            var value = SlugValue(row["component"]);
+            var valid = bool.Parse(row["valid"]);
+            string expected;
+            if (kind == "skill")
+            {
+                expected = $"skill-{value}.template.md";
+                File.WriteAllText(Path.Combine(Sources(), expected), valid ? CustomSource(value, false) : "malformed");
+            }
+            else if (kind == "owner")
+            {
+                expected = $"resource-{value}-resource-guide.template.md";
+                File.WriteAllText(Path.Combine(Sources(), $"skill-{value}.template.md"), valid ? CustomSource(value, false, resources: ["guide"]) : "malformed");
+                File.WriteAllText(Path.Combine(Sources(), expected), valid ? "guide\n" : "malformed");
+            }
+            else
+            {
+                expected = $"resource-valid-resource-{value}.template.md";
+                File.WriteAllText(Path.Combine(Sources(), "skill-valid.template.md"), valid ? CustomSource("valid", false, resources: [value]) : "malformed");
+                File.WriteAllText(Path.Combine(Sources(), expected), valid ? "guide\n" : "malformed");
+            }
+            var before = Manifest();
+            var result = await RunFilenameOperation(operation);
+            if (valid)
+            {
+                result.AssertSuccess();
+                if (operation == "preview") Assert.Equal(before, Manifest());
+                Assert.Equal(0, SyncCommand.Execute(_root));
+            }
+            else
+            {
+                Assert.NotEqual(0, result.ExitCode);
+                Assert.Contains(expected, result.Stdout + result.Stderr, StringComparison.Ordinal);
+                Assert.Equal(before, Manifest());
+            }
+        }
+    }
+
+    private async Task VerifyResourceContent(string prose)
+    {
+        Reset(); Initialize();
+        WriteCustom("skill", emitAgent: false, resources: ["guide"]);
+        WriteCustom("resource-guide", emitAgent: false, resources: ["guide"]);
+        var content = prose.Contains("valid skill frontmatter", StringComparison.Ordinal)
+            ? CustomSource("resource-guide", false)
+            : "arbitrary resource body\n";
+        File.WriteAllText(Path.Combine(Sources(), "resource-skill-resource-guide.template.md"), content);
+        (await RunFilenameOperation(QuotedValueAfter(prose, "filename matrix operation "))).AssertSuccess();
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        Assert.Equal(content, File.ReadAllText(Path.Combine(_root, ".claude", "skills", "skill", "resources", "guide.md")));
+        Assert.Equal(content, File.ReadAllText(Path.Combine(_root, ".agents", "skills", "skill", "resources", "guide.md")));
+        Assert.Contains("skill", Load().Skills.Keys);
+        Assert.Contains("resource-guide", Load().Skills.Keys);
+    }
+
+    private async Task VerifySkillResourceOverlap(string prose)
+    {
+        Reset(); Initialize();
+        var guideState = QuotedValueAfter(prose, "skill \"skill\" has ");
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var needsGuide = !guideState.StartsWith("no guide", StringComparison.Ordinal);
+        WriteCustom("skill", emitAgent: false, resources: needsGuide ? ["guide"] : []);
+        WriteCustom("resource-guide", emitAgent: false);
+        var canonical = Path.Combine(Sources(), "resource-skill-resource-guide.template.md");
+        if (guideState.Contains("missing", StringComparison.Ordinal)) File.Delete(canonical);
+        var before = Manifest();
+        var result = await RunFilenameOperation(operation);
+        if (guideState.Contains("missing", StringComparison.Ordinal))
+        {
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("resource-skill-resource-guide.template.md", result.Stdout + result.Stderr, StringComparison.Ordinal);
+            Assert.Equal(before, Manifest());
+            return;
+        }
+        result.AssertSuccess();
+        if (operation == "preview") Assert.Equal(before, Manifest());
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        Assert.Contains("skill", Load().Skills.Keys);
+        Assert.Contains("resource-guide", Load().Skills.Keys);
+    }
+
+    private async Task VerifyAmbiguousResourceOwner(string prose)
+    {
+        Reset(); Initialize();
+        WriteCustom("notes", emitAgent: false, resources: ["guide"]);
+        WriteCustom("resource-notes", emitAgent: false, resources: ["guide"]);
+        var target = Path.Combine(Sources(), "resource-resource-notes-resource-guide.template.md");
+        File.Delete(target);
+        var sentinel = Path.Combine(Sources(), "resource-notes-resource-guide.template.md");
+        File.WriteAllBytes(sentinel, [1, 2, 3, 4]);
+        var before = Manifest();
+        var result = await RunFilenameOperation(QuotedValueAfter(prose, "filename matrix operation "));
+        Assert.NotEqual(0, result.ExitCode);
+        var diagnostic = result.Stdout + result.Stderr;
+        Assert.Contains("resource-notes-resource-guide.template.md", diagnostic, StringComparison.Ordinal);
+        Assert.Contains("resource-resource-notes-resource-guide.template.md", diagnostic, StringComparison.Ordinal);
+        Assert.Contains("manual", diagnostic, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, Manifest());
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, File.ReadAllBytes(sentinel));
+    }
+
+    private async Task VerifyLegacyLocation(string prose)
+    {
+        Reset(); Initialize();
+        WriteCustom("notes", emitAgent: false, resources: ["guide"]);
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        var canonical = Path.Combine(Sources(), "resource-notes-resource-guide.template.md");
+        if (prose.Contains("\"absent\"", StringComparison.Ordinal)) File.Delete(canonical);
+        var relative = prose.Contains("\"nested\"", StringComparison.Ordinal)
+            ? "nested/notes-resource-guide.template.md" : "notes-resource-guide.template.md";
+        var legacy = Path.Combine(Sources(), relative.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(legacy)!);
+        File.WriteAllText(legacy, "malformed");
+        var before = Manifest();
+        var result = await RunFilenameOperation(QuotedValueAfter(prose, "filename matrix operation "));
+        Assert.NotEqual(0, result.ExitCode);
+        var diagnostic = result.Stdout + result.Stderr;
+        Assert.Contains(relative, diagnostic, StringComparison.Ordinal);
+        Assert.Contains(relative.StartsWith("nested", StringComparison.Ordinal) ? "nested" : "manual", diagnostic, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, Manifest());
+    }
+
+    private async Task VerifyFrameworkTransition(string prose)
+    {
+        Reset(); Initialize();
+        var config = Load();
+        var canonical = TemplateGenerator.GetAllTemplateNames().Where(name => name.StartsWith("resource-", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(21, canonical.Length);
+        var old = canonical.Select(name => name["resource-".Length..]).ToArray();
+        foreach (var (newName, oldName) in canonical.Zip(old))
+        {
+            var newPath = Path.Combine(Sources(), newName);
+            var oldPath = Path.Combine(Sources(), oldName);
+            File.Move(newPath, oldPath);
+            config.FrameworkHashes.Remove($"_system/templates/{newName}");
+            config.FrameworkHashes[$"_system/templates/{oldName}"] = TemplateCommand.ComputeHash(File.ReadAllText(oldPath));
+        }
+        Save(config);
+        var before = Manifest();
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var result = await RunFilenameOperation(operation);
+        result.AssertSuccess();
+        if (operation == "preview")
+        {
+            Assert.Equal(before, Manifest());
+            return;
+        }
+        var saved = Load();
+        foreach (var (newName, oldName) in canonical.Zip(old))
+        {
+            Assert.True(File.Exists(Path.Combine(Sources(), newName)), newName);
+            Assert.False(File.Exists(Path.Combine(Sources(), oldName)), oldName);
+            Assert.Contains($"_system/templates/{newName}", saved.FrameworkHashes.Keys);
+            Assert.DoesNotContain($"_system/templates/{oldName}", saved.FrameworkHashes.Keys);
+        }
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        var fixedPoint = Manifest();
+        (await RunAsync("template", "update")).AssertSuccess();
+        Assert.Equal(fixedPoint, Manifest());
+    }
+
+    private async Task VerifyFrameworkCollisions(string prose)
+    {
+        foreach (var row in _tables.Single().Rows)
+        {
+            Reset(); Initialize();
+            var canonical = TemplateGenerator.GetAllTemplateNames().First(name => name.StartsWith("resource-", StringComparison.Ordinal));
+            var old = canonical["resource-".Length..];
+            var config = Load();
+            var newPath = Path.Combine(Sources(), canonical);
+            var oldPath = Path.Combine(Sources(), old);
+            File.Move(newPath, oldPath);
+            config.FrameworkHashes.Remove($"_system/templates/{canonical}");
+            config.FrameworkHashes[$"_system/templates/{old}"] = TemplateCommand.ComputeHash(File.ReadAllText(oldPath));
+            var state = row["occupied path state"];
+            if (state.StartsWith("a new", StringComparison.Ordinal)) File.WriteAllText(newPath, "custom");
+            else if (state.Contains("neither", StringComparison.Ordinal)) config.FrameworkHashes.Remove($"_system/templates/{old}");
+            else if (state.Contains("inherited", StringComparison.Ordinal)) config.FrameworkHashes.Remove($"_system/templates/{old}");
+            else if (state.Contains("prior resource", StringComparison.Ordinal)) config.FrameworkHashes.Remove($"_system/templates/{old}");
+            Save(config);
+            var before = Manifest();
+            var result = await RunFilenameOperation(QuotedValueAfter(prose, "filename matrix operation "));
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains(state.StartsWith("a new", StringComparison.Ordinal) ? canonical : old,
+                result.Stdout + result.Stderr, StringComparison.Ordinal);
+            Assert.Equal(before, Manifest());
+        }
+    }
+
+    private async Task VerifySyncRequiresUpdate()
+    {
+        Reset(); Initialize();
+        var canonical = TemplateGenerator.GetAllTemplateNames().First(name => name.StartsWith("resource-", StringComparison.Ordinal));
+        var old = canonical["resource-".Length..];
+        var config = Load();
+        File.Move(Path.Combine(Sources(), canonical), Path.Combine(Sources(), old));
+        config.FrameworkHashes.Remove($"_system/templates/{canonical}");
+        config.FrameworkHashes[$"_system/templates/{old}"] = TemplateCommand.ComputeHash(File.ReadAllText(Path.Combine(Sources(), old)));
+        Save(config);
+        var before = Manifest();
+        var result = CaptureSync();
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains(old, result.Stdout + result.Stderr, StringComparison.Ordinal);
+        Assert.Contains(canonical, result.Stdout + result.Stderr, StringComparison.Ordinal);
+        Assert.Contains("template update", result.Stdout + result.Stderr, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, Manifest());
+    }
+
+    private async Task VerifyPartialTransition(string prose)
+    {
+        Reset(); Initialize();
+        var canonical = TemplateGenerator.GetAllTemplateNames().First(name => name.StartsWith("resource-", StringComparison.Ordinal));
+        var old = canonical["resource-".Length..];
+        var config = Load();
+        var newPath = Path.Combine(Sources(), canonical);
+        var oldPath = Path.Combine(Sources(), old);
+        var state = QuotedValueAfter(prose, "otherwise valid project has ");
+        if (!state.StartsWith("only", StringComparison.Ordinal)) File.Move(newPath, oldPath);
+        if (state.StartsWith("both", StringComparison.Ordinal)) File.Copy(oldPath, newPath);
+        config.FrameworkHashes.Remove($"_system/templates/{canonical}");
+        if (!state.StartsWith("only", StringComparison.Ordinal))
+            config.FrameworkHashes[$"_system/templates/{old}"] = TemplateCommand.ComputeHash(File.ReadAllText(oldPath));
+        if (state.StartsWith("both", StringComparison.Ordinal) || state.StartsWith("only", StringComparison.Ordinal))
+            config.FrameworkHashes[$"_system/templates/{canonical}"] = TemplateCommand.ComputeHash(File.ReadAllText(newPath));
+        Save(config);
+        var before = Manifest();
+        var operation = QuotedValueAfter(prose, "filename matrix operation ");
+        var result = await RunFilenameOperation(operation);
+        result.AssertSuccess();
+        if (operation == "preview") { Assert.Equal(before, Manifest()); return; }
+        Assert.True(File.Exists(newPath));
+        Assert.False(File.Exists(oldPath));
+        Assert.Contains($"_system/templates/{canonical}", Load().FrameworkHashes.Keys);
+        Assert.DoesNotContain($"_system/templates/{old}", Load().FrameworkHashes.Keys);
+        var fixedPoint = Manifest();
+        (await RunAsync("template", "update")).AssertSuccess();
+        Assert.Equal(fixedPoint, Manifest());
+    }
+
+    private static string SlugValue(string description) => description switch
+    {
+        "one lowercase letter" => "a",
+        "sixty-four lowercase letters" => new string('a', 64),
+        "resource-guide" => "resource-guide",
+        "empty" => "",
+        "sixty-five lowercase letters" => new string('a', 65),
+        "a leading hyphen" => "-a",
+        "a trailing hyphen" => "a-",
+        "two consecutive hyphens" => "a--b",
+        "an uppercase letter" => "A",
+        "an underscore" => "a_b",
+        "the protected delimiter inside bad-resource-name" => "bad-resource-name",
+        _ => throw new Xunit.Sdk.XunitException($"Unknown slug boundary '{description}'.")
+    };
+
     private void VerifyMinimalSwitch()
     {
         Initialize();
@@ -644,7 +1120,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         WriteCustom(customName, emitAgent: false, resources: ["guide"],
             mustRead: "../../../understand/custom-context.md");
         var custom = Path.Combine(Sources(), $"skill-{customName}.template.md");
-        var customResource = Path.Combine(Sources(), $"{customName}-resource-guide.template.md");
+        var customResource = Path.Combine(Sources(), $"resource-{customName}-resource-guide.template.md");
         var extension = Path.Combine(_root, "dydo", "_system", "template-additions", "reviewer.md");
         Directory.CreateDirectory(Path.GetDirectoryName(extension)!);
         File.WriteAllBytes(extension, [255, 13, 10, 0]);
@@ -797,7 +1273,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             var codexSkill = File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "SKILL.md"));
             var codexTwo = File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "resources", "two.md"));
             WriteCustom(skill, emitAgent: false, resources: ["two"]);
-            File.Delete(Path.Combine(Sources(), $"{skill}-resource-one.template.md"));
+            File.Delete(Path.Combine(Sources(), $"resource-{skill}-resource-one.template.md"));
             SelectOnly("claude");
             Assert.Equal(0, SyncCommand.Execute(_root));
             Assert.False(File.Exists(Path.Combine(_root, ".claude", "agents", $"{skill}.md")));
@@ -922,7 +1398,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             var nested = Path.Combine(sourceRoot, "nested");
             Directory.CreateDirectory(nested);
             File.WriteAllText(Path.Combine(nested, "skill-bad.template.md"), CustomSource("bad", false));
-            File.WriteAllText(Path.Combine(nested, "bad-resource-one.template.md"), "nested resource");
+            File.WriteAllText(Path.Combine(nested, "resource-bad-resource-one.template.md"), "nested resource");
         }
         else if (defect.Contains("outside 1-64", StringComparison.Ordinal))
         {
@@ -941,9 +1417,9 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             Save(config);
         }
         else if (defect.Contains("resource with no matching", StringComparison.Ordinal))
-            File.WriteAllText(Path.Combine(sourceRoot, "orphan-resource-one.template.md"), "orphan");
+            File.WriteAllText(Path.Combine(sourceRoot, "resource-orphan-resource-one.template.md"), "orphan");
         else if (defect.Contains("extra resource attached", StringComparison.Ordinal))
-            File.WriteAllText(Path.Combine(sourceRoot, "reviewer-resource-extra.template.md"), "extra");
+            File.WriteAllText(Path.Combine(sourceRoot, "resource-reviewer-resource-extra.template.md"), "extra");
         else if (defect.Contains("missing or blank", StringComparison.Ordinal))
         {
             File.WriteAllText(Path.Combine(sourceRoot, "skill-bad.template.md"), "---\nname: bad\ndescription: \nemit: skill\n---\n");
@@ -971,7 +1447,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         {
             File.WriteAllText(Path.Combine(sourceRoot, "skill-bad.template.md"), CustomSource("bad", false, resources: ["missing"]));
             File.WriteAllText(Path.Combine(sourceRoot, "skill-unreferenced.template.md"), CustomSource("unreferenced", false));
-            File.WriteAllText(Path.Combine(sourceRoot, "unreferenced-resource-extra.template.md"), "unreferenced");
+            File.WriteAllText(Path.Combine(sourceRoot, "resource-unreferenced-resource-extra.template.md"), "unreferenced");
         }
         else if (defect.Contains("Must-Read", StringComparison.Ordinal))
         {
@@ -1041,7 +1517,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         Assert.DoesNotContain("stale", File.ReadAllText(stale));
 
         WriteCustom("invalid-intended", emitAgent: false, resources: ["missing"]);
-        File.Delete(Path.Combine(Sources(), "invalid-intended-resource-missing.template.md"));
+        File.Delete(Path.Combine(Sources(), "resource-invalid-intended-resource-missing.template.md"));
         var before = Manifest();
         var rejected = CaptureSync();
         Assert.NotEqual(0, rejected.ExitCode);
@@ -1483,19 +1959,19 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
 
     private static string[] InvalidSourceDiagnosticTokens(string prose)
     {
-        if (prose.Contains("nested skill", StringComparison.Ordinal)) return ["skill-bad.template.md", "bad-resource-one.template.md", "nested", "top-level"];
+        if (prose.Contains("nested skill", StringComparison.Ordinal)) return ["skill-bad.template.md", "resource-bad-resource-one.template.md", "nested", "top-level"];
         if (prose.Contains("outside 1-64", StringComparison.Ordinal)) return ["skill-Bad.template.md", new string('a', 65), "invalid", "name"];
         if (prose.Contains("protected -resource-", StringComparison.Ordinal)) return ["skill-bad-resource-name.template.md", "protected", "delimiter"];
         if (prose.Contains("case-insensitive duplicate", StringComparison.Ordinal)) return ["admiral", "collides"];
         if (prose.Contains("newly shipped or retired", StringComparison.Ordinal)) return ["reviewer", "collid", "shipped"];
-        if (prose.Contains("resource with no matching", StringComparison.Ordinal)) return ["orphan-resource-one.template.md", "no matching"];
-        if (prose.Contains("extra resource attached", StringComparison.Ordinal)) return ["reviewer-resource-extra.template.md", "adds a resource"];
+        if (prose.Contains("resource with no matching", StringComparison.Ordinal)) return ["resource-orphan-resource-one.template.md", "no matching"];
+        if (prose.Contains("extra resource attached", StringComparison.Ordinal)) return ["resource-reviewer-resource-extra.template.md", "adds a resource"];
         if (prose.Contains("missing or blank", StringComparison.Ordinal)) return ["skill-bad.template.md", "skill-no-name.template.md", "skill-no-description.template.md", "skill-no-body.template.md", "description", "blank body"];
         if (prose.Contains("disagrees with its filename", StringComparison.Ordinal)) return ["skill-bad.template.md", "name: other"];
         if (prose.Contains("unknown frontmatter", StringComparison.Ordinal)) return ["skill-bad.template.md", "unknown", "skill-domain.template.md", "invocation"];
         if (prose.Contains("agent-only metadata", StringComparison.Ordinal)) return ["skill-bad.template.md", "agent-only"];
         if (prose.Contains("explicit invocation on an agent", StringComparison.Ordinal)) return ["skill-bad.template.md", "explicit invocation"];
-        if (prose.Contains("resource link without", StringComparison.Ordinal)) return ["skill-bad.template.md", "missing resource", "unreferenced-resource-extra.template.md", "not referenced"];
+        if (prose.Contains("resource link without", StringComparison.Ordinal)) return ["skill-bad.template.md", "missing resource", "resource-unreferenced-resource-extra.template.md", "not referenced"];
         if (prose.Contains("Must-Read", StringComparison.Ordinal)) return ["skill-bad.template.md", "skill-included-missing.template.md", "Must-Read", "outside", "missing"];
         throw new Xunit.Sdk.XunitException("Invalid-source diagnostic example was not recognized.");
     }
@@ -1540,6 +2016,14 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             Assert.Contains(token, result.Stdout + result.Stderr, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(before, Manifest());
     }
+
+    private async Task<CliResult> RunFilenameOperation(string operation) => operation switch
+    {
+        "sync" => CaptureSync(),
+        "update" => await RunAsync("template", "update"),
+        "preview" => await RunAsync("template", "update", "--diff"),
+        _ => throw new Xunit.Sdk.XunitException($"Unknown filename matrix operation '{operation}'.")
+    };
 
     private CliResult CaptureSync()
     {

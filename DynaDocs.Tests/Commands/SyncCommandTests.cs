@@ -150,7 +150,7 @@ public class SyncCommandTests : IDisposable
         var sources = Path.Combine(_testDir, "dydo/_system/templates");
         File.WriteAllText(Path.Combine(sources, $"skill-{validName}.template.md"),
             $"---\nname: {validName}\ndescription: Valid local agent.\nemit: agent\nargument-hint: context\n---\n\n# Valid local agent\n\n[Guide](resources/guide.md)\n");
-        File.WriteAllText(Path.Combine(sources, $"{validName}-resource-guide.template.md"), "# Valid guide\n");
+        File.WriteAllText(Path.Combine(sources, $"resource-{validName}-resource-guide.template.md"), "# Valid guide\n");
         Assert.Equal(0, ConsoleCapture.All(() => SyncCommand.Execute(_testDir)).exitCode);
         var configBefore = File.ReadAllBytes(Path.Combine(_testDir, "dydo.json"));
         var nativeBefore = new[] { ".claude", ".agents", ".codex" }
@@ -256,7 +256,7 @@ public class SyncCommandTests : IDisposable
         Assert.Equal(0, SyncCommand.Execute(_testDir));
         var sources = Path.Combine(_testDir, "dydo", "_system", "templates");
         File.Delete(Path.Combine(sources, "skill-reviewer.template.md"));
-        foreach (var resource in Directory.GetFiles(sources, "reviewer-resource-*.template.md"))
+        foreach (var resource in Directory.GetFiles(sources, "resource-reviewer-resource-*.template.md"))
             File.Delete(resource);
 
         var result = SyncCommand.Execute(_testDir);

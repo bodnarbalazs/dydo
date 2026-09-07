@@ -52,9 +52,12 @@ public static partial class SkillTemplateService
             var isResource = file.StartsWith("resource-", StringComparison.Ordinal);
             if (!isSkill && !isResource)
                 continue;
+            if (isResource && !file["resource-".Length..^".template.md".Length]
+                    .Contains("-resource-", StringComparison.Ordinal))
+                continue;
             if (Path.GetDirectoryName(path) != sourceRoot)
             {
-                errors.Add($"'{Path.GetRelativePath(sourceRoot, path)}' is nested; local templates must be top-level.");
+                errors.Add($"'{Path.GetRelativePath(sourceRoot, path).Replace('\\', '/')}' is nested; local templates must be top-level.");
                 continue;
             }
             if (isSkill)
@@ -241,6 +244,8 @@ public static partial class SkillTemplateService
 
             var canonical = $"resource-{owner}-resource-{resource}.template.md";
             var canonicalPath = Path.Combine(sourceRoot, canonical);
+            if (file.StartsWith("resource-", StringComparison.Ordinal) && File.Exists(canonicalPath))
+                continue;
             var hasRecordedResource = config.Skills.TryGetValue(owner, out var switchEntry)
                 && switchEntry.Resources?.Contains(resource, StringComparer.Ordinal) == true;
             var hasMissingReference = skillFiles.TryGetValue(owner, out var ownerPath)
@@ -265,7 +270,8 @@ public static partial class SkillTemplateService
             }
 
             yield return $"'{file}' is a legacy resource source for '{owner}' / '{resource}'. "
-                + $"Use '{canonical}' after checking ownership; run 'dydo template update' for shipped sources.";
+                + $"Manually rename it to '{canonical}' after checking ownership; do not infer its kind from contents. "
+                + "Run 'dydo template update' for shipped sources.";
         }
     }
 

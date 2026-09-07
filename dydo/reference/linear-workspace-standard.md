@@ -192,7 +192,7 @@ updates, or token, cost, or latency claims. Review gates stay where their workfl
 Start each post with the applicable form:
 
 - `PASS — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
-- `FAIL — rubric/type: <rubric>; candidate <SHA>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `FAIL — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 - `HARDENED — hop/candidate <SHA>; probes: <probes> → <outcomes>; gaps: <none or named gaps>; next: <action>; evidence: <link>.`
 - `SPECIFIED` or `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`

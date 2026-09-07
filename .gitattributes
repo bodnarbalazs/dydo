@@ -5,3 +5,6 @@
 Templates/*.js text eol=lf
 .claude/agents/*.md text eol=lf
 .claude/skills/**/*.md text eol=lf
+.agents/skills/**/*.md text=auto eol=lf
+.agents/skills/*/agents/openai.yaml text=auto eol=lf
+.codex/agents/*.toml text=auto eol=lf

@@ -192,7 +192,7 @@ updates, or token, cost, or latency claims. Review gates stay where their workfl
 Start each post with the applicable form:
 
 - `PASS — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
-- `FAIL — rubric/type: <rubric>; candidate <SHA>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `FAIL — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 - `HARDENED — hop/candidate <SHA>; probes: <probes> → <outcomes>; gaps: <none or named gaps>; next: <action>; evidence: <link>.`
 - `SPECIFIED` or `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
@@ -202,6 +202,22 @@ Brevity is soft: ordinary events aim for at most 800 characters, descriptions an
 1,500 characters or 12 lines. A necessary finding, gap, blocker, or evidence may exceed those aims;
 omit narration and repetition either way. A writer's successful delivery is never an independent
 `PASS`.
+
+### Truthful comment signatures
+
+Every agent-authored Linear comment identifies its acting role and truthful model identity. State the
+effective identity when trustworthy runtime information exposes it. Otherwise qualify a family or a
+requested/configured value; never infer an alias resolution, parent model, or effort. State effort
+only when it is known and useful. A captain relay preserves the original author or reviewer identity
+and distinguishes the captain's posting identity. The reviewer field in a reviewer block is its
+signature, so do not add a second or conflicting one. Historical comments stay untouched.
+
+Examples:
+
+- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
+- `PASS — rubric/type: docs; candidate <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
+- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
+- `STATE — Implementing; owner: implementer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
 
 ## Decision Records
 

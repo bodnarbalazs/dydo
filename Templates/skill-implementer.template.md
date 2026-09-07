@@ -21,6 +21,7 @@ good.
 4. [about.md](../../../understand/about.md)
 5. [architecture.md](../../../understand/architecture.md)
 6. [working-tree-contract.md](../../../guides/working-tree-contract.md)
+7. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 {{include:extra-must-reads}}
 
@@ -69,8 +70,7 @@ a mock belongs.
 
 ## Return
 
-To the Issue Captain: the Issue key; the SHA the work ends on; the changed files; each scenario and
-contract line with the test or gate that proves it, or named as a gap; each test added or changed,
-with its claim and seam; every gate's command and real output; and any adjacent finding, for the
-Captain to route. For a hypothesis: `confirmed`, `not reproduced` or `inconclusive`, with the
-observation that decided it.
+To the Issue Captain, use the `IMPLEMENTED` form in the communication protocol. Name the changed
+files, behavior proof, gaps, and any adjacent finding; retain full command output once as linked
+evidence. For a hypothesis: `confirmed`, `not reproduced` or `inconclusive`, with the observation
+that decided it.

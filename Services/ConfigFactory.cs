@@ -74,7 +74,7 @@ public static class ConfigFactory
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",
-            Message = "This PR carries no review block. Paste the independent reviewer's block under an 'Independent review' heading in the body — rubric, reviewer and model, candidate and base SHA, verdict, gates rerun, findings.",
+            Message = "This PR carries no review block. Add the independent review under an 'Independent review' heading and follow this project's shared Communication and evidence standard.",
             Severity = "warn"
         },
     ];

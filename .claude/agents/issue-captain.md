@@ -14,4 +14,3 @@ Read these for project context before working:
 - dydo/guides/working-tree-contract.md
 - dydo/understand/about.md
 - dydo/understand/architecture.md
-- dydo/reference/linear-workspace-standard.md

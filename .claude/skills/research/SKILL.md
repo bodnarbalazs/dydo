@@ -14,6 +14,7 @@ Follow every claim back to the source that owns it, and search wide enough to kn
 1. The question as the invoker stated it, and the destination it named for the findings.
 2. [about.md](../../../dydo/understand/about.md)
 3. [architecture.md](../../../dydo/understand/architecture.md)
+4. [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 
@@ -50,7 +51,7 @@ everything else you read.
 
 ## Return
 
-Given a Wayfinding Issue, post the report as a comment on it; the map holder closes the Issue and
-updates the map. Otherwise write it as `dydo/agents/workspace/research-<slug>.md`, the shared
-scratch folder git ignores. Either way, report back the one-line answer, the destination, and what
-stayed unsettled, so the invoker can act without opening the report.
+Given a Wayfinding Issue, post the report as a named evidence comment using the `DECIDED` form in the
+communication protocol; the map holder closes the Issue and updates the map. Otherwise write it as
+`dydo/agents/workspace/research-<slug>.md`, the shared scratch folder git ignores. Either way,
+report the answer, destination, and what stayed unsettled.

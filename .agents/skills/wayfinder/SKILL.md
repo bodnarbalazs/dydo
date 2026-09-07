@@ -14,6 +14,8 @@ clear one part of the route at a time.
 The Project Planner charts the first Project map, the admiral works it during delivery, and an Issue
 Captain may chart local fog inside one approved delivery outcome.
 
+For a communication protocol, read only [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence), not the whole workspace standard.
+
 ## Chart as you go
 
 Wayfinder advances large work one manageable step at a time.
@@ -72,8 +74,8 @@ visually in Linear, so the human sees what is takeable without opening the map. 
 **unblocked** when every Issue blocking it is closed; the **frontier** is the open, unblocked,
 unassigned Issues at the edge of the known.
 
-The resolution is recorded as a comment. Assets created while resolving an Issue are linked from it,
-not pasted in.
+The resolution is recorded as a named evidence comment using the `DECIDED` form in the communication
+protocol. Assets created while resolving an Issue are linked from it, not pasted in.
 
 For the admiral, contracts are Issues under the Project; for a captain they are Sub-issues under
 its Issue. The same Types, statuses and chain hold. The captain specifies its parent before naming

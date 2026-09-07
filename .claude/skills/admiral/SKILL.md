@@ -11,11 +11,11 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
 
 ## Must-Reads
 
-1. The Linear Project, its plan at the governing commit when one exists, and every Issue's contract.
+1. The Linear Project's metadata-first map, each current active contract, and named evidence only.
 2. [working-tree-contract.md](../../../dydo/guides/working-tree-contract.md)
 3. [about.md](../../../dydo/understand/about.md)
 4. [architecture.md](../../../dydo/understand/architecture.md)
-5. [linear-workspace-standard.md](../../../dydo/reference/linear-workspace-standard.md)
+5. [Communication and evidence](../../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 

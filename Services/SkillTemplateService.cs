@@ -105,7 +105,7 @@ public static partial class SkillTemplateService
                 resources[resourceName] = path;
         }
 
-        errors.AddRange(FindLegacyResourceDiagnostics(files, sourceRoot, skillFiles, config));
+        errors.AddRange(FindLegacyResourceDiagnostics(files, sourceRoot, projectRoot, skillFiles, config));
 
         foreach (var (skillName, resources) in resourceFiles)
         {
@@ -225,6 +225,7 @@ public static partial class SkillTemplateService
     private static IEnumerable<string> FindLegacyResourceDiagnostics(
         IEnumerable<string> files,
         string sourceRoot,
+        string projectRoot,
         IReadOnlyDictionary<string, string> skillFiles,
         DydoConfig config)
     {
@@ -250,7 +251,8 @@ public static partial class SkillTemplateService
                 && switchEntry.Resources?.Contains(resource, StringComparer.Ordinal) == true;
             var hasMissingReference = skillFiles.TryGetValue(owner, out var ownerPath)
                 && !File.Exists(canonicalPath)
-                && ResourceLinkRegex().Matches(File.ReadAllText(ownerPath))
+                && ResourceLinkRegex().Matches(
+                    ResolveIncludesStrict(File.ReadAllText(ownerPath), projectRoot, ownerPath))
                     .Any(match => match.Groups[1].Value.Equals(resource, StringComparison.Ordinal));
             if (!hasRecordedResource && !hasMissingReference)
                 continue;

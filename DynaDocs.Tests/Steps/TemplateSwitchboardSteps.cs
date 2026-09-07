@@ -585,8 +585,19 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var owner = QuotedValueAfter(prose, "valid custom owner ");
         var legacy = QuotedValueAfter(prose, "exact old source ");
         var canonical = QuotedValueAfter(prose, "canonical source ");
-        WriteCustom(owner, emitAgent: false, resources: ["guide"]);
-        Assert.Equal(0, SyncCommand.Execute(_root));
+        var linkEvidence = prose.Contains("missing canonical guide link after includes", StringComparison.Ordinal);
+        if (linkEvidence)
+        {
+            WriteCustom("baseline", emitAgent: false, resources: ["guide"]);
+            Assert.Equal(0, SyncCommand.Execute(_root));
+            WriteCustom(owner, emitAgent: false);
+            WriteIncludedResourceLink(owner);
+        }
+        else
+        {
+            WriteCustom(owner, emitAgent: false, resources: ["guide"]);
+            Assert.Equal(0, SyncCommand.Execute(_root));
+        }
 
         var canonicalPath = Path.Combine(Sources(), canonical);
         File.Delete(canonicalPath);
@@ -600,6 +611,9 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         Assert.Contains("guide", diagnostic, StringComparison.Ordinal);
         Assert.Contains(canonical, diagnostic, StringComparison.Ordinal);
         Assert.Contains("manual", diagnostic, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"'{legacy}' is a legacy resource source for '{owner}' / 'guide'. "
+            + $"Manually rename it to '{canonical}' after checking ownership; do not infer its kind from contents. "
+            + "Run 'dydo template update' for shipped sources.", diagnostic, StringComparison.Ordinal);
         Assert.Equal(before, Manifest());
     }
 
@@ -834,7 +848,17 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     {
         Reset(); Initialize();
         WriteCustom("notes", emitAgent: false, resources: ["guide"]);
-        WriteCustom("resource-notes", emitAgent: false, resources: ["guide"]);
+        if (prose.Contains("missing canonical guide link after includes", StringComparison.Ordinal))
+        {
+            WriteCustom("baseline", emitAgent: false, resources: ["guide"]);
+            Assert.Equal(0, SyncCommand.Execute(_root));
+            WriteCustom("resource-notes", emitAgent: false);
+            WriteIncludedResourceLink("resource-notes");
+        }
+        else
+        {
+            WriteCustom("resource-notes", emitAgent: false, resources: ["guide"]);
+        }
         var target = Path.Combine(Sources(), "resource-resource-notes-resource-guide.template.md");
         File.Delete(target);
         var sentinel = Path.Combine(Sources(), "resource-notes-resource-guide.template.md");
@@ -846,6 +870,9 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         Assert.Contains("resource-notes-resource-guide.template.md", diagnostic, StringComparison.Ordinal);
         Assert.Contains("resource-resource-notes-resource-guide.template.md", diagnostic, StringComparison.Ordinal);
         Assert.Contains("manual", diagnostic, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("'resource-notes-resource-guide.template.md' is ambiguous legacy ownership for 'resource-notes' / 'guide'. "
+            + "Preserve the existing canonical candidate and supply 'resource-resource-notes-resource-guide.template.md' "
+            + "after manual ownership resolution.", diagnostic, StringComparison.Ordinal);
         Assert.Equal(before, Manifest());
         Assert.Equal(new byte[] { 1, 2, 3, 4 }, File.ReadAllBytes(sentinel));
     }
@@ -1808,6 +1835,16 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             CustomSource(name, emitAgent, hint, invocation, resources, delegates, web, mustRead));
         foreach (var resource in resources)
             File.WriteAllText(Path.Combine(Sources(), $"resource-{name}-resource-{resource}.template.md"), $"# {resource}\n");
+    }
+
+    private void WriteIncludedResourceLink(string owner)
+    {
+        var include = $"{owner}-resource-link";
+        var ownerPath = Path.Combine(Sources(), $"skill-{owner}.template.md");
+        File.AppendAllText(ownerPath, $"\n{{{{include:{include}}}}}\n");
+        File.WriteAllText(Path.Combine(_root, "dydo", "_system", "template-additions", $"{include}.md"),
+            "- [guide](resources/guide.md)\n");
+        Assert.DoesNotContain("resources/guide.md", File.ReadAllText(ownerPath), StringComparison.Ordinal);
     }
 
     private static string CustomSource(string name, bool emitAgent, string? hint = null,

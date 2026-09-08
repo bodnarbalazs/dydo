@@ -2,11 +2,11 @@
   "schema": 1,
   "issue": "DYD-96",
   "base": "37acc1f3706bf925e5230fb58c4a790dba769d62",
-  "status": "proposed full contract, production pending captain posting and independent SPEC PASS",
+  "status": "amended full contract, production pending fresh independent SPEC PASS",
   "paths": [
     {
       "path": ".config/dotnet-tools.json",
-      "action": "Local coverlet.console6.0.4 tool manifest only; mutation tooling remains DYD-103",
+      "action": "Replace coverlet.console6.0.4 with local-development altcover.global9.0.102; mutation tooling remains DYD-103",
       "phase": "production"
     },
     {
@@ -26,12 +26,12 @@
     },
     {
       "path": "dydo/guides/testing-strategy.md",
-      "action": "Actual static/coverage setup, gates, unavailable distinctions and assertion-role policy",
+      "action": "Actual static/coverage setup including AltCover9.0.102 eager restore/commands, gates, unavailable distinctions and assertion-role policy",
       "phase": "production"
     },
     {
       "path": "dydo/reference/coverage-tools.md",
-      "action": "Concrete adapter commands, source/report schemas, provenance and tool restoration",
+      "action": "Concrete adapter commands, AltCover OpenCover/token and Roslyn policy-CC schemas, provenance and tool restoration",
       "phase": "production"
     },
     {
@@ -51,17 +51,17 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/coverage.runsettings",
-      "action": "Pinned JSON/OpenCover/Cobertura reports, complete target inclusion without compiler-generated async omission",
+      "action": "Delete obsolete Coverlet collector runsettings; AltCover preparation is owned by csharp_coverage.py",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/csharp_coverage.py",
-      "action": "Single isolated native full-suite/CLI/producer collection via run_tests.py",
+      "action": "Replace Coverlet with one isolated AltCover9.0.102 --eager prepare/runner full-suite campaign; preserve raw reports/spools and pre/instrumented/post identities",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/csharp_join.py",
-      "action": "Retain exact native/PDB join, remove shadow manifests",
+      "action": "Replace Coverlet signature/line join with exact original-module plus MethodDef-token AltCover OpenCover join; retain PDB/source/kickoff ownership and reject synthetic summaries",
       "phase": "production"
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/AssemblyMetrics.cs",
-      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "action": "Retain exact original DLL/PDB/MVID/MethodDef token/signature/document identity before and after AltCover instrumentation",
       "phase": "production"
     },
     {
@@ -221,12 +221,12 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/SourceMember.cs",
-      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "action": "Add the pinned Roslyn CFG policy-CC value to each exact source-callable fact; no vendor/physical CC substitution",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/SourceMetrics.cs",
-      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "action": "Compute source-callable policy CC with the pinned Sonar-calibrated Roslyn syntax convention and exact nested-callable exclusion; reject raw CFG/vendor CC",
       "phase": "production"
     },
     {
@@ -301,7 +301,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/run_tests.py",
-      "action": "Preserve reviewed lifecycle; add internal assurance output, NUL-safe snapshot and exact assembly/report collection",
+      "action": "Preserve reviewed lifecycle; run the no-filter AltCover eager campaign in one NUL-safe snapshot and publish raw/identity evidence before verified cleanup",
       "phase": "production"
     },
     {
@@ -366,17 +366,17 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_coverage.py",
-      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "action": "Replace Coverlet merge/format cases with real AltCover prepare/runner, eager child aggregation, raw failure preservation and identity-mutation cases; fixtures authored as test data strings",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
-      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "action": "Replace signature/line Coverlet cases with exact module/token/sequence/descendant-branch AltCover joins, zero-hit and ambiguity failures; fixtures authored as test data strings",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
-      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "action": "Retain semantic/PDB/MethodDef ownership cases and add pinned Roslyn CFG source-CC construct/boundary calibration including if2 and ternary2",
       "phase": "production"
     },
     {
@@ -496,7 +496,7 @@
     },
     {
       "path": "DynaDocs.Tests/DynaDocs.Tests.csproj",
-      "action": "Only explicit coverage/producer fixture integration if needed; preserve CompileRemove and all package/version/Reqnroll behavior",
+      "action": "Remove coverlet.collector6.0.4 only; preserve CompileRemove and all other package/version/Reqnroll behavior",
       "phase": "production"
     },
     {

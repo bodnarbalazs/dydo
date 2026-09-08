@@ -7,6 +7,255 @@
     "claude": true,
     "codex": true
   },
+  "skills": {
+    "admiral": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": []
+    },
+    "bro": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": []
+    },
+    "chief-of-staff": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": []
+    },
+    "co-thinker": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "codebase-design": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": [
+        "deepening",
+        "design-it-twice"
+      ]
+    },
+    "diagnosing-bugs": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "docs-writer": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "domain-modeling": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "grill-me": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": []
+    },
+    "grilling": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "handoff": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": []
+    },
+    "hardener": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "implementer": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": [
+        "mocking",
+        "tests"
+      ]
+    },
+    "improve-codebase-architecture": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": [
+        "html-report"
+      ]
+    },
+    "inquisitor": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "issue-captain": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "project-planner": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "prototype": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": [
+        "logic",
+        "ui"
+      ]
+    },
+    "research": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "reviewer": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": [
+        "code",
+        "docs",
+        "merge",
+        "project-plan",
+        "spec"
+      ]
+    },
+    "scout": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "self-improvement": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "show-me": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "specifier": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": true,
+      "codexMetadata": false,
+      "resources": [
+        "bug",
+        "inquisition",
+        "merge"
+      ]
+    },
+    "teach": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": [
+        "glossary-format",
+        "learning-record-format",
+        "mission-format",
+        "resources-format"
+      ]
+    },
+    "to-project": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": []
+    },
+    "walkthrough": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": true,
+      "resources": []
+    },
+    "wayfinder": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    },
+    "wizard": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": [
+        "template"
+      ]
+    },
+    "writing-for-agents": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": [
+        "skill-mechanics"
+      ]
+    },
+    "writing-for-humans": {
+      "enabled": true,
+      "origin": "shipped",
+      "emitAgent": false,
+      "codexMetadata": false,
+      "resources": []
+    }
+  },
   "models": {
     "tiers": {
       "anthropic": {
@@ -36,7 +285,8 @@
   "scanExclude": [
     "_system/.local/",
     "_system/audit/",
-    "agents/"
+    "agents/",
+    "_system/templates/"
   ],
   "nudges": [
     {
@@ -96,6 +346,58 @@
     "reference/dydo-glossary.md": "a09a73e66d718fbc075b5d09d61653eb4cc1cd052aee7e2b5dcb8fcb96bb1fd7",
     "reference/writing-docs.md": "2b46206881c2a7ab6b11475f05658360d9a6cc7ee24f704aedb92168fcad4fa7",
     "guides/working-tree-contract.md": "1b73d13c6cf7bb78ad6b29133bde2024961e48cb1795fc40166adee679af3ad4",
-    "reference/linear-workspace-standard.md": "8853604cb328fa56a45bc997f874e0ecbfac5b72fd90d297b6628ca167d9c743"
+    "reference/linear-workspace-standard.md": "8853604cb328fa56a45bc997f874e0ecbfac5b72fd90d297b6628ca167d9c743",
+    "_system/templates/skill-writing-for-humans.template.md": "14d441a48d2a819694930ba1c728b20fb764c0cafabda05f4bd926150602ceaf",
+    "_system/templates/resource-writing-for-agents-resource-skill-mechanics.template.md": "fdcde618e93a3debc0c586dbbe61eaa219d6e82e955b6b889c2b9c37825cefbf",
+    "_system/templates/skill-writing-for-agents.template.md": "cd9f2d5fa5a2226cfa590ed0543f3e752c7f77c28f96cf3bfb3fc5445c885c2e",
+    "_system/templates/resource-wizard-resource-template.template.md": "829af127f86cc1f45246afb3cc0b770c004afdec0e823853eeec94a64e44c851",
+    "_system/templates/skill-wizard.template.md": "a6b0f438bbc27b8219e1f57364a4c0103609c38d6065c42c83dd397e15eff4e9",
+    "_system/templates/skill-wayfinder.template.md": "3711f32648750c2f0216c07cd52a46747fed89302f4dcb256886d92d20cb0f69",
+    "_system/templates/skill-walkthrough.template.md": "c4239dec303b4f922978b067a332cb4687cd61de8f22cd0b4e45d8fec39bb74f",
+    "_system/templates/skill-to-project.template.md": "5de6909f7ef5067f61c3084c62741d672545f0c12e7da516b8a704e65f546e5f",
+    "_system/templates/resource-teach-resource-resources-format.template.md": "04192a8bd2b2a761b5751ffe05508dd720b0a4ce4160274811a71a689778438f",
+    "_system/templates/resource-teach-resource-mission-format.template.md": "8d4dae3ea87fd5cca713d629e477f1dcbc2b1195c3b5bc45f1b6194514686088",
+    "_system/templates/resource-teach-resource-learning-record-format.template.md": "2946385c268265681f13f5bd82dc48fd6f5d2dcfb6f0b30cf1a14bebbda5f1d0",
+    "_system/templates/resource-teach-resource-glossary-format.template.md": "b6224ac094681898c8ae130184604441302946fc310b898c65fba36479e63ad6",
+    "_system/templates/skill-teach.template.md": "e7352e21cc2ebc5d8561786a67204f4381e2a7ec237f6cf2e59baf3becff886d",
+    "_system/templates/resource-specifier-resource-merge.template.md": "ff1d0afb9fbca99c389678311e49030aedc0d219cd8c115939ba57f097e0e1e7",
+    "_system/templates/resource-specifier-resource-inquisition.template.md": "271e72789904339c46e93fc2f229dac70296f8b68b8754769b4b8ea3559a3a5b",
+    "_system/templates/resource-specifier-resource-bug.template.md": "5a8f25ae0b431e06c61500b8edc48271fb24e9af2e127be02775f68a48c8041f",
+    "_system/templates/skill-specifier.template.md": "7a6f5ff7fc1e1dfc53cd2a80eaec8e0298290fc4e29b02d96516ef12203c1ae1",
+    "_system/templates/skill-show-me.template.md": "f8b6390ece9b1ef058cb46546f403210779a5906d28e132f891462505b68fc5a",
+    "_system/templates/skill-self-improvement.template.md": "7e786a9d890c325eaa03a9c10b6387f57a52453e471939b060d14b1e424b3b8c",
+    "_system/templates/skill-scout.template.md": "b8cb59bef5234b0f6de48d2d494d6cc610c66321aecc4db7a2827a19eecdce66",
+    "_system/templates/resource-reviewer-resource-spec.template.md": "cc34aaa725e5a80d0030682e57ca74b48cf6215eb54ecbdddeb200a05abf9dab",
+    "_system/templates/resource-reviewer-resource-project-plan.template.md": "09c1e1706af003fcb6daeaf8cd0ed0385853a9eb71f8f495b8b0a8e55794bac5",
+    "_system/templates/resource-reviewer-resource-merge.template.md": "78e1778fa826a9d9073e54ff90a3b1bac6c4b8dc00a080465efb619533f2f6fe",
+    "_system/templates/resource-reviewer-resource-docs.template.md": "6402d10faa843ead02de8e63770fe7bfccf9065142d36c3e4f1009663be0daf4",
+    "_system/templates/resource-reviewer-resource-code.template.md": "db3962ae4d569a1a51ce4f79a93fc6dceabe21ea7d883054f7db9283b8ee4e56",
+    "_system/templates/skill-reviewer.template.md": "117aab7ebf5b775757aa04bda9551e2c8e1a1dd6b638fff764caa1f8c527720f",
+    "_system/templates/skill-research.template.md": "0f377c48653eba7d525a7b72b57dcf730b722b323a30c982010cbbaa8ca3918b",
+    "_system/templates/resource-prototype-resource-ui.template.md": "a8b90ff28be39d2a7bed82df1c6782e0e0f3801a62244b5f4a2f2230da004808",
+    "_system/templates/resource-prototype-resource-logic.template.md": "6c8614b340c9a4feb0a468dc8da875b8d32586b5dc8f0a2a2e70cd0dae494eee",
+    "_system/templates/skill-prototype.template.md": "81d8a8c25b23017f928304b34313b00a785e7526804986668c39d76bc40d6030",
+    "_system/templates/skill-project-planner.template.md": "aabad2bb4d0c444ec69946172dcfcc71193c81dcbad7ed2a786bb392f9b9bed2",
+    "_system/templates/skill-issue-captain.template.md": "173fb91537c30cbabb1043295df8f6201912ec1b3ddfabae70f643bed0f117ed",
+    "_system/templates/skill-inquisitor.template.md": "08870026dfc86a761560d2e4aee640b03f9a4f8f60007fb722d25d9cb5239a10",
+    "_system/templates/resource-improve-codebase-architecture-resource-html-report.template.md": "69f5f92e5408899000ee2b50fde523141be677ef425ac4249d462ca35beb8e7e",
+    "_system/templates/skill-improve-codebase-architecture.template.md": "5dd8c9319959c54964bec608eb0d962344fd2cedb4594b7c0e2e8a8011949ee4",
+    "_system/templates/resource-implementer-resource-tests.template.md": "4d046c65da31a11e1820fe7d0ec5d0c897115e94c95903c1f5afa9ffbe330287",
+    "_system/templates/resource-implementer-resource-mocking.template.md": "8670c8908e941907b1d6c5fecab9cc089709e6f52a64746e0310c15e3c95a0c2",
+    "_system/templates/skill-implementer.template.md": "2c478b79ee33d6ce46c59500112e0ce898d2b83bd5bc01f6efabcc8538031e84",
+    "_system/templates/skill-hardener.template.md": "d7fd12b4aec5dd7edb73d343ecd240352140f54535af15910f023cf9c2f547f9",
+    "_system/templates/skill-handoff.template.md": "7af76a237c344e8c8274ecd24365058875f08e407f54b6e94c934f976a57c2f3",
+    "_system/templates/skill-grilling.template.md": "5e8be67627281a4b6b4fe90ebbcdd851ddfd1f4bdd0a3ae763c07b172cf0ee2d",
+    "_system/templates/skill-grill-me.template.md": "bc426812f390d555c3cf4a8ddb034eff0d08c8fa998b75716482b71cec6d346b",
+    "_system/templates/skill-domain-modeling.template.md": "e84b33d213ec51cd91914128ffde178c817606478d9ab211940aa272ac623503",
+    "_system/templates/skill-docs-writer.template.md": "9b80223311e753918420003f1a3d3af10451a00503c8ca40ca30d09c58c5322d",
+    "_system/templates/skill-diagnosing-bugs.template.md": "143150602ef188d0cda52e8acb74504e99394287ab3e334e9bf8959477ea95a7",
+    "_system/templates/resource-codebase-design-resource-design-it-twice.template.md": "09feddee443333be7448cf391005e79c4c38ba1233164d61341ee29cd775ea0d",
+    "_system/templates/resource-codebase-design-resource-deepening.template.md": "1c8c84be26172306147aed35337752dbae08d86a5019cebba2a15840aec96640",
+    "_system/templates/skill-codebase-design.template.md": "340700cdfc764258acd58a7016e2d65c5400cb6e31347e44416c754dfb214921",
+    "_system/templates/skill-co-thinker.template.md": "b8ad39243adb1466c6286bae4311847965b88d53ab5a403ce243df0e163cd50e",
+    "_system/templates/skill-chief-of-staff.template.md": "0c875d474ef6e4c092c76283d1f4509d7aecfe468ac04a61c30604a5edfb674d",
+    "_system/templates/skill-bro.template.md": "b764eab6030eed417a80d4833ec4caf1d9fb477ce0108df3837f9e36c2f504ce",
+    "_system/templates/skill-admiral.template.md": "bd15b8a858339526d06d4919bad34a7f6aad076a8387709a6d18cb17048976e1"
   }
 }

@@ -10,26 +10,26 @@ into `.claude/skills/` and `.agents/skills/`.
 
 | Upstream skill | Adapted in |
 |---|---|
-| `code-review` | `Templates/reviewer-resource-code.template.md` |
-| `codebase-design` | `Templates/skill-codebase-design.template.md`, `Templates/codebase-design-resource-deepening.template.md`, `Templates/codebase-design-resource-design-it-twice.template.md` |
+| `code-review` | `Templates/resource-reviewer-resource-code.template.md` |
+| `codebase-design` | `Templates/skill-codebase-design.template.md`, `Templates/resource-codebase-design-resource-deepening.template.md`, `Templates/resource-codebase-design-resource-design-it-twice.template.md` |
 | `diagnosing-bugs` | `Templates/skill-diagnosing-bugs.template.md` |
 | `domain-modeling` | `Templates/skill-domain-modeling.template.md` |
 | `grill-me` | `Templates/skill-grill-me.template.md` |
 | `grilling` | `Templates/skill-grilling.template.md` |
 | `handoff` | `Templates/skill-handoff.template.md` |
-| `improve-codebase-architecture` | `Templates/skill-improve-codebase-architecture.template.md`, `Templates/improve-codebase-architecture-resource-html-report.template.md` |
-| `prototype` | `Templates/skill-prototype.template.md`, `Templates/prototype-resource-logic.template.md`, `Templates/prototype-resource-ui.template.md` |
+| `improve-codebase-architecture` | `Templates/skill-improve-codebase-architecture.template.md`, `Templates/resource-improve-codebase-architecture-resource-html-report.template.md` |
+| `prototype` | `Templates/skill-prototype.template.md`, `Templates/resource-prototype-resource-logic.template.md`, `Templates/resource-prototype-resource-ui.template.md` |
 | `research` | `Templates/skill-research.template.md` |
 | `retro` | `Templates/skill-self-improvement.template.md` |
-| `tdd` | `Templates/skill-implementer.template.md`, `Templates/implementer-resource-tests.template.md`, `Templates/implementer-resource-mocking.template.md`, `Templates/reviewer-resource-code.template.md` |
-| `teach` | `Templates/skill-teach.template.md`, `Templates/teach-resource-mission-format.template.md`, `Templates/teach-resource-glossary-format.template.md`, `Templates/teach-resource-learning-record-format.template.md`, `Templates/teach-resource-resources-format.template.md` |
+| `tdd` | `Templates/skill-implementer.template.md`, `Templates/resource-implementer-resource-tests.template.md`, `Templates/resource-implementer-resource-mocking.template.md`, `Templates/resource-reviewer-resource-code.template.md` |
+| `teach` | `Templates/skill-teach.template.md`, `Templates/resource-teach-resource-mission-format.template.md`, `Templates/resource-teach-resource-glossary-format.template.md`, `Templates/resource-teach-resource-learning-record-format.template.md`, `Templates/resource-teach-resource-resources-format.template.md` |
 | `to-spec` | `Templates/skill-to-project.template.md` |
 | `to-tickets` | `Templates/skill-project-planner.template.md` |
-| `wizard` and its `template.sh` | `Templates/skill-wizard.template.md`, `Templates/wizard-resource-template.template.md` |
+| `wizard` and its `template.sh` | `Templates/skill-wizard.template.md`, `Templates/resource-wizard-resource-template.template.md` |
 | `wait-what` | `Templates/skill-bro.template.md` |
 | `wayfinder` | `Templates/skill-wayfinder.template.md` |
 | `writing-for-agents` | `Templates/skill-writing-for-agents.template.md` |
-| `writing-for-agents/SKILL-MECHANICS` | `Templates/writing-for-agents-resource-skill-mechanics.template.md` |
+| `writing-for-agents/SKILL-MECHANICS` | `Templates/resource-writing-for-agents-resource-skill-mechanics.template.md` |
 
 MIT License
 

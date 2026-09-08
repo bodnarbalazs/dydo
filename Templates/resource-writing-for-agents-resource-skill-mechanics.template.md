@@ -57,7 +57,7 @@ that independent reach costs a permanently loaded description, so it has to be w
   the compiled skill body, rewritten to resolve from the folder the skill is emitted into, and into
   a spawned agent's context block as repo-relative paths. Close the list with
   `{{include:extra-must-reads}}` so a project can add its own without editing framework text.
-- **Resources** — `<skill>-resource-<name>.template.md` compiles to `resources/<name>.md` beside the
+- **Resources** — `resource-<skill>-resource-<name>.template.md` compiles to `resources/<name>.md` beside the
   skill, and the body reaches it by that same path, rewritten to the host's emitted location so even
   a preloaded agent can `Read` it. This is disclosure with a file boundary: one skill's own
   reference, reached only by the branches that need it. Reference several skills share lives

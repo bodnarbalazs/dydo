@@ -15,7 +15,7 @@ public static class TemplateGenerator
 
     /// <summary>
     /// Lists a skill's resource templates — files named
-    /// `&lt;skill&gt;-resource-&lt;name&gt;.template.md` ("resource" is the protected word) — as
+    /// `resource-&lt;skill&gt;-resource-&lt;name&gt;.template.md` — as
     /// (fileName, content) pairs. `dydo sync` compiles each into the skill folder as
     /// `resources/&lt;name&gt;.md`.
     /// </summary>
@@ -23,17 +23,17 @@ public static class TemplateGenerator
     {
         foreach (var templateName in GetSkillResourceTemplateNames(skillName))
         {
-            var name = templateName[$"{skillName}-resource-".Length..^".template.md".Length];
+            var name = templateName[$"resource-{skillName}-resource-".Length..^".template.md".Length];
             yield return ($"{name}.md", ReadBuiltInTemplate(templateName));
         }
     }
 
     /// <summary>
-    /// Embedded template names matching `&lt;skill&gt;-resource-*.template.md`.
+    /// Embedded template names matching `resource-&lt;skill&gt;-resource-*.template.md`.
     /// </summary>
     public static IReadOnlyList<string> GetSkillResourceTemplateNames(string skillName)
     {
-        var prefix = $"DynaDocs.Templates.{skillName}-resource-";
+        var prefix = $"DynaDocs.Templates.resource-{skillName}-resource-";
         return _assembly.GetManifestResourceNames()
             .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md"))
             .Select(r => r["DynaDocs.Templates.".Length..])
@@ -92,7 +92,7 @@ public static class TemplateGenerator
     /// <summary>
     /// The shipped template inventory: every skill template (skill-*.template.md) — the source
     /// `dydo sync` compiles into native agents and skills — plus each skill's resource templates
-    /// (&lt;skill&gt;-resource-&lt;name&gt;.template.md).
+    /// (resource-&lt;skill&gt;-resource-&lt;name&gt;.template.md).
     /// </summary>
     public static IReadOnlyList<string> GetAllTemplateNames()
     {

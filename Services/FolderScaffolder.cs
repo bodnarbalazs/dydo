@@ -19,6 +19,7 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/releases", "Release records and durable release evidence", "project"),
         new("project/future-features", "Ideas not in scope for current version", "project"),
         new("_system", "System configuration (committed)", "_system"),
+        new("_system/templates", "Local skill and resource sources", "_system"),
         new("_system/.local", "Machine-local runtime state (not committed)", "_system"),
         new("_assets", "Documentation assets (images, diagrams)", "_assets")
     ];
@@ -58,6 +59,7 @@ public class FolderScaffolder : IFolderScaffolder
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
         ScaffoldTemplateAdditions(basePath);
+        ScaffoldSkillTemplates(basePath);
         ScaffoldTypesJson(basePath);
         CopyBuiltInAssets(basePath);
 
@@ -129,6 +131,16 @@ public class FolderScaffolder : IFolderScaffolder
             TemplateGenerator.ReadBuiltInTemplate("extra-verify.example.md"));
     }
 
+    private static void ScaffoldSkillTemplates(string basePath)
+    {
+        var templateRoot = Path.Combine(basePath, "_system", "templates");
+        Directory.CreateDirectory(templateRoot);
+        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
+            WriteIfNotExists(
+                Path.Combine(templateRoot, templateName),
+                TemplateGenerator.ReadBuiltInTemplate(templateName));
+    }
+
     public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
     {
         foreach (var relativePath in TemplateCommand.FrameworkDocFiles)
@@ -136,6 +148,30 @@ public class FolderScaffolder : IFolderScaffolder
             var fullPath = Path.Combine(basePath, relativePath);
             if (File.Exists(fullPath))
                 config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
+        }
+
+
+        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
+        {
+            var relativePath = $"_system/templates/{templateName}";
+            var fullPath = Path.Combine(basePath, "_system", "templates", templateName);
+            config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
+        }
+
+        foreach (var skill in SkillTemplateService.DiscoverSkills())
+        {
+            var resources = TemplateGenerator.GetSkillResourceTemplateNames(skill.Name)
+                .Select(name => name[$"resource-{skill.Name}-resource-".Length..^".template.md".Length])
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToList();
+            config.Skills[skill.Name] = new SkillSwitchConfig
+            {
+                Enabled = true,
+                Origin = "shipped",
+                EmitAgent = skill.EmitAgent,
+                CodexMetadata = skill.ExplicitInvocation || skill.ArgumentHint != null,
+                Resources = resources
+            };
         }
     }
 

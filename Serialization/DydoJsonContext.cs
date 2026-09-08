@@ -12,6 +12,8 @@ using DynaDocs.Models;
     WriteIndented = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(DydoConfig))]
+[JsonSerializable(typeof(SkillSwitchConfig))]
+[JsonSerializable(typeof(Dictionary<string, SkillSwitchConfig>))]
 [JsonSerializable(typeof(StructureConfig))]
 [JsonSerializable(typeof(ModelsConfig))]
 [JsonSerializable(typeof(Dictionary<string, Dictionary<string, string>>))]

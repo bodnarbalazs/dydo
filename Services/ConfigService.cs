@@ -1,10 +1,11 @@
 namespace DynaDocs.Services;
 
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 
-public class ConfigService : IConfigService
+public partial class ConfigService : IConfigService
 {
     public const string ConfigFileName = "dydo.json";
     public const string DefaultRoot = "dydo";
@@ -46,14 +47,111 @@ public class ConfigService : IConfigService
         }
     }
 
+    public DydoConfig? LoadConfigStrict(string? startPath = null)
+    {
+        var configPath = FindConfigFile(startPath);
+        if (configPath == null)
+            return null;
+
+        try
+        {
+            var json = File.ReadAllText(configPath);
+            using var document = JsonDocument.Parse(json);
+            ValidateSwitchboard(document.RootElement);
+            return JsonSerializer.Deserialize(json, DydoConfigJsonContext.Default.DydoConfig)
+                ?? throw new InvalidDataException("dydo.json could not be deserialized.");
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidDataException($"dydo.json has Invalid JSON: {ex.Message}", ex);
+        }
+    }
+
     /// <summary>
     /// Save configuration to dydo.json
     /// </summary>
     public void SaveConfig(DydoConfig config, string path)
     {
+        config.Skills = config.Skills
+            .OrderBy(entry => entry.Key, StringComparer.Ordinal)
+            .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
+        foreach (var skill in config.Skills.Values)
+        {
+            if (skill.Resources != null)
+                skill.Resources = skill.Resources.OrderBy(name => name, StringComparer.Ordinal).ToList();
+        }
         var json = JsonSerializer.Serialize(config, DydoConfigJsonContext.Default.DydoConfig);
         File.WriteAllText(path, json);
     }
+
+    internal static bool IsValidSlug(string value) =>
+        value.Length is >= 1 and <= 64
+        && !value.Contains("-resource-", StringComparison.Ordinal)
+        && SlugRegex().IsMatch(value);
+
+    private static void ValidateSwitchboard(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("dydo.json root must be an object.");
+        if (!root.TryGetProperty("skills", out var skills))
+            return;
+        if (skills.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("dydo.json skills must be an object.");
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in skills.EnumerateObject())
+        {
+            if (!IsValidSlug(entry.Name))
+                throw new InvalidDataException($"dydo.json skill switch '{entry.Name}' is not a 1-64 character lowercase kebab-case name or contains the protected -resource- delimiter.");
+            if (!names.Add(entry.Name))
+                throw new InvalidDataException($"dydo.json skill switch '{entry.Name}' collides ordinal-ignore-case with another key.");
+            ValidateSwitch(entry.Name, entry.Value);
+        }
+    }
+
+    private static void ValidateSwitch(string name, JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException($"dydo.json skill switch '{name}' must be an object.");
+
+        var allowed = new HashSet<string>(["enabled", "origin", "emitAgent", "codexMetadata", "resources"], StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (!allowed.Contains(property.Name))
+                throw new InvalidDataException($"dydo.json skill switch '{name}' has unknown property '{property.Name}'.");
+        }
+
+        if (!value.TryGetProperty("enabled", out var enabled) || enabled.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            throw new InvalidDataException($"dydo.json skill switch '{name}' requires boolean enabled.");
+        if (value.TryGetProperty("origin", out var origin)
+            && (origin.ValueKind != JsonValueKind.String || origin.GetString() is not ("shipped" or "custom")))
+            throw new InvalidDataException($"dydo.json skill switch '{name}' origin must be 'shipped' or 'custom'.");
+        ValidateOptionalBoolean(value, name, "emitAgent");
+        ValidateOptionalBoolean(value, name, "codexMetadata");
+
+        if (!value.TryGetProperty("resources", out var resources))
+            return;
+        if (resources.ValueKind != JsonValueKind.Array)
+            throw new InvalidDataException($"dydo.json skill switch '{name}' resources must be an array.");
+        var slugs = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var resource in resources.EnumerateArray())
+        {
+            if (resource.ValueKind != JsonValueKind.String
+                || !IsValidSlug(resource.GetString()!)
+                || !slugs.Add(resource.GetString()!))
+                throw new InvalidDataException($"dydo.json skill switch '{name}' resources must contain unique lowercase kebab-case strings.");
+        }
+    }
+
+    private static void ValidateOptionalBoolean(JsonElement value, string name, string property)
+    {
+        if (value.TryGetProperty(property, out var field)
+            && field.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            throw new InvalidDataException($"dydo.json skill switch '{name}' {property} must be boolean.");
+    }
+
+    [GeneratedRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
+    private static partial Regex SlugRegex();
 
     /// <summary>
     /// Get the project root directory (where dydo.json lives)

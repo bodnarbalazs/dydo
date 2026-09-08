@@ -28,6 +28,36 @@ Feature: Delegators choose a model for each task
     And every surviving configuration property retains its value and nesting
     And the legacy model values have no effect on either provider's generated agents
 
+  Scenario: A framework update removes only the retired model block
+    Given a project predates the local source layer and records legacy model bindings
+    And its integrations, skills, nudges, scan exclusions, framework hashes, template additions, documentation, custom sources, and project-owned files are snapshotted
+    When I update the framework templates successfully
+    Then the saved dydo.json contains no "models" property
+    And its integrations, explicit skill choices, nudges, scan exclusions, unrelated framework hashes, and template additions retain their values and nesting
+    And its documentation, custom sources, and project-owned files retain identical paths and bytes
+    And only the expected shipped sources, shipped hashes, scan exclusion, and generated switch entries are scaffolded
+
+  Scenario Outline: A failed atomic configuration write preserves the original file
+    Given an existing dydo.json contains legacy models and byte-distinct configuration sentinels
+    And configuration saving is injected to fail "<failure>"
+    When a successful preflight reaches the configuration save
+    Then the command fails with the injected save diagnostic
+    And the original dydo.json retains identical bytes
+    And no temporary sibling created by the failed save remains
+
+    Examples:
+      | failure                                                        |
+      | after a strict prefix is written to the temporary sibling      |
+      | during replacement after the flushed temporary file is closed |
+
+  Scenario: A temporary-name collision cannot overwrite either file
+    Given an existing dydo.json and a same-directory temporary-name candidate contain different sentinel bytes
+    And configuration saving is injected to choose that existing sibling
+    When a successful preflight reaches the configuration save
+    Then the command fails before writing or replacing either file
+    And dydo.json and the pre-existing sibling retain identical bytes
+    And cleanup does not delete the sibling it did not create
+
   Scenario: Preserve disabled-provider bytes until that provider is enabled
     Given both providers have previously generated agents and project-owned custom sibling files
     And exactly one provider is disabled in dydo.json

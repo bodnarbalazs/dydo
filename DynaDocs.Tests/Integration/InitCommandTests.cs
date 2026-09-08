@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 namespace DynaDocs.Tests.Integration;
 
@@ -12,6 +13,27 @@ using DynaDocs.Commands;
 [Collection("Integration")]
 public class InitCommandTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Join_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var raw = JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = JsonNode.Parse("""{"agents":{"reviewer":"strong"},"tiers":{"openai":{"strong":"legacy"}}}""");
+        raw["unrelated"] = JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+            InitCommand.ExecuteJoin("codex", () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
     #region Init None
 
     [Fact]

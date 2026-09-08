@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Steps;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Models;
@@ -56,7 +57,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     [Given(@"^historical\ beta\.1\ evidence\ at\ base\ ""a4916c9140e70f8c7ddb1dec0df3ba7cdf9cbc2f""\ observed\ dydo\.json\ SHA-256\ change\ from\ ""D43EA96236F78662F90E22F0F79C4B54346EE1C5F6392834E75DEA03119F53FE""\ to\ ""9F5ECD3F2DB8BF23211D49DA7ADC2756349E8A97EF67821AB1950DD5016ACAA2""$")]
     [Given(@"^it\ declares\ no\ agent-only\ read-only,\ delegates,\ or\ web\ field$")]
     [Given(@"^it\ does\ not\ declare\ explicit\ invocation$")]
-    [Given(@"^its\ existing\ documentation,\ integrations,\ model\ bindings,\ nudges,\ exclusions,\ and\ template\ additions\ are\ recorded$")]
+    [Given(@"^its\ existing\ documentation,\ integrations,\ legacy\ model\ bindings,\ nudges,\ exclusions,\ and\ template\ additions\ are\ recorded$")]
     [Given(@"^its\ source\ and\ resource\ templates\ are\ absent$")]
     [Given(@"^its\ switch\ is\ exactly\ `\{\ ""enabled"":\ true\ }`$")]
     [Given(@"^its\ switch\ records\ ""emitAgent""\ .+?,\ ""codexMetadata""\ .+?,\ and\ the\ two\ unique\ resource\ slugs$")]
@@ -173,7 +174,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     [Then(@"^the\ command\ succeeds$")]
     [Then(@"^the\ compiler\ emits\ no\ unsupported\ permission\ or\ dependency\ claim$")]
     [Then(@"^the\ custom\ switch\ is\ not\ recreated$")]
-    [Then(@"^the\ existing\ project\ configuration\ and\ project-owned\ files\ retain\ their\ values\ and\ bytes$")]
+    [Then(@"^only\ the\ legacy\ models\ property\ is\ removed\ while\ existing\ project\ configuration\ and\ project-owned\ files\ retain\ their\ values\ and\ bytes$")]
     [Then(@"^the\ formerly\ shipped\ local\ sources\ and\ their\ provenance\ hashes\ are\ absent$")]
     [Then(@"^the\ hard\ edits\ are\ overwritten\ without\ a\ backup,\ merge,\ re-anchoring,\ or\ conflict\ file$")]
     [Then(@"^the\ malformed\ pre-update\ shipped\ copy\ does\ not\ block\ its\ own\ repair$")]
@@ -1075,13 +1076,11 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             old.ScanExclude.Add("project-cache/");
             old.Integrations.Clear();
             old.Integrations["codex"] = true;
-            old.Models = new ModelsConfig
-            {
-                Agents = new() { ["reviewer"] = "strong" },
-                Tiers = new() { ["openai"] = new() { ["strong"] = "sentinel-model" } }
-            };
             old.Nudges.Add(new NudgeConfig { Pattern = "sentinel", Message = "keep me", Severity = "warn" });
             Save(old);
+            var raw = JsonNode.Parse(File.ReadAllText(Path.Combine(_root, "dydo.json")))!.AsObject();
+            raw["models"] = JsonNode.Parse("""{"agents":{"reviewer":"strong"},"tiers":{"openai":{"strong":"sentinel-model"}}}""");
+            File.WriteAllText(Path.Combine(_root, "dydo.json"), raw.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
             var preservedConfig = Load();
             var result = await RunAsync("template", "update");
             result.AssertSuccess();
@@ -1094,7 +1093,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             Assert.Contains("_system/templates/", migrated.ScanExclude);
             Assert.Contains("project-cache/", migrated.ScanExclude);
             Assert.Equal(preservedConfig.Integrations, migrated.Integrations);
-            Assert.Equal("sentinel-model", migrated.Models!.Tiers["openai"]["strong"]);
+            Assert.False(JsonNode.Parse(File.ReadAllText(Path.Combine(_root, "dydo.json")))!.AsObject().ContainsKey("models"));
             Assert.Contains(migrated.Nudges, nudge => nudge.Pattern == "sentinel" && nudge.Message == "keep me");
             Assert.Equal([0, 10, 13, 255], File.ReadAllBytes(ownedDoc));
             Assert.Equal("preserve this addition\n", File.ReadAllText(addition));

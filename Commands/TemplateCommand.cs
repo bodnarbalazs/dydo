@@ -62,7 +62,7 @@ public static class TemplateCommand
         return command;
     }
 
-    private static int ExecuteUpdate(bool diff)
+    internal static int ExecuteUpdate(bool diff, Action? beforeConfigCommit = null)
     {
         try
         {
@@ -97,12 +97,15 @@ public static class TemplateCommand
             tally.Updated += ApplyConfigDefaults(config);
             tally.Updated += EnsureTypesJson(dydoRoot, diff);
 
-            if (!diff)
-                configService.SaveConfig(config, configPath);
-
             ReportSummary(tally);
+            if (tally.Warnings.Count > 0)
+                return 1;
+            if (diff)
+                return 0;
 
-            return tally.Warnings.Count > 0 ? 1 : 0;
+            beforeConfigCommit?.Invoke();
+            configService.SaveConfig(config, configPath);
+            return 0;
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException)
         {

@@ -256,32 +256,6 @@
       "resources": []
     }
   },
-  "models": {
-    "tiers": {
-      "anthropic": {
-        "strong": "claude-fable-5",
-        "standard": "claude-opus-5",
-        "light": "claude-haiku-4-5"
-      },
-      "openai": {
-        "strong": "gpt-5.6-sol",
-        "standard": "gpt-5.6-terra",
-        "light": "gpt-5.6-luna"
-      }
-    },
-    "agents": {
-      "implementer": "standard",
-      "hardener": "strong",
-      "docs-writer": "standard",
-      "reviewer": "strong",
-      "inquisitor": "strong",
-      "project-planner": "strong",
-      "specifier": "strong",
-      "issue-captain": "strong",
-      "research": "standard",
-      "scout": "standard"
-    }
-  },
   "scanExclude": [
     "_system/.local/",
     "_system/audit/",

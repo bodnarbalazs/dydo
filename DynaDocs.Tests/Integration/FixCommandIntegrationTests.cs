@@ -1,10 +1,60 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
+using DynaDocs.Utils;
 
 [Collection("Integration")]
 public class FixCommandIntegrationTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Fix_ValidationErrorsPreserveOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = PrepareLegacyConfigWithMissingInvariant();
+        var original = File.ReadAllBytes(configPath);
+        WriteFile("dydo/guides/Bad Name.md", "---\narea: guides\ntype: guide\n---\n\n# Bad Name\n");
+        WriteFile("dydo/guides/bad-name.md", "---\narea: guides\ntype: guide\n---\n\n# Existing\n");
+
+        var (exitCode, _, _) = ConsoleCapture.All(() => FixCommand.Execute(DydoDir));
+
+        Assert.Equal(ExitCodes.ValidationErrors, exitCode);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Fix_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = PrepareLegacyConfigWithMissingInvariant();
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+            FixCommand.Execute(DydoDir, () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    private string PrepareLegacyConfigWithMissingInvariant()
+    {
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.ScanExclude.Remove("_system/templates/");
+        new ConfigService().SaveConfig(config, configPath);
+        var raw = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = System.Text.Json.Nodes.JsonNode.Parse(
+            """{"agents":{"reviewer":"strong"},"tiers":{"anthropic":{"strong":"legacy"}}}""");
+        raw["unrelated"] = System.Text.Json.Nodes.JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+        return configPath;
+    }
+
     #region Explicit File Scope
 
     [Fact]

@@ -195,6 +195,141 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
+    public void SaveConfig_Success_AtomicallyReplacesAndLeavesNoTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "atomic-success.json");
+        var temporary = path + ".owned.tmp";
+        File.WriteAllBytes(path, "ORIGINAL"u8.ToArray());
+
+        new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            (stream, bytes) => stream.Write(bytes),
+            stream => stream.Flush(flushToDisk: true),
+            stream => stream.Dispose(),
+            (source, target) => File.Move(source, target, overwrite: true));
+
+        Assert.Contains("\"version\": 7", File.ReadAllText(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_PartialTemporaryWriteFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "partial-write.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-PARTIAL-WRITE"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            (stream, bytes) =>
+            {
+                stream.Write(bytes.AsSpan(0, 3));
+                throw new IOException("injected partial write failure");
+            },
+            stream => stream.Flush(flushToDisk: true),
+            stream => stream.Dispose(),
+            (source, target) => File.Move(source, target, overwrite: true)));
+
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_FlushFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "flush.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-FLUSH"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            (stream, bytes) => stream.Write(bytes),
+            _ => throw new IOException("injected durable flush failure"),
+            stream => stream.Dispose(),
+            (source, target) => File.Move(source, target, overwrite: true)));
+
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_CloseFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "close.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-CLOSE"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            (stream, bytes) => stream.Write(bytes),
+            stream => stream.Flush(flushToDisk: true),
+            stream =>
+            {
+                stream.Dispose();
+                throw new IOException("injected close failure");
+            },
+            (source, target) => File.Move(source, target, overwrite: true)));
+
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_ReplacementFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "replace.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-REPLACE"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            (stream, bytes) => stream.Write(bytes),
+            stream => stream.Flush(flushToDisk: true),
+            stream => stream.Dispose(),
+            (_, _) => throw new IOException("injected replacement failure")));
+
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_TemporaryNameCollision_PreservesBothFiles()
+    {
+        var path = Path.Combine(_testDir, "collision.json");
+        var temporary = path + ".collision.tmp";
+        var original = "ORIGINAL-COLLISION"u8.ToArray();
+        var collision = "PREEXISTING-SIBLING"u8.ToArray();
+        File.WriteAllBytes(path, original);
+        File.WriteAllBytes(temporary, collision);
+
+        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            (stream, bytes) => stream.Write(bytes),
+            stream => stream.Flush(flushToDisk: true),
+            stream => stream.Dispose(),
+            (source, target) => File.Move(source, target, overwrite: true)));
+
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Equal(collision, File.ReadAllBytes(temporary));
+    }
+
+    [Fact]
     public void GetProjectRoot_ReturnsNull_WhenNoConfig()
     {
         var emptyDir = Path.Combine(Path.GetTempPath(), "dydo-noroot-" + Guid.NewGuid().ToString("N")[..8]);
@@ -373,9 +508,7 @@ public class ConfigServiceTests : IDisposable
         Assert.Equal("dotnet test.*coverlet", config.Nudges[0].Pattern);
         Assert.Equal("warn", config.Nudges[0].Severity);
         Assert.Equal("rm -rf", config.Nudges[1].Pattern);
-        Assert.NotNull(config.Models);
-        Assert.Equal("claude-opus-4", config.Models!.Tiers["anthropic"]["strong"]);
-        Assert.Empty(config.Models.Agents);
+        Assert.DoesNotContain("Models", typeof(DydoConfig).GetProperties().Select(property => property.Name));
         Assert.True(config.Integrations["claude"]);
         Assert.False(config.Integrations["codex"]);
     }

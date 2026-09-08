@@ -2,6 +2,7 @@ namespace DynaDocs.Services;
 
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Text;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 
@@ -71,6 +72,25 @@ public partial class ConfigService : IConfigService
     /// Save configuration to dydo.json
     /// </summary>
     public void SaveConfig(DydoConfig config, string path)
+        => SaveConfig(
+            config,
+            path,
+            target => $"{target}.{Guid.NewGuid():N}.tmp",
+            temporary => new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            (stream, bytes) => stream.Write(bytes),
+            stream => stream.Flush(flushToDisk: true),
+            stream => stream.Dispose(),
+            (temporary, target) => File.Move(temporary, target, overwrite: true));
+
+    internal void SaveConfig(
+        DydoConfig config,
+        string path,
+        Func<string, string> chooseTemporaryPath,
+        Func<string, FileStream> createNew,
+        Action<FileStream, byte[]> writeAll,
+        Action<FileStream> durableFlush,
+        Action<FileStream> close,
+        Action<string, string> replace)
     {
         config.Skills = config.Skills
             .OrderBy(entry => entry.Key, StringComparer.Ordinal)
@@ -81,7 +101,35 @@ public partial class ConfigService : IConfigService
                 skill.Resources = skill.Resources.OrderBy(name => name, StringComparer.Ordinal).ToList();
         }
         var json = JsonSerializer.Serialize(config, DydoConfigJsonContext.Default.DydoConfig);
-        File.WriteAllText(path, json);
+        var bytes = Encoding.UTF8.GetBytes(json);
+        var temporaryPath = chooseTemporaryPath(path);
+        FileStream? stream = null;
+        var ownsTemporary = false;
+        try
+        {
+            stream = createNew(temporaryPath);
+            ownsTemporary = true;
+            writeAll(stream, bytes);
+            durableFlush(stream);
+            close(stream);
+            stream = null;
+            replace(temporaryPath, path);
+            ownsTemporary = false;
+        }
+        finally
+        {
+            if (stream != null)
+            {
+                try { stream.Dispose(); }
+                catch { }
+            }
+
+            if (ownsTemporary)
+            {
+                try { File.Delete(temporaryPath); }
+                catch { }
+            }
+        }
     }
 
     internal static bool IsValidSlug(string value) =>

@@ -7,6 +7,56 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateCommandTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Update_WarningsReturnNonzeroAndPreserveOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var relativePath = TemplateCommand.FrameworkDocFiles.First();
+        var docPath = Path.Combine(DydoDir, relativePath);
+        var originalContent = File.ReadAllText(docPath);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(originalContent);
+        new ConfigService().SaveConfig(config, configPath);
+        File.AppendAllText(docPath, "\nUSER EDIT SENTINEL\n");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Update_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+            TemplateCommand.ExecuteUpdate(false, () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    private static void AddLegacyModels(string configPath)
+    {
+        var raw = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = System.Text.Json.Nodes.JsonNode.Parse(
+            """{"agents":{"reviewer":"strong"},"tiers":{"anthropic":{"strong":"legacy"}}}""");
+        raw["unrelated"] = System.Text.Json.Nodes.JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+    }
+
     public static IEnumerable<object[]> UnsupportedSourceShapes()
     {
         string[] names = ["Skill-ghost.template.md", "valid-Resource-ghost.template.md",

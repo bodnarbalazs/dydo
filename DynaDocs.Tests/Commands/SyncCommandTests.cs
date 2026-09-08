@@ -32,6 +32,26 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
+    public void Execute_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        var configPath = Path.Combine(_testDir, "dydo.json");
+        var raw = JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = JsonNode.Parse("""{"agents":{"reviewer":"strong"},"tiers":{"anthropic":{"strong":"legacy"}}}""");
+        raw["unrelated"] = JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+            SyncCommand.Execute(_testDir, () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(_testDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
     public void SyncAgent_WritesAgentAndSkillFiles()
     {
         SyncCommand.SyncAgent(_reviewer, _testDir);
@@ -539,7 +559,7 @@ public class SyncCommandTests : IDisposable
     [Fact]
     public void SyncCodexAgent_WritesAgentAndRepoSkillFiles()
     {
-        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir);
 
         Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
         Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
@@ -779,39 +799,28 @@ public class SyncCommandTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude", "workflows")));
     }
     [Fact]
-    public void SyncCodexAgent_EmitsStrongOpenAiModelBinding()
-    {
-        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
-
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
-        Assert.Contains("model = \"gpt-5.6-sol\"", agent);
-    }
-
-    [Fact]
-    public void SyncCodexAgent_WithoutModelBinding_UsesStandardOpenAiFallback()
+    public void SyncCodexAgent_OmitsModelAndEffortBindings()
     {
         SyncCommand.SyncCodexAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
-        Assert.Contains("model = \"gpt-5.6-terra\"", agent);
+        Assert.DoesNotContain(agent.Split('\n'), line => line.StartsWith("model = ", StringComparison.Ordinal));
+        Assert.DoesNotContain("model_reasoning_effort", agent);
     }
 
     [Theory]
     [InlineData("reviewer")]
     [InlineData("inquisitor")]
-    public void SyncCodexAgent_ReadOnlyWorker_EmitsSingleReadOnlySandboxImmediatelyAfterModel(string skillName)
+    public void SyncCodexAgent_ReadOnlyWorker_EmitsSingleReadOnlySandbox(string skillName)
     {
         var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
 
-        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(skill, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
         var lines = agent.Split('\n');
-        var modelIndex = Array.FindIndex(lines, line => line.StartsWith("model = \"", StringComparison.Ordinal));
-
         Assert.StartsWith($"name = \"{skillName}\"\ndescription = \"", agent);
-        Assert.True(modelIndex >= 0, "Codex agent must emit a quoted model line.");
-        Assert.Equal("sandbox_mode = \"read-only\"", lines[modelIndex + 1]);
+        Assert.Contains("sandbox_mode = \"read-only\"", lines);
         Assert.Equal(1, lines.Count(line => line == "sandbox_mode = \"read-only\""));
         Assert.DoesNotContain('\r', agent);
     }
@@ -823,14 +832,11 @@ public class SyncCommandTests : IDisposable
     {
         var codeWriter = SkillTemplateService.DiscoverSkills().Single(s => s.Name == "implementer");
 
-        SyncCommand.SyncCodexAgent(codeWriter, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(codeWriter, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "implementer.toml"));
         var lines = agent.Split('\n');
-        var modelIndex = Array.FindIndex(lines, line => line.StartsWith("model = \"", StringComparison.Ordinal));
-
-        Assert.True(modelIndex >= 0, "Codex agent must emit a quoted model line.");
-        Assert.Equal("sandbox_mode = \"workspace-write\"", lines[modelIndex + 1]);
+        Assert.Contains("sandbox_mode = \"workspace-write\"", lines);
         Assert.Equal(1, lines.Count(line => line.StartsWith("sandbox_mode", StringComparison.Ordinal)));
     }
 
@@ -846,11 +852,11 @@ public class SyncCommandTests : IDisposable
             ReadOnly = true,
         };
 
-        SyncCommand.SyncCodexAgent(reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         Assert.Contains("description = \"Project \\\"reviewer\\\".\"", agent);
-        Assert.Contains("model = \"gpt-5.6-sol\"\nsandbox_mode = \"read-only\"\n\ndeveloper_instructions = \"\"\"", agent);
+        Assert.Contains("sandbox_mode = \"read-only\"\n\ndeveloper_instructions = \"\"\"", agent);
         Assert.DoesNotContain('\r', agent);
     }
 
@@ -862,14 +868,14 @@ public class SyncCommandTests : IDisposable
             .ToList();
 
         foreach (var skill in skills)
-            SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
+            SyncCommand.SyncCodexAgent(skill, _testDir);
 
         var firstEmit = skills.ToDictionary(
             skill => skill.Name,
             skill => File.ReadAllBytes(Path.Combine(_testDir, ".codex", "agents", $"{skill.Name}.toml")));
 
         foreach (var skill in skills)
-            SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
+            SyncCommand.SyncCodexAgent(skill, _testDir);
 
         foreach (var skill in skills)
         {
@@ -878,22 +884,10 @@ public class SyncCommandTests : IDisposable
         }
     }
 
-    [Theory]
-    [InlineData("implementer", "gpt-5.6-terra")]
-    [InlineData("docs-writer", "gpt-5.6-terra")]
-    public void SyncCodexAgent_DefaultModels_EmitsTierCorrectModel(string skillName, string expectedModel)
-    {
-        var skill = SkillTemplateService.DiscoverSkills().First(s => s.Name == skillName);
-        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
-
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
-        Assert.Contains($"model = \"{expectedModel}\"", agent);
-    }
-
     [Fact]
     public void SyncCodexAgent_EmitsDeveloperInstructions()
     {
-        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         var mustReads = SyncCommand.ExtractMustReads(_reviewer, _testDir);
@@ -920,14 +914,14 @@ public class SyncCommandTests : IDisposable
     {
         var skill = SkillTemplateService.DiscoverSkills().First(s => s.Name == skillName);
 
-        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(skill, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
         Assert.DoesNotContain(agent.Split('\n'), line => line.TrimStart().StartsWith("tools"));
         // Fields codex does accept remain intact — the drop is surgical, not structural.
         Assert.Contains($"name = \"{skillName}\"", agent);
         Assert.Contains("description = \"", agent);
-        Assert.Contains("model = \"", agent);
+        Assert.DoesNotContain(agent.Split('\n'), line => line.StartsWith("model = ", StringComparison.Ordinal));
         Assert.Contains("developer_instructions = \"\"\"", agent);
     }
 
@@ -938,7 +932,7 @@ public class SyncCommandTests : IDisposable
     {
         var searcher = WebSkill();
 
-        SyncCommand.SyncCodexAgent(searcher, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(searcher, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "searcher.toml"));
         Assert.Contains("\nweb_search = \"live\"\n", agent);
@@ -956,7 +950,7 @@ public class SyncCommandTests : IDisposable
     {
         Assert.False(_reviewer.Web);
 
-        SyncCommand.SyncCodexAgent(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
         Assert.DoesNotContain("[tools]", agent);
@@ -970,7 +964,7 @@ public class SyncCommandTests : IDisposable
     {
         var scout = SkillTemplateService.DiscoverSkills().Single(skill => skill.Name == "scout");
 
-        SyncCommand.SyncCodexAgent(scout, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(scout, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "scout.toml"));
         Assert.Contains("\nweb_search = \"live\"\n", agent);
@@ -991,7 +985,7 @@ public class SyncCommandTests : IDisposable
         Assert.Equal(delegates, skill.Delegates);
         Assert.Equal(web, skill.Web);
 
-        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(skill, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
         var table = agent.IndexOf("[agents]", StringComparison.Ordinal);
@@ -1130,7 +1124,7 @@ public class SyncCommandTests : IDisposable
     {
         var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
 
-        SyncCommand.SyncCodexAgent(skill, _testDir, ConfigFactory.CreateDefaultModels());
+        SyncCommand.SyncCodexAgent(skill, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{skillName}.toml"));
         Assert.Contains($"Load the `${skillName}` skill before working.", agent);
@@ -1607,8 +1601,8 @@ public class SyncCommandTests : IDisposable
             var planner = SkillTemplateService.DiscoverSkills().First(s => s.Name == skillName);
             Assert.True(planner.EmitAgent);
 
-            SyncCommand.SyncAgent(planner, _testDir, ConfigFactory.CreateDefaultModels());
-            SyncCommand.SyncCodexAgent(planner, _testDir, ConfigFactory.CreateDefaultModels());
+            SyncCommand.SyncAgent(planner, _testDir);
+            SyncCommand.SyncCodexAgent(planner, _testDir);
 
             Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", skillName, "SKILL.md")));
             Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{skillName}.md")));
@@ -1760,105 +1754,18 @@ public class SyncCommandTests : IDisposable
         }
     }
 
-    // --- Model-tier resolution (Decision 028) ---
-
-    private static ModelsConfig TestModels() => new()
-    {
-        Tiers = new Dictionary<string, Dictionary<string, string>>
-        {
-            ["anthropic"] = new() { ["strong"] = "model-strong", ["standard"] = "model-standard" }
-        },
-        Agents = new Dictionary<string, string>
-        {
-            ["reviewer"] = "strong",
-            ["implementer"] = "standard",
-            ["docs-writer"] = "light" // tier NOT bound in the vendor map
-        }
-    };
-
     [Fact]
-    public void ResolveModel_MappedAgent_ReturnsConcreteModel()
-    {
-        var model = SyncCommand.ResolveModel(TestModels(), "reviewer");
-        Assert.Equal("model-strong", model);
-    }
-
-    [Fact]
-    public void ResolveModel_OpenAiDefault_ReturnsStrongTierModel()
-    {
-        var model = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), "reviewer", "openai");
-
-        Assert.Equal("gpt-5.6-sol", model);
-    }
-
-    [Theory]
-    [InlineData("reviewer", "gpt-5.6-sol")]
-    [InlineData("project-planner", "gpt-5.6-sol")]
-    [InlineData("specifier", "gpt-5.6-sol")]
-    [InlineData("issue-captain", "gpt-5.6-sol")]
-    [InlineData("implementer", "gpt-5.6-terra")]
-    [InlineData("docs-writer", "gpt-5.6-terra")]
-    public void ResolveModel_OpenAiDefault_UsesAgentTier(string agentName, string expectedModel)
-    {
-        var model = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), agentName, "openai");
-
-        Assert.Equal(expectedModel, model);
-    }
-
-    [Fact]
-    public void ResolveModel_UnmappedAgent_ReturnsNull()
-    {
-        // No agent → tier entry: inherit the session model (Decision 028 — no silent downgrade).
-        var model = SyncCommand.ResolveModel(TestModels(), "project-planner");
-        Assert.Null(model);
-    }
-
-    [Fact]
-    public void ResolveModel_TierMissingFromVendorMap_ReturnsNull()
-    {
-        // docs-writer maps to "light", which the vendor map does not bind → inherit.
-        var model = SyncCommand.ResolveModel(TestModels(), "docs-writer");
-        Assert.Null(model);
-    }
-
-    [Fact]
-    public void ResolveModel_AbsentModelsSection_ReturnsNull()
-    {
-        var model = SyncCommand.ResolveModel(null, "reviewer");
-        Assert.Null(model);
-    }
-
-    [Fact]
-    public void SyncAgent_WithModels_EmitsResolvedModelFrontmatter()
-    {
-        SyncCommand.SyncAgent(_reviewer, _testDir, TestModels());
-
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
-        Assert.Contains("\nmodel: model-strong\n", agent);
-        Assert.DoesNotContain("model: inherit", agent);
-    }
-
-    [Fact]
-    public void SyncAgent_UnmappedAgent_FallsBackToInherit()
-    {
-        var projectPlanner = SkillTemplateService.DiscoverSkills().First(s => s.Name == "project-planner");
-        SyncCommand.SyncAgent(projectPlanner, _testDir, TestModels());
-
-        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "project-planner.md"));
-        Assert.Contains("model: inherit", agent);
-    }
-
-    [Fact]
-    public void SyncAgent_NoModelsSection_FallsBackToInherit()
+    public void SyncAgent_EmitsExplicitClaudeInheritanceWithoutEffort()
     {
         SyncCommand.SyncAgent(_reviewer, _testDir);
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
-        Assert.Contains("model: inherit", agent);
+        Assert.Equal(1, agent.Split('\n').Count(line => line == "model: inherit"));
+        Assert.DoesNotContain(agent.Split('\n'), line => line.StartsWith("effort:", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void SyncCommand_Run_ResolvesModelsFromDydoJson()
+    public void SyncCommand_Run_IgnoresLegacyModelsAndRemovesThemOnSuccess()
     {
         var originalDir = Directory.GetCurrentDirectory();
         try
@@ -1877,27 +1784,13 @@ public class SyncCommandTests : IDisposable
             SyncCommand.Create().Parse([]).Invoke();
 
             var reviewer = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
-            Assert.Contains("model: vendor-strong-model", reviewer);
-            // Unmapped agents inherit the session model
-            var codeWriter = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "implementer.md"));
-            Assert.Contains("model: inherit", codeWriter);
+            Assert.Contains("model: inherit", reviewer);
+            Assert.DoesNotContain("vendor-strong-model", reviewer);
+            Assert.DoesNotContain("\"models\"", File.ReadAllText(Path.Combine(_testDir, "dydo.json")));
         }
         finally
         {
             Directory.SetCurrentDirectory(originalDir);
-        }
-    }
-
-    [Fact]
-    public void DefaultModels_ResolveForAllTieredAgents()
-    {
-        // The shipped defaults (Decision 028) must actually bind: every agent in the
-        // default agent → tier map resolves to a concrete model.
-        var models = ConfigFactory.CreateDefaultModels();
-        foreach (var agent in models.Agents.Keys)
-        {
-            var model = SyncCommand.ResolveModel(models, agent);
-            Assert.False(string.IsNullOrEmpty(model), $"default tier for '{agent}' did not resolve");
         }
     }
 

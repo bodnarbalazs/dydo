@@ -46,7 +46,9 @@ public class WayfinderHarmonyTests : IDisposable
             {
                 Assert.StartsWith(climb, target);
 
-                var document = target[climb.Length..].Replace('/', Path.DirectorySeparatorChar);
+                var fragment = target.IndexOf('#');
+                var document = target[climb.Length..(fragment < 0 ? target.Length : fragment)]
+                    .Replace('/', Path.DirectorySeparatorChar);
                 var resolved = Path.Combine(repositoryDydo, document);
                 Assert.True(File.Exists(resolved),
                     $"{skill.Name}: compiled link '{target}' names no document ({resolved})");

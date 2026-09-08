@@ -359,11 +359,14 @@ public static partial class SkillTemplateService
             return;
         foreach (Match link in LinkRegex().Matches(section.Value))
         {
-            var target = link.Groups[1].Value.Replace('/', Path.DirectorySeparatorChar);
-            if (target.StartsWith('#')
-                || target.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                || target.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            var authoredTarget = link.Groups[1].Value;
+            if (authoredTarget.StartsWith('#')
+                || authoredTarget.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                || authoredTarget.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
                 continue;
+            var fragment = authoredTarget.IndexOf('#');
+            var target = (fragment < 0 ? authoredTarget : authoredTarget[..fragment])
+                .Replace('/', Path.DirectorySeparatorChar);
             var climbCount = Regex.Matches(target, @"^\.\.[\\/]", RegexOptions.CultureInvariant).Count;
             if (target.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
                 climbCount = target.Split(Path.DirectorySeparatorChar).TakeWhile(part => part == "..").Count();

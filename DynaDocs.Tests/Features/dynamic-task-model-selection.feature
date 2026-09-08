@@ -67,6 +67,8 @@ Feature: Delegators choose a model for each task
     Examples:
       | failure                                                        |
       | after a strict prefix is written to the temporary sibling      |
+      | during durable flush after all bytes are written               |
+      | during close after the flushed temporary file remains unmoved  |
       | during replacement after the flushed temporary file is closed |
 
   Scenario: A temporary-name collision cannot overwrite either file

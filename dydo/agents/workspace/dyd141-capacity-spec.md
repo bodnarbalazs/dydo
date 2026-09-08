@@ -23,11 +23,13 @@ value 16, backup and hashes, but must not emit that value or claim it as a proje
 DYD-88 retains the broader lifecycle matrix.
 
 The user's local configuration was preservation-safely changed to 16 before this specifier was
-created. This fresh child was accepted in the same desktop session where the earlier second child was
-refused. That is a bounded current-session hot-load acceptance result. Desktop reload semantics are
-undocumented, so it is not a universal hot-load, backend, version or reclamation guarantee. The CLI
-visible during specification reports `codex-cli 0.153.4`; no evidence available to this worker proves
-that it is the desktop backend's version or proves the effective model identity.
+created. A completed researcher disappeared from inventory before or with this replacement's
+accepted spawn, so that acceptance may be ordinary reclamation. Root's subsequent necessary fresh
+captain spawn and that captain's necessary fresh spec-review spawn both refused at four inventory
+entries. The value 16 is schema-valid but its consumption or effect in this existing desktop task is
+not proved. Desktop reload semantics are undocumented. The CLI visible during specification reports
+`codex-cli 0.153.4`; no evidence available to this worker proves that it is the desktop backend's
+version or proves the effective model identity.
 
 ## Spec
 
@@ -65,10 +67,11 @@ Feature: Captain ownership under native agent capacity
 
   Scenario: Configuration and observed capability remain separate evidence
     Given the local configuration records agents.max_concurrent_threads_per_session as 16 with preservation evidence
-    And an earlier child spawn was refused at four live inventory entries
-    When a fresh child spawn is accepted in that same desktop session after the change
-    Then the evidence records current-session hot-load acceptance
-    And it does not claim universal desktop reload, slot reclamation, backend, version, model, or lifecycle behavior
+    And a completed researcher disappeared before or with one accepted replacement spawn
+    When later necessary captain and fresh spec-review spawns are refused at four live inventory entries
+    Then the evidence records that configuration consumption and effectiveness remain unproved in the existing task
+    And it treats the accepted replacement as possible ordinary reclamation
+    And it does not claim desktop reload, slot reclamation, backend, version, model, or lifecycle behavior
     And it leaves durable project configuration emission to DYD-86 and broader lifecycle claims to DYD-88
 ```
 
@@ -96,29 +99,29 @@ The three authored templates must say, in their existing vocabulary:
 All managed copies must carry the same normative sentences after regeneration. No wrapper metadata,
 role model, permissions, Mode/Type map, review rubric or freshness definition changes.
 
-### Native canary
+### Native proof
 
 Retain the compact results and hashes in `dydo/agents/workspace/dyd141-capacity-evidence.md`; do not
 paste raw transcripts into Linear or the PR.
 
-1. Record the current-session observation already made: prior refusal at four live entries; local
-   config key/value plus the Admiral's backup and before/after hashes; this fresh specifier's accepted
-   spawn after the change. Label engine, desktop backend/version, effective model and universal reload
-   semantics `unproved` unless the native surface reports them directly.
-2. In a fresh, sacrificial desktop task using the validated local configuration, have an Admiral
-   commission one Issue Captain. The captain commissions a minimal production worker, consumes its
-   return, then commissions a different fresh reviewer and consumes its verdict. Record the inventory
-   before each spawn and the parent/child names; success requires Admiral -> Captain -> Crew throughout.
-3. In that same sacrificial task, keep the completed canary threads open and add bounded inert canary
-   children only while the native inventory remains below the configured limit of 16 open spawned
-   threads excluding the primary. At exactly 16, the captain makes one additional crew-spawn attempt.
-   Stop on any earlier mismatch. The refusal case passes only if the captain preserves the exact next
-   brief/candidate, performs no retry, and returns the concrete capacity limitation to the Admiral;
-   the Admiral must not dispatch the brief. End the sacrificial task after capturing the result.
+1. Record the existing-task chronology: the completed researcher disappeared before or with the
+   accepted replacement; the later necessary fresh captain and fresh spec-review spawns refused at
+   four inventory entries; the local config key/value has the Admiral's backup and before/after
+   hashes. Mark configuration consumption/effect, engine, desktop backend/version, effective model,
+   reload and reclamation semantics `unproved` unless the native surface reports them directly.
+2. After restart or otherwise fresh configuration consumption, deliver DYD-141 through its necessary
+   stages only. The Admiral commissions the Issue Captain; that captain commissions production,
+   consumes its return, commissions hardening, consumes its return, and then commissions a different
+   fresh reviewer. Run these stages strictly serially and record inventory before each necessary
+   spawn plus the parent/child names. Success requires Admiral -> Captain -> Crew throughout.
+3. Do not create agents merely to fill capacity. If one necessary DYD-141 stage is refused at actual
+   pressure, record that single refusal, preserve its exact brief/candidate/hop SHA, perform no retry,
+   and return the concrete limitation through Captain -> Admiral -> human. The Admiral must not
+   dispatch the brief. The already observed refusal supplies the refusal case unless a necessary
+   post-restart stage naturally supplies newer bounded evidence.
 
-The configured-count refusal is a canary for this host/session only. If the host does not expose an
-inventory whose accounting can be reconciled to the configured limit, do not fill speculatively:
-record that missing control as the concrete escalation result.
+If the host does not expose inventory or a documented control that makes the necessary serial stage
+runnable, record that missing control as the concrete escalation result. Do not manufacture pressure.
 
 ### Gates
 
@@ -134,10 +137,12 @@ record that missing control as the concrete escalation result.
 - Generation gate: a source-built template update followed by two synchronizations leaves the second
   run byte-identical and changes only the generated paths named below. Each managed prompt contains
   the required source wording; wrapper files remain byte-identical.
-- Native gate: the three-step canary above records the accepted hierarchy run and the bounded refusal
-  or the exact missing inventory/control escalation. A configuration value alone cannot pass it.
+- Native gate: the three-step proof above records the strictly serial captain-owned production,
+  hardening and fresh review run plus the already observed or one naturally occurring necessary
+  refusal, or the exact missing inventory/control escalation. A configuration value alone cannot
+  pass it.
 - Review gate: fresh `reviewer(spec)` PASS before production, fresh whole-Issue CODE PASS after the
-  canary evidence is committed, and fresh MERGE review in the later Merge Sub-issue.
+  native evidence is committed, and fresh MERGE review in the later Merge Sub-issue.
 
 ## Plan
 
@@ -152,9 +157,9 @@ Admiral -> Issue Captain -> Crew and fresh-review rules; it does not introduce a
 
 The Bug's reproduce-or-identify and fix placeholders should be collapsed into parent hops. The
 pre-change observation is an adequate reproduction at the prompt/protocol seam, and the supplied
-schema fact plus this accepted spawn identify normal configured open-thread budgeting as the current
-bounded explanation. Retaining serial Bug Sub-issues would transfer the same prompt paths twice and
-add no independently trackable work.
+schema fact plus the observed refusals identify configured open-thread budgeting as the current
+bounded hypothesis without proving that value 16 took effect in the existing task. Retaining serial
+Bug Sub-issues would transfer the same prompt paths twice and add no independently trackable work.
 
 ### Owned files
 
@@ -182,7 +187,7 @@ Proof:
 - `DynaDocs.Tests/Features/captain-capacity.feature` — the four boundary scenarios above.
 - `DynaDocs.Tests/Steps/CaptainCapacitySteps.cs` — focused source/output and obligation assertions.
 - `dydo/agents/workspace/dyd141-capacity-evidence.md` — configuration provenance, bounded desktop
-  observations, native canary inventory/results and exact candidate identity.
+  observations, native inventory/results and exact candidate identity.
 
 No other generated file is owned. In particular `.claude/agents/issue-captain.md`,
 `.codex/agents/issue-captain.toml`, `.agents/skills/admiral/agents/openai.yaml`, user configuration and
@@ -195,7 +200,7 @@ existing evidence are read-only and must remain byte-identical.
 2. **Implement — nonempty.** First add the four failing focused scenarios. Then edit only the three
    authored templates, run the source-built template update and sync, inspect the named outputs, and
    make the focused/full/build/docs/generation gates pass. Commit the exact owned paths.
-3. **Harden — nonempty.** Run the bounded native canary, record compact evidence and hashes, challenge
+3. **Harden — nonempty.** Run the bounded native proof, record compact evidence and hashes, challenge
    every universal host claim, rerun all gates, and commit the evidence or any necessary correction
    inside the owned paths. Do not edit user config or broaden DYD-86/88.
 4. **Issue review — required and fresh.** Judge the complete candidate against this spec and the CODE
@@ -211,11 +216,11 @@ existing evidence are read-only and must remain byte-identical.
 ### Edge and failure behavior
 
 - A configured number without a matching native observation remains configuration evidence only.
-- An accepted spawn after the value change proves this current session accepted that spawn; it does
-  not prove why, when reload occurred, or that all desktop sessions behave likewise.
+- The accepted replacement spawn may reflect ordinary reclamation because a completed researcher
+  disappeared before or with it; it does not prove configuration consumption or effectiveness.
 - A completed or interrupted child remains counted until the native inventory/control proves
   otherwise; never infer reclamation from status text.
-- Inventory below the configured count that nevertheless refuses a spawn is a mismatched canary:
+- Inventory below the configured count that nevertheless refuses a spawn is a bounded mismatch:
   preserve the exact snapshot and escalate it, with no retries or hierarchy bypass.
 - A missing close/delete/reclamation control is recorded as unavailable, not simulated or invented.
 - Capacity pressure never permits scope broadening, role reuse, skipped fresh review, Admiral-authored
@@ -227,5 +232,5 @@ existing evidence are read-only and must remain byte-identical.
 
 **Recommended.** This correction changes the canonical control-flow prompts and defines the precise
 failure/escalation route after a native capacity refusal. Fresh spec review should verify that it
-preserves captain-only authority and freshness, does not overstate the one-session hot-load result,
-and does not steal DYD-86 configuration emission or DYD-88 lifecycle scope.
+preserves captain-only authority and freshness, does not overstate configuration effectiveness in
+the existing task, and does not steal DYD-86 configuration emission or DYD-88 lifecycle scope.

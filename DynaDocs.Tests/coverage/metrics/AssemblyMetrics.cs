@@ -17,7 +17,12 @@ public static class AssemblyMetrics
             .Where(method => method.HasBody).Select(method => Describe(method, root)).ToArray();
         if (methods.Select(method => method.Token).Distinct().Count() != methods.Length)
             throw new InvalidOperationException("Duplicate method token in assembly.");
-        return new AssemblyFacts(Hash(assemblyPath), Hash(pdbPath), assembly.MainModule.Mvid.ToString(), methods);
+        var relative = Path.GetRelativePath(Path.GetFullPath(root), assemblyPath).Replace('\\', '/');
+        if (relative == ".." || relative.StartsWith("../", StringComparison.Ordinal) || Path.IsPathRooted(relative))
+            throw new InvalidOperationException("Assembly outside inventory root.");
+        return new AssemblyFacts(assembly.Name.Name, relative, new FileInfo(assemblyPath).Length,
+            Convert.ToHexStringLower(SHA1.HashData(File.ReadAllBytes(assemblyPath))),
+            Hash(assemblyPath), Hash(pdbPath), assembly.MainModule.Mvid.ToString(), methods);
     }
 
     private static string Hash(string path) => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)));

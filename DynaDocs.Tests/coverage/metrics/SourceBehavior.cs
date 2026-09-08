@@ -116,7 +116,7 @@ public static class SourceBehavior
             .WithParameterList(authored?.ParameterList ?? primary?.ParameterList ?? SyntaxFactory.ParameterList())
             .WithBody(SyntaxFactory.Block(statements));
         constructors.Add(new ConstructorFacts(key, CSharpCognitiveComplexityMetric.GetComplexity(synthetic).Complexity,
-            method.Parameters.Length, owned));
+            SourceMetrics.PolicyCc(synthetic), method.Parameters.Length, owned));
     }
 
     private static TypeDeclarationSyntax? PrimaryDeclaration(IMethodSymbol method, SyntaxNode? syntax,

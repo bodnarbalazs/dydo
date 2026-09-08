@@ -2,9 +2,9 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "coverlet.console": {
-      "version": "6.0.4",
-      "commands": ["coverlet"]
+    "altcover.global": {
+      "version": "9.0.102",
+      "commands": ["altcover"]
     }
   }
 }

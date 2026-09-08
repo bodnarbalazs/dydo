@@ -6,18 +6,11 @@
       "name": "dotnet",
       "kind": "aspnet",
       "cwd": ".",
-      "isolation": {
-        "requirement": "git-worktree-copy-working-changes",
-        "evidence": {
-          "state": "verified",
-          "kind": "adapter",
-          "path": "DynaDocs.Tests/coverage/run_tests.py"
-        }
-      },
+      "isolation": {"requirement": "git-worktree-copy-working-changes", "evidence": {"state": "verified", "kind": "adapter", "path": "DynaDocs.Tests/coverage/run_tests.py"}},
       "capabilities": {
         "test": {"state": "configured", "command": {"kind": "current-python", "argv": ["-u", "DynaDocs.Tests/coverage/run_tests.py", "--"]}, "artifacts": []},
-        "static": {"state": "unavailable", "reason": "Pending DYD-96"},
-        "coverage": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-static.json", "required": true}]},
+        "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json", "required": true}]},
         "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
       }
     },
@@ -28,8 +21,8 @@
       "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
       "capabilities": {
         "test": {"state": "configured", "command": {"kind": "current-python", "argv": ["-m", "unittest", "discover", "-s", "DynaDocs.Tests/coverage/tests", "-p", "test_*.py"]}, "artifacts": []},
-        "static": {"state": "unavailable", "reason": "Pending DYD-96"},
-        "coverage": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "python", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/python-static.json", "required": true}]},
+        "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "python", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/python-coverage.json", "required": true}]},
         "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
       }
     },
@@ -39,9 +32,9 @@
       "cwd": ".",
       "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
       "capabilities": {
-        "test": {"state": "configured", "command": {"kind": "argv", "argv": ["node", "--test", "DynaDocs.Tests/coverage/tests/testing_facade.test.mjs"]}, "artifacts": []},
-        "static": {"state": "unavailable", "reason": "Pending DYD-96"},
-        "coverage": {"state": "unavailable", "reason": "Pending DYD-96"},
+        "test": {"state": "configured", "command": {"kind": "argv", "argv": ["node", "DynaDocs.Tests/coverage/node_tests.cjs"]}, "artifacts": []},
+        "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "node", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/node-static.json", "required": true}]},
+        "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "node", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/node-coverage.json", "required": true}]},
         "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
       }
     }

@@ -125,6 +125,28 @@ class CSharpMetricsTests(unittest.TestCase):
         self.assertEqual(3, len(rows))
         self.assertEqual(3, len({row["id"] for row in rows}))
         self.assertTrue(all(row["cognitive"] > 0 for row in rows))
+        by_member = {row["member"]: row["policy_cc"] for row in rows}
+        self.assertEqual(1, by_member["M"])
+        self.assertEqual(2, by_member["L"])
+        self.assertEqual(2, by_member["<lambda>"])
+
+    def test_policy_cc_matches_the_pinned_sonar_syntax_convention(self):
+        rows = self.measure("""
+class C {
+  int Straight() => 1;
+  int Decisions(bool a, bool b, int? n) {
+    if (a && b) n ??= 1;
+    return n?.CompareTo(1) ?? 0;
+  }
+  int Switch(int n) => n switch { 0 => 0, 1 when n > 0 => 1, _ => 2 };
+  int Catches() { try { return 1; } catch when (System.DateTime.Now.Ticks > 0 && System.Environment.TickCount > 0) { return 2; } finally { } }
+}
+""")
+        by_member = {row["member"]: row["policy_cc"] for row in rows}
+        self.assertEqual(1, by_member["Straight"])
+        self.assertEqual(6, by_member["Decisions"])
+        self.assertEqual(4, by_member["Switch"])
+        self.assertEqual(2, by_member["Catches"])
 
     def test_malformed_source_fails_instead_of_emitting_partial_facts(self):
         result = subprocess.run(["dotnet", str(self.dll), "--syntax"], input="class {",
@@ -197,6 +219,9 @@ class CSharpMetricsTests(unittest.TestCase):
                                     text=True, capture_output=True)
             self.assertEqual(0, result.returncode, result.stderr)
             facts = json.loads(result.stdout)
+            self.assertEqual("Subject", facts["assembly_name"])
+            self.assertEqual("bin/Debug/net10.0/Subject.dll", facts["path"])
+            self.assertGreater(facts["bytes"], 0)
             methods = facts["methods"]
             self.assertEqual(len(methods), len({row["token"] for row in methods}))
             moved = [row for row in methods if row["kickoff"]]

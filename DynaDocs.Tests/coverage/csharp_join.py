@@ -19,45 +19,88 @@ def _relative(root, path):
         raise ValueError(f"Coverage source outside inventory: {path}") from error
 
 
-def coverage_methods(data, opencover, root, assembly_name):
-    """Join JSON hits and OpenCover CC by module + complete Cecil signature."""
+def coverage_methods(opencover, root, assembly, aliases):
+    """Read one exact AltCover module by original identity and MethodDef token."""
+    root = Path(root).resolve()
     modules = ET.fromstring(opencover).findall("./Modules/Module")
-    selected = [node for node in modules if node.findtext("ModuleName") == assembly_name]
+    selected = [node for node in modules if node.findtext("ModuleName") == assembly["assembly_name"]]
     if len(selected) != 1:
-        raise ValueError(f"Missing or ambiguous complexity module: {assembly_name}")
-    xml_files = {row.attrib['uid']: _relative(root, row.attrib['fullPath']) for row in selected[0].findall('./Files/File')}
-    complexity = {}
-    for method in selected[0].findall("./Classes/Class/Methods/Method"):
-        identity = method.findtext("Name")
-        file_ref = method.find('FileRef')
-        path = xml_files.get(file_ref.attrib['uid']) if file_ref is not None else None
-        key = identity, path
-        if not identity or key in complexity:
-            raise ValueError("Missing or duplicate full complexity method identity")
-        complexity[key] = _count(int(method.attrib["cyclomaticComplexity"]), "cyclomatic complexity")
-    module = data.get(assembly_name + ".dll")
-    if not isinstance(module, dict) or not module:
-        raise ValueError(f"Missing JSON coverage module: {assembly_name}")
-    result = {}
-    for filename, classes in module.items():
-        path = _relative(root, filename)
-        for methods in classes.values():
-            for identity, facts in methods.items():
-                key = identity, path
-                if key not in complexity:
-                    raise ValueError(f"Missing exact complexity method: {identity}")
-                if complexity[key] != max(1, len(facts['Branches'])):
-                    raise ValueError(f'Pinned Coverlet complexity disagreement: {key}')
-                row = result.setdefault(identity, {"cc": 0, "files": {}})
-                if path in row["files"]:
-                    raise ValueError(f"Duplicate coverage method/file: {identity}: {path}")
-                row["files"][path] = facts
-    actual = {(identity, _relative(root, path)) for path, classes in module.items()
-              for methods in classes.values() for identity in methods}
-    if actual != set(complexity):
-        raise ValueError("Complexity and coverage method inventories differ")
-    for row in result.values():
-        row['cc'] = max(1, sum(len(facts['Branches']) for facts in row['files'].values()))
+        raise ValueError(f"Missing or ambiguous module: {assembly['assembly_name']}")
+    module = selected[0]
+    report_path = _relative(root, module.findtext("ModulePath"))
+    normalized_aliases = sorted(set(aliases))
+    if report_path not in normalized_aliases:
+        raise ValueError(f"Unknown module alias: {report_path}")
+    report_hash = module.attrib.get("hash", "").replace("-", "").lower()
+    if report_hash != assembly["sha1"].lower():
+        raise ValueError("Original module hash mismatch")
+    files = {}
+    for row in module.findall("./Files/File"):
+        uid, path = row.attrib.get("uid"), row.attrib.get("fullPath")
+        if not uid or not path or uid in files:
+            raise ValueError("Missing or duplicate report file identity")
+        files[uid] = _relative(root, path)
+    methods = {row["token"]: row for row in assembly["methods"] if row.get("points")}
+    if len(methods) != sum(bool(row.get("points")) for row in assembly["methods"]):
+        raise ValueError("Duplicate original MethodDef token")
+    result, seen_tokens, branch_uspids = {}, set(), set()
+    for method in module.findall("./Classes/Class/Methods/Method"):
+        token_text, identity = method.findtext("MetadataToken"), method.findtext("Name")
+        if not token_text or not token_text.isdecimal():
+            raise ValueError("Missing MethodDef token")
+        token = int(token_text)
+        if token not in methods:
+            continue
+        expected = methods[token]
+        if token in seen_tokens:
+            raise ValueError(f"Duplicate MethodDef token: {token}")
+        seen_tokens.add(token)
+        if identity != expected["identity"]:
+            raise ValueError(f"Physical signature mismatch for token {token}")
+        file_rows = {}
+        point_lines = {(point["path"], point["line"]) for point in expected["points"]}
+        sequence_ids = set()
+        for point in method.findall("./SequencePoints/SequencePoint"):
+            required = ("vc", "uspid", "ordinal", "offset", "sl", "sc", "el", "ec", "fileid")
+            if any(name not in point.attrib for name in required):
+                raise ValueError(f"Missing native sequence field for token {token}")
+            values = {name: int(point.attrib[name]) for name in required if name != "fileid"}
+            if any(value < 0 for value in values.values()) or values["sl"] < 1:
+                raise ValueError(f"Invalid native sequence value for token {token}")
+            path = files.get(point.attrib["fileid"])
+            if path is None or (path, values["sl"]) not in point_lines:
+                raise ValueError(f"Sequence source ownership mismatch for token {token}")
+            identity_key = (path, values["uspid"], values["ordinal"], values["offset"], values["sl"])
+            if identity_key in sequence_ids:
+                raise ValueError(f"Duplicate sequence identity for token {token}")
+            sequence_ids.add(identity_key)
+            facts = file_rows.setdefault(path, {"Lines": {}, "Branches": []})
+            line = str(values["sl"])
+            facts["Lines"][line] = max(facts["Lines"].get(line, 0), values["vc"])
+        branch_ids = set()
+        for branch in method.findall("./BranchPoints/BranchPoint"):
+            required = ("vc", "uspid", "fileid", "sl", "offset", "offsetend", "path", "ordinal")
+            if any(name not in branch.attrib for name in required):
+                raise ValueError(f"Missing native branch field for token {token}")
+            values = {name: int(branch.attrib[name]) for name in required if name != "fileid"}
+            path = files.get(branch.attrib["fileid"])
+            if any(value < 0 for value in values.values()) or path is None or (path, values["sl"]) not in point_lines:
+                raise ValueError(f"Branch source ownership mismatch for token {token}")
+            key = (token, values["uspid"], branch.attrib["fileid"], values["sl"], values["offset"],
+                   values["offsetend"], values["path"], values["ordinal"])
+            if key in branch_ids or values["uspid"] in branch_uspids:
+                raise ValueError(f"Duplicate branch identity for token {token}")
+            branch_ids.add(key)
+            branch_uspids.add(values["uspid"])
+            file_rows.setdefault(path, {"Lines": {}, "Branches": []})["Branches"].append({
+                "Line": values["sl"], "Offset": values["offset"], "EndOffset": values["offsetend"],
+                "Path": values["path"], "Ordinal": values["ordinal"], "Uspid": values["uspid"],
+                "FileId": branch.attrib["fileid"], "Hits": values["vc"],
+            })
+        result[identity] = {"token": token, "files": file_rows}
+    missing = sorted(set(methods) - seen_tokens)
+    if missing:
+        raise ValueError(f"Missing physical token coverage: {missing}")
     return result
 
 
@@ -122,7 +165,7 @@ def _physical_hits(physical, coverage, modules):
             raise ValueError(f"PDB point absent from method coverage: {identity}: {point['path']}:{point['line']}")
     if not pairs:
         raise ValueError(f"Empty maintained method coverage: {identity}")
-    return row["cc"], sum(hits > 0 for hits in pairs.values()), len(pairs)
+    return sum(hits > 0 for hits in pairs.values()), len(pairs)
 
 
 def _constructor_order(physical, constructor, fragments):
@@ -182,7 +225,7 @@ def join_methods(root, source, assembly, coverage):
             accounting.append({"identity": physical["identity"], "reason": "no maintained portable-PDB points"})
             continue
         _validate_points(root, points, checksums)
-        cc, covered, total = _physical_hits(physical, coverage, modules)
+        covered, total = _physical_hits(physical, coverage, modules)
         key = physical["key"]
         if key in structural:
             accounting.append({"identity": physical["identity"], "reason": structural[key]})
@@ -192,6 +235,7 @@ def join_methods(root, source, assembly, coverage):
             constructor = constructors[key]
             path = points[0]["path"]
             owner = {"id": key, "line": points[0]["line"], "cognitive": constructor["cognitive"],
+                     "policy_cc": constructor["policy_cc"],
                      "parameters": constructor["parameters"], "constructor": True}
             accounting.append({"identity": physical["identity"], "constructor_order": _constructor_order(physical, constructor, fragments)})
         else:
@@ -200,7 +244,7 @@ def join_methods(root, source, assembly, coverage):
         identity = owner['id'] + '|' + physical['identity']
         _record_body_ownership(modules, physical, coverage, {'path': path, 'id': identity}, None)
         modules[path]["methods"].append({**owner, "id": identity,
-                                          "cc": cc, "covered": covered, "total": total})
+                                          "cc": owner["policy_cc"], "covered": covered, "total": total})
     missing = [(path, row["id"]) for path, methods in source_methods.items() for row in methods
                if not row["constructor"] and (path, row["id"]) not in mapped]
     if missing:

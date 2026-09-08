@@ -43,7 +43,7 @@ class SourceTokenTests(unittest.TestCase):
         before = facts('const text="雪😀"; const a=()=>1, b=()=>2;')
         after = facts('/* shifted */ const text="雪😀"; const a=()=>3, b=()=>2;')
         changed = [(left['text'], right['text']) for left, right in zip(before['tokens'], after['tokens'])
-                   if left != right]
+                   if (left['kind'], left['text']) != (right['kind'], right['text'])]
         self.assertEqual([('1', '3')], changed)
         self.assertEqual('Shebang', facts('#!/usr/bin/env node\nmodule.exports = 1;')['tokens'][0]['kind'])
 
@@ -59,7 +59,7 @@ class SourceTokenTests(unittest.TestCase):
         before = facts('class C { int A()=>1; int B()=>2; }')
         after = facts('/* shifted */ class C { int A()=>3; int B()=>2; }')
         changed = [(left['text'], right['text']) for left, right in zip(before['tokens'], after['tokens'])
-                   if left != right]
+                   if (left['kind'], left['text']) != (right['kind'], right['text'])]
         self.assertEqual([('1', '3')], changed)
         directive = facts('#define FLAG\nclass C { int A()=>1; }')['tokens'][0]
         self.assertEqual('DefineDirectiveTrivia', directive['kind'])

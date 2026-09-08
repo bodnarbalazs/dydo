@@ -6,32 +6,92 @@ import os
 import re
 import sys
 import uuid
+import hashlib
+import subprocess
 from pathlib import Path
 
 from gate_run import checked_result
 
 
-def publish(output, stack, gate, report):
+def _publication_payload(run, stack, gate, report, candidate, inventory):
     report = checked_result(report)
-    output = Path(output).resolve()
-    output.mkdir(parents=True, exist_ok=True)
-    run_name = "run-" + uuid.uuid4().hex
-    run = output / run_name
-    run.mkdir()
-    payload = {"schema": 1, "stack": stack, "gate": gate,
-               "run": run_name, "result": report}
+    run, inventory = Path(run).resolve(), Path(inventory).resolve()
+    inventory_relative = inventory.relative_to(run.parent.parent).as_posix()
+    findings = report["findings"]
+    gaps = report["errors"]
+    return {"schema": 1, "candidate": candidate, "stack": stack, "gate": gate,
+               "inventory": {"path": inventory_relative,
+                              "sha256": hashlib.sha256(inventory.read_bytes()).hexdigest()},
+               "tools": report["facts"].get("tools", {}),
+               "commands": report["facts"].get("commands", []),
+               "collectors": report["facts"].get("collectors", report["facts"]),
+               "findings": findings, "gaps": gaps,
+               "measurementComplete": not gaps,
+               "exitCode": {"pass": 0, "fail": 1, "error": 2}[report["status"]]}
+
+
+def _write_run_report(run, payload):
     encoded = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     (run / "report.json").write_text(encoded, encoding="utf-8")
-    temporary = output / ("latest-" + uuid.uuid4().hex + ".tmp")
-    temporary.write_text(encoded, encoding="utf-8")
-    temporary.replace(output / "latest.json")
-    return {"pass": 0, "fail": 1, "error": 2}[report["status"]]
+    return encoded
+
+
+def publish(summary, run, stack, gate, report, candidate, inventory):
+    summary, run = Path(summary).resolve(), Path(run).resolve()
+    payload = _publication_payload(run, stack, gate, report, candidate, inventory)
+    encoded = _write_run_report(run, payload)
+    summary.parent.mkdir(parents=True, exist_ok=True)
+    lock = Path(str(summary) + ".lock")
+    try:
+        descriptor = os.open(lock, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except FileExistsError as error:
+        raise ValueError(f"adapter publication lock already exists: {lock}") from error
+    os.close(descriptor)
+    temporary = summary.with_name(summary.name + "." + uuid.uuid4().hex + ".tmp")
+    try:
+        temporary.write_text(encoded, encoding="utf-8")
+        temporary.replace(summary)
+    finally:
+        temporary.unlink(missing_ok=True)
+        lock.unlink()
+    return payload["exitCode"]
+
+
+def _candidate(root):
+    safe = ["git", "-c", f"safe.directory={root.as_posix()}"]
+    commit = subprocess.run([*safe, "rev-parse", "HEAD"], cwd=root, check=True,
+                            text=True, capture_output=True).stdout.strip()
+    dirty = bool(subprocess.run([*safe, "status", "--porcelain=v1", "-z"], cwd=root, check=True,
+                                capture_output=True).stdout)
+    from inventory import git_file_state, build_file_rows, source_fingerprint
+    paths, deleted = git_file_state(root)
+    files = build_file_rows(root, paths, deleted)
+    return {"commit": commit, "dirty": dirty, "sourceFingerprint": source_fingerprint(files)}, files
+
+
+def _inventory_artifact(root, run, candidate):
+    from gate_collect import Collectors
+    collector = Collectors(root, run / "inventory-commands")
+    collector.discovery = _ordinary_discovery(root, collector.paths)
+    project_result = collector.projects()
+    inventory_result = collector.source_inventory()
+    association_result = collector.associations()
+    payload = collector.inventory or {"schema": 1, "files": [], "sources": [],
+                                      "excluded": [], "projects": [], "errors": []}
+    payload["candidate"] = candidate
+    payload["errors"] = [*payload.get("errors", []), *project_result["errors"],
+                         *inventory_result["errors"], *association_result["errors"]]
+    inventory = run / "inventory.json"
+    inventory.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return inventory, payload["errors"]
 
 
 def _ordinary_discovery(root, paths):
     rows = []
     for relative in paths:
         path = root / relative
+        if not path.is_file():
+            continue
         if relative.endswith(".py") and Path(relative).name.startswith("test_"):
             try:
                 tree = ast.parse(path.read_text(encoding="utf-8-sig"), relative)
@@ -64,7 +124,8 @@ def collect_static(root, output, stack):
     from gate_versions import collect_versions
     collector = Collectors(root, output)
     collector.discovery = _ordinary_discovery(root, collector.paths)
-    methods = {"projects": collector.projects, "source-inventory": collector.source_inventory}
+    methods = {"projects": collector.projects, "source-inventory": collector.source_inventory,
+               "associations": collector.associations}
     if stack == "dotnet":
         methods.update({"csharp-source": collector.csharp_source,
                         "csharp-analyzers": collector.csharp_analyzers,
@@ -173,21 +234,37 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gate", choices=("static", "coverage"), required=True)
     parser.add_argument("--stack", choices=("dotnet", "python", "node"), required=True)
-    parser.add_argument("--root", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("--root")
+    parser.add_argument("--output")
     args = parser.parse_args()
-    root, output = Path(args.root).resolve(), Path(args.output).resolve()
+    root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
+    output = Path(args.output).resolve() if args.output else root / "DynaDocs.Tests/coverage/results"
+    run = output / "assurance" / ("run-" + uuid.uuid4().hex)
+    run.mkdir(parents=True, exist_ok=False)
+    summary = output / "adapters" / f"{args.stack}-{args.gate}.json"
+    candidate, _ = _candidate(root)
+    inventory, inventory_errors = _inventory_artifact(root, run, candidate)
     try:
         local = root / "dydo/_system/.local/appdata"
         os.environ["APPDATA"] = str(local)
         os.environ.setdefault("NUGET_PACKAGES", str(Path.home() / ".nuget/packages"))
-        report = collect_static(root, output / ("commands-" + uuid.uuid4().hex), args.stack) \
-            if args.gate == "static" else collect_coverage(root, output, args.stack)
-        return publish(output, args.stack, args.gate, report)
+        report = collect_static(root, run / "raw", args.stack) \
+            if args.gate == "static" else collect_coverage(root, run, args.stack)
+        if inventory_errors:
+            report = {"status": "error", "facts": report.get("facts", {}),
+                      "findings": report.get("findings", []),
+                      "errors": [*report.get("errors", []), *inventory_errors]}
     except (ValueError, KeyError, OSError, TypeError) as error:
-        return publish(output, args.stack, args.gate,
-                       {"status": "error", "facts": {}, "findings": [],
-                        "errors": [{"type": type(error).__name__, "message": str(error)}]})
+        report = {"status": "error", "facts": {}, "findings": [],
+                  "errors": [{"type": type(error).__name__, "message": str(error)}]}
+    try:
+        return publish(summary, run, args.stack, args.gate, report, candidate, inventory)
+    except (ValueError, KeyError, OSError, TypeError) as error:
+        collision = {"status": "error", "facts": {}, "findings": [],
+                     "errors": [{"type": type(error).__name__, "message": str(error)}]}
+        _write_run_report(run, _publication_payload(run, args.stack, args.gate,
+                                                    collision, candidate, inventory))
+        return 2
 
 
 if __name__ == "__main__":

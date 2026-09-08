@@ -44,7 +44,7 @@ public static class SourceMetrics
         return new SourceMember($"Program::<Main>$@{span.Start}:{span.Length}", "EntryPoint", "<Main>$", "Program",
             location.StartLinePosition.Line + 1, location.StartLinePosition.Character,
             location.EndLinePosition.Line + 1, location.EndLinePosition.Character, span.Start, span.Length,
-            CSharpCognitiveComplexityMetric.GetComplexity(method).Complexity, 1, false);
+            CSharpCognitiveComplexityMetric.GetComplexity(method).Complexity, PolicyCc(method), 1, false);
     }
 
     private static bool IsCallable(SyntaxNode node) => node switch
@@ -68,7 +68,33 @@ public static class SourceMetrics
             location.StartLinePosition.Line + 1, location.StartLinePosition.Character,
             location.EndLinePosition.Line + 1, location.EndLinePosition.Character,
             node.SpanStart, node.Span.Length, CSharpCognitiveComplexityMetric.GetComplexity(node).Complexity,
-            ParameterCount(node), node is ConstructorDeclarationSyntax);
+            PolicyCc(node), ParameterCount(node), node is ConstructorDeclarationSyntax);
+    }
+
+    public static int PolicyCc(SyntaxNode callable)
+    {
+        var decisions = callable.DescendantNodes(node => node == callable || !IsCallable(node)).Count(node => node switch
+        {
+            IfStatementSyntax => true,
+            ConditionalExpressionSyntax => true,
+            ForStatementSyntax => true,
+            ForEachStatementSyntax => true,
+            ForEachVariableStatementSyntax => true,
+            WhileStatementSyntax => true,
+            DoStatementSyntax => true,
+            CaseSwitchLabelSyntax => true,
+            DefaultSwitchLabelSyntax => true,
+            SwitchExpressionArmSyntax => true,
+            BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.LogicalAndExpression)
+                || binary.IsKind(SyntaxKind.LogicalOrExpression)
+                || binary.IsKind(SyntaxKind.CoalesceExpression) => true,
+            AssignmentExpressionSyntax assignment when assignment.IsKind(SyntaxKind.CoalesceAssignmentExpression) => true,
+            ConditionalAccessExpressionSyntax => true,
+            BinaryPatternSyntax pattern when pattern.IsKind(SyntaxKind.AndPattern)
+                || pattern.IsKind(SyntaxKind.OrPattern) => true,
+            _ => false
+        });
+        return 1 + decisions;
     }
 
     private static string? ContainerName(SyntaxNode node) => node switch

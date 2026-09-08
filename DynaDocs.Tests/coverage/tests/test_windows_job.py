@@ -147,7 +147,7 @@ class WindowsJobTests(unittest.TestCase):
         changes = [("version", 2), ("argv", []), ("argv", None), ("argv", [True]),
                    ("argv", ["node\0.exe"]), ("argv", ["relative.exe"]),
                    ("cwd", str(self.root / "absent")), ("output", "relative"),
-                   ("execution_seconds", 0), ("execution_seconds", 241),
+                   ("execution_seconds", 0), ("execution_seconds", 1801),
                    ("execution_seconds", True), ("teardown_seconds", 11),
                    ("owner_id", None), ("owner_id", "short"), ("owner_id", "z" * 32),
                    ("unexpected", "reject"), ("config_sha256", "0" * 64)]

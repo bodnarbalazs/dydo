@@ -3,9 +3,9 @@ import json
 import re
 from pathlib import Path
 
-from gate_inventory import assemble_inventory, dependency_cycles, test_project_role
+from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
 from gate_run import CommandLog, result
-from inventory import git_paths
+from inventory import git_file_state
 
 
 def read_json(path):
@@ -34,7 +34,7 @@ class Collectors:
         self.log = CommandLog(self.root, self.output / 'commands')
         self.coverage = self.root / 'DynaDocs.Tests/coverage'
         self.python = self.root / 'dydo/_system/.local/static-gates/python/Scripts/python.exe'
-        self.paths = git_paths(self.root)
+        self.paths, self.deleted = git_file_state(self.root)
         self.inventory = None
         self.project_rows = []
         self.static = {}
@@ -63,7 +63,7 @@ class Collectors:
                 if len(files) != len(set(files)):
                     raise ValueError('Duplicate evaluated Compile identity')
                 self.project_rows.append({'path': project, 'test': test, 'compile': files,
-                                          'assembly': facts['Properties']['TargetPath']})
+                                          'assembly': assembly_path(self.root, facts['Properties']['TargetPath'])})
             except (ValueError, KeyError, OSError) as error:
                 errors.append({'path': project, 'message': str(error)})
         if not self.project_rows:
@@ -71,8 +71,22 @@ class Collectors:
         return result({'projects': self.project_rows}, errors=errors)
 
     def source_inventory(self):
-        self.inventory = assemble_inventory(self.root, self.paths, self.project_rows, self.discovery)
+        manifest_path = self.coverage / 'test-associations.json'
+        manifest = read_json(manifest_path) if manifest_path.is_file() else {'schema': 1, 'modules': []}
+        self.inventory = assemble_inventory(self.root, self.paths, self.project_rows, self.discovery,
+                                            self.deleted, manifest)
         return result(self.inventory, errors=self.inventory['errors'])
+
+    def associations(self):
+        from associations import validate_associations
+        if self.inventory is None:
+            return result(errors=[{'message': 'Source inventory unavailable'}])
+        manifest = read_json(self.coverage / 'test-associations.json')
+        try:
+            findings = validate_associations(self.inventory['sources'], manifest)
+            return result({'manifest': manifest}, findings=findings)
+        except (ValueError, KeyError, OSError) as error:
+            return result(errors=[{'message': str(error)}])
 
     def sources(self, language):
         if self.inventory is None:

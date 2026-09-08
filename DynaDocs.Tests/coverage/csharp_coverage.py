@@ -1,82 +1,18 @@
-"""Ordinary Coverlet campaign helpers with exact report and point identities."""
+"""One isolated AltCover 9.0.102 eager campaign with exact native identities."""
 import argparse
 import hashlib
 import json
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
-REPORT_NAMES = ("coverage.json", "coverage.opencover.xml", "coverage.cobertura.xml")
 
-
-def locate_reports(root):
-    """Return exactly one report in every configured native format."""
-    root = Path(root)
-    reports = []
-    for name in REPORT_NAMES:
-        matches = sorted(path for path in root.rglob(name) if path.is_file())
-        if len(matches) != 1:
-            raise ValueError(f"Missing or ambiguous Coverlet report {name}: {len(matches)}")
-        reports.append(matches[0])
-    return reports
-
-
-def _branch_key(row):
-    required = ("Line", "Offset", "EndOffset", "Path", "Ordinal")
-    if not isinstance(row, dict) or any(key not in row for key in (*required, "Hits")):
-        raise ValueError("Invalid Coverlet branch point")
-    return tuple(row[key] for key in required)
-
-
-def _merge_method(target, incoming, identity):
-    if set(target) != {"Lines", "Branches"} or set(incoming) != {"Lines", "Branches"}:
-        raise ValueError(f"Invalid Coverlet method facts: {identity}")
-    if set(target["Lines"]) != set(incoming["Lines"]):
-        raise ValueError(f"Coverlet line inventory mismatch: {identity}")
-    for line, hits in incoming["Lines"].items():
-        if type(hits) is not int or hits < 0:
-            raise ValueError(f"Invalid Coverlet line hits: {identity}:{line}")
-        target["Lines"][line] = max(target["Lines"][line], hits)
-    existing = {_branch_key(row): row for row in target["Branches"]}
-    offered = {_branch_key(row): row for row in incoming["Branches"]}
-    if len(existing) != len(target["Branches"]) or len(offered) != len(incoming["Branches"]):
-        raise ValueError(f"Duplicate Coverlet branch identity: {identity}")
-    if set(existing) != set(offered):
-        raise ValueError(f"Coverlet branch inventory mismatch: {identity}")
-    for key, row in offered.items():
-        hits = row["Hits"]
-        if type(hits) is not int or hits < 0:
-            raise ValueError(f"Invalid Coverlet branch hits: {identity}")
-        existing[key]["Hits"] = max(existing[key]["Hits"], hits)
-
-
-def merge_coverlet_json(reports):
-    """Union hits only after exact module/source/type/signature point matching."""
-    merged = {}
-    for report in reports:
-        if not isinstance(report, dict):
-            raise ValueError("Invalid Coverlet JSON root")
-        for module, files in report.items():
-            if module not in merged:
-                merged[module] = json.loads(json.dumps(files))
-                continue
-            if set(merged[module]) != set(files):
-                raise ValueError(f"Coverlet source inventory mismatch: {module}")
-            for source, classes in files.items():
-                if set(merged[module][source]) != set(classes):
-                    raise ValueError(f"Coverlet type inventory mismatch: {source}")
-                for class_name, methods in classes.items():
-                    current = merged[module][source][class_name]
-                    if set(current) != set(methods):
-                        raise ValueError(f"Coverlet method inventory mismatch: {class_name}")
-                    for identity, facts in methods.items():
-                        _merge_method(current[identity], facts, identity)
-    return merged
+ASSEMBLY_NAMES = {"dydo", "DynaDocs.Tests", "GateMetrics"}
 
 
 def snapshot_artifacts(root, paths):
-    """Bind copied native artifacts to exact campaign-root relative identities."""
     root = Path(root).resolve()
     rows = []
     for path in sorted({Path(path).resolve() for path in paths}):
@@ -91,123 +27,172 @@ def snapshot_artifacts(root, paths):
     return rows
 
 
-def publish_campaign(root, result_root, output, identity_paths):
-    """Publish raw reports and exact assembly/PDB/source hashes before cleanup."""
+def altcover_commands(root, output):
     root, output = Path(root).resolve(), Path(output).resolve()
-    output.mkdir(parents=True, exist_ok=True)
-    reports = locate_reports(result_root)
-    copied = []
-    for report in reports:
-        destination = output / report.name
-        shutil.copy2(report, destination)
-        copied.append(destination)
-    rows = snapshot_artifacts(root, [*identity_paths, *reports])
-    manifest = {"schema": 1, "artifacts": rows}
-    (output / "identities.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return copied
+    inputs = [root / "bin/Debug/net10.0", root / "DynaDocs.Tests/bin/Debug/net10.0",
+              root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0"]
+    prepare = ["dotnet", "tool", "run", "altcover", "--",
+               *(f"--inputDirectory={path}" for path in inputs), "--inplace",
+               f"--report={output / 'template.opencover.xml'}", "--reportFormat=OpenCover",
+               "--eager", "--localSource", "--visibleBranches", "--showGenerated",
+               "--assemblyFilter=^(?!(dydo|DynaDocs.Tests|GateMetrics)$).*"]
+    runner = ["dotnet", "tool", "run", "altcover", "--", "runner",
+              f"--recorderDirectory={root / 'DynaDocs.Tests/bin/Debug/net10.0'}",
+              f"--workingDirectory={root}", "--executable=dotnet",
+              f"--outputFile={output / 'coverage.opencover.xml'}", "--summary=N", "--",
+              "test", "DynaDocs.sln", "-c", "Debug", "--no-build", "-p:RunAnalyzers=false",
+              "-p:UseSharedCompilation=false", "--", "RunConfiguration.TreatNoTestsAsError=true"]
+    return prepare, runner
+
+
+def _run(name, command, root, output):
+    prefix = output / name
+    started = time.monotonic()
+    result = subprocess.run(list(map(str, command)), cwd=root, text=True, encoding="utf-8",
+                            errors="replace", capture_output=True)
+    stdout, stderr = Path(str(prefix) + ".stdout"), Path(str(prefix) + ".stderr")
+    stdout.write_text(result.stdout, encoding="utf-8")
+    stderr.write_text(result.stderr, encoding="utf-8")
+    return {"name": name, "argv": list(map(str, command)), "cwd": str(root),
+            "exit": result.returncode, "elapsedSeconds": round(time.monotonic() - started, 6),
+            "stdout": stdout.name, "stdoutSha256": hashlib.sha256(stdout.read_bytes()).hexdigest(),
+            "stderr": stderr.name, "stderrSha256": hashlib.sha256(stderr.read_bytes()).hexdigest()}
+
+
+def _assembly_facts(root, producer, assembly):
+    row = subprocess.run(["dotnet", str(producer), "--assembly", str(assembly), "--root", str(root)],
+                         cwd=root, text=True, encoding="utf-8", errors="strict", capture_output=True)
+    if row.returncode != 0:
+        raise ValueError(f"Assembly identity failed for {assembly}: {row.stderr.strip()}")
+    facts = json.loads(row.stdout)
+    facts["sha1"] = hashlib.sha1(assembly.read_bytes()).hexdigest()
+    return facts
+
+
+def _equivalence_key(facts):
+    methods = [{"token": row["token"], "identity": row["identity"], "points": row["points"]}
+               for row in facts["methods"]]
+    method_hash = hashlib.sha256(json.dumps(methods, sort_keys=True, separators=(",", ":"))
+                                 .encode("utf-8")).hexdigest()
+    return (facts["assembly_name"], facts["sha256"], facts["pdb_sha256"], facts["module_id"], method_hash)
+
+
+def _identity_classes(root, producer, paths):
+    classes = {}
+    for path in paths:
+        facts = _assembly_facts(root, producer, path)
+        key = _equivalence_key(facts)
+        if any(existing[0] == key[0] and existing != key for existing in classes):
+            raise ValueError(f"Conflicting same-name assembly identity: {key[0]}")
+        row = classes.setdefault(key, {"facts": facts, "aliases": []})
+        row["aliases"].append(path.resolve().relative_to(root).as_posix())
+    result = []
+    for row in classes.values():
+        row["aliases"].sort()
+        row["canonical"] = row["aliases"][0]
+        result.append(row)
+    return sorted(result, key=lambda row: row["canonical"])
+
+
+def _candidate_assemblies(root):
+    directories = [root / "bin/Debug/net10.0", root / "DynaDocs.Tests/bin/Debug/net10.0",
+                   root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0"]
+    paths = [path for directory in directories for path in directory.glob("*.dll")
+             if path.stem in ASSEMBLY_NAMES and path.with_suffix(".pdb").is_file()]
+    if {path.stem for path in paths} != ASSEMBLY_NAMES:
+        raise ValueError("Missing exact C# campaign assemblies")
+    return sorted(set(paths))
+
+
+def _same_native_map(before, after):
+    keys = ("assembly_name", "module_id")
+    return all(before[key] == after[key] for key in keys) and [
+        (row["token"], row["identity"], row["key"], row["points"]) for row in before["methods"]
+    ] == [(row["token"], row["identity"], row["key"], row["points"]) for row in after["methods"]]
 
 
 def run_campaign(root, result_root, extra_args=None):
-    """Build once, then collect the full ordinary suite and out-of-process CLI hits."""
     root, result_root = Path(root).resolve(), Path(result_root).resolve()
+    if extra_args:
+        raise ValueError("Assurance coverage requires the ordinary unfiltered full suite")
+    result_root.mkdir(parents=True, exist_ok=False)
     os.environ["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0"
     os.environ["MSBUILDDISABLENODEREUSE"] = "1"
-    result_root.mkdir(parents=True, exist_ok=False)
-    build = subprocess.run([
-        "dotnet", "build", "DynaDocs.sln", "-c", "Debug", "-p:RunAnalyzers=false",
-        "-p:NuGetAudit=false", "-p:UseSharedCompilation=false",
-    ], cwd=root)
-    if build.returncode:
-        return build.returncode
-    metrics_project = root / "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj"
-    metrics_build = subprocess.run([
-        "dotnet", "build", str(metrics_project), "-c", "Debug", "-p:RunAnalyzers=false",
-        "-p:NuGetAudit=false", "-p:UseSharedCompilation=false",
-    ], cwd=root)
-    if metrics_build.returncode:
-        return metrics_build.returncode
-    collector = result_root / "collector"
-    collector.mkdir()
-    console = result_root / "console"
-    console.mkdir()
-    test_args = [
-        "test", "DynaDocs.sln", "-c", "Debug", "--no-build", "-p:RunAnalyzers=false",
-        "-p:UseSharedCompilation=false",
-        "--collect:XPlat Code Coverage", "--settings", str(root / "DynaDocs.Tests/coverage/coverage.runsettings"),
-        "--results-directory", str(collector), *(extra_args or []), "--",
-        "RunConfiguration.TreatNoTestsAsError=true",
+    commands = []
+    builds = [
+        ["dotnet", "build", "DynaDocs.sln", "-c", "Debug", "-p:RunAnalyzers=false",
+         "-p:NuGetAudit=false", "-p:UseSharedCompilation=false"],
+        ["dotnet", "build", "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj", "-c", "Debug",
+         "-p:RunAnalyzers=false", "-p:NuGetAudit=false", "-p:UseSharedCompilation=false"],
     ]
-    command = [
-        "dotnet", "tool", "run", "coverlet", "--", str(root / "bin/Debug/net10.0/dydo.dll"),
-        "--target", "dotnet", "--targetargs", subprocess.list2cmdline(test_args),
-        "--format", "json", "--format", "opencover", "--format", "cobertura",
-        "--output", str(console / "coverage"),
-        "--exclude-by-file", "**/obj/**", "--exclude-by-file", "**/bin/**",
-    ]
-    tests = subprocess.run(command, cwd=root).returncode
-
+    for index, command in enumerate(builds):
+        row = _run(f"build-{index}", command, root, result_root)
+        commands.append(row)
+        if row["exit"]:
+            (result_root / "commands.json").write_text(json.dumps(commands, indent=2) + "\n")
+            return 2
     producer = root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/GateMetrics.dll"
-    producer_runs = [
-        ("producer-project", ["--project", str(metrics_project), "--root", str(root)]),
-        ("producer-assembly", ["--assembly", str(producer), "--root", str(root)]),
-    ]
-    for name, arguments in producer_runs:
-        destination = result_root / name
-        destination.mkdir()
-        row = subprocess.run([
-            "dotnet", "tool", "run", "coverlet", "--", str(producer),
-            "--target", "dotnet", "--targetargs", subprocess.list2cmdline([str(producer), *arguments]),
-            "--format", "json", "--format", "opencover", "--format", "cobertura",
-            "--output", str(destination / "coverage"),
-            "--exclude-by-file", "**/obj/**", "--exclude-by-file", "**/bin/**",
-        ], cwd=root, stdout=subprocess.DEVNULL)
-        if row.returncode:
-            return row.returncode
-
-    facts = result_root / "facts"
-    facts.mkdir()
-    fact_requests = [
-        ("dydo-source.json", ["--project", str(root / "DynaDocs.csproj"), "--root", str(root)]),
-        ("dydo-assembly.json", ["--assembly", str(root / "bin/Debug/net10.0/dydo.dll"), "--root", str(root)]),
-        ("producer-source.json", ["--project", str(metrics_project), "--root", str(root)]),
-        ("producer-assembly.json", ["--assembly", str(producer), "--root", str(root)]),
-    ]
-    for name, arguments in fact_requests:
-        with (facts / name).open("w", encoding="utf-8") as stream:
-            row = subprocess.run(["dotnet", str(producer), *arguments], cwd=root, text=True, stdout=stream)
-        if row.returncode:
-            return row.returncode
-
+    assembly_paths = _candidate_assemblies(root)
+    pre = _identity_classes(root, producer, assembly_paths)
+    originals = result_root / "originals"
+    for path in assembly_paths:
+        relative = path.relative_to(root)
+        destination = originals / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+        shutil.copy2(path.with_suffix(".pdb"), destination.with_suffix(".pdb"))
+    (result_root / "identity-pre.json").write_text(json.dumps(pre, indent=2, sort_keys=True) + "\n")
+    prepare, runner = altcover_commands(root, result_root)
+    row = _run("altcover-prepare", prepare, root, result_root)
+    commands.append(row)
+    if row["exit"]:
+        (result_root / "commands.json").write_text(json.dumps(commands, indent=2) + "\n")
+        return 2
+    instrumented = _identity_classes(root, producer, assembly_paths)
+    before_by_alias = {alias: row["facts"] for row in pre for alias in row["aliases"]}
+    for row in instrumented:
+        for alias in row["aliases"]:
+            if alias not in before_by_alias or not _same_native_map(before_by_alias[alias], row["facts"]):
+                raise ValueError(f"AltCover changed MethodDef/PDB identity: {alias}")
+    (result_root / "identity-instrumented.json").write_text(
+        json.dumps(instrumented, indent=2, sort_keys=True) + "\n")
+    row = _run("altcover-runner", runner, root, result_root)
+    commands.append(row)
+    (result_root / "commands.json").write_text(json.dumps(commands, indent=2, sort_keys=True) + "\n")
+    if row["exit"]:
+        return row["exit"]
+    report = result_root / "coverage.opencover.xml"
+    if not report.is_file():
+        raise ValueError("AltCover runner produced no collected OpenCover report")
+    post = _identity_classes(root, producer, assembly_paths)
+    for row in post:
+        for alias in row["aliases"]:
+            if alias not in {item for before in instrumented for item in before["aliases"]}:
+                raise ValueError(f"Post-campaign assembly alias changed: {alias}")
+    (result_root / "identity-post.json").write_text(json.dumps(post, indent=2, sort_keys=True) + "\n")
     from csharp_join import coverage_methods, join_methods
     from gate_policy import evaluate_policy
-    collector_reports = locate_reports(collector)
-    console_reports = locate_reports(console)
-    project_reports = locate_reports(result_root / "producer-project")
-    assembly_reports = locate_reports(result_root / "producer-assembly")
-    dydo_data = merge_coverlet_json([
-        json.loads(collector_reports[0].read_text(encoding="utf-8-sig")),
-        json.loads(console_reports[0].read_text(encoding="utf-8-sig")),
-    ])
-    producer_data = merge_coverlet_json([
-        json.loads(project_reports[0].read_text(encoding="utf-8-sig")),
-        json.loads(assembly_reports[0].read_text(encoding="utf-8-sig")),
-    ])
+    xml = report.read_text(encoding="utf-8-sig")
+    normalized = {}
+    for equivalence in pre:
+        normalized[equivalence["facts"]["assembly_name"]] = coverage_methods(
+            xml, root, equivalence["facts"], equivalence["aliases"])
     targets = []
-    for assembly_name, data, opencover, source_name, assembly_facts in [
-        ("dydo", dydo_data, collector_reports[1], "dydo-source.json", "dydo-assembly.json"),
-        ("GateMetrics", producer_data, project_reports[1], "producer-source.json", "producer-assembly.json"),
-    ]:
-        source = json.loads((facts / source_name).read_text(encoding="utf-8"))
-        assembly = json.loads((facts / assembly_facts).read_text(encoding="utf-8"))
-        coverage = coverage_methods(data, opencover.read_text(encoding="utf-8-sig"), root, assembly_name)
-        targets.append({"assembly": assembly_name, **join_methods(root, source, assembly, coverage)})
+    projects = [("dydo", root / "DynaDocs.csproj"),
+                ("GateMetrics", root / "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj")]
+    for name, project in projects:
+        source_row = subprocess.run(["dotnet", str(producer), "--project", str(project), "--root", str(root)],
+                                    cwd=root, text=True, encoding="utf-8", capture_output=True)
+        if source_row.returncode:
+            raise ValueError(f"Source identity failed for {name}: {source_row.stderr.strip()}")
+        source = json.loads(source_row.stdout)
+        assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == name)
+        targets.append({"assembly": name, **join_methods(root, source, assembly, normalized[name])})
     modules = [module for target in targets for module in target["modules"]]
     joined = {"schema": 1, "targets": targets, "modules": modules,
               "findings": evaluate_policy(modules)}
-    (result_root / "joined.json").write_text(
-        json.dumps(joined, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return tests
+    (result_root / "joined.json").write_text(json.dumps(joined, indent=2, sort_keys=True) + "\n")
+    return 0
 
 
 def main():
@@ -216,10 +201,14 @@ def main():
     parser.add_argument("--result-root", required=True)
     parser.add_argument("--extra-json", default="[]")
     args = parser.parse_args()
-    extra = json.loads(args.extra_json)
-    if not isinstance(extra, list) or any(not isinstance(item, str) for item in extra):
-        raise SystemExit(2)
-    return run_campaign(args.root, args.result_root, extra)
+    try:
+        extra = json.loads(args.extra_json)
+        if not isinstance(extra, list) or any(not isinstance(item, str) for item in extra):
+            return 2
+        return run_campaign(args.root, args.result_root, extra)
+    except (ValueError, KeyError, OSError, json.JSONDecodeError) as error:
+        print(error, file=os.sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

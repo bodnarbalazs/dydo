@@ -239,11 +239,14 @@ def run_row(stack, capability, root, since, forwarded):
                 child.wait(timeout=0.2)
             except subprocess.TimeoutExpired:
                 pass
-        if child.returncode == 0:
+        if capability != "test" or child.returncode == 0:
             for path, previous in before.items():
                 current = artifact_snapshot(root, path)
                 if current is None or current == previous:
-                    return result(stack, capability, "invalid", argv=argv, childExit=0, artifacts=artifacts, reason=f"required artifact was not produced or refreshed: {path}")
+                    return result(stack, capability, "invalid", argv=argv, childExit=child.returncode, artifacts=artifacts, reason=f"required artifact was not produced or refreshed: {path}")
+        if capability != "test" and child.returncode in (2, 130):
+            state = "invalid" if child.returncode == 2 else "interrupted"
+            return result(stack, capability, state, argv=argv, childExit=child.returncode, artifacts=artifacts)
         return result(stack, capability, "passed" if child.returncode == 0 else "failed", argv=argv, childExit=child.returncode, artifacts=artifacts)
     except KeyboardInterrupt:
         if child is None:

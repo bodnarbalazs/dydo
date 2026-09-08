@@ -37,10 +37,29 @@ Feature: Delegators choose a model for each task
     And its documentation, custom sources, and project-owned files retain identical paths and bytes
     And only the expected shipped sources, shipped hashes, scan exclusion, and generated switch entries are scaffolded
 
-  Scenario Outline: A failed atomic configuration write preserves the original file
+  Scenario Outline: A failed existing-config rewrite preserves its input before final commit
+    Given an existing dydo.json contains legacy models and byte-distinct configuration sentinels
+    And "<operation>" has an in-memory configuration change ready to save
+    And its managed file work, validation, warnings, and reporting produce "<late outcome>"
+    When I run the existing-config operation
+    Then the command returns a nonzero exit code
+    And the original dydo.json retains identical bytes
+    And the legacy "models" property remains in those original bytes
+    And no configuration save or temporary sibling creation was attempted
+
+    Examples:
+      | operation              | late outcome                        |
+      | sync                   | an injected post-work IOException   |
+      | template update        | an update warning                    |
+      | template update        | an injected post-work IOException   |
+      | fix                    | a validation error                   |
+      | fix                    | an injected post-work IOException   |
+      | init codex --join      | an injected post-work IOException   |
+
+  Scenario Outline: A failed final atomic configuration commit preserves the original file
     Given an existing dydo.json contains legacy models and byte-distinct configuration sentinels
     And configuration saving is injected to fail "<failure>"
-    When a successful preflight reaches the configuration save
+    When an existing-config command completes all other work and reaches its final configuration commit
     Then the command fails with the injected save diagnostic
     And the original dydo.json retains identical bytes
     And no temporary sibling created by the failed save remains

@@ -32,7 +32,7 @@
     },
     {
       "path": "dydo/reference/coverage-tools.md",
-      "action": "Concrete adapter commands, AltCover OpenCover/token and Roslyn policy-CC schemas, provenance and tool restoration",
+      "action": "Concrete adapter commands, AltCover OpenCover/token and Roslyn policy-CC schemas, provenance and tool restoration, portable-PDB document origin classes",
       "phase": "production"
     },
     {
@@ -57,12 +57,12 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/csharp_coverage.py",
-      "action": "Replace Coverlet with one isolated AltCover9.0.102 --eager prepare/runner full-suite campaign; preserve raw reports/spools and pre/instrumented/post identities",
+      "action": "Replace Coverlet with one isolated AltCover9.0.102 --eager prepare/runner full-suite campaign; preserve raw reports/spools and pre/instrumented/post identities; pass each assembly's owning project to the producer and compare document tables pre/instrumented",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/csharp_join.py",
-      "action": "Replace Coverlet signature/line join with exact original-module plus MethodDef-token AltCover OpenCover join; retain PDB/source/kickoff ownership and reject synthetic summaries",
+      "action": "Replace Coverlet signature/line join with exact original-module plus MethodDef-token AltCover OpenCover join; retain PDB/source/kickoff ownership and reject synthetic summaries; resolve report File rows through the document table and account generated/package-only methods by origin",
       "phase": "production"
     },
     {
@@ -142,12 +142,12 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/AssemblyFacts.cs",
-      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; add the ordinally sorted PDB URL-to-identity documents table",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/AssemblyMetrics.cs",
-      "action": "Retain exact original DLL/PDB/MVID/MethodDef token/signature/document identity before and after AltCover instrumentation",
+      "action": "Retain exact original DLL/PDB/MVID/MethodDef token/signature/document identity before and after AltCover instrumentation; classify every non-hidden PDB document by origin (maintained/generated/package) through the owning project's locked assets, fail on any other URL, and emit the URL-to-identity document table",
       "phase": "production"
     },
     {
@@ -197,7 +197,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/Program.cs",
-      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; --assembly takes --root and --project, the old grammar is exit 2",
       "phase": "production"
     },
     {
@@ -207,7 +207,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/ProjectMetrics.cs",
-      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; expose SourceIdentity to the assembly producer so both levels classify identically",
       "phase": "production"
     },
     {
@@ -232,7 +232,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/SourcePoint.cs",
-      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; add origin (maintained/generated/package) beside the classified document identity",
       "phase": "production"
     },
     {
@@ -367,17 +367,17 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_coverage.py",
-      "action": "Replace Coverlet merge/format cases with real AltCover prepare/runner, eager child aggregation, raw failure preservation and identity-mutation cases; fixtures authored as test data strings",
+      "action": "Replace Coverlet merge/format cases with real AltCover prepare/runner, eager child aggregation, raw failure preservation and identity-mutation cases; fixtures authored as test data strings plus the document-table identity comparison case",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
-      "action": "Replace signature/line Coverlet cases with exact module/token/sequence/descendant-branch AltCover joins, zero-hit and ambiguity failures; fixtures authored as test data strings",
+      "action": "Replace signature/line Coverlet cases with exact module/token/sequence/descendant-branch AltCover joins, zero-hit and ambiguity failures; fixtures authored as test data strings plus document-table resolution and exclusion-by-origin accounting cases",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
-      "action": "Retain semantic/PDB/MethodDef ownership cases and add Sonar-calibrated syntax-node source-CC/nested-callable cases including if2 and ternary2",
+      "action": "Retain semantic/PDB/MethodDef ownership cases and add Sonar-calibrated syntax-node source-CC/nested-callable cases including if2 and ternary2 plus the SDK/obj/source-generator document classification and failing-control cases",
       "phase": "production"
     },
     {

@@ -1,7 +1,8 @@
 {
   "schema": 1,
   "issue": "DYD-96",
-  "base": "37acc1f3706bf925e5230fb58c4a790dba769d62",
+  "productionOrigin": "37acc1f3706bf925e5230fb58c4a790dba769d62",
+  "amendmentImplementationBase": "633a78e10dc7fcd5992fcb437e87219486ca534d",
   "status": "amended full contract, production pending fresh independent SPEC PASS",
   "paths": [
     {
@@ -221,7 +222,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/metrics/SourceMember.cs",
-      "action": "Add the pinned Roslyn CFG policy-CC value to each exact source-callable fact; no vendor/physical CC substitution",
+      "action": "Add the pinned Sonar-calibrated Roslyn syntax-node policy-CC value to each exact source-callable fact; no vendor/physical CC substitution",
       "phase": "production"
     },
     {
@@ -376,7 +377,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
-      "action": "Retain semantic/PDB/MethodDef ownership cases and add pinned Roslyn CFG source-CC construct/boundary calibration including if2 and ternary2",
+      "action": "Retain semantic/PDB/MethodDef ownership cases and add Sonar-calibrated syntax-node source-CC/nested-callable cases including if2 and ternary2",
       "phase": "production"
     },
     {

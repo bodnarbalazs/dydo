@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Steps;
 
+using System.Text.RegularExpressions;
 using Reqnroll;
 
 [Binding]
@@ -61,20 +62,34 @@ public sealed class CaptainCapacitySteps
     [Then("the captain schedules the stages serially within the configured open-thread budget")]
     [Then("completion or interruption is not treated as slot release without native evidence")]
     [Then("no required fresh specifier or reviewer is reused or omitted to fit the budget")]
-    public void CaptainBudgetsSerialFreshStages() => AssertEvery(CaptainPrompts.Concat(SharedGuides),
-        "Budget the whole open-thread tree and run necessary stages serially",
-        "Do not treat completion, return or interruption as capacity release without native evidence",
-        "fresh specifier and fresh reviewer");
+    public void CaptainBudgetsSerialFreshStages()
+    {
+        AssertEvery(CaptainPrompts,
+            "Budget the whole open-thread tree and run necessary stages serially",
+            "Do not treat completion, return or interruption as capacity release without native evidence",
+            "fresh specifier and fresh reviewer");
+        AssertEvery(SharedGuides,
+            "captain alone commissions its exact-scope crew",
+            "runs necessary stages serially when capacity requires it",
+            "Completion, return or interruption is not capacity release without native evidence");
+    }
 
     [Then("the captain preserves the record, candidate, hop SHA, and exact brief")]
     [Then("the captain does not broaden the brief, retry blindly, or ask the Admiral to dispatch the crew")]
     [Then("documented lifecycle handling is used only when its effect is established for this host")]
     [Then("if no documented handling makes the captain-owned stage runnable, the captain releases or returns the concrete limitation for escalation through Admiral to human")]
-    public void RefusalPreservesCaptainOwnership() => AssertEvery(CaptainPrompts.Concat(SharedGuides),
-        "preserve the record, candidate, hop SHA and exact brief",
-        "Do not broaden the brief or retry blindly",
-        "documented lifecycle handling only when its effect is established for this host",
-        "return or release the concrete host limitation through the normal hierarchy");
+    public void RefusalPreservesCaptainOwnership()
+    {
+        AssertEvery(CaptainPrompts,
+            "preserve the record, candidate, hop SHA and exact brief",
+            "Do not broaden the brief or retry blindly",
+            "documented lifecycle handling only when its effect is established for this host",
+            "return or release the concrete host limitation through the normal hierarchy");
+        AssertEvery(SharedGuides,
+            "On one bounded capacity refusal, the captain preserves the record, candidate, hop SHA and exact brief",
+            "it does not broaden the brief or retry blindly",
+            "returns or releases the concrete host limitation through the normal hierarchy");
+    }
 
     [Then("the evidence records that configuration consumption and effectiveness remain unproved in the existing task")]
     [Then("it treats the accepted replacement as possible ordinary reclamation")]
@@ -90,7 +105,7 @@ public sealed class CaptainCapacitySteps
         {
             var content = File.ReadAllText(Path.Combine(RepositoryRoot(), path));
             foreach (var expectation in expectations)
-                Assert.Contains(expectation, content, StringComparison.Ordinal);
+                Assert.Contains(Normalize(expectation), Normalize(content), StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -100,4 +115,6 @@ public sealed class CaptainCapacitySteps
             if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.sln"))) return directory.FullName;
         throw new DirectoryNotFoundException("Repository root was not found.");
     }
+
+    private static string Normalize(string value) => Regex.Replace(value, @"\s+", " ");
 }

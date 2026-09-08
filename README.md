@@ -104,7 +104,6 @@ after current workflow state changes.
 - **Nudges** — project regex rules and messages in `dydo.json`.
 - **Roles** — shipped source templates.
 - **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks.
-- **Models** — abstract role tiers and vendor bindings in `dydo.json`.
 
 Do not hand-edit compiled skills, agents, or workflows. Change their source templates and run
 `dydo sync`.
@@ -113,7 +112,7 @@ Do not hand-edit compiled skills, agents, or workflows. Change their source temp
 
 ```text
 project/
-|-- dydo.json                    # Model tiers, integrations, nudges
+|-- dydo.json                    # Integrations, skills, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- .claude/                     # Compiled Claude agents, skills, and workflows

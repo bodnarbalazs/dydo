@@ -121,7 +121,7 @@ Do not hand-edit compiled skills or agents. Change their source templates and ru
 
 ```
 project/
-|-- dydo.json                    # Model tiers, integrations, nudges
+|-- dydo.json                    # Integrations, skills, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- .claude/                     # Compiled Claude agents, skills, and skill resources

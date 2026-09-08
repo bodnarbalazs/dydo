@@ -67,11 +67,20 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    runs the normal docs delivery chain as below.
    Skip only a hop the spec declares empty. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
-   Wayfinding loop before production resumes. **Done:** each candidate accounts for its paths, passes
+   Wayfinding loop before production resumes. Choose each worker's capability as you brief it: the
+   smallest adequate supported model, and the effort where the host exposes one, weighed from that
+   task's difficulty, uncertainty, consequence of error, required independence, context size and
+   likely retries. Start adequate and escalate on evidence. Select model and effort together where
+   the host takes both; where it takes only a model, leave effort host-owned and record that limit.
+   Brief the requested value so the worker's signature is truthful, and claim an effective identity
+   only where telemetry shows it. dydo compiles no model, no effort and no standing capability
+   table. **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the specify SHA, Candidate SHA
    and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests and gates go to `hardener`,
    a missed contract line to `implementer`, a wrong scenario or route through a fresh `specifier`.
+   Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
+   full strength whatever the work below them cost.
    Send the FAIL block with the brief and set the fixing hop's status. A change to acceptance,
    scope, destination or architecture goes to the admiral for plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the

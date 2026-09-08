@@ -55,6 +55,14 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
    every merging delivery Issue a final Merge Sub-issue, blocked by the previous merge in plan
    order. Set the Project `In Progress`. On every wake commission each pickable AFK Issue, including
    blocker-cleared and released ones, from its record; HITL waits for the human's captain session.
+   Choose each commission's capability yourself: the smallest adequate supported model, and the
+   effort where the host exposes one, weighed from that Issue's difficulty, uncertainty,
+   consequence of error, required independence, context size and likely retries. Start adequate and
+   escalate on evidence; keep every review and gate at full strength whatever it costs. Select model
+   and effort together where the host takes both; where it takes only a model, leave effort
+   host-owned and record that limit. State the requested value in your signature and claim an
+   effective identity only where telemetry shows it. dydo compiles no model, no effort and no
+   standing capability table.
    **Done:** each pickable Issue has a captain or a stated reason.
 4. **Order merges.** A captain's `done <key>: PR ready` leaves its Issue `Ready to Merge` with a
    reviewed PR. When its Merge Sub-issue's blocker clears, resume that captain with `merge`, or

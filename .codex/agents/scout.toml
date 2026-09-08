@@ -1,6 +1,5 @@
 name = "scout"
 description = "One question, one source family, passages back, for a researcher who verifies and pools them."
-model = "gpt-5.6-terra"
 sandbox_mode = "read-only"
 web_search = "live"
 

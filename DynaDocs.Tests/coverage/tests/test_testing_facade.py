@@ -45,11 +45,23 @@ def manifest(*stacks):
 class TestingFacadeTests(unittest.TestCase):
     runner = RUNNER
 
-    def fixture(self, data=None):
+    def fixture(self, data=None, execution_seconds=None, cleanup_seconds=None):
         temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
+        if self.runner == RUNNER:
+            helper = ROOT / 'DynaDocs.Tests/coverage/windows_job.py'
+            text = helper.read_text(encoding='utf-8')
+            if execution_seconds is not None:
+                text = text.replace('EXECUTION_SECONDS_MAXIMUM = 1800',
+                                    f'EXECUTION_SECONDS_MAXIMUM = {execution_seconds!r}')
+            (directory / 'windows_job.py').write_text(text, encoding='utf-8')
+            if cleanup_seconds is not None:
+                facade = (directory / 'gap_check.py').read_text(encoding='utf-8')
+                facade = facade.replace('CLEANUP_SECONDS = 30',
+                                        f'CLEANUP_SECONDS = {cleanup_seconds!r}')
+                (directory / 'gap_check.py').write_text(facade, encoding='utf-8')
         (directory / 'gap_check.json').write_text(json.dumps(data or manifest()), encoding='utf-8')
         return directory
 
@@ -498,7 +510,11 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertIsInstance(payload['candidate']['dirty'], bool)
         self.assertIn('name', payload['operation'])
         for row in payload['results']:
-            self.assertEqual({'stack', 'capability', 'state', 'argv', 'cwd', 'isolation', 'childExit', 'resultExit', 'artifacts'}, set(row) - {'reason'})
+            fields = {'stack', 'capability', 'state', 'argv', 'cwd', 'isolation',
+                      'childExit', 'resultExit', 'artifacts'}
+            if self.runner == RUNNER:
+                fields.add('environment')
+            self.assertEqual(fields, set(row) - {'reason'})
             self.assertIn(row['state'], ['passed', 'failed', 'unavailable', 'invalid', 'interrupted'])
             self.assertIn(row['resultExit'], [0, 1, 2, 130])
             self.assertTrue(row['childExit'] is None or type(row['childExit']) is int)
@@ -1191,6 +1207,52 @@ print('INTER_ITERATION_CASES=' + str(count))
                         facade.wait(timeout=35)
                     reader.join(timeout=5)
                     facade.stdout.close()
+
+    def test_absolute_row_deadline_cleans_cooperative_child_before_publication(self):
+        if self.runner != RUNNER:
+            self.skipTest('project deadline policy is not part of the portable example')
+        data = manifest(stack('first'), stack('later'))
+        root = self.fixture(data, execution_seconds=.15, cleanup_seconds=.25)
+        (root / 'deadline.py').write_text(
+            "import signal,sys,time\nfrom pathlib import Path\n"
+            "def stop(signum, frame):\n    Path('cleanup.txt').write_text('complete')\n    raise SystemExit(130)\n"
+            "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, stop)\n"
+            "deadline=time.monotonic()+1\n"
+            "while time.monotonic()<deadline:\n    print('wake', flush=True)\n    time.sleep(.005)\n"
+            "raise SystemExit(99)\n", encoding='utf-8')
+        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'deadline.py'])
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        process, _, payload = self.invoke(['all'], directory=root)
+        self.assert_exit(process, 130)
+        self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+        self.assertFalse((root / 'later-test.txt').exists())
+        self.assert_rows(payload, [('first', 'test', 'interrupted')])
+        row = payload['results'][0]
+        self.assertEqual(130, row['childExit'])
+        self.assertIn('DYDO_ROW_DEADLINE', row['environment'])
+        self.assertGreater(process.stdout.count('wake'), 5)
+
+    def test_absolute_row_deadline_force_terminates_uncooperative_child(self):
+        if self.runner != RUNNER:
+            self.skipTest('project deadline policy is not part of the portable example')
+        data = manifest(stack('first'), stack('later'))
+        root = self.fixture(data, execution_seconds=.1, cleanup_seconds=.15)
+        (root / 'deadline.py').write_text(
+            "import signal,time\n"
+            "signal.signal(signal.SIGINT, signal.SIG_IGN)\n"
+            + ("signal.signal(signal.SIGBREAK, signal.SIG_IGN)\n" if os.name == 'nt' else '')
+            + "deadline=time.monotonic()+1\n"
+            "while time.monotonic()<deadline:\n    time.sleep(.005)\n"
+            "raise SystemExit(99)\n", encoding='utf-8')
+        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'deadline.py'])
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        started = time.monotonic()
+        process, _, payload = self.invoke(['all'], directory=root)
+        self.assertLess(time.monotonic() - started, 2)
+        self.assert_exit(process, 130)
+        self.assertFalse((root / 'later-test.txt').exists())
+        self.assert_rows(payload, [('first', 'test', 'interrupted')])
+        self.assertIn('deadline', payload['results'][0]['reason'])
 
 
 class PortableTestingFacadeTests(TestingFacadeTests):

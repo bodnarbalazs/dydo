@@ -4,13 +4,51 @@ import ast
 import json
 import os
 import re
+import signal
 import sys
+import time
 import uuid
 import hashlib
 import subprocess
 from pathlib import Path
 
 from gate_run import checked_result
+
+
+CLEANUP_SECONDS = 30
+ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
+
+
+class MeasurementTimeout(ValueError):
+    pass
+
+
+def run_coverage_command(argv, cwd):
+    deadline_text = os.environ.get(ROW_DEADLINE_ENV)
+    deadline = float(deadline_text) if deadline_text is not None else None
+    timeout = None if deadline is None else max(0, deadline - time.monotonic() - CLEANUP_SECONDS)
+    child = subprocess.Popen(argv, cwd=cwd,
+                             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+                             start_new_session=sys.platform != "win32")
+    try:
+        return child.wait(timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        try:
+            if sys.platform == "win32":
+                child.send_signal(signal.CTRL_BREAK_EVENT)
+            else:
+                os.killpg(child.pid, signal.SIGINT)
+            child.wait(timeout=max(0, deadline - time.monotonic()))
+        except (OSError, subprocess.TimeoutExpired):
+            if sys.platform == "win32":
+                child.kill()
+            else:
+                try:
+                    os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            child.wait()
+        raise MeasurementTimeout("coverage campaign exceeded row deadline after owned cleanup") from error
 
 
 def _publication_payload(run, stack, gate, report, candidate, inventory):
@@ -188,10 +226,9 @@ def collect_node_coverage(root, raw):
     request_path = raw.parent / (raw.name + "-request.json")
     request_path.write_text(json.dumps(request, indent=2), encoding="utf-8")
     script = root / "DynaDocs.Tests/coverage/javascript_coverage.cjs"
-    import subprocess
-    child = subprocess.run(["node", str(script), "--root", str(root), "--output", str(raw),
-                            "--targets-json", json.dumps(measurable), "--command-json",
-                            json.dumps(request["command"])], cwd=root).returncode
+    child = run_coverage_command(["node", str(script), "--root", str(root), "--output", str(raw),
+                                  "--targets-json", json.dumps(measurable), "--command-json",
+                                  json.dumps(request["command"])], root)
     if child not in (0, 1):
         return {"status": "error", "facts": {"child_exit": child}, "findings": [],
                 "errors": [{"gate": "javascript-coverage", "message": "native c8 campaign failed"}]}
@@ -213,9 +250,8 @@ def collect_coverage(root, output, stack):
     if stack == "node":
         return collect_node_coverage(root, raw)
     if stack == "dotnet":
-        import subprocess
         run = root / "DynaDocs.Tests/coverage/run_tests.py"
-        child = subprocess.run([sys.executable, str(run), "--assurance-output", str(raw)], cwd=root).returncode
+        child = run_coverage_command([sys.executable, str(run), "--assurance-output", str(raw)], root)
         if child not in (0, 1):
             return {"status": "error", "facts": {"child_exit": child}, "findings": [],
                     "errors": [{"gate": "csharp-coverage", "message": "native campaign incomplete"}]}

@@ -27,4 +27,8 @@ public class DydoConfig
 
     [JsonPropertyName("frameworkHashes")]
     public Dictionary<string, string> FrameworkHashes { get; set; } = new();
+
+    [JsonPropertyName("testing")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TestingConfig? Testing { get; set; }
 }

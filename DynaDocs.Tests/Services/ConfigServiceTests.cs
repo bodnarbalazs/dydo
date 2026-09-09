@@ -194,6 +194,58 @@ public class ConfigServiceTests : IDisposable
         Assert.Contains("\"version\"", content);
     }
 
+    [Fact]
+    public void SaveConfig_OmitsAbsentTestingConfiguration()
+    {
+        var path = Path.Combine(_testDir, "without-testing.json");
+
+        new ConfigService().SaveConfig(new DydoConfig(), path);
+
+        Assert.DoesNotContain("\"testing\"", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void LoadConfigStrict_PreservesValidTestingRunnerAndSecondSaveIsByteIdentical()
+    {
+        var path = Path.Combine(_testDir, "dydo.json");
+        var service = new ConfigService();
+        service.SaveConfig(new DydoConfig
+        {
+            Testing = new TestingConfig { Runner = ["runner with spaces", "", "fixed space", "固定λ"] }
+        }, path);
+        var first = File.ReadAllBytes(path);
+
+        var config = service.LoadConfigStrict(_testDir)!;
+        Assert.Equal(["runner with spaces", "", "fixed space", "固定λ"], config.Testing!.Runner);
+        service.SaveConfig(config, path);
+
+        Assert.Equal(first, File.ReadAllBytes(path));
+    }
+
+    [Theory]
+    [InlineData("{\"testing\":[]}")]
+    [InlineData("{\"testing\":{}}")]
+    [InlineData("{\"testing\":{\"runner\":[]}}")]
+    [InlineData("{\"testing\":{\"runner\":[\"\"]}}")]
+    [InlineData("{\"testing\":{\"runner\":[1]}}")]
+    public void LoadConfigStrict_RejectsInvalidTestingRunner(string json)
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);
+
+        var error = Assert.Throws<InvalidDataException>(() => new ConfigService().LoadConfigStrict(_testDir));
+
+        Assert.Contains("dydo.json testing.runner", error.Message);
+    }
+
+    [Fact]
+    public void LoadConfigStrict_PropagatesAnUnreadableConfiguration()
+    {
+        var path = Path.Combine(_testDir, "dydo.json");
+        using var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        Assert.Throws<IOException>(() => new ConfigService().LoadConfigStrict(_testDir));
+    }
+
     // The six injected boundaries of the atomic save, each spelled here rather than taken from a
     // production global, so one test replaces exactly the boundary it fails.
     private static void SaveWith(

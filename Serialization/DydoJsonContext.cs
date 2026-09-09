@@ -20,6 +20,7 @@ using DynaDocs.Models;
 [JsonSerializable(typeof(NudgeConfig))]
 [JsonSerializable(typeof(List<NudgeConfig>))]
 [JsonSerializable(typeof(List<string>))]
+[JsonSerializable(typeof(TestingConfig))]
 internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 
 /// <summary>

@@ -96,6 +96,28 @@ public class ValidateCommandTests : IDisposable
         Assert.Contains("Local", stderr);
     }
 
+    [Fact]
+    public void Validate_AcceptsValidTestingRunner()
+    {
+        SetupValidProjectNoWarnings();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            "{\"testing\":{\"runner\":[\"runner\",\"\"]}}");
+
+        var exitCode = DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke();
+
+        Assert.Equal(0, exitCode);
+    }
+
+    [Fact]
+    public void Validate_RejectsInvalidTestingRunner()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "{\"testing\":{\"runner\":[]}}");
+
+        var exitCode = DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke();
+
+        Assert.Equal(1, exitCode);
+    }
+
     private static (string stdout, string stderr) CaptureOutput(Func<int> action)
     {
         var (_, stdout, stderr) = ConsoleCapture.All(action);

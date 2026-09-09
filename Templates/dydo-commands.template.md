@@ -197,6 +197,24 @@ This validates dydo's local configuration. It does not validate or provision Lin
 
 ---
 
+## Testing Command
+
+### dydo gap-check
+
+Run the project-configured coverage gap check.
+
+```bash
+dydo gap-check
+dydo gap-check --force-run
+```
+
+The nearest `dydo.json` must contain `testing.runner`: a nonempty string array whose first item is
+the executable and whose remaining items are fixed arguments. `dydo gap-check` starts it directly in
+the configuration directory and appends every caller argument exactly as supplied. Its exit code is the
+runner's exit code; configuration, startup, and cancellation failures exit `2`.
+
+---
+
 ## Utility Commands
 
 ### dydo completions

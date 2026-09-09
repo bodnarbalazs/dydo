@@ -152,7 +152,10 @@ public partial class ConfigService : IConfigService
         if (root.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("dydo.json root must be an object.");
         if (!root.TryGetProperty("skills", out var skills))
+        {
+            ValidateTesting(root);
             return;
+        }
         if (skills.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("dydo.json skills must be an object.");
 
@@ -165,6 +168,25 @@ public partial class ConfigService : IConfigService
                 throw new InvalidDataException($"dydo.json skill switch '{entry.Name}' collides ordinal-ignore-case with another key.");
             ValidateSwitch(entry.Name, entry.Value);
         }
+        ValidateTesting(root);
+    }
+
+    private static void ValidateTesting(JsonElement root)
+    {
+        if (!root.TryGetProperty("testing", out var testing))
+            return;
+        if (testing.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("dydo.json testing.runner requires testing to be an object.");
+        if (!testing.TryGetProperty("runner", out var runner))
+            throw new InvalidDataException("dydo.json testing.runner is required.");
+        if (runner.ValueKind != JsonValueKind.Array)
+            throw new InvalidDataException("dydo.json testing.runner must be a nonempty array of strings.");
+
+        var values = runner.EnumerateArray().ToList();
+        if (values.Count == 0 || values.Any(value => value.ValueKind != JsonValueKind.String))
+            throw new InvalidDataException("dydo.json testing.runner must be a nonempty array of strings.");
+        if (string.IsNullOrWhiteSpace(values[0].GetString()))
+            throw new InvalidDataException("dydo.json testing.runner executable must not be blank.");
     }
 
     private static void ValidateSwitch(string name, JsonElement value)

@@ -1,6 +1,9 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using System.Globalization;
+using System.Numerics;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Models;
@@ -77,11 +80,14 @@ public static class InitCommand
             foreach (var name in integrations)
                 config.Integrations[name] = true;
 
+            var hostSettings = PrepareHostSettings(projectRoot, integrations);
+
             var configPath = Path.Combine(projectRoot, ConfigService.ConfigFileName);
             configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
             ScaffoldProject(configService, config, configPath, projectRoot, integrations);
+            WriteHostSettings(hostSettings);
             PrintInitSummary(integrations);
 
             return ExitCodes.Success;
@@ -192,6 +198,7 @@ public static class InitCommand
             var projectRoot = Path.GetDirectoryName(configPath)!;
             var integrations = ExpandIntegrations(integration);
             var config = configService.LoadConfig(projectRoot);
+            var hostSettings = PrepareHostSettings(projectRoot, integrations);
 
             if (integrations.Contains("claude"))
             {
@@ -239,6 +246,8 @@ public static class InitCommand
                 configService.SaveConfig(pendingConfig, configPath);
             }
 
+            WriteHostSettings(hostSettings);
+
             return ExitCodes.Success;
         }
         catch (Exception ex)
@@ -266,6 +275,216 @@ public static class InitCommand
             _ => false
         };
     }
+
+    private static List<(string Path, string Content)> PrepareHostSettings(string projectRoot, string[] integrations)
+    {
+        var prepared = new List<(string Path, string Content)>();
+        if (integrations.Contains("claude"))
+        {
+            var setting = PrepareClaudeSettings(projectRoot);
+            if (setting != null)
+                prepared.Add(setting.Value);
+        }
+        if (integrations.Contains("codex"))
+        {
+            var setting = PrepareCodexSettings(projectRoot);
+            if (setting != null)
+                prepared.Add(setting.Value);
+        }
+        return prepared;
+    }
+
+    private static void WriteHostSettings(List<(string Path, string Content)> prepared)
+    {
+        foreach (var (path, content) in prepared)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, content);
+        }
+    }
+
+    private static (string Path, string Content)? PrepareClaudeSettings(string projectRoot)
+    {
+        const string relativePath = ".claude/settings.json";
+        const string key = "env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH";
+        var path = Path.Combine(projectRoot, ".claude", "settings.json");
+        var changed = !File.Exists(path);
+        JsonObject root;
+        if (!changed)
+        {
+            try
+            {
+                root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject
+                    ?? throw HostSettingError(relativePath, "JSON object root", "non-object root");
+            }
+            catch (JsonException ex)
+            {
+                throw HostSettingError(relativePath, "valid JSON object root", $"malformed JSON ({ex.Message})");
+            }
+        }
+        else
+        {
+            root = new JsonObject();
+        }
+
+        JsonObject env;
+        if (root["env"] == null)
+        {
+            env = new JsonObject();
+            root["env"] = env;
+            changed = true;
+        }
+        else if (root["env"] is JsonObject existingEnv)
+        {
+            env = existingEnv;
+        }
+        else
+        {
+            throw HostSettingError(relativePath, "object at env", DescribeJson(root["env"]));
+        }
+
+        if (env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] == null)
+        {
+            env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] = "3";
+            changed = true;
+        }
+        else if (env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] is not JsonValue value ||
+                 !value.TryGetValue<string>(out var depth) || !IsCanonicalDepth(depth, 3))
+        {
+            throw HostSettingError(relativePath, $"{key} JSON string canonical unsigned integer >= 3",
+                DescribeJson(env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"]));
+        }
+
+        return changed ? (path, root.ToJsonString(WriteOptions)) : null;
+    }
+
+    private static (string Path, string Content)? PrepareCodexSettings(string projectRoot)
+    {
+        const string relativePath = ".codex/config.toml";
+        var path = Path.Combine(projectRoot, ".codex", "config.toml");
+        var original = File.Exists(path) ? File.ReadAllText(path) : "";
+        var lines = Regex.Matches(original, @"[^\r\n]*(?:\r\n|\r|\n|$)");
+        var agentsStart = -1;
+        var agentsEnd = original.Length;
+        var agentKeys = new Dictionary<string, string>(StringComparer.Ordinal);
+        var inAgents = false;
+
+        foreach (Match lineMatch in lines)
+        {
+            if (lineMatch.Length == 0)
+                continue;
+            var line = lineMatch.Value.TrimEnd('\r', '\n');
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0 || trimmed.StartsWith('#'))
+                continue;
+
+            if (trimmed.StartsWith("[[agents", StringComparison.Ordinal) || trimmed.StartsWith("[agents.", StringComparison.Ordinal))
+                throw HostSettingError(relativePath, "one unambiguous [agents] table", trimmed);
+
+            var table = Regex.Match(trimmed, @"^\[(?<name>[A-Za-z0-9_.-]+)\](?:\s*#.*)?$");
+            if (table.Success)
+            {
+                if (inAgents)
+                    agentsEnd = lineMatch.Index;
+                inAgents = table.Groups["name"].Value == "agents";
+                if (inAgents)
+                {
+                    if (agentsStart >= 0)
+                        throw HostSettingError(relativePath, "one unambiguous [agents] table", "duplicate [agents] table");
+                    agentsStart = lineMatch.Index;
+                }
+                continue;
+            }
+            if (Regex.IsMatch(trimmed, @"^\[\[[A-Za-z0-9_.-]+\]\](?:\s*#.*)?$"))
+            {
+                if (inAgents)
+                    agentsEnd = lineMatch.Index;
+                inAgents = false;
+                continue;
+            }
+            if (trimmed.StartsWith('['))
+                throw HostSettingError(relativePath, "valid TOML table", trimmed);
+
+            var assignment = Regex.Match(trimmed, @"^(?<key>[A-Za-z0-9_.-]+)\s*=\s*(?<value>.*)$");
+            if (!assignment.Success)
+                throw HostSettingError(relativePath, "valid TOML key = value", trimmed);
+            if (StripTomlComment(assignment.Groups["value"].Value).Trim().Length == 0)
+                throw HostSettingError(relativePath, "TOML value", "empty value");
+            if (!inAgents)
+                continue;
+            var name = assignment.Groups["key"].Value;
+            if (!agentKeys.TryAdd(name, StripTomlComment(assignment.Groups["value"].Value).Trim()))
+                throw HostSettingError(relativePath, $"one {name} key in [agents]", "duplicate key");
+        }
+
+        ValidateTomlInteger(relativePath, agentKeys, "max_depth", 3);
+        ValidateTomlInteger(relativePath, agentKeys, "max_concurrent_threads_per_session", 16);
+        if (agentKeys.TryGetValue("enabled", out var enabled) && enabled != "true")
+            throw HostSettingError(relativePath, "agents.enabled = true or absent", $"agents.enabled = {enabled}");
+
+        var additions = new List<string>();
+        if (!agentKeys.ContainsKey("max_depth"))
+            additions.Add("max_depth = 3");
+        if (!agentKeys.ContainsKey("max_concurrent_threads_per_session"))
+            additions.Add("max_concurrent_threads_per_session = 16");
+        if (additions.Count == 0)
+            return null;
+
+        var newline = original.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        string content;
+        if (agentsStart < 0)
+        {
+            var separator = original.Length == 0 ? "" : original.EndsWith("\n", StringComparison.Ordinal) || original.EndsWith("\r", StringComparison.Ordinal) ? newline : newline + newline;
+            content = original + separator + "[agents]" + newline + string.Join(newline, additions) + newline;
+        }
+        else
+        {
+            var prefix = original[..agentsEnd];
+            var suffix = original[agentsEnd..];
+            var separator = prefix.EndsWith("\n", StringComparison.Ordinal) || prefix.EndsWith("\r", StringComparison.Ordinal) ? "" : newline;
+            content = prefix + separator + string.Join(newline, additions) + newline + suffix;
+        }
+        return (path, content);
+    }
+
+    private static void ValidateTomlInteger(string path, Dictionary<string, string> keys, string key, int minimum)
+    {
+        if (!keys.TryGetValue(key, out var value))
+            return;
+        var number = value.Replace("_", "", StringComparison.Ordinal);
+        if (!Regex.IsMatch(value, @"^[+]?[0-9](?:_?[0-9])*$") ||
+            !BigInteger.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) || parsed < minimum)
+            throw HostSettingError(path, $"agents.{key} integer >= {minimum}", $"agents.{key} = {value}");
+    }
+
+    private static bool IsCanonicalDepth(string value, int minimum) =>
+        Regex.IsMatch(value, @"^(0|[1-9][0-9]*)$") &&
+        BigInteger.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) && parsed >= minimum;
+
+    private static string StripTomlComment(string value)
+    {
+        var quoted = false;
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (value[i] == '"' && (i == 0 || value[i - 1] != '\\'))
+                quoted = !quoted;
+            if (value[i] == '#' && !quoted)
+                return value[..i];
+        }
+        return value;
+    }
+
+    private static ArgumentException HostSettingError(string path, string required, string found) =>
+        new($"Invalid {path}: required {required}; found {found}.");
+
+    private static string DescribeJson(JsonNode? value) => value switch
+    {
+        null => "null",
+        JsonValue jsonValue when jsonValue.TryGetValue<string>(out var text) => $"string \"{text}\"",
+        JsonObject => "object",
+        JsonArray => "array",
+        _ => value.ToJsonString()
+    };
 
     private static readonly string[] DydoAllowEntries =
     {

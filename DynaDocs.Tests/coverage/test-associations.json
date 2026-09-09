@@ -441,12 +441,6 @@
       ]
     },
     {
-      "module": "Models/ModelsConfig.cs",
-      "tests": [
-        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
-      ]
-    },
-    {
       "module": "Models/NudgeConfig.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"

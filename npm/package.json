@@ -21,7 +21,7 @@
   "license": "MIT",
   "author": "Balazs Bodnar",
   "bin": {
-    "dydo": "bin/dydo"
+    "dydo": "bin/dydo.cjs"
   },
   "files": [
     "bin/",

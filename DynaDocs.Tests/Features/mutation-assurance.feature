@@ -44,6 +44,13 @@ Feature: Mutation assurance runs real campaigns over isolated changed code
       | python |
       | node   |
 
+  Scenario: Mutants Stryker.NET removed by its mutate filter are witnessed, not counted
+    Given a candidate with one changed executable "dotnet" target since BASE
+    And the Stryker.NET report lists every mutant of an unselected file as Ignored with reason "Removed by mutate filter"
+    When I run "gate mutation --since BASE --stack dotnet"
+    Then the summary counts exclude those mutants and the witness names the unselected file
+    And the "dotnet" row has state passed, childExit 0 and resultExit 0
+
   Scenario Outline: A mutant that is not killed is a measured finding
     Given a candidate with one changed executable "<stack>" target since BASE
     And the "<stack>" engine reports one mutant with native status "<native>"
@@ -85,18 +92,27 @@ Feature: Mutation assurance runs real campaigns over isolated changed code
       | dotnet | a nonzero engine exit without a report                 | no mutation report produced                           |
       | dotnet | a malformed report                                     | malformed report                                      |
       | node   | a report that omits the selected file                  | partial report                                        |
+      | dotnet | a report with a non-Ignored mutant in an unselected file | foreign mutant                                    |
+      | node   | a report with an unselected file                       | foreign file                                          |
       | python | a session whose work item has no result                | partial report                                        |
       | python | a worker outcome of exception                          | engine could not run mutant                           |
       | dotnet | a source file changed by the engine and not restored   | candidate changed during the campaign                 |
       | node   | zero generated mutants                                 | zero-mutant campaign                                  |
       | dotnet | every generated mutant a compile error                 | all mutants invalid                                   |
-      | python | an existing summary lock                               | mutation slot busy                                    |
       | dotnet | a base that no commit resolves                         | unresolvable base                                     |
       | node   | a base that is not an ancestor of the candidate        | base is not an ancestor                               |
       | dotnet | an inventory with nonempty errors                      | inventory errors                                      |
       | dotnet | a changed C# target outside DynaDocs.csproj            | no .NET test project route                            |
       | node   | a changed JavaScript target without an extension       | extensionless target                                  |
       | dotnet | a template whose concurrency is 2                      | invalid mutation configuration                        |
+
+  Scenario: A busy mutation slot is refused without touching its owner
+    Given a candidate with one changed executable "python" target since BASE
+    And a foreign invocation holds the python summary lock beside a published python summary
+    When I run "gate mutation --since BASE --stack python"
+    Then the run report names "mutation slot busy" with the foreign lock path
+    And the foreign lock and the foreign summary are byte-identical after the run
+    And the "python" row has state invalid, childExit 2 and resultExit 2
 
   Scenario: A change touching no maintained source passes as a witnessed no-op
     Given the only change since BASE is a Markdown file
@@ -137,7 +153,7 @@ Feature: Mutation assurance runs real campaigns over isolated changed code
     When the facade receives an interrupt during that campaign
     Then the engine process tree is gone before the row is reported
     And the snapshot is removed and unregistered and the summary lock is released
-    And the run report records exitCode 130 and no summary is published
+    And the run report and the published summary both record exitCode 130, one gap interrupted, no finding and measurementComplete false
     And the "<stack>" row has state interrupted and resultExit 130 and the command exits 130
 
     Examples:

@@ -51,7 +51,8 @@ adapter is its own isolation adapter and always snapshots, which the guide recor
 
 `gap_check.py` public behaviour is unchanged. **Facade edit: none.** Every facade behaviour this
 spec relies on is already implemented and proven: `{base}` substitution and `--since` requirement
-(`testing-facade.feature` lines 56-82), required-artifact freshness (`gap_check.py:233-246`),
+(`testing-facade.feature` lines 56-82), required-artifact freshness (`gap_check.py:233-246` at
+`1bc93c5d`, extended by DYD-96 to every non-test exit at `0d3f0995` lines 242-246),
 `--force-run` never selecting mutation (`gap_check.py:266`, feature line 91-98), independent rows
 continuing after a peer's 1 or 2 and 130 stopping later rows (`gap_check.py:367-374`,
 DYD-96's `assurance-adoption.feature` lines 44-71), and the 30-second interrupt window
@@ -64,10 +65,22 @@ DYD-96's `assurance-adoption.feature` lines 44-71), and the 30-second interrupt 
 | 0 | complete measurement, no policy finding | 0 |
 | 1 | complete measurement with at least one finding (surviving, NoCoverage, Timeout, RuntimeError, Ignored-in-selected-file, Pending/NotRun, unknown status, Cosmic Ray survived or timed-out) | 1 |
 | 2 | invalid, unavailable, missing, malformed, stale, tool-missing, lock collision, unsupported host, unresolvable or non-ancestor base, inventory schema/errors, unselectable applicable target, substantive zero-mutant or all-invalid campaign, campaign limit exceeded, unverified snapshot removal | 2 |
-| 130 | interrupted, returned only after engine job teardown, raw evidence retention, verified snapshot removal and lock release | `run/report.json` records 130; no summary is published |
+| 130 | interrupted, returned only after engine job teardown, raw evidence retention, verified snapshot removal and the publication below; the lock is released last | 130 — the summary **is** published on 130 (`gaps: [{"reason": "interrupted"}]`, `findings: []`, `measurementComplete: false`) |
 
 2 outranks 1; 130 outranks both. Raw vendor exits are retained per command in `commands[].exit`.
-The facade maps adapter 0/1/2/130 to passed/failed/invalid/interrupted per the admiral ruling.
+The facade maps adapter 0/1/2/130 to passed/failed/invalid/interrupted per the admiral ruling, but
+only after its required-artifact check: `gap_check.py` `run_row` at `0d3f0995` (= `fb34c2bc`) marks
+every non-test row whose required artifact was not refreshed `invalid`/2 with the raw childExit
+(lines 242-246) before the 2/130 mapping (247-249), so an adapter-side 130 that left
+`<stack>-mutation.json` unrefreshed would be `invalid`, the aggregate 2, and later rows would keep
+dispatching — which the ruling forbids. Chosen correction: the summary is published on 130 after
+owned cleanup, exactly as DYD-96's 130 fixture does (`tests/test_assurance_adoption.py:104` at
+`0d3f0995` writes `{"schema": 1, "exitCode": 130}` before `SystemExit(130)`). The alternative —
+pinning the freshness rule as a consumed interface and proving adapter-side 130 → interrupted without
+a refresh — cannot be proven: the facade code makes an unrefreshed artifact `invalid` whatever the
+exit, and a facade edit is outside this Issue. An interruption whose snapshot removal is unverified
+is not a 130: cleanup failure after interruption is 2 (adoption specification, "Cleanup failure is 2,
+including after interruption"), published with both gaps.
 
 ### Consumed interfaces — pinned
 
@@ -97,9 +110,11 @@ generated document is represented. It is a DYD-103 spec return only if it adds o
 
 **Modules** (imported from the caller root's `DynaDocs.Tests/coverage/`; signature change = spec return):
 `inventory.source_fingerprint(rows)`, `inventory.build_file_rows(root, paths, deleted)`,
-`inventory.language_of(path)`; `run_tests.create_worktree(path)`, `run_tests.copy_dirty_files(worktree)`,
-`run_tests.remove_worktree(worktree)`, `run_tests.is_registered_worktree(worktree)`,
-`run_tests.defer_interruption()` (all present at `1bc93c5d` and at `0d3f0995`);
+`inventory.language_of(path)` (DYD-96 deliveries present at `0d3f0995` only — `inventory.py` does not
+exist at `1bc93c5d`; DYD-130 must land them before production); `run_tests.create_worktree(path)`,
+`run_tests.copy_dirty_files(worktree)`, `run_tests.remove_worktree(worktree)`,
+`run_tests.is_registered_worktree(worktree)`, `run_tests.defer_interruption()` (present at `1bc93c5d`
+and at `0d3f0995`);
 `windows_job.preflight()`, `windows_job.request(argv, cwd, output, execution_seconds, teardown_seconds)`,
 `windows_job.run(value, environment)` returning `complete`, `cleanup_confirmed`, `subject_status`,
 `stdout_path`, `stderr_path`, `elapsed_seconds` (at `0d3f0995`). **Serial edit owned by DYD-103 after
@@ -243,9 +258,11 @@ asserts the vendor log witnesses `Stryker will use a max of 1 parallel testsessi
   holding `inventory.json`, `inventory-commands/`, `report.json`, `<stack>/` (generated configs,
   `job-<name>/` windows_job output with `stdout.log`, `stderr.log`, `result.json`, `native/` or
   `reports/` or `sessions/` raw engine output, `baseline/`).
-- Exclusive slot: `os.open(<summary>.lock, O_WRONLY|O_CREAT|O_EXCL)` **before** the snapshot; collision
-  → 2 (`mutation slot busy: <lock>`), the foreign lock and summary untouched; released in `finally`
-  only if this invocation created it. No stale-lock stealing.
+- Exclusive slot: `os.open(<summary>.lock, O_WRONLY|O_CREAT|O_EXCL)` is the adapter's first act after
+  argument parsing, **before** the snapshot; collision → 2 (`mutation slot busy: <lock>`) recorded in
+  `run/report.json` only — the foreign lock and the foreign summary stay byte-identical, so the facade
+  row is `invalid`/2 with childExit 2 through its own freshness rule; released in `finally` only if
+  this invocation created it. No stale-lock stealing.
 - Every engine launch, baseline run and Cosmic Ray init/exec/read runs under
   `windows_job.run(windows_job.request(argv, cwd=snapshot, output=<run>/<stack>/job-<name>, execution_seconds=14400, teardown_seconds=10), env)`
   with `env` = the ambient environment minus `DYDO_*`. `windows_job.preflight()` failure (not Windows,
@@ -258,8 +275,15 @@ asserts the vendor log witnesses `Stryker will use a max of 1 parallel testsessi
   unverified → 2 with the retained path named (fail closed; never a pass over a leftover).
 - Interruption (SIGINT/SIGBREAK → `KeyboardInterrupt`): the active job is torn down by closing the
   job (KILL_ON_JOB_CLOSE), raw evidence gathered so far is retained, the snapshot removed and
-  verified, the lock released, `run/report.json` written with `exitCode: 130` and
-  `gaps: [{"reason": "interrupted"}]`, then exit 130. No stable summary is published on 130.
+  verified, then the summary is published (`run/report.json` and `<stack>-mutation.json`, schema 1,
+  `exitCode: 130`, `gaps: [{"reason": "interrupted"}]`, `findings: []`, `measurementComplete: false`,
+  counts all zero, `score: null`, `rawReports` = the retained evidence; fields not yet settled are
+  `null` — `mutation.base`, `mutation.selection`, `mutation.baseline`, and before the snapshot
+  inventory exists `candidate.sourceFingerprint` and `inventory`, with `candidate.commit`/`dirty` then
+  read from the caller root), the lock released last, exit 130. Unverified removal turns this into 2
+  with gaps `interrupted` and `snapshot removal unverified: <path>`. An interrupt before the lock is
+  held owns nothing, publishes nothing and exits 130 (the facade's own interrupt path still reports
+  `interrupted`; an adapter-only interrupt in that window is `invalid`/2 — never a pass).
 
 ### Report normalization
 
@@ -278,7 +302,7 @@ collectors: {"mutation": {"status", "raw": [{path, sha256}]}}
 findings: [{gate: "mutation", path, span: {startLine, startColumn, endLine, endColumn}, mutator, status, raw: {report, id}}]  # one per non-killed valid mutant of a selected file
 gaps: [{reason, path?, raw?}]
 measurementComplete: gaps == []
-exitCode: 2 if gaps else 1 if findings else 0
+exitCode: 130 if interrupted after owned cleanup else 2 if gaps else 1 if findings else 0
 mutation: {base, selection: {mode: none|changed|widened, reason, changedTargets, selected, witness},
            counts: {generated, valid, killed, survived, noCoverage, timeout, compileError, ignored, runtimeError, unrun, unknown},
            score: 100*killed/valid or null,
@@ -297,7 +321,7 @@ Status mapping (`mutation_summary.py`; both Strykers emit the mutation-testing-r
 | Stryker `RuntimeError` | runtimeError | valid | finding |
 | Stryker `CompileError` | compileError | generated only | excluded from valid |
 | Stryker `Ignored` in a selected file | ignored | valid | finding |
-| Stryker `Ignored` in an unselected file (`changed` mode) | not counted | — | recorded in `witness` |
+| Stryker.NET `Ignored` in a file outside `selected` | not counted | — | recorded in `witness` (foreign-file rule below) |
 | Stryker `Pending`/`NotRun` | unrun | valid | finding |
 | any other Stryker status | unknown | valid | finding |
 | Cosmic Ray `survived` | survived | valid | finding |
@@ -313,11 +337,20 @@ so "no surviving or uncovered changed-code mutant" is met exactly when every val
 is Killed. The Cosmic Ray completion line is unittest's own `Ran N tests in …` summary written by the
 manifest test command; a killed result whose captured output lacks it did not complete its suite.
 
-Report validation (each failure → 2): the report file exists and parses; `files` is an object whose
-keys are all inside `selected` (changed mode) or inside the stack's targets (widened mode); each
-mutant has `id`, `mutatorName`, `status`, `location.start/end.line/column`; a Cosmic Ray session
-has exactly one mutation per work item, every work item has a result, and every `module_path` equals
-the session's file; a file in `selected` that is absent from the report → 2 (`partial report`).
+Report validation (each failure → 2): the report file exists and parses; each mutant has `id`,
+`mutatorName`, `status`, `location.start/end.line/column`; a Cosmic Ray session has exactly one
+mutation per work item, every work item has a result, and every `module_path` equals the session's
+file; a file in `selected` that is absent from the report → 2 (`partial report`). Foreign-file rule,
+one per engine (`selected` is the changed targets in `changed` mode and every target of the stack in
+`widened` mode):
+
+- Stryker.NET: `mutate` is a mutant filter, not a file filter — mutants in files outside the globs
+  stay in the report as `Ignored` with `statusReason` `Removed by mutate filter` (pinned 4.16.0
+  `Stryker.Core.dll` on disk: `FilePatternMutantFilter`, strings `Removed by ` + `mutate filter`;
+  retained `run_mutation.py:491-497` at `70cf3a5e` required exactly that of every unselected row).
+  A file outside `selected` is accepted only when every mutant in it is `Ignored`: those mutants are
+  not counted and the file is listed in `witness`; any other status there → 2 (`foreign mutant: <path>`).
+- StrykerJS and Cosmic Ray: any file outside `selected` → 2 (`foreign file: <path>`).
 
 ### Failure semantics (each is a scenario or a unit gate)
 
@@ -327,17 +360,17 @@ the session's file; a file in `selected` that is absent from the report → 2 (`
 | `windows_job.preflight` fails | 2 | `unsupported host` |
 | python/node baseline test run nonzero | 2 | `baseline test run failed (exit N)`; mutation on a red baseline measures nothing (invalid), not a policy failure |
 | Stryker.NET exits nonzero with no report (initial test run or build failure) | 2 | `no mutation report produced (Stryker.NET exit N)` |
-| report missing / malformed / partial / foreign file | 2 | the path |
+| report missing / malformed / partial / foreign file / foreign mutant (Stryker.NET) | 2 | the path |
 | inventory `schema` ≠ 1, `errors` nonempty, identity mismatch at production or acceptance | 2 | the field |
 | a `files[]` row rehash differs after the campaign | 2 | `candidate changed during the campaign: <path>` |
 | substantive zero generated mutants; generated > 0 and valid == 0 | 2 | `zero-mutant campaign` / `all mutants invalid` |
 | campaign limit exceeded / engine did not complete | 2 | `campaign limit exceeded (14400 s)` |
-| lock collision | 2 | the lock path |
+| lock collision | 2 | the lock path, in `run/report.json` only; the foreign summary is not refreshed |
 | unresolvable / non-ancestor base | 2 | the base |
 | unselectable applicable target | 2 | the path and project |
 | snapshot removal unverified | 2 | the retained path |
 | survivor, NoCoverage, Timeout, RuntimeError, Ignored-in-selected, unrun, unknown | 1 | one finding per mutant |
-| interruption | 130 | after owned cleanup |
+| interruption | 130 | after owned cleanup, with the summary published (`gaps: [{"reason": "interrupted"}]`); unverified removal → 2 |
 | an applicable stack unavailable while it has changed sources | 2 | its row cannot be part of a whole-M pass (facade aggregation) |
 
 ### Scenarios
@@ -372,7 +405,7 @@ sources; the temporary repositories used by tests are written from data strings.
 | 5 | `dotnet build DynaDocs.sln -c Release --warnaserror` | exit 0 | build invariants | pre-code and production |
 | 6 | `dydo check` (`dotnet bin/Release/net10.0/dydo.dll check` when the installed dydo lags source) | 0 errors, 0 warnings | documentation graph | pre-code and production |
 | 7 | `$P DynaDocs.Tests/coverage/gap_check.py capabilities` | exit 0; `mutation: configured` for dotnet, python and node | facade inspection | pre-code (rows unavailable, exit 0) and production (configured) |
-| 8 | `$P DynaDocs.Tests/coverage/gap_check.py gate mutation --since <production base SHA>` | three rows reported, aggregate 0 or an honest 1 with findings; never 2; result bound to the exact candidate SHA and raw reports retained | DR 048 §4, AC 6/7 | production-only (final M-measure) |
+| 8 | `$P DynaDocs.Tests/coverage/gap_check.py gate mutation --since <production base SHA>` | three rows reported; aggregate 0, or 1 where no finding's `path` is in any stack's `mutation.selection.changedTargets`; never 2; result bound to the exact candidate SHA and raw reports retained. A finding in a changed target is a DYD-103 defect that blocks CODE review | DR 048 §4, AC 6/7 | production-only (final M-measure) |
 | 9 | `$P DynaDocs.Tests/coverage/gap_check.py --force-run` | identical selected rows and aggregate before and after DYD-103's edits on the same base; mutation never selected | facade compatibility unchanged | production-only |
 | 10 | `$P -m unittest discover -s DynaDocs.Tests/coverage/mutation/probes -p "test_replay.py"` | exit 0: per engine the exact-assertion subject yields killed 1 / score 100 / adapter exit 0 and the weak-assertion subject yields survived 1 / exit 1; the concurrency witnesses appear in the raw stdout | the retained native strong/weak probes replayed through the completed adapter's engine seam, outside the unit gate | production-only |
 
@@ -448,9 +481,13 @@ gap_check.py gate mutation --since BASE
 9. Final M-measure: gate 8 at the exact candidate SHA with `--since <production base>`; retain the
    three summaries and raw reports as Issue evidence. DYD-103's own changes touch `gap_check.json`,
    `.config/dotnet-tools.json` and an unassociated C# step file, so this run is `widened` for all three
-   stacks by the rules above: it is the repository's first complete M measurement. A 1 with findings
-   in paths DYD-103 does not own is reported like DYD-96's G-measure — evidence for remediation
-   Issues under AC 7 — and is not a DYD-103 defect; a 2 is.
+   stacks by the rules above while each summary still records its `changedTargets`: it is the
+   repository's first complete M measurement. Pass = aggregate 0, or 1 where no finding's `path` is in
+   any stack's `changedTargets`. A finding in a changed target (`mutation_adapter.py`,
+   `mutation_summary.py` or any other target DYD-103 changed) is a DYD-103 defect that blocks CODE
+   review; a 1 whose findings all lie outside every stack's `changedTargets` is reported like
+   DYD-96's G-measure — evidence for remediation Issues under AC 7 — and is not a DYD-103 defect; a 2
+   is a DYD-103 defect.
 10. Docs hop (not empty): the mutation sections of `testing-strategy.md` (what runs, selection
     rules, exits, artifacts, restore commands, the GateMetrics C# gap, Windows-only containment,
     extensionless JS until DYD-105) and `coverage-tools.md` (adapter commands, summary schema, raw
@@ -470,7 +507,8 @@ gap_check.py gate mutation --since BASE
 - StrykerJS `inPlace` leaves a mutated file after a crash: rehash mismatch → 2.
 - Cosmic Ray session where a work item has no result (interrupted engine): partial → 2.
 - Two facade invocations at once for the same stack: second sees the lock → 2, first unaffected.
-- Adapter interrupted before the snapshot exists: release lock, exit 130, nothing to remove.
+- Adapter interrupted before the snapshot exists: publish the 130 summary (unsettled fields `null`),
+  release the lock, exit 130; nothing to remove.
 - Adapter interrupted during snapshot removal: `defer_interruption` semantics as `run_tests.py:122-146`;
   removal completes, then 130.
 - Windows-only: any other host → 2 at preflight, before locking anything but the slot.
@@ -488,6 +526,28 @@ environment propagation to nested Node test processes; (5) the Cosmic Ray timeou
 unittest's completion line; (6) GateMetrics C# is unselectable (2), which binds any Project-level M
 whose base predates DYD-96; (7) campaign cost of a widened dotnet run against the 14400 s bound;
 (8) the M-measure reading of DYD-103's own final gate; (9) the docs-only `none` pass reading of AC 6.
+
+**Open — admiral ruling pending** (spec review 1 at `459ec3eb`, findings 1 and 2; owner `admiral`).
+No DYD-103 production hop touches `DynaDocs.Tests/coverage/windows_job.py`,
+`DynaDocs.Tests/coverage/tests/test_windows_job.py` or `DynaDocs.Tests/coverage/test-associations.json`
+until ruled; their `owned-paths.json` rows and the Modules paragraph's cap sentence stand as written
+pending that ruling.
+1. Campaign cap. Both cap files are DYD-96's (its `owned-paths.json` at `fb34c2bc` claims them; its
+   reviewed spec makes the 1800 s limit a tested invariant) and lie outside this Issue's envelope.
+   Options: (a) the admiral transfers the serial edit after DYD-130 — one constant (1800 → 14400) plus
+   one assertion — as this spec currently assumes; (b) the admiral refuses and a fresh specify hop
+   routes around the 1800 s cap, re-pinning every 14400 s figure here (Isolation, Failure semantics,
+   step 6, Edge cases).
+2. Association rows. DYD-96's static gate reports `non-trivial target has no associated test file`
+   for every executable target without a row (`associations.py:36` at `0d3f0995`) and
+   `test-associations.json` at `fb34c2bc` carries one row per `coverage/*.py`; DYD-103 adds two
+   executable targets, so the integrated `--force-run` (gate 9) would return 1 on DYD-103's own paths
+   and a test-only change to `test_mutation_*.py` would widen instead of rerunning its targets.
+   Options: (a) the admiral extends the envelope to `test-associations.json` as a
+   serial-after-DYD-130 row with exactly these edges — `DynaDocs.Tests/coverage/mutation_adapter.py`
+   → `DynaDocs.Tests/coverage/tests/test_mutation_adapter.py` and
+   `DynaDocs.Tests/coverage/tests/test_mutation_facade.py`; `DynaDocs.Tests/coverage/mutation_summary.py`
+   → `DynaDocs.Tests/coverage/tests/test_mutation_summary.py`; (b) an alternative the admiral names.
 Lanes: `none` (adapter, normalizer, fixtures, probes and steps interlock). Empty hops: none.
 Production prerequisite (resume condition, never a parent-Done blocker): DYD-96's implemented and
 independently checked inventory artifact at the integrated feature head after DYD-130 plus an

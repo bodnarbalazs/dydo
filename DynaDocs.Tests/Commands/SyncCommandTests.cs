@@ -41,11 +41,15 @@ public class SyncCommandTests : IDisposable
         File.WriteAllText(configPath, raw.ToJsonString());
         var original = File.ReadAllBytes(configPath);
 
-        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+        var (exitCode, stdout, stderr) = ConsoleCapture.All(() =>
             SyncCommand.Execute(_testDir, () => throw new IOException("injected post-work failure")));
 
         Assert.Equal(ExitCodes.ToolError, exitCode);
         Assert.Contains("injected post-work failure", stderr);
+        // Every managed output and the whole summary precede the commit seam.
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
+        Assert.Contains("agent(s) to .claude/", stdout);
+        Assert.Contains("Synced Codex artifacts", stdout);
         Assert.Equal(original, File.ReadAllBytes(configPath));
         Assert.Contains("\"models\"", File.ReadAllText(configPath));
         Assert.Empty(Directory.GetFiles(_testDir, "dydo.json.*.tmp"));

@@ -216,11 +216,13 @@ public static class InitCommand
 
             // Joining wires this machine, but the integration set is project state: record it
             // so dydo.json reflects every integration the project actually uses (issue 0300).
-            var configChanged = config != null && integrations.Any(name => !config.Integrations.GetValueOrDefault(name));
-            if (configChanged)
+            var pendingConfig = config != null && integrations.Any(name => !config.Integrations.GetValueOrDefault(name))
+                ? config
+                : null;
+            if (pendingConfig != null)
             {
                 foreach (var name in integrations)
-                    config!.Integrations[name] = true;
+                    pendingConfig.Integrations[name] = true;
                 Console.WriteLine($"  ✓ Recorded integration(s) in {ConfigService.ConfigFileName}: {string.Join(", ", integrations)}");
             }
 
@@ -231,10 +233,10 @@ public static class InitCommand
                 Console.WriteLine($"  {completionResult}");
             }
 
-            if (configChanged)
+            if (pendingConfig != null)
             {
                 beforeConfigCommit?.Invoke();
-                configService.SaveConfig(config!, configPath);
+                configService.SaveConfig(pendingConfig, configPath);
             }
 
             return ExitCodes.Success;

@@ -315,7 +315,7 @@
     }
   ],
   "frameworkHashes": {
-    "reference/about-dynadocs.md": "3ad9063ee98581a00813fda2265ae34fe2c13974b42c532b07a087fbbef0075d",
+    "reference/about-dynadocs.md": "4f6ecdac9d85e45dea66b3613be70541045dcb464f96c16c8a347a28d28304c1",
     "reference/dydo-commands.md": "584ed62f10f2c4a1fb6d4a70d91cac968c8eaa084c994e7b9d842e0bd3259a0d",
     "reference/dydo-glossary.md": "a09a73e66d718fbc075b5d09d61653eb4cc1cd052aee7e2b5dcb8fcb96bb1fd7",
     "reference/writing-docs.md": "2b46206881c2a7ab6b11475f05658360d9a6cc7ee24f704aedb92168fcad4fa7",
@@ -352,7 +352,7 @@
     "_system/templates/resource-prototype-resource-logic.template.md": "6c8614b340c9a4feb0a468dc8da875b8d32586b5dc8f0a2a2e70cd0dae494eee",
     "_system/templates/skill-prototype.template.md": "81d8a8c25b23017f928304b34313b00a785e7526804986668c39d76bc40d6030",
     "_system/templates/skill-project-planner.template.md": "aabad2bb4d0c444ec69946172dcfcc71193c81dcbad7ed2a786bb392f9b9bed2",
-    "_system/templates/skill-issue-captain.template.md": "6271c4dd203765475cdccca400a080fcceb91a201868a401315fd41084013323",
+    "_system/templates/skill-issue-captain.template.md": "62bcaa87f50799812ec2595ee496a2123963582ea2b5c6d4a07334951ef6841d",
     "_system/templates/skill-inquisitor.template.md": "08870026dfc86a761560d2e4aee640b03f9a4f8f60007fb722d25d9cb5239a10",
     "_system/templates/resource-improve-codebase-architecture-resource-html-report.template.md": "69f5f92e5408899000ee2b50fde523141be677ef425ac4249d462ca35beb8e7e",
     "_system/templates/skill-improve-codebase-architecture.template.md": "5dd8c9319959c54964bec608eb0d962344fd2cedb4594b7c0e2e8a8011949ee4",
@@ -372,6 +372,6 @@
     "_system/templates/skill-co-thinker.template.md": "b8ad39243adb1466c6286bae4311847965b88d53ab5a403ce243df0e163cd50e",
     "_system/templates/skill-chief-of-staff.template.md": "642f355852cb5f1e96289df7b9d82c8cf94fc1d270d90c076e9cfd5ecca816f4",
     "_system/templates/skill-bro.template.md": "b764eab6030eed417a80d4833ec4caf1d9fb477ce0108df3837f9e36c2f504ce",
-    "_system/templates/skill-admiral.template.md": "8be4864d0912b2b15865c83e1ec9441a0ca23363f296ce3774f8e44619ccdf59"
+    "_system/templates/skill-admiral.template.md": "2046b68e7eebd152d165b06bc69cf10a41eed0712471f1ccc5e2e9baad8200e5"
   }
 }

@@ -18,20 +18,46 @@ public class InitCommandTests : IntegrationTestBase
     {
         (await InitProjectAsync("none")).AssertSuccess();
         var configPath = Path.Combine(TestDir, "dydo.json");
-        var raw = JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
-        raw["models"] = JsonNode.Parse("""{"agents":{"reviewer":"strong"},"tiers":{"openai":{"strong":"legacy"}}}""");
-        raw["unrelated"] = JsonNode.Parse("""{"sentinel":[3,1,4]}""");
-        File.WriteAllText(configPath, raw.ToJsonString());
+        AddLegacyModels(configPath);
         var original = File.ReadAllBytes(configPath);
 
-        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+        var (exitCode, stdout, stderr) = ConsoleCapture.All(() =>
             InitCommand.ExecuteJoin("codex", () => throw new IOException("injected post-work failure")));
 
         Assert.Equal(ExitCodes.ToolError, exitCode);
         Assert.Contains("injected post-work failure", stderr);
+        // Hook wiring and the integration report precede the commit seam.
+        AssertFileExists(".codex/hooks.json");
+        Assert.Contains("Codex hooks configured", stdout);
+        Assert.Contains("Recorded integration(s) in dydo.json: codex", stdout);
         Assert.Equal(original, File.ReadAllBytes(configPath));
         Assert.Contains("\"models\"", File.ReadAllText(configPath));
         Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Join_AlreadyRecordedIntegration_LeavesConfigBytesUntouched()
+    {
+        (await InitProjectAsync("codex")).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Recorded integration(s)", result.Stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    private static void AddLegacyModels(string configPath)
+    {
+        var raw = JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = JsonNode.Parse("""{"agents":{"reviewer":"strong"},"tiers":{"openai":{"strong":"legacy"}}}""");
+        raw["unrelated"] = JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
     }
 
     #region Init None

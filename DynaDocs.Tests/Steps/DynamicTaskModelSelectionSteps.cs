@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using DynaDocs.Commands;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Tests.Commands;
 using DynaDocs.Tests.Integration;
@@ -71,32 +72,39 @@ public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
         project.AssertSelectableAgents();
     }
 
+    // Both migrations start from a project already at its sync/update fixed point, so the only
+    // difference a successful rewrite may make to dydo.json is the retired models block.
     private static void VerifyLegacySyncMigration()
     {
         using var project = ProjectFixture.Initialized("all");
+        Assert.Equal(0, SyncCommand.Execute(project.Root));
         project.AddLegacyModels();
-        var before = project.ConfigJson();
-        var sentinelNudge = before["nudges"]![0]!.DeepClone();
-        var sentinelIntegrations = before["integrations"]!.DeepClone();
+        var expected = project.ConfigJson();
+        Assert.True(expected.Remove("models"));
 
         var (exitCode, stdout, stderr) = ConsoleCapture.All(() => SyncCommand.Execute(project.Root));
         Assert.True(exitCode == 0, $"Sync failed.\nstdout: {stdout}\nstderr: {stderr}");
 
-        var after = project.ConfigJson();
-        Assert.False(after.ContainsKey("models"));
-        Assert.True(JsonNode.DeepEquals(sentinelNudge, after["nudges"]![0]));
-        Assert.True(JsonNode.DeepEquals(sentinelIntegrations, after["integrations"]));
+        Assert.True(JsonNode.DeepEquals(expected, project.ConfigJson()));
         project.AssertSelectableAgents();
     }
 
     private static void VerifyLegacyUpdateMigration()
     {
         using var project = ProjectFixture.Initialized("all");
+        project.Write("dydo/_system/templates/skill-our-review.template.md",
+            "---\nname: our-review\ndescription: Our review.\nemit: skill\ninvocation: automatic\n---\n\n# Our Review\n");
+        project.Write("dydo/guides/owned.md", "---\narea: guides\ntype: guide\n---\n\n# Owned\n");
+        Assert.Equal(0, project.Run(TemplateCommand.Create(), "update"));
         project.AddLegacyModels();
+        var expected = project.ConfigJson();
+        Assert.True(expected.Remove("models"));
+        var tree = project.Snapshot("dydo");
 
         Assert.Equal(0, project.Run(TemplateCommand.Create(), "update"));
 
-        Assert.False(project.ConfigJson().ContainsKey("models"));
+        Assert.True(JsonNode.DeepEquals(expected, project.ConfigJson()));
+        project.AssertSnapshot("dydo", tree);
     }
 
     private static async Task VerifyLateFailure(string operation, string outcome)
@@ -169,7 +177,7 @@ public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
 
         Assert.Equal(0, SyncCommand.Execute(project.Root));
         project.AssertSnapshot(".claude", disabled);
-        project.AssertCodexSelectable();
+        project.AssertCodexSelectable(project.Skill("reviewer"));
 
         config = new ConfigService().LoadConfigStrict(project.Root)!;
         config.Integrations["claude"] = true;
@@ -183,6 +191,8 @@ public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
     private static void VerifyCustomAgent()
     {
         using var project = ProjectFixture.Initialized("all");
+        Assert.Equal(0, SyncCommand.Execute(project.Root));
+        project.Write(".codex/agents/project-owned.toml", "CODEX SENTINEL\n");
         project.Write("dydo/_system/templates/skill-release-notes.template.md", """
             ---
             name: release-notes
@@ -200,15 +210,19 @@ public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
             Read [policy](resources/policy.md).
             """);
         project.Write("dydo/_system/templates/resource-release-notes-resource-policy.template.md", "# Policy\n");
+        var siblings = project.Snapshot(
+            "dydo/_system/templates", ".claude/agents/reviewer.md", ".codex/agents/reviewer.toml", ".codex/agents/project-owned.toml");
 
         var (exitCode, stdout, stderr) = ConsoleCapture.All(() => SyncCommand.Execute(project.Root));
         Assert.True(exitCode == 0, $"Sync failed.\nstdout: {stdout}\nstderr: {stderr}");
 
-        project.AssertClaudeSelectable("release-notes");
-        project.AssertCodexSelectable("release-notes");
+        var releaseNotes = project.Skill("release-notes");
+        project.AssertClaudeSelectable(releaseNotes);
+        project.AssertCodexSelectable(releaseNotes);
         Assert.Contains("max_depth = 3", project.Read(".codex/agents/release-notes.toml"));
         Assert.Contains("default_prompt: \"release context\"", project.Read(".agents/skills/release-notes/agents/openai.yaml"));
         Assert.Equal("# Policy\n", project.Read(".agents/skills/release-notes/resources/policy.md"));
+        project.AssertSnapshot(siblings);
     }
 
     private static void VerifyFixedPoint(string sequence)
@@ -311,41 +325,59 @@ public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
             File.WriteAllText(Path("dydo.json"), config.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
         }
 
+        public List<SkillTemplate> Catalog() =>
+            SkillTemplateService.DiscoverLocalCatalog(Root, new ConfigService().LoadConfigStrict(Root)!);
+
+        public SkillTemplate Skill(string name) => Catalog().Single(skill => skill.Name == name);
+
         public void AssertSelectableAgents()
         {
             var config = new ConfigService().LoadConfigStrict(Root)!;
             var (claude, codex) = SyncCommand.ResolveIntegrationTargets(config.Integrations);
-            var agents = SkillTemplateService.DiscoverLocalCatalog(Root, config).Where(skill => skill.EmitAgent && config.Skills[skill.Name].Enabled == true).ToList();
-            foreach (var skill in agents)
+            foreach (var skill in Catalog())
             {
-                if (claude) AssertClaudeSelectable(skill.Name);
-                if (codex) AssertCodexSelectable(skill.Name);
-            }
-            foreach (var skill in SkillTemplateService.DiscoverLocalCatalog(Root, config).Where(skill => !skill.EmitAgent))
-            {
-                Assert.False(File.Exists(Path($".claude/agents/{skill.Name}.md")));
-                Assert.False(File.Exists(Path($".codex/agents/{skill.Name}.toml")));
+                if (skill.EmitAgent && config.Skills[skill.Name].Enabled == true)
+                {
+                    if (claude) AssertClaudeSelectable(skill);
+                    if (codex) AssertCodexSelectable(skill);
+                }
+                else
+                {
+                    Assert.False(File.Exists(Path($".claude/agents/{skill.Name}.md")));
+                    Assert.False(File.Exists(Path($".codex/agents/{skill.Name}.toml")));
+                }
             }
         }
 
-        public void AssertClaudeSelectable(string name)
+        // Selectable at dispatch time, with every authored capability still compiled: identity,
+        // skill preload, the read-only/delegation/web tool profile.
+        public void AssertClaudeSelectable(SkillTemplate skill)
         {
-            var fields = ParseFrontmatter(Read($".claude/agents/{name}.md"));
+            var fields = ParseFrontmatter(Read($".claude/agents/{skill.Name}.md"));
             Assert.Equal("inherit", fields["model"]);
             Assert.False(fields.ContainsKey("effort"));
-            foreach (var field in new[] { "name", "description", "tools", "skills" })
-                Assert.True(fields.ContainsKey(field), $"Claude agent {name} omitted {field}.");
+            Assert.Equal(skill.Name, fields["name"]);
+            Assert.True(fields.ContainsKey("description"), $"Claude agent {skill.Name} omitted description.");
+            Assert.Equal($"[{skill.Name}]", fields["skills"]);
+            var tools = fields["tools"].Split(", ");
+            Assert.Equal(!skill.ReadOnly, tools.Contains("Edit"));
+            Assert.Equal(skill.Delegates, tools.Contains("Agent"));
+            Assert.Equal(skill.Web, tools.Contains("WebSearch"));
         }
 
-        public void AssertCodexSelectable() => AssertCodexSelectable("reviewer");
-
-        public void AssertCodexSelectable(string name)
+        // Selectable at dispatch time, with identity, sandbox, web reach and nesting still compiled.
+        public void AssertCodexSelectable(SkillTemplate skill)
         {
-            var fields = ParseTopLevelToml(Read($".codex/agents/{name}.toml"));
+            var content = Read($".codex/agents/{skill.Name}.toml");
+            var fields = ParseTopLevelToml(content);
             Assert.False(fields.ContainsKey("model"));
             Assert.False(fields.ContainsKey("model_reasoning_effort"));
-            foreach (var field in new[] { "name", "description", "sandbox_mode", "developer_instructions" })
-                Assert.True(fields.ContainsKey(field), $"Codex agent {name} omitted {field}.");
+            Assert.Equal($"\"{skill.Name}\"", fields["name"]);
+            Assert.True(fields.ContainsKey("description"), $"Codex agent {skill.Name} omitted description.");
+            Assert.True(fields.ContainsKey("developer_instructions"), $"Codex agent {skill.Name} omitted developer_instructions.");
+            Assert.Equal(skill.ReadOnly ? "\"read-only\"" : "\"workspace-write\"", fields["sandbox_mode"]);
+            Assert.Equal(skill.Web, fields.ContainsKey("web_search"));
+            Assert.Contains(skill.Delegates ? "[agents]\nenabled = true" : "[agents]\nenabled = false", content);
         }
 
         public Dictionary<string, byte[]> Snapshot(params string[] relativeRoots)

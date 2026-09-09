@@ -1,8 +1,8 @@
 namespace DynaDocs.Services;
 
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Text;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 
@@ -69,18 +69,26 @@ public partial class ConfigService : IConfigService
     }
 
     /// <summary>
-    /// Save configuration to dydo.json
+    /// Save configuration to dydo.json. The bytes go to a flushed sibling that is then renamed
+    /// over the target, so a failure at any step leaves the original file untouched.
     /// </summary>
     public void SaveConfig(DydoConfig config, string path)
         => SaveConfig(
             config,
             path,
-            target => $"{target}.{Guid.NewGuid():N}.tmp",
-            temporary => new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            TemporarySiblingPath,
+            CreateNewSibling,
             (stream, bytes) => stream.Write(bytes),
             stream => stream.Flush(flushToDisk: true),
             stream => stream.Dispose(),
             (temporary, target) => File.Move(temporary, target, overwrite: true));
+
+    // Beside the target on purpose: File.Move is an atomic rename only within one filesystem.
+    internal static string TemporarySiblingPath(string target) => $"{target}.{Guid.NewGuid():N}.tmp";
+
+    // CreateNew refuses an existing name, so a colliding sibling is never opened or overwritten.
+    internal static FileStream CreateNewSibling(string path) =>
+        new(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 
     internal void SaveConfig(
         DydoConfig config,
@@ -104,6 +112,8 @@ public partial class ConfigService : IConfigService
         var bytes = Encoding.UTF8.GetBytes(json);
         var temporaryPath = chooseTemporaryPath(path);
         FileStream? stream = null;
+        // Only a sibling this invocation created is ours to delete: a collision owns nothing,
+        // and a successful rename has already consumed it.
         var ownsTemporary = false;
         try
         {

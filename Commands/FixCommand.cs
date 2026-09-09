@@ -50,11 +50,10 @@ public static class FixCommand
 
             Console.WriteLine("FIXED:");
 
-            var (pendingConfig, pendingConfigPath, configFixCount) =
-                RestoreScanExcludeInvariants(configService, scope.CorpusRoot);
+            var pendingConfig = RestoreScanExcludeInvariants(configService, scope.CorpusRoot);
             var renamedFilePath = scope.FilePath == null ? null : GetKebabDestination(scope.FilePath);
             var (renamed, nameConflicts) = FixFileHandler.FixNaming(docs);
-            var fixedCount = configFixCount + renamed;
+            var fixedCount = (pendingConfig?.Added ?? 0) + renamed;
 
             if (renamedFilePath != null && renamed == 1)
                 scope = scope with { FilePath = renamedFilePath };
@@ -103,10 +102,10 @@ public static class FixCommand
 
             if (nameConflicts.Count > 0)
                 return ExitCodes.ValidationErrors;
-            if (pendingConfig != null && pendingConfigPath != null && configFixCount > 0)
+            if (pendingConfig is (var config, var configPath, _))
             {
                 beforeConfigCommit?.Invoke();
-                configService.SaveConfig(pendingConfig, pendingConfigPath);
+                configService.SaveConfig(config, configPath);
             }
             return ExitCodes.Success;
         }
@@ -172,21 +171,23 @@ public static class FixCommand
         return Path.Combine(Path.GetDirectoryName(filePath)!, fileName);
     }
 
-    private static (DydoConfig? Config, string? Path, int Added) RestoreScanExcludeInvariants(
+    // The restored config still to be committed, or null when there is nothing to commit: no
+    // loadable config in this corpus, or every invariant already present.
+    private static (DydoConfig Config, string Path, int Added)? RestoreScanExcludeInvariants(
         IConfigService configService,
         string startPath)
     {
         var configPath = configService.FindConfigFile(startPath);
         if (configPath == null)
-            return (null, null, 0);
+            return null;
 
         var config = configService.LoadConfig(startPath);
         if (config == null)
-            return (null, null, 0);
+            return null;
 
         var added = ConfigFactory.EnsureDefaultScanExclude(config);
         if (added == 0)
-            return (config, configPath, 0);
+            return null;
 
         ConsoleOutput.WriteSuccess($"  ✓ Restored {added} scanExclude invariant(s) in dydo.json");
         return (config, configPath, added);

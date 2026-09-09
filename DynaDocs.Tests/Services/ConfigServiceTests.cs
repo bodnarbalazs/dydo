@@ -194,6 +194,24 @@ public class ConfigServiceTests : IDisposable
         Assert.Contains("\"version\"", content);
     }
 
+    // The six injected boundaries of the atomic save, each spelled here rather than taken from a
+    // production global, so one test replaces exactly the boundary it fails.
+    private static void SaveWith(
+        string path,
+        string temporary,
+        Action<FileStream, byte[]>? writeAll = null,
+        Action<FileStream>? durableFlush = null,
+        Action<FileStream>? close = null,
+        Action<string, string>? replace = null)
+        => new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            writeAll ?? ((stream, bytes) => stream.Write(bytes)),
+            durableFlush ?? (stream => stream.Flush(flushToDisk: true)),
+            close ?? (stream => stream.Dispose()),
+            replace ?? ((source, target) => File.Move(source, target, overwrite: true)));
+
     [Fact]
     public void SaveConfig_Success_AtomicallyReplacesAndLeavesNoTemporarySibling()
     {
@@ -201,14 +219,7 @@ public class ConfigServiceTests : IDisposable
         var temporary = path + ".owned.tmp";
         File.WriteAllBytes(path, "ORIGINAL"u8.ToArray());
 
-        new ConfigService().SaveConfig(
-            new DydoConfig { Version = 7 }, path,
-            _ => temporary,
-            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
-            (stream, bytes) => stream.Write(bytes),
-            stream => stream.Flush(flushToDisk: true),
-            stream => stream.Dispose(),
-            (source, target) => File.Move(source, target, overwrite: true));
+        SaveWith(path, temporary);
 
         Assert.Contains("\"version\": 7", File.ReadAllText(path));
         Assert.False(File.Exists(temporary));
@@ -222,19 +233,13 @@ public class ConfigServiceTests : IDisposable
         var original = "ORIGINAL-PARTIAL-WRITE"u8.ToArray();
         File.WriteAllBytes(path, original);
 
-        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
-            new DydoConfig { Version = 7 }, path,
-            _ => temporary,
-            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
-            (stream, bytes) =>
-            {
-                stream.Write(bytes.AsSpan(0, 3));
-                throw new IOException("injected partial write failure");
-            },
-            stream => stream.Flush(flushToDisk: true),
-            stream => stream.Dispose(),
-            (source, target) => File.Move(source, target, overwrite: true)));
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary, writeAll: (stream, bytes) =>
+        {
+            stream.Write(bytes.AsSpan(0, 3));
+            throw new IOException("injected partial write failure");
+        }));
 
+        Assert.Equal("injected partial write failure", failure.Message);
         Assert.Equal(original, File.ReadAllBytes(path));
         Assert.False(File.Exists(temporary));
     }
@@ -247,15 +252,10 @@ public class ConfigServiceTests : IDisposable
         var original = "ORIGINAL-FLUSH"u8.ToArray();
         File.WriteAllBytes(path, original);
 
-        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
-            new DydoConfig { Version = 7 }, path,
-            _ => temporary,
-            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
-            (stream, bytes) => stream.Write(bytes),
-            _ => throw new IOException("injected durable flush failure"),
-            stream => stream.Dispose(),
-            (source, target) => File.Move(source, target, overwrite: true)));
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary,
+            durableFlush: _ => throw new IOException("injected durable flush failure")));
 
+        Assert.Equal("injected durable flush failure", failure.Message);
         Assert.Equal(original, File.ReadAllBytes(path));
         Assert.False(File.Exists(temporary));
     }
@@ -268,19 +268,13 @@ public class ConfigServiceTests : IDisposable
         var original = "ORIGINAL-CLOSE"u8.ToArray();
         File.WriteAllBytes(path, original);
 
-        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
-            new DydoConfig { Version = 7 }, path,
-            _ => temporary,
-            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
-            (stream, bytes) => stream.Write(bytes),
-            stream => stream.Flush(flushToDisk: true),
-            stream =>
-            {
-                stream.Dispose();
-                throw new IOException("injected close failure");
-            },
-            (source, target) => File.Move(source, target, overwrite: true)));
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary, close: stream =>
+        {
+            stream.Dispose();
+            throw new IOException("injected close failure");
+        }));
 
+        Assert.Equal("injected close failure", failure.Message);
         Assert.Equal(original, File.ReadAllBytes(path));
         Assert.False(File.Exists(temporary));
     }
@@ -293,15 +287,10 @@ public class ConfigServiceTests : IDisposable
         var original = "ORIGINAL-REPLACE"u8.ToArray();
         File.WriteAllBytes(path, original);
 
-        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
-            new DydoConfig { Version = 7 }, path,
-            _ => temporary,
-            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
-            (stream, bytes) => stream.Write(bytes),
-            stream => stream.Flush(flushToDisk: true),
-            stream => stream.Dispose(),
-            (_, _) => throw new IOException("injected replacement failure")));
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary,
+            replace: (_, _) => throw new IOException("injected replacement failure")));
 
+        Assert.Equal("injected replacement failure", failure.Message);
         Assert.Equal(original, File.ReadAllBytes(path));
         Assert.False(File.Exists(temporary));
     }
@@ -316,17 +305,49 @@ public class ConfigServiceTests : IDisposable
         File.WriteAllBytes(path, original);
         File.WriteAllBytes(temporary, collision);
 
-        Assert.Throws<IOException>(() => new ConfigService().SaveConfig(
-            new DydoConfig { Version = 7 }, path,
-            _ => temporary,
-            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
-            (stream, bytes) => stream.Write(bytes),
-            stream => stream.Flush(flushToDisk: true),
-            stream => stream.Dispose(),
-            (source, target) => File.Move(source, target, overwrite: true)));
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary));
 
+        Assert.Contains("already exists", failure.Message);
         Assert.Equal(original, File.ReadAllBytes(path));
         Assert.Equal(collision, File.ReadAllBytes(temporary));
+    }
+
+    // The two production boundaries the injected tests above cannot reach: where the sibling
+    // goes, and how it is opened.
+    [Fact]
+    public void TemporarySiblingPath_IsAUniqueTmpBesideTheTarget()
+    {
+        var target = Path.Combine(_testDir, "dydo.json");
+
+        var first = ConfigService.TemporarySiblingPath(target);
+        var second = ConfigService.TemporarySiblingPath(target);
+
+        Assert.Equal(_testDir, Path.GetDirectoryName(first));
+        Assert.Matches(@"^dydo\.json\.[0-9a-f]{32}\.tmp$", Path.GetFileName(first));
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
+    public void CreateNewSibling_RefusesAnExistingFile()
+    {
+        var sibling = Path.Combine(_testDir, "dydo.json.taken.tmp");
+        File.WriteAllBytes(sibling, "PREEXISTING"u8.ToArray());
+
+        Assert.Throws<IOException>(() => ConfigService.CreateNewSibling(sibling));
+
+        Assert.Equal("PREEXISTING"u8.ToArray(), File.ReadAllBytes(sibling));
+    }
+
+    [Fact]
+    public void CreateNewSibling_OpensWriteOnlyAndExcludesOtherHandles()
+    {
+        var sibling = Path.Combine(_testDir, "dydo.json.fresh.tmp");
+
+        using var stream = ConfigService.CreateNewSibling(sibling);
+
+        Assert.True(stream.CanWrite);
+        Assert.False(stream.CanRead);
+        Assert.Throws<IOException>(() => File.OpenRead(sibling));
     }
 
     [Fact]

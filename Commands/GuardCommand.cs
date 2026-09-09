@@ -749,7 +749,13 @@ public static partial class GuardCommand
         try
         {
             var basePath = Environment.CurrentDirectory;
-            var timestampPath = Path.Combine(basePath, "dydo", "_system", ".local", "last-validation");
+            var configService = new ConfigService();
+            if (configService.LoadConfig(basePath) == null)
+                return;
+
+            var dydoRoot = configService.GetDydoRoot(basePath);
+            var projectRoot = configService.GetProjectRoot(basePath)!;
+            var timestampPath = Path.Combine(dydoRoot, "_system", ".local", "last-validation");
 
             if (File.Exists(timestampPath))
             {
@@ -759,7 +765,7 @@ public static partial class GuardCommand
             }
 
             var validator = new ValidationService();
-            var issues = validator.ValidateSystem(basePath);
+            var issues = validator.ValidateSystem(projectRoot);
 
             if (issues.Count > 0)
             {
@@ -771,7 +777,7 @@ public static partial class GuardCommand
             }
 
             // Ensure .local/ dir exists (absent in worktrees)
-            PathUtils.EnsureLocalDirExists(Path.Combine(basePath, "dydo"));
+            PathUtils.EnsureLocalDirExists(dydoRoot);
             File.WriteAllText(timestampPath, DateTime.UtcNow.ToString("O"));
         }
         catch

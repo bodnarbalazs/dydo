@@ -176,7 +176,9 @@ def run_tests(extra_args=None, coverage=False):
         env = {k: v for k, v in os.environ.items() if not k.startswith("DYDO_")}
 
         print(f"  Running: {' '.join(cmd)}")
-        result = subprocess.run(cmd, cwd=worktree, env=env)
+        # Tests that install Console.In must not inherit an attached host console: .NET's
+        # Console.KeyAvailable probes the process handle instead of the installed reader.
+        result = subprocess.run(cmd, cwd=worktree, env=env, stdin=subprocess.DEVNULL)
 
         if coverage:
             copy_coverage_back(worktree)

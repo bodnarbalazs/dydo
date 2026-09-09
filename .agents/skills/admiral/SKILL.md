@@ -22,6 +22,11 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
   assignments, the integrated state, plan amendments, Linear evidence, and the final return.
 - **Command:** give each pickable Issue to one `issue-captain`. Captains own their Issues and direct
   their crews; you coordinate the captains rather than their workers.
+- **Native capacity:** Budget all open spawned threads in the native task tree before commissioning.
+  Commission or resume the captain from its record. A saved brief carries scope and resume context,
+  never Admiral-to-crew dispatch authority. Never use a saved captain brief to dispatch crew. On one
+  bounded refusal, preserve the record and avoid blind retries; escalate the exact host limitation
+  only after documented capacity or lifecycle handling cannot make captain-owned work runnable.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and
   Walkthrough yourself; commission captains for Prototype and Enablement. Pull shared or

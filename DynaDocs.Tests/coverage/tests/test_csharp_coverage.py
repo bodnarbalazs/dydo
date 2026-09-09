@@ -289,11 +289,10 @@ class CSharpCoverageTests(unittest.TestCase):
         self.assertFalse((raw / "source-facts.json").exists())
         pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
         assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == "dydo")
-        producer = _identity_producer(root)[1]
-        process = subprocess.run(["dotnet", str(producer), "--project", str(root / "DynaDocs.csproj"),
-                                  "--root", str(root)], text=True, capture_output=True, encoding="utf-8")
-        self.assertEqual(0, process.returncode, process.stderr)
-        source = json.loads(process.stdout)
+        derived = root / "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw/newly-derived-ec97c1b4"
+        provenance = json.loads((derived / "provenance.json").read_text(encoding="utf-8"))
+        self.assertEqual("ec97c1b4", provenance["sourceCommit"])
+        source = json.loads((derived / "source-facts-dydo.json").read_text(encoding="utf-8"))
         xml = (raw / "coverage.opencover.xml").read_text(encoding="utf-8-sig")
         original_path = next(module for module in ET.fromstring(xml).findall("./Modules/Module")
                              if module.findtext("ModuleName") == "dydo").findtext("ModulePath")
@@ -305,6 +304,7 @@ class CSharpCoverageTests(unittest.TestCase):
     def test_hop3_06_newly_derived_crlf_replay_completes_retained_join(self):
         """Replay only: SourceBehavior and CRLF source bytes are newly derived from pinned ec97c1b4."""
         root = Path(__file__).resolve().parents[3]
+        source_commit = "ec97c1b44015d83992303ea3dc9a9c045a82587e"
         raw = root / "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw"
         pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
         artifacts = json.loads((raw / "identity-pre-artifacts.json").read_text(encoding="utf-8"))
@@ -315,7 +315,11 @@ class CSharpCoverageTests(unittest.TestCase):
             for row in sources:
                 path = diagnostic_root / row["path"]
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes((root / row["path"]).read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+                blob = subprocess.run(
+                    ["git", "-c", f"safe.directory={root.as_posix()}", "show",
+                     f"{source_commit}:{row['path']}"], cwd=root, capture_output=True)
+                self.assertEqual(0, blob.returncode, blob.stderr.decode("utf-8", errors="replace"))
+                path.write_bytes(blob.stdout.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
             actual = {row["path"]: (row["bytes"], row["sha256"]) for row in
                       snapshot_artifacts(diagnostic_root, [diagnostic_root / row["path"] for row in sources])}
             self.assertEqual(expected, actual)

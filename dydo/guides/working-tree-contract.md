@@ -63,6 +63,22 @@ on that work item instead of working around a failure:
 4. The worktree is clean.
 5. The work item owns every path named in its plan.
 
+## Delivery scale and evidence
+
+For a small prompt or documentation change, use one author and one fresh independent whole-change
+reviewer. Add specification review or a separate hardener only when one short, concrete risk reason
+calls for it; persistence, migrations, permissions and uncertain native interfaces are examples that
+need stronger stages. Keep one compact acceptance contract and point to evidence rather than copying
+it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
+proof is never runtime proof.
+
+Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
+discovery. Record every gate result with candidate, command, environment or session, exit and result
+location; do not interrupt a quiet healthy test merely because it is silent. Reuse exact-candidate
+evidence only where the gate and environment permit it, rerunning after relevant changes or new
+concerns and at distinct mandatory integration or release boundaries. Validate uncertain native
+interface shapes early.
+
 ## Delegation
 
 - The Admiral budgets all open spawned threads in the native task tree before commissioning or

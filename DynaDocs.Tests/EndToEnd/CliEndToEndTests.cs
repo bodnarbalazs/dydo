@@ -70,8 +70,8 @@ public class CliEndToEndTests : IDisposable
 
         Assert.Equal(0, option.ExitCode);
         Assert.Equal(0, command.ExitCode);
-        Assert.Contains("3.0.0-beta.2", option.Stdout);
-        Assert.Contains("dydo version 3.0.0-beta.2", command.Stdout);
+        Assert.Contains("3.0.0-beta.3", option.Stdout);
+        Assert.Contains("dydo version 3.0.0-beta.3", command.Stdout);
     }
 
     /// <summary>
@@ -134,6 +134,21 @@ public class CliEndToEndTests : IDisposable
         Assert.True(checkResult.ExitCode <= 1,
             $"check crashed:\nStderr: {checkResult.Stderr}\nStdout: {checkResult.Stdout}");
         Assert.Contains("Checking", checkResult.Stdout); // Verify it actually ran
+    }
+
+    [Fact]
+    public async Task Init_All_WritesAndRetainsHostAgentSettingsThroughJoin()
+    {
+        var init = await RunDydoAsync("init all");
+        Assert.Equal(0, init.ExitCode);
+        Assert.Contains("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", File.ReadAllText(Path.Combine(_testDir, ".claude", "settings.json")));
+        var codexPath = Path.Combine(_testDir, ".codex", "config.toml");
+        var before = File.ReadAllBytes(codexPath);
+        Assert.Contains("max_concurrent_threads_per_session = 16", File.ReadAllText(codexPath));
+
+        var join = await RunDydoAsync("init all --join");
+        Assert.Equal(0, join.ExitCode);
+        Assert.Equal(before, File.ReadAllBytes(codexPath));
     }
 
     /// <summary>

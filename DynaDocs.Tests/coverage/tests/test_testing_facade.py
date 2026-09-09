@@ -693,7 +693,7 @@ class TestingFacadeTests(unittest.TestCase):
         self.test_node()
 
     def test_node(self):
-        p = subprocess.run(['node', '--test', 'DynaDocs.Tests/coverage/tests/testing_facade.test.mjs'], cwd=ROOT, env={**os.environ, 'PYTHON': sys.executable, 'FACADE_RUNNER': str(self.runner)}, capture_output=True, text=True, encoding='utf-8', timeout=60)
+        p = subprocess.run(['node', '--test', '--test-reporter=tap', 'DynaDocs.Tests/coverage/tests/testing_facade.test.mjs'], cwd=ROOT, env={**os.environ, 'PYTHON': sys.executable, 'FACADE_RUNNER': str(self.runner)}, capture_output=True, text=True, encoding='utf-8', timeout=60)
         self.assert_exit(p, 0)
         self.assertIn('# pass 1', p.stdout)
 

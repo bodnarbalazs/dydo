@@ -1,8 +1,15 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using System.Globalization;
+using System.Numerics;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using CsToml;
+using CsToml.Error;
+using CsToml.Values;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -77,11 +84,14 @@ public static class InitCommand
             foreach (var name in integrations)
                 config.Integrations[name] = true;
 
+            var hostSettings = PrepareHostSettings(projectRoot, integrations);
+
             var configPath = Path.Combine(projectRoot, ConfigService.ConfigFileName);
             configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
             ScaffoldProject(configService, config, configPath, projectRoot, integrations);
+            WriteHostSettings(hostSettings);
             PrintInitSummary(integrations);
 
             return ExitCodes.Success;
@@ -192,6 +202,7 @@ public static class InitCommand
             var projectRoot = Path.GetDirectoryName(configPath)!;
             var integrations = ExpandIntegrations(integration);
             var config = configService.LoadConfig(projectRoot);
+            var hostSettings = PrepareHostSettings(projectRoot, integrations);
 
             if (integrations.Contains("claude"))
             {
@@ -239,6 +250,8 @@ public static class InitCommand
                 configService.SaveConfig(pendingConfig, configPath);
             }
 
+            WriteHostSettings(hostSettings);
+
             return ExitCodes.Success;
         }
         catch (Exception ex)
@@ -266,6 +279,203 @@ public static class InitCommand
             _ => false
         };
     }
+
+    private static List<(string Path, string Content)> PrepareHostSettings(string projectRoot, string[] integrations)
+    {
+        var prepared = new List<(string Path, string Content)>();
+        if (integrations.Contains("claude"))
+        {
+            var setting = PrepareClaudeSettings(projectRoot);
+            if (setting != null)
+                prepared.Add(setting.Value);
+        }
+        if (integrations.Contains("codex"))
+        {
+            var setting = PrepareCodexSettings(projectRoot);
+            if (setting != null)
+                prepared.Add(setting.Value);
+        }
+        return prepared;
+    }
+
+    private static void WriteHostSettings(List<(string Path, string Content)> prepared)
+    {
+        foreach (var (path, content) in prepared)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, content);
+        }
+    }
+
+    private static (string Path, string Content)? PrepareClaudeSettings(string projectRoot)
+    {
+        const string relativePath = ".claude/settings.json";
+        const string key = "env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH";
+        var path = Path.Combine(projectRoot, ".claude", "settings.json");
+        var changed = !File.Exists(path);
+        JsonObject root;
+        if (!changed)
+        {
+            try
+            {
+                root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject
+                    ?? throw HostSettingError(relativePath, "JSON object root", "non-object root");
+            }
+            catch (JsonException ex)
+            {
+                throw HostSettingError(relativePath, "valid JSON object root", $"malformed JSON ({ex.Message})");
+            }
+        }
+        else
+        {
+            root = new JsonObject();
+        }
+
+        JsonObject env;
+        if (!root.TryGetPropertyValue("env", out var envNode))
+        {
+            env = new JsonObject();
+            root["env"] = env;
+            changed = true;
+        }
+        else if (envNode is JsonObject existingEnv)
+        {
+            env = existingEnv;
+        }
+        else
+        {
+            throw HostSettingError(relativePath, "object at env", DescribeJson(envNode));
+        }
+
+        if (!env.TryGetPropertyValue("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", out var depthNode))
+        {
+            env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] = "3";
+            changed = true;
+        }
+        else if (depthNode is not JsonValue value ||
+                 !value.TryGetValue<string>(out var depth) || !IsCanonicalDepth(depth, 3))
+        {
+            throw HostSettingError(relativePath, $"{key} JSON string canonical unsigned integer >= 3",
+                DescribeJson(depthNode));
+        }
+
+        return changed ? (path, root.ToJsonString(WriteOptions)) : null;
+    }
+
+    private static (string Path, string Content)? PrepareCodexSettings(string projectRoot)
+    {
+        const string relativePath = ".codex/config.toml";
+        var path = Path.Combine(projectRoot, ".codex", "config.toml");
+        var originalBytes = File.Exists(path) ? File.ReadAllBytes(path) : Array.Empty<byte>();
+        TomlDocument document;
+        try
+        {
+            document = CsTomlSerializer.Deserialize<TomlDocument>(originalBytes);
+        }
+        catch (CsTomlSerializeException ex)
+        {
+            var parse = ex.ParseExceptions?.FirstOrDefault();
+            var detail = parse == null
+                ? ex.Message
+                : $"line {parse.LineNumber}: {parse.InnerException?.Message ?? parse.Message}";
+            throw HostSettingError(relativePath, "valid TOML document", $"malformed TOML ({detail})");
+        }
+        var original = Encoding.UTF8.GetString(originalBytes);
+        var agents = document.RootNode["agents"u8];
+        var hasAgentsTable = agents.HasValue && agents.HasNodeOnly && agents.IsTableHeader;
+        if (agents.HasValue && !hasAgentsTable)
+            throw HostSettingError(relativePath, "explicit [agents] table", "inline, scalar, or array agents value");
+        if (hasAgentsTable)
+        {
+            ValidateTomlInteger(relativePath, agents["max_depth"u8], "max_depth", 3);
+            ValidateTomlInteger(relativePath, agents["max_concurrent_threads_per_session"u8], "max_concurrent_threads_per_session", 16);
+            ValidateTomlEnabled(relativePath, agents["enabled"u8]);
+        }
+
+        var lines = Regex.Matches(original, @"[^\r\n]*(?:\r\n|\r|\n|$)");
+        var agentsStart = -1;
+        var agentsEnd = original.Length;
+
+        foreach (Match lineMatch in lines)
+        {
+            if (lineMatch.Length == 0)
+                continue;
+            var line = lineMatch.Value.TrimEnd('\r', '\n');
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0 || trimmed.StartsWith('#'))
+                continue;
+
+            var table = Regex.Match(trimmed, @"^\[(?<name>agents)\](?:\s*#.*)?$");
+            if (table.Success)
+            {
+                if (agentsStart >= 0)
+                    throw HostSettingError(relativePath, "one unambiguous [agents] table", "duplicate [agents] table");
+                agentsStart = lineMatch.Index;
+                continue;
+            }
+            if (agentsStart >= 0 && agentsEnd == original.Length && trimmed.StartsWith('['))
+                agentsEnd = lineMatch.Index;
+        }
+
+        if (hasAgentsTable && agentsStart < 0)
+            throw HostSettingError(relativePath, "plain [agents] table", "quoted or otherwise ambiguous table header");
+
+        var additions = new List<string>();
+        if (!hasAgentsTable || !agents["max_depth"u8].HasValue)
+            additions.Add("max_depth = 3");
+        if (!hasAgentsTable || !agents["max_concurrent_threads_per_session"u8].HasValue)
+            additions.Add("max_concurrent_threads_per_session = 16");
+        if (additions.Count == 0)
+            return null;
+
+        var newline = original.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        string content;
+        if (agentsStart < 0)
+        {
+            var separator = original.Length == 0 ? "" : original.EndsWith("\n", StringComparison.Ordinal) || original.EndsWith("\r", StringComparison.Ordinal) ? newline : newline + newline;
+            content = original + separator + "[agents]" + newline + string.Join(newline, additions) + newline;
+        }
+        else
+        {
+            var prefix = original[..agentsEnd];
+            var suffix = original[agentsEnd..];
+            var separator = prefix.EndsWith("\n", StringComparison.Ordinal) || prefix.EndsWith("\r", StringComparison.Ordinal) ? "" : newline;
+            content = prefix + separator + string.Join(newline, additions) + newline + suffix;
+        }
+        return (path, content);
+    }
+
+    private static void ValidateTomlInteger(string path, TomlDocumentNode node, string key, int minimum)
+    {
+        if (!node.HasValue)
+            return;
+        if (node.ValueType != TomlValueType.Integer || !node.TryGetInt64(out var value) || value < minimum)
+            throw HostSettingError(path, $"agents.{key} integer >= {minimum}", $"agents.{key} has incompatible or lower value");
+    }
+
+    private static void ValidateTomlEnabled(string path, TomlDocumentNode node)
+    {
+        if (!node.HasValue)
+            return;
+        if (node.ValueType != TomlValueType.Boolean || !node.TryGetBool(out var enabled) || !enabled)
+            throw HostSettingError(path, "agents.enabled = true or absent", "agents.enabled has incompatible or false value");
+    }
+
+    private static bool IsCanonicalDepth(string value, int minimum) =>
+        Regex.IsMatch(value, @"^(0|[1-9][0-9]*)$") &&
+        BigInteger.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) && parsed >= minimum;
+
+    private static ArgumentException HostSettingError(string path, string required, string found) =>
+        new($"Invalid {path}: required {required}; found {found}.");
+
+    private static string DescribeJson(JsonNode? value) => value switch
+    {
+        null => "null",
+        JsonValue jsonValue when jsonValue.TryGetValue<string>(out var text) => $"string \"{text}\"",
+        JsonObject => "object",
+        JsonArray => "array",
+        _ => value.ToJsonString()
+    };
 
     private static readonly string[] DydoAllowEntries =
     {

@@ -118,11 +118,14 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 
 The crew tree needs three layers below a session: admiral, issue-captain, worker, scout.
 
-- Claude Code: `.claude/settings.json` gains `"env": { "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "3" }`.
-- Codex: the project's `.codex/config.toml` gains `[agents]` with `max_depth = 3`.
+- Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
+- Codex: the project's `.codex/config.toml` contains `[agents]` with `max_depth = 3` and
+  `max_concurrent_threads_per_session = 16`.
 
-`dydo init` writes both once DYD-86 lands; until then, by hand. Done when both files carry the key.
-Claude Code's default is already 3, so today only the Codex file changes behaviour.
+`dydo init claude`, `codex`, or `all` writes the selected project settings and rejects conflicting
+managed values instead of replacing them. These settings express project configuration intent; they do
+not prove host acceptance or available runtime capacity. Codex V2 and configuration reload behavior
+remain host qualifications. Done when the selected files carry the keys.
 
 ## 8. Check
 

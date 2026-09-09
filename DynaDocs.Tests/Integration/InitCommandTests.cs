@@ -297,7 +297,10 @@ public class InitCommandTests : IntegrationTestBase
     [InlineData("max_depth = 2\nmax_concurrent_threads_per_session = 16")]
     [InlineData("max_depth = 3\nmax_concurrent_threads_per_session = 15")]
     [InlineData("enabled = false\nmax_depth = 3\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("enabled = \"true\"\nmax_depth = 3\nmax_concurrent_threads_per_session = 16")]
     [InlineData("max_depth = \"3\"\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("max_depth = 3.0\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("max_depth = true\nmax_concurrent_threads_per_session = 16")]
     public async Task Init_CodexHostSetting_RejectsConflictWithoutPartialInit(string agents)
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
@@ -322,6 +325,7 @@ public class InitCommandTests : IntegrationTestBase
     [InlineData("agents = []\n")]
     [InlineData("[[agents]]\nmax_depth = 3\n")]
     [InlineData("agents.max_depth = 3\n")]
+    [InlineData("[ agents ]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n")]
     [InlineData("[\"agents\"]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n")]
     public async Task Init_CodexHostSetting_RejectsAmbiguousTomlBeforePartialInit(string toml)
     {
@@ -412,7 +416,8 @@ public class InitCommandTests : IntegrationTestBase
     [Theory]
     [InlineData("unrelated = true\nunrelated = false\n")]
     [InlineData("unrelated = \"unterminated\n")]
-    public async Task Init_All_MalformedUnrelatedCodexTomlPreservesBothHostsAndAllSideEffects(string toml)
+    [InlineData("[agents]\nmax_depth = 9223372036854775808\n")]
+    public async Task Init_All_MalformedCodexTomlPreservesBothHostsAndAllSideEffects(string toml)
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
@@ -439,7 +444,8 @@ public class InitCommandTests : IntegrationTestBase
     [Theory]
     [InlineData("unrelated = true\nunrelated = false\n")]
     [InlineData("unrelated = \"unterminated\n")]
-    public async Task Join_All_MalformedUnrelatedCodexTomlPreservesBothHostsAndAllSideEffects(string toml)
+    [InlineData("[agents]\nmax_depth = 9223372036854775808\n")]
+    public async Task Join_All_MalformedCodexTomlPreservesBothHostsAndAllSideEffects(string toml)
     {
         (await InitProjectAsync("none")).AssertSuccess();
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
@@ -505,6 +511,7 @@ public class InitCommandTests : IntegrationTestBase
         WriteFile(".codex/config.toml", toml);
         var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
         var ignore = File.ReadAllBytes(Path.Combine(TestDir, ".gitignore"));
+        var claudeEntryPoint = File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md"));
         var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
         var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
 
@@ -514,6 +521,7 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertStderrContains(".codex/config.toml");
         Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
         Assert.Equal(ignore, File.ReadAllBytes(Path.Combine(TestDir, ".gitignore")));
+        Assert.Equal(claudeEntryPoint, File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md")));
         Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
         Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
         AssertFileNotExists("AGENTS.md");

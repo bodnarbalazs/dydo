@@ -15,8 +15,6 @@ using DynaDocs.Models;
 [JsonSerializable(typeof(SkillSwitchConfig))]
 [JsonSerializable(typeof(Dictionary<string, SkillSwitchConfig>))]
 [JsonSerializable(typeof(StructureConfig))]
-[JsonSerializable(typeof(ModelsConfig))]
-[JsonSerializable(typeof(Dictionary<string, Dictionary<string, string>>))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(Dictionary<string, bool>))]
 [JsonSerializable(typeof(NudgeConfig))]

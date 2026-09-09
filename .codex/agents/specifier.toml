@@ -1,6 +1,5 @@
 name = "specifier"
 description = "A claimed Issue or lane: contract not yet exact, route still hiding choices. Write its spec and plan just in time, never its code."
-model = "gpt-5.6-sol"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

@@ -1,12 +1,20 @@
 ---
 area: general
 type: decision
-status: accepted
+status: superseded
 date: 2026-07-03
 participants: [balazs, Brian]
 ---
 
 # 028 — Model Tiers: Roles Declare a Tier, the Compiler Binds the Model
+
+> **Superseded by DYD-134 — dispatch-time model and effort selection (2026-09-09).**
+> The tier abstraction, the `models` block in `dydo.json` and the compiler's tier resolution are
+> retired: the configuration has no model property and `dydo sync` emits every role unbound on both
+> hosts. The delegating admiral or Issue Captain now chooses the model, and the effort where the
+> host exposes one, for each task. §5's review asymmetry survives as doctrine rather than
+> configuration: reviews and gates keep full strength whatever the work below them cost. Read this
+> record for history.
 
 Worker roles and workflow stages declare an abstract **model tier** (`strong` / `standard` / `light`) plus optionally an **effort** level — never a concrete model ID. A per-vendor mapping in `dydo.json` binds tiers to real models, and `dydo sync` resolves role → tier → model when emitting native artifacts (`.claude/agents/<role>.md` frontmatter carries the resolved model). Judgment-heavy work runs strong; well-defined implementation runs standard; mechanical sweeps run light. Everything is configurable in dydo; nothing is hardcoded.
 

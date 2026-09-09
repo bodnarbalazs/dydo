@@ -1,10 +1,87 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
+using DynaDocs.Utils;
 
 [Collection("Integration")]
 public class FixCommandIntegrationTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Fix_ValidationErrorsPreserveOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        RemoveScanExcludeInvariant(configPath);
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+        WriteFile("dydo/guides/Bad Name.md", "---\narea: guides\ntype: guide\n---\n\n# Bad Name\n");
+        WriteFile("dydo/guides/bad-name.md", "---\narea: guides\ntype: guide\n---\n\n# Existing\n");
+
+        var (exitCode, stdout, _) = ConsoleCapture.All(() => FixCommand.Execute(DydoDir));
+
+        Assert.Equal(ExitCodes.ValidationErrors, exitCode);
+        Assert.Contains("issues require manual attention", stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Fix_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        RemoveScanExcludeInvariant(configPath);
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, stdout, stderr) = ConsoleCapture.All(() =>
+            FixCommand.Execute(DydoDir, () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        // The in-memory restoration and the final report both precede the commit seam.
+        Assert.Contains("Restored 1 scanExclude invariant(s)", stdout);
+        Assert.Contains("Fixed 1 issues automatically.", stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Fix_NoConfigChange_LeavesConfigBytesUntouched()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, stdout, _) = ConsoleCapture.All(() => FixCommand.Execute(DydoDir));
+
+        Assert.Equal(ExitCodes.Success, exitCode);
+        Assert.Contains("Fixed 0 issues", stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    private void RemoveScanExcludeInvariant(string configPath)
+    {
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.ScanExclude.Remove("_system/templates/");
+        new ConfigService().SaveConfig(config, configPath);
+    }
+
+    private static void AddLegacyModels(string configPath)
+    {
+        var raw = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = System.Text.Json.Nodes.JsonNode.Parse(
+            """{"agents":{"reviewer":"strong"},"tiers":{"anthropic":{"strong":"legacy"}}}""");
+        raw["unrelated"] = System.Text.Json.Nodes.JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+    }
+
     #region Explicit File Scope
 
     [Fact]

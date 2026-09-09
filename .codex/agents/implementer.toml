@@ -1,6 +1,5 @@
 name = "implementer"
 description = "A specified Issue, not yet working. Write the tests and the code that make it pass, red before green, inside its owned paths."
-model = "gpt-5.6-terra"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

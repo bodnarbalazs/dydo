@@ -109,7 +109,7 @@ the workspace's project settings list the six Project statuses, which no MCP too
 - `dydo/understand/about.md`: purpose and domain;
 - `dydo/understand/architecture.md`: components and boundaries;
 - `dydo/guides/coding-standards.md`: repository conventions;
-- `dydo.json`: the model tiers per vendor and the agent bindings, the nudges, the scan exclusions;
+- `dydo.json`: the nudges and the scan exclusions;
   see [Configuration](../reference/configuration.md).
 
 Done when `dydo check` no longer warns about uncustomized foundation documents.

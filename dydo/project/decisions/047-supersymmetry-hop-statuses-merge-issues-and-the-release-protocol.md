@@ -278,6 +278,14 @@ otherwise. Hats run on the session's model, which the human sets strong.
 *Rejected:* a third tier in use, and effort emitted beside the model (kept as DYD-93), both until
 use proves a need.
 
+**Amended by DYD-134 (2026-09-09).** The tier mechanism this section keeps is retired along with
+DR 028: `dydo.json` has no `models` block, `dydo sync` writes no model into any compiled agent, and
+the two tiers bind nothing. The delegating admiral or Issue Captain chooses the model, and the
+effort where the host exposes one, per task at dispatch time, and states it as a requested value.
+Effort staying with the hosts survives in a sharper form: Claude Code exposes no per-call effort
+argument, so the session owns it, while on Codex the caller supplies effort beside the model.
+DYD-93's compiled per-tier effort is retired rather than deferred. Every other section stands.
+
 ## Consequences
 
 The human accepted this record on 2026-09-05 as the governing 3.0 model. The remaining prompt-file

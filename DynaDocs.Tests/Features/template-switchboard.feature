@@ -74,11 +74,11 @@ Feature: Local skill templates compile through an enabled switchboard
 
   Scenario: Upgrade a project that predates the local source layer
     Given an initialized project has no "dydo/_system/templates" directory and no "skills" switchboard
-    And its existing documentation, integrations, model bindings, nudges, exclusions, and template additions are recorded
+    And its existing documentation, integrations, legacy model bindings, nudges, exclusions, and template additions are recorded
     When I update the framework templates
     Then the command succeeds
     And the shipped local source, shipped provenance hashes, scan exclusion, and enabled switchboard are scaffolded
-    And the existing project configuration and project-owned files retain their values and bytes
+    And only the legacy models property is removed while existing project configuration and project-owned files retain their values and bytes
     When I synchronize the native artifacts
     Then enabled skills compile from the local source rather than an embedded fallback
 

@@ -43,5 +43,5 @@ Required sections:
 
 ## Related
 
-- [Project](../_index.md) - Project hub (transient task files live under `tasks/`)
-- [Decisions](../decisions/_index.md) - Why choices were made
+- [Project](../_project.md) - Project navigation
+- [Decisions](../decisions/_decisions.md) - Why choices were made

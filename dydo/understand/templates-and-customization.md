@@ -27,7 +27,7 @@ against a stored hash: `reference/about-dynadocs.md`, `reference/dydo-commands.m
 `reference/dydo-glossary.md`, `reference/writing-docs.md`, `reference/linear-workspace-standard.md` and
 `guides/working-tree-contract.md`. Every other document `dydo init` writes — `understand/about.md`,
 `understand/architecture.md`, `guides/coding-standards.md`, `welcome.md`, `glossary.md`,
-`files-off-limits.md`, `index.md`, the hubs and folder meta files, `CLAUDE.md`, `AGENTS.md`, and
+`files-off-limits.md`, `index.md`, authored navigation pages, `CLAUDE.md`, `AGENTS.md`, and
 `_system/template-additions/_README.md` beside its `extra-verify.md.example` — is written once and is
 the project's from then on. Two init outputs a later update still writes: `dydo.json`, where it
 refreshes the stored hashes and adds shipped defaults, and `_system/types.json`, which is topped up

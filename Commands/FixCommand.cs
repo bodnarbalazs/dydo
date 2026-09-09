@@ -70,12 +70,6 @@ public static class FixCommand
                 fixedCount += linksConverted;
             }
 
-            if (scope.FilePath == null)
-            {
-                fixedCount += FixHubHandler.RegenerateHubs(scope.CorpusRoot, scanner, docs);
-                fixedCount += FixHubHandler.CreateMissingMetaFiles(scope.CorpusRoot, scanner, docs);
-            }
-
             resolutionCorpus = scanner.ScanDirectory(scope.CorpusRoot);
             docs = SelectDocs(scope, resolutionCorpus);
             if (docs == null)

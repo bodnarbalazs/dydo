@@ -62,7 +62,7 @@ frontmatter itself does not enforce reads.
 
 - **Files:** `kebab-case.md` (lowercase, hyphens)
 - **Folders:** `kebab-case/` (lowercase, hyphens)
-- **Hub files:** `_index.md` in each folder
+- **Navigation pages:** authored `_folder.md` files where a folder needs navigation
 - **Meta files:** `_foldername.md` in direct children of main folders (e.g., `guides/api/_api.md`)
 
 Examples:
@@ -88,7 +88,7 @@ An optional summary of what this document covers.
 When useful, a summary helps agents quickly determine if this doc is relevant. Neither `dydo check`
 nor `dydo fix` requires one.
 
-**Note:** For folder meta files (`_foldername.md`), the first sentence of the summary is automatically extracted and displayed in hub file links.
+**Note:** Folder meta files (`_foldername.md`) are optional authored navigation pages.
 
 ### Related Section
 
@@ -129,9 +129,8 @@ dydo fix                # Auto-fix what's possible
 | Naming | Files and folders are kebab-case |
 | Title | H1 title exists |
 | Links | Relative paths, no broken links |
-| Hub Files | Each folder has `_index.md` |
-| Folder Meta Files | Direct children of main folders have `_foldername.md` |
-| Orphans | Every doc is linked from somewhere |
+| Navigation pages | Optional authored `_folder.md` pages |
+| Folder Meta Files | Optional authored `_foldername.md` pages |
 
 ---
 

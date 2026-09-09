@@ -168,8 +168,6 @@ Change source templates and run `dydo sync`; never hand-edit compiled `.claude/`
 | Layer | Owner | Question |
 |---|---|---|
 | Scan boundary | `Services/DocScanner.cs` and `scanExclude` | Should the path enter the documentation set? |
-| Hub generation | `Services/HubGenerator.cs` | Should a documentation hub be generated here? |
-| Hub fix-up | `Commands/FixHubHandler.cs` | Should `dydo fix` create or rewrite a hub here? |
 
 These layers answer different questions and are intentionally separate. Use off-limits rules for secret
 or protected paths, not scan exclusions.

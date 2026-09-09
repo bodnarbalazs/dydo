@@ -66,4 +66,4 @@ Only offer to create a Decision Record when all three are true:
 3. **The result of a real trade-off**: there were genuine alternatives and you picked one for specific reasons
 
 If any of the three is missing, skip it. Follow `_decisions.md`, number the file after the highest
-existing record, and run `dydo fix` so the hub lists it.
+existing record, and update authored navigation when the record needs a link.

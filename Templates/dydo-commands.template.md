@@ -75,7 +75,7 @@ Change the source template and re-run this command; never hand-edit a compiled a
 
 ### dydo check
 
-Validate documentation naming, frontmatter, titles, links, hub and folder-meta coverage, orphans,
+Validate documentation naming, frontmatter, titles, links, and project-specific rules. It also validates
 the off-limits file, legacy FutureFeature shape under `project/future-features/`, retired v2 work records,
 uncustomized foundation docs (warning), and `dydo.json` itself; config errors count toward exit `1`.
 
@@ -95,7 +95,7 @@ dydo fix
 dydo fix <path>
 ```
 
-Repairs include filename normalization, wikilink conversion, index/meta maintenance, and restoration of
+Repairs include filename normalization, wikilink conversion, and restoration of
 required scan exclusions. Review the Git diff afterward.
 
 ### dydo index

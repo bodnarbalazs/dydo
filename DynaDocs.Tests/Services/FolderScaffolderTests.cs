@@ -52,14 +52,14 @@ public class FolderScaffolderTests : IDisposable
     }
 
     [Fact]
-    public void Scaffold_CreatesHubIndexFiles()
+    public void Scaffold_DoesNotCreateFolderHubFiles()
     {
         _scaffolder.Scaffold(_testDir);
 
-        Assert.True(File.Exists(Path.Combine(_testDir, "understand", "_index.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, "guides", "_index.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, "reference", "_index.md")));
-        Assert.True(File.Exists(Path.Combine(_testDir, "project", "_index.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "understand", "_index.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "guides", "_index.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "reference", "_index.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "project", "_index.md")));
     }
 
     [Fact]

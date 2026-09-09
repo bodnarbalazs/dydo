@@ -12,12 +12,12 @@ state.
 ## The documentation funnel
 
 ```text
-entry file → dydo/index.md → folder hubs → issue-relevant durable docs
+entry file → dydo/index.md → authored navigation → issue-relevant durable docs
 ```
 
 1. The host loads `CLAUDE.md` or `AGENTS.md`.
 2. `dydo/index.md` establishes the knowledge and work boundary.
-3. Folder hubs narrow navigation to `understand/`, `guides/`, `reference/`, or `project/`.
+3. Optional authored navigation pages or direct durable docs narrow the path to the material relevant to the Issue.
 4. The agent reads only the Decisions, plan, architecture, guide, or reference material needed now.
 5. An invoked skill adds the methodology for the current kind of work.
 
@@ -47,7 +47,7 @@ status remains in Linear.
 
 Every document begins with YAML frontmatter and an H1. An opening summary is optional; a section
 or list may follow the title directly.
-Folder `_index.md` files provide navigation; direct child folders use `_<folder>.md` metadata.
+Folders may use authored `_<folder>.md` pages for navigation; neither these pages nor `_index.md` files are required.
 Relative Markdown links form the durable documentation graph.
 
 ```yaml
@@ -66,8 +66,8 @@ dydo check
 dydo fix
 ```
 
-`dydo check` validates frontmatter, titles, naming, links, hubs, folder metadata, and project rules.
-`dydo fix` applies supported repairs; review its diff because generated hubs and framework-owned files
+`dydo check` validates frontmatter, titles, naming, links, and project rules.
+`dydo fix` applies supported repairs; review its diff because framework-owned files
 may change.
 
 ## Related

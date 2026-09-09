@@ -134,7 +134,7 @@ its blocker do not exist yet; this release return is the admiral's ordinary wake
 
 On that wake, before generic pickable commissioning, the admiral uses the packet to contract a
 separate primary `Feature` / `AFK` record-delivery Issue from the retained feature branch. Its ownership names the exact
-`dydo/project/inquisitions/` record file and each required generated hub individually. Its own
+`dydo/project/inquisitions/` record file and exact authored navigation paths only when the record-delivery Issue contract requires them. Its own
 captain directs the ordinary specification, docs-writer, docs review and final Merge Sub-issue
 into the feature. Audit and proof branches never merge.
 

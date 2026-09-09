@@ -43,22 +43,26 @@ public sealed class CaptainCapacitySteps
 
     [Then("the Admiral commissions or resumes the Issue Captain from the record")]
     [Then("the Admiral does not dispatch that saved brief directly")]
-    public void AdmiralKeepsCaptainBoundary() => AssertEvery(AdmiralPrompts,
-        "Budget all open spawned threads in the native task tree before commissioning.",
-        "Commission or resume the captain from its record",
-        "never use a saved captain brief to dispatch crew",
-        "one bounded refusal");
+    public void AdmiralKeepsCaptainBoundary()
+    {
+        AssertEvery(AdmiralPrompts,
+            "Budget all open spawned threads in the native task tree before commissioning.",
+            "Commission or resume the captain from its record.",
+            "Never use a saved captain brief to dispatch crew.",
+            "On one bounded refusal, preserve the record and avoid blind retries;");
+        AssertEvery(SharedGuides,
+            "The Admiral budgets all open spawned threads in the native task tree before commissioning or resuming an Issue Captain from its record.");
+    }
 
     [Then("only that captain commissions the stage with its exact scope")]
     [Then("the worker return goes to the captain")]
     public void CaptainOwnsCrewScope() => AssertEvery(CaptainPrompts,
-        "You alone commission every specifier, production worker, hardener and reviewer for this Issue",
-        "keep each worker's scope exact",
-        "Every worker return comes back to you");
+        "You alone commission every specifier, production worker, hardener and reviewer for this Issue; keep each worker's scope exact.",
+        "Every worker return comes back to you.");
 
     [Then("the canonical Admiral and Issue Captain prompts and the shared guide state that a saved brief is a portable handoff and never Admiral-to-crew authority")]
     public void SavedBriefDoesNotTransferAuthority() => AssertEvery(AdmiralPrompts.Concat(CaptainPrompts).Concat(SharedGuides),
-        "saved brief carries scope and resume context, never Admiral-to-crew dispatch authority");
+        "A saved brief carries scope and resume context, never Admiral-to-crew dispatch authority.");
 
     [Then("the captain schedules the stages serially within the configured open-thread budget")]
     [Then("completion or interruption is not treated as slot release without native evidence")]
@@ -66,13 +70,11 @@ public sealed class CaptainCapacitySteps
     public void CaptainBudgetsSerialFreshStages()
     {
         AssertEvery(CaptainPrompts,
-            "Budget the whole open-thread tree and run necessary stages serially",
-            "Do not treat completion, return or interruption as capacity release without native evidence",
-            "fresh specifier and fresh reviewer");
+            "Budget the whole open-thread tree and run necessary stages serially when capacity requires it, preserving every fresh specifier and fresh reviewer.",
+            "Do not treat completion, return or interruption as capacity release without native evidence.");
         AssertEvery(SharedGuides,
-            "captain alone commissions its exact-scope crew",
-            "runs necessary stages serially when capacity requires it",
-            "Completion, return or interruption is not capacity release without native evidence");
+            "The captain alone commissions its exact-scope crew, budgets the whole open-thread tree and runs necessary stages serially when capacity requires it, preserving fresh specifier and fresh reviewer obligations.",
+            "Completion, return or interruption is not capacity release without native evidence.");
     }
 
     [Then("the captain preserves the record, candidate, hop SHA, and exact brief")]
@@ -82,17 +84,14 @@ public sealed class CaptainCapacitySteps
     public void RefusalPreservesCaptainOwnership()
     {
         AssertEvery(CaptainPrompts,
-            "preserve the record, candidate, hop SHA and exact brief",
-            "Do not broaden the brief or retry blindly",
-            "documented lifecycle handling only when its effect is established for this host",
-            "return or release the concrete host limitation through the normal hierarchy");
+            "On one bounded capacity refusal, preserve the record, candidate, hop SHA and exact brief.",
+            "Do not broaden the brief or retry blindly; use documented lifecycle handling only when its effect is established for this host, then return or release the concrete host limitation through the normal hierarchy.");
         AssertEvery(SharedGuides,
-            "On one bounded capacity refusal, the captain preserves the record, candidate, hop SHA and exact brief",
-            "it does not broaden the brief or retry blindly",
-            "Use documented lifecycle handling only when its effect is established for this host",
-            "returns or releases the concrete host limitation through the normal hierarchy");
+            "On one bounded capacity refusal, the captain preserves the record, candidate, hop SHA and exact brief; it does not broaden the brief or retry blindly.",
+            "Use documented lifecycle handling only when its effect is established for this host.",
+            "If it cannot make captain-owned work runnable, the captain returns or releases the concrete host limitation through the normal hierarchy; the Admiral never dispatches the saved brief.");
         AssertEvery(AdmiralPrompts,
-            "escalate the exact host limitation only after documented capacity or lifecycle handling cannot make captain-owned work runnable");
+            "On one bounded refusal, preserve the record and avoid blind retries; escalate the exact host limitation only after documented capacity or lifecycle handling cannot make captain-owned work runnable.");
     }
 
     [Then("the evidence records that configuration consumption and effectiveness remain unproved in the existing task")]
@@ -100,8 +99,8 @@ public sealed class CaptainCapacitySteps
     [Then("it does not claim desktop reload, slot reclamation, backend, version, model, or lifecycle behavior")]
     [Then("it leaves durable project configuration emission to DYD-86 and broader lifecycle claims to DYD-88")]
     public void EvidenceStaysBounded() => AssertEvery(SharedGuides,
-        "configuration and observed native result are separate evidence",
-        "does not claim configuration consumption, effectiveness, reload, reclamation, backend, version, model or lifecycle behavior");
+        "Configuration and observed native result are separate evidence.",
+        "It does not claim configuration consumption, effectiveness, reload, reclamation, backend, version, model or lifecycle behavior without direct host evidence.");
 
     private static void AssertEvery(IEnumerable<string> paths, params string[] expectations)
     {

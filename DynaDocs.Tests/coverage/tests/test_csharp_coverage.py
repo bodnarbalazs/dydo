@@ -5,10 +5,30 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from csharp_coverage import ASSEMBLY_PROJECTS, _same_native_map, altcover_commands, snapshot_artifacts
+from csharp_coverage import (ASSEMBLY_PROJECTS, _identity_producer, _same_native_map,
+                             _write_commands, altcover_commands, snapshot_artifacts)
 
 
 class CSharpCoverageTests(unittest.TestCase):
+    def test_identity_producer_is_built_outside_instrumented_debug_directories(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command, producer = _identity_producer(root)
+            self.assertEqual("Release", command[command.index("-c") + 1])
+            self.assertEqual(root / "DynaDocs.Tests/coverage/metrics/bin/Release/net10.0/GateMetrics.dll",
+                             producer)
+            prepare, _ = altcover_commands(root, root / "evidence")
+            inputs = [Path(item.split("=", 1)[1]) for item in prepare
+                      if item.startswith("--inputDirectory=")]
+            self.assertFalse(any(producer.is_relative_to(path) for path in inputs))
+
+    def test_completed_command_rows_are_persisted_incrementally(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            rows = [{"name": "build", "exit": 0}]
+            _write_commands(output, rows)
+            self.assertEqual(rows, __import__("json").loads((output / "commands.json").read_text()))
+
     def test_prepare_and_runner_commands_are_exact_and_unfiltered(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

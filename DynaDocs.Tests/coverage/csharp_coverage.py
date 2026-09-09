@@ -32,6 +32,20 @@ def snapshot_artifacts(root, paths):
     return rows
 
 
+def _write_commands(output, commands):
+    (Path(output) / "commands.json").write_text(
+        json.dumps(commands, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _identity_producer(root):
+    root = Path(root).resolve()
+    project = "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj"
+    command = ["dotnet", "build", project, "-c", "Release", "-p:RunAnalyzers=false",
+               "-p:NuGetAudit=false", "-p:UseSharedCompilation=false"]
+    producer = root / "DynaDocs.Tests/coverage/metrics/bin/Release/net10.0/GateMetrics.dll"
+    return command, producer
+
+
 def altcover_commands(root, output):
     root, output = Path(root).resolve(), Path(output).resolve()
     inputs = [root / "bin/Debug/net10.0", root / "DynaDocs.Tests/bin/Debug/net10.0",
@@ -128,19 +142,25 @@ def run_campaign(root, result_root, extra_args=None):
     os.environ["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0"
     os.environ["MSBUILDDISABLENODEREUSE"] = "1"
     commands = []
+    producer_build, producer = _identity_producer(root)
     builds = [
         ["dotnet", "build", "DynaDocs.sln", "-c", "Debug", "-p:RunAnalyzers=false",
          "-p:NuGetAudit=false", "-p:UseSharedCompilation=false"],
         ["dotnet", "build", "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj", "-c", "Debug",
          "-p:RunAnalyzers=false", "-p:NuGetAudit=false", "-p:UseSharedCompilation=false"],
+        producer_build,
     ]
     for index, command in enumerate(builds):
         row = _run(f"build-{index}", command, root, result_root)
         commands.append(row)
+        _write_commands(result_root, commands)
         if row["exit"]:
-            (result_root / "commands.json").write_text(json.dumps(commands, indent=2) + "\n")
             return 2
-    producer = root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/GateMetrics.dll"
+    producer_inputs = [path for path in producer.parent.iterdir() if path.is_file()]
+    (result_root / "identity-producer.json").write_text(json.dumps({
+        "schema": 1,
+        "artifacts": snapshot_artifacts(root, producer_inputs),
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     assembly_paths = _candidate_assemblies(root)
     pre = _identity_classes(root, producer, assembly_paths)
     originals = result_root / "originals"
@@ -154,20 +174,20 @@ def run_campaign(root, result_root, extra_args=None):
     prepare, runner = altcover_commands(root, result_root)
     row = _run("altcover-prepare", prepare, root, result_root)
     commands.append(row)
+    _write_commands(result_root, commands)
     if row["exit"]:
-        (result_root / "commands.json").write_text(json.dumps(commands, indent=2) + "\n")
         return 2
     instrumented = _identity_classes(root, producer, assembly_paths)
+    (result_root / "identity-instrumented.json").write_text(
+        json.dumps(instrumented, indent=2, sort_keys=True) + "\n")
     before_by_alias = {alias: row["facts"] for row in pre for alias in row["aliases"]}
     for row in instrumented:
         for alias in row["aliases"]:
             if alias not in before_by_alias or not _same_native_map(before_by_alias[alias], row["facts"]):
                 raise ValueError(f"AltCover changed MethodDef/PDB identity: {alias}")
-    (result_root / "identity-instrumented.json").write_text(
-        json.dumps(instrumented, indent=2, sort_keys=True) + "\n")
     row = _run("altcover-runner", runner, root, result_root)
     commands.append(row)
-    (result_root / "commands.json").write_text(json.dumps(commands, indent=2, sort_keys=True) + "\n")
+    _write_commands(result_root, commands)
     if row["exit"]:
         return row["exit"]
     report = result_root / "coverage.opencover.xml"

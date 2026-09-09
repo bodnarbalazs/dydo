@@ -4,6 +4,8 @@ import tempfile
 import unittest
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 from unittest.mock import patch
@@ -11,13 +13,80 @@ from pathlib import Path
 from copy import deepcopy
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from csharp_coverage import (ASSEMBLY_PROJECTS, _identity_producer, _source_facts, _source_facts_artifacts, _same_instrumented_map,
+from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _identity_producer, _source_facts, _source_facts_artifacts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
-                             _template_original_map, _write_commands, altcover_commands, snapshot_artifacts)
+                             _subject_commands, _template_original_map, _write_commands, altcover_commands,
+                             run_subject, snapshot_artifacts)
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
 
 
 class CSharpCoverageTests(unittest.TestCase):
+    def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            commands = _subject_commands(root)
+            self.assertEqual("dotnet", commands[0][0])
+            self.assertEqual(["test", "DynaDocs.sln"], commands[0][1:3])
+            self.assertIn("--no-build", commands[0])
+            self.assertEqual(sys.executable, commands[1][0])
+            self.assertEqual(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
+                             Path(commands[1][1]))
+            self.assertNotIn("build", commands[1])
+
+    def test_subject_runs_both_actions_in_order_with_inherited_recorder_environment(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            recorder = str(root / "recorder")
+            for exits, expected in (((7, 0), 7), ((0, 9), 9)):
+                with self.subTest(exits=exits), \
+                        patch.dict(os.environ, {"ALTCOVER_RECORDER": recorder}, clear=True), \
+                        patch("csharp_coverage.subprocess.run", side_effect=[
+                            subprocess.CompletedProcess([], code) for code in exits
+                        ]) as run:
+                    self.assertEqual(expected, run_subject(root))
+                self.assertEqual(_subject_commands(root), [call.args[0] for call in run.call_args_list])
+                for call in run.call_args_list:
+                    self.assertEqual(recorder, call.kwargs["env"]["ALTCOVER_RECORDER"])
+                    self.assertFalse(call.kwargs.get("capture_output", False))
+                self.assertEqual(str(root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/GateMetrics.dll"),
+                                 run.call_args_list[1].kwargs["env"][GATE_METRICS_PREBUILT_ENV])
+
+    def test_metrics_suite_records_real_gate_metrics_sequence_and_branch_visits(self):
+        root = Path(__file__).resolve().parents[3]
+        project = root / "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj"
+        build = subprocess.run(["dotnet", "build", str(project), "-c", "Debug", "--no-restore",
+                                "-p:RunAnalyzers=false", "-p:NuGetAudit=false"],
+                               cwd=root, text=True, capture_output=True)
+        self.assertEqual(0, build.returncode, build.stdout + build.stderr)
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            instrumented = output / "instrumented"
+            shutil.copytree(project.parent / "bin/Debug/net10.0", instrumented)
+            template, report = output / "template.xml", output / "coverage.xml"
+            prepare = ["dotnet", "tool", "run", "altcover", "--",
+                       f"--inputDirectory={instrumented}", "--inplace",
+                       f"--report={template}", "--reportFormat=OpenCover", "--eager",
+                       "--localSource", "--visibleBranches",
+                       "--assemblyFilter=^(?!(GateMetrics)$).*"]
+            prepared = subprocess.run(prepare, cwd=root, text=True, capture_output=True)
+            self.assertEqual(0, prepared.returncode, prepared.stdout + prepared.stderr)
+            env = os.environ.copy()
+            env[GATE_METRICS_PREBUILT_ENV] = str(instrumented / "GateMetrics.dll")
+            runner = ["dotnet", "tool", "run", "altcover", "--", "runner",
+                      f"--recorderDirectory={instrumented}", f"--workingDirectory={root}",
+                      f"--executable={sys.executable}", f"--outputFile={report}", "--summary=N", "--",
+                      str(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py")]
+            collected = subprocess.run(runner, cwd=root, env=env, text=True, capture_output=True)
+            self.assertEqual(0, collected.returncode, collected.stdout + collected.stderr)
+            module = next(row for row in ET.parse(report).findall("./Modules/Module")
+                          if row.findtext("ModuleName") == "GateMetrics")
+            sequence_visits = sum(int(point.attrib["vc"])
+                                  for point in module.findall(".//SequencePoint"))
+            branch_visits = sum(int(point.attrib["vc"])
+                                for point in module.findall(".//BranchPoint"))
+            self.assertGreater(sequence_visits, 0)
+            self.assertGreater(branch_visits, 0)
+
     def test_source_facts_persists_the_exact_producer_stdout(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -61,9 +130,11 @@ class CSharpCoverageTests(unittest.TestCase):
             self.assertIn("--assemblyFilter=^(?!(dydo|DynaDocs.Tests|GateMetrics)$).*", prepare)
             self.assertEqual(3, sum(arg.startswith("--inputDirectory=") for arg in prepare))
             self.assertEqual("runner", runner[5])
-            self.assertIn("--no-build", runner)
             self.assertNotIn("--filter", runner)
-            self.assertEqual(3, runner.count("--"))
+            executable = next(item for item in runner if item.startswith("--executable="))
+            self.assertEqual(sys.executable, executable.split("=", 1)[1])
+            self.assertEqual(2, runner.count("--"))
+            self.assertIn("--_subject", runner)
             self.assertTrue(str(output / "template.opencover.xml") in rendered)
 
     def test_snapshot_hashes_assembly_pdb_source_and_reports(self):

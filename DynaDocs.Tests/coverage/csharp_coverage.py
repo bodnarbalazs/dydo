@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter
@@ -17,6 +18,7 @@ ASSEMBLY_PROJECTS = {
     "DynaDocs.Tests": "DynaDocs.Tests/DynaDocs.Tests.csproj",
     "GateMetrics": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj",
 }
+GATE_METRICS_PREBUILT_ENV = "DYNADOCS_GATE_METRICS_PREBUILT_DLL"
 
 
 def snapshot_artifacts(root, paths):
@@ -48,6 +50,29 @@ def _identity_producer(root):
     return command, producer
 
 
+def _subject_commands(root):
+    root = Path(root).resolve()
+    return [
+        ["dotnet", "test", "DynaDocs.sln", "-c", "Debug", "--no-build",
+         "-p:RunAnalyzers=false", "-p:UseSharedCompilation=false", "--",
+         "RunConfiguration.TreatNoTestsAsError=true"],
+        [sys.executable, str(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py")],
+    ]
+
+
+def run_subject(root):
+    root = Path(root).resolve()
+    environment = os.environ.copy()
+    environment[GATE_METRICS_PREBUILT_ENV] = str(
+        root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/GateMetrics.dll")
+    status = 0
+    for command in _subject_commands(root):
+        result = subprocess.run(command, cwd=root, env=environment)
+        if not status and result.returncode:
+            status = result.returncode
+    return status
+
+
 def altcover_commands(root, output):
     root, output = Path(root).resolve(), Path(output).resolve()
     inputs = [root / "bin/Debug/net10.0", root / "DynaDocs.Tests/bin/Debug/net10.0",
@@ -59,10 +84,10 @@ def altcover_commands(root, output):
                "--assemblyFilter=^(?!(dydo|DynaDocs.Tests|GateMetrics)$).*"]
     runner = ["dotnet", "tool", "run", "altcover", "--", "runner",
               f"--recorderDirectory={root / 'DynaDocs.Tests/bin/Debug/net10.0'}",
-              f"--workingDirectory={root}", "--executable=dotnet",
+              f"--workingDirectory={root}", f"--executable={sys.executable}",
               f"--outputFile={output / 'coverage.opencover.xml'}", "--summary=N", "--",
-              "test", "DynaDocs.sln", "-c", "Debug", "--no-build", "-p:RunAnalyzers=false",
-              "-p:UseSharedCompilation=false", "--", "RunConfiguration.TreatNoTestsAsError=true"]
+              str(root / "DynaDocs.Tests/coverage/csharp_coverage.py"), "--_subject",
+              "--root", str(root)]
     return prepare, runner
 
 
@@ -360,11 +385,16 @@ def run_campaign(root, result_root, extra_args=None):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--_subject", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--root", required=True)
-    parser.add_argument("--result-root", required=True)
+    parser.add_argument("--result-root")
     parser.add_argument("--extra-json", default="[]")
     args = parser.parse_args()
     try:
+        if args._subject:
+            return run_subject(args.root)
+        if args.result_root is None:
+            return 2
         extra = json.loads(args.extra_json)
         if not isinstance(extra, list) or any(not isinstance(item, str) for item in extra):
             return 2

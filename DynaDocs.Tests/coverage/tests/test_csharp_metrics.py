@@ -4,9 +4,43 @@ import hashlib
 import os
 import shutil
 import subprocess
+import sys
 import unittest
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from csharp_coverage import GATE_METRICS_PREBUILT_ENV
+
+
+def gate_metrics_dll(root):
+    prebuilt = os.environ.get(GATE_METRICS_PREBUILT_ENV)
+    if prebuilt:
+        dll = Path(prebuilt).resolve()
+        if not dll.is_file():
+            raise AssertionError(f"Missing prebuilt GateMetrics DLL: {dll}")
+        return dll
+    project = Path(root).resolve() / "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj"
+    build = subprocess.run(["dotnet", "build", str(project), "--verbosity", "quiet",
+                            "--no-restore", "-p:RunAnalyzers=false"],
+                           text=True, capture_output=True)
+    if build.returncode:
+        raise AssertionError(build.stdout + build.stderr)
+    return project.parent / "bin/Debug/net10.0/GateMetrics.dll"
+
+
+class GateMetricsSetupTests(unittest.TestCase):
+    def test_explicit_prebuilt_mode_uses_named_dll_without_building(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            dll = root / "instrumented/GateMetrics.dll"
+            dll.parent.mkdir()
+            dll.write_bytes(b"instrumented")
+            with patch.dict(os.environ, {GATE_METRICS_PREBUILT_ENV: str(dll)}), \
+                    patch(__name__ + ".subprocess.run") as run:
+                self.assertEqual(dll.resolve(), gate_metrics_dll(root))
+            run.assert_not_called()
 
 
 class CSharpMetricsTests(unittest.TestCase):
@@ -16,11 +50,7 @@ class CSharpMetricsTests(unittest.TestCase):
         os.environ["APPDATA"] = str(cls.root / "dydo/_system/.local/appdata")
         os.environ.setdefault("NUGET_PACKAGES", str(Path.home() / ".nuget/packages"))
         cls.project = cls.root / "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj"
-        build = subprocess.run(["dotnet", "build", str(cls.project), "--verbosity", "quiet", "--no-restore", "-p:RunAnalyzers=false"],
-                               text=True, capture_output=True)
-        if build.returncode:
-            raise AssertionError(build.stdout + build.stderr)
-        cls.dll = cls.project.parent / "bin/Debug/net10.0/GateMetrics.dll"
+        cls.dll = gate_metrics_dll(cls.root)
 
     def measure(self, source):
         result = subprocess.run(["dotnet", str(self.dll), "--syntax"], input=source,

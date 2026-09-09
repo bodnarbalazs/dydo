@@ -225,6 +225,46 @@ def _record_body_ownership(modules, physical, coverage, logical, structural):
         modules[path]['body_owners'].append(row)
 
 
+def _structural_methods(behavior):
+    result = {}
+    for row in behavior["structural_methods"]:
+        key, reason = row.get("key"), row.get("reason")
+        if not isinstance(key, str) or not key or not isinstance(reason, str) or not reason:
+            raise ValueError("Invalid SourceBehavior structural classification")
+        if key in result:
+            raise ValueError(f"Duplicate SourceBehavior structural classification: {key}")
+        result[key] = reason
+    return result
+
+
+def _synthesized_accounting(assembly, physical, points, source_behavior):
+    fields = ("path", "line", "column", "end_line", "end_column")
+    if "token" not in physical or any(any(field not in point for field in fields) for point in points):
+        raise ValueError(f"Missing synthesized-member source evidence: {physical['identity']}")
+    evidence = sorted({tuple(point[field] for field in fields) for point in points})
+    paths = {row[0] for row in evidence}
+    if len(paths) != 1:
+        raise ValueError(f"Ambiguous synthesized-member source evidence: {physical['identity']}")
+    return {"module": assembly["assembly_name"], "token": physical["token"],
+            "signature": physical["identity"],
+            "evidence": [{"path": path, "line": line, "column": column,
+                          "end_line": end_line, "end_column": end_column}
+                         for path, line, column, end_line, end_column in evidence],
+            "sourceBehavior": {"class": "semantic synthesized member", "reason": source_behavior},
+            "reason": "semantic synthesized member with no authored executable behavior"}
+
+
+def _accounting_summary(accounting):
+    rows = [row for row in accounting
+            if row.get("reason") == "semantic synthesized member with no authored executable behavior"]
+    keys = [(row["reason"], row["evidence"][0]["path"]) for row in rows]
+    if len(keys) != len(set((row["module"], row["token"], row["signature"]) for row in rows)):
+        raise ValueError("Duplicate synthesized-member audit row")
+    groups = [{"reason": reason, "path": path, "count": keys.count((reason, path))}
+              for reason, path in sorted(set(keys))]
+    return {"total": len(rows), "groups": groups}
+
+
 def join_methods(root, source, assembly, coverage):
     """Every maintained emitted body needs exact hits and one explained source owner."""
     source_methods = {row["path"]: row["methods"] for row in source["files"]}
@@ -233,7 +273,7 @@ def join_methods(root, source, assembly, coverage):
     behavior = source["behavior"]
     constructors = {row["key"]: row for row in behavior["constructors"]}
     fragments = {row["id"]: row for row in behavior["fragments"]}
-    structural = {row["key"]: row["reason"] for row in behavior["structural_methods"]}
+    structural = _structural_methods(behavior)
     declared = {row["key"]: row for row in behavior["declared_methods"]}
     generated_files = set(source.get("generated_files", []))
     checksums, accounting, mapped = set(), [], set()
@@ -263,12 +303,11 @@ def join_methods(root, source, assembly, coverage):
         if not points:
             raise ValueError(f"Empty maintained PDB point inventory: {physical['identity']}")
         _validate_points(root, points, checksums)
-        covered, total = _physical_hits(physical, coverage, modules)
         key = physical["key"]
         if key in structural:
-            accounting.append({"identity": physical["identity"], "reason": structural[key]})
-            _record_body_ownership(modules, physical, coverage, None, structural[key])
+            accounting.append(_synthesized_accounting(assembly, physical, points, structural[key]))
             continue
+        covered, total = _physical_hits(physical, coverage, modules)
         if key in constructors:
             constructor = constructors[key]
             path = points[0]["path"]
@@ -289,4 +328,7 @@ def join_methods(root, source, assembly, coverage):
         raise ValueError(f"Authored methods absent from emitted coverage join: {missing}")
     for module in modules.values():
         module["executable"] = bool(module["lines"])
-    return {"modules": list(modules.values()), "accounting": accounting, "fragments": list(fragments.values())}
+    accounting.sort(key=lambda row: (row.get("module", ""), row.get("token", -1), row["identity"]
+                                      if "identity" in row else row.get("signature", "")))
+    return {"modules": list(modules.values()), "accounting": accounting,
+            "accountingSummary": _accounting_summary(accounting), "fragments": list(fragments.values())}

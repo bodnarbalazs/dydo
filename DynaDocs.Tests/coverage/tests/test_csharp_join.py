@@ -109,6 +109,55 @@ class CSharpJoinTests(unittest.TestCase):
         self.assertEqual(["nuget:p/1.0/build/Package.cs"], reasons["A::P()"]["documents"])
         self.assertEqual("no non-hidden portable-PDB points", reasons["A::N()"]["reason"])
 
+    def test_semantic_synthesized_members_are_audited_without_physical_coverage(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path = root / "A.cs"
+            source_path.write_text("record A { public int Auto { get; set; } }")
+            checksum = hashlib.sha256(source_path.read_bytes()).hexdigest()
+            point = {"path": "A.cs", "origin": "maintained", "checksum_algorithm": "SHA256",
+                     "checksum": checksum, "line": 1, "column": 0, "end_line": 1, "end_column": 45}
+            source = {"files": [{"path": "A.cs", "methods": []}], "generated_files": [],
+                      "behavior": {"constructors": [], "fragments": [], "declared_methods": [],
+                                   "structural_methods": [
+                                       {"key": "A::get_Auto()", "reason": "semantic synthesized auto accessor"},
+                                       {"key": "A::.ctor(A)", "reason": "semantic synthesized record copy constructor"},
+                                   ]}}
+            assembly = {"assembly_name": "A", "methods": [
+                {"token": 1, "identity": "System.Int32 A::get_Auto()", "key": "A::get_Auto()", "points": [point]},
+                {"token": 2, "identity": "System.Void A::.ctor(A)", "key": "A::.ctor(A)", "points": [point]},
+            ]}
+            joined = join_methods(root, source, assembly, {})
+            self.assertEqual([1, 2], [row["token"] for row in joined["accounting"]])
+            self.assertTrue(all(row["reason"] == "semantic synthesized member with no authored executable behavior"
+                                for row in joined["accounting"]))
+            self.assertEqual({"class": "semantic synthesized member",
+                              "reason": "semantic synthesized auto accessor"},
+                             joined["accounting"][0]["sourceBehavior"])
+            self.assertEqual({"total": 2, "groups": [
+                {"reason": "semantic synthesized member with no authored executable behavior", "path": "A.cs", "count": 2}
+            ]}, joined["accountingSummary"])
+
+    def test_authored_or_generated_named_members_are_never_excluded_without_source_behavior(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path = root / "A.cs"
+            source_path.write_text("class A { int Auto { get => 1; } }")
+            point = {"path": "A.cs", "origin": "maintained", "checksum_algorithm": "SHA256",
+                     "checksum": hashlib.sha256(source_path.read_bytes()).hexdigest(), "line": 1,
+                     "column": 0, "end_line": 1, "end_column": 36}
+            source = {"files": [{"path": "A.cs", "methods": []}], "generated_files": [],
+                      "behavior": {"constructors": [], "fragments": [], "declared_methods": [],
+                                   "structural_methods": []}}
+            for physical in (
+                {"token": 1, "identity": "System.Int32 A::get_Auto()", "key": "A::get_Auto()",
+                 "generated": True, "points": [point]},
+                {"token": 2, "identity": "System.Void A::.ctor()", "key": "A::.ctor()",
+                 "generated": True, "points": [point]},
+            ):
+                with self.subTest(identity=physical["identity"]), self.assertRaisesRegex(ValueError, "Missing physical method coverage"):
+                    join_methods(root, source, {"assembly_name": "A", "methods": [physical]}, {})
+
 
 if __name__ == "__main__":
     unittest.main()

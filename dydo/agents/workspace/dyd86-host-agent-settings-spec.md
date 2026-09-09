@@ -93,12 +93,14 @@ join wiring and write the prepared host-settings outputs. Validation failures th
 `dydo.json`, hook, entry-point, ignore-file, or host-settings mutation. Write only changed outputs;
 repeat output is byte-identical.
 
-**Gates.** Before broad testing, publish the real CLI as Native AOT with CsToml 1.8.4 and execute that
-published binary against valid, duplicate-key, and malformed Codex-config `init` cases; each result
-must satisfy its configuration or no-side-effects contract. Then use only
-`py DynaDocs.Tests/coverage/run_tests.py`: first a focused `InitCommandTests` and `CliEndToEndTests`
-selection with nonzero discovery, then the full runner; the required zero-warning build, `dydo check`,
-fresh built-CLI acceptance, preservation/extension, and repeated-identity checks all pass. Record
+**Gates.** Before fresh independent whole-source review, run the focused `InitCommandTests` and
+`CliEndToEndTests` matrix with nonzero discovery and publish the real CLI as Native AOT with CsToml
+1.8.4, then execute that published binary against valid, duplicate-key, and malformed Codex-config
+`init` cases; each result must satisfy its configuration or no-side-effects contract. The prior full
+suite evidence of 2,347 passed and 2 skipped applies only to candidate
+`6eeb9cc256620cc8e8e1e591bcefbe2af9c4ffe1`; it is not full-suite proof for a later source candidate,
+so no additional source full suite runs merely before that review. The final DYD-128 integrated
+candidate must run the complete combined suite and all existing G/M gates without waiver. Record every
 command, candidate SHA, exit, discovery, and evidence location. A fresh reviewer receives this
 contract, candidate, and base SHA; native project-setting semantics and the new AOT dependency warrant
 that review.

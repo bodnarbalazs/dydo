@@ -1,0 +1,80 @@
+---
+area: agents
+type: specification
+issue: DYD-86
+base: c115e0fa4525b116691172b08e76afdac0e8292f
+---
+
+# DYD-86 Host Agent Settings
+
+## Spec
+
+`dydo init claude`, `dydo init codex`, and `dydo init all` configure the selected project's
+host settings on both a fresh tree and `--join`; `none` leaves them absent. The setting is project
+configuration intent, never evidence that a host accepted it or that a runtime capacity exists.
+
+| Host file | Managed requirement |
+| --- | --- |
+| `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` is the JSON string `"3"`. |
+| `.codex/config.toml` | The verified `[agents]` table supplies `max_concurrent_threads_per_session = 16`. `enabled` defaults true, so it is not written at project root. `max_depth = 3` is an explicit **pre-production blocker**: the current official reference does not establish that key's syntax or semantics. Production needs a non-sacrificial parser/config-schema proof or a contract amendment. |
+
+For each selected file, a missing verified managed key is added while unrelated content remains
+intact. Repeated init/join is byte-identical after the first successful write. A present valid
+managed concurrency of at least 16 is retained. A lower concurrency, or `enabled = false`, is an
+actionable error naming the file, key, required value, and found value; it is never silently changed
+or downgraded. If the depth blocker is resolved in favor of `max_depth`, the same retain-at-least-3
+and diagnose-lower rule applies.
+
+Malformed JSON/TOML, a non-object JSON root or `env`, incompatible managed-value types, ambiguous
+TOML structure, and the above conflicts fail before any host-settings mutation. The command reports
+the actionable failure and does not create or alter either selected host-settings file. Unrelated
+JSON members and TOML bytes, comments, and ordering are preserved wherever their location is not
+managed; the implementation must refuse an ambiguous edit rather than rewrite a TOML document.
+
+The project `.claude/settings.json` is separate from existing personal hook wiring in
+`.claude/settings.local.json`; DYD-86 neither weakens nor relies on the hook loader's malformed-JSON
+fallback. Codex config is trusted-project configuration and layers root-to-current-directory, with
+the closest file winning; the concurrency ceiling excludes the primary thread. V1/V2 and reload
+behavior remain host qualifications, not failures. The native evidence is the official
+[configuration reference](https://developers.openai.com/codex/config-reference/) and
+[multi-agent guide](https://developers.openai.com/codex/multi-agent/). No capacity manager, runtime
+probe, generated-role change, or lifecycle claim is part of this Issue; DYD-88 owns runtime
+observation.
+
+## Plan
+
+**Pattern to copy.** `Commands/InitCommand.cs` already selects integrations in `ScaffoldProject` and
+`ExecuteJoin`; its idempotent hook wiring is adjacent but separate. `Commands/SyncCommand.cs:471` and
+`dydo/guides/customizing-roles.md:42` establish V1 `[agents]` vocabulary, while this Issue owns the
+project document rather than generated role TOML.
+
+**Files.**
+
+1. `Commands/InitCommand.cs` — after the depth blocker is resolved, preflight every selected
+   host-settings document before existing init or join mutations, merge only verified managed
+   JSON/TOML settings, then write the prepared output after validation; use a narrow
+   line-preserving TOML edit and fail when it cannot locate one safe edit.
+2. `DynaDocs.Tests/Integration/InitCommandTests.cs` — prove fresh/init/join/repeat cases, unrelated
+   JSON and TOML preservation, satisfying-value retention, each conflict/type/malformed diagnostic,
+   and zero host-settings writes on each preflight failure.
+3. `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` — run the built CLI with `init all` and read both
+   project settings back; retain one actual join/repeat invocation to prove the shipped command path.
+4. `dydo/guides/getting-started.md` — replace the DYD-86 future-tense note with the delivered
+   configuration contract, concurrency-intent qualification, and Codex V2 limitation. This is a
+   guide-only coordination boundary with DYD-91: do not register, template, or scaffold it here.
+
+**Mutation order.** Determine selected integrations; read and parse every target; validate root and
+managed types; resolve every conflict; construct every output; only then run existing scaffolding or
+join wiring and write the prepared host-settings outputs. Validation failures therefore precede
+`dydo.json`, hook, entry-point, ignore-file, or host-settings mutation. Write only changed outputs;
+repeat output is byte-identical.
+
+**Gates.** Use only `py DynaDocs.Tests/coverage/run_tests.py`: first a focused `InitCommandTests` and
+`CliEndToEndTests` selection with nonzero discovery, then the full runner; the required zero-warning
+build, `dydo check`, fresh built-CLI acceptance, preservation/extension, and repeated-identity checks
+all pass. Record command, candidate SHA, exit, discovery, and evidence location. A fresh reviewer
+receives this contract, candidate, and base SHA; native project-setting semantics warrant that review.
+
+**Plan review.** Recommended: TOML's native configuration semantics and lossless preservation make
+the depth-key blocker and failure ordering material. Production remains blocked on the recorded
+`max_depth` native proof or contract amendment and the DYD-39 sequencing constraint.

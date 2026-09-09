@@ -122,42 +122,7 @@ public static class TemplateCommand
         var sourceRoot = Path.Combine(projectRoot, original.Structure.Root, "_system", "templates");
         var managed = ManagedShippedSourcePaths(original).ToHashSet(StringComparer.Ordinal);
 
-        foreach (var canonical in packaged.Where(name => name.StartsWith("resource-", StringComparison.Ordinal)))
-        {
-            var legacy = LegacyResourceTemplateName(canonical);
-            var canonicalRelative = $"_system/templates/{canonical}";
-            var legacyRelative = $"_system/templates/{legacy}";
-            var canonicalPath = Path.Combine(sourceRoot, canonical);
-            var legacyPath = Path.Combine(sourceRoot, legacy);
-            var ownsLegacy = original.FrameworkHashes.ContainsKey(legacyRelative);
-            var ownsCanonical = original.FrameworkHashes.ContainsKey(canonicalRelative);
-
-            if (File.Exists(legacyPath) && !ownsLegacy)
-                throw new InvalidDataException($"Local custom source '{legacy}' collides with a retired shipped template.");
-            if (ownsLegacy && File.Exists(canonicalPath) && !ownsCanonical)
-                throw new InvalidDataException($"Local custom source '{canonical}' collides with a shipped template.");
-        }
-
-        foreach (var relative in managed.Where(relative =>
-                     !packaged.Contains(Path.GetFileName(relative))
-                     && !original.FrameworkHashes.ContainsKey(relative)))
-        {
-            var path = Path.Combine(projectRoot, original.Structure.Root,
-                relative.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(path))
-                throw new InvalidDataException(
-                    $"Local custom source '{Path.GetFileName(relative)}' collides with a retired shipped template.");
-        }
-
-        foreach (var name in packaged)
-        {
-            var path = Path.Combine(sourceRoot, name);
-            if (!File.Exists(path))
-                continue;
-            var relative = $"_system/templates/{name}";
-            if (!managed.Contains(relative))
-                throw new InvalidDataException($"Local custom source '{name}' collides with a shipped template.");
-        }
+        ValidateSourceCollisions(original, projectRoot, sourceRoot, packaged, managed);
 
         var temporaryRoot = Path.Combine(Path.GetTempPath(), "dydo-update-" + Guid.NewGuid().ToString("N"));
         try
@@ -204,6 +169,48 @@ public static class TemplateCommand
         {
             if (Directory.Exists(temporaryRoot))
                 Directory.Delete(temporaryRoot, true);
+        }
+    }
+
+    private static void ValidateSourceCollisions(DydoConfig original, string projectRoot,
+        string sourceRoot, HashSet<string> packaged, HashSet<string> managed)
+    {
+
+        foreach (var canonical in packaged.Where(name => name.StartsWith("resource-", StringComparison.Ordinal)))
+        {
+            var legacy = LegacyResourceTemplateName(canonical);
+            var canonicalRelative = $"_system/templates/{canonical}";
+            var legacyRelative = $"_system/templates/{legacy}";
+            var canonicalPath = Path.Combine(sourceRoot, canonical);
+            var legacyPath = Path.Combine(sourceRoot, legacy);
+            var ownsLegacy = original.FrameworkHashes.ContainsKey(legacyRelative);
+            var ownsCanonical = original.FrameworkHashes.ContainsKey(canonicalRelative);
+
+            if (File.Exists(legacyPath) && !ownsLegacy)
+                throw new InvalidDataException($"Local custom source '{legacy}' collides with a retired shipped template.");
+            if (ownsLegacy && File.Exists(canonicalPath) && !ownsCanonical)
+                throw new InvalidDataException($"Local custom source '{canonical}' collides with a shipped template.");
+        }
+
+        foreach (var relative in managed.Where(relative =>
+                     !packaged.Contains(Path.GetFileName(relative))
+                     && !original.FrameworkHashes.ContainsKey(relative)))
+        {
+            var path = Path.Combine(projectRoot, original.Structure.Root,
+                relative.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(path))
+                throw new InvalidDataException(
+                    $"Local custom source '{Path.GetFileName(relative)}' collides with a retired shipped template.");
+        }
+
+        foreach (var name in packaged)
+        {
+            var path = Path.Combine(sourceRoot, name);
+            if (!File.Exists(path))
+                continue;
+            var relative = $"_system/templates/{name}";
+            if (!managed.Contains(relative))
+                throw new InvalidDataException($"Local custom source '{name}' collides with a shipped template.");
         }
     }
 

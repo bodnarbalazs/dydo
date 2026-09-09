@@ -169,6 +169,64 @@ public class FixCommandIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region Explicit Directory Scope
+
+    [Fact]
+    public async Task Fix_ExplicitDirectory_ResolvesSiblingLinksWithoutChangingOutsideDocs()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var selectedDirectory = Path.Combine(DydoDir, "guides");
+        var outsidePath = Path.Combine(DydoDir, "reference", "Outside File.md");
+        WriteFile("dydo/guides/Selected File.md", "---\narea: guides\ntype: guide\n---\n\n# Selected\n\nSee [[resolution-target]].");
+        WriteFile("dydo/reference/resolution-target.md", "---\narea: reference\ntype: context\n---\n\n# Resolution Target\n");
+        WriteFile("dydo/reference/Outside File.md", "---\narea: reference\ntype: context\n---\n\n# Outside\n\nSee [[resolution-target]].");
+        var outsideBefore = File.ReadAllBytes(outsidePath);
+
+        var result = await RunAsync(FixCommand.Create(), selectedDirectory);
+
+        result.AssertSuccess();
+        AssertFileExists("dydo/guides/selected-file.md");
+        AssertFileNotExists("dydo/guides/Selected File.md");
+        Assert.Contains("[resolution-target](../reference/resolution-target.md)", ReadFile("dydo/guides/selected-file.md"));
+        Assert.Equal(outsideBefore, File.ReadAllBytes(outsidePath));
+        AssertFileNotExists("dydo/reference/outside-file.md");
+        Assert.DoesNotContain("Outside File.md", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Fix_ExplicitDirectory_HonorsRootRelativeScanExclude()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var selectedDirectory = Path.Combine(DydoDir, "guides");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.ScanExclude.Add("guides/excluded/");
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+        var excludedPath = Path.Combine(DydoDir, "guides", "excluded", "Excluded File.md");
+        WriteFile("dydo/guides/excluded/Excluded File.md", "---\narea: guides\ntype: guide\n---\n\n# Excluded\n");
+        var excludedBefore = File.ReadAllBytes(excludedPath);
+
+        var result = await RunAsync(FixCommand.Create(), selectedDirectory);
+
+        result.AssertSuccess();
+        Assert.Equal(excludedBefore, File.ReadAllBytes(excludedPath));
+        AssertFileNotExists("dydo/guides/excluded/excluded-file.md");
+    }
+
+    [Fact]
+    public async Task Fix_ExplicitDirectoryOutsideDocsTree_ReturnsToolError()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var outsideDirectory = Path.Combine(TestDir, "outside");
+        Directory.CreateDirectory(outsideDirectory);
+
+        var result = await RunAsync(FixCommand.Create(), outsideDirectory);
+
+        result.AssertExitCode(ExitCodes.ToolError);
+        Assert.Contains($"Path is outside the docs tree: {outsideDirectory}", result.Stderr);
+    }
+
+    #endregion
+
     #region Obsidian Compatibility
 
     [Fact]

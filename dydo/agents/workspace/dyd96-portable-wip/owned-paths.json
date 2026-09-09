@@ -57,7 +57,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/csharp_coverage.py",
-      "action": "Replace Coverlet with one isolated AltCover9.0.102 --eager prepare/runner full-suite campaign; preserve raw reports/spools and pre/instrumented/post identities; pass each assembly's owning project to the producer and compare document tables pre/instrumented",
+      "action": "Replace Coverlet with one isolated AltCover9.0.102 --eager prepare/runner full-suite campaign; preserve raw reports/spools and pre/instrumented/post identities; pass each assembly's owning project to the producer and compare document tables pre/instrumented; the pinned prepare command carries no --showGenerated (AltCover's -2 Visualizer marker is not a count)",
       "phase": "production"
     },
     {
@@ -367,12 +367,12 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_coverage.py",
-      "action": "Replace Coverlet merge/format cases with real AltCover prepare/runner, eager child aggregation, raw failure preservation and identity-mutation cases; fixtures authored as test data strings plus the document-table identity comparison case",
+      "action": "Replace Coverlet merge/format cases with real AltCover prepare/runner, eager child aggregation, raw failure preservation and identity-mutation cases; fixtures authored as test data strings plus the document-table identity comparison case and the absent --showGenerated assertion",
       "phase": "production"
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
-      "action": "Replace signature/line Coverlet cases with exact module/token/sequence/descendant-branch AltCover joins, zero-hit and ambiguity failures; fixtures authored as test data strings plus document-table resolution and exclusion-by-origin accounting cases",
+      "action": "Replace signature/line Coverlet cases with exact module/token/sequence/descendant-branch AltCover joins, zero-hit and ambiguity failures; fixtures authored as test data strings plus document-table resolution and exclusion-by-origin accounting cases and the rejected vc=-2 marker row",
       "phase": "production"
     },
     {
@@ -477,7 +477,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/tests/test_windows_job.py",
-      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings; plus the explicit execution_seconds_maximum boundary case (14400 accepted under 14400, 14401 rejected, 14400 rejected under the default)",
       "phase": "production"
     },
     {
@@ -492,7 +492,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/windows_job.py",
-      "action": "Retained narrow campaign containment with finite1800s bound, owned cleanup and no process adoption",
+      "action": "Retained narrow campaign containment with finite1800s bound, owned cleanup and no process adoption; validate bounds execution_seconds by the one constant EXECUTION_SECONDS_MAXIMUM=1800 unless an in-process caller passes execution_seconds_maximum through run; request schema and main() unchanged",
       "phase": "production"
     },
     {

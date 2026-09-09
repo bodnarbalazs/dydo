@@ -20,7 +20,7 @@ public class IndexGenerator : IIndexGenerator
         sb.AppendLine();
         sb.AppendLine("## How to Navigate");
         sb.AppendLine();
-        sb.AppendLine("1. Start with [Platform Overview](./understand/platform.md) if you're new");
+        sb.AppendLine("1. Start with [About This Project](./understand/about.md) if you're new");
         sb.AppendLine("2. Browse by purpose below");
         sb.AppendLine("3. Use the [Glossary](./glossary.md) for term definitions");
         sb.AppendLine();

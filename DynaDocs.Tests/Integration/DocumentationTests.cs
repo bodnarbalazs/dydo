@@ -385,6 +385,18 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Index_GeneratedRootPassesCheck()
+    {
+        await InitProjectAsync("none");
+
+        (await IndexAsync()).AssertSuccess();
+
+        var check = await CheckAsync();
+        check.AssertSuccess();
+        Assert.DoesNotContain("Broken link", check.Stdout);
+    }
+
+    [Fact]
     public async Task Index_NoDocsFolder_Fails()
     {
         // Don't initialize

@@ -4,12 +4,15 @@ Authored at `1bc93c5d2122305ad5e3a3fc997d7a6609ae77e4` (= `feature/dydo-3-consol
 `DYD-103-mutation-gate` in `C:/Users/User/Desktop/Projects/DynaDocs/.worktrees/dyd103-spec`, 2026-09-09.
 Authority in order: DR 048 §4; `dydo/project/plans/dydo-3-completion.md` §3, §4 "Later bearings" 3,
 "Exact gates", §5, §6; Issue DYD-103 sections "Current contract — 2026-09-09" and "Admiral integration
-ruling — gate adapter exits, 2026-09-06"; DYD-96's reviewed adoption specification at
-`fd7bd3d34640dd91943aeef901b846f037e95e63`; the coding, testing and coverage standards.
+ruling — gate adapter exits, 2026-09-06" and the admiral's DECIDED 9c72177b (2026-09-09: campaign
+cap and association rows); DYD-96's reviewed adoption specification at
+`cc6705b04a3d289892437cb09a37cc71e6b80537` (SPEC PASS aa8d2e13 on DYD-96; DECIDED 543bcf14 there
+mirrors the association transfer); the coding, testing and coverage standards.
 
 The production base of DYD-103 is the feature head after DYD-130 (DYD-96's merge). This spec is
 authored at `1bc93c5d` and is **re-pinned, not re-specified**, to that head unless a consumed
-interface field named below changed. `$P` = `C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe`
+interface field named below changed or the `execution_seconds_maximum` keyword is absent from
+`windows_job.validate`/`run` there. `$P` = `C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe`
 (Python 3.12.14).
 
 ## Spec
@@ -85,8 +88,10 @@ including after interruption"), published with both gaps.
 ### Consumed interfaces — pinned
 
 **Inventory artifact.** `inventory.json` schema 1 as defined in DYD-96's adoption specification
-section "Inventory, roles and the mutation handoff" at commit `fd7bd3d34640dd91943aeef901b846f037e95e63`
-(file SHA256 `ed5d337834f691cb1a4578ce8ede135bc67989ac21898cf0b17d1233e197328e`). Produced inside the
+section "Inventory, roles and the mutation handoff" (lines 29-37) at commit
+`cc6705b04a3d289892437cb09a37cc71e6b80537` (file SHA256
+`2a46e02cc502e2567f1e2a06522356d1fb32319f62aa7e1ac33fada395250406`; that section is byte-identical
+to the `fd7bd3d3` pin this spec first carried, so the field table below is unchanged). Produced inside the
 snapshot by DYD-96's own producer as `gate_adapter.py` uses it for its `run/inventory.json`
 (`gate_adapter._candidate(root)` and `gate_adapter._inventory_artifact(root, run, candidate)` at
 `0d3f0995`; the re-pin substitutes the public name if DYD-96 exposes one).
@@ -116,19 +121,42 @@ exist at `1bc93c5d`; DYD-130 must land them before production); `run_tests.creat
 `run_tests.is_registered_worktree(worktree)`, `run_tests.defer_interruption()` (present at `1bc93c5d`
 and at `0d3f0995`);
 `windows_job.preflight()`, `windows_job.request(argv, cwd, output, execution_seconds, teardown_seconds)`,
-`windows_job.run(value, environment)` returning `complete`, `cleanup_confirmed`, `subject_status`,
-`stdout_path`, `stderr_path`, `elapsed_seconds` (at `0d3f0995`). **Serial edit owned by DYD-103 after
-DYD-130:** `windows_job.validate` caps `execution_seconds` at 1800; the cap becomes 14400 (one
-constant, one test assertion in `tests/test_windows_job.py`); DYD-96's coverage keeps requesting 1800.
+`windows_job.run(value, environment, execution_seconds_maximum)` returning `complete`, `cleanup_confirmed`,
+`subject_status`, `stdout_path`, `stderr_path`, `elapsed_seconds` (at `0d3f0995`, without the keyword).
+**Campaign cap — consumed interface, no DYD-103 edit** (admiral DECIDED 9c72177b on DYD-103,
+2026-09-09; DYD-96's reviewed amendment at `cc6705b0` lines 111, 150 and 161, SPEC PASS aa8d2e13):
+`windows_job.EXECUTION_SECONDS_MAXIMUM = 1800` is the one module constant and stays DYD-96's tested
+invariant for its own campaigns; `validate(value, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM)`
+uses the parameter in place of the literal 1800 in the deadline tuple; `run(value, environment=None,
+execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM)` passes the keyword to `validate` verbatim and
+does nothing else with it; `request()`, the request schema, `config_sha256`, the result schema and
+`main()` are unchanged, so a stdin request is always bound by the default and `run_tests.py` keeps
+`execution_seconds=1800` — the maximum is an in-process caller argument, never a request field. An
+explicit maximum is the finite ceiling of one caller, never a global raise: DYD-103 passes
+`execution_seconds_maximum=14400` on every `run` call, and every 14400 s figure in this spec is that
+caller-supplied bound. Edge (line 161): an explicit maximum below the requested value, or non-numeric,
+rejects before launch with no output directory exactly as an over-limit request does. DYD-96's
+`tests/test_windows_job.py` proves the keyword (`test_explicit_execution_seconds_maximum_is_validated_at_the_boundary`);
+DYD-103 adds nothing to either file. At `cc6705b0` the production `windows_job.py` is still unchanged
+(`validate(value)` hard-codes 1800 at line 96, `run(value, environment=None)` at line 438): the keyword
+is reviewed intent that DYD-96's production hop implements and DYD-130 lands, so step 1's re-pin must
+verify it exists on both functions at the production base; a missing keyword is a spec return, exactly
+like a changed consumed inventory field.
 
 **Manifest rows** read from the snapshot's `gap_check.json`: `stacks[].capabilities.test.command`
 (`kind`, `argv`) for `python` and `node` (the vendor test command), nothing else.
 
 **Shared files** DYD-96 creates that DYD-103 edits after DYD-130: `.config/dotnet-tools.json` (add
 `dotnet-stryker` 4.16.0), `gap_check.json` (three `mutation` rows), `dydo/guides/testing-strategy.md`
-and `dydo/reference/coverage-tools.md` (mutation sections), `windows_job.py` and `tests/test_windows_job.py`
-(the cap). `DynaDocs.Tests/coverage/.gitignore` is not touched: DYD-103 adds an exclusive
-`mutation/.gitignore`.
+and `dydo/reference/coverage-tools.md` (mutation sections), and `test-associations.json` (admiral
+DECIDED 9c72177b; recorded on DYD-96 as a transfer, DECIDED 543bcf14: DYD-96 does not add them) —
+exactly two schema-1 rows (`{"module": "exact/source", "tests": ["exact/test"]}`, DYD-96 spec line 37:
+no wildcards, no same-stem inference, no empty or duplicate edges, sorted exact paths):
+`DynaDocs.Tests/coverage/mutation_adapter.py` → `DynaDocs.Tests/coverage/tests/test_mutation_adapter.py`,
+`DynaDocs.Tests/coverage/tests/test_mutation_facade.py`; `DynaDocs.Tests/coverage/mutation_summary.py` →
+`DynaDocs.Tests/coverage/tests/test_mutation_summary.py`; no edit before DYD-130 is Done. `windows_job.py`
+and `tests/test_windows_job.py` are DYD-96's and are never edited by DYD-103 (the cap paragraph above).
+`DynaDocs.Tests/coverage/.gitignore` is not touched: DYD-103 adds an exclusive `mutation/.gitignore`.
 
 ### Candidate, base and changed set
 
@@ -264,11 +292,11 @@ asserts the vendor log witnesses `Stryker will use a max of 1 parallel testsessi
   row is `invalid`/2 with childExit 2 through its own freshness rule; released in `finally` only if
   this invocation created it. No stale-lock stealing.
 - Every engine launch, baseline run and Cosmic Ray init/exec/read runs under
-  `windows_job.run(windows_job.request(argv, cwd=snapshot, output=<run>/<stack>/job-<name>, execution_seconds=14400, teardown_seconds=10), env)`
+  `windows_job.run(windows_job.request(argv, cwd=snapshot, output=<run>/<stack>/job-<name>, execution_seconds=14400, teardown_seconds=10), env, execution_seconds_maximum=14400)`
   with `env` = the ambient environment minus `DYDO_*`. `windows_job.preflight()` failure (not Windows,
   not CPython 3.12.14) → 2 `unsupported host`. A result with `complete == False` or
-  `cleanup_confirmed == False` → 2 (`campaign limit exceeded` when `elapsed_seconds >= 14400`, else
-  `engine did not complete`). KILL_ON_JOB_CLOSE contains every descendant (vstest hosts, node test
+  `cleanup_confirmed == False` → 2 (`campaign limit exceeded` when `elapsed_seconds >= 14400`, the
+  caller-supplied `execution_seconds_maximum`, else `engine did not complete`). KILL_ON_JOB_CLOSE contains every descendant (vstest hosts, node test
   children, Cosmic Ray test commands); the adapter kills no foreign process.
 - Raw reports are hashed and listed in the summary before the snapshot is removed. Removal =
   `run_tests.remove_worktree` then verification `not path.exists() and not is_registered_worktree(path)`;
@@ -364,7 +392,7 @@ one per engine (`selected` is the changed targets in `changed` mode and every ta
 | inventory `schema` ≠ 1, `errors` nonempty, identity mismatch at production or acceptance | 2 | the field |
 | a `files[]` row rehash differs after the campaign | 2 | `candidate changed during the campaign: <path>` |
 | substantive zero generated mutants; generated > 0 and valid == 0 | 2 | `zero-mutant campaign` / `all mutants invalid` |
-| campaign limit exceeded / engine did not complete | 2 | `campaign limit exceeded (14400 s)` |
+| campaign limit exceeded / engine did not complete | 2 | `campaign limit exceeded (14400 s)` (14400 is the caller-supplied `execution_seconds_maximum`, not a `windows_job` constant) |
 | lock collision | 2 | the lock path, in `run/report.json` only; the foreign summary is not refreshed |
 | unresolvable / non-ancestor base | 2 | the base |
 | unselectable applicable target | 2 | the path and project |
@@ -435,7 +463,9 @@ gap_check.py gate mutation --since BASE
 - DYD-96 `gate_adapter.py:39-57` (exclusive lock, temp-file publish), `:60-86` (candidate identity,
   inventory artifact), `:233-267` (run directory, summary path, `--root/--output`) — mirrored;
   departure: the lock is held for the whole campaign.
-- DYD-96 `windows_job.py:70-76, 438-463` (request/run) — reused; departure: cap 14400.
+- DYD-96 `windows_job.py:70-76, 438-463` (request/run) — reused through the reviewed
+  `execution_seconds_maximum=14400` keyword on `run` (`cc6705b0` line 111); departure: none, DYD-96's
+  files are not edited.
 - DYD-96 `gate_run.py:15-46` (`CommandLog` rows) — the `commands[]` row shape is mirrored, not imported.
 - retained `run_mutation.py:30-56` (template validation), `:248-267` (Cosmic Ray session read),
   `:374-375` (`glob_literal`), `:575-601` (tool presence checks) — adapted; `mutation_results.py:157-197`
@@ -450,16 +480,19 @@ gap_check.py gate mutation --since BASE
 `mutation/probes/test_replay.py`, `tests/test_mutation_adapter.py`, `tests/test_mutation_summary.py`,
 `tests/test_mutation_facade.py`, `tests/fixtures/mutation/**`, `Features/mutation-assurance.feature`,
 `Steps/MutationAssuranceSteps.cs`. Serial after DYD-130: `gap_check.json`, `.config/dotnet-tools.json`,
-`windows_job.py`, `tests/test_windows_job.py`, `dydo/guides/testing-strategy.md`,
+`test-associations.json` (the two rows named under Shared files), `dydo/guides/testing-strategy.md`,
 `dydo/reference/coverage-tools.md`. Not owned: `gap_check.py`, `dydo/reference/gap-check.example.*`
-(DYD-113/DYD-91), `inventory.py`, `gate_*.py`, `run_tests.py`, `test-associations.json`,
+(DYD-113/DYD-91), `inventory.py`, `gate_*.py`, `run_tests.py`, `windows_job.py`, `tests/test_windows_job.py`
+(DYD-96; the `execution_seconds_maximum` keyword is consumed, never edited),
 `coverage/package*.json`, `coverage/requirements.*`, `coverage/.gitignore` (DYD-96), `npm/**` (DYD-105),
 `DynaDocs.Tests/DynaDocs.Tests.csproj`, `reqnroll.json` (DYD-99/DYD-96), root `.gitignore`.
 
 **Steps** —
 1. Re-pin at the production base (feature head after DYD-130): diff every consumed interface above
-   against that head; record "re-pinned to <SHA>" on the Issue, or stop with a spec return naming the
-   changed field. Checkable: the recorded SHA and the unchanged field list.
+   against that head, including that `windows_job.validate` and `windows_job.run` carry the
+   `execution_seconds_maximum` keyword there; record "re-pinned to <SHA>" on the Issue, or stop with a
+   spec return naming the changed field or the missing keyword. Checkable: the recorded SHA, the
+   unchanged field list and the keyword's presence.
 2. Restore the three engines with the restore commands; author the three templates and the exclusive
    manifests/locks/`.gitignore`; add the `dotnet-stryker` entry. Checkable: tool presence checks pass
    in a scratch run.
@@ -475,13 +508,21 @@ gap_check.py gate mutation --since BASE
 6. Green `mutation_adapter.py`: lock, preflight, snapshot, inventory, base, changed set, selection
    (`CONFIG_WIDENING` verbatim), tool checks, baseline, generated configs, launches under
    `windows_job`, identity recheck, raw hashes, verified removal, publication, interruption.
-   Checkable: gates 1, 2 green; the widened-cap serial edit and its test.
-7. Configure the three `gap_check.json` mutation rows; gates 5, 6, 7, 9 green; gate 3/4 green.
+   Checkable: gates 1, 2 green; every `windows_job.run` call passes `execution_seconds_maximum=14400`
+   (the campaign-limit case of `test_mutation_adapter.py` asserts it at the launch seam).
+7. Serial edits, only after DYD-130 is Done: configure the three `gap_check.json` mutation rows, and
+   add the two `test-associations.json` rows named under Shared files (in module-path order — at
+   `cc6705b0` between `DynaDocs.Tests/coverage/metrics/StructuralMethod.cs` and
+   `DynaDocs.Tests/coverage/node_tests.cjs` — tests sorted, no other row touched) before gate 9's
+   integrated `--force-run`; gates 5, 6, 7, 9 green; gate 3/4 green. Checkable: `associations.py`
+   reports no `non-trivial target has no associated test file` for either module and no
+   `unknown or duplicate associated module`.
 8. Replay gate 10 with real engines; retain its evidence under the run directory.
 9. Final M-measure: gate 8 at the exact candidate SHA with `--since <production base>`; retain the
    three summaries and raw reports as Issue evidence. DYD-103's own changes touch `gap_check.json`,
-   `.config/dotnet-tools.json` and an unassociated C# step file, so this run is `widened` for all three
-   stacks by the rules above while each summary still records its `changedTargets`: it is the
+   `test-associations.json`, `.config/dotnet-tools.json` and an unassociated C# step file, so this run
+   is `widened` for all three stacks by the rules above while each summary still records its
+   `changedTargets`: it is the
    repository's first complete M measurement. Pass = aggregate 0, or 1 where no finding's `path` is in
    any stack's `changedTargets`. A finding in a changed target (`mutation_adapter.py`,
    `mutation_summary.py` or any other target DYD-103 changed) is a DYD-103 defect that blocks CODE
@@ -518,38 +559,35 @@ gap_check.py gate mutation --since BASE
 - Facade `--stack` subset: rows not selected run nothing; the summary for a selected stack never
   claims other stacks.
 
-**Plan review** — `recommended`: (1) the consumed inventory producer entry is a private name at
+**Plan review** — `recommended` (a consumed cross-Issue interface changed in the fold-in hop): (1) the
+consumed inventory producer entry is a private name at
 `0d3f0995` and the facade-boundary tests need its minimal repository inputs (a restorable csproj and
-`test-associations.json`); (2) the serial cap edit in DYD-96's reviewed `windows_job.py`; (3) explicit
+`test-associations.json`); (2) the consumed `execution_seconds_maximum` keyword of DYD-96's reviewed
+`windows_job.py` interface, unimplemented at `cc6705b0` and verified only at the re-pin; (3) explicit
 `mutate` globs instead of Stryker.NET `--since`; (4) StrykerJS `inPlace` with the command runner and
 environment propagation to nested Node test processes; (5) the Cosmic Ray timeout classification via
 unittest's completion line; (6) GateMetrics C# is unselectable (2), which binds any Project-level M
-whose base predates DYD-96; (7) campaign cost of a widened dotnet run against the 14400 s bound;
+whose base predates DYD-96; (7) campaign cost of a widened dotnet run against the caller-supplied
+14400 s bound;
 (8) the M-measure reading of DYD-103's own final gate; (9) the docs-only `none` pass reading of AC 6.
 
-**Open — admiral ruling pending** (spec review 1 at `459ec3eb`, findings 1 and 2; owner `admiral`).
-No DYD-103 production hop touches `DynaDocs.Tests/coverage/windows_job.py`,
-`DynaDocs.Tests/coverage/tests/test_windows_job.py` or `DynaDocs.Tests/coverage/test-associations.json`
-until ruled; their `owned-paths.json` rows and the Modules paragraph's cap sentence stand as written
-pending that ruling.
-1. Campaign cap. Both cap files are DYD-96's (its `owned-paths.json` at `fb34c2bc` claims them; its
-   reviewed spec makes the 1800 s limit a tested invariant) and lie outside this Issue's envelope.
-   Options: (a) the admiral transfers the serial edit after DYD-130 — one constant (1800 → 14400) plus
-   one assertion — as this spec currently assumes; (b) the admiral refuses and a fresh specify hop
-   routes around the 1800 s cap, re-pinning every 14400 s figure here (Isolation, Failure semantics,
-   step 6, Edge cases).
-2. Association rows. DYD-96's static gate reports `non-trivial target has no associated test file`
-   for every executable target without a row (`associations.py:36` at `0d3f0995`) and
-   `test-associations.json` at `fb34c2bc` carries one row per `coverage/*.py`; DYD-103 adds two
-   executable targets, so the integrated `--force-run` (gate 9) would return 1 on DYD-103's own paths
-   and a test-only change to `test_mutation_*.py` would widen instead of rerunning its targets.
-   Options: (a) the admiral extends the envelope to `test-associations.json` as a
-   serial-after-DYD-130 row with exactly these edges — `DynaDocs.Tests/coverage/mutation_adapter.py`
-   → `DynaDocs.Tests/coverage/tests/test_mutation_adapter.py` and
-   `DynaDocs.Tests/coverage/tests/test_mutation_facade.py`; `DynaDocs.Tests/coverage/mutation_summary.py`
-   → `DynaDocs.Tests/coverage/tests/test_mutation_summary.py`; (b) an alternative the admiral names.
+**Ruled — 2026-09-09** (spec review 1 at `459ec3eb`, findings 1 and 2; admiral DECIDED 9c72177b on
+DYD-103, 03:51Z; DYD-96 mirror DECIDED 543bcf14 and SPEC PASS aa8d2e13 on its amendment chain
+`fd7bd3d3` → `fb34c2bc` → `08a6cd82` → `cc6705b0`).
+1. Campaign cap: no transfer of `windows_job.py` / `tests/test_windows_job.py`; the 1800 s cap stays
+   DYD-96's tested invariant for its own campaigns, and DYD-96's reviewed amendment adds the
+   caller-supplied `execution_seconds_maximum` keyword to `windows_job.validate`/`run` (default 1800
+   unchanged), which DYD-103 consumes with 14400; the ruling's fallback (routing around the cap) does
+   not apply because DYD-96's spec review accepted the override.
+2. Association rows: the envelope extends to `test-associations.json` as a serial edit after DYD-130
+   with exactly the three edges named under Shared files; recorded on DYD-96 as a transfer; no edit
+   before DYD-130 is Done.
+This packet carries both rulings (Authority, Modules, Shared files, Isolation, Failure semantics,
+Pattern to copy, Files, steps 1, 6, 7 and 9, Plan review, `owned-paths.json`).
 Lanes: `none` (adapter, normalizer, fixtures, probes and steps interlock). Empty hops: none.
 Production prerequisite (resume condition, never a parent-Done blocker): DYD-96's implemented and
-independently checked inventory artifact at the integrated feature head after DYD-130 plus an
-integrated passing baseline (`run_tests.py` green at that head); a whole-M pass additionally needs
-DYD-105 merged (extensionless JavaScript target).
+independently checked inventory artifact at the integrated feature head after DYD-130, the
+`execution_seconds_maximum` keyword present on `windows_job.validate` and `windows_job.run` at that
+head (DYD-96's production hop implements it; absent at `cc6705b0`), plus an integrated passing
+baseline (`run_tests.py` green at that head); a whole-M pass additionally needs DYD-105 merged
+(extensionless JavaScript target).

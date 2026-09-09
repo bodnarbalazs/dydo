@@ -4,13 +4,12 @@ on:
   push:
     tags:
       - 'v*'
-
-permissions:
-  contents: write
-  id-token: write  # Required for NuGet trusted publishing
+  workflow_dispatch:
 
 jobs:
   build:
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
@@ -65,9 +64,51 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
 
-  release:
+  validation:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run isolated test adapter
+        run: python DynaDocs.Tests/coverage/run_tests.py
+
+      - name: Build release with warnings as errors
+        run: dotnet build DynaDocs.csproj -c Release -warnaserror
+
+      - name: Check documentation
+        run: dydo check
+
+      - name: Run coverage gate
+        run: python DynaDocs.Tests/coverage/gap_check.py --force-run
+
+      - name: Run mutation gate
+        run: python DynaDocs.Tests/coverage/gap_check.py gate mutation --since 2e31b1d0915529926a79224424c18620ee8003e1
+
+  release:
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}
+    needs: [build, validation]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Download all artifacts
@@ -82,18 +123,29 @@ jobs:
           sha256sum * > checksums.txt
           cat checksums.txt
 
-      - name: Create Release
+      - name: Create beta release
+        if: github.ref == 'refs/tags/v3.0.0-beta.3'
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/*
+          files: artifacts/*
           generate_release_notes: true
+          prerelease: true
+
+      - name: Create stable release
+        if: github.ref == 'refs/tags/v3.0.0'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          prerelease: false
 
   nuget:
-    needs: build
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}
+    needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for NuGet trusted publishing OIDC
+      contents: read
+      id-token: write
     environment: nuget
 
     steps:
@@ -121,12 +173,13 @@ jobs:
         run: dotnet nuget push nupkg/dydo.${{ steps.version.outputs.VERSION }}.nupkg --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   npm:
-    needs: release  # Wait for GitHub release so binaries are available
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}
+    needs: [build, validation, release]
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # Required for npm trusted publishing
-    environment: npm  # Optional: for deployment protection rules
+      id-token: write
+    environment: npm
 
     steps:
       - uses: actions/checkout@v4
@@ -146,5 +199,5 @@ jobs:
         working-directory: npm
 
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: npm publish --access public --provenance --tag ${{ github.ref == 'refs/tags/v3.0.0-beta.3' && 'beta' || 'latest' }}
         working-directory: npm

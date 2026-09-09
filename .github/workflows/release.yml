@@ -72,6 +72,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -92,10 +94,10 @@ jobs:
         run: python DynaDocs.Tests/coverage/run_tests.py
 
       - name: Build release with warnings as errors
-        run: dotnet build DynaDocs.csproj -c Release -warnaserror
+        run: dotnet build DynaDocs.sln -c Release --warnaserror
 
       - name: Check documentation
-        run: dydo check
+        run: dotnet run --project DynaDocs.csproj -c Release --no-build -- check
 
       - name: Run coverage gate
         run: python DynaDocs.Tests/coverage/gap_check.py --force-run

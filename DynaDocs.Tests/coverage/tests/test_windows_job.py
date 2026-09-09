@@ -143,6 +143,22 @@ class WindowsJobTests(unittest.TestCase):
         self.assertEqual("not_started", result["launch_state"])
         self.assertFalse((self.root / "evidence").exists())
 
+    def test_explicit_execution_seconds_maximum_is_validated_at_the_boundary(self):
+        value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"],
+                                    self.root, self.root / "evidence", 14400, 1)
+        result = windows_job.run(value, execution_seconds_maximum=14400)
+        self.assertTrue(result["complete"], result)
+        self.assertEqual(14400, result["execution_seconds"])
+
+        for requested, maximum, output in ((14401, 14400, "over"), (14400, 1800, "default")):
+            with self.subTest(requested=requested, maximum=maximum):
+                value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"],
+                                            self.root, self.root / output, requested, 1)
+                result = windows_job.run(value, execution_seconds_maximum=maximum)
+                self.assertFalse(result["complete"])
+                self.assertEqual("not_started", result["launch_state"])
+                self.assertFalse((self.root / output).exists())
+
     def test_invalid_control_requests_never_launch_or_touch_outputs(self):
         changes = [("version", 2), ("argv", []), ("argv", None), ("argv", [True]),
                    ("argv", ["node\0.exe"]), ("argv", ["relative.exe"]),

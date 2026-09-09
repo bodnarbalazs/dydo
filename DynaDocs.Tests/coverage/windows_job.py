@@ -67,6 +67,9 @@ def config_hash(value):
     return hashlib.sha256(encoded).hexdigest()
 
 
+EXECUTION_SECONDS_MAXIMUM = 1800
+
+
 def request(argv, cwd, output, execution_seconds=60, teardown_seconds=10):
     value = {"version": 1, "owner_id": uuid.uuid4().hex, "argv": list(argv),
              "cwd": str(Path(cwd).resolve()), "output": str(Path(output).resolve()),
@@ -76,7 +79,7 @@ def request(argv, cwd, output, execution_seconds=60, teardown_seconds=10):
     return value
 
 
-def validate(value):
+def validate(value, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM):
     keys = {"version", "owner_id", "argv", "cwd", "output", "execution_seconds",
             "teardown_seconds", "helper_sha256", "config_sha256"}
     if (set(value) != keys or type(value["version"]) is not int or value["version"] != 1
@@ -93,7 +96,7 @@ def validate(value):
         raise ValueError("Owner requires an absolute executable and existing cwd")
     if not Path(value["output"]).is_absolute():
         raise ValueError("Owner output must be absolute")
-    for key, maximum in (("execution_seconds", 1800), ("teardown_seconds", 10)):
+    for key, maximum in (("execution_seconds", execution_seconds_maximum), ("teardown_seconds", 10)):
         if type(value[key]) not in (float, int) or not 0 < value[key] <= maximum:
             raise ValueError("Invalid owner deadline")
     if not isinstance(value["owner_id"], str) or len(value["owner_id"]) != 32 or any(char not in "0123456789abcdef" for char in value["owner_id"]):
@@ -435,7 +438,7 @@ def preflight():
             "helper_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "capability": True}
 
 
-def run(value, environment=None):
+def run(value, environment=None, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM):
     started = time.monotonic()
     result = {"version": 1, "owner_id": value.get("owner_id"), "config_sha256": value.get("config_sha256"),
               "helper_sha256": value.get("helper_sha256"), "launch_state": "not_started",
@@ -445,7 +448,7 @@ def run(value, environment=None):
               "execution_seconds": value.get("execution_seconds"), "teardown_seconds": value.get("teardown_seconds")}
     output = None
     try:
-        validate(value)
+        validate(value, execution_seconds_maximum=execution_seconds_maximum)
         candidate = Path(value["output"])
         candidate.mkdir(parents=True, exist_ok=False)
         output = candidate

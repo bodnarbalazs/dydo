@@ -152,13 +152,14 @@ class Collectors:
         return result({'commands': facts, 'raw': raw, 'generated': normalized['generated']}, findings, errors)
 
     def python_source(self):
-        from python_metrics import source_metrics, module_scores
         from positions import canonical_text
         facts, findings, errors = [], [], []
-        for source in self.sources('python'):
+        for index, source in enumerate(self.sources('python')):
             try:
                 text = canonical_text((self.root / source['path']).read_bytes())
-                row = {'path': source['path'], **source_metrics(text), 'module': module_scores(text)}
+                metrics = self.command_json(f'python-source-{index}',
+                    [self.python, self.coverage / 'python_metrics.py'], stdin=text)
+                row = {'path': source['path'], **metrics}
                 facts.append(row)
                 findings.extend(metric_findings(row['path'], row['methods']))
                 findings.extend({'path': row['path'], 'gate': 'nested-ternary', 'line': line}
@@ -167,7 +168,8 @@ class Collectors:
                     findings.append({'path': row['path'], 'member': '<module>', 'gate': 'cognitive',
                                      'actual': row['module']['cognitive'], 'threshold': 20})
             except (ValueError, SyntaxError, KeyError, OSError) as error:
-                errors.append({'path': source['path'], 'message': str(error)})
+                errors.append({'path': source['path'],
+                               'message': f'Python metric process failed ({self.python}): {error}'})
         self.static['python'] = facts
         return result({'modules': facts}, findings, errors)
 

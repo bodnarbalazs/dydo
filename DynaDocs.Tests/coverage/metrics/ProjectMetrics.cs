@@ -33,13 +33,9 @@ public static class ProjectMetrics
         var generated = new List<string>();
         foreach (var document in project.Documents)
         {
-            var path = SourceIdentity(root, project.FilePath!, document.FilePath);
-            if (path.StartsWith("nuget:", StringComparison.Ordinal))
-            {
-                generated.Add(path);
-                continue;
-            }
-            if (path.Split('/').Contains("obj", StringComparer.OrdinalIgnoreCase))
+            var identity = SourceIdentity(root, project.FilePath!, document.FilePath);
+            var path = identity.Path;
+            if (identity.Origin != "maintained")
             {
                 generated.Add(path);
                 continue;
@@ -52,7 +48,7 @@ public static class ProjectMetrics
         if (files.Select(file => file.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() != files.Count)
             throw new InvalidOperationException("Duplicate evaluated C# source path");
         generated.AddRange(compilation.SyntaxTrees.Where(tree => !trees.Contains(tree))
-            .Select(tree => SourceIdentity(root, project.FilePath!, tree.FilePath))
+            .Select(tree => SourceIdentity(root, project.FilePath!, tree.FilePath).Path)
             .Except(generated, StringComparer.Ordinal));
         return new ProjectFacts(true, RelativePath(root, project.FilePath), project.OutputFilePath,
             files.OrderBy(file => file.Path, StringComparer.Ordinal).ToArray(),
@@ -69,13 +65,15 @@ public static class ProjectMetrics
         return relative;
     }
 
-    private static string SourceIdentity(string root, string projectPath, string? path)
+    internal static (string Path, string Origin) SourceIdentity(
+        string root, string projectPath, string? path, string description = "C# source")
     {
-        if (path == null)
+        if (path == null || !Path.IsPathFullyQualified(path))
             throw new InvalidOperationException("Missing evaluated C# source path");
         var relative = Path.GetRelativePath(root, path).Replace('\\', '/');
         if (relative != ".." && !relative.StartsWith("../", StringComparison.Ordinal) && !Path.IsPathRooted(relative))
-            return relative;
+            return (relative, relative.Split('/').Contains("obj", StringComparer.OrdinalIgnoreCase)
+                ? "generated" : "maintained");
 
         var assetsPath = Path.Combine(Path.GetDirectoryName(projectPath)!, "obj", "project.assets.json");
         if (File.Exists(assetsPath))
@@ -92,9 +90,9 @@ public static class ProjectMetrics
                     continue;
                 var parts = packageRelative.Split('/');
                 if (parts.Length >= 3 && libraries.Contains($"{parts[0]}/{parts[1]}"))
-                    return $"nuget:{parts[0].ToLowerInvariant()}/{string.Join('/', parts.Skip(1))}";
+                    return ($"nuget:{parts[0].ToLowerInvariant()}/{string.Join('/', parts.Skip(1))}", "package");
             }
         }
-        throw new InvalidOperationException($"C# source outside inventory root: {path}");
+        throw new InvalidOperationException($"{description} outside inventory root: {path}");
     }
 }

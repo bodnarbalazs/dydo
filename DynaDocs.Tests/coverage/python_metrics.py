@@ -177,5 +177,5 @@ def source_metrics(source):
 
 
 if __name__ == "__main__":
-    print(json.dumps(source_metrics(canonical_text(sys.stdin.buffer.read()))))
-
+    source = canonical_text(sys.stdin.buffer.read())
+    print(json.dumps({**source_metrics(source), "module": module_scores(source)}))

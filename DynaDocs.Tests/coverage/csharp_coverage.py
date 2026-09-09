@@ -10,6 +10,11 @@ from pathlib import Path
 
 
 ASSEMBLY_NAMES = {"dydo", "DynaDocs.Tests", "GateMetrics"}
+ASSEMBLY_PROJECTS = {
+    "dydo": "DynaDocs.csproj",
+    "DynaDocs.Tests": "DynaDocs.Tests/DynaDocs.Tests.csproj",
+    "GateMetrics": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj",
+}
 
 
 def snapshot_artifacts(root, paths):
@@ -34,7 +39,7 @@ def altcover_commands(root, output):
     prepare = ["dotnet", "tool", "run", "altcover", "--",
                *(f"--inputDirectory={path}" for path in inputs), "--inplace",
                f"--report={output / 'template.opencover.xml'}", "--reportFormat=OpenCover",
-               "--eager", "--localSource", "--visibleBranches", "--showGenerated",
+               "--eager", "--localSource", "--visibleBranches",
                "--assemblyFilter=^(?!(dydo|DynaDocs.Tests|GateMetrics)$).*"]
     runner = ["dotnet", "tool", "run", "altcover", "--", "runner",
               f"--recorderDirectory={root / 'DynaDocs.Tests/bin/Debug/net10.0'}",
@@ -60,7 +65,9 @@ def _run(name, command, root, output):
 
 
 def _assembly_facts(root, producer, assembly):
-    row = subprocess.run(["dotnet", str(producer), "--assembly", str(assembly), "--root", str(root)],
+    project = root / ASSEMBLY_PROJECTS[assembly.stem]
+    row = subprocess.run(["dotnet", str(producer), "--assembly", str(assembly), "--root", str(root),
+                          "--project", str(project)],
                          cwd=root, text=True, encoding="utf-8", errors="strict", capture_output=True)
     if row.returncode != 0:
         raise ValueError(f"Assembly identity failed for {assembly}: {row.stderr.strip()}")
@@ -70,9 +77,10 @@ def _assembly_facts(root, producer, assembly):
 
 
 def _equivalence_key(facts):
-    methods = [{"token": row["token"], "identity": row["identity"], "points": row["points"]}
-               for row in facts["methods"]]
-    method_hash = hashlib.sha256(json.dumps(methods, sort_keys=True, separators=(",", ":"))
+    identity = {"documents": facts["documents"], "methods": [
+        {"token": row["token"], "identity": row["identity"], "points": row["points"]}
+        for row in facts["methods"]]}
+    method_hash = hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":"))
                                  .encode("utf-8")).hexdigest()
     return (facts["assembly_name"], facts["sha256"], facts["pdb_sha256"], facts["module_id"], method_hash)
 
@@ -106,9 +114,10 @@ def _candidate_assemblies(root):
 
 def _same_native_map(before, after):
     keys = ("assembly_name", "module_id")
-    return all(before[key] == after[key] for key in keys) and [
+    return (all(before[key] == after[key] for key in keys)
+            and before["documents"] == after["documents"] and [
         (row["token"], row["identity"], row["key"], row["points"]) for row in before["methods"]
-    ] == [(row["token"], row["identity"], row["key"], row["points"]) for row in after["methods"]]
+    ] == [(row["token"], row["identity"], row["key"], row["points"]) for row in after["methods"]])
 
 
 def run_campaign(root, result_root, extra_args=None):

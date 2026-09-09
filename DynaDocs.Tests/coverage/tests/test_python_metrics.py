@@ -8,6 +8,7 @@ from python_metrics import callable_nodes, parameter_count, nested_ternaries, im
 import ast
 import json
 import subprocess
+import tempfile
 
 
 class PythonMetricsTests(unittest.TestCase):
@@ -20,9 +21,39 @@ class PythonMetricsTests(unittest.TestCase):
                          modules | {'other/metric.py'}, ['tools', 'other'])
 
     def test_module_metrics_keep_class_initializers_and_definition_expressions(self):
-        from python_metrics import module_scores
+        root = Path(__file__).resolve().parents[3]
+        python = root / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
         source = 'flag = True\nclass C:\n    value = 1 if flag else 2\n    def unused(self, value=1 if flag else 2):\n        if flag: return 3\n'
-        self.assertEqual({'cognitive': 2, 'cc': 3}, module_scores(source))
+        result = subprocess.run([str(python), str(Path(__file__).resolve().parents[1] / "python_metrics.py")],
+                                input=source, text=True, capture_output=True, check=True)
+        self.assertEqual({'cognitive': 2, 'cc': 3}, json.loads(result.stdout)["module"])
+
+    def test_python_source_metrics_use_local_process_and_missing_interpreter_fails_closed(self):
+        from gate_collect import Collectors
+        from gate_run import CommandLog
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text("def choose(value):\n    return 1 if value else 0\n")
+            collector = Collectors.__new__(Collectors)
+            collector.root = root
+            collector.output = root / "output"
+            collector.coverage = Path(__file__).resolve().parents[1]
+            collector.python = Path(__file__).resolve().parents[3] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+            collector.log = CommandLog(root, collector.output / "commands")
+            collector.inventory = {"sources": [{"path": "subject.py", "language": "python"}]}
+            collector.static = {}
+            measured = collector.python_source()
+            self.assertEqual("pass", measured["status"], measured)
+            self.assertEqual(0, measured["facts"]["modules"][0]["module"]["cognitive"])
+            self.assertEqual(str(collector.python), collector.log.rows[0]["command"][0])
+
+            collector.python = root / "missing-python.exe"
+            collector.log = CommandLog(root, root / "missing-commands")
+            missing = collector.python_source()
+            self.assertEqual("error", missing["status"])
+            self.assertIn("missing-python.exe", missing["errors"][0]["message"])
+            self.assertIsNone(collector.log.rows[0]["exit_code"])
 
     def test_duplicate_nested_names_have_distinct_source_identities(self):
         source = "def outer():\n    def inner(x): return x\n    return inner(1)\ndef other():\n    def inner(x): return x\n    return inner(2)\n"
@@ -76,4 +107,3 @@ class PythonMetricsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

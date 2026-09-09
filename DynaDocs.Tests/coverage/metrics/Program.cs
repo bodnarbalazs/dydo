@@ -9,8 +9,9 @@ try
     {
         ["--syntax"] => SyntaxFacts(Console.In.ReadToEnd()),
         ["--project", var project, "--root", var root] => await ProjectMetrics.CollectAsync(project, root),
-        ["--assembly", var assembly, "--root", var root] => AssemblyMetrics.Collect(assembly, root),
-        _ => throw new ArgumentException("Expected --syntax or --project <csproj> --root <root>.")
+        ["--assembly", var assembly, "--root", var root, "--project", var project] =>
+            AssemblyMetrics.Collect(assembly, root, project),
+        _ => throw new ArgumentException("Expected --syntax, --project <csproj> --root <root> or --assembly <dll> --root <root> --project <csproj>.")
     };
     Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions
     {

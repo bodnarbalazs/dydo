@@ -34,12 +34,29 @@ def coverage_methods(opencover, root, assembly, aliases):
     report_hash = module.attrib.get("hash", "").replace("-", "").lower()
     if report_hash != assembly["sha1"].lower():
         raise ValueError("Original module hash mismatch")
+    documents = assembly.get("documents")
+    if not isinstance(documents, dict) or any(not isinstance(key, str) or not isinstance(value, str)
+                                               for key, value in documents.items()):
+        raise ValueError("Missing PDB document inventory")
+    document_origins = {}
+    for method in assembly["methods"]:
+        for point in method.get("points", []):
+            origin = point.get("origin")
+            path = point.get("path")
+            if origin not in {"maintained", "generated", "package"} or not isinstance(path, str):
+                raise ValueError("Invalid PDB document classification")
+            if path in document_origins and document_origins[path] != origin:
+                raise ValueError(f"Conflicting PDB document origin: {path}")
+            document_origins[path] = origin
     files = {}
     for row in module.findall("./Files/File"):
-        uid, path = row.attrib.get("uid"), row.attrib.get("fullPath")
-        if not uid or not path or uid in files:
+        uid, url = row.attrib.get("uid"), row.attrib.get("fullPath")
+        if not uid or not url or uid in files:
             raise ValueError("Missing or duplicate report file identity")
-        files[uid] = _relative(root, path)
+        path = documents.get(url)
+        if path is None or path not in document_origins:
+            raise ValueError(f"Coverage source outside PDB document inventory: {url}")
+        files[uid] = path
     methods = {row["token"]: row for row in assembly["methods"] if row.get("points")}
     if len(methods) != sum(bool(row.get("points")) for row in assembly["methods"]):
         raise ValueError("Duplicate original MethodDef token")
@@ -218,12 +235,33 @@ def join_methods(root, source, assembly, coverage):
     fragments = {row["id"]: row for row in behavior["fragments"]}
     structural = {row["key"]: row["reason"] for row in behavior["structural_methods"]}
     declared = {row["key"]: row for row in behavior["declared_methods"]}
+    generated_files = set(source.get("generated_files", []))
     checksums, accounting, mapped = set(), [], set()
     for physical in assembly["methods"]:
-        points = [point for point in physical["points"] if point["path"] in modules]
-        if not points:
-            accounting.append({"identity": physical["identity"], "reason": "no maintained portable-PDB points"})
+        all_points = physical["points"]
+        if not all_points:
+            accounting.append({"identity": physical["identity"],
+                               "reason": "no non-hidden portable-PDB points"})
             continue
+        origins = {point.get("origin") for point in all_points}
+        documents = {point["path"] for point in all_points}
+        if not origins <= {"maintained", "generated", "package"}:
+            raise ValueError(f"Invalid PDB document origin: {physical['identity']}")
+        if "maintained" in origins and len(origins) != 1:
+            raise ValueError(f"Mixed-origin physical method: {physical['identity']}: {sorted(documents)}")
+        if "maintained" not in origins:
+            missing = sorted(documents - generated_files)
+            if missing:
+                raise ValueError(f"Generated PDB document absent from compilation inventory: {missing[0]}")
+            accounting.append({"identity": physical["identity"], "reason": "excluded by origin",
+                               "origins": sorted(origins), "documents": sorted(documents)})
+            continue
+        missing = sorted(documents - set(modules))
+        if missing:
+            raise ValueError(f"Maintained PDB document absent from source inventory: {missing[0]}")
+        points = list(all_points)
+        if not points:
+            raise ValueError(f"Empty maintained PDB point inventory: {physical['identity']}")
         _validate_points(root, points, checksums)
         covered, total = _physical_hits(physical, coverage, modules)
         key = physical["key"]

@@ -24,8 +24,8 @@ named SHA. The subset is behavior and files, not DYD-96's whole tree: `inventory
 `gate_inventory.py` producing and fail-closed validating schema 1; `run_tests.py` snapshot functions;
 `windows_job.py` preflight/request/run with default 1800 and caller override plus cleanup; and
 `gate_adapter.py`/`gap_check.py` freshness and 0/1/2/130 mapping. Association semantics are needed
-later only. The handoff includes the JS G coverage outputs; unrelated DYD-96 findings and remediation
-are outside it.
+later only. JS G coverage outputs, unrelated DYD-96 findings and remediation are outside the bounded
+handoff.
 
 Preparation may touch only the existing `exclusive` paths: `mutation_adapter.py`,
 `mutation_summary.py`; `mutation/**` configs/manifests/probe; `test_mutation_*.py` and fixtures;
@@ -33,10 +33,10 @@ Preparation may touch only the existing `exclusive` paths: `mutation_adapter.py`
 `gap_check.json`, `.config/dotnet-tools.json`, `test-associations.json`, `testing-strategy.md`, and
 `coverage-tools.md` remain forbidden until DYD-130. Branch preparation from the exact subset-PASS
 SHA to preserve source ancestry, accepting only the named interface blobs and behavior; inherited
-unrelated DYD-96 paths are neither reviewed by DYD-103 nor owned. That subset SHA must remain an
-ancestor of the final post-DYD-130 feature. At final reconciliation, merge or re-pin to the exact
-reviewed post-DYD-130 feature head and compare every consumed signature, field and blob; any
-departure or non-ancestry is a spec return, never a silent transplant. Reuse retained `70cf3a5e`
+unrelated DYD-96 paths are neither reviewed by DYD-103 nor owned. After verifying that the subset-PASS
+SHA is an ancestor, merge the exact reviewed post-DYD-130 feature head into the preparation branch,
+then re-pin and compare every consumed signature, field and blob; non-ancestry, conflict or departure
+is a spec return, never a silent transplant. Reuse retained `70cf3a5e`
 engine pins/provenance and existing native qualifications where bytes and environment allow; do not
 duplicate qualification solely because of scheduling, while still running missing current-adapter
 proofs and gates.
@@ -555,9 +555,8 @@ gap_check.py gate mutation --since BASE
    <SHA>" on the Issue, or stop with a spec return naming any changed signature, field, blob or
    missing keyword. Checkable: both PASS records, ancestry, the recorded final SHA, unchanged field
    list and keyword presence.
-2. Restore the three engines with the restore commands; author the three templates and the exclusive
-   manifests/locks/`.gitignore`; add the `dotnet-stryker` entry. Checkable: tool presence checks pass
-   in a scratch run.
+2. Restore the three engines with the restore commands; author only the three templates and the
+   exclusive manifests/locks/`.gitignore`. Checkable: tool presence checks pass in a scratch run.
 3. Capture real fixtures: run the retained-style strong/weak/no-coverage/timeout/all-invalid subjects
    (data strings in `test_replay.py`) once through each engine by hand, copy the raw reports and one
    Cosmic Ray session into `tests/fixtures/mutation/` with `origin.json`; derive the two
@@ -572,7 +571,8 @@ gap_check.py gate mutation --since BASE
    `windows_job`, identity recheck, raw hashes, verified removal, publication, interruption.
    Checkable: gates 1, 2 green; every `windows_job.run` call passes `execution_seconds_maximum=14400`
    (the campaign-limit case of `test_mutation_adapter.py` asserts it at the launch seam).
-7. Serial edits, only after DYD-130 is Done and the final reconciliation in step 1 passes: configure the three `gap_check.json` mutation rows, and
+7. Serial edits, only after DYD-130 is Done and the final reconciliation in step 1 passes: add the
+   `dotnet-stryker` entry, configure the three `gap_check.json` mutation rows, and
    add the two `test-associations.json` rows named under Shared files (in module-path order — at
    `cc6705b0` between `DynaDocs.Tests/coverage/metrics/StructuralMethod.cs` and
    `DynaDocs.Tests/coverage/node_tests.cjs` — tests sorted, no other row touched) before gate 9's

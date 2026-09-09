@@ -445,6 +445,7 @@ public class InitCommandTests : IntegrationTestBase
         WriteFile(".codex/config.toml", toml);
         var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
         var ignore = File.ReadAllBytes(Path.Combine(TestDir, ".gitignore"));
+        var claudeEntryPoint = File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md"));
         var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
         var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
 
@@ -455,6 +456,7 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertStderrContains("malformed");
         Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
         Assert.Equal(ignore, File.ReadAllBytes(Path.Combine(TestDir, ".gitignore")));
+        Assert.Equal(claudeEntryPoint, File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md")));
         Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
         Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
         AssertFileNotExists("AGENTS.md");

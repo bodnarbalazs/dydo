@@ -105,7 +105,40 @@ snapshot by DYD-96's own producer as `gate_adapter.py` uses it for its `run/inve
 | `sources[].path`, `.language`, `.role`, `.testFiles`, `.projects`, `.executable` | selection: language routes to a stack, role `target|test`, `testFiles` joins a changed test to its targets, `projects` decides C# selectability, `executable` decides whether zero mutants is substantive | spec return |
 | `excluded[].path` | a changed excluded path widens its language's stack | spec return |
 | `errors` | nonempty → 2, copied into `gaps` | spec return |
-| `files[]` order, `sources[].sha256`, `excluded[].reason/origin`, `projects[]` (top level), any added property | **ignored** | re-pin only |
+| `files[]` order, `sources[].sha256`, `excluded[].reason/origin`, `projects[]` (top level), any added property | validated as part of the schema-1 handoff; any mismatch → 2 before selection | spec return |
+
+The consumer validates the complete schema-1 envelope before it computes a changed set or selects a
+stack. The root has exactly `schema`, `candidate`, `files`, `sources`, `excluded`, `projects` and
+`errors`; `candidate` has exactly `commit`, `dirty` and `sourceFingerprint`. Unknown properties,
+missing properties, wrong JSON types, duplicate keys, duplicate paths, and case-folding aliases are
+invalid. `files` is a list of exact canonical paths in strictly sorted order: an existing row is
+exactly `{path,sha256}`, while a tracked deletion is exactly
+`{path,sha256:null,deleted:true}`. No other row shape is accepted. `sources` is a list of the exact
+rows `{path,sha256,language,role,projects,executable,testFiles}`, sorted by exact path; language,
+role and booleans use the DYD-96 domains, project paths and `testFiles` are sorted exact canonical
+paths, and every source path occurs once in `files` with the same `sha256` and is not deleted.
+
+`excluded` is validated even when no changed path would use it. Each row is exactly
+`{path,reason,origin}`, with a canonical path occurring once and an origin object whose exact keys
+and positive evidence match its reason (`derived-copy` carries `source`, `canonicalSourceSha256`,
+`producer`, `producerTest`; `native-evidence-fixture` carries `manifest`, `manifestSha256`).
+`projects` is likewise always validated even when no C# target is selected: every row is exactly
+`{path,compile,testProject,assembly}`, with canonical sorted `compile` paths, a boolean
+`testProject`, and a root-relative `assembly` path or null. Duplicate or case-alias paths across
+the applicable inventory collections, unsorted `files`/`sources`/`projects`/nested path lists,
+or any added property are rejected with adapter exit/result 2. These checks occur before selection,
+so malformed or ambiguous inventory data cannot become an empty or widened campaign.
+
+For every `sources[]` row, the adapter first matches its path to the unique `files[]` row and then
+rehashes the matching current snapshot bytes; either mismatch, including a source hash that is
+correct in `sources[]` but stale in `files[]`, is exit/result 2. It also validates the complete
+`excluded` and `projects` structures and the envelope's `sourceFingerprint` before reading any
+selection field. The boundary proofs are named exactly: an unknown root, candidate, file, source,
+excluded-origin or project property returns adapter exit 2 and summary `exitCode: 2` before selection;
+a duplicate or case-alias path, invalid ordering, or invalid row shape does the same; and a duplicate
+inventory entry never yields a `none` or `widened` selection. The stable 0/1/2/130 protocol,
+caller-supplied `execution_seconds_maximum`, no `windows_job` ownership transfer, and production
+dependency on DYD-96's final reviewed source remain unchanged.
 
 DYD-96's open bounded return (Linear document "DYD-96 bounded implementation and SDK PDB return —
 0d3f0995": the external `Microsoft.NET.Test.Sdk.Program.cs` PDB document) touches how an external

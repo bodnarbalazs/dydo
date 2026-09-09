@@ -3,9 +3,12 @@ namespace DynaDocs.Commands;
 using System.CommandLine;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using CsToml;
+using CsToml.Error;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -362,7 +365,20 @@ public static class InitCommand
     {
         const string relativePath = ".codex/config.toml";
         var path = Path.Combine(projectRoot, ".codex", "config.toml");
-        var original = File.Exists(path) ? File.ReadAllText(path) : "";
+        var originalBytes = File.Exists(path) ? File.ReadAllBytes(path) : Array.Empty<byte>();
+        try
+        {
+            _ = CsTomlSerializer.Deserialize<TomlDocument>(originalBytes);
+        }
+        catch (CsTomlSerializeException ex)
+        {
+            var parse = ex.ParseExceptions?.FirstOrDefault();
+            var detail = parse == null
+                ? ex.Message
+                : $"line {parse.LineNumber}: {parse.InnerException?.Message ?? parse.Message}";
+            throw HostSettingError(relativePath, "valid TOML document", $"malformed TOML ({detail})");
+        }
+        var original = Encoding.UTF8.GetString(originalBytes);
         var lines = Regex.Matches(original, @"[^\r\n]*(?:\r\n|\r|\n|$)");
         var agentsStart = -1;
         var agentsEnd = original.Length;
@@ -408,16 +424,18 @@ public static class InitCommand
             if (trimmed.StartsWith('['))
                 throw HostSettingError(relativePath, "valid TOML table", trimmed);
 
-            var assignment = Regex.Match(trimmed, @"^(?<key>[A-Za-z0-9_.-]+)\s*=\s*(?<value>.*)$");
-            if (!assignment.Success)
-                throw HostSettingError(relativePath, "valid TOML key = value", trimmed);
-            if (StripTomlComment(assignment.Groups["value"].Value).Trim().Length == 0)
-                throw HostSettingError(relativePath, "TOML value", "empty value");
-            var name = assignment.Groups["key"].Value;
-            if (currentTable == null && (name == "agents" || name.StartsWith("agents.", StringComparison.Ordinal)))
-                throw HostSettingError(relativePath, "one unambiguous [agents] table", trimmed);
             if (!inAgents)
+            {
+                var rootAssignment = Regex.Match(trimmed, @"^(?<key>[A-Za-z0-9_.-]+)\s*=");
+                if (currentTable == null && rootAssignment.Success &&
+                    (rootAssignment.Groups["key"].Value == "agents" || rootAssignment.Groups["key"].Value.StartsWith("agents.", StringComparison.Ordinal)))
+                    throw HostSettingError(relativePath, "one unambiguous [agents] table", trimmed);
                 continue;
+            }
+            var assignment = Regex.Match(trimmed, @"^(?<key>[A-Za-z0-9_-]+)\s*=\s*(?<value>.*)$");
+            if (!assignment.Success)
+                throw HostSettingError(relativePath, "valid key = value in [agents]", trimmed);
+            var name = assignment.Groups["key"].Value;
             if (!agentKeys.TryAdd(name, StripTomlComment(assignment.Groups["value"].Value).Trim()))
                 throw HostSettingError(relativePath, $"one {name} key in [agents]", "duplicate key");
         }

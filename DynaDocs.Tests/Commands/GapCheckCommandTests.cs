@@ -93,8 +93,9 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
             File.Copy(file, Path.Combine(runnerDirectory, Path.GetFileName(file)), overwrite: true);
         var collisionDirectory = Path.Combine(project, "path collision");
         Directory.CreateDirectory(collisionDirectory);
-        File.WriteAllText(Path.Combine(collisionDirectory, "Probe.exe"), "not an executable");
-        WriteConfig(project, [".\\relative runner\\Probe.exe", "inspect"]);
+        var probeExecutableName = OperatingSystem.IsWindows() ? "Probe.exe" : "Probe";
+        File.WriteAllText(Path.Combine(collisionDirectory, probeExecutableName), "not an executable");
+        WriteConfig(project, [Path.Combine(".", "relative runner", probeExecutableName), "inspect"]);
 
         var result = await RunDydo(nested, ["gap-check"], additionalPath: collisionDirectory);
 

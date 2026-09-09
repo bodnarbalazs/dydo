@@ -12,6 +12,8 @@ public sealed class ReleaseWorkflowTests
         var jobs = ActiveJobs(workflow);
 
         Assert.Contains("workflow_dispatch:", ActiveText(workflow));
+        Assert.Contains("branches:\n      - feature/dydo-3-consolidation", ActiveText(workflow));
+        Assert.Contains("tags:\n      - 'v*'", ActiveText(workflow));
         Assert.Equal(5, CountOccurrences(jobs["build"], "rid:"));
 
         var validation = jobs["validation"];
@@ -45,6 +47,7 @@ public sealed class ReleaseWorkflowTests
         var workflow = Workflow();
 
         AssertRejected(workflow.Replace($"if: ${{{{ {AllowedTagGuard} }}}}", $"# if: ${{{{ {AllowedTagGuard} }}}}", StringComparison.Ordinal));
+        AssertRejected(workflow.Replace(AllowedTagGuard, "github.event_name == 'push' && github.ref == 'refs/heads/feature/dydo-3-consolidation'", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build # needs: [build, validation]", StringComparison.Ordinal));
         AssertRejected(workflow + "\n  rogue:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm publish --access public\n");

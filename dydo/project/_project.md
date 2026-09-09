@@ -37,6 +37,6 @@ For technical specs, use `reference/`. For how-to guides, use `guides/`.
 
 - [About DynaDocs](../reference/about-dynadocs.md)
 - [Writing Documentation](../reference/writing-docs.md)
-- [Understand](../understand/_index.md)
-- [Guides](../guides/_index.md)
-- [Reference](../reference/_index.md)
+- [Understand](../understand/_understand.md)
+- [Guides](../guides/_guides.md)
+- [Reference](../reference/_reference.md)

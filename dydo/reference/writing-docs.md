@@ -88,7 +88,7 @@ An optional summary of what this document covers.
 When useful, a summary helps agents quickly determine if this doc is relevant. Neither `dydo check`
 nor `dydo fix` requires one.
 
-**Note:** For folder meta files (`_foldername.md`), the first sentence of the summary is automatically extracted and displayed in hub file links.
+**Note:** Folder meta files (`_foldername.md`) are optional authored navigation pages.
 
 ### Related Section
 
@@ -130,7 +130,7 @@ dydo fix                # Auto-fix what's possible
 | Title | H1 title exists |
 | Links | Relative paths, no broken links |
 | Navigation pages | Optional authored `_folder.md` pages |
-| Folder Meta Files | Direct children of main folders have `_foldername.md` |
+| Folder Meta Files | Optional authored `_foldername.md` pages |
 | Orphans | Every doc is linked from somewhere |
 
 ---

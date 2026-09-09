@@ -67,7 +67,7 @@ dydo fix
 ```
 
 `dydo check` validates frontmatter, titles, naming, links, and project rules.
-`dydo fix` applies supported repairs; review its diff because generated hubs and framework-owned files
+`dydo fix` applies supported repairs; review its diff because framework-owned files
 may change.
 
 ## Related

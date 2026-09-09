@@ -362,7 +362,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 20 | implementer → issue-captain | R, G | Issue key, implement SHA, files, each scenario and contract line with its proof or gap, tests with claim and seam, gates with output, adjacent findings | — | — |
 | 21 | issue-captain → hardener | R (spawn) | the Issue, the implementer's return; the review block when a FAIL sent it | the Issue with spec and plan and the implementer's return, the block, the plan, standards | `Hardening` |
 | 22 | hardener → issue-captain | R, G | Issue key, harden SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates incl. mutation, out-of-path observations | — | — |
-| 23 | delivery issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan; for a record Feature, its exact owned record/hub paths and the Inquisition's pinned packet | the delivery Issue, packet, about, writing-docs and working-tree retention contract | record Feature or other docs Issue `Implementing` |
+| 23 | delivery issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan; for a record Feature, its exact owned record/navigation paths and the Inquisition's pinned packet | the delivery Issue, packet, about, writing-docs and working-tree retention contract | record Feature or other docs Issue `Implementing` |
 | 24 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | — | — |
 | 25 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, Contract at the specify commit, Candidate SHA, Base SHA | the contract at its governing commit with outcome, scenarios, owned paths, gates; the rubric; the hops | `In Review` |
 | 26 | reviewer → issue-captain, record, PR | R, L, G | the review block: Rubric, Reviewer, Contract, Candidate, Base, Verdict, Gates, Findings; observations after it | — | the fixing hop's status on FAIL |
@@ -550,7 +550,7 @@ flowchart TD
   IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner| BUG[(Bug Issues in Todo, under the Project)]
   IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::hat
   REL -->|released &lt;key&gt;: record delivery wakes admiral| AD2[admiral]:::hat
-  AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and hub paths]:::hat
+  AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and navigation paths]:::hat
   RC --> SP2[specifier]:::worker
   SP2 --> DW[docs-writer on the record Feature branch]:::worker
   DW --> RV[docs review, then final Merge Sub-issue into retained feature]

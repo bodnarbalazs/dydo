@@ -369,6 +369,22 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Index_ReportsPopulatedSectionWithoutOptionalNavigationPage()
+    {
+        await InitProjectAsync("none");
+        File.Delete(Path.Combine(TestDir, "dydo", "guides", "_guides.md"));
+
+        var result = await IndexAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("guides (");
+        Assert.DoesNotContain("guides/_guides.md", result.Stdout);
+        var index = ReadFile("dydo/index.md");
+        Assert.DoesNotContain("./guides/_guides.md", index);
+        Assert.DoesNotContain("guides/ folder not found", index);
+    }
+
+    [Fact]
     public async Task Index_NoDocsFolder_Fails()
     {
         // Don't initialize

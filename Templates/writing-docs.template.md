@@ -131,7 +131,6 @@ dydo fix                # Auto-fix what's possible
 | Links | Relative paths, no broken links |
 | Navigation pages | Optional authored `_folder.md` pages |
 | Folder Meta Files | Optional authored `_foldername.md` pages |
-| Orphans | Every doc is linked from somewhere |
 
 ---
 

@@ -56,7 +56,7 @@ public static class IndexCommand
             {
                 var docsInHub = docs.Count(d => d.RelativePath.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase));
                 var status = docsInHub > 0 ? $"({docsInHub} docs)" : "(not found)";
-                Console.WriteLine($"  - {folder}/_{folder}.md {status}");
+                Console.WriteLine($"  - {folder} {status}");
             }
 
             Console.WriteLine();

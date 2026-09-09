@@ -12,12 +12,12 @@ state.
 ## The documentation funnel
 
 ```text
-entry file → dydo/index.md → folder hubs → issue-relevant durable docs
+entry file → dydo/index.md → authored navigation → issue-relevant durable docs
 ```
 
 1. The host loads `CLAUDE.md` or `AGENTS.md`.
 2. `dydo/index.md` establishes the knowledge and work boundary.
-3. Folder hubs narrow navigation to `understand/`, `guides/`, `reference/`, or `project/`.
+3. Optional authored navigation pages or direct durable docs narrow the path to the material relevant to the Issue.
 4. The agent reads only the Decisions, plan, architecture, guide, or reference material needed now.
 5. An invoked skill adds the methodology for the current kind of work.
 

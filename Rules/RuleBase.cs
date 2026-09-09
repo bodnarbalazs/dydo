@@ -9,11 +9,8 @@ public abstract class RuleBase : IRule
     public virtual bool CanAutoFix => false;
 
     /// <summary>
-    /// Per-rule opt-in skip. Default false. Rules override this to declare
-    /// docs they don't validate (e.g. template files for content-shape rules).
-    /// PR2 will move the existing inline path-prefix skips in
-    /// FrontmatterRule/TitleRule/BrokenLinksRule/NamingRule/OrphanDocsRule
-    /// onto this hook.
+    /// Per-rule opt-in skip hook. The default validates every document; a rule may override it
+    /// when it has a documented exclusion.
     /// </summary>
     protected virtual bool ShouldSkip(DocFile doc) => false;
 

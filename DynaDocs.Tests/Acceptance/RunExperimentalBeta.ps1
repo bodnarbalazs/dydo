@@ -4,15 +4,24 @@ param(
     [string]$CandidateSha,
 
     [Parameter(Mandatory)]
-    [string]$RollbackPackage,
+    [string]$CandidateVersion,
+
+    [Parameter(Mandatory)]
+    [string]$PreviousPackage,
+
+    [Parameter(Mandatory)]
+    [string]$PreviousVersion,
+
+    [Parameter(Mandatory)]
+    [string]$PreviousPackageSha256,
 
     [switch]$IsolatedOnly
 )
 
 $ErrorActionPreference = 'Stop'
-$betaVersion = '3.0.0-beta.1'
-$rollbackVersion = '2.2.9'
-$rollbackHash = 'C60F0D7395B1842DFF22E41914430D884FB7B3CCFF1A1059AE9FE7385695DB14'
+$betaVersion = $CandidateVersion
+$rollbackVersion = $PreviousVersion
+$rollbackHash = $PreviousPackageSha256
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $originalLocation = (Get-Location).Path
 $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
@@ -61,14 +70,15 @@ function Assert-InstalledPackage([string]$ToolDirectory, [string]$Version, [stri
     return $actualHash
 }
 
-function Get-StringHash([string]$Value) {
-    $sha256 = [Security.Cryptography.SHA256]::Create()
-    try {
-        return [BitConverter]::ToString($sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($Value))).Replace('-', '')
-    }
-    finally {
-        $sha256.Dispose()
-    }
+function Get-CommandHash([string]$Command, [string]$Name) {
+    if (-not (Test-Path -LiteralPath $Command)) { throw "$Name executable is missing: $Command" }
+    return (Get-FileHash -LiteralPath $Command -Algorithm SHA256).Hash
+}
+
+function Assert-CleanRepository([string]$Name) {
+    $status = & git status --porcelain
+    if ($LASTEXITCODE -ne 0) { throw "$Name could not read Git status." }
+    if ($status) { throw "$Name left a tracked or untracked repository delta: $($status -join '; ')" }
 }
 
 function Write-Json([object]$Value, [string]$Path) {
@@ -109,7 +119,8 @@ function Restore-Rollback {
     if ($rollbackCommand.Source -cne $globalCommandPath) { throw 'Rollback changed the PATH-resolved dydo command.' }
     Assert-Version $rollbackCommand.Source $rollbackVersion 'rollback command'
     $evidence.rollback_installed_package_sha256 = Assert-InstalledPackage (Split-Path -Parent $rollbackCommand.Source) $rollbackVersion $rollbackHash 'rollback'
-    $evidence.rollback_command_path_sha256 = Get-StringHash $rollbackCommand.Source
+    $evidence.rollback_command_path = $rollbackCommand.Source
+    $evidence.rollback_command_sha256 = Get-CommandHash $rollbackCommand.Source 'rollback command'
 }
 
 New-Item -ItemType Directory -Force -Path $packageRoot, $toolRoot, $scratch | Out-Null
@@ -124,16 +135,14 @@ $beforePath = @{
 }
 
 try {
-    $resolvedRollbackPackage = (Resolve-Path $RollbackPackage).Path
+    $resolvedRollbackPackage = (Resolve-Path $PreviousPackage).Path
     $rollbackSource = Split-Path -Parent $resolvedRollbackPackage
     Set-Location $root
     $actualSha = (& git rev-parse HEAD | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Could not read the candidate Git SHA.' }
     if ($actualSha -ne $CandidateSha) { throw 'Candidate SHA does not match HEAD.' }
-    $gitStatus = & git status --porcelain
-    if ($LASTEXITCODE -ne 0) { throw 'Could not read candidate Git status.' }
-    if ($gitStatus) { throw 'Candidate is dirty; refusing package or global mutation.' }
-    if ((Get-FileHash $resolvedRollbackPackage -Algorithm SHA256).Hash -ne $rollbackHash) { throw 'Rollback package SHA-256 does not match the retained 2.2.9 package.' }
+    Assert-CleanRepository 'candidate'
+    if ((Get-FileHash $resolvedRollbackPackage -Algorithm SHA256).Hash -ne $rollbackHash) { throw 'Previous package SHA-256 does not match the supplied retained package.' }
 
     $sourceManifest = Join-Path $runRoot 'source-templates.json'
     Write-Json (Get-TemplateSnapshot) $sourceManifest
@@ -142,7 +151,8 @@ try {
     $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
     $globalCommandPath = $globalCommand.Source
     Assert-Version $globalCommand.Source $rollbackVersion 'preexisting global command'
-    $evidence.preexisting_command_path_sha256 = Get-StringHash $globalCommand.Source
+    $evidence.preexisting_command_path = $globalCommand.Source
+    $evidence.preexisting_command_sha256 = Get-CommandHash $globalCommand.Source 'preexisting command'
 
     Invoke-Checked { dotnet pack DynaDocs.csproj -c Release --no-restore -o $packageRoot } 'beta package'
     $package = Join-Path $packageRoot "dydo.$betaVersion.nupkg"
@@ -171,7 +181,8 @@ try {
     $evidence.emitted_artifact_manifest_sha256 = (Get-FileHash $emittedManifest -Algorithm SHA256).Hash
     Set-Location $root
     $evidence.isolated_install = $true
-    $evidence.isolated_command_path_sha256 = Get-StringHash $isolated
+    $evidence.isolated_command_path = $isolated
+    $evidence.isolated_command_sha256 = Get-CommandHash $isolated 'isolated command'
     $evidence.isolated_sync_idempotent = $true
 
     if (-not $IsolatedOnly) {
@@ -181,14 +192,23 @@ try {
         if ($globalCommand.Source -cne $globalCommandPath) { throw 'Beta update changed the PATH-resolved dydo command.' }
         Assert-Version $globalCommand.Source $betaVersion 'global beta command'
         $evidence.beta_installed_package_sha256 = Assert-InstalledPackage (Split-Path -Parent $globalCommand.Source) $betaVersion $evidence.package_sha256 'global beta'
-        $evidence.beta_command_path_sha256 = Get-StringHash $globalCommand.Source
+        $evidence.beta_command_path = $globalCommand.Source
+        $evidence.beta_command_sha256 = Get-CommandHash $globalCommand.Source 'global beta command'
+        Set-Location $root
+        Invoke-Checked { & $globalCommand.Source 'template' 'update' } 'dogfood template update'
+        Invoke-Checked { & $globalCommand.Source sync } 'dogfood first sync'
+        Invoke-Checked { & $globalCommand.Source sync } 'dogfood second sync'
+        Invoke-Checked { & $globalCommand.Source check } 'dogfood check'
+        Assert-CleanRepository 'dogfood template update and sync'
+        $evidence.dogfood_template_update_sync_check = $true
         Restore-Rollback
         Invoke-Checked { dotnet tool update --global dydo --source $packageRoot --version $betaVersion } 'final global beta install'
         $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
         if ($globalCommand.Source -cne $globalCommandPath) { throw 'Final beta install changed the PATH-resolved dydo command.' }
         Assert-Version $globalCommand.Source $betaVersion 'final global beta command'
         $evidence.final_installed_package_sha256 = Assert-InstalledPackage (Split-Path -Parent $globalCommand.Source) $betaVersion $evidence.package_sha256 'final global beta'
-        $evidence.final_command_path_sha256 = Get-StringHash $globalCommand.Source
+        $evidence.final_command_path = $globalCommand.Source
+        $evidence.final_command_sha256 = Get-CommandHash $globalCommand.Source 'final global beta command'
         $evidence.final_beta_reinstall = $true
     }
 }

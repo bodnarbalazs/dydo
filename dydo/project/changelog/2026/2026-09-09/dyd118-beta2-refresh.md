@@ -1,6 +1,7 @@
 ---
-area: changelog
-type: evidence
+area: general
+type: changelog
+date: 2026-09-09
 ---
 
 # DYD-118 beta.2 dogfood refresh — 2026-09-09

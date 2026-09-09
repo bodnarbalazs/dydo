@@ -197,10 +197,16 @@ try {
         Set-Location $root
         Invoke-Checked { & $globalCommand.Source 'template' 'update' } 'dogfood template update'
         Invoke-Checked { & $globalCommand.Source sync } 'dogfood first sync'
+        $firstDogfoodSnapshot = @(Get-ManagedSnapshot $root)
+        $firstDogfoodSnapshotJson = $firstDogfoodSnapshot | ConvertTo-Json -Compress
         Invoke-Checked { & $globalCommand.Source sync } 'dogfood second sync'
+        $secondDogfoodSnapshot = @(Get-ManagedSnapshot $root)
+        $secondDogfoodSnapshotJson = $secondDogfoodSnapshot | ConvertTo-Json -Compress
+        if ($firstDogfoodSnapshotJson -ne $secondDogfoodSnapshotJson) { throw 'The dogfood second sync changed compiler-owned artifacts.' }
         Invoke-Checked { & $globalCommand.Source check } 'dogfood check'
         Assert-CleanRepository 'dogfood template update and sync'
         $evidence.dogfood_template_update_sync_check = $true
+        $evidence.dogfood_sync_idempotent = $true
         Restore-Rollback
         Invoke-Checked { dotnet tool update --global dydo --source $packageRoot --version $betaVersion } 'final global beta install'
         $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop

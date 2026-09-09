@@ -1,6 +1,5 @@
 name = "issue-captain"
 description = "One contracted Issue needs a captain: specify, direct the crew, review, merge and release from its recorded state."
-model = "gpt-5.6-sol"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

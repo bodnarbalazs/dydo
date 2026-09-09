@@ -29,15 +29,11 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 - **Crew:** specification and route belong to `specifier`; production to `implementer`, then
   `hardener`, or to `docs-writer`; independent judgment to `reviewer`. Brief, sequence, track,
   correct, and direct integration.
-- **Native capacity:** You alone commission every specifier, production worker, hardener and reviewer
-  for this Issue; keep each worker's scope exact. Budget the whole open-thread tree and run necessary
-  stages serially when capacity requires it, preserving every fresh specifier and fresh reviewer.
-  Do not treat completion, return or interruption as capacity release without native evidence. A saved
-  brief carries scope and resume context, never Admiral-to-crew dispatch authority. On one bounded
-  capacity refusal, preserve the record, candidate, hop SHA and exact brief. Do not broaden the brief
-  or retry blindly; use documented lifecycle handling only when its effect is established for this host,
-  then return or release the concrete host limitation through the normal hierarchy. Every worker return
-  comes back to you.
+- **Native capacity:** You alone commission exact-scope crew. Budget open native capacity and run
+  necessary stages serially, preserving fresh specifier and reviewer obligations. On a bounded refusal,
+  preserve the record, candidate, hop SHA and brief; do not broaden it or retry blindly. Use
+  established lifecycle handling, then return or release the concrete limitation when captain-owned
+  work cannot run. Every worker return comes back to you.
 - **Delivery scale:** For a small prompt or documentation change, use one author and one fresh,
   independent whole-change reviewer. Add specification review or a separate hardener only with one
   short, concrete risk reason; persistence, migrations, permissions and uncertain native interfaces
@@ -86,13 +82,22 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    runs the normal docs delivery chain as below.
    Skip only a hop the spec declares empty. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
-   Wayfinding loop before production resumes. Validate uncertain native interface shapes early. Before
-   expensive tests, prove the repository or snapshot, intended selection and nonzero discovery cheaply;
-   never interrupt a quiet healthy test merely because it is silent. **Done:** each candidate accounts
-   for its paths, passes its gates, ends on a posted commit, and carries no unresolved choice.
+   Wayfinding loop before production resumes. Choose each worker's capability as you brief it: the
+   smallest adequate supported model, and the effort where the host exposes one, weighed from that
+   task's difficulty, uncertainty, consequence of error, required independence, context size and
+   likely retries. Start adequate and escalate on evidence. Select model and effort together where
+   the host takes both; where it takes only a model, leave effort host-owned and record that limit.
+   Brief the requested value so the worker's signature is truthful, and claim an effective identity
+   only where telemetry shows it. dydo compiles no model, no effort and no standing capability
+   table. Validate uncertain native interface shapes early. Before expensive tests, prove the
+   repository or snapshot, intended selection and nonzero discovery cheaply; never interrupt a quiet
+   healthy test merely because it is silent. **Done:** each candidate accounts for its paths, passes
+   its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the specify SHA, Candidate SHA
    and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests and gates go to `hardener`,
    a missed contract line to `implementer`, a wrong scenario or route through a fresh `specifier`.
+   Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
+   full strength whatever the work below them cost.
    Send the FAIL block with the brief and set the fixing hop's status. A change to acceptance,
    scope, destination or architecture goes to the admiral for plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the

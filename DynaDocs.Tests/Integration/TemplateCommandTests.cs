@@ -7,6 +7,83 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateCommandTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Update_WarningsReturnNonzeroAndPreserveOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        UserEditFrameworkDoc(configPath);
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        Assert.NotEqual(0, result.ExitCode);
+        result.AssertStdoutContains("Template update complete:");
+        Assert.Contains("user-edited", result.Stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Update_DiffWithWarnings_ReturnsNonzeroWithoutSaving()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        UserEditFrameworkDoc(configPath);
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await RunTemplateUpdateAsync("--diff");
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("user-edited", result.Stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Update_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, stdout, stderr) = ConsoleCapture.All(() =>
+            TemplateCommand.ExecuteUpdate(false, () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        // The complete tally is reported before the commit seam.
+        Assert.Contains("Template update complete:", stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    // Stores the framework hash of the first framework doc, then edits the doc: the next update
+    // sees a hash mismatch and warns "user-edited" instead of overwriting it.
+    private void UserEditFrameworkDoc(string configPath)
+    {
+        var relativePath = TemplateCommand.FrameworkDocFiles.First();
+        var docPath = Path.Combine(DydoDir, relativePath);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(docPath));
+        new ConfigService().SaveConfig(config, configPath);
+        File.AppendAllText(docPath, "\nUSER EDIT SENTINEL\n");
+    }
+
+    private static void AddLegacyModels(string configPath)
+    {
+        var raw = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = System.Text.Json.Nodes.JsonNode.Parse(
+            """{"agents":{"reviewer":"strong"},"tiers":{"anthropic":{"strong":"legacy"}}}""");
+        raw["unrelated"] = System.Text.Json.Nodes.JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+    }
+
     public static IEnumerable<object[]> UnsupportedSourceShapes()
     {
         string[] names = ["Skill-ghost.template.md", "valid-Resource-ghost.template.md",

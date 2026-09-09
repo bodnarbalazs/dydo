@@ -91,6 +91,12 @@ stand in the roster.
 The model is supersymmetric: a captain's Issue is a Project one level down. The same Types, the same
 statuses and the same chain hold at both levels; only the map holder changes.
 
+Capability rides with the delegation, not with the role. On every edge below, the delegating hat
+picks the model — and the effort where the host exposes one — for the worker it is about to spawn,
+weighing what that one task is worth. Nothing dydo compiles makes the choice for it;
+[Configuration](../reference/configuration.md) carries each host's resolution order and what its
+telemetry can and cannot prove afterwards.
+
 ### 3a. One Project
 
 ```mermaid
@@ -736,7 +742,7 @@ Completed rows below name the source, not a claim that generated runtime output 
 | dydo init | Deferred to DYD-86: native nesting depth and host setup proof. |
 | ~~working-tree contract~~ | Authored/local twin: captain's Merge at each level, branch exceptions, Specifying, release and merge-commit landing. |
 | getting-started | Deferred to DYD-91: framework setup checklist and template registration. |
-| dydo.json | Deferred to final integration: two bound model tiers, light unbound, no emitted effort. |
+| ~~dydo.json~~ | Removed in source: no model or effort property remains; the delegating hat chooses both at dispatch (DYD-134). |
 | ~~work-model, task-lifecycle, dydo-glossary~~ | Authored/local prose: current flow, Types, release, Questions, inquisition and supersymmetry. |
 | generated skills, agents, framework hashes and host reflection | Deferred to DYD-75 after source/compiler integration; independent review repeats on the compiled surface. |
 

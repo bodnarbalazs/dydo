@@ -169,7 +169,7 @@ public static class InitCommand
     // human — there is no roster to draw from. It reduces to "wire up this machine's local
     // integration for an already-initialized project" (a fresh clone, or adding a second
     // integration): configure hooks without re-scaffolding or overwriting the tree.
-    private static int ExecuteJoin(string integration)
+    internal static int ExecuteJoin(string integration, Action? beforeConfigCommit = null)
     {
         if (!IsValidIntegration(integration))
             return IntegrationError(integration);
@@ -216,11 +216,13 @@ public static class InitCommand
 
             // Joining wires this machine, but the integration set is project state: record it
             // so dydo.json reflects every integration the project actually uses (issue 0300).
-            if (config != null && integrations.Any(name => !config.Integrations.GetValueOrDefault(name)))
+            var pendingConfig = config != null && integrations.Any(name => !config.Integrations.GetValueOrDefault(name))
+                ? config
+                : null;
+            if (pendingConfig != null)
             {
                 foreach (var name in integrations)
-                    config.Integrations[name] = true;
-                configService.SaveConfig(config, configPath);
+                    pendingConfig.Integrations[name] = true;
                 Console.WriteLine($"  ✓ Recorded integration(s) in {ConfigService.ConfigFileName}: {string.Join(", ", integrations)}");
             }
 
@@ -229,6 +231,12 @@ public static class InitCommand
             {
                 Console.WriteLine();
                 Console.WriteLine($"  {completionResult}");
+            }
+
+            if (pendingConfig != null)
+            {
+                beforeConfigCommit?.Invoke();
+                configService.SaveConfig(pendingConfig, configPath);
             }
 
             return ExitCodes.Success;

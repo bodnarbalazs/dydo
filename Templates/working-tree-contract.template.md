@@ -81,19 +81,12 @@ interface shapes early.
 
 ## Delegation
 
-- The Admiral budgets all open spawned threads in the native task tree before commissioning or
-  resuming an Issue Captain from its record. A saved brief carries scope and resume context, never
-  Admiral-to-crew dispatch authority. The captain alone commissions its exact-scope crew, budgets the
-  whole open-thread tree and runs necessary stages serially when capacity requires it, preserving
-  fresh specifier and fresh reviewer obligations. Completion, return or interruption is not capacity
-  release without native evidence.
-- On one bounded capacity refusal, the captain preserves the record, candidate, hop SHA and exact
-  brief; it does not broaden the brief or retry blindly. Use documented lifecycle handling only when
-  its effect is established for this host. If it cannot make captain-owned work runnable, the captain
-  returns or releases the concrete host limitation through the normal hierarchy; the Admiral never
-  dispatches the saved brief. Configuration and observed native result are separate evidence. It does
-  not claim configuration consumption, effectiveness, reload, reclamation, backend, version, model or
-  lifecycle behavior without direct host evidence.
+- The Admiral budgets open native capacity before commissioning or resuming a captain. The captain alone
+  commissions exact-scope crew, budgets that capacity and preserves fresh specifier and reviewer
+  obligations. A saved brief is not Admiral-to-crew authority.
+- On a bounded refusal, preserve the record, candidate, hop SHA and exact brief; do not broaden it or
+  retry blindly. Use established lifecycle handling, then return or release the concrete limitation
+  when captain-owned work cannot run. Record only observed native evidence.
 - Workers inherit the relevant Issue or Sub-issue contract, owned paths and gates, and commit their
   own hop. Ordinary workers do not create its branch, open its PR, merge it or review their own
    work. A captain-directed Merge implementer performs the specified merge and conflict resolutions;

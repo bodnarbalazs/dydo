@@ -1,6 +1,5 @@
 name = "project-planner"
 description = "Ripe Project intent, no reliable route. Write the first pickable Issues and bearings; return the committed plan to the admiral."
-model = "gpt-5.6-sol"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

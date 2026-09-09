@@ -1,6 +1,5 @@
 name = "inquisitor"
 description = "Refute-first sweep of landed work. Use when the inquisition's Captain assigns one lens over the named scope, or over one part of it."
-model = "gpt-5.6-sol"
 sandbox_mode = "read-only"
 
 developer_instructions = """

@@ -71,17 +71,20 @@ missing resources fail preflight.
 which keeps project-specific guidance out of framework text. The
 [template pipeline](../understand/templates-and-customization.md) covers the available hooks.
 
-## Model tier
+## Choosing a model for a task
 
-`models.agents` in `dydo.json` binds an agent to a tier and `models.tiers` binds a tier to one concrete
-model per vendor, so a role never names a model. A role with no binding compiles `model: inherit` on
-Claude, leaving the native runtime to inherit, and the compiler fallback `gpt-5.6-terra` on Codex. See the
-[configuration reference](../reference/configuration.md).
+Nothing in a template or in `dydo.json` binds a role to a model or an effort. Every compiled role
+is left unbound on purpose, so whoever delegates picks the capability the task in front of them
+deserves; the shipped `admiral` and `issue-captain` methods carry that judgment.
 
-DR 047 uses `standard` for implementer, docs-writer, Research and scout; `strong` for reviewer,
-specifier, hardener, issue-captain, project-planner and inquisitor. `light` remains defined but
-unbound. Effort stays at host defaults. Final consolidation verifies model fallback and native
-delegation/permissions after compiler setup; generated configuration alone is not a runtime proof.
+Select at the call, not in a file:
+
+- **Claude Code** — pass `model` on the Agent call that spawns the role. Effort belongs to the
+  session, so open the session at the effort the work needs.
+- **Codex** — pass the model and a reasoning effort that model supports, together, on the spawn.
+
+The [configuration reference](../reference/configuration.md) carries each host's full resolution
+order and the limits worth knowing before a claim rests on one.
 
 ## What is gone
 
@@ -99,7 +102,7 @@ custom siblings and nested files. The Inquisition Issue protocol supplies the cu
 ## Related
 
 - [Templates and Customization](../understand/templates-and-customization.md) — the template pipeline end to end
-- [Configuration Reference](../reference/configuration.md) — `models.agents`, hashes, nudges
+- [Configuration Reference](../reference/configuration.md) — dispatch-time model and effort, hashes, nudges
 - [dydo Commands Reference](../reference/dydo-commands.md) — `dydo sync`, `dydo template update`
 - [dydo Glossary](../reference/dydo-glossary.md) — hat, worker, method, and the retired terms
 - [Orientation](../index.md) — the shipped taxonomy and what each role is reached for

@@ -19,13 +19,6 @@ public class DydoConfig
     [JsonPropertyName("skills")]
     public Dictionary<string, SkillSwitchConfig> Skills { get; set; } = new();
 
-    /// <summary>
-    /// Model-tier bindings (Decision 028). Null when the section is absent —
-    /// every generated agent then inherits the session model.
-    /// </summary>
-    [JsonPropertyName("models")]
-    public ModelsConfig? Models { get; set; }
-
     [JsonPropertyName("scanExclude")]
     public List<string> ScanExclude { get; set; } = new();
 

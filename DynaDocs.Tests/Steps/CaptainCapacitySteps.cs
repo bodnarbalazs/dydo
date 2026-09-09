@@ -45,6 +45,7 @@ public sealed class CaptainCapacitySteps
     [Then("the Admiral does not dispatch that saved brief directly")]
     public void AdmiralKeepsCaptainBoundary() => AssertEvery(AdmiralPrompts,
         "Budget all open spawned threads in the native task tree before commissioning.",
+        "Commission or resume the captain from its record",
         "never use a saved captain brief to dispatch crew",
         "one bounded refusal");
 
@@ -88,7 +89,10 @@ public sealed class CaptainCapacitySteps
         AssertEvery(SharedGuides,
             "On one bounded capacity refusal, the captain preserves the record, candidate, hop SHA and exact brief",
             "it does not broaden the brief or retry blindly",
+            "Use documented lifecycle handling only when its effect is established for this host",
             "returns or releases the concrete host limitation through the normal hierarchy");
+        AssertEvery(AdmiralPrompts,
+            "escalate the exact host limitation only after documented capacity or lifecycle handling cannot make captain-owned work runnable");
     }
 
     [Then("the evidence records that configuration consumption and effectiveness remain unproved in the existing task")]

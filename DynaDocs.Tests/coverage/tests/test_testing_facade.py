@@ -734,6 +734,28 @@ class TestingFacadeTests(unittest.TestCase):
                                      text=True, capture_output=True, check=True).stdout
             self.assertNotIn('worktree ' + candidate.as_posix(), listing)
 
+    def test_dotnet_adapter_closes_inherited_stdin(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        with tempfile.TemporaryDirectory(prefix='dydo-runner-stdin-') as temporary:
+            namespace = runpy.run_path(adapter, run_name='run_tests_probe')
+            globals_ = namespace['run_tests'].__globals__
+            with (mock.patch.dict(globals_, {
+                      'is_registered_worktree': mock.Mock(return_value=False),
+                      'create_worktree': mock.Mock(return_value=True),
+                      'copy_dirty_files': mock.Mock(),
+                      'remove_worktree': mock.Mock(),
+                  }),
+                  mock.patch.object(namespace['tempfile'], 'gettempdir', return_value=temporary),
+                  mock.patch.object(namespace['uuid'], 'uuid4',
+                                    return_value=type('Uuid', (), {'hex': 'stdin001'})()),
+                  mock.patch.object(namespace['subprocess'], 'run') as run):
+                run.return_value.returncode = 0
+
+                self.assertEqual(0, namespace['run_tests']())
+
+                dotnet = next(call for call in run.call_args_list if call.args[0][0] == 'dotnet')
+                self.assertIs(subprocess.DEVNULL, dotnet.kwargs['stdin'])
+
     def test_interrupt_at_atomic_directory_acquisition_preserves_ownership(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
         for collision in [False, True]:

@@ -254,7 +254,9 @@ def run_tests(extra_args=None, coverage=False, assurance_output=None):
         cmd = test_command(extra_args)
         env = isolated_environment()
         print(f"  Running: {' '.join(cmd)}")
-        result = subprocess.run(cmd, cwd=worktree, env=env)
+        # Tests that install Console.In must not inherit an attached host console: .NET's
+        # Console.KeyAvailable probes the process handle instead of the installed reader.
+        result = subprocess.run(cmd, cwd=worktree, env=env, stdin=subprocess.DEVNULL)
 
         if coverage:
             copy_coverage_back(worktree)

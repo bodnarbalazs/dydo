@@ -63,7 +63,7 @@ public static class GraphCommand
             var graph = new DocGraph(new LinkResolver());
             graph.Build(docs, basePath);
 
-            var targetPath = ResolveTargetFile(file, basePath, docs);
+            var targetPath = ResolveTargetFile(file, docs);
             if (targetPath == null)
             {
                 ConsoleOutput.WriteError($"File not found: {file}");
@@ -109,7 +109,7 @@ public static class GraphCommand
         }
     }
 
-    private static string? ResolveTargetFile(string file, string basePath, List<Models.DocFile> docs)
+    private static string? ResolveTargetFile(string file, List<Models.DocFile> docs)
     {
         var normalizedInput = PathUtils.NormalizeForKey(file);
 

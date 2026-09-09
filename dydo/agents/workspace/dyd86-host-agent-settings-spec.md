@@ -100,10 +100,12 @@ repeat output is byte-identical.
 suite evidence of 2,347 passed and 2 skipped applies only to candidate
 `6eeb9cc256620cc8e8e1e591bcefbe2af9c4ffe1`; it is not full-suite proof for a later source candidate,
 so no additional source full suite runs merely before that review. The final DYD-128 integrated
-candidate must run the complete combined suite and all existing G/M gates without waiver. Record every
-command, candidate SHA, exit, discovery, and evidence location. A fresh reviewer receives this
-contract, candidate, and base SHA; native project-setting semantics and the new AOT dependency warrant
-that review.
+candidate must run the complete combined .NET suite, zero-warning build, source `dydo check`, and
+native preservation evidence. G/M remains required at the final project assurance/release boundary;
+it is neither a DYD-128 prerequisite nor waived or claimed passed here. Record every command,
+candidate SHA, exit, discovery, and evidence location. A fresh reviewer receives this contract,
+candidate, and base SHA; native project-setting semantics and the new AOT dependency warrant that
+review.
 
 **Plan review.** Recommended: TOML's native configuration semantics and lossless preservation make
 the parser-backed key shape and failure ordering material. Production remains sequenced after

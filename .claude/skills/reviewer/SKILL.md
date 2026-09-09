@@ -35,11 +35,14 @@ Judge one candidate; corrections and status are the invoker's. Your independence
    is named with why.
 5. **Write the block.** Done when the invoker can act on every finding without asking you a question.
 
-6. Run the candidate's exact test commands through `DynaDocs.Tests/coverage/run_tests.py`, never
-   `dotnet test` directly.
-7. Run `python DynaDocs.Tests/coverage/gap_check.py --force-run`. A non-zero result is a finding.
-- [ ] The exact tests passed through the worktree-isolated runner.
-- [ ] Forced coverage passed with zero failing modules.
+6. Rerun the exact gates applicable to the current Issue and stage, using the commands named in
+   that contract. A bounded prose-only review may have no runtime gate when its contract names none.
+   Meaningful code changes retain their specified test obligations; combined merge gates and final
+   G/M release obligations remain mandatory at their stages.
+- [ ] Every gate applicable to this Issue and stage was rerun with the contract-named command.
+- [ ] Meaningful code changes passed their specified tests.
+- [ ] Combined merge gates passed when this is a merge review.
+- [ ] Final G/M release obligations passed when this is the final release review.
 
 ## Return
 

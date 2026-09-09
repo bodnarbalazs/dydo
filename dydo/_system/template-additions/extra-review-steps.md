@@ -1,3 +1,4 @@
-5. Run the candidate's exact test commands through `DynaDocs.Tests/coverage/run_tests.py`, never
-   `dotnet test` directly.
-6. Run `python DynaDocs.Tests/coverage/gap_check.py --force-run`. A non-zero result is a finding.
+5. Rerun the exact gates applicable to the current Issue and stage, using the commands named in
+   that contract. A bounded prose-only review may have no runtime gate when its contract names none.
+   Meaningful code changes retain their specified test obligations; combined merge gates and final
+   G/M release obligations remain mandatory at their stages.

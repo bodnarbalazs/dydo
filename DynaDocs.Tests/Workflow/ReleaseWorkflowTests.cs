@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Workflow;
 public sealed class ReleaseWorkflowTests
 {
     private const string AllowedTagGuard = "github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0')";
+    private const string NpmPublishRun = "npm publish --access public --provenance --tag ${{ github.ref == 'refs/tags/v3.0.0-beta.3' && 'beta' || 'latest' }}";
 
     [Fact]
     public void ReleaseWorkflow_ValidatesTheBuildBeforeEveryPublicationAction()
@@ -49,6 +50,10 @@ public sealed class ReleaseWorkflowTests
         AssertRejected(workflow + "\n  rogue:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm publish --access public\n");
         AssertRejected(Swap(workflow, "prerelease: true", "prerelease: false"));
         AssertRejected(Swap(workflow, "if: github.ref == 'refs/tags/v3.0.0-beta.3'", "if: github.ref == 'refs/tags/v3.0.0'"));
+        AssertRejected(Swap(workflow, "'beta'", "'latest'"));
+        AssertRejected(workflow
+            .Replace(NpmPublishRun, "npm publish --access public --provenance --tag wrong", StringComparison.Ordinal)
+            .Replace("- name: Publish to npm", $"- name: Publish to npm # {NpmPublishRun}", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -61,7 +66,7 @@ public sealed class ReleaseWorkflowTests
         Assert.Contains("prerelease: true", release);
         Assert.Contains("- name: Create stable release", release);
         Assert.Contains("prerelease: false", release);
-        Assert.Contains("npm publish --access public --provenance --tag ${{ github.ref == 'refs/tags/v3.0.0-beta.3' && 'beta' || 'latest' }}", jobs["npm"]);
+        Assert.Equal(NpmPublishRun, StepField(JobStep(jobs["npm"], "Publish to npm"), "run"));
     }
 
     private static void AssertRejected(string workflow) => Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertFailClosedPublicationGraph(workflow));
@@ -97,6 +102,7 @@ public sealed class ReleaseWorkflowTests
 
         AssertReleaseStep(jobs["release"], "Create beta release", "github.ref == 'refs/tags/v3.0.0-beta.3'", "true");
         AssertReleaseStep(jobs["release"], "Create stable release", "github.ref == 'refs/tags/v3.0.0'", "false");
+        Assert.Equal(NpmPublishRun, StepField(JobStep(jobs["npm"], "Publish to npm"), "run"));
     }
 
     private static void AssertReleaseStep(string release, string name, string guard, string prerelease)

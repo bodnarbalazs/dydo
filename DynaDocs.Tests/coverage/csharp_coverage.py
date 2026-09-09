@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import time
 import xml.etree.ElementTree as ET
+from collections import Counter
 from pathlib import Path
 
 
@@ -136,14 +137,24 @@ def _same_native_map(before, after):
 
 
 def _same_instrumented_map(before, after):
-    serialize = lambda point: json.dumps(point, sort_keys=True, separators=(",", ":"))
-    before_points = sorted((serialize(point) for method in before["methods"] for point in method["points"]))
-    after_points = sorted((serialize(point) for method in after["methods"] for point in method["points"]))
+    fields = ("path", "origin", "checksum_algorithm", "checksum", "line", "column",
+              "end_line", "end_column")
+    def points(facts):
+        values = []
+        for method in facts["methods"]:
+            for point in method["points"]:
+                if any(field not in point for field in fields):
+                    return None
+                values.append(tuple(point[field] for field in fields))
+        return Counter(values)
+    before_points, after_points = points(before), points(after)
+    documents = before["documents"]
     return (before["assembly_name"] == after["assembly_name"]
             and before["module_id"] == after["module_id"]
             and before["pdb_sha256"] == after["pdb_sha256"]
-            and before["documents"] == after["documents"]
-            and before_points == after_points)
+            and documents == after["documents"]
+            and len(documents) == len(set(documents.values()))
+            and before_points is not None and before_points == after_points)
 
 
 def _same_restored_map(before, after):

@@ -93,11 +93,25 @@ class CSharpCoverageTests(unittest.TestCase):
         before = {"assembly_name": "A", "module_id": "m", "pdb_sha256": "p",
                   "documents": {"C:/A.cs": "A.cs"}, "methods": [
                       {"token": 1, "identity": "A::First()", "key": "A::First()",
-                       "points": [{"path": "A.cs", "origin": "maintained", "offset": 0}]},
+                       "points": [{"path": "A.cs", "origin": "maintained", "offset": 0,
+                                   "checksum_algorithm": "SHA256", "checksum": "hash", "line": 1,
+                                   "column": 0, "end_line": 1, "end_column": 2}]},
                   ]}
         instrumented = deepcopy(before)
         instrumented["methods"][0]["token"] = 100
+        instrumented["methods"][0]["points"][0]["offset"] = 99
         self.assertTrue(_same_instrumented_map(before, instrumented))
+        changed_point = deepcopy(instrumented)
+        changed_point["methods"][0]["points"][0]["line"] = 2
+        self.assertFalse(_same_instrumented_map(before, changed_point))
+        ambiguous = deepcopy(instrumented)
+        ambiguous["methods"][0]["points"].append(deepcopy(ambiguous["methods"][0]["points"][0]))
+        self.assertFalse(_same_instrumented_map(before, ambiguous))
+        ambiguous_documents = deepcopy(instrumented)
+        ambiguous_documents["documents"]["C:/Other.cs"] = "A.cs"
+        ambiguous_before = deepcopy(before)
+        ambiguous_before["documents"]["C:/Other.cs"] = "A.cs"
+        self.assertFalse(_same_instrumented_map(ambiguous_before, ambiguous_documents))
 
     def test_template_mapping_and_restoration_mismatches_fail_closed(self):
         original = {"facts": {"assembly_name": "A", "sha1": "ab", "methods": [

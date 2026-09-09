@@ -750,14 +750,20 @@ public static partial class GuardCommand
         {
             var basePath = Environment.CurrentDirectory;
             var configService = new ConfigService();
-            if (configService.LoadConfig(basePath) == null)
+            var configPath = configService.FindConfigFile(basePath);
+            if (configPath == null)
                 return;
 
-            var dydoRoot = configService.GetDydoRoot(basePath);
-            var projectRoot = configService.GetProjectRoot(basePath)!;
-            var timestampPath = Path.Combine(dydoRoot, "_system", ".local", "last-validation");
+            var projectRoot = Path.GetDirectoryName(configPath)!;
+            var config = configService.LoadConfig(basePath);
+            var dydoRoot = config == null
+                ? null
+                : Path.Combine(projectRoot, config.Structure.Root);
+            var timestampPath = dydoRoot == null
+                ? null
+                : Path.Combine(dydoRoot, "_system", ".local", "last-validation");
 
-            if (File.Exists(timestampPath))
+            if (timestampPath != null && File.Exists(timestampPath))
             {
                 var lastRun = File.GetLastWriteTimeUtc(timestampPath);
                 if ((DateTime.UtcNow - lastRun).TotalHours < 24)
@@ -776,9 +782,12 @@ public static partial class GuardCommand
                 Console.Error.WriteLine();
             }
 
-            // Ensure .local/ dir exists (absent in worktrees)
-            PathUtils.EnsureLocalDirExists(dydoRoot);
-            File.WriteAllText(timestampPath, DateTime.UtcNow.ToString("O"));
+            if (dydoRoot != null)
+            {
+                // Ensure .local/ dir exists (absent in worktrees)
+                PathUtils.EnsureLocalDirExists(dydoRoot);
+                File.WriteAllText(timestampPath!, DateTime.UtcNow.ToString("O"));
+            }
         }
         catch
         {

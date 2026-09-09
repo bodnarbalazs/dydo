@@ -420,24 +420,56 @@ public class GuardCommandTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
             {
                 "version": 1,
-                "structure": { "root": "{{customRoot}}" }
+                "structure": { "root": "{{customRoot}}" },
+                "nudges": [
+                  { "pattern": "test", "message": "test", "severity": "invalid" }
+                ]
             }
             """);
 
+        string stderr;
         try
         {
             Environment.CurrentDirectory = nestedDirectory;
 
-            InvokeDailyValidation();
+            stderr = InvokeDailyValidationCapturingError();
         }
         finally
         {
             Environment.CurrentDirectory = _testDir;
         }
 
+        Assert.Contains("invalid severity", stderr);
+        Assert.DoesNotContain("dydo.json not found", stderr);
         Assert.True(File.Exists(Path.Combine(configuredRoot, "_system", ".local", "last-validation")));
         Assert.False(File.Exists(Path.Combine(_dydoDir, "_system", ".local", "last-validation")));
         Assert.False(Directory.Exists(Path.Combine(nestedDirectory, "dydo")));
+    }
+
+    [Fact]
+    public void RunDailyValidationIfDue_WithMalformedConfig_WarnsWithoutCreatingDydoState()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-guard-malformed-config-" + Guid.NewGuid().ToString("N"));
+        var nestedDirectory = Path.Combine(root, "src", "feature");
+        Directory.CreateDirectory(nestedDirectory);
+        File.WriteAllText(Path.Combine(root, "dydo.json"), "{not valid json}");
+
+        try
+        {
+            Environment.CurrentDirectory = nestedDirectory;
+
+            var stderr = InvokeDailyValidationCapturingError();
+
+            Assert.Contains("Daily validation found issues", stderr);
+            Assert.Contains("Invalid JSON", stderr);
+            Assert.False(Directory.Exists(Path.Combine(root, "dydo")));
+            Assert.False(Directory.Exists(Path.Combine(nestedDirectory, "dydo")));
+        }
+        finally
+        {
+            Environment.CurrentDirectory = _testDir;
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
@@ -470,6 +502,22 @@ public class GuardCommandTests : IDisposable
 
         Assert.NotNull(method);
         method!.Invoke(null, null);
+    }
+
+    private static string InvokeDailyValidationCapturingError()
+    {
+        var original = Console.Error;
+        var capture = new StringWriter();
+        Console.SetError(capture);
+        try
+        {
+            InvokeDailyValidation();
+            return capture.ToString();
+        }
+        finally
+        {
+            Console.SetError(original);
+        }
     }
 
     #endregion

@@ -44,12 +44,6 @@
       ]
     },
     {
-      "module": "Commands/FixHubHandler.cs",
-      "tests": [
-        "DynaDocs.Tests/Commands/FixHubHandlerTests.cs"
-      ]
-    },
-    {
       "module": "Commands/GraphCommand.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"

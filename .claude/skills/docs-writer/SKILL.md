@@ -32,7 +32,7 @@ words.
    document (a skill template, its resources, an entry point) is written by `writing-for-agents`.
    Cut whatever the code already states plainly. Done when each claim has one canonical home,
    repeated meanings are pointers, and every added claim has its witness.
-3. **Edit the source; regeneration writes the rest.** Hubs and folder metadata are `dydo fix`'s;
+3. **Edit the source; regeneration writes the rest.** Author navigation pages when the docs need them;
    compiled skills under `.claude/`, `.codex/` and `.agents/` are `dydo sync`'s. Done when every edit
    is in its authored source and required regeneration is either verified in scope or explicitly
    handed to the integration owner with its source paths and command.

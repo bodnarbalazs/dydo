@@ -97,7 +97,7 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
    cancels it; commission the confirmed Issue and route the Bugs it files. On its
    `released <key>: record delivery` wake, read the completed packet and first contract a separate
    primary Feature/AFK record-delivery Issue on the retained feature with exact record and required
-   hub paths. Wire only the Inquisition blocked by record delivery before generic pickup, then
+   navigation paths. Wire only the Inquisition blocked by record delivery before generic pickup, then
    commission the record captain. Do not recommission the audit from its temporary Todo gap; follow
    the working-tree contract's retention route.
    On delivery `Done`, resume the released Inquisition captain for durable-evidence verification.

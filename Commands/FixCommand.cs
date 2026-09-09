@@ -31,14 +31,14 @@ public static class FixCommand
     {
         try
         {
-            var scope = ResolveScope(path);
+            var scope = ResolveScope(path, out var scopeError);
             if (scope == null)
             {
-                ConsoleOutput.WriteError("Could not find docs folder.");
+                ConsoleOutput.WriteError(scopeError ?? "Could not find docs folder.");
                 return ExitCodes.ToolError;
             }
 
-            Console.WriteLine($"Fixing {scope.FilePath ?? scope.CorpusRoot}...");
+            Console.WriteLine($"Fixing {scope.FilePath ?? scope.DirectoryPath ?? scope.CorpusRoot}...");
             Console.WriteLine();
 
             var configService = new ConfigService();
@@ -110,22 +110,38 @@ public static class FixCommand
         }
     }
 
-    private static FixScope? ResolveScope(string? path)
+    private static FixScope? ResolveScope(string? path, out string? error)
     {
+        error = null;
         if (!string.IsNullOrEmpty(path))
         {
             if (Directory.Exists(path))
-                return new FixScope(Path.GetFullPath(path), null);
+            {
+                var directoryPath = Path.GetFullPath(path);
+                var corpusRoot = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+                if (corpusRoot == null)
+                    return null;
+
+                corpusRoot = Path.GetFullPath(corpusRoot);
+                if (CheckDocValidator.IsUnderScope(corpusRoot, directoryPath))
+                    return new FixScope(corpusRoot, null, null);
+                if (!CheckDocValidator.IsUnderScope(directoryPath, corpusRoot))
+                {
+                    error = $"Path is outside the docs tree: {path}";
+                    return null;
+                }
+                return new FixScope(corpusRoot, null, directoryPath);
+            }
             if (File.Exists(path))
             {
                 var filePath = Path.GetFullPath(path);
-                return new FixScope(FindContainingCorpusRoot(filePath), filePath);
+                return new FixScope(FindContainingCorpusRoot(filePath), filePath, null);
             }
             return null;
         }
 
         var docsPath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
-        return docsPath == null ? null : new FixScope(Path.GetFullPath(docsPath), null);
+        return docsPath == null ? null : new FixScope(Path.GetFullPath(docsPath), null, null);
     }
 
     private static string FindContainingCorpusRoot(string filePath)
@@ -146,7 +162,9 @@ public static class FixCommand
     private static List<DocFile>? SelectDocs(FixScope scope, List<DocFile> resolutionCorpus)
     {
         if (scope.FilePath == null)
-            return resolutionCorpus;
+            return scope.DirectoryPath == null
+                ? resolutionCorpus
+                : resolutionCorpus.Where(doc => CheckDocValidator.IsUnderScope(doc.FilePath, scope.DirectoryPath)).ToList();
 
         var selected = resolutionCorpus.Where(doc =>
             PathUtils.NormalizePath(Path.GetFullPath(doc.FilePath)).Equals(
@@ -187,5 +205,5 @@ public static class FixCommand
         return (config, configPath, added);
     }
 
-    private sealed record FixScope(string CorpusRoot, string? FilePath);
+    private sealed record FixScope(string CorpusRoot, string? FilePath, string? DirectoryPath);
 }

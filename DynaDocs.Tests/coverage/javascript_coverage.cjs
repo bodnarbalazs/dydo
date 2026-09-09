@@ -33,11 +33,14 @@ function rawFunctions(root, output, targets) {
   for (const name of fs.readdirSync(tmp).filter(name => name.endsWith('.json')).sort()) {
     const data = JSON.parse(fs.readFileSync(path.join(tmp, name), 'utf8'));
     if (!Array.isArray(data.result)) throw new Error('Invalid native V8 coverage result');
+    const seen = new Set();
     for (const script of data.result) {
       if (!script.url || !script.url.startsWith('file:')) continue;
       const identity = canonical(root, script.url);
       if (!allowed.has(identity)) continue;
       if (!Array.isArray(script.functions)) throw new Error('Invalid native V8 function inventory');
+      if (seen.has(identity)) throw new Error(`Ambiguous native V8 source identity: ${script.url}`);
+      seen.add(identity);
       const rows = scripts.get(identity) || [];
       rows.push(script.functions);
       scripts.set(identity, rows);
@@ -63,31 +66,47 @@ function join(root, output, targets) {
     const coverage = rows.get(identity);
     const kind = relative.endsWith('.mjs') ? 'module' : 'commonjs';
     const metrics = analyze(source, kind).methods;
-    const functions = Object.entries(coverage.fnMap || {});
     const methods = metrics.map(metric => {
       let count;
       if (coverage.all === true) {
+        const functions = Object.entries(coverage.fnMap || {});
         if (functions.length !== 1 || functions[0][1].name !== '(empty-report)'
             || Object.values(coverage.f).some(value => value !== 0)) {
           throw new Error(`Invalid c8 --all zero-hit witness: ${relative}`);
         }
         count = 0;
       } else {
-        const matches = functions.filter(([, fn]) => samePoint(fn.loc.start, { line: metric.line, column: metric.column })
-          && samePoint(fn.loc.end, { line: metric.end_line, column: metric.end_column }));
-        if (matches.length !== 1) throw new Error(`Missing or ambiguous Istanbul callable join: ${relative}:${metric.id}`);
-        count = coverage.f[matches[0][0]];
-      }
-      if (!Number.isInteger(count) || count < 0) throw new Error('Invalid Istanbul function counter');
-      const scriptInventories = native.get(identity) || [];
-      if (!scriptInventories.length) {
-        if (coverage.all !== true || count !== 0) throw new Error(`Missing native V8 source identity: ${relative}`);
-      } else {
+        const scriptInventories = native.get(identity) || [];
+        let nativeCount = 0;
         for (const inventory of scriptInventories) {
           const raw = inventory.filter(fn => Array.isArray(fn.ranges) && fn.ranges.length
             && fn.ranges[0].startOffset === metric.start && fn.ranges[0].endOffset === metric.end);
-          if (raw.length !== 1) throw new Error(`Missing or ambiguous native V8 callable join: ${relative}:${metric.id}`);
+          if (raw.length > 1) throw new Error(`Ambiguous native V8 callable join: ${relative}:${metric.id}`);
+          if (raw.length === 1) {
+            const value = raw[0].ranges[0].count;
+            if (!Number.isInteger(value) || value < 0) throw new Error('Invalid native V8 function counter');
+            nativeCount += value;
+          }
         }
+        if (nativeCount === 0) {
+          const found = scriptInventories.some(inventory => inventory.some(fn => Array.isArray(fn.ranges) && fn.ranges.length
+            && fn.ranges[0].startOffset === metric.start && fn.ranges[0].endOffset === metric.end));
+          if (!found) throw new Error(`Missing native V8 callable join: ${relative}:${metric.id}`);
+        }
+        const functions = Object.entries(coverage.fnMap || {}).filter(([, fn]) => samePoint(fn.loc.start, { line: metric.line, column: metric.column })
+          && samePoint(fn.loc.end, { line: metric.end_line, column: metric.end_column }));
+        const branches = Object.entries(coverage.branchMap || {}).filter(([, branch]) => branch.locations?.length === 1
+          && samePoint(branch.locations[0].start, { line: metric.line, column: metric.column })
+          && samePoint(branch.locations[0].end, { line: metric.end_line, column: metric.end_column }));
+        if (functions.length > 1 || branches.length > 1) throw new Error(`Ambiguous Istanbul callable join: ${relative}:${metric.id}`);
+        const functionCount = functions.length ? coverage.f[functions[0][0]] : null;
+        const branchCount = branches.length ? coverage.b[branches[0][0]][0] : null;
+        for (const value of [functionCount, branchCount].filter(value => value !== null)) {
+          if (!Number.isInteger(value) || value < 0 || value !== nativeCount) {
+            throw new Error(`Disagreeing Istanbul callable join: ${relative}:${metric.id}`);
+          }
+        }
+        count = nativeCount;
       }
       return { ...metric, covered: Number(count > 0), total: 1, execution_count: count };
     });
@@ -140,7 +159,7 @@ function main(args = process.argv.slice(2)) {
   return campaign(values['--root'], values['--output'], JSON.parse(values['--targets-json']), JSON.parse(values['--command-json']));
 }
 
-module.exports = { canonicalRows, join, campaign };
+module.exports = { canonicalRows, rawFunctions, join, campaign };
 if (require.main === module) {
   try { process.exitCode = main(); } catch (error) { console.error(error.message); process.exitCode = 2; }
 }

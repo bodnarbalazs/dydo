@@ -210,6 +210,19 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Fix_ReportsManualFixNeeded()
+    {
+        await InitProjectAsync("none");
+        WriteFile("dydo/guides/needs-manual.md", "# Needs Manual Fix\n");
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("NEEDS MANUAL FIX");
+        result.AssertStdoutContains("needs-manual.md");
+    }
+
+    [Fact]
     public async Task Fix_DoesNotCreateMissingHubOrMetaFiles()
     {
         await InitProjectAsync("none");

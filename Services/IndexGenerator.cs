@@ -39,11 +39,16 @@ public class IndexGenerator : IIndexGenerator
         {
             var sectionPath = $"./{folder}/_{folder}.md";
             var sectionExists = docs.Any(d => d.RelativePath.Equals($"{folder}/_{folder}.md", StringComparison.OrdinalIgnoreCase));
+            var folderExists = docs.Any(d => d.RelativePath.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase));
 
             sb.AppendLine($"### {heading}");
             if (sectionExists)
             {
                 sb.AppendLine($"[{linkText}]({sectionPath}) - {description}");
+            }
+            else if (folderExists)
+            {
+                sb.AppendLine(description);
             }
             else
             {

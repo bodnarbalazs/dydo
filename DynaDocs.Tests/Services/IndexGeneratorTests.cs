@@ -83,4 +83,23 @@ public class IndexGeneratorTests
         // Assert
         Assert.Contains("*understand/ folder not found*", result);
     }
+
+    [Fact]
+    public void Generate_ShowsPopulatedSectionWithoutMissingNavigationLink()
+    {
+        var result = new IndexGenerator().Generate(
+        [
+            new DocFile
+            {
+                FilePath = "/test/understand/about.md",
+                RelativePath = "understand/about.md",
+                FileName = "about.md",
+                Content = "# About"
+            }
+        ], "/test");
+
+        Assert.Contains("Core concepts, domain knowledge, architecture", result);
+        Assert.DoesNotContain("understand/ folder not found", result);
+        Assert.DoesNotContain("./understand/_understand.md", result);
+    }
 }

@@ -5,23 +5,23 @@ using DynaDocs.Models;
 
 public class FolderScaffolder : IFolderScaffolder
 {
-    private readonly record struct FolderSpec(string Path, string Description, string Area);
+    private readonly record struct FolderSpec(string Path);
 
     private static readonly FolderSpec[] Folders =
     [
-        new("understand", "Core concepts, domain knowledge, and architecture", "understand"),
-        new("guides", "Task-oriented development guides", "guides"),
-        new("reference", "API specs, configuration, and tool documentation", "reference"),
-        new("project", "Decisions, pitfalls, changelog, and meta documentation", "project"),
-        new("project/decisions", "Decision records", "project"),
-        new("project/changelog", "Change history", "project"),
-        new("project/pitfalls", "Known issues and gotchas", "project"),
-        new("project/releases", "Release records and durable release evidence", "project"),
-        new("project/future-features", "Ideas not in scope for current version", "project"),
-        new("_system", "System configuration (committed)", "_system"),
-        new("_system/templates", "Local skill and resource sources", "_system"),
-        new("_system/.local", "Machine-local runtime state (not committed)", "_system"),
-        new("_assets", "Documentation assets (images, diagrams)", "_assets")
+        new("understand"),
+        new("guides"),
+        new("reference"),
+        new("project"),
+        new("project/decisions"),
+        new("project/changelog"),
+        new("project/pitfalls"),
+        new("project/releases"),
+        new("project/future-features"),
+        new("_system"),
+        new("_system/templates"),
+        new("_system/.local"),
+        new("_assets")
     ];
 
     private static readonly (string RelativePath, Func<string> Generate)[] DocFiles =

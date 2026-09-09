@@ -95,7 +95,7 @@ dydo fix
 dydo fix <path>
 ```
 
-Repairs include filename normalization, wikilink conversion, index/meta maintenance, and restoration of
+Repairs include filename normalization, wikilink conversion, and restoration of
 required scan exclusions. Review the Git diff afterward.
 
 ### dydo index

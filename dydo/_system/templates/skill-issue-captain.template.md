@@ -68,7 +68,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    contract completes a small prompt/docs change; where used, the accepted spec makes the route
    mechanical and names lanes, or none, and empty hops.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
-   parent; the Bug Type-map exception is below. Open the spec's disjoint parallel lanes in `Todo`, with the parent's Type and Mode, bounded
+   parent; the Bug Type-map exception is below. Where a spec names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
    outcome, paths, gates and isolated branch/worktree off the parent. Specify each lane and give
    each merge into the parent its own Merge Sub-issue, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
@@ -80,7 +80,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    For normal delivery, set `Implementing` or `Hardening` on each spawn and post each hop's commit
    SHA on the record. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
    runs the normal docs delivery chain as below.
-   Skip only a hop the spec declares empty. Run disjoint lanes concurrently and keep every attempt on
+   On a route with a spec, skip only a hop it declares empty. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each worker's capability as you brief it: the
    smallest adequate supported model, and the effort where the host exposes one, weighed from that
@@ -93,8 +93,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    repository or snapshot, intended selection and nonzero discovery cheaply; never interrupt a quiet
    healthy test merely because it is silent. **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
-5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the specify SHA, Candidate SHA
-   and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests and gates go to `hardener`,
+5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the compact acceptance-contract
+   SHA or, when present, the specify SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests and gates go to `hardener`,
    a missed contract line to `implementer`, a wrong scenario or route through a fresh `specifier`.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
    full strength whatever the work below them cost.
@@ -120,7 +120,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 ## Kinds and failure paths
 
-Start from the Type's shape in the workspace standard; the spec makes the map exact. A Bug normally
+Start from the Type's shape in the workspace standard; when used, the spec makes the map exact. A Bug normally
 reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
 simple Bug template placeholders into parent hops, recording why and closing the unused records
 `Canceled`. Under DR 047's Type-map exception, the spec may retain reproduce-or-identify and fix

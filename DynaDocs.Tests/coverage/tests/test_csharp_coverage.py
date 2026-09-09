@@ -3,9 +3,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from copy import deepcopy
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from csharp_coverage import (ASSEMBLY_PROJECTS, _identity_producer, _same_native_map,
+from csharp_coverage import (ASSEMBLY_PROJECTS, _identity_producer, _same_instrumented_map,
+                             _same_artifacts, _same_native_map, _same_restored_map, _template_original_map,
                              _write_commands, altcover_commands, snapshot_artifacts)
 
 
@@ -71,6 +73,49 @@ class CSharpCoverageTests(unittest.TestCase):
                                                  "points": [{"path": "A.cs", "origin": "generated"}]}]}
         self.assertFalse(_same_native_map(facts, changed_document))
         self.assertFalse(_same_native_map(facts, changed_origin))
+
+    def test_template_binds_original_tokens_despite_instrumented_renumbering(self):
+        original = {"facts": {"assembly_name": "A", "sha1": "ab", "methods": [
+            {"token": 1, "identity": "A::First()", "points": []},
+            {"token": 2, "identity": "A::Second()", "points": []},
+        ]}, "aliases": ["bin/A.dll"], "canonical": "bin/A.dll"}
+        template = """<CoverageSession><Modules><Module hash=\"ab\"><ModuleName>A</ModuleName>
+            <ModulePath>bin/A.dll</ModulePath><Classes><Class><Methods>
+            <Method><MetadataToken>1</MetadataToken><Name>A::First()</Name></Method>
+            <Method><MetadataToken>2</MetadataToken><Name>A::Second()</Name></Method>
+            </Methods></Class></Classes></Module></Modules></CoverageSession>"""
+        self.assertEqual({"bin/A.dll": {1: "A::First()", 2: "A::Second()"}},
+                         _template_original_map(template, [original]))
+        before = {"assembly_name": "A", "module_id": "m", "pdb_sha256": "p",
+                  "documents": {"C:/A.cs": "A.cs"}, "methods": [
+                      {"token": 1, "identity": "A::First()", "key": "A::First()",
+                       "points": [{"path": "A.cs", "origin": "maintained", "offset": 0}]},
+                  ]}
+        instrumented = deepcopy(before)
+        instrumented["methods"][0]["token"] = 100
+        self.assertTrue(_same_instrumented_map(before, instrumented))
+
+    def test_template_mapping_and_restoration_mismatches_fail_closed(self):
+        original = {"facts": {"assembly_name": "A", "sha1": "ab", "methods": [
+            {"token": 1, "identity": "A::First()", "points": []},
+        ]}, "aliases": ["bin/A.dll"], "canonical": "bin/A.dll"}
+        for method, message in (("<Method><MetadataToken>2</MetadataToken><Name>A::First()</Name></Method>", "Missing original"),
+                                ("<Method><MetadataToken>1</MetadataToken><Name>A::First()</Name></Method><Method><MetadataToken>1</MetadataToken><Name>A::First()</Name></Method>", "Duplicate template"),
+                                ("<Method><MetadataToken>1</MetadataToken><Name>A::Other()</Name></Method>", "Template signature")):
+            template = f"<CoverageSession><Modules><Module hash=\"ab\"><ModuleName>A</ModuleName><ModulePath>bin/A.dll</ModulePath><Classes><Class><Methods>{method}</Methods></Class></Classes></Module></Modules></CoverageSession>"
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                _template_original_map(template, [original])
+        facts = {"assembly_name": "A", "sha256": "dll", "pdb_sha256": "pdb", "module_id": "m",
+                 "documents": {"C:/A.cs": "A.cs"}, "methods": [{"token": 1, "identity": "A::First()",
+                 "key": "A::First()", "points": [{"path": "A.cs", "origin": "maintained"}]}]}
+        for field, value in (("sha256", "other-dll"), ("pdb_sha256", "other-pdb"),
+                             ("module_id", "other-mvid"), ("documents", {"C:/A.cs": "Other.cs"})):
+            changed = deepcopy(facts)
+            changed[field] = value
+            with self.subTest(field=field):
+                self.assertFalse(_same_restored_map(facts, changed))
+        self.assertFalse(_same_artifacts([{"path": "Source.cs", "bytes": 1, "sha256": "before"}],
+                                         [{"path": "Source.cs", "bytes": 1, "sha256": "after"}]))
 
 
 if __name__ == "__main__":

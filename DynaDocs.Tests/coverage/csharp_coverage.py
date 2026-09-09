@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -134,6 +135,74 @@ def _same_native_map(before, after):
     ] == [(row["token"], row["identity"], row["key"], row["points"]) for row in after["methods"]])
 
 
+def _same_instrumented_map(before, after):
+    serialize = lambda point: json.dumps(point, sort_keys=True, separators=(",", ":"))
+    before_points = sorted((serialize(point) for method in before["methods"] for point in method["points"]))
+    after_points = sorted((serialize(point) for method in after["methods"] for point in method["points"]))
+    return (before["assembly_name"] == after["assembly_name"]
+            and before["module_id"] == after["module_id"]
+            and before["pdb_sha256"] == after["pdb_sha256"]
+            and before["documents"] == after["documents"]
+            and before_points == after_points)
+
+
+def _same_restored_map(before, after):
+    return before == after
+
+
+def _same_artifacts(before, after):
+    return before == after
+
+
+def _campaign_identity_paths(root, assembly_paths, identities):
+    paths = [path for assembly in assembly_paths for path in (assembly, assembly.with_suffix(".pdb"))]
+    sources = {point["path"] for row in identities for method in row["facts"]["methods"]
+               for point in method["points"] if point["origin"] == "maintained"}
+    return [*paths, *(Path(root) / source for source in sorted(sources))]
+
+
+def _template_original_map(opencover, originals):
+    """Bind each template token/signature pair to one staged original method."""
+    modules = ET.fromstring(opencover).findall("./Modules/Module")
+    result = {}
+    for original in originals:
+        facts, aliases = original["facts"], sorted(set(original["aliases"]))
+        matching = [module for module in modules
+                    if module.findtext("ModuleName") == facts["assembly_name"]]
+        if len(matching) != 1:
+            raise ValueError(f"Missing or ambiguous template module: {facts['assembly_name']}")
+        module = matching[0]
+        module_path = module.findtext("ModulePath")
+        if module_path not in aliases:
+            raise ValueError(f"Unknown template module alias: {module_path}")
+        module_hash = module.attrib.get("hash", "").replace("-", "").lower()
+        if module_hash != facts["sha1"].lower():
+            raise ValueError("Original template module hash mismatch")
+        methods = {}
+        for row in facts["methods"]:
+            methods.setdefault(row["token"], []).append(row["identity"])
+        mapped = {}
+        for method in module.findall("./Classes/Class/Methods/Method"):
+            token_text, name = method.findtext("MetadataToken"), method.findtext("Name")
+            if not token_text or not token_text.isdecimal():
+                raise ValueError("Missing template MethodDef token")
+            token = int(token_text)
+            if token in mapped:
+                raise ValueError(f"Duplicate template MethodDef token: {token}")
+            matches = methods.get(token, [])
+            if not matches:
+                raise ValueError(f"Missing original MethodDef token: {token}")
+            if len(matches) != 1:
+                raise ValueError(f"Duplicate original MethodDef token: {token}")
+            if name != matches[0]:
+                raise ValueError(f"Template signature mismatch for token {token}")
+            mapped[token] = name
+        result[original["canonical"]] = mapped
+    if len(modules) != len(result):
+        raise ValueError("Template module missing original identity")
+    return result
+
+
 def run_campaign(root, result_root, extra_args=None):
     root, result_root = Path(root).resolve(), Path(result_root).resolve()
     if extra_args:
@@ -171,20 +240,34 @@ def run_campaign(root, result_root, extra_args=None):
         shutil.copy2(path, destination)
         shutil.copy2(path.with_suffix(".pdb"), destination.with_suffix(".pdb"))
     (result_root / "identity-pre.json").write_text(json.dumps(pre, indent=2, sort_keys=True) + "\n")
+    pre_artifacts = snapshot_artifacts(root, _campaign_identity_paths(root, assembly_paths, pre))
+    (result_root / "identity-pre-artifacts.json").write_text(
+        json.dumps(pre_artifacts, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     prepare, runner = altcover_commands(root, result_root)
     row = _run("altcover-prepare", prepare, root, result_root)
     commands.append(row)
     _write_commands(result_root, commands)
     if row["exit"]:
         return 2
+    template = result_root / "template.opencover.xml"
+    if not template.is_file():
+        raise ValueError("AltCover prepare produced no template OpenCover report")
+    template_map = _template_original_map(template.read_text(encoding="utf-8-sig"), pre)
+    (result_root / "template-original-map.json").write_text(
+        json.dumps(template_map, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     instrumented = _identity_classes(root, producer, assembly_paths)
     (result_root / "identity-instrumented.json").write_text(
         json.dumps(instrumented, indent=2, sort_keys=True) + "\n")
     before_by_alias = {alias: row["facts"] for row in pre for alias in row["aliases"]}
     for row in instrumented:
         for alias in row["aliases"]:
-            if alias not in before_by_alias or not _same_native_map(before_by_alias[alias], row["facts"]):
-                raise ValueError(f"AltCover changed MethodDef/PDB identity: {alias}")
+            if alias not in before_by_alias or not _same_instrumented_map(before_by_alias[alias], row["facts"]):
+                raise ValueError(f"AltCover changed portable-PDB identity: {alias}")
+    instrumented_artifacts = snapshot_artifacts(root, _campaign_identity_paths(root, assembly_paths, instrumented))
+    stable_paths = {row["path"] for row in pre_artifacts if not row["path"].endswith(".dll")}
+    if ([row for row in pre_artifacts if row["path"] in stable_paths]
+            != [row for row in instrumented_artifacts if row["path"] in stable_paths]):
+        raise ValueError("AltCover changed portable-PDB or source bytes")
     row = _run("altcover-runner", runner, root, result_root)
     commands.append(row)
     _write_commands(result_root, commands)
@@ -193,11 +276,22 @@ def run_campaign(root, result_root, extra_args=None):
     report = result_root / "coverage.opencover.xml"
     if not report.is_file():
         raise ValueError("AltCover runner produced no collected OpenCover report")
+    collected_map = _template_original_map(report.read_text(encoding="utf-8-sig"), pre)
+    if collected_map != template_map:
+        raise ValueError("Collected report changed template MethodDef namespace")
+    for path in assembly_paths:
+        staged = originals / path.relative_to(root)
+        shutil.copy2(staged, path)
+        shutil.copy2(staged.with_suffix(".pdb"), path.with_suffix(".pdb"))
     post = _identity_classes(root, producer, assembly_paths)
+    post_artifacts = snapshot_artifacts(root, _campaign_identity_paths(root, assembly_paths, post))
+    if not _same_artifacts(pre_artifacts, post_artifacts):
+        raise ValueError("Post-campaign artifact restoration mismatch")
+    before_by_alias = {alias: row["facts"] for row in pre for alias in row["aliases"]}
     for row in post:
         for alias in row["aliases"]:
-            if alias not in {item for before in instrumented for item in before["aliases"]}:
-                raise ValueError(f"Post-campaign assembly alias changed: {alias}")
+            if alias not in before_by_alias or not _same_restored_map(before_by_alias[alias], row["facts"]):
+                raise ValueError(f"Post-campaign restoration mismatch: {alias}")
     (result_root / "identity-post.json").write_text(json.dumps(post, indent=2, sort_keys=True) + "\n")
     from csharp_join import coverage_methods, join_methods
     from gate_policy import evaluate_policy

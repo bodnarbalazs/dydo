@@ -28,11 +28,17 @@ emitted as `"3"`. A present valid Codex depth of at least 3 and concurrency of a
 retained. A lower depth or concurrency, or `enabled = false`, is an actionable error naming the
 file, key, required value, and found value; it is never silently changed or downgraded.
 
-Malformed JSON/TOML, a non-object JSON root or `env`, incompatible managed-value types, ambiguous
-TOML structure, and the above conflicts fail before any host-settings mutation. The command reports
-the actionable failure and does not create or alter either selected host-settings file. Unrelated
-JSON members and TOML bytes, comments, and ordering are preserved wherever their location is not
-managed; the implementation must refuse an ambiguous edit rather than rewrite a TOML document.
+Malformed JSON/TOML, including a duplicate unrelated root TOML key, a non-object JSON root or `env`,
+incompatible managed-value types, ambiguous TOML structure, and the above conflicts fail before any
+host-settings mutation. The command reports the actionable failure and does not create or alter either
+selected host-settings file. It first parses the original UTF-8 TOML bytes with
+`CsTomlSerializer.Deserialize<TomlDocument>`, catching `CsTomlSerializeException` and CsToml parse
+exceptions to report an actionable malformed-config diagnostic. That parse validates the complete
+document, including unrelated duplicate keys; CsToml is a validator only and never serializes the
+file. After a successful parse, the existing narrow byte/line-preserving editor locates the managed
+settings and refuses every ambiguous inline, dotted, or quoted `[agents]` form rather than rewriting a
+TOML document. Unrelated JSON members and TOML bytes, comments, and ordering are preserved wherever
+their location is not managed.
 
 The project `.claude/settings.json` is separate from existing personal hook wiring in
 `.claude/settings.local.json`; DYD-86 neither weakens nor relies on the hook loader's malformed-JSON
@@ -56,20 +62,26 @@ project document rather than generated role TOML.
 **Files.**
 
 1. `Commands/InitCommand.cs` — preflight every selected host-settings document before existing init
-   or join mutations, merge only verified managed JSON/TOML settings, then write the prepared output
-   after validation; use a narrow line-preserving TOML edit and fail when it cannot locate one safe
-   edit.
+   or join mutations. For Codex TOML, parse the original UTF-8 bytes with CsToml into a `TomlDocument`
+   and translate `CsTomlSerializeException` or parse exceptions into the existing actionable malformed
+   diagnostic before using the narrow byte/line-preserving editor; CsToml never produces output. After
+   parse success, merge only verified managed JSON/TOML settings and fail on any ambiguous inline,
+   dotted, or quoted `[agents]` form rather than selecting one. Write prepared outputs only after all
+   validation succeeds.
 2. `DynaDocs.Tests/Integration/InitCommandTests.cs` — prove fresh/init/join/repeat cases, unrelated
    JSON and TOML preservation, Claude's canonical-string acceptance and rejection cases,
    satisfying-value retention, each conflict/type/malformed diagnostic, and that every host
    preflight failure leaves all pre-existing init/join side-effect paths unchanged or absent:
    `dydo.json`, hooks, entry points, ignore-file, and both host-settings files. Cover `init all`
-   when either its Claude or Codex target is invalid.
+   when either its Claude or Codex target is invalid. Add a focused duplicate-unrelated-root-key
+   regression that proves all selected settings and every init/join side effect remain unchanged.
 3. `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` — run the built CLI with `init all` and read both
    project settings back; retain one actual join/repeat invocation to prove the shipped command path.
 4. `dydo/guides/getting-started.md` — replace the DYD-86 future-tense note with the delivered
    configuration contract, concurrency-intent qualification, and Codex V2 limitation. This is a
    guide-only coordination boundary with DYD-91: do not register, template, or scaffold it here.
+5. `DynaDocs.csproj` — add exactly `<PackageReference Include="CsToml" Version="1.8.4" />`; its
+   net10 asset and `System.IO.Hashing` 10.0.9 dependency are part of the Native AOT proof.
 
 **Mutation order.** Determine selected integrations; read and parse every target; validate root and
 managed types; resolve every conflict; construct every output; only then run existing scaffolding or
@@ -77,11 +89,15 @@ join wiring and write the prepared host-settings outputs. Validation failures th
 `dydo.json`, hook, entry-point, ignore-file, or host-settings mutation. Write only changed outputs;
 repeat output is byte-identical.
 
-**Gates.** Use only `py DynaDocs.Tests/coverage/run_tests.py`: first a focused `InitCommandTests` and
-`CliEndToEndTests` selection with nonzero discovery, then the full runner; the required zero-warning
-build, `dydo check`, fresh built-CLI acceptance, preservation/extension, and repeated-identity checks
-all pass. Record command, candidate SHA, exit, discovery, and evidence location. A fresh reviewer
-receives this contract, candidate, and base SHA; native project-setting semantics warrant that review.
+**Gates.** Before broad testing, publish the real CLI as Native AOT with CsToml 1.8.4 and execute that
+published binary against valid, duplicate-key, and malformed Codex-config `init` cases; each result
+must satisfy its configuration or no-side-effects contract. Then use only
+`py DynaDocs.Tests/coverage/run_tests.py`: first a focused `InitCommandTests` and `CliEndToEndTests`
+selection with nonzero discovery, then the full runner; the required zero-warning build, `dydo check`,
+fresh built-CLI acceptance, preservation/extension, and repeated-identity checks all pass. Record
+command, candidate SHA, exit, discovery, and evidence location. A fresh reviewer receives this
+contract, candidate, and base SHA; native project-setting semantics and the new AOT dependency warrant
+that review.
 
 **Plan review.** Recommended: TOML's native configuration semantics and lossless preservation make
 the parser-backed key shape and failure ordering material. Production remains sequenced after

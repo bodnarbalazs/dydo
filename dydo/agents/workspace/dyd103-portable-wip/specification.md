@@ -15,6 +15,32 @@ interface field named below changed or the `execution_seconds_maximum` keyword i
 `windows_job.validate`/`run` there. `$P` = `C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe`
 (Python 3.12.14).
 
+### Scheduling amendment — reviewed interface preparation
+
+The post-DYD-130 production prerequisite remains required for the integrated feature and all
+serial work. Disjoint DYD-103 preparation may begin only after this amendment has a fresh SPEC PASS
+and an independently reviewed CODE PASS exists for the exact consumed DYD-96 interface subset at a
+named SHA. The subset is behavior and files, not DYD-96's whole tree: `inventory.py` and
+`gate_inventory.py` producing and fail-closed validating schema 1; `run_tests.py` snapshot functions;
+`windows_job.py` preflight/request/run with default 1800 and caller override plus cleanup; and
+`gate_adapter.py`/`gap_check.py` freshness and 0/1/2/130 mapping. Association semantics are needed
+later only. The handoff includes the JS G coverage outputs; unrelated DYD-96 findings and remediation
+are outside it.
+
+Preparation may touch only the existing `exclusive` paths: `mutation_adapter.py`,
+`mutation_summary.py`; `mutation/**` configs/manifests/probe; `test_mutation_*.py` and fixtures;
+`mutation-assurance.feature`; and `MutationAssuranceSteps.cs`. The serial-after-DYD-130
+`gap_check.json`, `.config/dotnet-tools.json`, `test-associations.json`, `testing-strategy.md`, and
+`coverage-tools.md` remain forbidden until DYD-130. Branch preparation from the exact subset-PASS
+SHA to preserve source ancestry, accepting only the named interface blobs and behavior; inherited
+unrelated DYD-96 paths are neither reviewed by DYD-103 nor owned. That subset SHA must remain an
+ancestor of the final post-DYD-130 feature. At final reconciliation, merge or re-pin to the exact
+reviewed post-DYD-130 feature head and compare every consumed signature, field and blob; any
+departure or non-ancestry is a spec return, never a silent transplant. Reuse retained `70cf3a5e`
+engine pins/provenance and existing native qualifications where bytes and environment allow; do not
+duplicate qualification solely because of scheduling, while still running missing current-adapter
+proofs and gates.
+
 ## Spec
 
 ### Outcome
@@ -521,11 +547,14 @@ gap_check.py gate mutation --since BASE
 `DynaDocs.Tests/DynaDocs.Tests.csproj`, `reqnroll.json` (DYD-99/DYD-96), root `.gitignore`.
 
 **Steps** —
-1. Re-pin at the production base (feature head after DYD-130): diff every consumed interface above
-   against that head, including that `windows_job.validate` and `windows_job.run` carry the
-   `execution_seconds_maximum` keyword there; record "re-pinned to <SHA>" on the Issue, or stop with a
-   spec return naming the changed field or the missing keyword. Checkable: the recorded SHA, the
-   unchanged field list and the keyword's presence.
+1. Before any exclusive preparation, record the fresh SPEC PASS and independently reviewed CODE
+   PASS for the exact consumed DYD-96 subset at its named SHA; branch from that SHA and check that
+   only the exclusive paths are touched. At final reconciliation, re-pin at the exact reviewed
+   post-DYD-130 feature head: diff every consumed interface above, including that `windows_job.validate`
+   and `windows_job.run` carry the `execution_seconds_maximum` keyword there; record "re-pinned to
+   <SHA>" on the Issue, or stop with a spec return naming any changed signature, field, blob or
+   missing keyword. Checkable: both PASS records, ancestry, the recorded final SHA, unchanged field
+   list and keyword presence.
 2. Restore the three engines with the restore commands; author the three templates and the exclusive
    manifests/locks/`.gitignore`; add the `dotnet-stryker` entry. Checkable: tool presence checks pass
    in a scratch run.
@@ -543,7 +572,7 @@ gap_check.py gate mutation --since BASE
    `windows_job`, identity recheck, raw hashes, verified removal, publication, interruption.
    Checkable: gates 1, 2 green; every `windows_job.run` call passes `execution_seconds_maximum=14400`
    (the campaign-limit case of `test_mutation_adapter.py` asserts it at the launch seam).
-7. Serial edits, only after DYD-130 is Done: configure the three `gap_check.json` mutation rows, and
+7. Serial edits, only after DYD-130 is Done and the final reconciliation in step 1 passes: configure the three `gap_check.json` mutation rows, and
    add the two `test-associations.json` rows named under Shared files (in module-path order — at
    `cc6705b0` between `DynaDocs.Tests/coverage/metrics/StructuralMethod.cs` and
    `DynaDocs.Tests/coverage/node_tests.cjs` — tests sorted, no other row touched) before gate 9's
@@ -618,7 +647,7 @@ DYD-103, 03:51Z; DYD-96 mirror DECIDED 543bcf14 and SPEC PASS aa8d2e13 on its am
 This packet carries both rulings (Authority, Modules, Shared files, Isolation, Failure semantics,
 Pattern to copy, Files, steps 1, 6, 7 and 9, Plan review, `owned-paths.json`).
 Lanes: `none` (adapter, normalizer, fixtures, probes and steps interlock). Empty hops: none.
-Production prerequisite (resume condition, never a parent-Done blocker): DYD-96's implemented and
+Production prerequisite for final integration (resume condition, never a parent-Done blocker): DYD-96's implemented and
 independently checked inventory artifact at the integrated feature head after DYD-130, the
 `execution_seconds_maximum` keyword present on `windows_job.validate` and `windows_job.run` at that
 head (DYD-96's production hop implements it; absent at `cc6705b0`), plus an integrated passing

@@ -174,18 +174,18 @@ public class InitCommandTests : IntegrationTestBase
             .Select(Path.GetFileName)
             .OrderBy(name => name)
             .ToArray();
-        Assert.Equal(new[] { "_future-features.md", "_index.md" }, futureFeatureFiles);
+        Assert.Equal(new[] { "_future-features.md" }, futureFeatureFiles);
 
         // Decisions folder - hub and meta
-        AssertFileExists("dydo/project/decisions/_index.md");
+        AssertFileNotExists("dydo/project/decisions/_index.md");
         AssertFileExists("dydo/project/decisions/_decisions.md");
 
         // Changelog folder - hub and meta
-        AssertFileExists("dydo/project/changelog/_index.md");
+        AssertFileNotExists("dydo/project/changelog/_index.md");
         AssertFileExists("dydo/project/changelog/_changelog.md");
 
         // Pitfalls folder - hub and meta
-        AssertFileExists("dydo/project/pitfalls/_index.md");
+        AssertFileNotExists("dydo/project/pitfalls/_index.md");
         AssertFileExists("dydo/project/pitfalls/_pitfalls.md");
     }
 

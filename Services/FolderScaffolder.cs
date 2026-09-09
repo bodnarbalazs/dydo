@@ -68,29 +68,12 @@ public class FolderScaffolder : IFolderScaffolder
             TemplateGenerator.GenerateIndexMd());
 
         ScaffoldDocFiles(basePath);
-        GenerateHubFiles(basePath);
     }
 
     private void ScaffoldDocFiles(string basePath)
     {
         foreach (var (relativePath, generate) in DocFiles)
             WriteIfNotExists(Path.Combine(basePath, relativePath), generate());
-    }
-
-    private void GenerateHubFiles(string basePath)
-    {
-        var parser = new MarkdownParser();
-        var scanner = new DocScanner(parser);
-        var docs = scanner.ScanDirectory(basePath);
-
-        var hubs = HubGenerator.GenerateAllHubs(basePath, docs);
-
-        foreach (var (relativePath, content) in hubs)
-        {
-            var fullPath = Path.Combine(basePath, relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-            File.WriteAllText(fullPath, content);
-        }
     }
 
     private void CopyBuiltInAssets(string basePath)

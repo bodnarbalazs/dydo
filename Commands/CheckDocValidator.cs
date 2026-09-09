@@ -75,9 +75,6 @@ internal static class CheckDocValidator
             new FutureFeatureRule(),
             new TitleRule(),
             new BrokenLinksRule(linkResolver),
-            new HubFilesRule(),
-            new FolderMetaFilesRule(),
-            new OrphanDocsRule(),
             new OffLimitsRule(),
             new UncustomizedDocsRule()
         ];

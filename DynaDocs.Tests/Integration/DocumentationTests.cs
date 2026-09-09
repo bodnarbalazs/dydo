@@ -29,7 +29,7 @@ public class DocumentationTests : IntegrationTestBase
             .Select(Path.GetFileName)
             .OrderBy(name => name)
             .ToArray();
-        Assert.Equal(new[] { "_future-features.md", "_index.md" }, futureFeatureFiles);
+        Assert.Equal(new[] { "_future-features.md" }, futureFeatureFiles);
 
         var futureFeatureContract = File.ReadAllText(
             Path.Combine(futureFeaturesRoot, "_future-features.md"));
@@ -210,7 +210,7 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Fix_CreatesMissingHubFiles()
+    public async Task Fix_DoesNotCreateMissingHubFiles()
     {
         await InitProjectAsync("none");
 
@@ -229,7 +229,7 @@ public class DocumentationTests : IntegrationTestBase
         var result = await FixAsync();
 
         result.AssertSuccess();
-        AssertFileExists("dydo/guides/tutorials/_index.md");
+        AssertFileNotExists("dydo/guides/tutorials/_index.md");
     }
 
     [Fact]
@@ -248,31 +248,25 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Fix_HubFiles_ContainActualLinks()
+    public async Task Fix_PreservesCustomHub()
     {
         await InitProjectAsync("none");
 
-        // Create a subfolder with docs but no hub
-        WriteFile("dydo/guides/tutorials/getting-started.md", """
+        WriteFile("dydo/guides/_index.md", """
             ---
             area: guides
-            type: guide
+            type: hub
             ---
 
-            # Getting Started
+            # Guides
 
-            This guide helps you get started quickly.
+            Custom navigation.
             """);
 
         var result = await FixAsync();
 
         result.AssertSuccess();
-        AssertFileExists("dydo/guides/tutorials/_index.md");
-
-        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
-        Assert.Contains("[Getting Started](./getting-started.md)", hubContent);
-        Assert.Contains("This guide helps you get started quickly.", hubContent);
-        Assert.DoesNotContain("TODO", hubContent);
+        Assert.Contains("Custom navigation.", ReadFile("dydo/guides/_index.md"));
     }
 
     [Fact]
@@ -513,14 +507,14 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Index_ListsHubFolders()
+    public async Task Index_ListsDocumentationSections()
     {
         await InitProjectAsync("none");
 
         var result = await IndexAsync();
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Scanned top-level hubs");
+        result.AssertStdoutContains("Scanned documentation sections");
         result.AssertStdoutContains("understand");
         result.AssertStdoutContains("guides");
     }

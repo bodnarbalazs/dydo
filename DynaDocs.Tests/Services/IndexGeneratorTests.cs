@@ -46,7 +46,7 @@ public class IndexGeneratorTests
     }
 
     [Fact]
-    public void Generate_ShowsHubLinkWhenHubExists()
+    public void Generate_ShowsSectionLinkWhenAuthoredSectionExists()
     {
         // Arrange
         var generator = new IndexGenerator();
@@ -54,9 +54,9 @@ public class IndexGeneratorTests
         {
             new DocFile
             {
-                FilePath = "/test/understand/_index.md",
-                RelativePath = "understand/_index.md",
-                FileName = "_index.md",
+                FilePath = "/test/understand/_understand.md",
+                RelativePath = "understand/_understand.md",
+                FileName = "_understand.md",
                 Content = "# Understanding"
             }
         };
@@ -66,11 +66,11 @@ public class IndexGeneratorTests
         var result = generator.Generate(docs, basePath);
 
         // Assert
-        Assert.Contains("[Understanding the Platform](./understand/_index.md)", result);
+        Assert.Contains("[Understanding the Platform](./understand/_understand.md)", result);
     }
 
     [Fact]
-    public void Generate_ShowsFolderNotFoundWhenHubMissing()
+    public void Generate_ShowsFolderNotFoundWhenSectionPageMissing()
     {
         // Arrange
         var generator = new IndexGenerator();

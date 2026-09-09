@@ -19,10 +19,14 @@ configuration intent, never evidence that a host accepted it or that a runtime c
 | `.codex/config.toml` | The verified `[agents]` table supplies `max_depth = 3` and `max_concurrent_threads_per_session = 16`. `enabled` defaults true, so it is not written at project root. |
 
 For each selected file, a missing verified managed key is added while unrelated content remains
-intact. Repeated init/join is byte-identical after the first successful write. A present valid
-managed depth of at least 3 and concurrency of at least 16 is retained. A lower depth or
-concurrency, or `enabled = false`, is an actionable error naming the file, key, required value, and
-found value; it is never silently changed or downgraded.
+intact. Repeated init/join is byte-identical after the first successful write. Claude's managed
+depth satisfies the requirement only when it is a JSON string whose contents are a canonical
+unsigned base-10 integer: no sign, whitespace, or leading zeroes except the string `"0"` itself,
+and a decimal value of at least 3. Thus `"4"` is retained; `"03"`, `"+3"`, padded or non-numeric
+strings, lower values, and non-string JSON values are actionable errors. A missing Claude value is
+emitted as `"3"`. A present valid Codex depth of at least 3 and concurrency of at least 16 is
+retained. A lower depth or concurrency, or `enabled = false`, is an actionable error naming the
+file, key, required value, and found value; it is never silently changed or downgraded.
 
 Malformed JSON/TOML, a non-object JSON root or `env`, incompatible managed-value types, ambiguous
 TOML structure, and the above conflicts fail before any host-settings mutation. The command reports
@@ -56,8 +60,11 @@ project document rather than generated role TOML.
    after validation; use a narrow line-preserving TOML edit and fail when it cannot locate one safe
    edit.
 2. `DynaDocs.Tests/Integration/InitCommandTests.cs` — prove fresh/init/join/repeat cases, unrelated
-   JSON and TOML preservation, satisfying-value retention, each conflict/type/malformed diagnostic,
-   and zero host-settings writes on each preflight failure.
+   JSON and TOML preservation, Claude's canonical-string acceptance and rejection cases,
+   satisfying-value retention, each conflict/type/malformed diagnostic, and that every host
+   preflight failure leaves all pre-existing init/join side-effect paths unchanged or absent:
+   `dydo.json`, hooks, entry points, ignore-file, and both host-settings files. Cover `init all`
+   when either its Claude or Codex target is invalid.
 3. `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` — run the built CLI with `init all` and read both
    project settings back; retain one actual join/repeat invocation to prove the shipped command path.
 4. `dydo/guides/getting-started.md` — replace the DYD-86 future-tense note with the delivered

@@ -24,15 +24,16 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 - **Crew:** specification and route belong to `specifier`; production to `implementer`, then
   `hardener`, or to `docs-writer`; independent judgment to `reviewer`. Brief, sequence, track,
   correct, and direct integration.
-- **Native capacity:** You alone commission every specifier, production worker, hardener and reviewer
-  for this Issue; keep each worker's scope exact. Budget the whole open-thread tree and run necessary
-  stages serially when capacity requires it, preserving every fresh specifier and fresh reviewer.
-  Do not treat completion, return or interruption as capacity release without native evidence. A saved
-  brief carries scope and resume context, never Admiral-to-crew dispatch authority. On one bounded
-  capacity refusal, preserve the record, candidate, hop SHA and exact brief. Do not broaden the brief
-  or retry blindly; use documented lifecycle handling only when its effect is established for this host,
-  then return or release the concrete host limitation through the normal hierarchy. Every worker return
-  comes back to you.
+- **Native capacity:** You alone commission exact-scope crew. Budget open native capacity and run
+  necessary stages serially, preserving fresh specifier and reviewer obligations. On a bounded refusal,
+  preserve the record, candidate, hop SHA and brief; do not broaden it or retry blindly. Use
+  established lifecycle handling, then return or release the concrete limitation when captain-owned
+  work cannot run. Every worker return comes back to you.
+- **Delivery scale:** For a small prompt or documentation change, use one author and one fresh,
+  independent whole-change reviewer. Add specification review or a separate hardener only with one
+  short, concrete risk reason; persistence, migrations, permissions and uncertain native interfaces
+  are examples that need stronger stages. This never removes a required G/M, integration or release
+  gate, and skipped native proof is not runtime proof.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another Issue; the current
   Issue bounds intent and paths.
@@ -55,26 +56,26 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    working-tree contract before spawning. When the admiral commissions Project setup, open the
    feature branch from its named approved main SHA before creating the Issue branch. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
-2. **Specify.** Send `specifier` on the parent first, setting `Specifying`, and post its commit SHA.
-   **Done:** scenarios, gates,
-   patterns, seams, files, and edge cases make implementation mechanical; require a `spec` PASS
-   before production only when the route's risk warrants it, considering the Specifier's
-   recommendation. Set the record `In Review` for that optional gate, return it to `Specifying` after
-   FAIL through a fresh specifier. The accepted spec names
-   lanes, or none, and declares which hops are empty.
+2. **Specify.** For work above the small prompt/docs default, send `specifier` on the parent, setting
+   `Specifying`, and post its commit SHA. Keep one compact acceptance contract and link its evidence
+   instead of repeating it. Add a `spec` PASS only when one short concrete risk reason warrants it;
+   return to `Specifying` after FAIL through a fresh specifier. **Done:** the compact acceptance
+   contract completes a small prompt/docs change; where used, the accepted spec makes the route
+   mechanical and names lanes, or none, and empty hops.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
-   parent; the Bug Type-map exception is below. Open the spec's disjoint parallel lanes in `Todo`, with the parent's Type and Mode, bounded
+   parent; the Bug Type-map exception is below. Where a spec names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
    outcome, paths, gates and isolated branch/worktree off the parent. Specify each lane and give
    each merge into the parent its own Merge Sub-issue, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
    becomes siblings; the Bug stages below, Merge and map-holder-held Sub-issues are the other
    permitted children.
-4. **Direct the crew.** Send each parent or lane through [implementer] → [hardener]; route docs to
+4. **Direct the crew.** For the small prompt/docs default, send one author; otherwise send each parent
+   or lane through [implementer] → [hardener] when its recorded risk requires it. Route docs to
    `docs-writer`; the implementer uses `diagnosing-bugs` when a defect lacks a red reproduction.
    For normal delivery, set `Implementing` or `Hardening` on each spawn and post each hop's commit
    SHA on the record. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
    runs the normal docs delivery chain as below.
-   Skip only a hop the spec declares empty. Run disjoint lanes concurrently and keep every attempt on
+   On a route with a spec, skip only a hop it declares empty. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each worker's capability as you brief it: the
    smallest adequate supported model, and the effort where the host exposes one, weighed from that
@@ -83,17 +84,22 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    the host takes both; where it takes only a model, leave effort host-owned and record that limit.
    Brief the requested value so the worker's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
-   table. **Done:** each candidate accounts for its paths, passes
+   table. Validate uncertain native interface shapes early. Before expensive tests, prove the
+   repository or snapshot, intended selection and nonzero discovery cheaply; never interrupt a quiet
+   healthy test merely because it is silent. **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
-5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the specify SHA, Candidate SHA
-   and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests and gates go to `hardener`,
+5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the compact acceptance-contract
+   SHA or, when present, the specify SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests and gates go to `hardener`,
    a missed contract line to `implementer`, a wrong scenario or route through a fresh `specifier`.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
    full strength whatever the work below them cost.
    Send the FAIL block with the brief and set the fixing hop's status. A change to acceptance,
    scope, destination or architecture goes to the admiral for plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the
-   findings and wires a prepared Question through the scope rule below.
+   findings and wires a prepared Question through the scope rule below. Record each gate result with
+   its candidate, command, environment or session, exit and result location. Reuse exact-candidate
+   evidence when that gate and environment permit; rerun only after relevant change or concern, or at
+   a distinct mandatory integration or release boundary.
 6. **Offer.** Direct each passed lane's Merge Sub-issue in order: specifier maps conflicts and
    combined gates, implementer merges, then send `hardener` at `Hardening` if the resolution
    refactored. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain
@@ -109,7 +115,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 ## Kinds and failure paths
 
-Start from the Type's shape in the workspace standard; the spec makes the map exact. A Bug normally
+Start from the Type's shape in the workspace standard; when used, the spec makes the map exact. A Bug normally
 reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
 simple Bug template placeholders into parent hops, recording why and closing the unused records
 `Canceled`. Under DR 047's Type-map exception, the spec may retain reproduce-or-identify and fix

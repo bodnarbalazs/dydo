@@ -60,7 +60,7 @@ class CSharpJoinTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "alias"):
                 coverage_methods(xml, root, facts, ["other/A.dll"])
 
-    def test_report_file_rows_resolve_generated_documents_to_classified_identities(self):
+    def test_report_file_rows_keep_generated_documents_but_require_only_maintained_methods(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             dll = root / "bin/A.dll"
@@ -85,8 +85,7 @@ class CSharpJoinTests(unittest.TestCase):
               <Method><MetadataToken>2</MetadataToken><Name>A::G()</Name><SequencePoints><SequencePoint vc="0" uspid="2" ordinal="0" offset="0" sl="1" sc="1" el="1" ec="2" fileid="2" /></SequencePoints><BranchPoints /></Method>
               </Methods></Class></Classes></Module></Modules></CoverageSession>'''
             joined = coverage_methods(xml, root, facts, ["bin/A.dll"])
-            self.assertEqual(["nuget:p/1.0/build/Package.cs"], list(joined["A::P()"]["files"]))
-            self.assertEqual(["obj/Gen.cs"], list(joined["A::G()"]["files"]))
+            self.assertEqual({}, joined)
             with self.assertRaisesRegex(ValueError, "outside PDB document inventory"):
                 coverage_methods(xml.replace(str(package_url), str(root.parent / "unknown.cs")),
                                  root, facts, ["bin/A.dll"])

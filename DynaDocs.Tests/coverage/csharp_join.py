@@ -19,7 +19,7 @@ def _relative(root, path):
         raise ValueError(f"Coverage source outside inventory: {path}") from error
 
 
-def coverage_methods(opencover, root, assembly, aliases):
+def coverage_methods(opencover, root, assembly, aliases, excluded_tokens=frozenset()):
     """Read one exact AltCover module by original identity and MethodDef token."""
     root = Path(root).resolve()
     modules = ET.fromstring(opencover).findall("./Modules/Module")
@@ -57,8 +57,14 @@ def coverage_methods(opencover, root, assembly, aliases):
         if path is None or path not in document_origins:
             raise ValueError(f"Coverage source outside PDB document inventory: {url}")
         files[uid] = path
-    methods = {row["token"]: row for row in assembly["methods"] if row.get("points")}
-    if len(methods) != sum(bool(row.get("points")) for row in assembly["methods"]):
+    if not isinstance(excluded_tokens, (set, frozenset)) or any(type(token) is not int for token in excluded_tokens):
+        raise ValueError("Invalid SourceBehavior eligibility tokens")
+    requires_coverage = lambda row: any(point.get("origin") == "maintained" for point in row.get("points", []))
+    methods = {row["token"]: row for row in assembly["methods"]
+               if requires_coverage(row) and row["token"] not in excluded_tokens}
+    expected = [row for row in assembly["methods"]
+                if requires_coverage(row) and row["token"] not in excluded_tokens]
+    if len(methods) != len(expected):
         raise ValueError("Duplicate original MethodDef token")
     result, seen_tokens, branch_uspids = {}, set(), set()
     for method in module.findall("./Classes/Class/Methods/Method"):
@@ -235,6 +241,24 @@ def _structural_methods(behavior):
             raise ValueError(f"Duplicate SourceBehavior structural classification: {key}")
         result[key] = reason
     return result
+
+
+def excluded_physical_tokens(source, assembly):
+    structural = _structural_methods(source["behavior"])
+    physical = {}
+    for method in assembly["methods"]:
+        key = method.get("key")
+        if key in structural and any(point.get("origin") == "maintained" for point in method.get("points", [])):
+            physical.setdefault(key, []).append(method)
+    excluded = set()
+    for key in structural:
+        matches = physical.get(key, [])
+        if not matches:
+            continue
+        if len(matches) != 1 or type(matches[0].get("token")) is not int:
+            raise ValueError(f"Missing or ambiguous SourceBehavior physical classification: {key}")
+        excluded.add(matches[0]["token"])
+    return excluded
 
 
 def _synthesized_accounting(assembly, physical, points, source_behavior):

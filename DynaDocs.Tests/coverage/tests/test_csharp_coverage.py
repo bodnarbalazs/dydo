@@ -2,6 +2,10 @@
 import sys
 import tempfile
 import unittest
+import hashlib
+import json
+import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from copy import deepcopy
 
@@ -9,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from csharp_coverage import (ASSEMBLY_PROJECTS, _identity_producer, _same_instrumented_map,
                              _same_artifacts, _same_native_map, _same_restored_map, _template_original_map,
                              _write_commands, altcover_commands, snapshot_artifacts)
+from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
 
 
 class CSharpCoverageTests(unittest.TestCase):
@@ -135,6 +140,83 @@ class CSharpCoverageTests(unittest.TestCase):
         self.assertFalse(_same_artifacts([{"path": "Source.cs", "bytes": 1, "sha256": "before"}],
                                          [{"path": "Source.cs", "bytes": 1, "sha256": "after"}]))
 
+    def test_campaign_applies_source_behavior_eligibility_before_coverage_completeness(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            dll, source = root / "bin/A.dll", root / "A.cs"
+            dll.parent.mkdir()
+            dll.write_bytes(b"original")
+            source.write_text("void M() { }\nrecord A { public int Auto { get; set; } }\n")
+            checksum = hashlib.sha256(source.read_bytes()).hexdigest()
+            facts = {"assembly_name": "A", "sha1": hashlib.sha1(dll.read_bytes()).hexdigest(),
+                     "documents": {str(source): "A.cs"}, "methods": [
+                         {"token": 1, "identity": "System.Void A::M()", "key": "A::M()",
+                          "points": [{"path": "A.cs", "origin": "maintained", "line": 1,
+                                      "column": 0, "end_line": 1, "end_column": 12,
+                                      "checksum_algorithm": "SHA256", "checksum": checksum}]},
+                         {"token": 2, "identity": "System.Int32 A::get_Auto()", "key": "A::get_Auto()",
+                          "points": [{"path": "A.cs", "origin": "maintained", "line": 2,
+                                      "column": 0, "end_line": 2, "end_column": 40,
+                                      "checksum_algorithm": "SHA256", "checksum": checksum}]},
+                     ]}
+            source_facts = {
+                "files": [{"path": "A.cs", "methods": [{
+                    "id": "A::M()", "line": 1, "column": 0, "end_line": 1, "end_column": 12,
+                    "constructor": False, "cognitive": 0, "policy_cc": 1, "parameters": 0,
+                }]}],
+                "generated_files": [],
+                "behavior": {
+                    "structural_methods": [{
+                        "key": "A::get_Auto()", "reason": "semantic synthesized auto accessor"
+                    }],
+                    "constructors": [], "fragments": [],
+                    "declared_methods": [{
+                        "key": "A::M()", "path": "A.cs", "line": 1, "column": 0,
+                        "end_line": 1, "end_column": 12,
+                    }],
+                },
+            }
+            xml = f'''<CoverageSession><Modules><Module hash="{facts['sha1']}"><ModulePath>{dll}</ModulePath>
+              <ModuleName>A</ModuleName><Files><File uid="1" fullPath="{source}" /></Files><Classes><Class><Methods>
+              <Method><MetadataToken>1</MetadataToken><Name>System.Void A::M()</Name><SequencePoints>
+              <SequencePoint vc="1" uspid="1" ordinal="0" offset="0" sl="1" sc="1" el="1" ec="2" fileid="1" />
+              </SequencePoints><BranchPoints /></Method></Methods></Class></Classes></Module></Modules></CoverageSession>'''
+            excluded = excluded_physical_tokens(source_facts, facts)
+            self.assertEqual({2}, excluded)
+            coverage = coverage_methods(xml, root, facts, ["bin/A.dll"], excluded)
+            self.assertEqual(["System.Void A::M()"], list(coverage))
+            joined = join_methods(root, source_facts, facts, coverage)
+            self.assertEqual(1, joined["accountingSummary"]["total"])
+            self.assertEqual("semantic synthesized auto accessor",
+                             joined["accounting"][0]["sourceBehavior"]["reason"])
+            no_point = {"assembly_name": "A", "methods": [
+                {"token": 3, "identity": "System.Void GuardContext::.ctor()",
+                 "key": "DynaDocs.Commands.GuardCommand/GuardContext::.ctor`0()", "points": []}
+            ]}
+            self.assertEqual(set(), excluded_physical_tokens({"behavior": {"structural_methods": [
+                {"key": "DynaDocs.Commands.GuardCommand/GuardContext::.ctor`0()",
+                 "reason": "semantic implicit constructor with no authored executable fragments"}
+            ]}}, no_point))
+
+    def test_hop3_05_replay_applies_physical_eligibility_to_retained_collector_output(self):
+        """Replay only: retained source facts are absent, so this deliberately stops before join."""
+        root = Path(__file__).resolve().parents[3]
+        raw = root / "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-05/raw"
+        self.assertFalse((raw / "source-facts.json").exists())
+        pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
+        assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == "dydo")
+        producer = _identity_producer(root)[1]
+        process = subprocess.run(["dotnet", str(producer), "--project", str(root / "DynaDocs.csproj"),
+                                  "--root", str(root)], text=True, capture_output=True, encoding="utf-8")
+        self.assertEqual(0, process.returncode, process.stderr)
+        source = json.loads(process.stdout)
+        xml = (raw / "coverage.opencover.xml").read_text(encoding="utf-8-sig")
+        original_path = next(module for module in ET.fromstring(xml).findall("./Modules/Module")
+                             if module.findtext("ModuleName") == "dydo").findtext("ModulePath")
+        xml = xml.replace(original_path, str(root / assembly["path"]), 1)
+        coverage = coverage_methods(xml, root, assembly, [assembly["path"]],
+                                    excluded_physical_tokens(source, assembly))
+        self.assertTrue(coverage)
 
 if __name__ == "__main__":
     unittest.main()

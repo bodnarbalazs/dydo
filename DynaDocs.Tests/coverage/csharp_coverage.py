@@ -227,6 +227,15 @@ def _template_original_map(opencover, root, originals):
     return result
 
 
+def _source_facts(root, producer, name):
+    project = root / ASSEMBLY_PROJECTS[name]
+    row = subprocess.run(["dotnet", str(producer), "--project", str(project), "--root", str(root)],
+                         cwd=root, text=True, encoding="utf-8", capture_output=True)
+    if row.returncode:
+        raise ValueError(f"Source identity failed for {name}: {row.stderr.strip()}")
+    return json.loads(row.stdout)
+
+
 def run_campaign(root, result_root, extra_args=None):
     root, result_root = Path(root).resolve(), Path(result_root).resolve()
     if extra_args:
@@ -317,24 +326,20 @@ def run_campaign(root, result_root, extra_args=None):
             if alias not in before_by_alias or not _same_restored_map(before_by_alias[alias], row["facts"]):
                 raise ValueError(f"Post-campaign restoration mismatch: {alias}")
     (result_root / "identity-post.json").write_text(json.dumps(post, indent=2, sort_keys=True) + "\n")
-    from csharp_join import coverage_methods, join_methods
+    from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
     from gate_policy import evaluate_policy
     xml = report.read_text(encoding="utf-8-sig")
+    sources = {name: _source_facts(root, producer, name) for name in ASSEMBLY_PROJECTS}
     normalized = {}
     for equivalence in pre:
+        name = equivalence["facts"]["assembly_name"]
         normalized[equivalence["facts"]["assembly_name"]] = coverage_methods(
-            xml, root, equivalence["facts"], _altcover_aliases(equivalence["aliases"]))
+            xml, root, equivalence["facts"], _altcover_aliases(equivalence["aliases"]),
+            excluded_physical_tokens(sources[name], equivalence["facts"]))
     targets = []
-    projects = [("dydo", root / "DynaDocs.csproj"),
-                ("GateMetrics", root / "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj")]
-    for name, project in projects:
-        source_row = subprocess.run(["dotnet", str(producer), "--project", str(project), "--root", str(root)],
-                                    cwd=root, text=True, encoding="utf-8", capture_output=True)
-        if source_row.returncode:
-            raise ValueError(f"Source identity failed for {name}: {source_row.stderr.strip()}")
-        source = json.loads(source_row.stdout)
+    for name in ("dydo", "GateMetrics"):
         assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == name)
-        targets.append({"assembly": name, **join_methods(root, source, assembly, normalized[name])})
+        targets.append({"assembly": name, **join_methods(root, sources[name], assembly, normalized[name])})
     modules = [module for target in targets for module in target["modules"]]
     joined = {"schema": 1, "targets": targets, "modules": modules,
               "findings": evaluate_policy(modules)}

@@ -43,7 +43,7 @@ through Linear's official surfaces.
   "nudges": [],
   "frameworkHashes": {},
   "testing": {
-    "runner": ["python", "scripts/gap_check.py", "--force-run"]
+    "runner": ["python", "scripts/gap_check.py"]
   }
 }
 ```

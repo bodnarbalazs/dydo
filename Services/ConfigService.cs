@@ -183,7 +183,9 @@ public partial class ConfigService : IConfigService
             throw new InvalidDataException("dydo.json testing.runner must be a nonempty array of strings.");
 
         var values = runner.EnumerateArray().ToList();
-        if (values.Count == 0 || values.Any(value => value.ValueKind != JsonValueKind.String))
+        if (values.Count == 0
+            || values.Any(value => value.ValueKind != JsonValueKind.String
+                || value.GetString()!.Contains('\0')))
             throw new InvalidDataException("dydo.json testing.runner must be a nonempty array of strings.");
         if (string.IsNullOrWhiteSpace(values[0].GetString()))
             throw new InvalidDataException("dydo.json testing.runner executable must not be blank.");

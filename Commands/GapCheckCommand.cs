@@ -20,21 +20,27 @@ public static class GapCheckCommand
         string startPath,
         CancellationToken cancellationToken)
     {
-        var configService = new ConfigService();
-        var configPath = configService.FindConfigFile(startPath);
-        if (configPath == null)
-            return Error($"dydo.json testing.runner is required; no dydo.json was found from {Path.GetFullPath(startPath)}.");
-
-        var absoluteConfigPath = Path.GetFullPath(configPath);
+        string? absoluteConfigPath = null;
         try
         {
+            var configService = new ConfigService();
+            var configPath = configService.FindConfigFile(startPath);
+            if (configPath == null)
+                return Error($"dydo.json testing.runner is required; no dydo.json was found from {Path.GetFullPath(startPath)}.");
+
+            absoluteConfigPath = Path.GetFullPath(configPath);
             var config = configService.LoadConfigStrict(startPath)!;
             var runner = config.Testing?.Runner;
             if (runner == null)
                 return Error($"dydo.json testing.runner is required in {absoluteConfigPath}.");
             var configDirectory = Path.GetDirectoryName(absoluteConfigPath)!;
-            var runnerPath = Path.GetFullPath(runner[0], configDirectory);
-            var start = new ProcessStartInfo(runner[0])
+            var executable = IsExplicitPath(runner[0])
+                ? Path.GetFullPath(runner[0], configDirectory)
+                : runner[0];
+            var runnerPath = IsExplicitPath(runner[0])
+                ? executable
+                : Path.GetFullPath(runner[0], configDirectory);
+            var start = new ProcessStartInfo(executable)
             {
                 WorkingDirectory = configDirectory,
                 UseShellExecute = false
@@ -49,7 +55,7 @@ public static class GapCheckCommand
             {
                 process = Process.Start(start);
             }
-            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException or ArgumentException)
             {
                 return Error($"dydo.json testing.runner could not start {runnerPath} from {absoluteConfigPath}: {ex.Message}");
             }
@@ -81,17 +87,27 @@ public static class GapCheckCommand
         }
         catch (InvalidDataException ex)
         {
-            return Error($"dydo.json testing.runner is invalid in {absoluteConfigPath}: {ex.Message}");
+            return Error($"dydo.json testing.runner is invalid in {absoluteConfigPath ?? "the selected configuration"}: {ex.Message}");
         }
         catch (IOException ex)
         {
-            return Error($"dydo.json testing.runner could not read {absoluteConfigPath}: {ex.Message}");
+            return Error($"dydo.json testing.runner could not read {absoluteConfigPath ?? "the selected configuration"}: {ex.Message}");
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Error($"dydo.json testing.runner could not read {absoluteConfigPath}: {ex.Message}");
+            return Error($"dydo.json testing.runner could not read {absoluteConfigPath ?? "the selected configuration"}: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            return Error($"dydo.json testing.runner could not resolve the start or runner path: {ex.Message}");
         }
     }
+
+    private static bool IsExplicitPath(string executable) =>
+        Path.IsPathRooted(executable)
+        || executable.StartsWith(".", StringComparison.Ordinal)
+        || executable.Contains(Path.DirectorySeparatorChar)
+        || executable.Contains(Path.AltDirectorySeparatorChar);
 
     private static int Error(string message)
     {

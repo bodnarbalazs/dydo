@@ -54,3 +54,5 @@ raise SystemExit(23)
 finally {
     if (Test-Path -LiteralPath $scratch) { Remove-Item -LiteralPath $scratch -Recurse -Force }
 }
+
+$global:LASTEXITCODE = 0

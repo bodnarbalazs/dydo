@@ -228,6 +228,7 @@ public class ConfigServiceTests : IDisposable
     [InlineData("{\"testing\":{\"runner\":[]}}")]
     [InlineData("{\"testing\":{\"runner\":[\"\"]}}")]
     [InlineData("{\"testing\":{\"runner\":[1]}}")]
+    [InlineData("{\"testing\":{\"runner\":[\"runner\",\"\\u0000\"]}}")]
     public void LoadConfigStrict_RejectsInvalidTestingRunner(string json)
     {
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);

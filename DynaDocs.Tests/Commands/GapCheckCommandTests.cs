@@ -26,7 +26,12 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
             "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
         File.WriteAllText(Path.Combine(_probeRoot, "Program.cs"), ProbeProgram);
 
-        var build = new ProcessStartInfo("dotnet") { WorkingDirectory = _probeRoot, UseShellExecute = false };
+        var build = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = _probeRoot,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
         build.ArgumentList.Add("build");
         build.ArgumentList.Add("--nologo");
         build.ArgumentList.Add("Probe.csproj");
@@ -58,8 +63,44 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
         Assert.Equal(new[] { "inspect", "", "fixed space", "fixed\"quote", "固定λ" }.Concat(caller).ToArray(),
             output.RootElement.GetProperty("arguments").EnumerateArray().Select(element => element.GetString()).ToArray());
         Assert.Equal(project, output.RootElement.GetProperty("currentDirectory").GetString());
-        Assert.Equal(Console.IsInputRedirected, output.RootElement.GetProperty("inputRedirected").GetBoolean());
         Assert.Equal("probe stderr", result.Stderr);
+    }
+
+    [Fact]
+    public async Task LauncherInheritsSentinelStandardInputIntoTheRealRunner()
+    {
+        var project = Project("stdin project");
+        WriteConfig(project, Runner("inspect-stdin"));
+        var sentinel = "stdin-sentinel\0固定λ\r\n"u8.ToArray();
+
+        var result = await RunDydo(project, ["gap-check"], sentinel);
+
+        Assert.Equal(23, result.ExitCode);
+        using var output = JsonDocument.Parse(result.Stdout);
+        Assert.Equal(sentinel, Convert.FromBase64String(output.RootElement.GetProperty("stdin").GetString()!));
+        Assert.Equal("probe stderr", result.Stderr);
+    }
+
+    [Fact]
+    public async Task LauncherResolvesExplicitRelativeRunnerFromConfigRootBeforePathLookup()
+    {
+        var project = Project("relative runner project");
+        var nested = Path.Combine(project, "nested", "start");
+        Directory.CreateDirectory(nested);
+        var runnerDirectory = Path.Combine(project, "relative runner");
+        Directory.CreateDirectory(runnerDirectory);
+        foreach (var file in Directory.GetFiles(Path.GetDirectoryName(ProbeAssembly)!))
+            File.Copy(file, Path.Combine(runnerDirectory, Path.GetFileName(file)), overwrite: true);
+        var collisionDirectory = Path.Combine(project, "path collision");
+        Directory.CreateDirectory(collisionDirectory);
+        File.WriteAllText(Path.Combine(collisionDirectory, "Probe.exe"), "not an executable");
+        WriteConfig(project, [".\\relative runner\\Probe.exe", "inspect"]);
+
+        var result = await RunDydo(nested, ["gap-check"], additionalPath: collisionDirectory);
+
+        Assert.Equal(23, result.ExitCode);
+        using var output = JsonDocument.Parse(result.Stdout);
+        Assert.Equal(project, output.RootElement.GetProperty("currentDirectory").GetString());
     }
 
     [Fact]
@@ -113,6 +154,17 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
 
         var (exitCode, _, stderr) = ConsoleCapture.All(() =>
             GapCheckCommand.ExecuteAsync([], project, CancellationToken.None).GetAwaiter().GetResult());
+
+        Assert.Equal(2, exitCode);
+        Assert.Contains("dydo.json testing.runner", stderr);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task LauncherMapsAnInvalidStartPathToTestingRunnerGuidance()
+    {
+        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+            GapCheckCommand.ExecuteAsync([], "\0", CancellationToken.None).GetAwaiter().GetResult());
 
         Assert.Equal(2, exitCode);
         Assert.Contains("dydo.json testing.runner", stderr);
@@ -214,16 +266,24 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
         }
     }
 
-    private static async Task<(int ExitCode, string Stdout, string Stderr)> RunDydo(string directory, string[] arguments)
+    private static async Task<(int ExitCode, string Stdout, string Stderr)> RunDydo(
+        string directory,
+        string[] arguments,
+        byte[]? standardInput = null,
+        string? additionalPath = null)
     {
         var runtime = Path.Combine(AppContext.BaseDirectory, "DynaDocs.Tests");
         var start = new ProcessStartInfo("dotnet")
         {
             WorkingDirectory = directory,
             UseShellExecute = false,
+            CreateNoWindow = true,
             RedirectStandardOutput = true,
-            RedirectStandardError = true
+            RedirectStandardError = true,
+            RedirectStandardInput = standardInput != null
         };
+        if (additionalPath != null)
+            start.Environment["PATH"] = additionalPath + Path.PathSeparator + start.Environment["PATH"];
         foreach (var argument in new[]
                  {
                      "exec", "--runtimeconfig", runtime + ".runtimeconfig.json", "--depsfile", runtime + ".deps.json",
@@ -234,6 +294,11 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
         using var process = Process.Start(start)!;
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
+        if (standardInput != null)
+        {
+            await process.StandardInput.BaseStream.WriteAsync(standardInput);
+            process.StandardInput.Close();
+        }
         await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30));
         return (process.ExitCode, await stdout, await stderr);
     }
@@ -246,9 +311,12 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
         using System.Text.Json;
         using System.Threading;
 
-        if (args[0] == "inspect")
+        if (args[0] == "inspect" || args[0] == "inspect-stdin")
         {
-            Console.Write(JsonSerializer.Serialize(new { arguments = args, currentDirectory = Environment.CurrentDirectory, inputRedirected = Console.IsInputRedirected }));
+            using var stdin = new MemoryStream();
+            if (args[0] == "inspect-stdin")
+                Console.OpenStandardInput().CopyTo(stdin);
+            Console.Write(JsonSerializer.Serialize(new { arguments = args, currentDirectory = Environment.CurrentDirectory, stdin = Convert.ToBase64String(stdin.ToArray()) }));
             Console.Error.Write("probe stderr");
             return 23;
         }
@@ -262,7 +330,7 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
         }
 
         File.WriteAllText(Path.Combine(folder, "parent.pid"), Environment.ProcessId.ToString());
-        var child = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
+        var child = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true };
         child.ArgumentList.Add(Assembly.GetExecutingAssembly().Location);
         child.ArgumentList.Add("hold");
         child.ArgumentList.Add(folder);

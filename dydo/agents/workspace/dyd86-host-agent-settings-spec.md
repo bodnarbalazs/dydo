@@ -32,8 +32,10 @@ Malformed JSON/TOML, including a duplicate unrelated root TOML key, a non-object
 incompatible managed-value types, ambiguous TOML structure, and the above conflicts fail before any
 host-settings mutation. The command reports the actionable failure and does not create or alter either
 selected host-settings file. It first parses the original UTF-8 TOML bytes with
-`CsTomlSerializer.Deserialize<TomlDocument>`, catching `CsTomlSerializeException` and CsToml parse
-exceptions to report an actionable malformed-config diagnostic. That parse validates the complete
+`CsTomlSerializer.Deserialize<TomlDocument>`, catching
+`CsToml.Error.CsTomlSerializeException`, reading its `ParseExceptions` collection for line and
+inner-error details, and producing the actionable malformed-config diagnostic; no separate
+parser-exception catch is required. That parse validates the complete
 document, including unrelated duplicate keys; CsToml is a validator only and never serializes the
 file. After a successful parse, the existing narrow byte/line-preserving editor locates the managed
 settings and refuses every ambiguous inline, dotted, or quoted `[agents]` form rather than rewriting a
@@ -63,8 +65,10 @@ project document rather than generated role TOML.
 
 1. `Commands/InitCommand.cs` — preflight every selected host-settings document before existing init
    or join mutations. For Codex TOML, parse the original UTF-8 bytes with CsToml into a `TomlDocument`
-   and translate `CsTomlSerializeException` or parse exceptions into the existing actionable malformed
-   diagnostic before using the narrow byte/line-preserving editor; CsToml never produces output. After
+   and catch `CsToml.Error.CsTomlSerializeException`, read its `ParseExceptions` collection for line
+   and inner-error details, and produce the existing actionable malformed diagnostic; no separate
+   parser-exception catch is required before using the narrow byte/line-preserving editor; CsToml
+   never produces output. After
    parse success, merge only verified managed JSON/TOML settings and fail on any ambiguous inline,
    dotted, or quoted `[agents]` form rather than selecting one. Write prepared outputs only after all
    validation succeeds.

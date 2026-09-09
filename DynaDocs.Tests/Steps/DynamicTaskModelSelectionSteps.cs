@@ -11,10 +11,11 @@ using DynaDocs.Tests.Commands;
 using DynaDocs.Tests.Integration;
 using DynaDocs.Tests.Services;
 using Reqnroll;
+using Reqnroll.UnitTestProvider;
 
 [Binding]
 [Scope(Tag = "DYD-134")]
-public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
+public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context, IUnitTestRuntimeProvider runtime)
 {
     [Given(@"^.*$")]
     public void GivenContractStep() { }
@@ -24,6 +25,16 @@ public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
 
     [Then(@"^.*$")]
     public void ThenContractStep() { }
+
+    // The @native examples are the runtime canaries the captain runs and links on the Issue; the
+    // static suite reports them skipped, never green by construction. The tag is tested here
+    // because the class-level scope is OR-combined with a hook's own tag filter.
+    [BeforeScenario]
+    public void SkipNativeCanary()
+    {
+        if (context.ScenarioInfo.Tags.Contains("native"))
+            runtime.TestIgnore("native canary: separate captain-run runtime evidence (the native gate evidence linked on DYD-134), never represented by the static suite");
+    }
 
     [AfterScenario]
     public async Task VerifyContract()
@@ -54,7 +65,7 @@ public sealed class DynamicTaskModelSelectionSteps(ScenarioContext context)
         else if (title.StartsWith("Codex agents leave", StringComparison.Ordinal))
             VerifyCodexDocumentation();
         else if (title.StartsWith("A fresh native role catalog", StringComparison.Ordinal))
-            Assert.Contains(context.ScenarioInfo.Tags, tag => tag == "native" || tag == "paid");
+            Assert.Equal(ScenarioExecutionStatus.Skipped, context.ScenarioExecutionStatus);
         else
             throw new Xunit.Sdk.XunitException($"Unmapped DYD-134 scenario: {title}");
     }

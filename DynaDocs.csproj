@@ -40,6 +40,7 @@
 
     <ItemGroup>
         <PackageReference Include="System.CommandLine" Version="2.0.2" />
+        <PackageReference Include="CsToml" Version="1.8.4" />
         <PackageReference Include="Markdig" Version="0.44.0" />
         <!-- System.Management removed - using P/Invoke for parent PID lookup instead (AOT-compatible) -->
         <!-- Source Link for enhanced debugging -->

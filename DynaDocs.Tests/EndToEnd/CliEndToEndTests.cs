@@ -136,6 +136,21 @@ public class CliEndToEndTests : IDisposable
         Assert.Contains("Checking", checkResult.Stdout); // Verify it actually ran
     }
 
+    [Fact]
+    public async Task Init_All_WritesAndRetainsHostAgentSettingsThroughJoin()
+    {
+        var init = await RunDydoAsync("init all");
+        Assert.Equal(0, init.ExitCode);
+        Assert.Contains("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", File.ReadAllText(Path.Combine(_testDir, ".claude", "settings.json")));
+        var codexPath = Path.Combine(_testDir, ".codex", "config.toml");
+        var before = File.ReadAllBytes(codexPath);
+        Assert.Contains("max_concurrent_threads_per_session = 16", File.ReadAllText(codexPath));
+
+        var join = await RunDydoAsync("init all --join");
+        Assert.Equal(0, join.ExitCode);
+        Assert.Equal(before, File.ReadAllBytes(codexPath));
+    }
+
     /// <summary>
     /// The agent-free CLI exposes documentation commands after initialization without restoring
     /// the retired repository work commands.

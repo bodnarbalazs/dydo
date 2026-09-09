@@ -12,6 +12,7 @@ public sealed class ReleaseWorkflowTests
         var jobs = ActiveJobs(workflow);
 
         Assert.Contains("workflow_dispatch:", ActiveText(workflow));
+        Assert.Equal("  push:\n    branches:\n      - feature/dydo-3-consolidation\n    tags:\n      - 'v*'", ActivePush(workflow));
         Assert.Equal(5, CountOccurrences(jobs["build"], "rid:"));
 
         var validation = jobs["validation"];
@@ -44,7 +45,11 @@ public sealed class ReleaseWorkflowTests
     {
         var workflow = Workflow();
 
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => Assert.Equal(
+            "  push:\n    branches:\n      - feature/dydo-3-consolidation\n    tags:\n      - 'v*'",
+            ActivePush(workflow.Replace("      - feature/dydo-3-consolidation", "      - feature/dydo-3-consolidation\n      - release", StringComparison.Ordinal))));
         AssertRejected(workflow.Replace($"if: ${{{{ {AllowedTagGuard} }}}}", $"# if: ${{{{ {AllowedTagGuard} }}}}", StringComparison.Ordinal));
+        AssertRejected(workflow.Replace(AllowedTagGuard, "github.event_name == 'push' && github.ref == 'refs/heads/feature/dydo-3-consolidation'", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build # needs: [build, validation]", StringComparison.Ordinal));
         AssertRejected(workflow + "\n  rogue:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm publish --access public\n");
@@ -176,6 +181,21 @@ public sealed class ReleaseWorkflowTests
         if (name is not null)
             jobs.Add(name, string.Join('\n', body));
         return jobs;
+    }
+
+    private static string ActivePush(string workflow)
+    {
+        var lines = ActiveText(workflow).Split('\n');
+        var start = Array.IndexOf(lines, "  push:");
+        Assert.True(start >= 0, "Missing active push trigger.");
+
+        var end = start + 1;
+        while (end < lines.Length &&
+               (!lines[end].StartsWith("  ", StringComparison.Ordinal) ||
+                lines[end].StartsWith("    ", StringComparison.Ordinal)))
+            end++;
+
+        return string.Join('\n', lines[start..end]);
     }
 
     private static string ActiveText(string workflow) => string.Join('\n', workflow

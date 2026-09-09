@@ -189,31 +189,6 @@ public static class TemplateGenerator
     public static string GenerateCodingStandardsMd() => ReadBuiltInTemplate("coding-standards.template.md");
 
     /// <summary>
-    /// Generate a hub _index.md file for a folder.
-    /// </summary>
-    public static string GenerateHubIndex(string folderName, string description, string area)
-    {
-        var title = char.ToUpper(folderName[0]) + folderName[1..];
-
-        return $"""
-            ---
-            area: {area}
-            type: hub
-            ---
-
-            # {title}
-
-            {description}
-
-            ---
-
-            ## Contents
-
-            *Add links to documents in this section.*
-            """;
-    }
-
-    /// <summary>
     /// Generate the about.md file for understanding the project.
     /// </summary>
     public static string GenerateAboutMd() => ReadBuiltInTemplate("about.template.md");
@@ -273,30 +248,6 @@ public static class TemplateGenerator
         using var memoryStream = new MemoryStream();
         stream.CopyTo(memoryStream);
         return memoryStream.ToArray();
-    }
-
-    /// <summary>
-    /// Generate a hub _index.md file for a project subfolder.
-    /// Minimal content since the meta file has the details.
-    /// </summary>
-    public static string GenerateProjectSubfolderHub(string folderName, string description)
-    {
-        var title = char.ToUpper(folderName[0]) + folderName[1..];
-
-        return $"""
-            ---
-            area: project
-            type: hub
-            ---
-
-            # {title}
-
-            {description}
-
-            ## Contents
-
-            *No documents in this folder yet.*
-            """;
     }
 
     /// <summary>

@@ -62,7 +62,7 @@ frontmatter itself does not enforce reads.
 
 - **Files:** `kebab-case.md` (lowercase, hyphens)
 - **Folders:** `kebab-case/` (lowercase, hyphens)
-- **Hub files:** `_index.md` in each folder
+- **Navigation pages:** authored `_folder.md` files where a folder needs navigation
 - **Meta files:** `_foldername.md` in direct children of main folders (e.g., `guides/api/_api.md`)
 
 Examples:
@@ -129,7 +129,7 @@ dydo fix                # Auto-fix what's possible
 | Naming | Files and folders are kebab-case |
 | Title | H1 title exists |
 | Links | Relative paths, no broken links |
-| Hub Files | Each folder has `_index.md` |
+| Navigation pages | Optional authored `_folder.md` pages |
 | Folder Meta Files | Direct children of main folders have `_foldername.md` |
 | Orphans | Every doc is linked from somewhere |
 

@@ -286,7 +286,7 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 <!--
 Add stack-specific standards as your project grows:
-- guides/backend/_index.md — Backend patterns
-- guides/frontend/_index.md — Frontend patterns
+- guides/backend/_backend.md — Backend patterns
+- guides/frontend/_frontend.md — Frontend patterns
 - guides/testing-strategy.md — testing facade, adopted gates, and mutation command
 -->

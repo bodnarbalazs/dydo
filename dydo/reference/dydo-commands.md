@@ -75,7 +75,7 @@ Change the source template and re-run this command; never hand-edit a compiled a
 
 ### dydo check
 
-Validate documentation naming, frontmatter, titles, links, hub and folder-meta coverage, orphans,
+Validate documentation naming, frontmatter, titles, links, and project-specific rules.
 the off-limits file, legacy FutureFeature shape under `project/future-features/`, retired v2 work records,
 uncustomized foundation docs (warning), and `dydo.json` itself; config errors count toward exit `1`.
 

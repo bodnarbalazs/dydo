@@ -53,7 +53,6 @@ dydo fix
 | Missing title | Add an H1 title. An opening summary is optional. |
 | Bad filename | Rename to kebab-case, or let `dydo fix` handle a safe rename. |
 | Broken link | Correct or remove the relative target. |
-| Missing hub or folder metadata | Run `dydo fix`, then review its diff. |
 | Orphan document | Link it from the appropriate hub or durable parent. |
 
 The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical

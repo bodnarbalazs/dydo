@@ -86,7 +86,7 @@ follow, not machinery the CLI runs. See [Guard System](./guard-system.md) for th
 ## Documentation graph
 
 Markdown files carry frontmatter and relative links. The scanner builds the document set; validation
-rules check titles, links, folder metadata, hubs, filenames, and project-specific invariants.
+rules check titles, links, filenames, and project-specific invariants.
 `dydo fix` applies supported repairs and `dydo graph` exposes navigation relationships.
 
 ## Key design choices

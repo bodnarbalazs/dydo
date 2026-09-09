@@ -11,8 +11,6 @@ import time
 import uuid
 from pathlib import Path, PureWindowsPath
 
-import windows_job
-
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -27,6 +25,7 @@ if sys.platform == "win32":
 
 CAPS = ("test", "static", "coverage", "mutation")
 EXITS = {"passed": 0, "failed": 1, "unavailable": 2, "invalid": 2, "interrupted": 130}
+EXECUTION_SECONDS_MAXIMUM = 1800
 CLEANUP_SECONDS = 30
 ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
 HELP = """Usage: gap_check.py [--force-run] [operation] [options] [-- native arguments]
@@ -391,7 +390,7 @@ def main(argv=None):
         run = prepare_result(destination)
         for stack in selected:
             for capability in capabilities:
-                deadline = time.monotonic() + windows_job.EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
+                deadline = time.monotonic() + EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
                 current = run_row(stack, capability, root, since, forwarded, deadline); rows.append(current)
                 print(f"{current['stack']} {capability}: {current['state'].upper()}" + (f" (child exit {current['childExit']})" if current["childExit"] is not None else "") + (f": {current['reason']}" if current.get("reason") else ""), flush=True)
                 if current["state"] == "interrupted":

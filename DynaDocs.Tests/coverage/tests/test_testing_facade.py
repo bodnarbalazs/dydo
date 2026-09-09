@@ -51,17 +51,14 @@ class TestingFacadeTests(unittest.TestCase):
         directory = Path(temporary.name)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
         if self.runner == RUNNER:
-            helper = ROOT / 'DynaDocs.Tests/coverage/windows_job.py'
-            text = helper.read_text(encoding='utf-8')
+            facade = (directory / 'gap_check.py').read_text(encoding='utf-8')
             if execution_seconds is not None:
-                text = text.replace('EXECUTION_SECONDS_MAXIMUM = 1800',
-                                    f'EXECUTION_SECONDS_MAXIMUM = {execution_seconds!r}')
-            (directory / 'windows_job.py').write_text(text, encoding='utf-8')
+                facade = facade.replace('EXECUTION_SECONDS_MAXIMUM = 1800',
+                                        f'EXECUTION_SECONDS_MAXIMUM = {execution_seconds!r}')
             if cleanup_seconds is not None:
-                facade = (directory / 'gap_check.py').read_text(encoding='utf-8')
                 facade = facade.replace('CLEANUP_SECONDS = 30',
                                         f'CLEANUP_SECONDS = {cleanup_seconds!r}')
-                (directory / 'gap_check.py').write_text(facade, encoding='utf-8')
+            (directory / 'gap_check.py').write_text(facade, encoding='utf-8')
         (directory / 'gap_check.json').write_text(json.dumps(data or manifest()), encoding='utf-8')
         return directory
 
@@ -511,9 +508,7 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertIn('name', payload['operation'])
         for row in payload['results']:
             fields = {'stack', 'capability', 'state', 'argv', 'cwd', 'isolation',
-                      'childExit', 'resultExit', 'artifacts'}
-            if self.runner == RUNNER:
-                fields.add('environment')
+                      'environment', 'childExit', 'resultExit', 'artifacts'}
             self.assertEqual(fields, set(row) - {'reason'})
             self.assertIn(row['state'], ['passed', 'failed', 'unavailable', 'invalid', 'interrupted'])
             self.assertIn(row['resultExit'], [0, 1, 2, 130])
@@ -701,6 +696,42 @@ class TestingFacadeTests(unittest.TestCase):
         p = subprocess.run(['node', '--test', 'DynaDocs.Tests/coverage/tests/testing_facade.test.mjs'], cwd=ROOT, env={**os.environ, 'PYTHON': sys.executable, 'FACADE_RUNNER': str(self.runner)}, capture_output=True, text=True, encoding='utf-8', timeout=60)
         self.assert_exit(p, 0)
         self.assertIn('# pass 1', p.stdout)
+
+    def test_copied_single_file_preserves_child_streams_exit_deadline_and_cleanup(self):
+        with tempfile.TemporaryDirectory(prefix='dydo-standalone-facade-') as temporary:
+            root = Path(temporary)
+            shutil.copyfile(RUNNER, root / 'gap_check.py')
+            (root / 'child.py').write_text(
+                "import math,os,sys,time\nfrom pathlib import Path\n"
+                "try:\n"
+                "    deadline=float(os.environ['DYDO_ROW_DEADLINE'])\n"
+                "    assert math.isfinite(deadline) and deadline > time.monotonic()\n"
+                "    Path('deadline.txt').write_text(str(deadline), encoding='utf-8')\n"
+                "    print('STANDALONE_STDOUT', flush=True)\n"
+                "    print('STANDALONE_STDERR', file=sys.stderr, flush=True)\n"
+                "    raise SystemExit(17)\n"
+                "finally:\n"
+                "    Path('cleanup.txt').write_text('complete', encoding='utf-8')\n",
+                encoding='utf-8')
+            data = manifest(stack('standalone'))
+            data['stacks'][0]['capabilities']['test'] = configured(['-u', 'child.py'])
+            (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+
+            process = subprocess.run([sys.executable, '-u', str(root / 'gap_check.py'),
+                                      'test', '--stack', 'standalone'], cwd=root,
+                                     capture_output=True, text=True, encoding='utf-8', timeout=30)
+
+            self.assertEqual(1, process.returncode, process.stdout + process.stderr)
+            self.assertIn('STANDALONE_STDOUT', process.stdout)
+            self.assertIn('STANDALONE_STDERR', process.stderr)
+            self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+            deadline = float((root / 'deadline.txt').read_text(encoding='utf-8'))
+            self.assertLess(deadline, float('inf'))
+            result_path = next(root.glob('results/*/result.json'))
+            row = json.loads(result_path.read_text(encoding='utf-8'))['results'][0]
+            self.assertEqual(('failed', 17, 1),
+                             (row['state'], row['childExit'], row['resultExit']))
+            self.assertEqual(deadline, float(row['environment']['DYDO_ROW_DEADLINE']))
 
     def test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set(self):
         for path in ['dydo/guides/testing-strategy.md', 'dydo/reference/coverage-tools.md', 'Templates/coding-standards.template.md']:

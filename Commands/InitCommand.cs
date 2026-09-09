@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using CsToml;
 using CsToml.Error;
+using CsToml.Values;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -366,9 +367,10 @@ public static class InitCommand
         const string relativePath = ".codex/config.toml";
         var path = Path.Combine(projectRoot, ".codex", "config.toml");
         var originalBytes = File.Exists(path) ? File.ReadAllBytes(path) : Array.Empty<byte>();
+        TomlDocument document;
         try
         {
-            _ = CsTomlSerializer.Deserialize<TomlDocument>(originalBytes);
+            document = CsTomlSerializer.Deserialize<TomlDocument>(originalBytes);
         }
         catch (CsTomlSerializeException ex)
         {
@@ -379,12 +381,20 @@ public static class InitCommand
             throw HostSettingError(relativePath, "valid TOML document", $"malformed TOML ({detail})");
         }
         var original = Encoding.UTF8.GetString(originalBytes);
+        var agents = document.RootNode["agents"u8];
+        var hasAgentsTable = agents.HasValue && agents.HasNodeOnly && agents.IsTableHeader;
+        if (agents.HasValue && !hasAgentsTable)
+            throw HostSettingError(relativePath, "explicit [agents] table", "inline, scalar, or array agents value");
+        if (hasAgentsTable)
+        {
+            ValidateTomlInteger(relativePath, agents["max_depth"u8], "max_depth", 3);
+            ValidateTomlInteger(relativePath, agents["max_concurrent_threads_per_session"u8], "max_concurrent_threads_per_session", 16);
+            ValidateTomlEnabled(relativePath, agents["enabled"u8]);
+        }
+
         var lines = Regex.Matches(original, @"[^\r\n]*(?:\r\n|\r|\n|$)");
         var agentsStart = -1;
         var agentsEnd = original.Length;
-        var agentKeys = new Dictionary<string, string>(StringComparer.Ordinal);
-        var inAgents = false;
-        string? currentTable = null;
 
         foreach (Match lineMatch in lines)
         {
@@ -395,60 +405,25 @@ public static class InitCommand
             if (trimmed.Length == 0 || trimmed.StartsWith('#'))
                 continue;
 
-            if (trimmed.StartsWith("[[agents", StringComparison.Ordinal) || trimmed.StartsWith("[agents.", StringComparison.Ordinal))
-                throw HostSettingError(relativePath, "one unambiguous [agents] table", trimmed);
-
-            var table = Regex.Match(trimmed, @"^\[(?<name>[A-Za-z0-9_.-]+)\](?:\s*#.*)?$");
+            var table = Regex.Match(trimmed, @"^\[(?<name>agents)\](?:\s*#.*)?$");
             if (table.Success)
             {
-                if (inAgents)
-                    agentsEnd = lineMatch.Index;
-                currentTable = table.Groups["name"].Value;
-                inAgents = currentTable == "agents";
-                if (inAgents)
-                {
-                    if (agentsStart >= 0)
-                        throw HostSettingError(relativePath, "one unambiguous [agents] table", "duplicate [agents] table");
-                    agentsStart = lineMatch.Index;
-                }
+                if (agentsStart >= 0)
+                    throw HostSettingError(relativePath, "one unambiguous [agents] table", "duplicate [agents] table");
+                agentsStart = lineMatch.Index;
                 continue;
             }
-            if (Regex.IsMatch(trimmed, @"^\[\[[A-Za-z0-9_.-]+\]\](?:\s*#.*)?$"))
-            {
-                if (inAgents)
-                    agentsEnd = lineMatch.Index;
-                inAgents = false;
-                currentTable = null;
-                continue;
-            }
-            if (trimmed.StartsWith('['))
-                throw HostSettingError(relativePath, "valid TOML table", trimmed);
-
-            if (!inAgents)
-            {
-                var rootAssignment = Regex.Match(trimmed, @"^(?<key>[A-Za-z0-9_.-]+)\s*=");
-                if (currentTable == null && rootAssignment.Success &&
-                    (rootAssignment.Groups["key"].Value == "agents" || rootAssignment.Groups["key"].Value.StartsWith("agents.", StringComparison.Ordinal)))
-                    throw HostSettingError(relativePath, "one unambiguous [agents] table", trimmed);
-                continue;
-            }
-            var assignment = Regex.Match(trimmed, @"^(?<key>[A-Za-z0-9_-]+)\s*=\s*(?<value>.*)$");
-            if (!assignment.Success)
-                throw HostSettingError(relativePath, "valid key = value in [agents]", trimmed);
-            var name = assignment.Groups["key"].Value;
-            if (!agentKeys.TryAdd(name, StripTomlComment(assignment.Groups["value"].Value).Trim()))
-                throw HostSettingError(relativePath, $"one {name} key in [agents]", "duplicate key");
+            if (agentsStart >= 0 && agentsEnd == original.Length && trimmed.StartsWith('['))
+                agentsEnd = lineMatch.Index;
         }
 
-        ValidateTomlInteger(relativePath, agentKeys, "max_depth", 3);
-        ValidateTomlInteger(relativePath, agentKeys, "max_concurrent_threads_per_session", 16);
-        if (agentKeys.TryGetValue("enabled", out var enabled) && enabled != "true")
-            throw HostSettingError(relativePath, "agents.enabled = true or absent", $"agents.enabled = {enabled}");
+        if (hasAgentsTable && agentsStart < 0)
+            throw HostSettingError(relativePath, "plain [agents] table", "quoted or otherwise ambiguous table header");
 
         var additions = new List<string>();
-        if (!agentKeys.ContainsKey("max_depth"))
+        if (!hasAgentsTable || !agents["max_depth"u8].HasValue)
             additions.Add("max_depth = 3");
-        if (!agentKeys.ContainsKey("max_concurrent_threads_per_session"))
+        if (!hasAgentsTable || !agents["max_concurrent_threads_per_session"u8].HasValue)
             additions.Add("max_concurrent_threads_per_session = 16");
         if (additions.Count == 0)
             return null;
@@ -470,33 +445,25 @@ public static class InitCommand
         return (path, content);
     }
 
-    private static void ValidateTomlInteger(string path, Dictionary<string, string> keys, string key, int minimum)
+    private static void ValidateTomlInteger(string path, TomlDocumentNode node, string key, int minimum)
     {
-        if (!keys.TryGetValue(key, out var value))
+        if (!node.HasValue)
             return;
-        if (!Regex.IsMatch(value, @"^[+]?(?:0|[1-9](?:_?[0-9])*)$"))
-            throw HostSettingError(path, $"agents.{key} integer >= {minimum}", $"agents.{key} = {value}");
-        var number = value.Replace("_", "", StringComparison.Ordinal).TrimStart('+');
-        if (!BigInteger.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) || parsed < minimum)
-            throw HostSettingError(path, $"agents.{key} integer >= {minimum}", $"agents.{key} = {value}");
+        if (node.ValueType != TomlValueType.Integer || !node.TryGetInt64(out var value) || value < minimum)
+            throw HostSettingError(path, $"agents.{key} integer >= {minimum}", $"agents.{key} has incompatible or lower value");
+    }
+
+    private static void ValidateTomlEnabled(string path, TomlDocumentNode node)
+    {
+        if (!node.HasValue)
+            return;
+        if (node.ValueType != TomlValueType.Boolean || !node.TryGetBool(out var enabled) || !enabled)
+            throw HostSettingError(path, "agents.enabled = true or absent", "agents.enabled has incompatible or false value");
     }
 
     private static bool IsCanonicalDepth(string value, int minimum) =>
         Regex.IsMatch(value, @"^(0|[1-9][0-9]*)$") &&
         BigInteger.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) && parsed >= minimum;
-
-    private static string StripTomlComment(string value)
-    {
-        var quoted = false;
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (value[i] == '"' && (i == 0 || value[i - 1] != '\\'))
-                quoted = !quoted;
-            if (value[i] == '#' && !quoted)
-                return value[..i];
-        }
-        return value;
-    }
 
     private static ArgumentException HostSettingError(string path, string required, string found) =>
         new($"Invalid {path}: required {required}; found {found}.");

@@ -328,31 +328,31 @@ public static class InitCommand
         }
 
         JsonObject env;
-        if (root["env"] == null)
+        if (!root.TryGetPropertyValue("env", out var envNode))
         {
             env = new JsonObject();
             root["env"] = env;
             changed = true;
         }
-        else if (root["env"] is JsonObject existingEnv)
+        else if (envNode is JsonObject existingEnv)
         {
             env = existingEnv;
         }
         else
         {
-            throw HostSettingError(relativePath, "object at env", DescribeJson(root["env"]));
+            throw HostSettingError(relativePath, "object at env", DescribeJson(envNode));
         }
 
-        if (env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] == null)
+        if (!env.TryGetPropertyValue("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", out var depthNode))
         {
             env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] = "3";
             changed = true;
         }
-        else if (env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] is not JsonValue value ||
+        else if (depthNode is not JsonValue value ||
                  !value.TryGetValue<string>(out var depth) || !IsCanonicalDepth(depth, 3))
         {
             throw HostSettingError(relativePath, $"{key} JSON string canonical unsigned integer >= 3",
-                DescribeJson(env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"]));
+                DescribeJson(depthNode));
         }
 
         return changed ? (path, root.ToJsonString(WriteOptions)) : null;
@@ -368,6 +368,7 @@ public static class InitCommand
         var agentsEnd = original.Length;
         var agentKeys = new Dictionary<string, string>(StringComparer.Ordinal);
         var inAgents = false;
+        string? currentTable = null;
 
         foreach (Match lineMatch in lines)
         {
@@ -386,7 +387,8 @@ public static class InitCommand
             {
                 if (inAgents)
                     agentsEnd = lineMatch.Index;
-                inAgents = table.Groups["name"].Value == "agents";
+                currentTable = table.Groups["name"].Value;
+                inAgents = currentTable == "agents";
                 if (inAgents)
                 {
                     if (agentsStart >= 0)
@@ -400,6 +402,7 @@ public static class InitCommand
                 if (inAgents)
                     agentsEnd = lineMatch.Index;
                 inAgents = false;
+                currentTable = null;
                 continue;
             }
             if (trimmed.StartsWith('['))
@@ -410,9 +413,11 @@ public static class InitCommand
                 throw HostSettingError(relativePath, "valid TOML key = value", trimmed);
             if (StripTomlComment(assignment.Groups["value"].Value).Trim().Length == 0)
                 throw HostSettingError(relativePath, "TOML value", "empty value");
+            var name = assignment.Groups["key"].Value;
+            if (currentTable == null && (name == "agents" || name.StartsWith("agents.", StringComparison.Ordinal)))
+                throw HostSettingError(relativePath, "one unambiguous [agents] table", trimmed);
             if (!inAgents)
                 continue;
-            var name = assignment.Groups["key"].Value;
             if (!agentKeys.TryAdd(name, StripTomlComment(assignment.Groups["value"].Value).Trim()))
                 throw HostSettingError(relativePath, $"one {name} key in [agents]", "duplicate key");
         }
@@ -451,9 +456,10 @@ public static class InitCommand
     {
         if (!keys.TryGetValue(key, out var value))
             return;
-        var number = value.Replace("_", "", StringComparison.Ordinal);
-        if (!Regex.IsMatch(value, @"^[+]?[0-9](?:_?[0-9])*$") ||
-            !BigInteger.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) || parsed < minimum)
+        if (!Regex.IsMatch(value, @"^[+]?(?:0|[1-9](?:_?[0-9])*)$"))
+            throw HostSettingError(path, $"agents.{key} integer >= {minimum}", $"agents.{key} = {value}");
+        var number = value.Replace("_", "", StringComparison.Ordinal).TrimStart('+');
+        if (!BigInteger.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) || parsed < minimum)
             throw HostSettingError(path, $"agents.{key} integer >= {minimum}", $"agents.{key} = {value}");
     }
 

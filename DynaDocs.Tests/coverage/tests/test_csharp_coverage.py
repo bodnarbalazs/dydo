@@ -6,17 +6,30 @@ import hashlib
 import json
 import subprocess
 import xml.etree.ElementTree as ET
+from unittest.mock import patch
 from pathlib import Path
 from copy import deepcopy
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from csharp_coverage import (ASSEMBLY_PROJECTS, _identity_producer, _same_instrumented_map,
-                             _same_artifacts, _same_native_map, _same_restored_map, _template_original_map,
-                             _write_commands, altcover_commands, snapshot_artifacts)
+from csharp_coverage import (ASSEMBLY_PROJECTS, _identity_producer, _source_facts, _source_facts_artifacts, _same_instrumented_map,
+                             _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
+                             _template_original_map, _write_commands, altcover_commands, snapshot_artifacts)
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
 
 
 class CSharpCoverageTests(unittest.TestCase):
+    def test_source_facts_persists_the_exact_producer_stdout(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "raw"
+            output.mkdir()
+            stdout = '{"files":[],"behavior":{}}\n'
+            with patch("csharp_coverage.subprocess.run", return_value=subprocess.CompletedProcess([], 0, stdout, "")) as run:
+                self.assertEqual({"files": [], "behavior": {}},
+                                 _source_facts(root, root / "producer.dll", "dydo", output))
+            self.assertEqual(stdout, (output / "source-facts-dydo.json").read_text(encoding="utf-8"))
+            self.assertEqual(1, run.call_count)
+
     def test_identity_producer_is_built_outside_instrumented_debug_directories(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -217,6 +230,60 @@ class CSharpCoverageTests(unittest.TestCase):
         coverage = coverage_methods(xml, root, assembly, [assembly["path"]],
                                     excluded_physical_tokens(source, assembly))
         self.assertTrue(coverage)
+
+    def test_hop3_06_newly_derived_crlf_replay_completes_retained_join(self):
+        """Replay only: SourceBehavior and CRLF source bytes are newly derived from pinned ec97c1b4."""
+        root = Path(__file__).resolve().parents[3]
+        raw = root / "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw"
+        pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
+        artifacts = json.loads((raw / "identity-pre-artifacts.json").read_text(encoding="utf-8"))
+        sources = [row for row in artifacts if row["path"].endswith(".cs")]
+        expected = {row["path"]: (row["bytes"], row["sha256"]) for row in sources}
+        with tempfile.TemporaryDirectory() as folder:
+            diagnostic_root = Path(folder)
+            for row in sources:
+                path = diagnostic_root / row["path"]
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes((root / row["path"]).read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+            actual = {row["path"]: (row["bytes"], row["sha256"]) for row in
+                      snapshot_artifacts(diagnostic_root, [diagnostic_root / row["path"] for row in sources])}
+            self.assertEqual(expected, actual)
+            producer = _identity_producer(root)[1]
+            cache = raw / "newly-derived-ec97c1b4"
+            cache.mkdir(exist_ok=True)
+            provenance = cache / "provenance.json"
+            if not provenance.is_file():
+                derived = {name: _source_facts(root, producer, name, cache) for name in ASSEMBLY_PROJECTS}
+                (cache / "source-facts-artifacts.json").write_text(
+                    json.dumps(_source_facts_artifacts(root, cache, ASSEMBLY_PROJECTS), indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8")
+                provenance.write_text(json.dumps({
+                    "schema": 1, "kind": "newly derived diagnostic replay", "sourceCommit": "ec97c1b4",
+                    "retainedInputs": ["identity-pre.json", "identity-pre-artifacts.json",
+                                       "template-original-map.json", "coverage.opencover.xml"],
+                    "sourceRepresentation": "pinned checkout LF normalized to CRLF for retained checksum validation",
+                }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            else:
+                derived = {name: json.loads((cache / f"source-facts-{name}.json").read_text(encoding="utf-8"))
+                           for name in ASSEMBLY_PROJECTS}
+            self.assertEqual("ec97c1b4", json.loads(provenance.read_text(encoding="utf-8"))["sourceCommit"])
+            self.assertEqual(_source_facts_artifacts(root, cache, ASSEMBLY_PROJECTS),
+                             json.loads((cache / "source-facts-artifacts.json").read_text(encoding="utf-8")))
+            xml = (raw / "coverage.opencover.xml").read_text(encoding="utf-8-sig")
+            for equivalence in pre:
+                name, path = equivalence["facts"]["assembly_name"], equivalence["facts"]["path"]
+                old = next(module for module in ET.fromstring(xml).findall("./Modules/Module")
+                           if module.findtext("ModuleName") == name).findtext("ModulePath")
+                xml = xml.replace(old, str(root / path), 1)
+            template = {path: {int(token): identity for token, identity in methods.items()}
+                        for path, methods in json.loads((raw / "template-original-map.json").read_text(encoding="utf-8")).items()}
+            self.assertEqual(template, _template_original_map(xml, root, pre))
+            coverage = {row["facts"]["assembly_name"]: coverage_methods(
+                xml, root, row["facts"], _altcover_aliases(row["aliases"]),
+                excluded_physical_tokens(derived[row["facts"]["assembly_name"]], row["facts"])) for row in pre}
+            for name in ("dydo", "GateMetrics"):
+                assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == name)
+                self.assertTrue(join_methods(diagnostic_root, derived[name], assembly, coverage[name])["modules"])
 
 if __name__ == "__main__":
     unittest.main()

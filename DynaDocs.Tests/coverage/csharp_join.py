@@ -131,11 +131,15 @@ def _span(row):
     return row["line"], row["column"], row["end_line"], row["end_column"]
 
 
+def _contains_span(outer, inner):
+    return outer[:2] <= inner[:2] and inner[2:] <= outer[2:]
+
+
 def _point_owner(point, methods):
     candidates = [row for row in methods if contains(_span(row), point["line"], point["column"])]
     smallest = [row for row in candidates if not any(
         other is not row and _span(other) != _span(row)
-        and (_span(row)[:2] <= _span(other)[:2] and _span(other)[2:] <= _span(row)[2:])
+        and _contains_span(_span(row), _span(other))
         for other in candidates)]
     if len(smallest) != 1:
         raise ValueError(f"Missing or ambiguous source owner: {point['path']}:{point['line']}:{point['column']}")
@@ -216,7 +220,8 @@ def _normal_owner(physical, source_methods, declared):
     key = physical.get("kickoff_key") or physical["key"]
     if key in declared:
         semantic = declared[key]
-        if semantic["path"] != path or _span(semantic) != _span(owner):
+        if semantic["path"] != path or not (_contains_span(_span(semantic), _span(owner))
+                                             or _contains_span(_span(owner), _span(semantic))):
             raise ValueError(f"Semantic/PDB method owner mismatch: {key}")
     return path, owner
 
@@ -240,6 +245,18 @@ def _structural_methods(behavior):
         if key in result:
             raise ValueError(f"Duplicate SourceBehavior structural classification: {key}")
         result[key] = reason
+    return result
+
+
+def _declared_methods(behavior):
+    result = {}
+    for row in behavior["declared_methods"]:
+        key = row.get("key")
+        if not isinstance(key, str) or not key:
+            raise ValueError("Invalid SourceBehavior declared member")
+        if key in result:
+            raise ValueError(f"Duplicate SourceBehavior declared member: {key}")
+        result[key] = row
     return result
 
 
@@ -298,7 +315,7 @@ def join_methods(root, source, assembly, coverage):
     constructors = {row["key"]: row for row in behavior["constructors"]}
     fragments = {row["id"]: row for row in behavior["fragments"]}
     structural = _structural_methods(behavior)
-    declared = {row["key"]: row for row in behavior["declared_methods"]}
+    declared = _declared_methods(behavior)
     generated_files = set(source.get("generated_files", []))
     checksums, accounting, mapped = set(), [], set()
     for physical in assembly["methods"]:

@@ -157,6 +157,50 @@ class CSharpJoinTests(unittest.TestCase):
                 with self.subTest(identity=physical["identity"]), self.assertRaisesRegex(ValueError, "Missing physical method coverage"):
                     join_methods(root, source, {"assembly_name": "A", "methods": [physical]}, {})
 
+    def test_expression_bodied_property_uses_containing_declared_span_without_exclusion(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path = root / "Services/LegacyPmManifestService.cs"
+            source_path.parent.mkdir()
+            source_path.write_text("\n" * 40)
+            point = {"path": "Services/LegacyPmManifestService.cs", "origin": "maintained",
+                     "checksum_algorithm": "SHA256", "checksum": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+                     "line": 20, "column": 20, "end_line": 20, "end_column": 35}
+            key = "DynaDocs.Services.LegacyPmManifestService::get_IsActive`0()"
+            source = {"files": [{"path": point["path"], "methods": [{
+                "id": "LegacyPmManifestService.IsActive", "line": 20, "column": 12,
+                "end_line": 20, "end_column": 40, "constructor": False,
+                "cognitive": 0, "policy_cc": 1, "parameters": 0,
+            }]}], "generated_files": [], "behavior": {"constructors": [], "fragments": [],
+                "structural_methods": [], "declared_methods": [{
+                    "key": key, "path": point["path"], "line": 20, "column": 0,
+                    "end_line": 20, "end_column": 41,
+                }]}}
+            physical = {"token": 1, "identity": "System.Boolean DynaDocs.Services.LegacyPmManifestService::get_IsActive()",
+                        "key": key, "points": [point]}
+            coverage = {physical["identity"]: {"files": {point["path"]: {
+                "Lines": {"20": 1}, "Branches": []}}}}
+            joined = join_methods(root, source, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+            self.assertEqual(1, joined["modules"][0]["methods"][0]["covered"])
+
+            for declared, message in (
+                ({"key": key, "path": "Other.cs", "line": 20, "column": 0, "end_line": 20, "end_column": 41},
+                 "Semantic/PDB method owner mismatch"),
+                ({"key": key, "path": point["path"], "line": 19, "column": 30, "end_line": 20, "end_column": 30},
+                 "Semantic/PDB method owner mismatch"),
+            ):
+                invalid = {**source, "behavior": {**source["behavior"], "declared_methods": [declared]}}
+                with self.subTest(declared=declared), self.assertRaisesRegex(ValueError, message):
+                    join_methods(root, invalid, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+            ambiguous = {**source, "files": [{"path": point["path"], "methods": [
+                *source["files"][0]["methods"], {**source["files"][0]["methods"][0], "id": "other"}]}]}
+            with self.assertRaisesRegex(ValueError, "Missing or ambiguous source owner"):
+                join_methods(root, ambiguous, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+            duplicate = {**source, "behavior": {**source["behavior"], "declared_methods": [
+                *source["behavior"]["declared_methods"], source["behavior"]["declared_methods"][0]]}}
+            with self.assertRaisesRegex(ValueError, "Duplicate SourceBehavior declared member"):
+                join_methods(root, duplicate, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+
 
 if __name__ == "__main__":
     unittest.main()

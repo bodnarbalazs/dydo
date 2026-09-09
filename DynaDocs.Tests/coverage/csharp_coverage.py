@@ -227,13 +227,21 @@ def _template_original_map(opencover, root, originals):
     return result
 
 
-def _source_facts(root, producer, name):
+def _source_facts(root, producer, name, result_root=None):
     project = root / ASSEMBLY_PROJECTS[name]
     row = subprocess.run(["dotnet", str(producer), "--project", str(project), "--root", str(root)],
                          cwd=root, text=True, encoding="utf-8", capture_output=True)
     if row.returncode:
         raise ValueError(f"Source identity failed for {name}: {row.stderr.strip()}")
+    if result_root is not None:
+        (Path(result_root) / f"source-facts-{name}.json").write_text(row.stdout, encoding="utf-8")
     return json.loads(row.stdout)
+
+
+def _source_facts_artifacts(root, result_root, names):
+    return {"schema": 1,
+            "artifacts": snapshot_artifacts(root, [Path(result_root) / f"source-facts-{name}.json"
+                                                      for name in names])}
 
 
 def run_campaign(root, result_root, extra_args=None):
@@ -329,7 +337,10 @@ def run_campaign(root, result_root, extra_args=None):
     from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
     from gate_policy import evaluate_policy
     xml = report.read_text(encoding="utf-8-sig")
-    sources = {name: _source_facts(root, producer, name) for name in ASSEMBLY_PROJECTS}
+    sources = {name: _source_facts(root, producer, name, result_root) for name in ASSEMBLY_PROJECTS}
+    (result_root / "source-facts-artifacts.json").write_text(
+        json.dumps(_source_facts_artifacts(root, result_root, ASSEMBLY_PROJECTS), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
     normalized = {}
     for equivalence in pre:
         name = equivalence["facts"]["assembly_name"]

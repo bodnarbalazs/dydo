@@ -45,6 +45,7 @@ public sealed class ReleaseWorkflowTests
 
         AssertRejected(workflow.Replace($"if: ${{{{ {AllowedTagGuard} }}}}", $"# if: ${{{{ {AllowedTagGuard} }}}}", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build", StringComparison.Ordinal));
+        AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build # needs: [build, validation]", StringComparison.Ordinal));
         AssertRejected(workflow + "\n  rogue:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm publish --access public\n");
     }
 
@@ -80,17 +81,28 @@ public sealed class ReleaseWorkflowTests
                 continue;
 
             Assert.True(expectedNeeds.TryGetValue(name, out var needs), $"Unexpected publication job '{name}'.");
-            Assert.Contains($"if: ${{{{ {AllowedTagGuard} }}}}", body);
-            Assert.Contains(needs, body);
+            Assert.Equal($"${{{{ {AllowedTagGuard} }}}}", JobField(body, "if"));
+            Assert.Equal(needs[7..], JobField(body, "needs"));
         }
 
         foreach (var (name, needs) in expectedNeeds)
         {
             Assert.True(jobs.TryGetValue(name, out var body), $"Missing publication job '{name}'.");
-            Assert.Contains($"if: ${{{{ {AllowedTagGuard} }}}}", body);
-            Assert.Contains(needs, body);
+            Assert.Equal($"${{{{ {AllowedTagGuard} }}}}", JobField(body, "if"));
+            Assert.Equal(needs[7..], JobField(body, "needs"));
             Assert.Contains(name == "release" ? "softprops/action-gh-release@" : name == "nuget" ? "dotnet nuget push" : "npm publish", body);
         }
+    }
+
+    private static string? JobField(string body, string field)
+    {
+        foreach (var line in body.Split('\n'))
+        {
+            var prefix = $"    {field}:";
+            if (line.StartsWith(prefix, StringComparison.Ordinal))
+                return line[prefix.Length..].Trim();
+        }
+        return null;
     }
 
     private static Dictionary<string, string> ActiveJobs(string workflow)
@@ -121,7 +133,24 @@ public sealed class ReleaseWorkflowTests
     private static string ActiveText(string workflow) => string.Join('\n', workflow
         .Replace("\r\n", "\n", StringComparison.Ordinal)
         .Split('\n')
-        .Where(line => !line.TrimStart().StartsWith('#')));
+        .Select(StripInlineComment)
+        .Where(line => !string.IsNullOrWhiteSpace(line)));
+
+    private static string StripInlineComment(string line)
+    {
+        char? quote = null;
+        for (var index = 0; index < line.Length; index++)
+        {
+            var character = line[index];
+            if (quote is null && (character == '\'' || character == '\"'))
+                quote = character;
+            else if (quote == character)
+                quote = null;
+            else if (quote is null && character == '#')
+                return line[..index].TrimEnd();
+        }
+        return line;
+    }
 
     private static string Workflow() => File.ReadAllText(RepositoryFile(".github", "workflows", "release.yml"));
 

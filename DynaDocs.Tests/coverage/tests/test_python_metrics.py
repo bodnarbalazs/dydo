@@ -55,6 +55,51 @@ class PythonMetricsTests(unittest.TestCase):
             self.assertIn("missing-python.exe", missing["errors"][0]["message"])
             self.assertIsNone(collector.log.rows[0]["exit_code"])
 
+    def test_python_source_metrics_normalize_crlf_only_for_subprocess_transport(self):
+        from gate_collect import Collectors
+        from gate_run import CommandLog
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = b"value = 1 + \\\r\n    2\r\n"
+            (root / "subject.py").write_bytes(source)
+            collector = Collectors.__new__(Collectors)
+            collector.root = root
+            collector.output = root / "output"
+            collector.coverage = Path(__file__).resolve().parents[1]
+            collector.python = Path(__file__).resolve().parents[3] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+            collector.log = CommandLog(root, collector.output / "commands")
+            collector.inventory = {"sources": [{"path": "subject.py", "language": "python"}]}
+            collector.static = {}
+
+            measured = collector.python_source()
+
+            self.assertEqual("pass", measured["status"], measured)
+            self.assertEqual(0, collector.log.rows[0]["exit_code"])
+            self.assertEqual(source, (root / "subject.py").read_bytes())
+
+    def test_python_dependencies_accept_json_loads_but_reject_unknown_dynamic_import(self):
+        from gate_collect import Collectors
+
+        root = Path(__file__).resolve().parents[3]
+        collector = Collectors.__new__(Collectors)
+        collector.root = root
+        collector.inventory = {"sources": [{
+            "path": "DynaDocs.Tests/coverage/tests/test_csharp_coverage.py",
+            "language": "python",
+        }]}
+        measured = collector.python_dependencies()
+        self.assertEqual("pass", measured["status"], measured)
+
+        with tempfile.TemporaryDirectory() as folder:
+            dynamic_root = Path(folder)
+            (dynamic_root / "dynamic.py").write_text("module = __import__(module_name)\n", encoding="utf-8")
+            collector.root = dynamic_root
+            collector.inventory = {"sources": [{"path": "dynamic.py", "language": "python"}]}
+            measured = collector.python_dependencies()
+            self.assertEqual("error", measured["status"], measured)
+            self.assertEqual("__import__", measured["errors"][0]["call"])
+
     def test_duplicate_nested_names_have_distinct_source_identities(self):
         source = "def outer():\n    def inner(x): return x\n    return inner(1)\ndef other():\n    def inner(x): return x\n    return inner(2)\n"
         rows = callable_nodes(ast.parse(source))

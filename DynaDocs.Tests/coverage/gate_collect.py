@@ -27,6 +27,10 @@ def metric_findings(path, methods):
     return findings
 
 
+def _source_stdin(text):
+    return text.replace('\r\n', '\n').replace('\r', '\n')
+
+
 class Collectors:
     def __init__(self, root, output):
         self.root = Path(root).resolve()
@@ -158,7 +162,7 @@ class Collectors:
             try:
                 text = canonical_text((self.root / source['path']).read_bytes())
                 metrics = self.command_json(f'python-source-{index}',
-                    [self.python, self.coverage / 'python_metrics.py'], stdin=text)
+                    [self.python, self.coverage / 'python_metrics.py'], stdin=_source_stdin(text))
                 row = {'path': source['path'], **metrics}
                 facts.append(row)
                 findings.extend(metric_findings(row['path'], row['methods']))
@@ -219,12 +223,14 @@ class Collectors:
         return result({'edges': edges, 'search_roots': roots}, findings, errors)
 
     def javascript_source(self):
+        from positions import canonical_text
         facts, findings, errors = [], [], []
         for index, source in enumerate(self.sources('javascript')):
             try:
                 kind = 'module' if source['path'].endswith('.mjs') else 'commonjs'
-                text = (self.root / source['path']).read_text(encoding='utf-8-sig')
-                row = self.command_json(f'javascript-source-{index}', ['node', self.coverage / 'js_metrics.cjs', kind], stdin=text)
+                text = canonical_text((self.root / source['path']).read_bytes())
+                row = self.command_json(f'javascript-source-{index}',
+                    ['node', self.coverage / 'js_metrics.cjs', kind], stdin=_source_stdin(text))
                 row['path'] = source['path']
                 facts.append(row)
                 findings.extend(metric_findings(row['path'], row['methods']))

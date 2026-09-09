@@ -116,7 +116,7 @@ class CSharpCoverageTests(unittest.TestCase):
             output = Path(folder)
             rows = [{"name": "build", "exit": 0}]
             _write_commands(output, rows)
-            self.assertEqual(rows, __import__("json").loads((output / "commands.json").read_text()))
+            self.assertEqual(rows, json.loads((output / "commands.json").read_text()))
 
     def test_prepare_and_runner_commands_are_exact_and_unfiltered(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -16,14 +16,13 @@ configuration intent, never evidence that a host accepted it or that a runtime c
 | Host file | Managed requirement |
 | --- | --- |
 | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` is the JSON string `"3"`. |
-| `.codex/config.toml` | The verified `[agents]` table supplies `max_concurrent_threads_per_session = 16`. `enabled` defaults true, so it is not written at project root. `max_depth = 3` is an explicit **pre-production blocker**: the current official reference does not establish that key's syntax or semantics. Production needs a non-sacrificial parser/config-schema proof or a contract amendment. |
+| `.codex/config.toml` | The verified `[agents]` table supplies `max_depth = 3` and `max_concurrent_threads_per_session = 16`. `enabled` defaults true, so it is not written at project root. |
 
 For each selected file, a missing verified managed key is added while unrelated content remains
 intact. Repeated init/join is byte-identical after the first successful write. A present valid
-managed concurrency of at least 16 is retained. A lower concurrency, or `enabled = false`, is an
-actionable error naming the file, key, required value, and found value; it is never silently changed
-or downgraded. If the depth blocker is resolved in favor of `max_depth`, the same retain-at-least-3
-and diagnose-lower rule applies.
+managed depth of at least 3 and concurrency of at least 16 is retained. A lower depth or
+concurrency, or `enabled = false`, is an actionable error naming the file, key, required value, and
+found value; it is never silently changed or downgraded.
 
 Malformed JSON/TOML, a non-object JSON root or `env`, incompatible managed-value types, ambiguous
 TOML structure, and the above conflicts fail before any host-settings mutation. The command reports
@@ -37,8 +36,10 @@ fallback. Codex config is trusted-project configuration and layers root-to-curre
 the closest file winning; the concurrency ceiling excludes the primary thread. V1/V2 and reload
 behavior remain host qualifications, not failures. The native evidence is the official
 [configuration reference](https://developers.openai.com/codex/config-reference/) and
-[multi-agent guide](https://developers.openai.com/codex/multi-agent/). No capacity manager, runtime
-probe, generated-role change, or lifecycle claim is part of this Issue; DYD-88 owns runtime
+[multi-agent guide](https://developers.openai.com/codex/multi-agent/), plus installed Codex CLI
+0.153.4: `--strict-config -c agents.max_depth=3 doctor` loaded config while an invented `agents.*`
+key was rejected. That proves parser placement only, not runtime enforcement. No capacity manager,
+runtime probe, generated-role change, or lifecycle claim is part of this Issue; DYD-88 owns runtime
 observation.
 
 ## Plan
@@ -50,10 +51,10 @@ project document rather than generated role TOML.
 
 **Files.**
 
-1. `Commands/InitCommand.cs` — after the depth blocker is resolved, preflight every selected
-   host-settings document before existing init or join mutations, merge only verified managed
-   JSON/TOML settings, then write the prepared output after validation; use a narrow
-   line-preserving TOML edit and fail when it cannot locate one safe edit.
+1. `Commands/InitCommand.cs` — preflight every selected host-settings document before existing init
+   or join mutations, merge only verified managed JSON/TOML settings, then write the prepared output
+   after validation; use a narrow line-preserving TOML edit and fail when it cannot locate one safe
+   edit.
 2. `DynaDocs.Tests/Integration/InitCommandTests.cs` — prove fresh/init/join/repeat cases, unrelated
    JSON and TOML preservation, satisfying-value retention, each conflict/type/malformed diagnostic,
    and zero host-settings writes on each preflight failure.
@@ -76,5 +77,5 @@ all pass. Record command, candidate SHA, exit, discovery, and evidence location.
 receives this contract, candidate, and base SHA; native project-setting semantics warrant that review.
 
 **Plan review.** Recommended: TOML's native configuration semantics and lossless preservation make
-the depth-key blocker and failure ordering material. Production remains blocked on the recorded
-`max_depth` native proof or contract amendment and the DYD-39 sequencing constraint.
+the parser-backed key shape and failure ordering material. Production remains sequenced after
+DYD-39; V1/V2 semantics and reload behavior remain DYD-88 runtime-observation work.

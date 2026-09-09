@@ -17,7 +17,8 @@ def validate_associations(inventory, manifest):
     if not isinstance(manifest["modules"], list):
         raise ValueError("association modules must be an array")
     sources = {row["path"]: row for row in inventory}
-    targets = {path for path, row in sources.items() if row.get("role") == "target" and row.get("executable")}
+    targets = {path for path, row in sources.items() if row.get("role") == "target"}
+    required_targets = {path for path in targets if sources[path].get("executable")}
     tests = {path for path, row in sources.items() if row.get("role") == "test" and row.get("nativeTest", True)}
     related = set()
     for row in manifest["modules"]:
@@ -34,4 +35,4 @@ def validate_associations(inventory, manifest):
         related.add(module)
     return [{"gate": "test-association", "path": path,
              "reason": "non-trivial target has no associated test file"}
-            for path in sorted(targets - related)]
+            for path in sorted(required_targets - related)]

@@ -23,6 +23,16 @@ class AssociationTests(unittest.TestCase):
         ]}
         self.assertEqual([], validate_associations(self.inventory, manifest))
 
+    def test_nonexecutable_target_can_have_an_exact_association(self):
+        inventory = [*self.inventory,
+                     {"path": "src/contracts.py", "role": "target", "executable": False}]
+        manifest = {"schema": 1, "modules": [
+            {"module": "src/a.py", "tests": ["tests/test_flow.py"]},
+            {"module": "src/b.py", "tests": ["tests/test_flow.py"]},
+            {"module": "src/contracts.py", "tests": ["tests/test_flow.py"]},
+        ]}
+        self.assertEqual([], validate_associations(inventory, manifest))
+
     def test_missing_relation_is_policy_failure(self):
         manifest = {"schema": 1, "modules": [
             {"module": "src/a.py", "tests": ["tests/test_flow.py"]},

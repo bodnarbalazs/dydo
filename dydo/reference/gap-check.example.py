@@ -11,6 +11,8 @@ import time
 import uuid
 from pathlib import Path, PureWindowsPath
 
+import windows_job
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -25,6 +27,8 @@ if sys.platform == "win32":
 
 CAPS = ("test", "static", "coverage", "mutation")
 EXITS = {"passed": 0, "failed": 1, "unavailable": 2, "invalid": 2, "interrupted": 130}
+CLEANUP_SECONDS = 30
+ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
 HELP = """Usage: gap_check.py [--force-run] [operation] [options] [-- native arguments]
 
 Project testing facade. It runs manifest argv vectors directly; it never invokes a shell.
@@ -84,7 +88,7 @@ def read_manifest(path):
 def result(stack, capability, state, **values):
     item = {"stack": stack.get("name", "unknown"), "capability": capability, "state": state,
             "argv": [], "cwd": stack.get("cwd", ""), "isolation": stack.get("isolation"),
-            "childExit": None, "resultExit": EXITS[state], "artifacts": []}
+            "environment": {}, "childExit": None, "resultExit": EXITS[state], "artifacts": []}
     item.update(values)
     return item
 
@@ -221,48 +225,66 @@ def artifact_snapshot(root, value):
     return snapshot
 
 
-def run_row(stack, capability, root, since, forwarded):
+def stop_child(child, deadline):
+    try:
+        if sys.platform == "win32":
+            child.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            os.killpg(child.pid, signal.SIGINT)
+        child.wait(timeout=max(0, deadline - time.monotonic()))
+    except (OSError, subprocess.TimeoutExpired):
+        if sys.platform == "win32":
+            child.kill()
+        else:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        child.wait()
+
+
+def run_row(stack, capability, root, since, forwarded, deadline):
     argv, artifacts, state, reason = prepare_row(stack, capability, root, since)
     if state != "configured":
         return result(stack, capability, state, reason=reason)
     if capability == "test":
         argv += forwarded
     child = None
+    environment = {ROW_DEADLINE_ENV: format(deadline, ".9f")}
     try:
         working_directory = contained(root, stack["cwd"])
         before = {item["path"]: artifact_snapshot(root, item["path"]) for item in artifacts
                   if item["required"] and capability != "test"}
-        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable, **environment}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                                  start_new_session=sys.platform != "win32")
+        execution_deadline = deadline if capability != "test" else deadline - CLEANUP_SECONDS
         while child.poll() is None:
+            remaining = execution_deadline - time.monotonic()
+            if remaining <= 0:
+                stop_child(child, deadline)
+                return result(stack, capability, "interrupted", argv=argv, environment=environment,
+                              childExit=child.returncode, artifacts=artifacts,
+                              reason="row deadline exceeded after adapter cleanup")
             try:
-                child.wait(timeout=0.2)
+                child.wait(timeout=min(0.2, remaining))
             except subprocess.TimeoutExpired:
                 pass
         if capability != "test" or child.returncode == 0:
             for path, previous in before.items():
                 current = artifact_snapshot(root, path)
                 if current is None or current == previous:
-                    return result(stack, capability, "invalid", argv=argv, childExit=child.returncode, artifacts=artifacts, reason=f"required artifact was not produced or refreshed: {path}")
+                    return result(stack, capability, "invalid", argv=argv, environment=environment, childExit=child.returncode, artifacts=artifacts, reason=f"required artifact was not produced or refreshed: {path}")
         if capability != "test" and child.returncode in (2, 130):
             state = "invalid" if child.returncode == 2 else "interrupted"
-            return result(stack, capability, state, argv=argv, childExit=child.returncode, artifacts=artifacts)
-        return result(stack, capability, "passed" if child.returncode == 0 else "failed", argv=argv, childExit=child.returncode, artifacts=artifacts)
+            return result(stack, capability, state, argv=argv, environment=environment, childExit=child.returncode, artifacts=artifacts)
+        return result(stack, capability, "passed" if child.returncode == 0 else "failed", argv=argv, environment=environment, childExit=child.returncode, artifacts=artifacts)
     except KeyboardInterrupt:
         if child is None:
-            return result(stack, capability, "interrupted", argv=argv, artifacts=artifacts, reason="interrupted before adapter launch")
-        try:
-            if sys.platform == "win32":
-                child.send_signal(signal.CTRL_BREAK_EVENT)
-            else:
-                os.killpg(child.pid, signal.SIGINT)
-            child.wait(timeout=30)
-        except (OSError, subprocess.TimeoutExpired):
-            child.kill()
-            child.wait()
-        return result(stack, capability, "interrupted", argv=argv, childExit=child.returncode, artifacts=artifacts, reason="adapter interrupted after cleanup window")
+            return result(stack, capability, "interrupted", argv=argv, environment=environment, artifacts=artifacts, reason="interrupted before adapter launch")
+        stop_child(child, time.monotonic() + CLEANUP_SECONDS)
+        return result(stack, capability, "interrupted", argv=argv, environment=environment, childExit=child.returncode, artifacts=artifacts, reason="adapter interrupted after cleanup window")
     except (OSError, ContractError) as error:
-        return result(stack, capability, "invalid", argv=argv, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
+        return result(stack, capability, "invalid", argv=argv, environment=environment, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
 
 
 def request(args):
@@ -369,7 +391,8 @@ def main(argv=None):
         run = prepare_result(destination)
         for stack in selected:
             for capability in capabilities:
-                current = run_row(stack, capability, root, since, forwarded); rows.append(current)
+                deadline = time.monotonic() + windows_job.EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
+                current = run_row(stack, capability, root, since, forwarded, deadline); rows.append(current)
                 print(f"{current['stack']} {capability}: {current['state'].upper()}" + (f" (child exit {current['childExit']})" if current["childExit"] is not None else "") + (f": {current['reason']}" if current.get("reason") else ""), flush=True)
                 if current["state"] == "interrupted":
                     break

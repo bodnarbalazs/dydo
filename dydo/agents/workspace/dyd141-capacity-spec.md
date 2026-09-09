@@ -134,9 +134,29 @@ runnable, record that missing control as the concrete escalation result. Do not 
   `py DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal` exits 0.
 - Build gate: `dotnet build DynaDocs.sln -c Release --warnaserror` exits 0 with zero warnings.
 - Documentation gate: `dydo check` exits 0 for the candidate.
-- Generation gate: a source-built template update followed by two synchronizations leaves the second
-  run byte-identical and changes only the generated paths named below. Each managed prompt contains
-  the required source wording; wrapper files remain byte-identical.
+- Generation gate, run from the worktree root on the committed candidate, in this order:
+  1. Normalize. With `git status --porcelain` empty, run
+     `git checkout -- Templates/skill-admiral.template.md Templates/skill-issue-captain.template.md Templates/working-tree-contract.template.md dydo/_system/templates/skill-admiral.template.md dydo/_system/templates/skill-issue-captain.template.md dydo/guides/working-tree-contract.md`.
+     Afterwards `git status --porcelain` is still empty and `git ls-files --eol` on those six paths
+     shows one working-tree form (`w/crlf` on this `core.autocrlf=true` checkout, the platform's
+     checkout form elsewhere), never `w/mixed`; a path still `w/mixed` is deleted and checked out again.
+  2. Build from that state: `dotnet build DynaDocs.sln -c Release --warnaserror` exits 0. The binary
+     under test is the resulting `bin/Release/net10.0/dydo.dll`; an earlier build embeds the bytes a
+     writer's tool left on disk and proves nothing.
+  3. Regenerate: `dotnet bin/Release/net10.0/dydo.dll template update`, then
+     `dotnet bin/Release/net10.0/dydo.dll sync`, then `sync` once more.
+  4. Pass: the update prints exactly `Template update complete: 0 updated, 6 already current.`, no
+     per-file action line and nothing on stderr; `git status --porcelain` is empty after the update
+     and after each sync, so the tree equals the committed candidate as git normalizes it and the
+     second sync leaves what the first left; the seven managed prompt outputs and the three owned hash
+     lines are unchanged by regeneration; `.claude/agents/issue-captain.md`,
+     `.codex/agents/issue-captain.toml` and every `.agents/skills/*/agents/openai.yaml` are
+     byte-identical; each managed prompt contains its required source wording.
+  Until the three owned hash lines are committed, the same run reports
+  `1 metadata-only document hash refresh(es), 2 source hash change(s)` and leaves `dydo.json` modified:
+  that modification is the fix hop's commit, not a pass. The committed candidate's six prompt files
+  carry consistent line endings as git normalizes them, so the fixed point depends on checkout bytes,
+  never on arrival bytes.
 - Native gate: the three-step proof above records the strictly serial captain-owned production,
   hardening and fresh review run plus the already observed or one naturally occurring necessary
   refusal, or the exact missing inventory/control escalation. A configuration value alone cannot
@@ -181,6 +201,10 @@ Managed/generated outputs, changed only by source-built template update/sync:
 - `.claude/skills/issue-captain/SKILL.md`
 - `.agents/skills/admiral/SKILL.md`
 - `.agents/skills/issue-captain/SKILL.md`
+- `dydo.json` — only its `frameworkHashes` entries for `guides/working-tree-contract.md`,
+  `_system/templates/skill-issue-captain.template.md` and
+  `_system/templates/skill-admiral.template.md`, which `template update` rewrites to the hashes of the
+  three managed copies above. Every other line of `dydo.json` is unowned and stays byte-identical.
 
 Proof:
 
@@ -189,9 +213,9 @@ Proof:
 - `dydo/agents/workspace/dyd141-capacity-evidence.md` — configuration provenance, bounded desktop
   observations, native inventory/results and exact candidate identity.
 
-No other generated file is owned. In particular `.claude/agents/issue-captain.md`,
-`.codex/agents/issue-captain.toml`, `.agents/skills/admiral/agents/openai.yaml`, user configuration and
-existing evidence are read-only and must remain byte-identical.
+No other generated file or `dydo.json` line is owned. In particular `.claude/agents/issue-captain.md`,
+`.codex/agents/issue-captain.toml`, every `.agents/skills/*/agents/openai.yaml`, user configuration
+and existing evidence are read-only and must remain byte-identical.
 
 ### Steps and hops
 
@@ -206,6 +230,11 @@ existing evidence are read-only and must remain byte-identical.
 4. **Issue review — required and fresh.** Judge the complete candidate against this spec and the CODE
    rubric, including generated parity, unchanged wrapper bytes, native evidence qualification and
    captain-only dispatch. Correct any FAIL through the owner named by the captain, then review afresh.
+   CODE review 1 of `059c575f` returned FAIL (artifact on the Issue). Its corrections run on the Issue
+   branch in this order, one commit each: this specify hop (`DYD-141 specify: own dydo.json framework
+   hashes`); a fresh hardener's `DYD-141 fix:` commit of the regenerated `dydo.json` hash lines under
+   the generation gate; the same hardener's second `DYD-141 fix:` commit resolving finding 2 in
+   `dydo/agents/workspace/dyd141-capacity-evidence.md`; then a fresh CODE review of the result.
 5. **Offer — nonempty captain operation.** Push the unsquashed Issue branch, open the PR with the PASS
    block, and keep DYD-141 `Ready to Merge`.
 6. **Merge — later Sub-issue required.** Create/specify a Merge/AFK Sub-issue when the candidate and
@@ -227,10 +256,22 @@ existing evidence are read-only and must remain byte-identical.
   production, Admiral review, or Admiral-to-crew dispatch.
 - Regeneration that changes an unowned wrapper or unrelated artifact fails the generation gate and is
   reverted by path before the candidate is offered.
+- A stale `frameworkHashes` entry for a managed file the Issue changed fails the generation gate: the
+  next framework update would report that file user-edited and skip it. The correction is to commit
+  the source-built `template update` output for exactly those entries, never a hand-written hash.
 
 ### Plan review
 
-**Recommended.** This correction changes the canonical control-flow prompts and defines the precise
-failure/escalation route after a native capacity refusal. Fresh spec review should verify that it
-preserves captain-only authority and freshness, does not overstate configuration effectiveness in
-the existing task, and does not steal DYD-86 configuration emission or DYD-88 lifecycle scope.
+**Recommended (fulfilled: SPEC PASS on `d109e2eb`).** This correction changes the canonical
+control-flow prompts and defines the precise failure/escalation route after a native capacity
+refusal. Fresh spec review should verify that it preserves captain-only authority and freshness, does
+not overstate configuration effectiveness in the existing task, and does not steal DYD-86
+configuration emission or DYD-88 lifecycle scope.
+
+**Amendment owning the `dydo.json` framework hashes: unnecessary.** It adds one generated path whose
+content only `template update` can produce, makes the generation gate an exact procedure, adds one
+edge rule and records the fix route; the immutable contract, scenarios, prompt wording obligations,
+native proof and other gates are unchanged. The owned hash lines are this Issue's own regeneration
+output, not configuration emission, so DYD-86 keeps its scope. The fresh CODE review already judges
+the procedure's result on the corrected candidate; a second SPEC review would judge no risk it does
+not.

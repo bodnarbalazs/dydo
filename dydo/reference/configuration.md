@@ -41,7 +41,10 @@ through Linear's official surfaces.
     "agents/"
   ],
   "nudges": [],
-  "frameworkHashes": {}
+  "frameworkHashes": {},
+  "testing": {
+    "runner": ["python", "scripts/gap_check.py"]
+  }
 }
 ```
 
@@ -61,6 +64,7 @@ through Linear's official surfaces.
 | `scanExclude` | string[] | Paths excluded from documentation scanning. |
 | `nudges` | object[] | Project guard rules. |
 | `frameworkHashes` | object | Product-managed hashes used by `dydo template update`. |
+| `testing.runner` | nonempty string[] | Executable followed by fixed arguments for `dydo gap-check`. The executable is the first item; later empty arguments are preserved. |
 
 Older 2.x configuration may still contain repository work-path fields. The 3.x runtime ignores those
 unknown properties safely and does not migrate them into another local work model. A fresh
@@ -70,6 +74,11 @@ initialization emits `structure.root` and no retired work-path fields.
 minimal `{ "enabled": true }`; the next successful sync fills the generated members. Discovery adds
 a valid source missing from the switchboard as enabled and never changes an existing true or false.
 Malformed switches fail update, sync, check, and validate rather than receiving defaults.
+
+`testing` is optional. When present, it must be an object containing a nonempty `runner` array of
+strings, whose first item is a nonblank executable. The launcher starts that executable directly from
+the directory containing the nearest `dydo.json`, appends the caller's arguments without shell parsing,
+and inherits the terminal streams.
 
 ## Work-management boundary
 

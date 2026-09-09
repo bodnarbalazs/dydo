@@ -749,9 +749,21 @@ public static partial class GuardCommand
         try
         {
             var basePath = Environment.CurrentDirectory;
-            var timestampPath = Path.Combine(basePath, "dydo", "_system", ".local", "last-validation");
+            var configService = new ConfigService();
+            var configPath = configService.FindConfigFile(basePath);
+            if (configPath == null)
+                return;
 
-            if (File.Exists(timestampPath))
+            var projectRoot = Path.GetDirectoryName(configPath)!;
+            var config = configService.LoadConfig(basePath);
+            var dydoRoot = config == null
+                ? null
+                : Path.Combine(projectRoot, config.Structure.Root);
+            var timestampPath = dydoRoot == null
+                ? null
+                : Path.Combine(dydoRoot, "_system", ".local", "last-validation");
+
+            if (timestampPath != null && File.Exists(timestampPath))
             {
                 var lastRun = File.GetLastWriteTimeUtc(timestampPath);
                 if ((DateTime.UtcNow - lastRun).TotalHours < 24)
@@ -759,7 +771,7 @@ public static partial class GuardCommand
             }
 
             var validator = new ValidationService();
-            var issues = validator.ValidateSystem(basePath);
+            var issues = validator.ValidateSystem(projectRoot);
 
             if (issues.Count > 0)
             {
@@ -770,9 +782,12 @@ public static partial class GuardCommand
                 Console.Error.WriteLine();
             }
 
-            // Ensure .local/ dir exists (absent in worktrees)
-            PathUtils.EnsureLocalDirExists(Path.Combine(basePath, "dydo"));
-            File.WriteAllText(timestampPath, DateTime.UtcNow.ToString("O"));
+            if (dydoRoot != null)
+            {
+                // Ensure .local/ dir exists (absent in worktrees)
+                PathUtils.EnsureLocalDirExists(dydoRoot);
+                File.WriteAllText(timestampPath!, DateTime.UtcNow.ToString("O"));
+            }
         }
         catch
         {

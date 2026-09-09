@@ -47,6 +47,8 @@ public sealed class ReleaseWorkflowTests
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build # needs: [build, validation]", StringComparison.Ordinal));
         AssertRejected(workflow + "\n  rogue:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm publish --access public\n");
+        AssertRejected(Swap(workflow, "prerelease: true", "prerelease: false"));
+        AssertRejected(Swap(workflow, "if: github.ref == 'refs/tags/v3.0.0-beta.3'", "if: github.ref == 'refs/tags/v3.0.0'"));
     }
 
     [Fact]
@@ -92,7 +94,47 @@ public sealed class ReleaseWorkflowTests
             Assert.Equal(needs[7..], JobField(body, "needs"));
             Assert.Contains(name == "release" ? "softprops/action-gh-release@" : name == "nuget" ? "dotnet nuget push" : "npm publish", body);
         }
+
+        AssertReleaseStep(jobs["release"], "Create beta release", "github.ref == 'refs/tags/v3.0.0-beta.3'", "true");
+        AssertReleaseStep(jobs["release"], "Create stable release", "github.ref == 'refs/tags/v3.0.0'", "false");
     }
+
+    private static void AssertReleaseStep(string release, string name, string guard, string prerelease)
+    {
+        var step = JobStep(release, name);
+        Assert.Equal(guard, StepField(step, "if"));
+        Assert.Equal("softprops/action-gh-release@v2", StepField(step, "uses"));
+        Assert.Equal(prerelease, StepField(step, "prerelease"));
+    }
+
+    private static string JobStep(string job, string name)
+    {
+        var lines = job.Split('\n');
+        var start = Array.FindIndex(lines, line => line == $"      - name: {name}");
+        Assert.True(start >= 0, $"Missing release step '{name}'.");
+
+        var end = start + 1;
+        while (end < lines.Length && !lines[end].StartsWith("      - ", StringComparison.Ordinal))
+            end++;
+        return string.Join('\n', lines[start..end]);
+    }
+
+    private static string? StepField(string step, string field)
+    {
+        foreach (var line in step.Split('\n'))
+        {
+            var trimmed = line.TrimStart();
+            var prefix = $"{field}:";
+            if (trimmed.StartsWith(prefix, StringComparison.Ordinal))
+                return trimmed[prefix.Length..].Trim();
+        }
+        return null;
+    }
+
+    private static string Swap(string text, string first, string second) => text
+        .Replace(first, "__temporary_swap__", StringComparison.Ordinal)
+        .Replace(second, first, StringComparison.Ordinal)
+        .Replace("__temporary_swap__", second, StringComparison.Ordinal);
 
     private static string? JobField(string body, string field)
     {

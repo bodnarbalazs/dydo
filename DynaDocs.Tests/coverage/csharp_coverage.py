@@ -161,8 +161,16 @@ def _campaign_identity_paths(root, assembly_paths, identities):
     return [*paths, *(Path(root) / source for source in sorted(sources))]
 
 
-def _template_original_map(opencover, originals):
+def _altcover_aliases(aliases):
+    aliases = sorted(set(aliases))
+    saved = [(Path(alias).parent / "__Saved" / Path(alias).name).as_posix()
+             for alias in aliases]
+    return sorted(set([*aliases, *saved]))
+
+
+def _template_original_map(opencover, root, originals):
     """Bind each template token/signature pair to one staged original method."""
+    root = Path(root).resolve()
     modules = ET.fromstring(opencover).findall("./Modules/Module")
     result = {}
     for original in originals:
@@ -172,8 +180,13 @@ def _template_original_map(opencover, originals):
         if len(matching) != 1:
             raise ValueError(f"Missing or ambiguous template module: {facts['assembly_name']}")
         module = matching[0]
-        module_path = module.findtext("ModulePath")
-        if module_path not in aliases:
+        module_path = Path(module.findtext("ModulePath"))
+        module_path = module_path if module_path.is_absolute() else root / module_path
+        try:
+            report_alias = module_path.resolve().relative_to(root).as_posix()
+        except ValueError as error:
+            raise ValueError(f"Template module outside campaign root: {module_path}") from error
+        if report_alias not in _altcover_aliases(aliases):
             raise ValueError(f"Unknown template module alias: {module_path}")
         module_hash = module.attrib.get("hash", "").replace("-", "").lower()
         if module_hash != facts["sha1"].lower():
@@ -252,7 +265,7 @@ def run_campaign(root, result_root, extra_args=None):
     template = result_root / "template.opencover.xml"
     if not template.is_file():
         raise ValueError("AltCover prepare produced no template OpenCover report")
-    template_map = _template_original_map(template.read_text(encoding="utf-8-sig"), pre)
+    template_map = _template_original_map(template.read_text(encoding="utf-8-sig"), root, pre)
     (result_root / "template-original-map.json").write_text(
         json.dumps(template_map, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     instrumented = _identity_classes(root, producer, assembly_paths)
@@ -276,7 +289,7 @@ def run_campaign(root, result_root, extra_args=None):
     report = result_root / "coverage.opencover.xml"
     if not report.is_file():
         raise ValueError("AltCover runner produced no collected OpenCover report")
-    collected_map = _template_original_map(report.read_text(encoding="utf-8-sig"), pre)
+    collected_map = _template_original_map(report.read_text(encoding="utf-8-sig"), root, pre)
     if collected_map != template_map:
         raise ValueError("Collected report changed template MethodDef namespace")
     for path in assembly_paths:
@@ -299,7 +312,7 @@ def run_campaign(root, result_root, extra_args=None):
     normalized = {}
     for equivalence in pre:
         normalized[equivalence["facts"]["assembly_name"]] = coverage_methods(
-            xml, root, equivalence["facts"], equivalence["aliases"])
+            xml, root, equivalence["facts"], _altcover_aliases(equivalence["aliases"]))
     targets = []
     projects = [("dydo", root / "DynaDocs.csproj"),
                 ("GateMetrics", root / "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj")]

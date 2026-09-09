@@ -75,6 +75,7 @@ class CSharpCoverageTests(unittest.TestCase):
         self.assertFalse(_same_native_map(facts, changed_origin))
 
     def test_template_binds_original_tokens_despite_instrumented_renumbering(self):
+        root = Path.cwd()
         original = {"facts": {"assembly_name": "A", "sha1": "ab", "methods": [
             {"token": 1, "identity": "A::First()", "points": []},
             {"token": 2, "identity": "A::Second()", "points": []},
@@ -85,7 +86,10 @@ class CSharpCoverageTests(unittest.TestCase):
             <Method><MetadataToken>2</MetadataToken><Name>A::Second()</Name></Method>
             </Methods></Class></Classes></Module></Modules></CoverageSession>"""
         self.assertEqual({"bin/A.dll": {1: "A::First()", 2: "A::Second()"}},
-                         _template_original_map(template, [original]))
+                         _template_original_map(template, root, [original]))
+        saved = template.replace("bin/A.dll", str(root / "bin/__Saved/A.dll"))
+        self.assertEqual({"bin/A.dll": {1: "A::First()", 2: "A::Second()"}},
+                         _template_original_map(saved, root, [original]))
         before = {"assembly_name": "A", "module_id": "m", "pdb_sha256": "p",
                   "documents": {"C:/A.cs": "A.cs"}, "methods": [
                       {"token": 1, "identity": "A::First()", "key": "A::First()",
@@ -104,7 +108,7 @@ class CSharpCoverageTests(unittest.TestCase):
                                 ("<Method><MetadataToken>1</MetadataToken><Name>A::Other()</Name></Method>", "Template signature")):
             template = f"<CoverageSession><Modules><Module hash=\"ab\"><ModuleName>A</ModuleName><ModulePath>bin/A.dll</ModulePath><Classes><Class><Methods>{method}</Methods></Class></Classes></Module></Modules></CoverageSession>"
             with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
-                _template_original_map(template, [original])
+                    _template_original_map(template, Path.cwd(), [original])
         facts = {"assembly_name": "A", "sha256": "dll", "pdb_sha256": "pdb", "module_id": "m",
                  "documents": {"C:/A.cs": "A.cs"}, "methods": [{"token": 1, "identity": "A::First()",
                  "key": "A::First()", "points": [{"path": "A.cs", "origin": "maintained"}]}]}

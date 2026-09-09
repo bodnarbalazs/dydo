@@ -27,7 +27,8 @@ dydo init <integration>              # claude, codex, all, or none
 dydo init <integration> --join       # wire this machine, or an added runtime, into an existing project
 ```
 
-Writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents and
+Writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents, the flat
+`dydo/_system/templates/` local skill/resource inventory, and an enabled switch for every shipped skill, plus
 `files-off-limits.md`, updates
 `.gitignore`, and writes the `CLAUDE.md` entry point — plus `AGENTS.md` when `codex` is selected.
 `claude` and `codex` also install that runtime's `PreToolUse` hook, so every matched tool call reaches
@@ -46,16 +47,21 @@ Compile the authored skill templates into native Claude Code and Codex artifacts
 dydo sync
 ```
 
-Roles are discovered by enumerating `skill-<name>.template.md`: the shipped set.
+Roles are discovered from valid top-level `skill-<name>.template.md` files under
+`dydo/_system/templates/`. A new custom source is enabled by default when no switch exists; an
+existing true or false is retained. Sync fails when the local source layer is missing and never
+falls back to embedded templates.
 Frontmatter decides each artifact's shape — `emit: agent` (the default) produces an agent definition
 *and* a skill, `emit: skill` produces the skill alone, `read-only: true` withholds the editing tools,
 `delegates: true` grants the `Agent` tool, and `invocation: explicit` disables model invocation on
 both hosts. A role's `## Must-Reads` links become its agent's context list, links in the compiled body
-are rewritten to resolve from the emitted skill folder, `<role>-resource-<name>.template.md` files
+are rewritten to resolve from the emitted skill folder, `resource-<role>-resource-<name>.template.md` files
 compile into that skill's `resources/`.
 
-Only the integrations recorded in `dydo.json` are emitted; a project with neither recorded — `none`,
+Only enabled skills emit, and only to integrations recorded in `dydo.json`; a project with neither recorded — `none`,
 or a `dydo.json` from before integrations were recorded — emits for both hosts. Every run also deletes
+the exact recorded output shape for disabled, missing, or changed sources from both provider surfaces,
+including a currently deselected provider. Unrelated siblings are preserved. Every run also deletes
 outputs dydo no longer ships: retired workflows, resources retired by rename, and retired roles.
 Workflow cleanup removes only `.claude/workflows/run-sprint.js` and
 `.claude/workflows/inquisition.js`, even for a Codex-only project. Custom siblings and nested files
@@ -69,7 +75,7 @@ Change the source template and re-run this command; never hand-edit a compiled a
 
 ### dydo check
 
-Validate documentation naming, frontmatter, titles, links, hub and folder-meta coverage, orphans,
+Validate documentation naming, frontmatter, titles, links, and project-specific rules. It also validates
 the off-limits file, legacy FutureFeature shape under `project/future-features/`, retired v2 work records,
 uncustomized foundation docs (warning), and `dydo.json` itself; config errors count toward exit `1`.
 
@@ -89,7 +95,7 @@ dydo fix
 dydo fix <path>
 ```
 
-Repairs include filename normalization, wikilink conversion, index/meta maintenance, and restoration of
+Repairs include filename normalization, wikilink conversion, and restoration of
 required scan exclusions. Review the Git diff afterward.
 
 ### dydo index
@@ -152,7 +158,7 @@ wiring keeps resolving.
 
 ### dydo template update
 
-Refresh this project's framework-owned documents to the running dydo version.
+Refresh this project's framework-owned documents and shipped local template sources to the running dydo version.
 
 ```bash
 dydo template update
@@ -165,6 +171,11 @@ The framework documents in
 `dydo/reference/` and `dydo/guides/` are compared against the shipped set. An unmodified copy is
 overwritten. An edited framework document is left alone and reported instead. The run also tops up
 default nudges, scan exclusions, and frontmatter types. Warnings exit `1`.
+
+Every shipped skill/resource source is overwritten unconditionally, including a hard edit. Distinctly
+named custom sources are preserved. Removed shipped sources become switchboard tombstones for exact
+native cleanup. Update validates the intended post-operation catalog and collisions before changing
+anything; `--diff` runs that same preflight and reports the planned source and configuration changes.
 
 Durable customization belongs in the `{{include:...}}` fragments under
 `dydo/_system/template-additions/`, which this command never rewrites; other edits to framework-owned
@@ -183,6 +194,24 @@ dydo validate
 ```
 
 This validates dydo's local configuration. It does not validate or provision Linear.
+
+---
+
+## Testing Command
+
+### dydo gap-check
+
+Run the project-configured coverage gap check.
+
+```bash
+dydo gap-check
+dydo gap-check --force-run
+```
+
+The nearest `dydo.json` must contain `testing.runner`: a nonempty string array whose first item is
+the executable and whose remaining items are fixed arguments. `dydo gap-check` starts it directly in
+the configuration directory and appends every caller argument exactly as supplied. Its exit code is the
+runner's exit code; configuration, startup, and cancellation failures exit `2`.
 
 ---
 

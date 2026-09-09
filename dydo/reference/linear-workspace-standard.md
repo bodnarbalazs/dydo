@@ -76,8 +76,11 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Grilling` | map holder | any | A tree of intent or specification choices resolved with the human. | shared understanding recorded, with its Decision Records linked | `#D4A017` |
 | `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
-A captain-held Issue runs the chain [specifier] → [implementer] → [hardener] → [reviewer] on its own
-record or on its lanes; the captain decides, through its spec, which hops are empty. A map-holder-held Issue is run
+A captain-held Issue normally uses one author and one fresh independent whole-change reviewer for a
+small prompt or documentation change. A separate specifier or hardener needs one short concrete risk
+reason; persistence, migrations, permissions and uncertain native interfaces are examples needing
+stronger stages. Required G/M, integration and release gates remain. The captain records one compact
+acceptance contract and points to its evidence. A map-holder-held Issue is run
 directly by the admiral or captain whose map it clears; it receives no captain, branch, PR or review
 loop. `Task` names the captain-held Issue's role on a map; it is not a label.
 
@@ -121,7 +124,7 @@ files a `Question` only when judgment remains.
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
 | `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
-| captain-held default, subject to the Type exceptions | `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
+| captain-held default, subject to the Type exceptions | Small prompt/docs: `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`; stronger routes: `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
 | Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`; it merges, it is never merged |
 
 A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
@@ -176,6 +179,52 @@ required connector capability.
 | `Research` | `## Question` and `## Destination` for the cited report. |
 | `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
 | `Walkthrough` | `## What landed` (branch, SHA, final PASS), the four-part tour, `## Findings` as linked Issues. |
+
+## Communication and evidence
+
+Use metadata first: the current active contract and named evidence only. Keep the stable current
+contract and state in the description. Read comments only for a named missing fact or binding review;
+comments have no assumed order. Filter tool output before it enters model context.
+
+Keep existing historical originals accessible. Put new full raw proof and native gate logs once in a
+durable, linked Git or document artifact; do not dump them into PRs or comments. Each gate result
+names its candidate, command, environment or session, exit and result location. Before expensive tests,
+record cheap proof of repository or snapshot, intended selection and nonzero discovery; a quiet healthy
+test continues. Reuse exact-candidate evidence only when the gate and environment permit it, rerunning
+after relevant changes or new concerns and at mandatory integration or release boundaries. Issue-and-PR
+binding review stays compact but complete. Ordinary updates expose only counts, exits, failure excerpts,
+and an evidence link. Do not repeat contracts, hashes, full returns, passing-test name dumps, unchanged
+updates, or token, cost, or latency claims. Review gates stay where their workflows require.
+
+Start each post with the applicable form:
+
+- `PASS — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
+- `FAIL — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
+- `HARDENED — hop/candidate <SHA>; probes: <probes> → <outcomes>; gaps: <none or named gaps>; next: <action>; evidence: <link>.`
+- `SPECIFIED` or `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
+- `STATE — <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
+
+Brevity is soft: ordinary events aim for at most 800 characters, descriptions and state for at most
+1,500 characters or 12 lines. A necessary finding, gap, blocker, or evidence may exceed those aims;
+omit narration and repetition either way. A writer's successful delivery is never an independent
+`PASS`.
+
+### Truthful comment signatures
+
+Every agent-authored Linear comment identifies its acting role and truthful model identity. State the
+effective identity when trustworthy runtime information exposes it. Otherwise qualify a family or a
+requested/configured value; never infer an alias resolution, parent model, or effort. State effort
+only when it is known and useful. A captain relay preserves the original author or reviewer identity
+and distinguishes the captain's posting identity. The reviewer field in a reviewer block is its
+signature, so do not add a second or conflicting one. Historical comments stay untouched.
+
+Examples:
+
+- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
+- `PASS — rubric/type: docs; candidate <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
+- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
+- `STATE — Implementing; owner: implementer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
 
 ## Decision Records
 

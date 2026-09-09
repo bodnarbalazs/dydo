@@ -1,9 +1,7 @@
 namespace DynaDocs.Services;
 
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
-using DynaDocs.Serialization;
 
 public class ValidationService : IValidationService
 {
@@ -32,29 +30,16 @@ public class ValidationService : IValidationService
 
         try
         {
-            var json = File.ReadAllText(configPath);
-            var config = JsonSerializer.Deserialize(json, DydoConfigJsonContext.Default.DydoConfig);
-            if (config == null)
-            {
-                issues.Add(new ValidationIssue
-                {
-                    Severity = "error",
-                    File = "dydo.json",
-                    Message = "Failed to deserialize dydo.json."
-                });
-            }
-            else
-            {
-                ValidateNudges(config, issues);
-            }
+            var config = new ConfigService().LoadConfigStrict(basePath)!;
+            ValidateNudges(config, issues);
         }
-        catch (JsonException ex)
+        catch (InvalidDataException ex)
         {
             issues.Add(new ValidationIssue
             {
                 Severity = "error",
                 File = "dydo.json",
-                Message = $"Invalid JSON: {ex.Message}"
+                Message = ex.Message
             });
         }
     }

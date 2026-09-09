@@ -31,7 +31,7 @@ public static class CheckCommand
         try
         {
             var configService = new ConfigService();
-            var config = configService.LoadConfig();
+            var config = configService.LoadConfigStrict();
             var configHasErrors = ValidateConfig(config);
 
             var docsOutcome = ValidateDocs(path);

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 namespace DynaDocs.Tests.Integration;
 
@@ -12,6 +13,53 @@ using DynaDocs.Commands;
 [Collection("Integration")]
 public class InitCommandTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Join_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, stdout, stderr) = ConsoleCapture.All(() =>
+            InitCommand.ExecuteJoin("codex", () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        // Hook wiring and the integration report precede the commit seam.
+        AssertFileExists(".codex/hooks.json");
+        Assert.Contains("Codex hooks configured", stdout);
+        Assert.Contains("Recorded integration(s) in dydo.json: codex", stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Join_AlreadyRecordedIntegration_LeavesConfigBytesUntouched()
+    {
+        (await InitProjectAsync("codex")).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Recorded integration(s)", result.Stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    private static void AddLegacyModels(string configPath)
+    {
+        var raw = JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = JsonNode.Parse("""{"agents":{"reviewer":"strong"},"tiers":{"openai":{"strong":"legacy"}}}""");
+        raw["unrelated"] = JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+    }
+
     #region Init None
 
     [Fact]
@@ -126,18 +174,18 @@ public class InitCommandTests : IntegrationTestBase
             .Select(Path.GetFileName)
             .OrderBy(name => name)
             .ToArray();
-        Assert.Equal(new[] { "_future-features.md", "_index.md" }, futureFeatureFiles);
+        Assert.Equal(new[] { "_future-features.md" }, futureFeatureFiles);
 
         // Decisions folder - hub and meta
-        AssertFileExists("dydo/project/decisions/_index.md");
+        AssertFileNotExists("dydo/project/decisions/_index.md");
         AssertFileExists("dydo/project/decisions/_decisions.md");
 
         // Changelog folder - hub and meta
-        AssertFileExists("dydo/project/changelog/_index.md");
+        AssertFileNotExists("dydo/project/changelog/_index.md");
         AssertFileExists("dydo/project/changelog/_changelog.md");
 
         // Pitfalls folder - hub and meta
-        AssertFileExists("dydo/project/pitfalls/_index.md");
+        AssertFileNotExists("dydo/project/pitfalls/_index.md");
         AssertFileExists("dydo/project/pitfalls/_pitfalls.md");
     }
 

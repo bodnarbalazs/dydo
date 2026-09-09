@@ -7,6 +7,425 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateCommandTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Update_WarningsReturnNonzeroAndPreserveOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        UserEditFrameworkDoc(configPath);
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        Assert.NotEqual(0, result.ExitCode);
+        result.AssertStdoutContains("Template update complete:");
+        Assert.Contains("user-edited", result.Stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Update_DiffWithWarnings_ReturnsNonzeroWithoutSaving()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        UserEditFrameworkDoc(configPath);
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await RunTemplateUpdateAsync("--diff");
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("user-edited", result.Stderr);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Update_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, stdout, stderr) = ConsoleCapture.All(() =>
+            TemplateCommand.ExecuteUpdate(false, () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        // The complete tally is reported before the commit seam.
+        Assert.Contains("Template update complete:", stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    // Stores the framework hash of the first framework doc, then edits the doc: the next update
+    // sees a hash mismatch and warns "user-edited" instead of overwriting it.
+    private void UserEditFrameworkDoc(string configPath)
+    {
+        var relativePath = TemplateCommand.FrameworkDocFiles.First();
+        var docPath = Path.Combine(DydoDir, relativePath);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(docPath));
+        new ConfigService().SaveConfig(config, configPath);
+        File.AppendAllText(docPath, "\nUSER EDIT SENTINEL\n");
+    }
+
+    private static void AddLegacyModels(string configPath)
+    {
+        var raw = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = System.Text.Json.Nodes.JsonNode.Parse(
+            """{"agents":{"reviewer":"strong"},"tiers":{"anthropic":{"strong":"legacy"}}}""");
+        raw["unrelated"] = System.Text.Json.Nodes.JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+    }
+
+    public static IEnumerable<object[]> UnsupportedSourceShapes()
+    {
+        string[] names = ["Skill-ghost.template.md", "valid-Resource-ghost.template.md",
+            "skill-ghost.TEMPLATE.MD", "skill-ghost.Template.md", "skill-ghost.template.Md",
+            "valid-resource-ghost.TEMPLATE.MD", "valid-resource-ghost.Template.md",
+            "valid-resource-ghost.template.Md", "skill-ghost.template.md.bak",
+            "valid-resource-ghost.template.md.bak", "arbitrary.template.md", "README", ".hidden", "binary.dat"];
+        foreach (var name in names)
+        foreach (var directory in new[] { "", "nested/" })
+        foreach (var operation in new[] { "sync", "update", "preview" })
+            yield return [directory + name, operation];
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsupportedSourceShapes))]
+    public async Task SourceCommands_IgnoreUnsupportedShapesBeforeCheckingLocation(string name, string operation)
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var sources = Path.Combine(TestDir, "dydo/_system/templates");
+        File.WriteAllText(Path.Combine(sources, "skill-valid.template.md"),
+            "---\nname: valid\ndescription: Valid source.\nemit: agent\nargument-hint: context\n---\n\n# Valid body\n\n[Guide](resources/guide.md)\n");
+        File.WriteAllText(Path.Combine(sources, "resource-valid-resource-guide.template.md"), "# Valid resource\n");
+        (await RunAsync(SyncCommand.Create())).AssertSuccess();
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.True(config.Skills["valid"].Enabled);
+        Assert.Equal("custom", config.Skills["valid"].Origin);
+        Assert.True(config.Skills["valid"].EmitAgent);
+        Assert.True(config.Skills["valid"].CodexMetadata);
+        Assert.Equal(["guide"], config.Skills["valid"].Resources);
+        foreach (var provider in new[] { ".claude", ".agents" })
+        {
+            Assert.Contains("# Valid body", File.ReadAllText(Path.Combine(TestDir, provider, "skills/valid/SKILL.md")));
+            Assert.Equal("# Valid resource\n", File.ReadAllText(Path.Combine(TestDir, provider, "skills/valid/resources/guide.md")));
+        }
+        AssertFileExists(".claude/agents/valid.md");
+        AssertFileExists(".codex/agents/valid.toml");
+        AssertFileExists(".agents/skills/valid/agents/openai.yaml");
+        var path = Path.Combine(sources, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        // Invalid source content also proves that these files never enter source validation.
+        File.WriteAllBytes(path, [0xff, 0x00, 0x81]);
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(file => file, File.ReadAllBytes);
+
+        var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
+            : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+
+        result.AssertSuccess();
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
+    [InlineData("sync", false)]
+    [InlineData("update", false)]
+    [InlineData("preview", false)]
+    [InlineData("sync", true)]
+    [InlineData("update", true)]
+    [InlineData("preview", true)]
+    public async Task SourceCommands_RejectEmptyResourceOwnerAtomically(string operation, bool nested)
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var sources = Path.Combine(TestDir, "dydo/_system/templates");
+        File.WriteAllText(Path.Combine(sources, "skill-valid.template.md"),
+            "---\nname: valid\ndescription: Valid source.\nemit: skill\n---\n\n# Valid body\n");
+        (await RunAsync(SyncCommand.Create())).AssertSuccess();
+        Assert.True(new ConfigService().LoadConfigStrict(TestDir)!.Skills["valid"].Enabled);
+        foreach (var provider in new[] { ".claude", ".agents" })
+            Assert.Contains("# Valid body", File.ReadAllText(Path.Combine(TestDir, provider, "skills/valid/SKILL.md")));
+        if (operation != "sync")
+            (await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : [])).AssertSuccess();
+
+        var name = nested ? Path.Combine("nested", "resource--resource-ghost.template.md") : "resource--resource-ghost.template.md";
+        var path = Path.Combine(sources, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "# Empty-owner resource\n");
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(file => file, File.ReadAllBytes);
+
+        var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
+            : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains(name.Replace('\\', '/'), result.Stderr.Replace('\\', '/'), StringComparison.Ordinal);
+        Assert.Contains(nested ? "is nested; local templates must be top-level" : "invalid skill or resource name", result.Stderr);
+        if (nested)
+            Assert.DoesNotContain("invalid skill or resource name", result.Stderr);
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
+    [InlineData("nested/skill-ghost.template.md", "top-level")]
+    [InlineData("nested/resource-valid-resource-ghost.template.md", "top-level")]
+    [InlineData("skill-Bad.template.md", "invalid skill name")]
+    [InlineData("skill-bad-resource-name.template.md", "invalid skill name")]
+    [InlineData("skill-ghost.template.md", "frontmatter")]
+    [InlineData("resource-valid-resource-ghost.template.md", "no matching skill source")]
+    public async Task SourceCommands_RejectRecognizedInvalidSourcesAtomically(string name, string reason)
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        (await RunAsync(SyncCommand.Create())).AssertSuccess();
+        var path = Path.Combine(TestDir, "dydo/_system/templates", name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "Malformed recognized source");
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(file => file, File.ReadAllBytes);
+
+        foreach (var operation in new[] { "sync", "update", "preview" })
+        {
+            var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
+                : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains(Path.GetFileName(path), result.Stderr);
+            Assert.Contains(reason, result.Stderr);
+            Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+            Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TemplateUpdate_InvalidSourceHashPath_CannotClaimOtherProjectFiles(bool diff)
+    {
+        await InitProjectAsync();
+        var sentinel = Path.Combine(TestDir, "dydo/_system/project-owned.md");
+        File.WriteAllText(sentinel, "PROJECT OWNED SENTINEL");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes["_system/templates/../project-owned.md"] = new string('0', 64);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(path => path, File.ReadAllBytes);
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        result.AssertStderrContains("_system/templates/../project-owned.md");
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TemplateUpdate_UntrackedPackagedResourceCollision_IsAtomic(bool diff)
+    {
+        await InitProjectAsync();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes.Remove("_system/templates/resource-reviewer-resource-code.template.md");
+        config.Skills["reviewer"].Resources!.Remove("code");
+        new ConfigService().SaveConfig(config, configPath);
+        File.WriteAllText(Path.Combine(TestDir, "dydo/_system/templates/resource-reviewer-resource-code.template.md"),
+            "CUSTOM RESOURCE SENTINEL — preserve exactly");
+        var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
+            .ToDictionary(path => path, File.ReadAllBytes);
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        result.AssertStderrContains("resource-reviewer-resource-code.template.md");
+        Assert.Contains("collides", result.Stderr);
+        Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
+        Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
+    }
+
+    [Theory]
+    [InlineData("skill-reviewer.template.md")]
+    [InlineData("resource-reviewer-resource-code.template.md")]
+    public async Task TemplateUpdate_MissingSourceHash_ReportsPreviewAndAppliedReconciliation(string file)
+    {
+        await InitProjectAsync();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var sourcePath = Path.Combine(TestDir, "dydo", "_system", "templates", file);
+        var sourceBefore = File.ReadAllBytes(sourcePath);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.FrameworkHashes.Remove($"_system/templates/{file}");
+        new ConfigService().SaveConfig(config, configPath);
+        var before = File.ReadAllBytes(configPath);
+
+        var preview = await RunTemplateUpdateAsync("--diff");
+
+        preview.AssertSuccess();
+        preview.AssertStdoutContains($"Reconciled source hash: _system/templates/{file}");
+        Assert.Equal(before, File.ReadAllBytes(configPath));
+        Assert.Equal(sourceBefore, File.ReadAllBytes(sourcePath));
+
+        var update = await RunTemplateUpdateAsync();
+
+        update.AssertSuccess();
+        update.AssertStdoutContains($"Reconciled source hash: _system/templates/{file}");
+        var expectedHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(File.ReadAllText(sourcePath).Replace("\r\n", "\n")))).ToLowerInvariant();
+        Assert.Equal(expectedHash,
+            new ConfigService().LoadConfigStrict(TestDir)!.FrameworkHashes[$"_system/templates/{file}"]);
+        Assert.Equal(sourceBefore, File.ReadAllBytes(sourcePath));
+        var after = File.ReadAllBytes(configPath);
+        var repeated = await RunTemplateUpdateAsync();
+        repeated.AssertSuccess();
+        Assert.DoesNotContain("Reconciled source hash:", repeated.Stdout);
+        Assert.Equal(after, File.ReadAllBytes(configPath));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_OverwritesShippedSourceButPreservesDistinctCustomSource()
+    {
+        await InitProjectAsync();
+        var root = Path.Combine(TestDir, "dydo", "_system", "templates");
+        var shipped = Path.Combine(root, "skill-reviewer.template.md");
+        var custom = Path.Combine(root, "skill-our-review.template.md");
+        File.WriteAllText(shipped, "broken hard edit");
+        var customContent = "---\nname: our-review\ndescription: Our review.\nemit: skill\ninvocation: automatic\n---\n\n# Our Review\n";
+        File.WriteAllText(custom, customContent);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.Equal(TemplateGenerator.ReadBuiltInTemplate("skill-reviewer.template.md"), File.ReadAllText(shipped));
+        Assert.Equal(customContent, File.ReadAllText(custom));
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.Equal("custom", config.Skills["our-review"].Origin);
+        Assert.True(config.Skills["our-review"].Enabled);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_MigratesProjectWithoutLocalSourceLayer()
+    {
+        await InitProjectAsync();
+        Directory.Delete(Path.Combine(TestDir, "dydo", "_system", "templates"), true);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.Skills.Clear();
+        foreach (var key in config.FrameworkHashes.Keys.Where(key => key.StartsWith("_system/templates/", StringComparison.Ordinal)).ToList())
+            config.FrameworkHashes.Remove(key);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        AssertFileExists("dydo/_system/templates/skill-reviewer.template.md");
+        var migrated = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.NotEmpty(migrated.Skills);
+        Assert.Contains("_system/templates/", migrated.ScanExclude);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_DiffPreflightsSourcesWithoutWriting()
+    {
+        await InitProjectAsync();
+        var root = Path.Combine(TestDir, "dydo", "_system", "templates");
+        var shipped = Path.Combine(root, "skill-reviewer.template.md");
+        File.WriteAllText(shipped, "broken hard edit");
+        var configBefore = File.ReadAllText(Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync("--diff");
+
+        result.AssertSuccess();
+        Assert.Equal("broken hard edit", File.ReadAllText(shipped));
+        Assert.Equal(configBefore, File.ReadAllText(Path.Combine(TestDir, "dydo.json")));
+        result.AssertStdoutContains("Updated source: _system/templates/skill-reviewer.template.md");
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_RemovesRetiredShippedSourceAndKeepsCleanupTombstone()
+    {
+        await InitProjectAsync();
+        var source = Path.Combine(TestDir, "dydo", "_system", "templates", "skill-former.template.md");
+        File.WriteAllText(source,
+            "---\nname: former\ndescription: Former shipped skill.\nemit: skill\ninvocation: automatic\n---\n\n# Former\n");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.Skills["former"] = new SkillSwitchConfig
+        {
+            Enabled = false,
+            Origin = "shipped",
+            EmitAgent = false,
+            CodexMetadata = false,
+            Resources = []
+        };
+        config.FrameworkHashes["_system/templates/skill-former.template.md"] = new string('0', 64);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(source));
+        var updated = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.True(updated.Skills.TryGetValue("former", out var tombstone));
+        Assert.False(tombstone.Enabled);
+        Assert.Equal("shipped", tombstone.Origin);
+        Assert.False(updated.FrameworkHashes.ContainsKey("_system/templates/skill-former.template.md"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TemplateUpdate_RejectsUntrackedSourceAtRetiredShippedNameWithoutDeletingIt(bool diff)
+    {
+        await InitProjectAsync();
+        var source = Path.Combine(TestDir, "dydo", "_system", "templates", "skill-former.template.md");
+        var customContent =
+            "---\nname: former\ndescription: Custom replacement.\nemit: skill\ninvocation: automatic\n---\n\n# Custom replacement\n";
+        File.WriteAllText(source, customContent);
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.Skills["former"] = new SkillSwitchConfig
+        {
+            Enabled = true,
+            Origin = "shipped",
+            EmitAgent = false,
+            CodexMetadata = false,
+            Resources = []
+        };
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+        var configBefore = File.ReadAllText(Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("retired", result.Stderr, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(customContent, File.ReadAllText(source));
+        Assert.Equal(configBefore, File.ReadAllText(Path.Combine(TestDir, "dydo.json")));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TemplateUpdate_IgnoresLockedAgentWorkspaceEvidence(bool diff)
+    {
+        await InitProjectAsync();
+        var workspace = Path.Combine(TestDir, "dydo", "agents", "workspace");
+        Directory.CreateDirectory(workspace);
+        var evidence = Path.Combine(workspace, "active-agent-evidence.bin");
+        await File.WriteAllTextAsync(evidence, "volatile evidence");
+        await using var locked = new FileStream(evidence, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        var result = await RunTemplateUpdateAsync(diff ? ["--diff"] : []);
+
+        result.AssertSuccess();
+        locked.Position = 0;
+        using var reader = new StreamReader(locked, leaveOpen: true);
+        Assert.Equal("volatile evidence", await reader.ReadToEndAsync());
+    }
+
     private async Task<CommandResult> RunTemplateUpdateAsync(params string[] extraArgs)
     {
         var command = TemplateCommand.Create();

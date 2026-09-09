@@ -12,6 +12,31 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateScaffoldingTests : IntegrationTestBase
 {
+    [Theory]
+    [InlineData("none")]
+    [InlineData("claude")]
+    [InlineData("codex")]
+    [InlineData("all")]
+    public async Task Init_ScaffoldsLocalTemplateInventoryAndEnabledSwitchboard(string integration)
+    {
+        await InitProjectAsync(integration);
+
+        var names = TemplateGenerator.GetAllTemplateNames();
+        Assert.All(names, name => AssertFileExists($"dydo/_system/templates/{name}"));
+
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        Assert.Equal(
+            names.Count(name => name.StartsWith("skill-", StringComparison.Ordinal)),
+            config.Skills.Count);
+        Assert.All(config.Skills, entry =>
+        {
+            Assert.True(entry.Value.Enabled);
+            Assert.Equal("shipped", entry.Value.Origin);
+            Assert.True(config.FrameworkHashes.ContainsKey($"_system/templates/skill-{entry.Key}.template.md"));
+        });
+        Assert.Contains("_system/templates/", config.ScanExclude);
+    }
+
     [Fact]
     public void GetAllTemplateNames_ReturnsExpectedTemplates()
     {
@@ -23,10 +48,10 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         Assert.Contains("skill-specifier.template.md", templateNames);
         Assert.Contains("skill-to-project.template.md", templateNames);
         Assert.Contains("skill-wizard.template.md", templateNames);
-        Assert.Contains("specifier-resource-bug.template.md", templateNames);
-        Assert.Contains("specifier-resource-merge.template.md", templateNames);
-        Assert.Contains("specifier-resource-inquisition.template.md", templateNames);
-        Assert.Contains("wizard-resource-template.template.md", templateNames);
+        Assert.Contains("resource-specifier-resource-bug.template.md", templateNames);
+        Assert.Contains("resource-specifier-resource-merge.template.md", templateNames);
+        Assert.Contains("resource-specifier-resource-inquisition.template.md", templateNames);
+        Assert.Contains("resource-wizard-resource-template.template.md", templateNames);
         Assert.Contains("skill-chief-of-staff.template.md", templateNames);
         Assert.Contains("skill-inquisitor.template.md", templateNames);
         Assert.Contains("skill-self-improvement.template.md", templateNames);
@@ -39,8 +64,8 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         // The inventory is every skill template plus every skill resource
         // template (<skill>-resource-<name>.template.md). A hard-coded count would freeze the
         // inventory the DR 045 taxonomy is about to change.
-        Assert.Contains("reviewer-resource-project-plan.template.md", templateNames);
-        Assert.Contains("reviewer-resource-spec.template.md", templateNames);
+        Assert.Contains("resource-reviewer-resource-project-plan.template.md", templateNames);
+        Assert.Contains("resource-reviewer-resource-spec.template.md", templateNames);
         Assert.DoesNotContain("reviewer-resource-plan.template.md", templateNames);
         Assert.Equal(ShippedTemplateNames(), templateNames.OrderBy(n => n, StringComparer.Ordinal));
     }

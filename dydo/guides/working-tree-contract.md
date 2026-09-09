@@ -43,8 +43,8 @@ provide the Issue worktree; otherwise place it beside the repository at
 | Stage | Owner | Required state |
 |---|---|---|
 | Open the Project | `admiral`, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
-| Claim the Issue | `issue-captain` | Issue is assigned; the captain sets `Specifying` when spawning its specifier; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. |
-| Resolve the work | `issue-captain` | The parent spec names the lanes and empty hops; the spec and plan make the contract exact and work mechanical; parallel workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
+| Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Specifying` only when its risk-scaled route uses a specifier. |
+| Resolve the work | `issue-captain` | A small prompt/docs change uses its compact acceptance contract; a stronger route's parent spec makes the work mechanical and names lanes and empty hops. Parallel workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | workers | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `specify`, `implement`, `harden` or `fix`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
@@ -63,8 +63,30 @@ on that work item instead of working around a failure:
 4. The worktree is clean.
 5. The work item owns every path named in its plan.
 
+## Delivery scale and evidence
+
+For a small prompt or documentation change, use one author and one fresh independent whole-change
+reviewer. Add specification review or a separate hardener only when one short, concrete risk reason
+calls for it; persistence, migrations, permissions and uncertain native interfaces are examples that
+need stronger stages. Keep one compact acceptance contract and point to evidence rather than copying
+it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
+proof is never runtime proof.
+
+Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
+discovery. Record every gate result with candidate, command, environment or session, exit and result
+location; do not interrupt a quiet healthy test merely because it is silent. Reuse exact-candidate
+evidence only where the gate and environment permit it, rerunning after relevant changes or new
+concerns and at distinct mandatory integration or release boundaries. Validate uncertain native
+interface shapes early.
+
 ## Delegation
 
+- The Admiral budgets open native capacity before commissioning or resuming a captain. The captain alone
+  commissions exact-scope crew, budgets that capacity and preserves fresh specifier and reviewer
+  obligations. A saved brief is not Admiral-to-crew authority.
+- On a bounded refusal, preserve the record, candidate, hop SHA and exact brief; do not broaden it or
+  retry blindly. Use established lifecycle handling, then return or release the concrete limitation
+  when captain-owned work cannot run. Record only observed native evidence.
 - Workers inherit the relevant Issue or Sub-issue contract, owned paths and gates, and commit their
   own hop. Ordinary workers do not create its branch, open its PR, merge it or review their own
    work. A captain-directed Merge implementer performs the specified merge and conflict resolutions;
@@ -112,7 +134,7 @@ its blocker do not exist yet; this release return is the admiral's ordinary wake
 
 On that wake, before generic pickable commissioning, the admiral uses the packet to contract a
 separate primary `Feature` / `AFK` record-delivery Issue from the retained feature branch. Its ownership names the exact
-`dydo/project/inquisitions/` record file and each required generated hub individually. Its own
+`dydo/project/inquisitions/` record file and exact authored navigation paths only when the record-delivery Issue contract requires them. Its own
 captain directs the ordinary specification, docs-writer, docs review and final Merge Sub-issue
 into the feature. Audit and proof branches never merge.
 

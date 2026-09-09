@@ -1,5 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
+using System.Text.RegularExpressions;
+
 public class UpstreamSkillSourceTests
 {
     private const string UpstreamCommit = "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76";
@@ -10,6 +12,24 @@ public class UpstreamSkillSourceTests
     // DR 045 section 9's explicit-only list, narrowed to the skills this file covers. Every other
     // invocation value belongs to the source that authors it, so it is validated, not pinned.
     private static readonly string[] ExplicitOnlySkills = ["grill-me", "bro"];
+
+    private static readonly (string Old, string New)[] ResourceNoticeCitations =
+    [
+        ("Templates/reviewer-resource-code.template.md", "Templates/resource-reviewer-resource-code.template.md"),
+        ("Templates/codebase-design-resource-deepening.template.md", "Templates/resource-codebase-design-resource-deepening.template.md"),
+        ("Templates/codebase-design-resource-design-it-twice.template.md", "Templates/resource-codebase-design-resource-design-it-twice.template.md"),
+        ("Templates/improve-codebase-architecture-resource-html-report.template.md", "Templates/resource-improve-codebase-architecture-resource-html-report.template.md"),
+        ("Templates/prototype-resource-logic.template.md", "Templates/resource-prototype-resource-logic.template.md"),
+        ("Templates/prototype-resource-ui.template.md", "Templates/resource-prototype-resource-ui.template.md"),
+        ("Templates/implementer-resource-tests.template.md", "Templates/resource-implementer-resource-tests.template.md"),
+        ("Templates/implementer-resource-mocking.template.md", "Templates/resource-implementer-resource-mocking.template.md"),
+        ("Templates/teach-resource-mission-format.template.md", "Templates/resource-teach-resource-mission-format.template.md"),
+        ("Templates/teach-resource-glossary-format.template.md", "Templates/resource-teach-resource-glossary-format.template.md"),
+        ("Templates/teach-resource-learning-record-format.template.md", "Templates/resource-teach-resource-learning-record-format.template.md"),
+        ("Templates/teach-resource-resources-format.template.md", "Templates/resource-teach-resource-resources-format.template.md"),
+        ("Templates/wizard-resource-template.template.md", "Templates/resource-wizard-resource-template.template.md"),
+        ("Templates/writing-for-agents-resource-skill-mechanics.template.md", "Templates/resource-writing-for-agents-resource-skill-mechanics.template.md")
+    ];
 
     // The invocation metadata is a routing contract, not prose: a skill with a missing or invalid
     // value routes by accident. Which model-invoked skills exist is the taxonomy's business; that
@@ -100,6 +120,25 @@ public class UpstreamSkillSourceTests
 
         var npmPackage = Normalize(File.ReadAllText(Path.Combine(root, "npm", "package.json")));
         Assert.Contains("\"THIRD-PARTY-NOTICES.md\"", npmPackage);
+
+        AssertNoticeSources(root, rootNotice);
+        AssertNoticeSources(root, npmNotice);
+    }
+
+    private static void AssertNoticeSources(string root, string notice)
+    {
+        var sources = Regex.Matches(notice, @"`(Templates/[^`]+)`")
+            .Select(match => match.Groups[1].Value)
+            .ToArray();
+
+        Assert.NotEmpty(sources);
+        Assert.All(sources, source => Assert.True(File.Exists(Path.Combine(root, source.Replace('/', Path.DirectorySeparatorChar))),
+            $"notice cites missing source '{source}'"));
+        foreach (var (oldPath, newPath) in ResourceNoticeCitations)
+        {
+            Assert.DoesNotContain(oldPath, sources, StringComparer.Ordinal);
+            Assert.Contains(newPath, sources, StringComparer.Ordinal);
+        }
     }
 
     private static string ReadTemplate(string skill) => Normalize(File.ReadAllText(Path.Combine(

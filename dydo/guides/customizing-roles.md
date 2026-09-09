@@ -5,10 +5,12 @@ type: guide
 
 # Customizing Roles
 
-The skill template is the role. One `skill-<name>.template.md` carries the metadata in its frontmatter
+The skill template is the role. One flat `dydo/_system/templates/skill-<name>.template.md` carries the metadata in its frontmatter
 and the whole methodology in its body; `dydo sync` compiles it into a skill on every host and, when the
-frontmatter asks for one, a spawnable agent. Compiled output is a build product: fix the template and
-sync again.
+frontmatter asks for one, a spawnable agent. Compiled output is a build product: fix a distinctly
+named custom source and sync again. Shipped source copies are replaced by `dydo template update`;
+extend shipped methods through `dydo/_system/template-additions/` or a project document linked under
+`## Must-Reads`.
 
 ---
 
@@ -22,7 +24,7 @@ sync again.
 | `read-only` | `true` | The compiled agent assesses and reports; it gets no editing tools. |
 | `delegates` | `true` | The role may spawn sub-agents: issue-captain directs a crew and Research sends scouts. Other workers do their own work. |
 | `web` | `true` | Grants Claude WebFetch/WebSearch and Codex `web_search = "live"`. |
-| `argument-hint` | one quoted line | Claude argument-hint and Codex interface.default_prompt. |
+| `argument-hint` | one quoted line | Claude argument-hint and Codex `agents/openai.yaml` `interface.default_prompt`. |
 | `invocation` | `automatic` \| `explicit` | `explicit` puts the skill out of every model's reach: only the human, by name. Any other value fails the sync. |
 
 `automatic` buys discovery — the model can fire on the description, and other skills can reach the role —
@@ -41,7 +43,7 @@ taxonomy. An `emit: agent` role stays `automatic`: an agent's preload cannot rea
 | no `delegates: true` | no `Agent` tool | final `[agents]` table with `enabled = false` and no `max_depth` |
 | `web: true` | `WebFetch` and `WebSearch` tools | top-level `web_search = "live"` |
 | `invocation: explicit` | `disable-model-invocation: true` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` |
-| a shipped `<role>-resource-<n>.template.md` | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
+| a shipped `resource-<role>-resource-<n>.template.md` | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
 
 Codex's generated agent files express the V1 configuration shape. A role without `web: true`
 omits `web_search`, leaving the host setting inherited rather than denying it. Codex V2 may
@@ -57,30 +59,32 @@ spawned agent's context block. Write each target as the document's path under `d
 the compiler normalizes both. Close the list with `{{include:extra-must-reads}}` so a project can add its
 own without editing framework text.
 
-**Resources** — a `<role>-resource-<name>.template.md` is a role's own reference behind a file
+**Resources** — a `resource-<role>-resource-<name>.template.md` is a role's own reference behind a file
 boundary, read only by the branches that need it. A shipped role's body links it as
 `resources/<name>.md`, and the compiler rewrites that to the host's emitted path so even a preloaded
-agent can read it. The set is the one dydo ships: a resource name dydo does not ship is never
-discovered — sync
-emits nothing, and a body link to it compiles into a path that does not exist. A custom role's own
-reference therefore goes in a `dydo/` document listed under its Must-Reads, and so does reference that
-several roles share, unless it earns a model-invoked method skill of its own.
+agent can read it. Shipped roles may use only resources shipped by the running executable. A
+distinctly named custom role may own custom resources in the same flat local source directory. Every
+resource source must be linked as `resources/<name>.md`, and every such link must resolve; orphan or
+missing resources fail preflight.
 
 **Includes** — `{{include:<name>}}` pulls in `dydo/_system/template-additions/<name>.md` at the hook,
 which keeps project-specific guidance out of framework text. The
 [template pipeline](../understand/templates-and-customization.md) covers the available hooks.
 
-## Model tier
+## Choosing a model for a task
 
-`models.agents` in `dydo.json` binds an agent to a tier and `models.tiers` binds a tier to one concrete
-model per vendor, so a role never names a model. A role with no binding compiles `model: inherit` on
-Claude — the session's model, never a silent downgrade — and a built-in default model on Codex. See the
-[configuration reference](../reference/configuration.md).
+Nothing in a template or in `dydo.json` binds a role to a model or an effort. Every compiled role
+is left unbound on purpose, so whoever delegates picks the capability the task in front of them
+deserves; the shipped `admiral` and `issue-captain` methods carry that judgment.
 
-DR 047 uses `standard` for implementer, docs-writer, Research and scout; `strong` for reviewer,
-specifier, hardener, issue-captain, project-planner and inquisitor. `light` remains defined but
-unbound. Effort stays at host defaults. Final consolidation verifies model fallback and native
-delegation/permissions after compiler setup; generated configuration alone is not a runtime proof.
+Select at the call, not in a file:
+
+- **Claude Code** — pass `model` on the Agent call that spawns the role. Effort belongs to the
+  session, so open the session at the effort the work needs.
+- **Codex** — pass the model and a reasoning effort that model supports, together, on the spawn.
+
+The [configuration reference](../reference/configuration.md) carries each host's full resolution
+order and the limits worth knowing before a claim rests on one.
 
 ## What is gone
 
@@ -98,7 +102,7 @@ custom siblings and nested files. The Inquisition Issue protocol supplies the cu
 ## Related
 
 - [Templates and Customization](../understand/templates-and-customization.md) — the template pipeline end to end
-- [Configuration Reference](../reference/configuration.md) — `models.agents`, hashes, nudges
+- [Configuration Reference](../reference/configuration.md) — dispatch-time model and effort, hashes, nudges
 - [dydo Commands Reference](../reference/dydo-commands.md) — `dydo sync`, `dydo template update`
 - [dydo Glossary](../reference/dydo-glossary.md) — hat, worker, method, and the retired terms
 - [Orientation](../index.md) — the shipped taxonomy and what each role is reached for

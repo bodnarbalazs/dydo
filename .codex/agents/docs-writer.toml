@@ -1,6 +1,5 @@
 name = "docs-writer"
 description = "Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Issue Captain."
-model = "gpt-5.6-terra"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

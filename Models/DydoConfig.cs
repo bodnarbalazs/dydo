@@ -16,12 +16,8 @@ public class DydoConfig
     [JsonPropertyName("integrations")]
     public Dictionary<string, bool> Integrations { get; set; } = new();
 
-    /// <summary>
-    /// Model-tier bindings (Decision 028). Null when the section is absent —
-    /// every generated agent then inherits the session model.
-    /// </summary>
-    [JsonPropertyName("models")]
-    public ModelsConfig? Models { get; set; }
+    [JsonPropertyName("skills")]
+    public Dictionary<string, SkillSwitchConfig> Skills { get; set; } = new();
 
     [JsonPropertyName("scanExclude")]
     public List<string> ScanExclude { get; set; } = new();
@@ -31,4 +27,8 @@ public class DydoConfig
 
     [JsonPropertyName("frameworkHashes")]
     public Dictionary<string, string> FrameworkHashes { get; set; } = new();
+
+    [JsonPropertyName("testing")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TestingConfig? Testing { get; set; }
 }

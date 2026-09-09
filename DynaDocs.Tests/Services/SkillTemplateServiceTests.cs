@@ -6,6 +6,249 @@ using DynaDocs.Utils;
 
 public class SkillTemplateServiceTests
 {
+    [Fact]
+    public void DiscoverLocalCatalog_AcceptsMinimalCustomSwitchAndReconcilesGeneratedShape()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-my-tool.template.md"),
+            "---\nname: my-tool\ndescription: My local tool.\nemit: skill\ninvocation: explicit\n---\n\n# My Tool\n");
+        var config = new DynaDocs.Models.DydoConfig
+        {
+            Skills = new Dictionary<string, DynaDocs.Models.SkillSwitchConfig>
+            {
+                ["my-tool"] = new() { Enabled = true }
+            }
+        };
+
+        try
+        {
+            var catalog = SkillTemplateService.DiscoverLocalCatalog(root, config);
+
+            Assert.Single(catalog);
+            Assert.Equal("custom", config.Skills["my-tool"].Origin);
+            Assert.False(config.Skills["my-tool"].EmitAgent);
+            Assert.True(config.Skills["my-tool"].CodexMetadata);
+            Assert.NotNull(config.Skills["my-tool"].Resources);
+            Assert.Empty(config.Skills["my-tool"].Resources!);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void DiscoverLocalCatalog_AcceptsMustReadFragmentWithoutChangingItsAuthoredLink()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        var sourcePath = Path.Combine(sourceRoot, "skill-my-tool.template.md");
+        var source = "---\nname: my-tool\ndescription: My local tool.\nemit: skill\n---\n\n# My Tool\n\n## Must-Reads\n\n- [Guide](../../../guides/guide.md#details)\n";
+        Directory.CreateDirectory(sourceRoot);
+        Directory.CreateDirectory(Path.Combine(root, "dydo", "guides"));
+        File.WriteAllText(sourcePath, source);
+        File.WriteAllText(Path.Combine(root, "dydo", "guides", "guide.md"), "# Guide\n\n## Details\n");
+
+        try
+        {
+            var catalog = SkillTemplateService.DiscoverLocalCatalog(root, new DynaDocs.Models.DydoConfig());
+
+            Assert.Single(catalog);
+            Assert.Equal(source, File.ReadAllText(sourcePath));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Theory]
+    [InlineData("../../../guides/missing.md#details", "missing")]
+    [InlineData("../../../../outside.md#details", "outside")]
+    public void DiscoverLocalCatalog_FragmentDoesNotBypassMustReadBoundary(string target, string diagnostic)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-my-tool.template.md"),
+            $"---\nname: my-tool\ndescription: My local tool.\nemit: skill\n---\n\n# My Tool\n\n## Must-Reads\n\n- [Guide]({target})\n");
+
+        try
+        {
+            var error = Assert.Throws<InvalidDataException>(
+                () => SkillTemplateService.DiscoverLocalCatalog(root, new DynaDocs.Models.DydoConfig()));
+
+            Assert.Contains(target, error.Message);
+            Assert.Contains(diagnostic, error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void DiscoverLocalCatalog_RejectsOrphanResourceAndLeavesSwitchboardUnchanged()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "resource-missing-resource-help.template.md"), "help");
+        var config = new DynaDocs.Models.DydoConfig();
+
+        try
+        {
+            var error = Assert.Throws<InvalidDataException>(
+                () => SkillTemplateService.DiscoverLocalCatalog(root, config));
+
+            Assert.Contains("resource-missing-resource-help.template.md", error.Message);
+            Assert.Empty(config.Skills);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void DiscoverLocalCatalog_DiagnosesAnEvidenceIdentifiedLegacyResourceWithoutReadingItsBytes()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-notes.template.md"),
+            "---\nname: notes\ndescription: Notes.\nemit: skill\n---\n\n# Notes\n\n[Guide](resources/guide.md)\n");
+        File.WriteAllBytes(Path.Combine(sourceRoot, "notes-resource-guide.template.md"), [0xff, 0x00, 0x81]);
+
+        try
+        {
+            var error = Assert.Throws<InvalidDataException>(
+                () => SkillTemplateService.DiscoverLocalCatalog(root, new DynaDocs.Models.DydoConfig()));
+
+            Assert.Contains("notes-resource-guide.template.md", error.Message);
+            Assert.Contains("resource-notes-resource-guide.template.md", error.Message);
+            Assert.Contains("template update", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("frontmatter", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void DiscoverLocalCatalog_PriorProvenanceMakesAProtectedLegacyFilenameDiagnostic()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllBytes(Path.Combine(sourceRoot, "skill-owner-resource-guide.template.md"), [0xff, 0x00, 0x81]);
+        var config = new DynaDocs.Models.DydoConfig
+        {
+            Skills = new Dictionary<string, DynaDocs.Models.SkillSwitchConfig>
+            {
+                ["skill-owner"] = new()
+                {
+                    Enabled = true,
+                    Origin = "custom",
+                    EmitAgent = false,
+                    CodexMetadata = false,
+                    Resources = ["guide"]
+                }
+            }
+        };
+
+        try
+        {
+            var error = Assert.Throws<InvalidDataException>(
+                () => SkillTemplateService.DiscoverLocalCatalog(root, config));
+
+            Assert.Contains("skill-owner-resource-guide.template.md", error.Message);
+            Assert.Contains("resource-skill-owner-resource-guide.template.md", error.Message);
+            Assert.DoesNotContain("invalid skill name", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("frontmatter", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void DiscoverLocalCatalog_DiagnosesAmbiguousCanonicalPathWhenItIsPriorLegacyOwnership()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-notes.template.md"),
+            "---\nname: notes\ndescription: Notes.\nemit: skill\n---\n\n# Notes\n\n[Guide](resources/guide.md)\n");
+        File.WriteAllBytes(Path.Combine(sourceRoot, "resource-notes-resource-guide.template.md"), [0xff, 0x00, 0x81]);
+        var config = new DynaDocs.Models.DydoConfig
+        {
+            Skills = new Dictionary<string, DynaDocs.Models.SkillSwitchConfig>
+            {
+                ["resource-notes"] = new()
+                {
+                    Enabled = true,
+                    Origin = "custom",
+                    EmitAgent = false,
+                    CodexMetadata = false,
+                    Resources = ["guide"]
+                }
+            }
+        };
+
+        try
+        {
+            var error = Assert.Throws<InvalidDataException>(
+                () => SkillTemplateService.DiscoverLocalCatalog(root, config));
+
+            Assert.Contains("resource-notes-resource-guide.template.md", error.Message);
+            Assert.Contains("resource-resource-notes-resource-guide.template.md", error.Message);
+            Assert.Contains("ambiguous", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("frontmatter", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void DiscoverLocalCatalog_KeepsCanonicalSkillAndResourceNamesDisjoint()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-skill.template.md"),
+            "---\nname: skill\ndescription: Skill.\nemit: skill\n---\n\n# Skill\n\n[Guide](resources/guide.md)\n");
+        File.WriteAllText(Path.Combine(sourceRoot, "resource-skill-resource-guide.template.md"), "skill guide\n");
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-resource-guide.template.md"),
+            "---\nname: resource-guide\ndescription: Resource guide.\nemit: skill\n---\n\n# Resource Guide\n\n[Guide](resources/guide.md)\n");
+        File.WriteAllText(Path.Combine(sourceRoot, "resource-resource-guide-resource-guide.template.md"), "resource-guide guide\n");
+        var config = new DynaDocs.Models.DydoConfig();
+
+        try
+        {
+            var catalog = SkillTemplateService.DiscoverLocalCatalog(root, config)
+                .ToDictionary(skill => skill.Name, StringComparer.Ordinal);
+
+            Assert.Equal(["resource-guide", "skill"], catalog.Keys.Order(StringComparer.Ordinal));
+            Assert.Equal(["guide"], config.Skills["skill"].Resources);
+            Assert.Equal(["guide"], config.Skills["resource-guide"].Resources);
+            Assert.Equal("skill guide\n", File.ReadAllText(
+                Path.Combine(sourceRoot, "resource-skill-resource-guide.template.md")));
+            Assert.Equal("resource-guide guide\n", File.ReadAllText(
+                Path.Combine(sourceRoot, "resource-resource-guide-resource-guide.template.md")));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     #region DiscoverSkills
 
     [Fact]

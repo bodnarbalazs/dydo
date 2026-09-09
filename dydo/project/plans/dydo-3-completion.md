@@ -342,3 +342,10 @@ The retained evidence is
 `dydo/_system/.local/completion-route-rereview/review.md`, SHA-256
 `61A20F71D15488C02B12B0BB0758684F023D18E17FFB7F03693099A6DEA8C314`; the corresponding Linear
 Project review comment is `e4407b08-6299-458c-ab45-6d959f9c0b0f`.
+
+## DYD-118 amendment — 2026-09-09
+
+DYD-118 operates from `fddaec54ad73fde6cf7d2fcc58ffd72951be21ab`. Its owned refresh is limited to
+`DynaDocs.csproj`, `npm/package.json`, the focused CLI version expectation, the reusable local-only
+acceptance script, this plan amendment, and its dated changelog evidence. It packages and dogfoods
+`3.0.0-beta.2` only from local package sources; GitHub publication remains outside this checkpoint.

@@ -123,6 +123,8 @@ public class WorkflowRetirementAssertionTests
         var scenario = new CliScenario();
         try
         {
+            await scenario.RunAsync("init", "all");
+            scenario.Result.AssertSuccess();
             await scenario.RunAsync("sync");
             scenario.Result.AssertSuccess();
             WorkflowRetirementSteps.AssertNativeArtifacts(scenario.DirectoryPath, "all");

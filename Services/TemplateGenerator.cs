@@ -15,7 +15,7 @@ public static class TemplateGenerator
 
     /// <summary>
     /// Lists a skill's resource templates — files named
-    /// `&lt;skill&gt;-resource-&lt;name&gt;.template.md` ("resource" is the protected word) — as
+    /// `resource-&lt;skill&gt;-resource-&lt;name&gt;.template.md` — as
     /// (fileName, content) pairs. `dydo sync` compiles each into the skill folder as
     /// `resources/&lt;name&gt;.md`.
     /// </summary>
@@ -23,17 +23,17 @@ public static class TemplateGenerator
     {
         foreach (var templateName in GetSkillResourceTemplateNames(skillName))
         {
-            var name = templateName[$"{skillName}-resource-".Length..^".template.md".Length];
+            var name = templateName[$"resource-{skillName}-resource-".Length..^".template.md".Length];
             yield return ($"{name}.md", ReadBuiltInTemplate(templateName));
         }
     }
 
     /// <summary>
-    /// Embedded template names matching `&lt;skill&gt;-resource-*.template.md`.
+    /// Embedded template names matching `resource-&lt;skill&gt;-resource-*.template.md`.
     /// </summary>
     public static IReadOnlyList<string> GetSkillResourceTemplateNames(string skillName)
     {
-        var prefix = $"DynaDocs.Templates.{skillName}-resource-";
+        var prefix = $"DynaDocs.Templates.resource-{skillName}-resource-";
         return _assembly.GetManifestResourceNames()
             .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md"))
             .Select(r => r["DynaDocs.Templates.".Length..])
@@ -92,7 +92,7 @@ public static class TemplateGenerator
     /// <summary>
     /// The shipped template inventory: every skill template (skill-*.template.md) — the source
     /// `dydo sync` compiles into native agents and skills — plus each skill's resource templates
-    /// (&lt;skill&gt;-resource-&lt;name&gt;.template.md).
+    /// (resource-&lt;skill&gt;-resource-&lt;name&gt;.template.md).
     /// </summary>
     public static IReadOnlyList<string> GetAllTemplateNames()
     {
@@ -189,31 +189,6 @@ public static class TemplateGenerator
     public static string GenerateCodingStandardsMd() => ReadBuiltInTemplate("coding-standards.template.md");
 
     /// <summary>
-    /// Generate a hub _index.md file for a folder.
-    /// </summary>
-    public static string GenerateHubIndex(string folderName, string description, string area)
-    {
-        var title = char.ToUpper(folderName[0]) + folderName[1..];
-
-        return $"""
-            ---
-            area: {area}
-            type: hub
-            ---
-
-            # {title}
-
-            {description}
-
-            ---
-
-            ## Contents
-
-            *Add links to documents in this section.*
-            """;
-    }
-
-    /// <summary>
     /// Generate the about.md file for understanding the project.
     /// </summary>
     public static string GenerateAboutMd() => ReadBuiltInTemplate("about.template.md");
@@ -273,30 +248,6 @@ public static class TemplateGenerator
         using var memoryStream = new MemoryStream();
         stream.CopyTo(memoryStream);
         return memoryStream.ToArray();
-    }
-
-    /// <summary>
-    /// Generate a hub _index.md file for a project subfolder.
-    /// Minimal content since the meta file has the details.
-    /// </summary>
-    public static string GenerateProjectSubfolderHub(string folderName, string description)
-    {
-        var title = char.ToUpper(folderName[0]) + folderName[1..];
-
-        return $"""
-            ---
-            area: project
-            type: hub
-            ---
-
-            # {title}
-
-            {description}
-
-            ## Contents
-
-            *No documents in this folder yet.*
-            """;
     }
 
     /// <summary>

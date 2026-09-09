@@ -55,8 +55,9 @@ validation, auto-fixing, indexes, and graph tooling. This is the context that co
 
 ### 2. One source for native roles and skills
 
-`dydo sync` compiles role templates and resources into Claude Code and Codex artifacts. Edit the source
-once; both runtimes receive the same method. The host runtime owns agent identity and orchestration.
+`dydo sync` compiles enabled local role templates and resources from `dydo/_system/templates/` into
+Claude Code and Codex artifacts. Distinctly named custom sources share the same format; shipped copies
+are refreshed by `dydo template update`. The host runtime owns agent identity and orchestration.
 
 ### 3. Enforced project rules
 
@@ -111,7 +112,7 @@ runtime or machine into an existing project.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`
-- **Roles** — shipped source templates
+- **Roles** — enabled shipped or custom sources under `dydo/_system/templates/`
 - **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks
 
 Do not hand-edit compiled skills or agents. Change their source templates and run `dydo sync`.
@@ -120,7 +121,7 @@ Do not hand-edit compiled skills or agents. Change their source templates and ru
 
 ```
 project/
-|-- dydo.json                    # Model tiers, integrations, nudges
+|-- dydo.json                    # Integrations, skills, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- .claude/                     # Compiled Claude agents, skills, and skill resources
@@ -132,6 +133,7 @@ project/
     |-- guides/                  # How-to guidance
     |-- reference/               # Exact commands and specifications
     |-- project/                 # Durable knowledge and delivery proof
+    |-- _system/templates/      # Flat local skill and resource sources
     |-- _system/template-additions/
     `-- _assets/
 ```

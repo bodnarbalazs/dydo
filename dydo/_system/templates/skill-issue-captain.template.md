@@ -64,9 +64,9 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 2. **Specify.** For work above the small prompt/docs default, send `specifier` on the parent, setting
    `Specifying`, and post its commit SHA. Keep one compact acceptance contract and link its evidence
    instead of repeating it. Add a `spec` PASS only when one short concrete risk reason warrants it;
-   return to `Specifying` after FAIL through a fresh specifier. **Done:** scenarios, gates, patterns,
-   seams, files and edge cases make implementation mechanical; the accepted spec names lanes, or none,
-   and declares which hops are empty.
+   return to `Specifying` after FAIL through a fresh specifier. **Done:** the compact acceptance
+   contract completes a small prompt/docs change; where used, the accepted spec makes the route
+   mechanical and names lanes, or none, and empty hops.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Open the spec's disjoint parallel lanes in `Todo`, with the parent's Type and Mode, bounded
    outcome, paths, gates and isolated branch/worktree off the parent. Specify each lane and give

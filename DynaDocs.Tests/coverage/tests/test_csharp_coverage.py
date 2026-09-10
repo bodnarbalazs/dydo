@@ -568,6 +568,26 @@ class CSharpCoverageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Duplicate original MethodDef token: 1"):
             _template_original_map(report, Path.cwd(), [original])
 
+    def test_a_defective_collected_report_is_a_broken_measurement_not_a_failed_test(self):
+        original = {"facts": {"assembly_name": "A", "sha1": "ab", "methods": []},
+                    "aliases": ["bin/A.dll"], "canonical": "bin/A.dll"}
+        method = "<Method><MetadataToken>1</MetadataToken><Name>A::First()</Name></Method>"
+        truncated = _template_report(_template_module_xml("A", "bin/A.dll", "ab", method))[:-40]
+        without_path = ('<CoverageSession><Modules><Module hash="ab">'
+                        '<ModuleName>A</ModuleName></Module></Modules></CoverageSession>')
+        for defect, report in (("ParseError", truncated), ("TypeError", without_path)):
+            with self.subTest(defect=defect), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                arguments = ["csharp_coverage.py", "--root", str(root),
+                             "--result-root", str(root / "evidence")]
+                stderr = io.StringIO()
+                with patch("csharp_coverage.run_campaign",
+                           side_effect=lambda *_a, xml=report: _template_original_map(
+                               xml, root, [original])), \
+                        patch.object(sys, "argv", arguments), redirect_stderr(stderr):
+                    self.assertEqual(2, main())
+                self.assertIn(defect, stderr.getvalue())
+
     def test_source_facts_fail_closed_when_the_producer_exits_nonzero(self):
         with patch("csharp_coverage.subprocess.run",
                    return_value=subprocess.CompletedProcess([], 2, "", "producer refused\n")):

@@ -1,5 +1,6 @@
 """Whole source inventory, explicit uncertain joins, and semantic graph cycles."""
 import hashlib
+import re
 from pathlib import Path, PurePosixPath
 
 from inventory import build_file_rows, checked_paths, language_of, source_fingerprint
@@ -42,6 +43,36 @@ _DERIVED_TEST = 'DynaDocs.Tests/coverage/tests/test_sync_testing_example.py'
 _NATIVE_EVIDENCE = 'dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence'
 
 
+def _manifest_digests(text):
+    """Parse the sha256sum manifest that vouches for the retained native evidence."""
+    digests = {}
+    for line in text.splitlines():
+        digest, separator, name = line.partition('  ')
+        if not separator or not re.fullmatch(r'[0-9A-Fa-f]{64}', digest):
+            raise ValueError('Unreadable native evidence manifest line')
+        digests[name.strip()] = digest.lower()
+    return digests
+
+
+def _fixture_exclusion(root, relative, manifest, manifest_path):
+    """Exclude a retained fixture only on its own listed membership and matching hash."""
+    name = PurePosixPath(relative).relative_to(_NATIVE_EVIDENCE).as_posix()
+    try:
+        digests = _manifest_digests(manifest_path.read_text(encoding='utf-8'))
+    except (ValueError, OSError) as error:
+        return None, {'path': relative, 'type': 'fixture-manifest-unreadable',
+                      'manifest': manifest, 'message': str(error)}
+    if name not in digests:
+        return None, {'path': relative, 'type': 'fixture-origin-unlisted', 'manifest': manifest}
+    actual = hashlib.sha256((root / relative).read_bytes()).hexdigest()
+    if actual != digests[name]:
+        return None, {'path': relative, 'type': 'fixture-origin-diverged', 'manifest': manifest,
+                      'manifestSha256': digests[name], 'actualSha256': actual}
+    return {'path': relative, 'reason': 'native-evidence-fixture',
+            'origin': {'manifest': manifest, 'entry': name, 'sha256': actual,
+                       'manifestSha256': hashlib.sha256(manifest_path.read_bytes()).hexdigest()}}, None
+
+
 def _structural_exclusion(root, relative, paths, test_files):
     """Return reproducible exclusion evidence, or a gap that denies exclusion."""
     path_set = set(paths)
@@ -69,9 +100,7 @@ def _structural_exclusion(root, relative, paths, test_files):
         manifest_path = root / manifest
         if manifest not in path_set or not manifest_path.is_file():
             return None, {'path': relative, 'type': 'fixture-origin-missing', 'manifest': manifest}
-        return {'path': relative, 'reason': 'native-evidence-fixture',
-                'origin': {'manifest': manifest,
-                           'manifestSha256': hashlib.sha256(manifest_path.read_bytes()).hexdigest()}}, None
+        return _fixture_exclusion(root, relative, manifest, manifest_path)
     return None, None
 
 

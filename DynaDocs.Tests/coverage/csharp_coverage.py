@@ -19,6 +19,12 @@ ASSEMBLY_PROJECTS = {
     "GateMetrics": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj",
 }
 GATE_METRICS_PREBUILT_ENV = "DYNADOCS_GATE_METRICS_PREBUILT_DLL"
+CAMPAIGN_ENVIRONMENT = ("DOTNET_CLI_USE_MSBUILD_SERVER", "MSBUILDDISABLENODEREUSE",
+                        GATE_METRICS_PREBUILT_ENV)
+# A malformed or truncated report is a broken measurement, never a failed test: ParseError is
+# a SyntaxError, and an unexpected report shape raises Type/Attribute/IndexError.
+REPORT_DEFECTS = (ValueError, KeyError, OSError, TypeError, AttributeError, IndexError,
+                  SyntaxError)
 
 
 def snapshot_artifacts(root, paths):
@@ -100,6 +106,7 @@ def _run(name, command, root, output):
     stdout.write_text(result.stdout, encoding="utf-8")
     stderr.write_text(result.stderr, encoding="utf-8")
     return {"name": name, "argv": list(map(str, command)), "cwd": str(root),
+            "environment": {key: os.environ[key] for key in CAMPAIGN_ENVIRONMENT if key in os.environ},
             "exit": result.returncode, "elapsedSeconds": round(time.monotonic() - started, 6),
             "stdout": stdout.name, "stdoutSha256": hashlib.sha256(stdout.read_bytes()).hexdigest(),
             "stderr": stderr.name, "stderrSha256": hashlib.sha256(stderr.read_bytes()).hexdigest()}
@@ -443,8 +450,8 @@ def main():
         if not isinstance(extra, list) or any(not isinstance(item, str) for item in extra):
             return 2
         return run_campaign(args.root, args.result_root, extra)
-    except (ValueError, KeyError, OSError, json.JSONDecodeError) as error:
-        print(error, file=os.sys.stderr)
+    except REPORT_DEFECTS as error:
+        print(f"{type(error).__name__}: {error}", file=sys.stderr)
         return 2
 
 

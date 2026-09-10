@@ -50,25 +50,29 @@ class TestingFacadeTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
-        if self.runner == RUNNER:
-            launcher = [
-                'import importlib.util',
-                f'spec=importlib.util.spec_from_file_location("gap_check", {str(RUNNER)!r})',
-                'module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)',
-                f'module.__file__={str(directory / "gap_check.py")!r}',
-            ]
-            if execution_seconds is not None:
-                launcher.append(f'module.EXECUTION_SECONDS_MAXIMUM={execution_seconds!r}')
-            if cleanup_seconds is not None:
-                launcher.append(f'module.CLEANUP_SECONDS={cleanup_seconds!r}')
-            launcher.append('raise SystemExit(module.main())')
-            (directory / 'run_gap_check.py').write_text('\n'.join(launcher) + '\n', encoding='utf-8')
+        # Both legs run through the same launcher: the derived copy is byte-identical, so its
+        # deadline policy is the project's and every case must hold for it too.
+        launcher = [
+            'import importlib.util, sys',
+            # The derived runner lives outside any ignored tree: caching its bytecode there would
+            # make the candidate dirty and put an untracked artifact in the inventory.
+            'sys.dont_write_bytecode = True',
+            f'spec=importlib.util.spec_from_file_location("gap_check", {str(self.runner)!r})',
+            'module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)',
+            f'module.__file__={str(directory / "gap_check.py")!r}',
+        ]
+        if execution_seconds is not None:
+            launcher.append(f'module.EXECUTION_SECONDS_MAXIMUM={execution_seconds!r}')
+        if cleanup_seconds is not None:
+            launcher.append(f'module.CLEANUP_SECONDS={cleanup_seconds!r}')
+        launcher.append('raise SystemExit(module.main())')
+        (directory / 'run_gap_check.py').write_text('\n'.join(launcher) + '\n', encoding='utf-8')
         (directory / 'gap_check.json').write_text(json.dumps(data or manifest()), encoding='utf-8')
         return directory
 
     def invoke(self, args, data=None, directory=None):
         directory = directory or self.fixture(data)
-        runner = directory / ('run_gap_check.py' if self.runner == RUNNER else 'gap_check.py')
+        runner = directory / 'run_gap_check.py'
         process = subprocess.run([sys.executable, '-u', str(runner), *args], cwd=directory,
                                  capture_output=True, text=True, encoding='utf-8', timeout=60)
         result_paths = [line[8:] for line in process.stdout.splitlines() if line.startswith('Result: ')]
@@ -1267,8 +1271,6 @@ print('INTER_ITERATION_CASES=' + str(count))
                     facade.stdout.close()
 
     def test_absolute_row_deadline_cleans_cooperative_child_before_publication(self):
-        if self.runner != RUNNER:
-            self.skipTest('project deadline policy is not part of the portable example')
         data = manifest(stack('first'), stack('later'))
         root = self.fixture(data, execution_seconds=.15, cleanup_seconds=.25)
         (root / 'deadline.py').write_text(
@@ -1293,8 +1295,6 @@ print('INTER_ITERATION_CASES=' + str(count))
         self.assertGreater(process.stdout.count('wake'), 5)
 
     def test_absolute_row_deadline_force_terminates_uncooperative_child(self):
-        if self.runner != RUNNER:
-            self.skipTest('project deadline policy is not part of the portable example')
         data = manifest(stack('first'), stack('later'))
         root = self.fixture(data, execution_seconds=.1, cleanup_seconds=.15)
         (root / 'deadline.py').write_text(

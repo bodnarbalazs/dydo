@@ -1,5 +1,6 @@
 """Private adapters publish one complete stable schema under an exclusive lock."""
 import json
+import hashlib
 import io
 import os
 import subprocess
@@ -85,6 +86,10 @@ def committed_repository(root):
                     "-c", "user.email=fixture@example.invalid",
                     "commit", "--quiet", "-m", "fixture"], check=True)
     return root
+
+
+def collector_row(answer, name):
+    return answer["facts"]["collectors"][name]
 
 
 def python_repository(folder, suite=PYTHON_SUITE):
@@ -197,7 +202,7 @@ class GateAdapterTests(unittest.TestCase):
                     "--root", str(root), "--output", str(output)]
             with mock.patch.object(sys, "argv", argv), \
                     mock.patch.object(gate_adapter, "_candidate", return_value=({"commit": "a" * 40}, [])), \
-                    mock.patch.object(gate_adapter, "_inventory_artifact", return_value=(inventory, [])), \
+                    mock.patch.object(gate_adapter, "_inventory_artifact", return_value=(inventory, [], [])), \
                     mock.patch.object(gate_adapter, "collect_coverage",
                                       side_effect=gate_adapter.MeasurementTimeout("row deadline")), \
                     mock.patch.object(gate_adapter, "publish", side_effect=publication), \
@@ -218,7 +223,7 @@ class GateAdapterTests(unittest.TestCase):
             def collect_inventory(*_args):
                 observed["appdata"] = os.environ.get("APPDATA")
                 observed["packages"] = os.environ.get("NUGET_PACKAGES")
-                return inventory, []
+                return inventory, [], []
 
             argv = ["gate_adapter.py", "--gate", "static", "--stack", "python",
                     "--root", str(root), "--output", str(output)]
@@ -231,6 +236,141 @@ class GateAdapterTests(unittest.TestCase):
                 self.assertEqual(0, gate_adapter.main())
             self.assertEqual(str(root / "dydo/_system/.local/appdata"), observed["appdata"])
             self.assertEqual("", observed["packages"])
+
+
+class PublishedProvenanceTests(unittest.TestCase):
+    """The summary must name what measured it, not merely what it concluded."""
+
+    def test_tools_name_both_interpreters_and_every_resolved_tool_pin(self):
+        root = TOOLS.parents[1]
+
+        tools = gate_adapter.gate_tools(root)
+
+        interpreters = tools["interpreters"]
+        self.assertEqual(sys.executable, interpreters["caller"]["path"])
+        self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
+                         interpreters["caller"]["sha256"])
+        self.assertEqual("dydo/_system/.local/static-gates/python/Scripts/python.exe",
+                         interpreters["dependencyBearing"]["path"])
+        self.assertEqual(hashlib.sha256(STATIC_PYTHON.read_bytes()).hexdigest(),
+                         interpreters["dependencyBearing"]["sha256"])
+        pins = tools["pins"]
+        locks = json.loads((TOOLS / "metrics/packages.lock.json").read_text(encoding="utf-8"))
+        self.assertEqual(locks["dependencies"]["net10.0"]["SonarAnalyzer.CSharp"]["resolved"],
+                         pins["dotnet"]["resolved"]["SonarAnalyzer.CSharp"])
+        self.assertEqual(json.loads((TOOLS / "package.json").read_text(encoding="utf-8"))
+                         ["dependencies"]["c8"], pins["javascript"]["resolved"]["c8"])
+        self.assertIn("coverage==" + pins["python"]["resolved"]["coverage"],
+                      (TOOLS / "requirements.lock").read_text(encoding="utf-8"))
+        self.assertEqual(json.loads((root / ".config/dotnet-tools.json").read_text(encoding="utf-8"))
+                         ["tools"]["altcover.global"]["version"],
+                         pins["altcover"]["resolved"]["altcover.global"])
+        self.assertEqual(hashlib.sha256((TOOLS / "requirements.lock").read_bytes()).hexdigest(),
+                         pins["python"]["sha256"])
+
+    def test_an_unreadable_pin_is_named_without_destroying_the_measurement(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            write_file(root, "DynaDocs.Tests/coverage/requirements.lock", "coverage==7.16.0\n")
+            write_file(root, ".config/dotnet-tools.json", "{ not json")
+
+            tools = gate_adapter.gate_tools(root)
+
+            self.assertEqual({"coverage": "7.16.0"}, tools["pins"]["python"]["resolved"])
+            self.assertIsNone(tools["pins"]["altcover"]["resolved"])
+            self.assertIn("JSONDecodeError", tools["pins"]["altcover"]["reason"])
+            self.assertIsNone(tools["pins"]["dotnet"]["resolved"])
+            self.assertIsNone(tools["interpreters"]["dependencyBearing"]["sha256"])
+
+    def test_logged_commands_carry_argv_environment_exit_elapsed_and_hashed_streams(self):
+        from gate_run import CommandLog
+        with tempfile.TemporaryDirectory() as folder:
+            run = Path(folder)
+            log = CommandLog(run, run / "raw/commands")
+            log.run("probe", [sys.executable, "-c", "import os,sys; sys.stdout.write(os.environ['DYDO_PROBE'])"],
+                    environment={"DYDO_PROBE": "supplied"})
+
+            rows = gate_adapter._logged_commands(log.rows, run)
+
+            self.assertEqual(1, len(rows))
+            row = rows[0]
+            self.assertEqual("probe", row["name"])
+            self.assertEqual(sys.executable, row["argv"][0])
+            self.assertEqual({"DYDO_PROBE": "supplied"}, row["environment"])
+            self.assertEqual(0, row["exit"])
+            self.assertEqual("raw/commands/0000-probe.stdout", row["stdout"])
+            self.assertEqual("raw/commands/0000-probe.stderr", row["stderr"])
+            self.assertEqual(hashlib.sha256(b"supplied").hexdigest(), row["stdoutSha256"])
+            self.assertGreater(row["elapsedSeconds"], 0)
+            self.assertEqual(str(run), row["cwd"])
+
+    def test_campaign_command_rows_are_rebased_on_the_report_directory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run = Path(folder)
+            evidence = run / "raw-abc/raw"
+            write_file(evidence, "altcover-runner.stdout", "collected\n")
+            write_file(evidence, "commands.json", json.dumps([
+                {"name": "altcover-runner", "argv": ["dotnet", "tool", "run"], "cwd": str(run),
+                 "environment": {"MSBUILDDISABLENODEREUSE": "1"}, "exit": 0,
+                 "elapsedSeconds": 211.938, "stdout": "altcover-runner.stdout",
+                 "stdoutSha256": "a" * 64, "stderr": "altcover-runner.stderr",
+                 "stderrSha256": "b" * 64}]))
+
+            rows = gate_adapter._campaign_commands(evidence, run)
+
+            self.assertEqual("raw-abc/raw/altcover-runner.stdout", rows[0]["stdout"])
+            self.assertEqual("raw-abc/raw/altcover-runner.stderr", rows[0]["stderr"])
+            self.assertEqual(211.938, rows[0]["elapsedSeconds"])
+            self.assertEqual({"MSBUILDDISABLENODEREUSE": "1"}, rows[0]["environment"])
+            self.assertEqual([], gate_adapter._campaign_commands(run / "absent", run))
+
+    def test_a_path_outside_the_report_directory_stays_absolute(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run = Path(folder) / "run"
+
+            self.assertEqual("raw/a.json", gate_adapter._report_relative(run / "raw/a.json", run))
+            self.assertEqual((Path(folder) / "other.json").as_posix(),
+                             gate_adapter._report_relative(Path(folder) / "other.json", run))
+
+    def test_a_collector_owns_the_raw_files_it_writes_beside_its_command_log(self):
+        from gate_run import CommandLog
+        with tempfile.TemporaryDirectory() as folder:
+            run = Path(folder)
+            collector = mock.Mock(output=run / "raw", log=CommandLog(run, run / "raw/commands"))
+            (run / "raw/stale.json").write_text("before", encoding="utf-8")
+            artifacts = {}
+
+            def produce():
+                (run / "raw/analyzers-0.sarif").write_text("native", encoding="utf-8")
+                (run / "raw/commands/0000-noise.stdout").write_text("noise", encoding="utf-8")
+                return {"status": "pass"}
+
+            answer = gate_adapter._recorded(collector, "csharp-analyzers", produce, artifacts)()
+
+            self.assertEqual({"status": "pass"}, answer)
+            self.assertEqual([{"path": "raw/analyzers-0.sarif",
+                               "sha256": hashlib.sha256(b"native").hexdigest()}],
+                             artifacts["csharp-analyzers"])
+
+    def test_static_collectors_carry_their_own_raw_artifact_hashes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = python_repository(folder)
+            run = Path(folder) / "run"
+
+            answer = gate_adapter.collect_static(root, run / "raw", "python")
+
+            source = answer["facts"]["collectors"]["python-source"]
+            self.assertEqual([], source["artifacts"])
+            self.assertTrue(all("artifacts" in row
+                                for row in answer["facts"]["collectors"].values()))
+            names = [row["name"] for row in answer["facts"]["commands"]]
+            self.assertEqual(["python-source-0", "python-source-1", "ruff"], sorted(names))
+            ruff = next(row for row in answer["facts"]["commands"] if row["name"] == "ruff")
+            self.assertEqual("raw/commands/0002-ruff.stdout", ruff["stdout"])
+            self.assertEqual("raw/commands/0002-ruff.stderr", ruff["stderr"])
+            self.assertEqual(str(root), ruff["cwd"])
+            self.assertEqual({}, ruff["environment"])
+            self.assertIn("static-gates", ruff["argv"][0])
 
 
 class NativeDiscoveryTests(unittest.TestCase):
@@ -286,8 +426,8 @@ class CandidateInventoryTests(unittest.TestCase):
             root = python_repository(folder)
             candidate = {"commit": "a" * 40, "dirty": False, "sourceFingerprint": "b" * 64}
 
-            inventory, errors = gate_adapter._inventory_artifact(root, Path(folder) / "run",
-                                                                 candidate)
+            inventory, errors, commands = gate_adapter._inventory_artifact(
+                root, Path(folder) / "run", candidate)
 
             payload = json.loads(inventory.read_text(encoding="utf-8"))
             self.assertEqual(candidate, payload["candidate"])
@@ -295,6 +435,7 @@ class CandidateInventoryTests(unittest.TestCase):
             roles = {row["path"]: row["role"] for row in payload["sources"]}
             self.assertEqual("target", roles["lib/arithmetic.py"])
             self.assertEqual("test", roles["DynaDocs.Tests/coverage/tests/test_arithmetic.py"])
+            self.assertEqual([], commands)
 
     def test_static_gate_registers_the_collectors_its_stack_owns(self):
         shared = {"projects", "source-inventory", "associations"}
@@ -365,7 +506,14 @@ class CoverageCampaignTests(unittest.TestCase):
             self.assertEqual("error", answer["status"])
             self.assertEqual([{"gate": "csharp-coverage", "message": "native campaign incomplete"}],
                              answer["errors"])
-            self.assertEqual(2, answer["facts"]["child_exit"])
+            row = collector_row(answer, "csharp-coverage")
+            self.assertEqual(2, row["facts"]["child_exit"])
+            self.assertEqual([], row["artifacts"])
+            command = answer["facts"]["commands"][0]
+            self.assertEqual(("csharp-campaign", 2, "inherited"),
+                             (command["name"], command["exit"], command["streams"]))
+            self.assertIn("run_tests.py", command["argv"][1])
+            self.assertGreaterEqual(command["elapsedSeconds"], 0)
             with self.assertRaisesRegex(ValueError, "Unknown stack: elixir"):
                 gate_adapter.collect_coverage(root, Path(folder), "elixir", inventory)
 
@@ -379,10 +527,20 @@ class CoverageCampaignTests(unittest.TestCase):
 
             self.assertEqual("pass", answer["status"], json.dumps(answer["findings"]))
             self.assertEqual([], answer["errors"])
-            self.assertEqual(0, answer["facts"]["child_exit"])
-            self.assertEqual(["lib/sum.cjs"], [row["path"] for row in answer["facts"]["modules"]])
-            request = json.loads((raw.parent / (raw.name + "-request.json")).read_text(encoding="utf-8"))
+            row = collector_row(answer, "javascript-coverage")
+            self.assertEqual(0, row["facts"]["child_exit"])
+            self.assertEqual(raw.name, row["facts"]["raw"])
+            self.assertEqual(["lib/sum.cjs"], [item["path"] for item in row["facts"]["modules"]])
+            artifacts = {item["path"]: item["sha256"] for item in row["artifacts"]}
+            self.assertEqual({raw.name + "-request.json", raw.name + "/joined.json"},
+                             set(artifacts))
+            request_path = raw.parent / (raw.name + "-request.json")
+            request = json.loads(request_path.read_text(encoding="utf-8"))
             self.assertEqual(["lib/sum.cjs"], request["targets"])
+            self.assertEqual(hashlib.sha256(request_path.read_bytes()).hexdigest(),
+                             artifacts[raw.name + "-request.json"])
+            self.assertEqual(hashlib.sha256((raw / "joined.json").read_bytes()).hexdigest(),
+                             artifacts[raw.name + "/joined.json"])
 
     def test_node_coverage_reports_uncovered_targets_beside_extensionless_gaps(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -408,7 +566,7 @@ class CoverageCampaignTests(unittest.TestCase):
             answer = gate_adapter.collect_node_coverage(root, raw)
 
             self.assertEqual("error", answer["status"])
-            self.assertEqual(2, answer["facts"]["child_exit"])
+            self.assertEqual(2, collector_row(answer, "javascript-coverage")["facts"]["child_exit"])
             committed_repository(root)
             (root / "lib/sum.cjs").unlink()
             with self.assertRaisesRegex(ValueError, "Deleted maintained inputs"):

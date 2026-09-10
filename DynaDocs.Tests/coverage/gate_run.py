@@ -27,7 +27,7 @@ class CommandLog:
         env = isolated_environment()
         env.update(environment or {})
         row = {'name': name, 'command': list(map(str, command)), 'cwd': str(Path(cwd or self.root).resolve()),
-               'stdout': str(stdout), 'stderr': str(stderr)}
+               'environment': dict(environment or {}), 'stdout': str(stdout), 'stderr': str(stderr)}
         started = time.monotonic()
         self.rows.append(row)
         try:

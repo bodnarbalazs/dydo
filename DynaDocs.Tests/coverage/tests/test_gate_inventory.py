@@ -86,19 +86,50 @@ class GateInventoryTests(unittest.TestCase):
             self.assertIn(paths[1], [row['path'] for row in report['sources']])
             self.assertIn('derived-copy-diverged', [row['type'] for row in report['errors']])
 
-    def test_native_packet_sources_are_excluded_with_manifest_origin(self):
+    def native_packet(self, root, manifest_text, source='class Probe {}\n'):
+        prefix = Path('dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence')
+        manifest = root / prefix / 'SHA256SUMS'
+        fixture = root / prefix / 'fixture/Program.cs'
+        fixture.parent.mkdir(parents=True)
+        fixture.write_bytes(source.encode('utf-8'))
+        manifest.write_text(manifest_text, encoding='utf-8')
+        paths = [manifest.relative_to(root).as_posix(), fixture.relative_to(root).as_posix()]
+        return manifest, fixture, paths
+
+    def test_native_packet_sources_are_excluded_only_on_listed_membership_and_hash(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            prefix = Path('dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence')
-            manifest = root / prefix / 'SHA256SUMS'
-            fixture = root / prefix / 'fixture/Program.cs'
-            fixture.parent.mkdir(parents=True)
-            fixture.write_text('class Probe {}\n', encoding='utf-8')
-            manifest.write_text('fixture evidence\n', encoding='utf-8')
-            paths = [manifest.relative_to(root).as_posix(), fixture.relative_to(root).as_posix()]
+            digest = hashlib.sha256('class Probe {}\n'.encode('utf-8')).hexdigest()
+            manifest, _, paths = self.native_packet(
+                root, f'{digest.upper()}  fixture/Program.cs\n')
+
             report = assemble_inventory(root, paths, [], [])
+
             self.assertEqual([], report['sources'])
+            self.assertEqual([], report['errors'])
+            origin = report['excluded'][0]['origin']
             self.assertEqual('native-evidence-fixture', report['excluded'][0]['reason'])
-            self.assertEqual(paths[0], report['excluded'][0]['origin']['manifest'])
+            self.assertEqual(paths[0], origin['manifest'])
+            self.assertEqual('fixture/Program.cs', origin['entry'])
+            self.assertEqual(digest, origin['sha256'])
             self.assertEqual(hashlib.sha256(manifest.read_bytes()).hexdigest(),
-                             report['excluded'][0]['origin']['manifestSha256'])
+                             origin['manifestSha256'])
+
+    def test_a_fixture_the_manifest_does_not_vouch_for_is_denied_its_exclusion(self):
+        digest = hashlib.sha256('class Probe {}\n'.encode('utf-8')).hexdigest()
+        for expected, manifest_text in (
+                ('fixture-origin-unlisted', f'{digest}  fixture/Other.cs\n'),
+                ('fixture-origin-diverged', f'{"a" * 64}  fixture/Program.cs\n'),
+                ('fixture-manifest-unreadable', 'fixture evidence\n')):
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                _, _, paths = self.native_packet(root, manifest_text)
+
+                report = assemble_inventory(root, paths, [], [])
+
+                self.assertEqual([], report['excluded'])
+                self.assertEqual([paths[1]], [row['path'] for row in report['sources']])
+                self.assertEqual([expected, 'missing-evaluated-compile'],
+                                 [row['type'] for row in report['errors']])
+                if expected == 'fixture-origin-diverged':
+                    self.assertEqual(digest, report['errors'][0]['actualSha256'])

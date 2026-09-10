@@ -12,10 +12,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import gate_adapter
-from gate_adapter import publish
+from gate_adapter import _target_paths, publish
 
 
 class GateAdapterTests(unittest.TestCase):
+    def test_python_coverage_targets_only_inventory_maintained_sources(self):
+        with tempfile.TemporaryDirectory() as folder:
+            inventory = Path(folder) / "inventory.json"
+            inventory.write_text(json.dumps({"sources": [
+                {"path": "active.py", "language": "python", "role": "target"},
+                {"path": "test_active.py", "language": "python", "role": "test"},
+                {"path": "active.js", "language": "javascript", "role": "target"},
+            ], "excluded": [{"path": "derived.py", "reason": "derived-copy"}]}))
+
+            self.assertEqual(["active.py"], _target_paths(inventory, "python"))
+
     def fixture(self, root):
         run = root / "assurance/run-a"
         run.mkdir(parents=True)

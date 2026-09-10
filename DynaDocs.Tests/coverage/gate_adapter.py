@@ -197,21 +197,17 @@ def collect_static(root, output, stack):
     return _aggregate(collect_all(methods, list(methods)))
 
 
-def _target_paths(root, language):
-    from inventory import git_file_state, language_of
-    paths, deleted = git_file_state(root)
-    if deleted:
-        raise ValueError(f"Deleted maintained inputs prevent coverage: {sorted(deleted)}")
-    tests = {row["file"] for row in _ordinary_discovery(root, paths)}
-    return [relative for relative in paths
-            if language_of(root / relative) == language and relative not in tests]
+def _target_paths(inventory, language):
+    payload = json.loads(Path(inventory).read_text(encoding="utf-8"))
+    return [row["path"] for row in payload["sources"]
+            if row["language"] == language and row["role"] != "test"]
 
 
-def collect_python_coverage(root, raw):
+def collect_python_coverage(root, raw, inventory):
     from python_coverage import collect as native_collect
     from python_join import collect as join
     from gate_policy import evaluate_policy
-    sources = _target_paths(root, "python")
+    sources = _target_paths(inventory, "python")
     command = ["{python}", "-m", "unittest", "discover", "-s",
                "DynaDocs.Tests/coverage/tests", "-p", "test_*.py"]
     child = native_collect(root, raw, sources, command)
@@ -266,10 +262,10 @@ def collect_node_coverage(root, raw):
             "facts": {"child_exit": child, **joined}, "findings": findings, "errors": errors}
 
 
-def collect_coverage(root, output, stack):
+def collect_coverage(root, output, stack, inventory):
     raw = output / ("raw-" + uuid.uuid4().hex)
     if stack == "python":
-        return collect_python_coverage(root, raw)
+        return collect_python_coverage(root, raw, inventory)
     if stack == "node":
         return collect_node_coverage(root, raw)
     if stack == "dotnet":
@@ -308,7 +304,7 @@ def main():
     inventory, inventory_errors = _inventory_artifact(root, run, candidate)
     try:
         report = collect_static(root, run / "raw", args.stack) \
-            if args.gate == "static" else collect_coverage(root, run, args.stack)
+            if args.gate == "static" else collect_coverage(root, run, args.stack, inventory)
         if inventory_errors:
             report = {"status": "error", "facts": report.get("facts", {}),
                       "findings": report.get("findings", []),

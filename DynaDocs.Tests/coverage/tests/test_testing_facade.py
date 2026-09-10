@@ -51,20 +51,25 @@ class TestingFacadeTests(unittest.TestCase):
         directory = Path(temporary.name)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
         if self.runner == RUNNER:
-            facade = (directory / 'gap_check.py').read_text(encoding='utf-8')
+            launcher = [
+                'import importlib.util',
+                f'spec=importlib.util.spec_from_file_location("gap_check", {str(RUNNER)!r})',
+                'module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)',
+                f'module.__file__={str(directory / "gap_check.py")!r}',
+            ]
             if execution_seconds is not None:
-                facade = facade.replace('EXECUTION_SECONDS_MAXIMUM = 1800',
-                                        f'EXECUTION_SECONDS_MAXIMUM = {execution_seconds!r}')
+                launcher.append(f'module.EXECUTION_SECONDS_MAXIMUM={execution_seconds!r}')
             if cleanup_seconds is not None:
-                facade = facade.replace('CLEANUP_SECONDS = 30',
-                                        f'CLEANUP_SECONDS = {cleanup_seconds!r}')
-            (directory / 'gap_check.py').write_text(facade, encoding='utf-8')
+                launcher.append(f'module.CLEANUP_SECONDS={cleanup_seconds!r}')
+            launcher.append('raise SystemExit(module.main())')
+            (directory / 'run_gap_check.py').write_text('\n'.join(launcher) + '\n', encoding='utf-8')
         (directory / 'gap_check.json').write_text(json.dumps(data or manifest()), encoding='utf-8')
         return directory
 
     def invoke(self, args, data=None, directory=None):
         directory = directory or self.fixture(data)
-        process = subprocess.run([sys.executable, '-u', str(directory / 'gap_check.py'), *args], cwd=directory,
+        runner = directory / ('run_gap_check.py' if self.runner == RUNNER else 'gap_check.py')
+        process = subprocess.run([sys.executable, '-u', str(runner), *args], cwd=directory,
                                  capture_output=True, text=True, encoding='utf-8', timeout=60)
         result_paths = [line[8:] for line in process.stdout.splitlines() if line.startswith('Result: ')]
         payload = json.loads(Path(result_paths[0]).read_text(encoding='utf-8')) if result_paths else None

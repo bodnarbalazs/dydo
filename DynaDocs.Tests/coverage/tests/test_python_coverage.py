@@ -11,6 +11,27 @@ from python_coverage import combine_counters
 
 
 class PythonCoverageTests(unittest.TestCase):
+    def campaign(self, root, output, sources, command):
+        tools = Path(__file__).resolve().parents[1]
+        python = tools.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        result = subprocess.run([
+            str(python), str(tools / "python_coverage.py"),
+            "--root", str(root), "--output", str(output),
+            "--sources-json", json.dumps(sources), "--command-json", json.dumps(command),
+        ], cwd=root, text=True, capture_output=True)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        return json.loads((output / "counters.json").read_text())
+
+    def test_project_facade_tests_execute_the_canonical_source_identity(self):
+        root = Path(__file__).resolve().parents[3]
+        source = "DynaDocs.Tests/coverage/gap_check.py"
+        test = "DynaDocs.Tests/coverage/tests/test_testing_facade.py"
+        with tempfile.TemporaryDirectory() as folder:
+            counters = self.campaign(root, Path(folder) / "evidence", [source],
+                                     ["{python}", test, "TestingFacadeTests.test_help"])
+        main = next(row for row in counters["callables"] if row["id"].startswith("main:"))
+        self.assertGreater(main["execution_count"], 0)
+
     def test_flat_counter_union_requires_identical_complete_inventory(self):
         row = {"schema": 1, "sources": {"a.py": "a" * 64}, "callables": [{
             "id": "f:1:0", "path": "a.py", "line": 1, "column": 0,
@@ -37,13 +58,8 @@ class PythonCoverageTests(unittest.TestCase):
                 " def test_direct_and_child(self):\n  self.assertEqual(1,subject.direct())\n"
                 "  subprocess.run([sys.executable,'subject.py'],check=True)\n", encoding="utf-8")
             output = root / "evidence"
-            command = [str(python), str(tools / "python_coverage.py"),
-                       "--root", str(root), "--output", str(output),
-                       "--sources-json", '["subject.py"]', "--command-json",
-                       '["{python}","-m","unittest","discover","-s","."]']
-            result = subprocess.run(command, cwd=root, text=True, capture_output=True)
-            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-            counters = json.loads((output / "counters.json").read_text())
+            counters = self.campaign(root, output, ["subject.py"],
+                                     ["{python}", "-m", "unittest", "discover", "-s", "."])
             calls = {row["id"].split(":", 1)[0]: row["execution_count"]
                      for row in counters["callables"]}
             self.assertGreater(calls["direct"], 0)

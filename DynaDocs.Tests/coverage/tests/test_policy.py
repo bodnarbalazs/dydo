@@ -56,6 +56,7 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(set(), self.kinds(module(100, 100, cognitive=20)))
         self.assertEqual({"hcrap", "cognitive"}, self.kinds(module(100, 100, cognitive=21)))
         self.assertIn("hcrap", self.kinds(module(80, 100, cognitive=1, cc=50)))
+        self.assertNotIn("hcrap", self.kinds(module(50, 100, cc=10)))
 
     def test_parameter_limit_exempts_only_constructors(self):
         self.assertEqual(set(), self.kinds(module(parameters=7)))

@@ -134,6 +134,26 @@ class PythonCoverageTests(unittest.TestCase):
             self.assertEqual((0, 0), (never["execution_count"], never["covered"]))
             self.assertTrue(module["lines"])
 
+            def rejoin():
+                return subprocess.run([
+                    str(python), str(tools / "python_join.py"), "--root", str(root),
+                    "--output", str(output), "--sources-json", '["subject.py"]'],
+                    cwd=root, text=True, capture_output=True)
+
+            original = (root / "subject.py").read_text(encoding="utf-8")
+            (root / "subject.py").write_text(original.replace("return 3", "return 4"), encoding="utf-8")
+            stale = rejoin()
+            self.assertEqual(2, stale.returncode, stale.stdout)
+            self.assertIn("source/counter hash mismatch", stale.stderr)
+
+            (root / "subject.py").write_text(original, encoding="utf-8")
+            counters = json.loads((output / "counters.json").read_text(encoding="utf-8"))
+            counters["callables"][0]["body_lines"] = {"999": 0}
+            (output / "counters.json").write_text(json.dumps(counters), encoding="utf-8")
+            substituted = rejoin()
+            self.assertEqual(2, substituted.returncode, substituted.stdout)
+            self.assertIn("Mismatched Python callable body inventory", substituted.stderr)
+
     def test_counter_union_refuses_every_inconsistent_receipt(self):
         base = _counter_receipt([_counter_row()])
         for message, receipts in (

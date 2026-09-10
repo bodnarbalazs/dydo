@@ -52,6 +52,7 @@ class CSharpJoinTests(unittest.TestCase):
                 ("System.Int32 A::M(System.Boolean)", "System.Int32 A::N(System.Boolean)", "signature"),
                 (facts["sha1"], "0" * 40, "hash"),
                 ('vc="1" uspid="1"', 'vc="-2" uspid="1"', "sequence value"),
+                ('sl="1" sc="1"', 'sl="2" sc="1"', "Sequence source ownership"),
                 (' offsetend="4"', "", "branch"),
             ]
             for old, new, message in attacks:
@@ -107,6 +108,45 @@ class CSharpJoinTests(unittest.TestCase):
         self.assertEqual(["generated"], reasons["A::G()"]["origins"])
         self.assertEqual(["nuget:p/1.0/build/Package.cs"], reasons["A::P()"]["documents"])
         self.assertEqual("no non-hidden portable-PDB points", reasons["A::N()"]["reason"])
+
+    def mapped_fixture(self, root):
+        """One authored method, one emitted body, one exact line of coverage."""
+        source_path = root / "A.cs"
+        source_path.write_text("class A { int M() => 1; }")
+        point = {"path": "A.cs", "origin": "maintained", "checksum_algorithm": "SHA256",
+                 "checksum": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+                 "line": 1, "column": 10, "end_line": 1, "end_column": 23}
+        source = {"files": [{"path": "A.cs", "methods": [{
+            "id": "A.M", "line": 1, "column": 10, "end_line": 1, "end_column": 23,
+            "constructor": False, "cognitive": 0, "policy_cc": 1, "parameters": 0}]}],
+            "generated_files": [], "behavior": {"constructors": [], "fragments": [],
+                                                "structural_methods": [], "declared_methods": []}}
+        physical = {"token": 1, "identity": "System.Int32 A::M()", "key": "A::M`0()",
+                    "points": [point]}
+        coverage = {physical["identity"]: {"files": {"A.cs": {"Lines": {"1": 1}, "Branches": []}}}}
+        return source_path, source, {"assembly_name": "A", "methods": [physical]}, coverage
+
+    def test_absent_point_unmapped_author_and_stale_source_cannot_reach_a_verdict(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path, source, assembly, coverage = self.mapped_fixture(root)
+            method = join_methods(root, source, assembly, coverage)["modules"][0]["methods"][0]
+            self.assertEqual((1, 1), (method["covered"], method["total"]))
+
+            elsewhere = {"System.Int32 A::M()": {"files": {"A.cs": {"Lines": {"2": 1}, "Branches": []}}}}
+            with self.assertRaisesRegex(ValueError, "PDB point absent from method coverage"):
+                join_methods(root, source, assembly, elsewhere)
+
+            authored = source["files"][0]["methods"][0]
+            unmapped = {**source, "files": [{"path": "A.cs", "methods": [authored, {
+                **authored, "id": "A.Unemitted", "line": 2, "column": 0,
+                "end_line": 2, "end_column": 5}]}]}
+            with self.assertRaisesRegex(ValueError, "Authored methods absent from emitted coverage join"):
+                join_methods(root, unmapped, assembly, coverage)
+
+            source_path.write_text("class A { int M() => 2; }")
+            with self.assertRaisesRegex(ValueError, "Source/PDB checksum mismatch"):
+                join_methods(root, source, assembly, coverage)
 
     def test_semantic_synthesized_members_are_audited_without_physical_coverage(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -238,8 +238,9 @@ def _retarget_assemblies(xml, root, pre):
 class CSharpCoverageTests(unittest.TestCase):
     def test_campaign_mechanism_callables_stay_within_cognitive_budget(self):
         root = Path(__file__).resolve().parents[3]
+        python = root / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
         metrics = subprocess.run([
-            sys.executable, str(root / "DynaDocs.Tests/coverage/python_metrics.py")
+            str(python), str(root / "DynaDocs.Tests/coverage/python_metrics.py")
         ], input=(root / "DynaDocs.Tests/coverage/csharp_coverage.py").read_text(encoding="utf-8"),
             text=True, capture_output=True, check=True)
         rows = {row["id"].split(":", 1)[0]: row["cognitive"]

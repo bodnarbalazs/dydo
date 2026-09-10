@@ -51,6 +51,18 @@ def write_repository(root, files):
     subprocess.run(["git", "init", "-q"], cwd=root, check=True, capture_output=True)
 
 
+def copy_tooling(destination):
+    """The measurement tools in a private tree, so a collector build never reaches the campaign's
+    in-place instrumented producer under the repository's own metrics/bin."""
+    tools = Path(__file__).resolve().parents[1]
+    shutil.copytree(tools / "metrics", destination / "DynaDocs.Tests/coverage/metrics",
+                    ignore=shutil.ignore_patterns("bin", "obj"))
+    for relative in ("Directory.Build.props", "DynaDocs.Tests/coverage/SonarLint.xml",
+                     "DynaDocs.Tests/coverage/test-associations.json"):
+        shutil.copy2(tools.parents[1] / relative, destination / relative)
+    return destination / "DynaDocs.Tests/coverage"
+
+
 def gate_metrics_dll(root):
     prebuilt = os.environ.get(GATE_METRICS_PREBUILT_ENV)
     if prebuilt:
@@ -416,9 +428,9 @@ class CSharpCollectorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tooling = Path(__file__).resolve().parents[1]
-        os.environ["APPDATA"] = str(cls.tooling.parents[1] / "dydo/_system/.local/appdata")
-        os.environ.setdefault("NUGET_PACKAGES", str(Path.home() / ".nuget/packages"))
-        cls.fixture = Path(tempfile.mkdtemp(prefix="dyd96-csharp-collectors-"))
+        cls.workspace = Path(tempfile.mkdtemp(prefix="dyd96-csharp-collectors-"))
+        cls.fixture = cls.workspace / "repository"
+        cls.fixture.mkdir()
         write_repository(cls.fixture, {
             "subject/Subject.csproj": SDK_PROJECT.format(targets=""),
             "subject/Subject.cs": tangled_subject(),
@@ -433,20 +445,24 @@ class CSharpCollectorTests(unittest.TestCase):
             "late/Late.cs": trivial_class("Late", 3),
         })
         collector = Collectors(cls.fixture, cls.fixture / "gate-output")
-        collector.coverage = cls.tooling
-        cls.projects = collector.projects()
-        cls.inventory = collector.source_inventory()
-        cls.stale_associations = collector.associations()
-        cls.source = collector.csharp_source()
-        evaluated = list(collector.project_rows)
-        collector.project_rows = [row for row in evaluated if row["path"].startswith("subject/")]
-        cls.clean_analyzers = collector.csharp_analyzers()
-        collector.project_rows = [row for row in evaluated if not row["path"].startswith("subject/")]
-        cls.gap_analyzers = collector.csharp_analyzers()
+        collector.coverage = copy_tooling(cls.workspace / "tooling")
+        with patch.dict(os.environ, {
+                "APPDATA": str(cls.tooling.parents[1] / "dydo/_system/.local/appdata"),
+                "NUGET_PACKAGES": os.environ.get("NUGET_PACKAGES",
+                                                 str(Path.home() / ".nuget/packages"))}):
+            cls.projects = collector.projects()
+            cls.inventory = collector.source_inventory()
+            cls.stale_associations = collector.associations()
+            cls.source = collector.csharp_source()
+            evaluated = list(collector.project_rows)
+            collector.project_rows = [row for row in evaluated if row["path"].startswith("subject/")]
+            cls.clean_analyzers = collector.csharp_analyzers()
+            collector.project_rows = [row for row in evaluated if not row["path"].startswith("subject/")]
+            cls.gap_analyzers = collector.csharp_analyzers()
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.fixture, ignore_errors=True)
+        shutil.rmtree(cls.workspace, ignore_errors=True)
 
     def temporary(self, prefix):
         folder = Path(tempfile.mkdtemp(prefix=prefix))

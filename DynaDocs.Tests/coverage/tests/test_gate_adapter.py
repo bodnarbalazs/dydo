@@ -14,6 +14,87 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import gate_adapter
 from gate_adapter import _target_paths, publish
 
+TOOLS = Path(__file__).resolve().parents[1]
+STATIC_PYTHON = TOOLS.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+
+PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
+PYTHON_SUITE = ("import unittest\n\n\n"
+                "class AddTests(unittest.TestCase):\n"
+                "    def test_add(self):\n"
+                "        self.assertEqual(3, 1 + 2)\n")
+PYTHON_FAILING_SUITE = PYTHON_SUITE.replace("self.assertEqual(3, 1 + 2)",
+                                            "self.fail('fixture regression')")
+
+DISCOVERY_SOURCES = {
+    "tests/test_unittest_case.py": "import unittest\n\n\nclass Case(unittest.TestCase):\n    pass\n",
+    "tests/test_plain_class.py": "class Case(object):\n    pass\n",
+    "tests/test_unparsable.py": "def broken(:\n",
+    "tests/helper.py": "import unittest\n\n\nclass Case(unittest.TestCase):\n    pass\n",
+    "tests/adapter.test.cjs": "const { test } = require('node:test');\ntest('a', () => {});\n",
+    "tests/browser.test.cjs": "test('a', () => {});\n",
+    "tests/library.cjs": "module.exports = {};\n",
+}
+
+# The fixture repository delegates to the real producer: a copy would lose its node_modules/c8.
+NODE_PRODUCER_SHIM = (
+    "'use strict';\n"
+    "const { spawnSync } = require('node:child_process');\n"
+    "const answer = spawnSync(process.execPath,\n"
+    "  [" + json.dumps((TOOLS / "javascript_coverage.cjs").as_posix()) + ",\n"
+    "   ...process.argv.slice(2)], { stdio: 'inherit' });\n"
+    "process.exitCode = answer.status === null ? 130 : answer.status;\n")
+NODE_TEST_DRIVER = (
+    "'use strict';\n"
+    "const path = require('node:path');\n"
+    "const { spawnSync } = require('node:child_process');\n"
+    "const suite = path.resolve(__dirname, 'tests', 'sum.test.cjs');\n"
+    "const answer = spawnSync(process.execPath, ['--test', suite], { stdio: 'inherit' });\n"
+    "process.exitCode = answer.status === null ? 130 : answer.status;\n")
+NODE_IGNORED = ("DynaDocs.Tests/coverage/javascript_coverage.cjs\n"
+                "DynaDocs.Tests/coverage/node_tests.cjs\n")
+NODE_SOURCE = ("'use strict';\n"
+               "function sum(a, b) {\n  return a + b;\n}\n"
+               "module.exports = { sum };\n")
+NODE_SOURCE_WITH_GAP = ("'use strict';\n"
+                        "function sum(a, b) {\n  return a + b;\n}\n"
+                        "function unused(a) {\n  return a - 1;\n}\n"
+                        "module.exports = { sum, unused };\n")
+NODE_SUITE = ("'use strict';\n"
+              "const test = require('node:test');\n"
+              "const assert = require('node:assert');\n"
+              "const { sum } = require('../../../lib/sum.cjs');\n"
+              "test('sum adds', () => { assert.strictEqual(sum(1, 2), 3); });\n")
+
+
+def write_file(root, relative, text):
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def git_repository(root):
+    subprocess.run(["git", "init", "--quiet", str(root)], check=True)
+    return root
+
+
+def committed_repository(root):
+    git_repository(root)
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=fixture",
+                    "-c", "user.email=fixture@example.invalid",
+                    "commit", "--quiet", "-m", "fixture"], check=True)
+    return root
+
+
+def python_repository(folder, suite=PYTHON_SUITE):
+    root = Path(folder) / "repo"
+    write_file(root, "lib/arithmetic.py", PYTHON_TARGET)
+    write_file(root, "DynaDocs.Tests/coverage/tests/test_arithmetic.py", suite)
+    write_file(root, "DynaDocs.Tests/coverage/test-associations.json",
+               '{"schema": 1, "modules": []}')
+    return committed_repository(root)
+
 
 class GateAdapterTests(unittest.TestCase):
     def test_python_coverage_targets_only_inventory_maintained_sources(self):
@@ -150,6 +231,188 @@ class GateAdapterTests(unittest.TestCase):
                 self.assertEqual(0, gate_adapter.main())
             self.assertEqual(str(root / "dydo/_system/.local/appdata"), observed["appdata"])
             self.assertEqual("", observed["packages"])
+
+
+class NativeDiscoveryTests(unittest.TestCase):
+    def test_discovery_accepts_only_unittest_cases_and_node_test_files(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for relative, text in DISCOVERY_SOURCES.items():
+                write_file(root, relative, text)
+
+            rows = gate_adapter._ordinary_discovery(root, [*sorted(DISCOVERY_SOURCES),
+                                                           "tests/absent.py"])
+
+            self.assertEqual([{"id": "tests/adapter.test.cjs#node-test",
+                               "file": "tests/adapter.test.cjs"},
+                              {"id": "tests/test_unittest_case.py#unittest",
+                               "file": "tests/test_unittest_case.py"}], rows)
+
+    def test_aggregate_prefers_measurement_gaps_over_findings_and_names_each_collector(self):
+        clean = {"findings": [], "errors": []}
+        failed = {"findings": [{"gate": "line-coverage"}], "errors": []}
+        absent = {"findings": [], "errors": [{"message": "no native producer"}]}
+        rows = [{"a": clean}, {"a": clean, "b": failed}, {"b": failed, "c": absent}]
+
+        statuses = [gate_adapter._aggregate({"collectors": row})["status"] for row in rows]
+
+        self.assertEqual(["pass", "fail", "error"], statuses)
+        answer = gate_adapter._aggregate({"collectors": rows[2]})
+        self.assertEqual([{"collector": "b", "gate": "line-coverage"}], answer["findings"])
+        self.assertEqual([{"collector": "c", "message": "no native producer"}], answer["errors"])
+        self.assertEqual(rows[2], answer["facts"]["collectors"])
+
+
+class CandidateInventoryTests(unittest.TestCase):
+    def test_candidate_reports_the_head_commit_and_notices_an_untracked_change(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = python_repository(folder)
+            head = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], check=True,
+                                  text=True, capture_output=True).stdout.strip()
+
+            clean, tracked = gate_adapter._candidate(root)
+            write_file(root, "lib/extra.py", "value = 1\n")
+            dirty, extended = gate_adapter._candidate(root)
+
+            self.assertEqual(head, clean["commit"])
+            self.assertFalse(clean["dirty"])
+            self.assertTrue(dirty["dirty"])
+            self.assertNotEqual(clean["sourceFingerprint"], dirty["sourceFingerprint"])
+            self.assertEqual(["lib/extra.py"], [row["path"] for row in extended
+                                                if row not in tracked])
+
+    def test_inventory_artifact_retains_the_candidate_roles_and_the_missing_project_gap(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = python_repository(folder)
+            candidate = {"commit": "a" * 40, "dirty": False, "sourceFingerprint": "b" * 64}
+
+            inventory, errors = gate_adapter._inventory_artifact(root, Path(folder) / "run",
+                                                                 candidate)
+
+            payload = json.loads(inventory.read_text(encoding="utf-8"))
+            self.assertEqual(candidate, payload["candidate"])
+            self.assertEqual([{"message": "No evaluated C# projects"}], errors)
+            roles = {row["path"]: row["role"] for row in payload["sources"]}
+            self.assertEqual("target", roles["lib/arithmetic.py"])
+            self.assertEqual("test", roles["DynaDocs.Tests/coverage/tests/test_arithmetic.py"])
+
+    def test_static_gate_registers_the_collectors_its_stack_owns(self):
+        shared = {"projects", "source-inventory", "associations"}
+        expected = {
+            "python": shared | {"python-source", "python-dead-code", "python-dependencies"},
+            "node": shared | {"javascript-source", "javascript-dependencies",
+                              "javascript-unused-exports", "clones"},
+            "dotnet": shared | {"csharp-source", "csharp-analyzers", "versions"},
+        }
+        with tempfile.TemporaryDirectory() as folder:
+            root = python_repository(folder)
+            for stack, names in expected.items():
+                answer = gate_adapter.collect_static(root, Path(folder) / ("static-" + stack), stack)
+                self.assertEqual(names, set(answer["facts"]["collectors"]), stack)
+            with self.assertRaisesRegex(ValueError, "Unknown stack: elixir"):
+                gate_adapter.collect_static(root, Path(folder) / "static-elixir", "elixir")
+
+
+class CoverageCampaignTests(unittest.TestCase):
+    def coverage_gate(self, root, output):
+        return subprocess.run([str(STATIC_PYTHON), str(TOOLS / "gate_adapter.py"),
+                               "--gate", "coverage", "--stack", "python",
+                               "--root", str(root), "--output", str(output)],
+                              text=True, capture_output=True, encoding="utf-8", errors="replace")
+
+    def node_repository(self, folder, source):
+        root = Path(folder) / "repo"
+        write_file(root, "lib/sum.cjs", source)
+        write_file(root, ".gitignore", NODE_IGNORED)
+        write_file(root, "DynaDocs.Tests/coverage/javascript_coverage.cjs", NODE_PRODUCER_SHIM)
+        write_file(root, "DynaDocs.Tests/coverage/node_tests.cjs", NODE_TEST_DRIVER)
+        write_file(root, "DynaDocs.Tests/coverage/tests/sum.test.cjs", NODE_SUITE)
+        return git_repository(root)
+
+    def test_python_coverage_gate_publishes_measured_findings_beside_inventory_gaps(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = python_repository(folder)
+            output = Path(folder) / "results"
+
+            process = self.coverage_gate(root, output)
+
+            self.assertEqual(2, process.returncode, process.stderr)
+            payload = json.loads((output / "adapters/python-coverage.json").read_text(encoding="utf-8"))
+            self.assertEqual([{"actual": 0.0, "gate": "line-coverage", "member": None,
+                               "path": "lib/arithmetic.py", "threshold": 80}], payload["findings"])
+            self.assertEqual([{"message": "No evaluated C# projects"}], payload["gaps"])
+            self.assertFalse(payload["measurementComplete"])
+
+    def test_python_coverage_gate_reports_a_failed_suite_before_any_policy(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = python_repository(folder, PYTHON_FAILING_SUITE)
+            output = Path(folder) / "results"
+
+            process = self.coverage_gate(root, output)
+
+            self.assertEqual(2, process.returncode, process.stderr)
+            payload = json.loads((output / "adapters/python-coverage.json").read_text(encoding="utf-8"))
+            self.assertEqual([{"gate": "functional", "child_exit": 1}], payload["findings"])
+
+    def test_dotnet_coverage_reports_an_incomplete_campaign_and_rejects_an_unknown_stack(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "repo"
+            root.mkdir()
+            inventory = write_file(root, "inventory.json", '{"sources": []}')
+
+            answer = gate_adapter.collect_coverage(root, Path(folder), "dotnet", inventory)
+
+            self.assertEqual("error", answer["status"])
+            self.assertEqual([{"gate": "csharp-coverage", "message": "native campaign incomplete"}],
+                             answer["errors"])
+            self.assertEqual(2, answer["facts"]["child_exit"])
+            with self.assertRaisesRegex(ValueError, "Unknown stack: elixir"):
+                gate_adapter.collect_coverage(root, Path(folder), "elixir", inventory)
+
+    def test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = self.node_repository(folder, NODE_SOURCE)
+            raw = Path(folder) / "output/raw"
+            raw.parent.mkdir()
+
+            answer = gate_adapter.collect_node_coverage(root, raw)
+
+            self.assertEqual("pass", answer["status"], json.dumps(answer["findings"]))
+            self.assertEqual([], answer["errors"])
+            self.assertEqual(0, answer["facts"]["child_exit"])
+            self.assertEqual(["lib/sum.cjs"], [row["path"] for row in answer["facts"]["modules"]])
+            request = json.loads((raw.parent / (raw.name + "-request.json")).read_text(encoding="utf-8"))
+            self.assertEqual(["lib/sum.cjs"], request["targets"])
+
+    def test_node_coverage_reports_uncovered_targets_beside_extensionless_gaps(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = self.node_repository(folder, NODE_SOURCE_WITH_GAP)
+            write_file(root, "bin/launcher", "#!/usr/bin/env node\n")
+            raw = Path(folder) / "output/raw"
+            raw.parent.mkdir()
+
+            answer = gate_adapter.collect_node_coverage(root, raw)
+
+            self.assertEqual("error", answer["status"])
+            self.assertEqual(["line-coverage"], [row["gate"] for row in answer["findings"]])
+            self.assertEqual([{"gate": "extensionless-javascript", "path": "bin/launcher",
+                               "message": "Native analyzer filename identity pending DYD-105"}],
+                             answer["errors"])
+
+    def test_node_coverage_refuses_a_reused_output_and_deleted_maintained_inputs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = self.node_repository(folder, NODE_SOURCE)
+            raw = Path(folder) / "output/raw"
+            raw.mkdir(parents=True)
+
+            answer = gate_adapter.collect_node_coverage(root, raw)
+
+            self.assertEqual("error", answer["status"])
+            self.assertEqual(2, answer["facts"]["child_exit"])
+            committed_repository(root)
+            (root / "lib/sum.cjs").unlink()
+            with self.assertRaisesRegex(ValueError, "Deleted maintained inputs"):
+                gate_adapter.collect_node_coverage(root, Path(folder) / "output/second")
 
 
 if __name__ == "__main__":

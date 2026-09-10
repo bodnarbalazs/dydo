@@ -526,7 +526,9 @@ reader can tell a campaign-reachable status from one only a fixture can carry.
 Report validation runs in this order and each failure is 2; the order is part of the contract
 (Ruled 5 below). (1) The report file exists and parses; each mutant has `id`, `mutatorName`,
 `status`, `location.start/end.line/column`; a Cosmic Ray session has exactly one mutation per work
-item, every work item has a result, and every `module_path` equals the session's file. (2) Every
+item, every work item has a result, and every `module_path` names the session's file — path
+identity as this host spells it, never a byte comparison, and never case-folded, per the spelling
+note in Report path normalization. (2) Every
 report path is normalized to a canonical repository-relative path (the normalization paragraph
 after the foreign-file rule). (3) The
 zero-mutant rule of "Selection width" is applied to the campaign as a whole. (4) Only when the

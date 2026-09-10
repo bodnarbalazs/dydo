@@ -501,12 +501,6 @@
       ]
     },
     {
-      "module": "Rules/FolderMetaFilesRule.cs",
-      "tests": [
-        "DynaDocs.Tests/Rules/FolderMetaFilesRuleTests.cs"
-      ]
-    },
-    {
       "module": "Rules/FrontmatterRule.cs",
       "tests": [
         "DynaDocs.Tests/Rules/FrontmatterRuleTests.cs"
@@ -516,12 +510,6 @@
       "module": "Rules/FutureFeatureRule.cs",
       "tests": [
         "DynaDocs.Tests/Rules/FutureFeatureRuleTests.cs"
-      ]
-    },
-    {
-      "module": "Rules/HubFilesRule.cs",
-      "tests": [
-        "DynaDocs.Tests/Rules/HubFilesRuleTests.cs"
       ]
     },
     {
@@ -546,12 +534,6 @@
       "module": "Rules/OffLimitsRule.cs",
       "tests": [
         "DynaDocs.Tests/Rules/OffLimitsRuleTests.cs"
-      ]
-    },
-    {
-      "module": "Rules/OrphanDocsRule.cs",
-      "tests": [
-        "DynaDocs.Tests/Rules/OrphanDocsRuleTests.cs"
       ]
     },
     {
@@ -654,12 +636,6 @@
       "module": "Services/FrontmatterTypesService.cs",
       "tests": [
         "DynaDocs.Tests/Services/FrontmatterTypesServiceTests.cs"
-      ]
-    },
-    {
-      "module": "Services/HubGenerator.cs",
-      "tests": [
-        "DynaDocs.Tests/Services/HubGeneratorTests.cs"
       ]
     },
     {

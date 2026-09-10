@@ -549,7 +549,10 @@ engine (`selected` is the changed targets in `changed` mode and every target of 
 Report path normalization (Ruled 6 below): no engine reports a repository-relative path on its own.
 Stryker.NET's `files` keys are absolute OS paths and its `projectRoot` is the mutated project's
 directory; StrykerJS's `files` keys are relative to its own absolute `projectRoot`; Cosmic Ray stores
-`module_path` exactly as the adapter generated `module-path`. `mutation_summary` therefore takes the
+`module_path` as `str(Path(<the adapter's module-path>))` (`cosmic_ray/cli.py:106`,
+`commands/init.py:67`), so on Windows a nested `src/mod.py` comes back spelled `src\mod.py` — the
+same file, not the same bytes, and a reader that compares bytes refuses every nested python target.
+`mutation_summary` therefore takes the
 snapshot root as an explicit argument — never `cwd`, so a captured fixture whose paths point into the
 tree that produced it replays anywhere — and maps every report key the same way: join a relative key
 onto that report's `projectRoot`, resolve with `os.path.realpath`, require containment in the resolved

@@ -65,23 +65,33 @@ def _resolve_module(name, folder, modules, search_roots=()):
     return next(iter(matches), None)
 
 
+def _relative_import_targets(node, path):
+    folder = PurePosixPath(path).parent
+    for _ in range(node.level - 1):
+        folder = folder.parent
+    prefix = folder.as_posix().replace('/', '.') if str(folder) != "." else ""
+    base = ".".join(part for part in (prefix, node.module) if part)
+    candidates = [base] if node.module else []
+    candidates.extend(".".join(part for part in (base, item.name) if part)
+                      for item in node.names)
+    return [(candidate, "") for candidate in candidates]
+
+
+def _absolute_import_targets(node, path):
+    folder = str(PurePosixPath(path).parent)
+    candidates = [node.module or ""]
+    candidates.extend(f"{node.module}.{item.name}" for item in node.names)
+    return [(candidate, folder) for candidate in candidates]
+
+
 def _import_targets(node, path):
     if isinstance(node, ast.Import):
         return [(name.name, str(PurePosixPath(path).parent)) for name in node.names]
     if not isinstance(node, ast.ImportFrom):
         return []
-    folder = PurePosixPath(path).parent
     if node.level:
-        for _ in range(node.level - 1):
-            folder = folder.parent
-        prefix = f"{folder.as_posix().replace('/', '.')}" if str(folder) != "." else ""
-        base = ".".join(part for part in (prefix, node.module) if part)
-        candidates = [base] if node.module else []
-        candidates.extend(".".join(part for part in (base, item.name) if part) for item in node.names)
-        return [(candidate, "") for candidate in candidates]
-    candidates = [node.module or ""]
-    candidates.extend(f"{node.module}.{item.name}" for item in node.names)
-    return [(candidate, str(folder)) for candidate in candidates]
+        return _relative_import_targets(node, path)
+    return _absolute_import_targets(node, path)
 
 
 def import_edges(path, tree, modules, search_roots=()):

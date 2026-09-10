@@ -34,16 +34,19 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 4. **Take the gates at this stage's scale.** Judging a hop, weigh the focused run it committed: a
    test relevant to the change and left out of it is a finding, and the full suites stay with the
    gate. At a gate review — the Issue's final gates, a merge, the landing — the full-suite evidence
-   is that exact candidate's own gate record: candidate, command, environment, exit, result path and
-   hashes. Check that record; a rerun needs a concrete doubt you state. Real output is evidence; a
-   gate that cannot run yet is named with why.
+   is that exact candidate's own gate record: candidate, command, environment or session, exit and
+   result location. Check that record; a rerun needs a concrete doubt you state. Real output is
+   evidence; a gate that cannot run yet is named with why.
 5. **Write the block.** Done when the invoker can act on every finding without asking you a question.
 
-6. Rerun the exact gates applicable to the current Issue and stage, using the commands named in
-   that contract. A bounded prose-only review may have no runtime gate when its contract names none.
-   Meaningful code changes retain their specified test obligations; combined merge gates and final
-   G/M release obligations remain mandatory at their stages.
-- [ ] Every gate applicable to this Issue and stage was rerun with the contract-named command.
+6. Work the gates this stage owes with the commands that contract names: at a hop, the tests the
+   change reaches and the cheap checks the Issue names; at the Issue's final gates, a merge or the
+   landing, the full suites and the whole gate set on that exact candidate. A bounded prose-only
+   review may have no runtime gate when its contract names none. Meaningful code changes retain
+   their specified test obligations; combined merge gates and final G/M release obligations remain
+   mandatory at their stages.
+- [ ] Every gate this stage owes has its contract-named command and result on this candidate.
+- [ ] A hop's committed run includes every test its change reaches.
 - [ ] Meaningful code changes passed their specified tests.
 - [ ] Combined merge gates passed when this is a merge review.
 - [ ] Final G/M release obligations passed when this is the final release review.

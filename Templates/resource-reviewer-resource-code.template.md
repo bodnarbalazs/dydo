@@ -44,12 +44,15 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
   unit; a suite where no test was ever red; an assertion on a prompt file's wording; a metric moved
   with nothing claimed; an unbounded wait or a dependence on order
 
-## Gates rerun
+## Gates
 
-- The Issue's exact commands
-- Coverage, HCRAP and the one-level static policy in the project's testing guide
-- Mutation on the changed files, no survivor; one example value changed per scenario, none left green
-- `dydo check` when the change touches documentation or validation surfaces
+- At a hop, the selection: the tests the change reaches ran green beside the cheap checks the Issue
+  names, and a relevant test the run left out is a finding; the full suites belong to the gate
+- At a gate — the Issue's final gates, a merge, the landing — the whole set below on that exact
+  candidate, read from its gate record or run by you:
+  - Coverage, HCRAP and the one-level static policy in the project's testing guide
+  - Mutation on the changed files, no survivor; one example value changed per scenario, none left green
+  - `dydo check` when the change touches documentation or validation surfaces
 
 ## Security and likely bugs
 

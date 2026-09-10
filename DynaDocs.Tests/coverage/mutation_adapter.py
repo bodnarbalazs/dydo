@@ -718,11 +718,8 @@ def _arguments(argv):
 
 
 def _selection(candidate, stack, targets, triggers, witness, gaps):
-    whole = _stack_targets(candidate, stack)
-    # A trigger whose whole stack the changed targets already cover widens nothing, so the
-    # campaign is the changed one it would have been; the earliest trigger names a real widening.
-    if triggers and whole != targets:
-        mode, reason, selected = "widened", min(triggers)[1], whole
+    if triggers:
+        mode, reason, selected = "widened", min(triggers)[1], _stack_targets(candidate, stack)
     elif targets:
         mode, reason, selected = "changed", "changed target", list(targets)
     else:

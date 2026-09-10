@@ -306,7 +306,9 @@ class Repository:
         tests = {"dotnet": ("current-python", ["-c", "print('dotnet tests')"]),
                  "python": ("current-python",
                             ["-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"]),
-                 "node": ("argv", ["node", "--test", "tests/"])}
+                 # Node 22 loads a directory argument as a module and dies; its own discovery
+                 # from the campaign root is the form that runs `tests/*.test.cjs`.
+                 "node": ("argv", ["node", "--test"])}
         stacks = []
         for name in ("dotnet", "python", "node"):
             kind, argv = tests[name]
@@ -327,7 +329,7 @@ class Repository:
                    **entries}
         self.write("shims/shim.json", json.dumps(payload, indent=1))
         core = ("DynaDocs.Tests/coverage/mutation/node_modules/@stryker-mutator/core")
-        self.write(f"{core}/shim.json", json.dumps(payload, indent=1))
+        self.write(f"{core}/bin/shim.json", json.dumps(payload, indent=1))
         self.write("dydo/_system/.local/mutation/python/Lib/site-packages/cosmic_ray/shim.json",
                    json.dumps(payload, indent=1))
 
@@ -514,7 +516,10 @@ class MutationFacadeTests(unittest.TestCase):
         recorded = seen.facts(stack, "candidate.commit", "candidate.dirty",
                               "candidate.sourceFingerprint", "inventory.path", "inventory.sha256",
                               "tools", "commands", "mutation.rawReports")
-        self.assertEqual([], [name for name, value in recorded.items() if not value])
+        # Every field is recorded; `candidate.dirty` is a boolean, so a truthful `False` is
+        # a reading, not an absence.
+        self.assertEqual([], [name for name, value in recorded.items()
+                              if not value and not isinstance(value, bool)])
         return seen
 
     def test_an_all_killed_dotnet_campaign_passes(self):
@@ -853,7 +858,8 @@ class MutationFacadeTests(unittest.TestCase):
                 {"module": "src/beta.py", "tests": ["tests/test_mod.py"]},
                 {"module": "src/mod.py", "tests": ["tests/test_mod.py"]},
                 {"module": "src/value.cjs", "tests": ["tests/value.test.cjs"]}]}, indent=1))
-        repository.commit("associate both python targets with the one test")
+        # The association belongs to the base, so the test file is the scenario's only change.
+        repository.base = repository.commit("associate both python targets with the one test")
         repository.write("tests/test_mod.py", TEST_MOD_PY + "\n# changed\n")
         repository.commit("change only the test file")
         seen = self.campaign("python", "cosmic-ray-killed.sqlite",
@@ -878,12 +884,13 @@ class MutationFacadeTests(unittest.TestCase):
                 {"module": "src/fresh.py", "tests": ["tests/test_mod.py"]},
                 {"module": "src/mod.py", "tests": ["tests/test_mod.py"]},
                 {"module": "src/value.cjs", "tests": ["tests/value.test.cjs"]}]}, indent=1))
+        repository.plan(**{"cosmic": {"fixture": "cosmic-ray-killed.sqlite",
+                                      "files": ["src/fresh.py", "src/mod.py"]}})
+        # Taken after the harness's own last write, so what it compares is the adapter's effect.
         before = {path.relative_to(repository.path).as_posix(): path.read_bytes()
                   for path in sorted(repository.path.rglob("*"))
                   if path.is_file() and ".git" not in path.parts
                   and "results" not in path.parts}
-        repository.plan(**{"cosmic": {"fixture": "cosmic-ray-killed.sqlite",
-                                      "files": ["src/fresh.py", "src/mod.py"]}})
         seen = repository.invoke("gate", "mutation", "--since", repository.base, "--stack",
                                  "python")
         after = {path.relative_to(repository.path).as_posix(): path.read_bytes()
@@ -1014,7 +1021,7 @@ class MutationFacadeTests(unittest.TestCase):
                     self.js_template(inPlace=False), "node", "stryker-js-killed.json")
 
     def test_the_python_template_pins_the_local_distributor(self):
-        self.pinned("cosmic-ray.toml", "distributor", 'name = "local"',
+        self.pinned("cosmic-ray.toml", "distributor", 'name="local"',
                     '[cosmic-ray]\nmodule-path = ""\ntimeout = 0.0\nexcluded-modules = []\n'
                     'test-command = ""\n\n[cosmic-ray.distributor]\nname = "http"\n',
                     "python", "cosmic-ray-killed.sqlite")

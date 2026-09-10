@@ -54,9 +54,11 @@ with the reason. This mode proves the problem; it does not make the test green b
    the shape is wrong; run that test file, not the suite. One seam, one test, one change per cycle,
    each answering what the last one taught. Done when every scenario and every step of the plan is
    green and nothing outside the owned paths moved.
-5. **Prove it, once.** The full suite and the exact gates, real output in hand; then commit in the
-   owned paths. Investigate an unexpected failure until you can name its cause. Done when every gate
-   has run and the work is committed.
+5. **Prove it, once.** The tests relevant to the change — the test modules you touched and the
+   fixtures it reaches — with the cheap checks the Issue names (compile, lint, diff check), real
+   output in hand; then commit in the owned paths. The full suites run at the gate the Captain
+   names, not on this hop. Investigate an unexpected failure until you can name its cause. Done when
+   that focused proof has run and the work is committed.
 
 [tests](.claude/skills/implementer/resources/tests.md) shows the good and bad shapes; [mocking](.claude/skills/implementer/resources/mocking.md) says where
 a mock belongs.

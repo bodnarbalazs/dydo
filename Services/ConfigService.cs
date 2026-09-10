@@ -5,11 +5,12 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
+using DynaDocs.Utils;
 
 public partial class ConfigService : IConfigService
 {
-    public const string ConfigFileName = "dydo.json";
-    public const string DefaultRoot = "dydo";
+    public const string ConfigFileName = ConfigFileLocator.FileName;
+    public const string DefaultRoot = ConfigFileLocator.DefaultRoot;
 
     // Cache keyed by startPath to avoid repeated directory walks within the same instance
     private readonly Dictionary<string, string?> _configFileCache = new();

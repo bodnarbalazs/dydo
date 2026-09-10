@@ -213,6 +213,12 @@ class C {
                                 text=True, capture_output=True, check=True)
         self.assertEqual([], json.loads(result.stdout)["namespace_edges"])
 
+    def test_namespace_reference_in_type_declaration_uses_declaring_namespace(self):
+        source = "namespace Root { public class Parent {} } namespace Root.Child { public class Child : Root.Parent {} }"
+        result = subprocess.run(["dotnet", str(self.dll), "--syntax"], input=source,
+                                text=True, capture_output=True, check=True)
+        self.assertEqual([["Root.Child", "Root"]], json.loads(result.stdout)["namespace_edges"])
+
     def test_real_msbuild_project_produces_compilation_and_exact_file_identity(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

@@ -798,8 +798,8 @@ public class SyncCommandTests : IDisposable
             Console.SetOut(originalOutput);
         }
 
-        Steps.WorkflowRetirementSteps.AssertNativeSummary(new Steps.CliResult(result, output.ToString(), ""), "none");
-        Steps.WorkflowRetirementSteps.AssertNativeArtifacts(_testDir, "none");
+        NativeSyncAssertions.AssertSummary(result, output.ToString(), "", "none");
+        NativeSyncAssertions.AssertArtifacts(_testDir, "none");
         Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude", "workflows")));
     }
     [Fact]

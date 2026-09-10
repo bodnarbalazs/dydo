@@ -30,7 +30,7 @@ public static class NamespaceDependencies
             var symbol = model.GetSymbolInfo(node).Symbol;
             if (symbol is not (ITypeSymbol or IMethodSymbol or IPropertySymbol or IFieldSymbol or IEventSymbol))
                 continue;
-            var from = Name(model.GetEnclosingSymbol(node.SpanStart)?.ContainingNamespace);
+            var from = EnclosingNamespace(model.GetEnclosingSymbol(node.SpanStart));
             var to = Name(symbol.ContainingNamespace);
             if (from != null && to != null && from != to && namespaces.Contains(from) && namespaces.Contains(to))
                 edges.Add((from, to));
@@ -43,5 +43,9 @@ public static class NamespaceDependencies
             return null;
         return symbol.IsGlobalNamespace ? "<global>" : symbol.ToDisplayString();
     }
-}
 
+    private static string? EnclosingNamespace(ISymbol? symbol) =>
+        symbol is INamespaceSymbol namespaceSymbol
+            ? Name(namespaceSymbol)
+            : Name(symbol?.ContainingNamespace);
+}

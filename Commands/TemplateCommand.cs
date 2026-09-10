@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DynaDocs.Models;
@@ -12,15 +11,7 @@ using DynaDocs.Utils;
 public static class TemplateCommand
 {
     // Framework-owned files relative to the dydo root
-    public static readonly string[] FrameworkDocFiles =
-    [
-        "reference/about-dynadocs.md",
-        "reference/dydo-commands.md",
-        "reference/dydo-glossary.md",
-        "reference/linear-workspace-standard.md",
-        "reference/writing-docs.md",
-        "guides/working-tree-contract.md"
-    ];
+    public static readonly string[] FrameworkDocFiles = FrameworkCatalog.DocumentFiles;
 
     // Binary assets retired from the framework, deleted from projects on update — but only
     // when the on-disk copy is a known framework version (stored hash, or a shipped hash
@@ -652,25 +643,13 @@ public static class TemplateCommand
     };
 
     public static string NormalizeForHash(string content)
-    {
-        // Strip UTF-8 BOM
-        if (content.Length > 0 && content[0] == '\uFEFF')
-            content = content[1..];
-
-        return content.Replace("\r\n", "\n");
-    }
+        => FrameworkCatalog.Normalize(content);
 
     public static string ComputeHash(string content)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(NormalizeForHash(content)));
-        return Convert.ToHexStringLower(bytes);
-    }
+        => FrameworkCatalog.ComputeHash(content);
 
     public static string ComputeHashBytes(byte[] content)
-    {
-        var bytes = SHA256.HashData(content);
-        return Convert.ToHexStringLower(bytes);
-    }
+        => FrameworkCatalog.ComputeHashBytes(content);
 
     internal abstract record UpdateResult
     {

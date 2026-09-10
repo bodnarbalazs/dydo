@@ -29,7 +29,7 @@ public static partial class SyncCommand
     // output-directory cleaner. DR 046 retired `code-writer` and `issue-planner` by renaming
     // them to `implementer` and `specifier`; `implementer` is a shipped skill again, so listing
     // it here would make every sync sweep its own output.
-    internal static readonly string[] RetiredSkills = ["sprint-auditor", "orchestrator", "manager", "planner", "test-writer", "code-writer", "issue-planner"];
+    internal static readonly string[] RetiredSkills = FrameworkCatalog.RetiredSkills;
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
     // Issue Captain's completion criterion; the inquisition became an Issue with its own

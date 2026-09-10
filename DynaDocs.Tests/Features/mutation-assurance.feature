@@ -60,21 +60,23 @@ Feature: Mutation assurance runs real campaigns over isolated changed code
     And measurementComplete is true and the command exits 1
 
     Examples:
-      | stack  | native                              | normalized   |
-      | dotnet | Survived                            | survived     |
-      | dotnet | NoCoverage                          | noCoverage   |
-      | dotnet | Timeout                             | timeout      |
-      | dotnet | RuntimeError                        | runtimeError |
-      | dotnet | Ignored                             | ignored      |
-      | dotnet | Pending                             | unrun        |
-      | node   | Survived                            | survived     |
-      | node   | Timeout                             | timeout      |
-      | node   | RuntimeError                        | runtimeError |
-      | python | survived                            | survived     |
-      | python | killed after the engine timeout     | timeout      |
-      | python | killed with no completion marker    | runtimeError |
-      | python | killed whose marker reads exit=0    | runtimeError |
-      | python | skipped                             | unrun        |
+      | stack  | native                                    | normalized   |
+      | dotnet | Survived                                  | survived     |
+      | dotnet | NoCoverage                                | noCoverage   |
+      | dotnet | Timeout                                   | timeout      |
+      | dotnet | RuntimeError                              | runtimeError |
+      | dotnet | Ignored                                   | ignored      |
+      | dotnet | Pending                                   | unrun        |
+      | node   | Survived                                  | survived     |
+      | node   | Timeout                                   | timeout      |
+      | node   | RuntimeError                              | runtimeError |
+      | python | survived                                  | survived     |
+      | python | killed after the engine timeout           | timeout      |
+      | python | killed with no completion marker          | runtimeError |
+      | python | killed whose marker reads exit=0          | runtimeError |
+      | python | killed whose marker is another campaign's | runtimeError |
+      | python | skipped                                   | unrun        |
+      | python | no-test                                   | unrun        |
 
   Scenario Outline: Missing or invalid measurement is invalid, never a pass
     Given a candidate with one changed executable "<stack>" target since BASE

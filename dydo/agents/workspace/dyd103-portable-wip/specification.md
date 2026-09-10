@@ -329,27 +329,33 @@ configuration`) and completed per run into the run directory:
   file: `module-path`, `test-command` (the three paragraphs below),
   `timeout = max(60, 5 × baseline seconds)`.
   Argv: `<venv python> -m cosmic_ray.cli init <toml> <run>/python/sessions/<n>.sqlite` then
-  `... exec <toml> <that sqlite>`; read-out `<venv python> <root>/DynaDocs.Tests/coverage/mutation_summary.py --read-cosmic-session <sqlite> --output <run>/python/sessions/<n>.json`
+  `... exec <toml> <that sqlite>`; read-out `<venv python> <root>/DynaDocs.Tests/coverage/mutation_summary.py --read-cosmic-session <sqlite> --marker-nonce <this run's uuid> --output <run>/python/sessions/<n>.json`
   using `cosmic_ray.work_db.use_db(path, mode=WorkDB.Mode.open)`, `work_items` and `results`
   (`job_id`, `mutations[0].module_path/operator_name/occurrence/start_pos/end_pos`,
   `worker_outcome.value`, `test_outcome.value`, `output`). Cosmic Ray's process exit is never read.
 
-**Cosmic Ray suite runner** (Ruled 3 below). `<run>/python/suite_runner.py` is generated once per
-campaign from a constant the adapter owns, is listed and hashed with the generated configs, and lives
-in the run directory, never in the snapshot, so no campaign ever mutates its own harness. It runs the
+**Cosmic Ray suite runner** (Ruled 3 and 11 below). `<run>/python/suite_runner.py` is generated once
+per campaign from a template constant the adapter owns with this invocation's **run uuid substituted
+into it as a literal**, is listed and hashed with the generated configs, and lives
+in the run directory, never in the snapshot, so no campaign ever mutates its own harness. That uuid
+is the marker nonce: the same freshly generated `uuid.uuid4().hex` that names the run directory
+`results/assurance/run-<uuid>/`, allocated once per adapter invocation and never derived from the
+candidate, so no committed text can spell it in advance. It runs the
 python stack's manifest test argv **in its own process** and reports completion: it keeps a reference
 to `sys.stdout`, reconfigures that stream to `encoding="utf-8", errors="backslashreplace"`, binds
 `sys.stderr` to it, sets `sys.path[0] = ""` (the `python -m` search order), sets `sys.argv` to the
 manifest argv without its leading `-m`, executes it with
 `runpy.run_module(<module>, run_name="__main__", alter_sys=True)` for a `-m <module>` argv or
 `runpy.run_path(<script>, run_name="__main__")` for a script argv, catches `SystemExit`, writes
-`\n##DYDO-SUITE-COMPLETE exit=<code>##` to the kept stream as its last act, and exits with `<code>`
+`\n##DYDO-SUITE-COMPLETE <uuid> exit=<code>##` to the kept stream as its last act — `<uuid>` being
+that embedded literal — and exits with `<code>`
 (0 when nothing raised or `SystemExit(None)`, 1 for a non-integer code). In-process
 is the mechanism, not a detail: a wrapper that spawned the suite would leave the real test process
 orphaned on every engine timeout, because `cosmic_ray.testing._kill_process_group` degrades to
 `proc.kill()` on Windows and the following `communicate()` then blocks on the orphan's pipe (measured:
 21.1 s against a 2 s timeout, versus 3.0 s in-process). One process also means a suite that dies
-mid-run — the case the completion witness exists for — writes no marker. A manifest test command the
+mid-run — the case the completion witness exists for — takes the runner down with it, so this
+campaign's marker is never written. A manifest test command the
 runner cannot dispatch in-process (kind not `current-python`, or a first argument that is neither
 `-m <module>` nor a script path) → 2 (`unsupported python test command`).
 
@@ -363,9 +369,11 @@ correct only for StrykerJS's `commandRunner.command`, which Node runs through a 
 
 **Cosmic Ray baseline.** The python baseline runs that exact rendered command; its seconds feed the
 timeout above. Nonzero exit → 2 (`baseline test run failed (exit N)`); exit 0 whose last non-empty
-stdout line is not exactly `##DYDO-SUITE-COMPLETE exit=0##` → 2 (`baseline did not report suite
-completion`). The baseline runs a green suite, so its marker must read `exit=0`, and that one line
-proves the marker, its placement and its `exit=<code>` field live for this campaign — which is what
+stdout line is not exactly `##DYDO-SUITE-COMPLETE <uuid> exit=0##` for this run's uuid → 2
+(`baseline did not report suite
+completion`). The baseline runs a green suite through the same generated runner, so its marker must
+carry this run's nonce and read `exit=0`, and that one line
+proves the marker, its placement, its nonce and its `exit=<code>` field live for this campaign — which is what
 lets a mutant's missing marker mean that mutant's run was cut short, and a mutant's `exit=0` marker
 mean its suite passed.
 
@@ -447,10 +455,10 @@ Status mapping (`mutation_summary.py`; both Strykers emit the mutation-testing-r
 | Stryker `Pending`/`NotRun` | unrun | valid | finding |
 | any other Stryker status | unknown | valid | finding |
 | Cosmic Ray `survived` | survived | valid | finding |
-| Cosmic Ray `killed` whose completion marker reports a nonzero suite exit | killed | valid | pass |
+| Cosmic Ray `killed` carrying this campaign's completion marker with a nonzero suite exit | killed | valid | pass |
 | Cosmic Ray `killed` whose `output` is exactly `timeout` | timeout | valid | finding |
-| Cosmic Ray `killed` whose completion marker reports `exit=0` | runtimeError | valid | finding (`suite reported success under a killed result`) |
-| Cosmic Ray `killed` with no completion marker | runtimeError | valid | finding (`test command did not complete`) |
+| Cosmic Ray `killed` carrying this campaign's completion marker reading `exit=0` | runtimeError | valid | finding (`suite reported success under a killed result`) |
+| Cosmic Ray `killed` with no completion marker of this campaign | runtimeError | valid | finding (`test command did not complete`) |
 | Cosmic Ray `incompetent`, under either worker outcome | — | — | gap 2 (`engine could not run mutant`) |
 | Cosmic Ray worker outcome `skipped`/`no-test` | unrun | valid | finding |
 | Cosmic Ray worker outcome `exception`/`abnormal` | — | — | gap 2 (`engine could not run mutant`) |
@@ -460,23 +468,36 @@ Stryker.NET reports it natively as `NoCoverage`; Cosmic Ray as `survived`. All t
 so "no surviving or uncovered changed-code mutant" is met exactly when every valid generated mutant
 is Killed. Cosmic Ray needs its own witness: it records only the stdout of its test command and calls
 every nonzero exit `killed`, which is equally what a crashed, cut-short or never-started suite does.
-The witness is the marker the generated suite runner writes as its last act, and the marker's own
-`exit=<code>` field is half of that witness: the runner exits with the suite's code, so only a
-**nonzero** `<code>` says the suite ran and failed, which is what killing a mutant means. Four
+The witness is the marker the generated suite runner writes as its last act, and it carries two
+fields the reading depends on. The **nonce** binds the marker to the campaign whose runner wrote it:
+only that generated runner holds this invocation's run uuid, so a line
+`##DYDO-SUITE-COMPLETE <uuid> exit=<code>##` bearing any other `<uuid>` was not written by this
+campaign's runner. The `exit=<code>` field is the other half: the runner exits with the suite's code,
+so only a **nonzero** `<code>` says the suite ran and failed, which is what killing a mutant means.
+`mutation_summary` therefore takes the campaign's marker nonce as an explicit argument, exactly as it
+takes the snapshot root — never `cwd`, the environment or a module constant — and "the completion
+marker" below always means the exact line `##DYDO-SUITE-COMPLETE <that nonce> exit=<code>##`. Four
 readings of a `killed` row, in this order. Output exactly `timeout` is Cosmic Ray's own timeout
 string (`testing.py:70-74` returns `(KILLED, "timeout")` and never reads the pipe) — a `timeout`
-finding. A last non-empty line exactly `##DYDO-SUITE-COMPLETE exit=<code>##` whose `<code>` is a
-nonzero decimal integer is a real kill. That same marker reading `exit=0` is a `runtimeError`
+finding. A last non-empty line that is exactly this campaign's completion marker with a
+nonzero decimal `<code>` is a real kill. That same marker reading `exit=0` is a `runtimeError`
 finding: the suite completed and reported success, so the mutant survived, and the nonzero process
 exit that made Cosmic Ray write `killed` came from something after the suite — measured, an `atexit`
 handler calling `os._exit(5)` produced output byte-identical to the surviving run's, and the engine
-recorded one `SURVIVED` and the other `KILLED` (Ruled 8). Anything else — no marker, or a last line
-that is not exactly that shape — means the suite was cut short, a `runtimeError` finding, the same
-reading Stryker.NET gives a test host that died. The marker must be the **last non-empty line** of
-`output` after trailing whitespace is stripped, so the literal occurring inside the suite's own text
-— the normalizer's own tests carry it — is never mistaken for the runner's. A `survived` row needs
-no marker: it is a finding whatever produced it, and the baseline above already proves the marker
-and its `exit=<code>` field live for the campaign.
+recorded one `SURVIVED` and the other `KILLED` (Ruled 8). Anything else — no marker, a last line
+that is not exactly that shape, or a marker-shaped line carrying any other nonce — is
+**no completion marker**: the suite was cut short, a `runtimeError` finding
+(`test command did not complete`), the same
+reading Stryker.NET gives a test host that died. Last-non-empty-line, after trailing whitespace is
+stripped, is the **shape** rule; the nonce is the **defence** (Ruled 11). Position alone separates
+the runner's line from the suite's own text only while the runner survives to write last, which is
+exactly the case the witness exists for: measured, a test that prints the marker literal and then
+calls `os._exit(3)` under the mutant is recorded `NORMAL/KILLED` with that literal as the last
+non-empty line. The literal does occur inside this repository's own python stack — as fixture data
+in `test_mutation_summary.py` and as the match pattern in `mutation_summary.py`, both mutated
+targets — and no such committed text can carry this run's uuid. A `survived` row needs
+no marker: it is a finding whatever produced it, and the baseline above already proves the marker,
+its nonce and its `exit=<code>` field live for the campaign.
 
 Cosmic Ray rows are read worker outcome first, then test outcome, so no row matches two rules and
 none matches nothing (Ruled 9): `skipped`/`no-test` → `unrun`; `exception`/`abnormal` → gap 2;
@@ -546,7 +567,7 @@ spelling; a vendor spelling never reaches the summary.
 | engine not restored | 2 | the exact restore command |
 | `windows_job.preflight` fails | 2 | `unsupported host` |
 | python/node baseline test run nonzero | 2 | `baseline test run failed (exit N)`; mutation on a red baseline measures nothing (invalid), not a policy failure |
-| python baseline exits 0 whose last non-empty stdout line is not exactly `##DYDO-SUITE-COMPLETE exit=0##` | 2 | `baseline did not report suite completion` |
+| python baseline exits 0 whose last non-empty stdout line is not exactly this campaign's completion marker `##DYDO-SUITE-COMPLETE <uuid> exit=0##` | 2 | `baseline did not report suite completion` |
 | a python manifest test command the suite runner cannot dispatch in-process | 2 | `unsupported python test command` |
 | Stryker.NET exits nonzero with no report (initial test run or build failure) | 2 | `no mutation report produced (Stryker.NET exit N)` |
 | report missing / malformed / partial / foreign file / foreign mutant (Stryker.NET) | 2 | the path |
@@ -576,7 +597,11 @@ the real DYD-96 inventory producer, and engine shims at the process boundary —
 prepended to `PATH`, a shim `stryker.js` under the temp repository's `mutation/node_modules`, and a
 throwaway venv whose `cosmic_ray/cli.py` is a shim — each emitting a real captured report fixture
 from `tests/fixtures/mutation/`) or in `test_mutation_summary.py` (normalization examples from the
-same fixtures). No unit test launches a real engine.
+same fixtures). No unit test launches a real engine. The Cosmic Ray shim emits each session with the
+marker nonce of the invocation it stands in for, read from the generated `suite_runner.py` that the
+campaign's `test-command` names — exactly where the real engine's runner takes it from — and only
+the probe for `killed whose marker is another campaign's` emits its captured session verbatim, so
+its recorded capture nonce is the foreign one.
 
 Fixtures under `DynaDocs.Tests/coverage/tests/fixtures/mutation/` are real engine outputs captured
 from the replay subjects (`origin.json` names the subject, engine version and command per file);
@@ -677,13 +702,22 @@ gap_check.py gate mutation --since BASE
    (`exception`, `no-test`, `partial`, `skipped`), where the rendering is still the adapter's. Delete
    every Cosmic Ray session file not in this list.
 
+   **Marker nonces.** Every session's marker carries its own capture nonce. The hand capture
+   generates one `uuid.uuid4().hex` per session — the stand-in for that campaign's run uuid —
+   substitutes it into the generated runner as the literal the adapter substitutes, and records it in
+   `origin.json` as that session's `markerNonce` beside its subject, engine version and command.
+   `<nonce>` in the table below is that value. The normalization examples pass the recorded nonce to
+   `mutation_summary`; one further example re-reads `cosmic-ray-killed.sqlite` under a **different**
+   nonce and expects `runtimeError` (`test command did not complete`), so the foreign-campaign
+   reading needs no capture of its own.
+
    | Session file | Subject | Native rows | Reading it proves |
    |---|---|---|---|
-   | `cosmic-ray-killed.sqlite` | strong assertion; the mutant makes the suite fail | `NORMAL/KILLED`, last non-empty line `##DYDO-SUITE-COMPLETE exit=1##` | kill (pass) |
+   | `cosmic-ray-killed.sqlite` | strong assertion; the mutant makes the suite fail | `NORMAL/KILLED`, last non-empty line `##DYDO-SUITE-COMPLETE <nonce> exit=1##` | kill (pass) |
    | `cosmic-ray-timeout.sqlite` | the mutant makes a test sleep past the session `timeout` | `NORMAL/KILLED`, `output` exactly `timeout` | `timeout` finding |
-   | `cosmic-ray-killed-marker-exit-zero.sqlite` | the suite passes; a module-level `atexit` handler then calls `os._exit(5)` | `NORMAL/KILLED`, last non-empty line `##DYDO-SUITE-COMPLETE exit=0##` | `runtimeError` finding — a survivor the engine recorded `killed` |
+   | `cosmic-ray-killed-marker-exit-zero.sqlite` | the suite passes; a module-level `atexit` handler then calls `os._exit(5)` | `NORMAL/KILLED`, last non-empty line `##DYDO-SUITE-COMPLETE <nonce> exit=0##` | `runtimeError` finding — a survivor the engine recorded `killed` |
    | `cosmic-ray-killed-without-marker.sqlite` | a test calls `os._exit(1)` when the mutant is present | `NORMAL/KILLED`, empty `output` | `runtimeError` finding |
-   | `cosmic-ray-survived.sqlite` | weak assertion; the mutant survives | `NORMAL/SURVIVED`, last non-empty line `##DYDO-SUITE-COMPLETE exit=0##` | `survived` finding |
+   | `cosmic-ray-survived.sqlite` | weak assertion; the mutant survives | `NORMAL/SURVIVED`, last non-empty line `##DYDO-SUITE-COMPLETE <nonce> exit=0##` | `survived` finding |
    | `cosmic-ray-incompetent.sqlite` | a test writes a raw non-UTF-8 byte with `sys.stdout.buffer.write(b"\xff")`, past the runner's text layer, so `stdout.decode("utf-8")` raises in `testing.py` | `NORMAL/INCOMPETENT` | gap 2 `engine could not run mutant` |
    | `cosmic-ray-exception.sqlite` | the module is renamed away between `init` and `exec`, so the mutation machinery raises | `EXCEPTION/INCOMPETENT` | gap 2 `engine could not run mutant` |
    | `cosmic-ray-no-test.sqlite` | the module loses its mutation site between `init` and `exec` | `NO_TEST` with no test outcome | `unrun` finding |
@@ -701,7 +735,9 @@ gap_check.py gate mutation --since BASE
    two non-reproducible Stryker statuses are. Checkable: `origin.json` names every fixture; every
    Cosmic Ray `test-command` string in it is the one the adapter would render for that subject; the
    ten sessions above plus the derived `cosmic-ray-abnormal.sqlite` are exactly the Cosmic Ray files
-   in the fixture directory; and each of the four `killed` readings is carried by exactly one of them.
+   in the fixture directory; `origin.json` carries a `markerNonce` for each of them; and the five
+   `killed` readings are carried — the four native ones by exactly one session each, and the
+   foreign-nonce refusal by the `cosmic-ray-killed.sqlite` re-read under a different nonce.
 4. Red: commit the failing `test_mutation_summary.py`, `test_mutation_adapter.py`,
    `test_mutation_facade.py` and the Reqnroll step file mapping every scenario to a probe.
    Checkable: gate 1 fails on assertions, not on collection errors; gate 4 fails on assertions.
@@ -953,6 +989,79 @@ beside it; all git-ignored. Case names below are that transcript's.)
 This second 2026-09-10 packet carries entries 8-10 (Report normalization's Cosmic Ray status rows
 and the two paragraphs after the table, Engines and pins' Cosmic Ray baseline, Failure semantics,
 step 3, the Feature consequence above, `mutation-assurance.feature`, `owned-paths.json`).
+
+**Ruled — 2026-09-10, third packet** (the one binding finding of the round-two independent spec
+review of the amendment at `4045bdb5`; every other finding of that review was verified closed. The
+refutation below was reproduced first, then the correction proved, against the installed Cosmic Ray
+8.7.0 under `dydo/_system/.local/mutation/python/Lib/site-packages/cosmic_ray/`, on throwaway
+subjects outside every repository, each with `test-command` rendered exactly as the adapter renders
+it and the generated in-process suite runner as its entry point. Raw evidence:
+`dydo/agents/workspace/dyd103-portable-wip/evidence/spec-review2-close-marker-nonce-evidence.txt`,
+produced by `spec-review2-close-marker-nonce-drive.py`, `-evaluate.py` (the same sessions re-read
+through `cosmic_ray.work_db` with the enum `.value`s, as the adapter reads them) and `-hunter.py`
+beside it; all git-ignored. The reviewer's own reproduction is `forge.py` and
+`forged-marker-then-die/s.sqlite` in its session scratchpad. Case names below are that transcript's.)
+
+11. **The completion marker must name the campaign that wrote it.** *Was specified:* (entries 3 and
+    8) the generated runner writes `##DYDO-SUITE-COMPLETE exit=<code>##` as its last act, and a
+    `killed` row is a kill when that marker with a nonzero `<code>` is the last non-empty line of
+    `output` — the last-non-empty-line rule being what keeps the literal inside the suite's own text
+    from being "mistaken for the runner's". *Refuted:* position separates the two writers only while
+    the runner survives to write last, which is exactly the case the witness exists for. Nothing but
+    the runner is meant to write the marker and nothing stops the suite from writing one: measured
+    on the installed 8.7.0 with this spec's rendering and runner verbatim, a test that prints
+    `##DYDO-SUITE-COMPLETE exit=1##` and then calls `os._exit(3)` under the mutant is recorded
+    `NORMAL/KILLED` with that literal as the last non-empty line of a 32-character output, and the
+    accepted rule scores it a kill — a mutant whose suite never completed, passed. Entry 8's
+    `exit=<code>` field does not close it: a forged line can say `exit=1`. Nor is it hypothetical
+    here — this spec puts that literal into `test_mutation_summary.py` as fixture data and into
+    `mutation_summary.py` as its match pattern, and both are mutated targets of the python stack.
+    *Corrected:* the marker carries a nonce. `suite_runner.py` is generated with this invocation's
+    run uuid embedded as a literal and writes `\n##DYDO-SUITE-COMPLETE <uuid> exit=<code>##`; the
+    baseline must show that exact line with this run's uuid and `exit=0` before any campaign starts;
+    `mutation_summary` takes the nonce as an explicit argument exactly as it takes the snapshot root;
+    and a marker-shaped line bearing any other nonce is no completion marker — a `runtimeError`
+    finding, `test command did not complete`. Last-non-empty-line stays the **shape** rule; the
+    nonce, not position, is the **defence**. *The run uuid is the right nonce*, on three grounds and
+    one condition: the nonce's whole job is to be unspellable by text committed in this repository,
+    which a per-invocation `uuid.uuid4().hex` is; it cannot be a secret from the suite whatever value
+    it takes, because the runner must hold it in cleartext and the suite runs out of that file, so a
+    second dedicated value would add an identifier and no defence; and reusing the run uuid makes a
+    session's marker name the run directory holding its raw evidence. The condition is that it be
+    freshly generated per invocation and never derived from the candidate, the base or any committed
+    value — stated in the suite-runner paragraph — since a derived nonce could be spelled in advance
+    by the text it defends against. Publication in `results/assurance/run-<uuid>/` paths is
+    therefore not a leak: there is nothing to leak. *Proved:* `A-forge-no-nonce` — the accepted
+    rule's runner, the forging suite — `NORMAL/KILLED`, last non-empty line
+    `##DYDO-SUITE-COMPLETE exit=1##`, accepted rule → **kill**, corrected rule → `runtimeError`;
+    `B-forge-nonce-runner-plain-literal` — the same forgery under the nonce runner — refused;
+    `C-forge-foreign-nonce` — a forged line carrying another campaign's whole marker, the strongest
+    forgery committed text can hold — refused under this campaign's nonce and accepted only under
+    exactly that other one, so the rule is a match and not a shape; `D-strong-kill` — the honest
+    kill — `NORMAL/KILLED` with the runner's own `##DYDO-SUITE-COMPLETE <uuid> exit=1##` → kill, and
+    the same session re-read under a different nonce → `runtimeError`, which is the normalization
+    example step 3 now orders; and the baseline precondition — the green suite through the rendered
+    command exits 0 with `##DYDO-SUITE-COMPLETE <uuid> exit=0##` as its last non-empty line, which
+    fails for any other run's uuid. *Bounded:* `J-nonce-hunter` — a suite that reads the generated
+    runner's path off its own process command line, lifts the nonce out of the file and prints it
+    before dying — forges successfully. The nonce defeats committed text, which is the threat this
+    gate has; no value defeats a suite that actively reads the runner it was launched by.
+
+Feature consequence. `python | killed whose marker is another campaign's | runtimeError` joins
+"A mutant that is not killed is a measured finding", so the boundary demands the refusal this entry
+exists for; without it a normalizer that ignored the nonce would pass every scenario. Taken with it,
+from the same review's non-binding list: `python | no-test | unrun` in the same outline, the one
+campaign-reachable status-table reading no scenario demanded, whose fixture step 3 already orders.
+Nothing else in `mutation-assurance.feature` changes. Fixture consequence: every captured Cosmic Ray
+session now carries its capture nonce in `origin.json`, and the facade's Cosmic Ray shim emits each
+session with the nonce of the invocation it stands in for — read from the generated runner the
+`test-command` names — since a session replayed under a foreign nonce is by this rule not a kill.
+
+This third 2026-09-10 packet carries entry 11 (Engines and pins' suite runner and Cosmic Ray
+baseline paragraphs and the `--read-cosmic-session` argv, Report normalization's Cosmic Ray status
+rows and witness paragraph, Failure semantics, Scenarios, step 3, `mutation-assurance.feature`,
+`owned-paths.json`). It changes no acceptance criterion, owned path, gate, destination or
+architecture: the nonce is an internal argument between two exclusive modules.
 
 Lanes: `none` (adapter, normalizer, fixtures, probes and steps interlock). Empty hops: none.
 Production prerequisite for final integration (resume condition, never a parent-Done blocker): DYD-96's implemented and

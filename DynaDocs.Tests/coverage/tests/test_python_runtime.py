@@ -1,10 +1,16 @@
 """Lambda witnesses must not borrow execution from their containing statement."""
 import sys
+import types
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from python_runtime import CallableWitness, callable_inventory
+from python_runtime import CallableWitness, callable_inventory, module_inventory
+
+
+def _nested_code(code, name):
+    return next(value for value in code.co_consts
+                if isinstance(value, types.CodeType) and value.co_name == name)
 
 
 class PythonRuntimeTests(unittest.TestCase):
@@ -172,6 +178,77 @@ outer()
             for tool_id, owner in existing.items():
                 if owner is None:
                     monitor.free_tool_id(tool_id)
+
+    def test_source_shapes_without_an_exact_compiled_join_fail_closed(self):
+        cases = [('def identity[T](value: T) -> T:\n    return value\n', 'Missing or ambiguous'),
+                 ('if False:\n    def unreachable():\n        return 1\n', 'Incomplete or duplicate')]
+        for source, message in cases:
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                callable_inventory(source, 'join-subject.py')
+
+    def test_measurement_refuses_to_start_on_an_unpinned_interpreter(self):
+        from unittest.mock import patch
+        with patch.object(sys, 'version_info', (3, 13, 0, 'final', 0)):
+            with self.assertRaisesRegex(ValueError, 'pinned CPython 3.12'):
+                CallableWitness({})
+
+    def test_foreign_unknown_and_unexpected_events_are_refused_not_counted(self):
+        source = 'def work():\n    return 1\n'
+        path = str(Path('refusal-subject.py').resolve())
+        witness = CallableWitness({path: source})
+        work = _nested_code(compile(source, path, 'exec'), 'work')
+
+        witness._start(_nested_code(compile(source, 'foreign.py', 'exec'), 'work'), 0)
+        self.assertEqual([0], [row['execution_count'] for row in witness.rows()])
+
+        witness._line(work, 999)
+        edited = compile('def work():\n    return 1 + 1\n', path, 'exec')
+        witness._start(_nested_code(edited, 'work'), 0)
+        with self.assertRaises(ValueError) as refusal:
+            witness.rows()
+        self.assertIn('Unexpected callable body line', str(refusal.exception))
+        self.assertIn('Unknown runtime callable', str(refusal.exception))
+
+    def test_generator_branch_events_are_deduplicated_against_the_physical_owner(self):
+        source = 'def work():\n    return (value for value in (1, 2))\n'
+        path = str(Path('physical-subject.py').resolve())
+        witness = CallableWitness({path: source})
+        generator = _nested_code(_nested_code(compile(source, path, 'exec'), 'work'), '<genexpr>')
+
+        witness._branch(generator, 0, 4)
+        witness._branch(generator, 0, 4)
+        witness._branch(generator, 4, 8)
+
+        row = witness.rows()[0]
+        self.assertEqual([], row['branches'])
+        self.assertEqual([(0, 4), (4, 8)],
+                         [(edge['origin'], edge['destination']) for edge in row['physical_branches']])
+        self.assertEqual(1, len({edge['code'] for edge in row['physical_branches']}))
+
+    def test_failed_callback_registration_releases_the_monitor_id(self):
+        from unittest.mock import patch
+        witness = CallableWitness({str(Path('enter-subject.py').resolve()): 'f = lambda: 1'})
+        original = sys.monitoring.register_callback
+        refusals = []
+
+        def refuse(tool_id, event, callback):
+            refusals.append(event)
+            if len(refusals) == 1:
+                raise RuntimeError('native registration refused')
+            return original(tool_id, event, callback)
+
+        with patch.object(sys.monitoring, 'register_callback', side_effect=refuse):
+            with self.assertRaisesRegex(RuntimeError, 'registration refused'):
+                witness.__enter__()
+        self.assertIsNone(sys.monitoring.get_tool(witness.tool_id))
+        self.assertEqual(0, sys.monitoring.get_events(witness.tool_id))
+
+    def test_module_row_spans_the_whole_file_without_owning_callable_bodies(self):
+        row = module_inventory('value = 1\nf = lambda: 2\n', 'module-subject.py')
+        self.assertEqual(('<module>:1:0', 'module', 1, 0, 2, 13),
+                         (row['id'], row['kind'], row['line'], row['column'],
+                          row['end_line'], row['end_column']))
+        self.assertEqual({'1': 0, '2': 0}, row['body_lines'])
 
     def test_all_compiled_lambdas_are_inventory_even_before_execution(self):
         rows = callable_inventory('f = lambda: 1\ng = lambda: 2', 'subject.py')

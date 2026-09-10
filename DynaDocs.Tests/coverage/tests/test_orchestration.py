@@ -58,6 +58,22 @@ class OrchestrationTests(unittest.TestCase):
         malformed = collect_all({'first': lambda: {'status': 'pass', 'facts': {}, 'findings': [{'gate': 'hidden'}], 'errors': []}}, ['first'])
         self.assertEqual(2, malformed['exit_code'])
 
+    def test_every_malformed_collector_result_is_an_accounted_measurement_error(self):
+        malformed = [
+            ('missing fields', {'status': 'pass', 'facts': {}}),
+            ('facts are not a mapping', {'status': 'pass', 'facts': [], 'findings': [], 'errors': []}),
+            ('unknown status', {'status': 'green', 'facts': {}, 'findings': [], 'errors': []}),
+            ('failure without findings', {'status': 'fail', 'facts': {}, 'findings': [], 'errors': []}),
+            ('error without errors', {'status': 'error', 'facts': {}, 'findings': [], 'errors': []}),
+        ]
+        for name, value in malformed:
+            with self.subTest(name=name):
+                answer = collect_all({'gate': lambda captured=value: captured}, ['gate'])
+                self.assertEqual(2, answer['exit_code'])
+                self.assertFalse(answer['measurement_complete'])
+                self.assertEqual('ValueError', answer['collectors']['gate']['errors'][0]['type'])
+                self.assertEqual([], answer['collectors']['gate']['findings'])
+
     def test_command_preserves_environment_and_retains_actual_exit_and_output(self):
         from gate_run import CommandLog
         import os

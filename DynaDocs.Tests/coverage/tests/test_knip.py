@@ -8,7 +8,10 @@ import subprocess
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from gate_knip import workspace_model, normalize_report
+from gate_knip import collect_knip, workspace_model, normalize_report
+from gate_collect import Collectors
+from gate_run import CommandLog
+from inventory import git_file_state, language_of
 
 
 class KnipAccountingTests(unittest.TestCase):
@@ -88,3 +91,20 @@ class KnipAccountingTests(unittest.TestCase):
         (self.root / 'DynaDocs.Tests/coverage/cross.test.cjs').write_text("require('../../npm/lib.cjs');", encoding='utf-8')
         self.assertEqual(expected | {('npm/lib.cjs', 'used')}, measure())
 
+    def test_collector_measures_the_real_maintained_javascript_graph(self):
+        root = Path(__file__).resolve().parents[3]
+        paths = [relative for relative in git_file_state(root)[0]
+                 if language_of(root / relative) == 'javascript']
+        runner = Collectors.__new__(Collectors)
+        runner.root = root
+        runner.coverage = root / 'DynaDocs.Tests/coverage'
+        runner.output = self.root / 'knip-output'
+        runner.log = CommandLog(root, runner.output / 'commands')
+        runner.inventory = {'sources': [{'path': path, 'language': 'javascript'} for path in paths]}
+
+        answer = collect_knip(runner)
+
+        self.assertEqual([], answer['errors'])
+        self.assertEqual(paths, [row['path'] for row in answer['facts']['model']['sources']])
+        self.assertEqual(len(paths), answer['facts']['native'][1]['counters']['processed'])
+        self.assertEqual([], [row for row in answer['findings'] if row['path'] not in set(paths)])

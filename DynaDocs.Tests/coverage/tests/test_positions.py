@@ -25,6 +25,24 @@ class PositionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             canonical_text(b'\xff')
 
+    def test_invalid_and_out_of_range_columns_fail_closed(self):
+        for column in (-1, 1.0, True):
+            with self.subTest(column=column), self.assertRaisesRegex(ValueError, 'Invalid source column'):
+                utf16_column('ab', column, 'utf8')
+        for encoding, column in (('unicode', 3), ('utf8', 3), ('utf16', 3)):
+            with self.subTest(encoding=encoding), self.assertRaisesRegex(ValueError, 'outside line'):
+                utf16_column('ab', column, encoding)
+        with self.assertRaisesRegex(ValueError, 'Unknown column encoding'):
+            utf16_column('ab', 1, 'latin1')
+
+    def test_malformed_empty_and_reversed_spans_fail_closed(self):
+        for span in ((1, 0, 1), (1, 0, 1, '5')):
+            with self.subTest(span=span), self.assertRaisesRegex(ValueError, 'Invalid source span'):
+                contains(span, 1, 0)
+        for span in ((1, 5, 1, 5), (2, 0, 1, 9)):
+            with self.subTest(span=span), self.assertRaisesRegex(ValueError, 'Empty or reversed'):
+                contains(span, 1, 0)
+
     def test_half_open_adjacent_callables_do_not_share_boundary(self):
         left = (1, 0, 1, 5)
         right = (1, 5, 1, 10)

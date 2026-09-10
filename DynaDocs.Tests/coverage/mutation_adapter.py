@@ -278,8 +278,8 @@ class _Campaign:
     def _campaign(self):
         try:
             self._preflight()
-            self._take_snapshot()
             try:
+                self._take_snapshot()
                 self._produce_inventory()
                 self._resolve_base()
                 self._select()
@@ -309,7 +309,12 @@ class _Campaign:
             self.snapshot = candidate
         if not run_tests.create_worktree(self.snapshot):
             raise _Refusal(f"cannot snapshot the candidate at {self.snapshot}")
-        run_tests.copy_dirty_files(self.snapshot)
+        try:
+            run_tests.copy_dirty_files(self.snapshot)
+        except ValueError as error:
+            # An unmerged index entry is content no snapshot can hold: refuse the campaign
+            # rather than die over the worktree this invocation has already registered.
+            raise _Refusal(f"cannot snapshot the candidate at {self.snapshot}: {error}") from error
         # Sampled here, before the inventory producer's own restore output can enter it.
         self.porcelain = self._git("status", "--porcelain=v1", "-z",
                                    "--untracked-files=all").stdout
@@ -475,11 +480,11 @@ class _Campaign:
                 self._launch(f"cosmic-ray-{stage}-{index}",
                              self._venv("-m", "cosmic_ray.cli", stage, str(configuration),
                                         str(session)))
-            readings.append(self._read_session(index, session))
+            readings.append(self._read_session(index, session, path))
         return _merged(readings)
 
-    def _read_session(self, index, session):
-        """Read one session through `mutation_summary` under the engine's own interpreter."""
+    def _read_session(self, index, session, path):
+        """Read one session of `path` through `mutation_summary` under the engine's interpreter."""
         if not session.is_file():
             raise _Refusal(f"no mutation report produced (Cosmic Ray session {index})")
         self._retain(session)
@@ -487,7 +492,8 @@ class _Campaign:
         self._launch(f"cosmic-ray-read-{index}",
                      self._venv(str(self.root / "DynaDocs.Tests/coverage/mutation_summary.py"),
                                 "--read-cosmic-session", str(session),
-                                "--marker-nonce", self.nonce, "--output", str(reading)))
+                                "--marker-nonce", self.nonce, "--module-path", path,
+                                "--output", str(reading)))
         payload = self._json(reading)
         if payload is None:
             raise _Refusal(f"malformed report: {session.name}")

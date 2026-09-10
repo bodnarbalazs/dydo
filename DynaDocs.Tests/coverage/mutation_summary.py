@@ -13,8 +13,8 @@ Three stages, each pure data in and data out, so a captured report replays anywh
    non-killed valid mutant, the gaps, the score and the exit code.
 
 `--read-cosmic-session` is the one subcommand the adapter runs out of process, because a Cosmic Ray
-session is a session database rather than a report file; it takes the campaign's marker nonce
-explicitly, exactly as the readers take the snapshot root.
+session is a session database rather than a report file; it takes the campaign's marker nonce and
+the file that campaign mutates explicitly, exactly as the readers take the snapshot root.
 """
 import argparse
 import json
@@ -99,13 +99,14 @@ def read_stryker_report(path, report=None):
     return _reading(document["projectRoot"], list(document["files"]), rows, [])
 
 
-def read_cosmic_session(path, marker_nonce, report=None):
-    """Read one Cosmic Ray session, reading each `killed` row against `marker_nonce`.
+def read_cosmic_session(path, marker_nonce, module_path, report=None):
+    """Read one Cosmic Ray session of `module_path`, reading `killed` rows against `marker_nonce`.
 
     The reading is taken with the standard library against the schema pinned to Cosmic Ray 8.7.0
     by `mutation/requirements.lock`, and any departure from that schema -- a missing table, an
     unexpected column, an enum value 8.7.0 does not spell -- is invalid measurement rather than a
-    best-effort parse.
+    best-effort parse. One session is one campaign over one file, so a row naming any file but
+    `module_path` is a session this campaign did not ask for.
     """
     path = Path(path)
     report = report if report is not None else path.name
@@ -133,7 +134,7 @@ def read_cosmic_session(path, marker_nonce, report=None):
     for record in records:
         span = tuple(record[field] for field in ("start_line", "start_column",
                                                  "end_line", "end_column"))
-        if not isinstance(record["module_path"], str) \
+        if record["module_path"] != module_path \
                 or not isinstance(record["operator_name"], str) \
                 or not all(isinstance(value, int) for value in span):
             return malformed
@@ -215,13 +216,15 @@ def normalize(reading, selected, engine, substantive=True):
 
 
 def main(argv=None):
-    """--read-cosmic-session <session> --marker-nonce <nonce> --output <json>."""
+    """Read one session as JSON: --read-cosmic-session, --marker-nonce, --module-path, --output."""
     parser = argparse.ArgumentParser(description="Read one Cosmic Ray session as JSON.")
     parser.add_argument("--read-cosmic-session", required=True)
     parser.add_argument("--marker-nonce", required=True)
+    parser.add_argument("--module-path", required=True)
     parser.add_argument("--output", required=True)
     arguments = parser.parse_args(argv)
-    reading = read_cosmic_session(arguments.read_cosmic_session, arguments.marker_nonce)
+    reading = read_cosmic_session(arguments.read_cosmic_session, arguments.marker_nonce,
+                                  arguments.module_path)
     Path(arguments.output).write_text(json.dumps(reading, indent=2) + "\n", encoding="utf-8")
     return 2 if reading["gaps"] else 0
 

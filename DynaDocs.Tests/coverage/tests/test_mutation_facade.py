@@ -19,6 +19,7 @@ import sys
 import tempfile
 import threading
 import time
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -249,6 +250,25 @@ class Observation:
     def gap_reasons(self, stack):
         summary = self.summary(stack) or {}
         return [gap.get("reason") for gap in summary.get("gaps", [])]
+
+    def engine_targets(self, stack):
+        """The files this stack's generated engine configuration itself names.
+
+        What the summary calls `selection.selected` is the adapter's account of the campaign;
+        this is the file filter the engine was actually handed. `None` where the configuration
+        carries none at all, which is what a widened Stryker.NET campaign must generate.
+        """
+        assurance = self.repository.path / "DynaDocs.Tests/coverage/results/assurance"
+        if stack == "python":
+            return [tomllib.loads(path.read_text(encoding="utf-8"))["cosmic-ray"]["module-path"]
+                    for path in sorted(assurance.glob("run-*/python/sessions/*.toml"))]
+        generated = sorted(assurance.glob("run-*/dotnet/stryker-config.json" if stack == "dotnet"
+                                          else "run-*/node/stryker.json"))
+        if len(generated) != 1:
+            # A campaign that generated no configuration must not read as "no file filter".
+            return f"{len(generated)} generated configurations"
+        settings = json.loads(generated[0].read_text(encoding="utf-8"))
+        return (settings["stryker-config"] if stack == "dotnet" else settings).get("mutate")
 
     def run_reports(self):
         runs = sorted((self.repository.path / "DynaDocs.Tests/coverage/results/assurance")
@@ -520,6 +540,7 @@ class MutationFacadeTests(unittest.TestCase):
         # a reading, not an absence.
         self.assertEqual([], [name for name, value in recorded.items()
                               if not value and not isinstance(value, bool)])
+        self.assertEqual([target], seen.engine_targets(stack))
         return seen
 
     def test_an_all_killed_dotnet_campaign_passes(self):
@@ -667,8 +688,9 @@ class MutationFacadeTests(unittest.TestCase):
         repository.write("src/beta.cjs", "exports.beta = () => 2;\n")
         repository.write("src/value.cjs", VALUE_CJS + "// changed\n")
         repository.commit("change both node targets")
-        self.invalid("node", "partial report", repository=repository, change=False,
-                     fixture="stryker-js-killed.json", files=["src/value.cjs"])
+        seen = self.invalid("node", "partial report", repository=repository, change=False,
+                            fixture="stryker-js-killed.json", files=["src/value.cjs"])
+        self.assertEqual(["src/beta.cjs", "src/value.cjs"], seen.engine_targets("node"))
 
     def test_a_non_ignored_mutant_in_an_unselected_dotnet_file_is_invalid(self):
         repository = self.repository(extra=[("src/Other.cs", OTHER_CS)])
@@ -810,6 +832,10 @@ class MutationFacadeTests(unittest.TestCase):
             {"mode": digest_path(seen.summary(stack), "mutation.selection.mode"),
              "reason": digest_path(seen.summary(stack), "mutation.selection.reason"),
              "selected": digest_path(seen.summary(stack), "mutation.selection.selected")})
+        # Stryker.NET mutates the whole project when the campaign widens, so the one engine
+        # whose `mutate` is a filter must be handed none at all.
+        self.assertEqual(None if stack == "dotnet" else sorted(selected),
+                         seen.engine_targets(stack))
         return seen
 
     def test_a_renamed_dotnet_target_widens_the_stack(self):
@@ -867,11 +893,13 @@ class MutationFacadeTests(unittest.TestCase):
                              change=False)
         self.assertEqual(
             {"mode": "changed", "changedTargets": ["src/beta.py", "src/mod.py"],
-             "selected": ["src/beta.py", "src/mod.py"]},
+             "selected": ["src/beta.py", "src/mod.py"],
+             "engine": ["src/beta.py", "src/mod.py"]},
             {"mode": digest_path(seen.summary("python"), "mutation.selection.mode"),
              "changedTargets": digest_path(seen.summary("python"),
                                            "mutation.selection.changedTargets"),
-             "selected": digest_path(seen.summary("python"), "mutation.selection.selected")})
+             "selected": digest_path(seen.summary("python"), "mutation.selection.selected"),
+             "engine": seen.engine_targets("python")})
 
     # -- scenario: dirty and untracked content ------------------------------------------
 
@@ -898,8 +926,10 @@ class MutationFacadeTests(unittest.TestCase):
                  if path.is_file() and ".git" not in path.parts and "results" not in path.parts}
         worktrees = repository.git("worktree", "list", "--porcelain").stdout
         self.assertEqual(
-            {"selected": ["src/fresh.py", "src/mod.py"], "tree": True, "worktrees": 1},
+            {"selected": ["src/fresh.py", "src/mod.py"],
+             "engine": ["src/fresh.py", "src/mod.py"], "tree": True, "worktrees": 1},
             {"selected": digest_path(seen.summary("python"), "mutation.selection.selected"),
+             "engine": seen.engine_targets("python"),
              "tree": before == after,
              "worktrees": worktrees.count("worktree ")})
 

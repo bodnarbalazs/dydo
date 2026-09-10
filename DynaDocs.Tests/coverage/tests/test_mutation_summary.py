@@ -5,6 +5,7 @@ each one's subject, engine version, command and, for a Cosmic Ray session, the c
 generated suite runner embedded). Nothing launches an engine.
 """
 import json
+import shutil
 import sqlite3
 import sys
 import tempfile
@@ -17,6 +18,8 @@ import mutation_summary
 FIXTURES = Path(__file__).resolve().parent / "fixtures/mutation"
 ORIGIN = json.loads((FIXTURES / "origin.json").read_text(encoding="utf-8"))["fixtures"]
 FOREIGN_NONCE = "00000000000000000000000000000000"
+# Every captured session is one campaign over one file, and that is the file it must name.
+MODULE_PATH = "mod.py"
 
 EMPTY_COUNTS = {"generated": 0, "valid": 0, "killed": 0, "survived": 0, "noCoverage": 0,
                 "timeout": 0, "compileError": 0, "ignored": 0, "runtimeError": 0, "unrun": 0,
@@ -274,13 +277,58 @@ class MalformedReportTests(unittest.TestCase):
         self.assertEqual([{"reason": "malformed report", "path": "report.json"}], reading["gaps"])
 
 
+class WrittenReportTests(unittest.TestCase):
+    """Two readings no captured report carries, written here in the engines' own report shape.
+
+    `origin.json` records every fixture as real engine output of a replay subject, so a status
+    no subject produced and a second file outside the snapshot are report data instead.
+    """
+
+    SNAPSHOT = Path(tempfile.gettempdir()) / "dydo-mutation-snapshot"
+
+    def mutant(self, identity, native):
+        return {"id": identity, "mutatorName": "Arithmetic mutation", "status": native,
+                "location": {"start": {"line": 1, "column": 68},
+                             "end": {"line": 1, "column": 77}}}
+
+    def normalized(self, files, selected, inventory):
+        directory = tempfile.TemporaryDirectory(prefix="dydo-mutation-report-")
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "report.json"
+        path.write_text(json.dumps(
+            {"schemaVersion": "1.0", "thresholds": {"high": 100, "low": 100},
+             "projectRoot": str(self.SNAPSHOT),
+             "files": {key: {"language": "cs", "source": "", "mutants": mutants}
+                       for key, mutants in files.items()}}), encoding="utf-8")
+        reading = mutation_summary.read_stryker_report(path)
+        mapped = mutation_summary.map_report_paths(reading, self.SNAPSHOT, list(inventory))
+        return mutation_summary.normalize(mapped, list(selected), "stryker-net")
+
+    def test_a_native_status_the_mapping_table_does_not_name_is_an_unknown_finding(self):
+        self.assertEqual(
+            outcome({"generated": 1, "valid": 1, "unknown": 1}, score=0.0, exit_code=1,
+                    findings=[finding("src/Number.cs", "Arithmetic mutation", "unknown",
+                                      span(1, 68, 1, 77), "report.json", "0")]),
+            self.normalized(
+                {str(self.SNAPSHOT / "src/Number.cs"): [self.mutant("0", "Unexpected")]},
+                ["src/Number.cs"], ["src/Number.cs"]))
+
+    def test_an_unmappable_key_refuses_a_campaign_whose_selected_mutants_were_all_killed(self):
+        outside = Path(tempfile.gettempdir()) / "dydo-mutation-elsewhere/src/Other.cs"
+        self.assertEqual(
+            outcome({}, gaps=[{"reason": f"unmappable report path: {outside}"}], exit_code=2),
+            self.normalized({str(self.SNAPSHOT / "src/Number.cs"): [self.mutant("0", "Killed")],
+                             str(outside): [self.mutant("1", "Killed")]},
+                            ["src/Number.cs"], ["src/Number.cs"]))
+
+
 class CosmicRayNormalizationTests(unittest.TestCase):
     """Cosmic Ray calls every nonzero test-process exit `killed`; the marker says which are kills."""
 
     def read(self, fixture, selected=("mod.py",), nonce=None, substantive=True):
         session = FIXTURES / fixture
         reading = mutation_summary.read_cosmic_session(
-            session, nonce if nonce is not None else cosmic_nonce(fixture))
+            session, nonce if nonce is not None else cosmic_nonce(fixture), MODULE_PATH)
         mapped = mutation_summary.map_report_paths(
             reading, Path(__file__).resolve().parents[3], list(selected))
         return mutation_summary.normalize(mapped, list(selected), "cosmic-ray", substantive)
@@ -371,6 +419,47 @@ class CosmicRayNormalizationTests(unittest.TestCase):
             outcome({}, gaps=[{"reason": "partial report",
                                "path": "cosmic-ray-partial-session.sqlite"}], exit_code=2),
             self.read("cosmic-ray-partial-session.sqlite"))
+
+
+class CosmicRaySessionRefusalTests(unittest.TestCase):
+    """The standard-library reading believes one pinned schema and one file, or nothing.
+
+    Reading `work_items`, `mutation_specs` and `work_results` with `sqlite3` instead of
+    `cosmic_ray.work_db` is safe only while a session that departs from the schema Cosmic Ray
+    8.7.0 pins, or that names a file this campaign did not mutate, is invalid measurement.
+    """
+
+    def reading(self, statement=None):
+        """The captured killed session, or a copy departing from it by one statement."""
+        directory = tempfile.TemporaryDirectory(prefix="dydo-mutation-session-")
+        self.addCleanup(directory.cleanup)
+        copy = Path(directory.name) / "session.sqlite"
+        shutil.copyfile(FIXTURES / "cosmic-ray-killed.sqlite", copy)
+        if statement is not None:
+            connection = sqlite3.connect(str(copy))
+            try:
+                connection.execute(statement)
+                connection.commit()
+            finally:
+                connection.close()
+        return mutation_summary.read_cosmic_session(
+            copy, cosmic_nonce("cosmic-ray-killed.sqlite"), MODULE_PATH)
+
+    def test_the_unaltered_copy_of_the_captured_session_reads_as_one_kill(self):
+        reading = self.reading()
+        self.assertEqual(([], [MODULE_PATH], ["killed"]),
+                         (reading["gaps"], reading["files"],
+                          [row["status"] for row in reading["rows"]]))
+
+    def test_a_session_whose_column_set_departs_from_the_pin_is_malformed(self):
+        self.assertEqual(
+            [{"reason": "malformed report", "path": "session.sqlite"}],
+            self.reading("alter table work_results add column retries integer")["gaps"])
+
+    def test_a_session_naming_a_file_the_campaign_did_not_mutate_is_malformed(self):
+        self.assertEqual(
+            [{"reason": "malformed report", "path": "session.sqlite"}],
+            self.reading("update mutation_specs set module_path = 'other.py'")["gaps"])
 
 
 class CosmicRaySessionFixtureTests(unittest.TestCase):

@@ -243,9 +243,10 @@ public sealed class MutationAssuranceSteps(ScenarioContext context)
             + error.GetAwaiter().GetResult();
         Assert.True(process.ExitCode == 0, transcript);
         // -k selects nothing silently, and a skipped probe witnesses nothing, so neither can
-        // stand in for a scenario that passed.
+        // stand in for a scenario that passed. The count comes from unittest's own summary
+        // line, because a probe name may spell the word itself.
         Assert.True(transcript.Contains("Ran 1 test", StringComparison.Ordinal), transcript);
-        Assert.False(transcript.Contains("skipped", StringComparison.Ordinal), transcript);
+        Assert.False(transcript.Contains("skipped=", StringComparison.Ordinal), transcript);
         return "passed";
     }
 

@@ -27,6 +27,52 @@ def _hits(value):
     return value
 
 
+def _original_counters(receipt, kind):
+    rows = receipt.get(kind, [])
+    original = {_identity(row): row for row in rows}
+    if len(original) != len(rows):
+        raise ValueError("Duplicate Python counter identity")
+    return original
+
+
+def _copy_counters(original):
+    return {identity: {**row, "body_lines": dict(row["body_lines"]),
+                       "branches": list(row["branches"]),
+                       "physical_branches": list(row["physical_branches"])}
+            for identity, row in original.items()}
+
+
+def _merge_counter_row(target, expected, row):
+    if _shape(row) != _shape(expected) or set(row["body_lines"]) != set(expected["body_lines"]):
+        raise ValueError("Python counter body inventory mismatch")
+    target["execution_count"] += _hits(row["execution_count"])
+    for line, hits in row["body_lines"].items():
+        target["body_lines"][line] += _hits(hits)
+    for branch_kind in ("branches", "physical_branches"):
+        for edge in row[branch_kind]:
+            if edge not in target[branch_kind]:
+                target[branch_kind].append(edge)
+
+
+def _merge_receipt(first, receipt, kind, original, accumulated):
+    if receipt.get("schema") != 1 or receipt.get("sources") != first["sources"]:
+        raise ValueError("Python counter source inventory mismatch")
+    rows = receipt.get(kind, [])
+    actual = {_identity(row): row for row in rows}
+    if len(actual) != len(rows) or set(actual) != set(original):
+        raise ValueError("Python counter callable inventory mismatch")
+    for identity, row in actual.items():
+        _merge_counter_row(accumulated[identity], original[identity], row)
+
+
+def _combine_counter_kind(first, receipts, kind):
+    original = _original_counters(first, kind)
+    accumulated = _copy_counters(original)
+    for receipt in receipts:
+        _merge_receipt(first, receipt, kind, original, accumulated)
+    return [accumulated[key] for key in sorted(accumulated)]
+
+
 def combine_counters(receipts):
     """Union flat per-process counters after exact complete source/body matching."""
     if not receipts:
@@ -36,32 +82,7 @@ def combine_counters(receipts):
         raise ValueError("Invalid Python counter schema")
     output = {"schema": 1, "sources": first["sources"], "callables": [], "modules": []}
     for kind in ("callables", "modules"):
-        original = {_identity(row): row for row in first.get(kind, [])}
-        if len(original) != len(first.get(kind, [])):
-            raise ValueError("Duplicate Python counter identity")
-        accumulated = {}
-        for identity, row in original.items():
-            accumulated[identity] = {**row, "body_lines": dict(row["body_lines"]),
-                                     "branches": list(row["branches"]),
-                                     "physical_branches": list(row["physical_branches"])}
-        for receipt in receipts[1:]:
-            if receipt.get("schema") != 1 or receipt.get("sources") != first["sources"]:
-                raise ValueError("Python counter source inventory mismatch")
-            actual = {_identity(row): row for row in receipt.get(kind, [])}
-            if len(actual) != len(receipt.get(kind, [])) or set(actual) != set(original):
-                raise ValueError("Python counter callable inventory mismatch")
-            for identity, row in actual.items():
-                target, expected = accumulated[identity], original[identity]
-                if _shape(row) != _shape(expected) or set(row["body_lines"]) != set(expected["body_lines"]):
-                    raise ValueError("Python counter body inventory mismatch")
-                target["execution_count"] += _hits(row["execution_count"])
-                for line, hits in row["body_lines"].items():
-                    target["body_lines"][line] += _hits(hits)
-                for branch_kind in ("branches", "physical_branches"):
-                    for edge in row[branch_kind]:
-                        if edge not in target[branch_kind]:
-                            target[branch_kind].append(edge)
-        output[kind] = [accumulated[key] for key in sorted(accumulated)]
+        output[kind] = _combine_counter_kind(first, receipts[1:], kind)
     return output
 
 

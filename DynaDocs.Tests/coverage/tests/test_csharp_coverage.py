@@ -1,4 +1,5 @@
 """The C# campaign is one exact AltCover eager full-suite invocation."""
+import io
 import sys
 import tempfile
 import unittest
@@ -8,16 +9,182 @@ import os
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
+from contextlib import redirect_stderr
 from unittest.mock import patch
 from pathlib import Path
 from copy import deepcopy
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _identity_producer, _source_facts, _source_facts_artifacts, _same_instrumented_map,
+from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _source_facts_artifacts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
-                             _subject_commands, _template_original_map, _write_commands, altcover_commands,
-                             run_subject, snapshot_artifacts)
+                             _subject_commands, _template_original_map, _validate_instrumented,
+                             _validate_restored, _write_commands, altcover_commands, main,
+                             run_campaign, run_subject, snapshot_artifacts)
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
+
+MINIMAL_SOLUTION = """Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynaDocs", "DynaDocs.csproj", "{8537ADD5-149C-4DAA-B9B7-C26CA3852204}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynaDocs.Tests", "DynaDocs.Tests\\DynaDocs.Tests.csproj", "{0838948C-BE5B-4F0D-980D-389149315058}"
+EndProject
+Global
+\tGlobalSection(SolutionConfigurationPlatforms) = preSolution
+\t\tDebug|Any CPU = Debug|Any CPU
+\t\tRelease|Any CPU = Release|Any CPU
+\tEndGlobalSection
+\tGlobalSection(ProjectConfigurationPlatforms) = postSolution
+\t\t{8537ADD5-149C-4DAA-B9B7-C26CA3852204}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+\t\t{8537ADD5-149C-4DAA-B9B7-C26CA3852204}.Debug|Any CPU.Build.0 = Debug|Any CPU
+\t\t{8537ADD5-149C-4DAA-B9B7-C26CA3852204}.Release|Any CPU.ActiveCfg = Release|Any CPU
+\t\t{8537ADD5-149C-4DAA-B9B7-C26CA3852204}.Release|Any CPU.Build.0 = Release|Any CPU
+\t\t{0838948C-BE5B-4F0D-980D-389149315058}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+\t\t{0838948C-BE5B-4F0D-980D-389149315058}.Debug|Any CPU.Build.0 = Debug|Any CPU
+\t\t{0838948C-BE5B-4F0D-980D-389149315058}.Release|Any CPU.ActiveCfg = Release|Any CPU
+\t\t{0838948C-BE5B-4F0D-980D-389149315058}.Release|Any CPU.Build.0 = Release|Any CPU
+\tEndGlobalSection
+EndGlobal
+"""
+
+MINIMAL_LIBRARY = """<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>dydo</AssemblyName>
+    <RootNamespace>Mini</RootNamespace>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src/Widget.cs" />
+  </ItemGroup>
+</Project>
+"""
+
+MINIMAL_WIDGET = """namespace Mini;
+
+public static class Widget
+{
+    public static int Classify(int value)
+    {
+        if (value < 0)
+        {
+            return -1;
+        }
+
+        return value == 0 ? 0 : 1;
+    }
+}
+"""
+
+MINIMAL_TEST_PROJECT = """<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>DynaDocs.Tests</AssemblyName>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="WidgetTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\\DynaDocs.csproj" />
+  </ItemGroup>
+</Project>
+"""
+
+MINIMAL_WIDGET_TESTS = """using Mini;
+using Xunit;
+
+namespace Mini.Tests;
+
+public class WidgetTests
+{
+    [Fact]
+    public void ClassifiesNegativeAndPositiveValues()
+    {
+        Assert.Equal(-1, Widget.Classify(-2));
+        Assert.Equal(1, Widget.Classify(5));
+    }
+}
+"""
+
+MINIMAL_PRODUCER_PROJECT = """<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.9.0" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.33.0.1635" PrivateAssets="all" GeneratePathProperty="true" />
+    <Reference Include="SonarAnalyzer.CSharp">
+      <HintPath>$(PkgSonarAnalyzer_CSharp)/analyzers/SonarAnalyzer.CSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
+"""
+
+SUBJECT_LAUNCHER = """import runpy
+
+runpy.run_path(r"{module}", run_name="__main__")
+"""
+
+SUBJECT_METRICS = """import os
+import subprocess
+
+producer = os.environ["DYNADOCS_GATE_METRICS_PREBUILT_DLL"]
+done = subprocess.run(["dotnet", producer, "--syntax"], input="class A { int M(int v) => v; }",
+                      text=True, capture_output=True)
+raise SystemExit(done.returncode)
+"""
+
+
+def _write_all(root, files):
+    for relative, text in files.items():
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+
+def _minimal_campaign_root(root):
+    """A real .NET root shaped exactly as the campaign expects, holding no repository product code."""
+    tools = Path(__file__).resolve().parents[1]
+    _write_all(root, {
+        ".config/dotnet-tools.json": (tools.parents[1] / ".config/dotnet-tools.json").read_text(encoding="utf-8"),
+        "DynaDocs.sln": MINIMAL_SOLUTION,
+        "DynaDocs.csproj": MINIMAL_LIBRARY,
+        "src/Widget.cs": MINIMAL_WIDGET,
+        "DynaDocs.Tests/DynaDocs.Tests.csproj": MINIMAL_TEST_PROJECT,
+        "DynaDocs.Tests/WidgetTests.cs": MINIMAL_WIDGET_TESTS,
+        "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj": MINIMAL_PRODUCER_PROJECT,
+        "DynaDocs.Tests/coverage/csharp_coverage.py": SUBJECT_LAUNCHER.format(
+            module=tools / "csharp_coverage.py"),
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py": SUBJECT_METRICS,
+    })
+    for source in sorted((tools / "metrics").glob("*.cs")):
+        shutil.copy2(source, root / "DynaDocs.Tests/coverage/metrics" / source.name)
+    return root
+
+
+def _template_module_xml(name, path, digest, methods=""):
+    return (f'<Module hash="{digest}"><ModuleName>{name}</ModuleName><ModulePath>{path}</ModulePath>'
+            f'<Classes><Class><Methods>{methods}</Methods></Class></Classes></Module>')
+
+
+def _template_report(*modules):
+    return f"<CoverageSession><Modules>{''.join(modules)}</Modules></CoverageSession>"
 
 
 def _materialize_crlf_sources(root, source_commit, sources, destination):
@@ -341,6 +508,105 @@ class CSharpCoverageTests(unittest.TestCase):
                  "reason": "semantic implicit constructor with no authored executable fragments"}
             ]}}, no_point))
 
+    def test_snapshot_rejects_artifacts_outside_the_root_or_absent_from_disk(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "root"
+            root.mkdir()
+            (Path(folder) / "stray.dll").write_bytes(b"stray")
+            with self.assertRaisesRegex(ValueError, "Artifact outside campaign root"):
+                snapshot_artifacts(root, [Path(folder) / "stray.dll"])
+            with self.assertRaisesRegex(ValueError, "Missing campaign artifact: absent.dll"):
+                snapshot_artifacts(root, [root / "absent.dll"])
+
+    def test_candidate_assemblies_require_every_named_campaign_assembly(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(ValueError, "Missing exact C# campaign assemblies"):
+                _candidate_assemblies(Path(folder))
+
+    def test_instrumented_comparison_rejects_points_without_full_source_identity(self):
+        facts = {"assembly_name": "A", "module_id": "m", "pdb_sha256": "p",
+                 "documents": {"C:/A.cs": "A.cs"},
+                 "methods": [{"token": 1, "identity": "A::M()", "key": "A::M()",
+                              "points": [{"path": "A.cs", "origin": "maintained", "line": 1}]}]}
+        self.assertFalse(_same_instrumented_map(facts, deepcopy(facts)))
+
+    def test_template_module_selection_rejects_every_unproven_binding(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            original = {"facts": {"assembly_name": "A", "sha1": "ab", "methods": [
+                {"token": 1, "identity": "A::First()", "points": []}]},
+                "aliases": ["bin/A.dll"], "canonical": "bin/A.dll"}
+            method = "<Method><MetadataToken>1</MetadataToken><Name>A::First()</Name></Method>"
+            for message, report in (
+                ("Missing or ambiguous template module",
+                 _template_report(_template_module_xml("B", "bin/A.dll", "ab", method))),
+                ("Template module outside campaign root",
+                 _template_report(_template_module_xml("A", "C:/elsewhere/A.dll", "ab", method))),
+                ("Unknown template module alias",
+                 _template_report(_template_module_xml("A", "bin/Other.dll", "ab", method))),
+                ("Original template module hash mismatch",
+                 _template_report(_template_module_xml("A", "bin/A.dll", "cd", method))),
+                ("Missing template MethodDef token",
+                 _template_report(_template_module_xml("A", "bin/A.dll", "ab",
+                                                       "<Method><Name>A::First()</Name></Method>"))),
+                ("Template module missing original identity",
+                 _template_report(_template_module_xml("A", "bin/A.dll", "ab", method),
+                                  _template_module_xml("B", "bin/B.dll", "ef"))),
+            ):
+                with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                    _template_original_map(report, root, [original])
+
+    def test_template_mapping_rejects_one_token_claimed_by_two_original_methods(self):
+        original = {"facts": {"assembly_name": "A", "sha1": "ab", "methods": [
+            {"token": 1, "identity": "A::First()", "points": []},
+            {"token": 1, "identity": "A::Second()", "points": []}]},
+            "aliases": ["bin/A.dll"], "canonical": "bin/A.dll"}
+        report = _template_report(_template_module_xml(
+            "A", "bin/A.dll", "ab",
+            "<Method><MetadataToken>1</MetadataToken><Name>A::First()</Name></Method>"))
+        with self.assertRaisesRegex(ValueError, "Duplicate original MethodDef token: 1"):
+            _template_original_map(report, Path.cwd(), [original])
+
+    def test_source_facts_fail_closed_when_the_producer_exits_nonzero(self):
+        with patch("csharp_coverage.subprocess.run",
+                   return_value=subprocess.CompletedProcess([], 2, "", "producer refused\n")):
+            with self.assertRaisesRegex(ValueError, "Source identity failed for dydo: producer refused"):
+                _source_facts(Path.cwd(), Path("producer.dll"), "dydo")
+
+    def test_command_line_rejects_incomplete_or_unusable_campaign_arguments(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            taken = root / "taken"
+            taken.mkdir()
+            for arguments in (["--root", str(root)],
+                              ["--root", str(root), "--result-root", str(root / "fresh"),
+                               "--extra-json", "{}"]):
+                with self.subTest(arguments=arguments), \
+                        patch.object(sys, "argv", ["csharp_coverage.py", *arguments]):
+                    self.assertEqual(2, main())
+            self.assertFalse((root / "fresh").exists())
+            stderr = io.StringIO()
+            with patch.object(sys, "argv", ["csharp_coverage.py", "--root", str(root),
+                                            "--result-root", str(taken)]), redirect_stderr(stderr):
+                self.assertEqual(2, main())
+            self.assertIn("taken", stderr.getvalue())
+            with self.assertRaisesRegex(ValueError, "ordinary unfiltered full suite"):
+                run_campaign(root, root / "filtered", ["--filter=Category!=Slow"])
+
+    def test_campaign_records_the_failing_native_build_and_stops(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            evidence = root / "evidence"
+            arguments = ["csharp_coverage.py", "--root", str(root), "--result-root", str(evidence)]
+            with patch.dict(os.environ), patch.object(sys, "argv", arguments):
+                self.assertEqual(2, main())
+            commands = json.loads((evidence / "commands.json").read_text(encoding="utf-8"))
+            self.assertEqual(["build-0"], [row["name"] for row in commands])
+            self.assertNotEqual(0, commands[0]["exit"])
+            self.assertIn("DynaDocs.sln", " ".join(commands[0]["argv"]))
+            self.assertTrue((evidence / "build-0.stdout").is_file())
+            self.assertFalse((evidence / "identity-pre.json").exists())
+
     def test_hop3_05_replay_applies_physical_eligibility_to_retained_collector_output(self):
         """Replay only: retained source facts are absent, so this deliberately stops before join."""
         root = Path(__file__).resolve().parents[3]
@@ -391,6 +657,92 @@ class CSharpCoverageTests(unittest.TestCase):
             for name in ("dydo", "GateMetrics"):
                 assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == name)
                 self.assertTrue(join_methods(diagnostic_root, derived[name], assembly, coverage[name])["modules"])
+
+
+class CSharpCampaignTests(unittest.TestCase):
+    """One real AltCover 9.0.102 campaign, driven over a generated minimal .NET root."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.folder = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        cls.root = _minimal_campaign_root(Path(cls.folder.name))
+        restored = subprocess.run(["dotnet", "tool", "restore"], cwd=cls.root, text=True,
+                                  capture_output=True)
+        if restored.returncode:
+            raise AssertionError(restored.stdout + restored.stderr)
+        cls.evidence = cls.root / "evidence"
+        cls.producer = _identity_producer(cls.root)[1]
+        with patch.dict(os.environ):
+            cls.campaign_exit = run_campaign(cls.root, cls.evidence)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.folder.cleanup()
+
+    def recorded(self, name):
+        return json.loads((self.evidence / name).read_text(encoding="utf-8"))
+
+    def test_real_campaign_runs_every_native_command_and_restores_the_originals(self):
+        self.assertEqual(0, self.campaign_exit)
+        commands = self.recorded("commands.json")
+        self.assertEqual(["build-0", "build-1", "build-2", "altcover-prepare", "altcover-runner"],
+                         [row["name"] for row in commands])
+        self.assertEqual([0] * 5, [row["exit"] for row in commands])
+        self.assertIn("visits recorded",
+                      (self.evidence / "altcover-runner.stdout").read_text(encoding="utf-8"))
+        pre = {row["canonical"]: row["facts"]["sha256"] for row in self.recorded("identity-pre.json")}
+        instrumented = {row["canonical"]: row["facts"]["sha256"]
+                        for row in self.recorded("identity-instrumented.json")}
+        self.assertEqual(sorted(pre), sorted(instrumented))
+        self.assertTrue(all(pre[alias] != instrumented[alias] for alias in pre))
+        self.assertEqual(self.recorded("identity-pre.json"), self.recorded("identity-post.json"))
+
+    def test_real_campaign_joins_collected_hits_onto_the_authored_source_method(self):
+        joined = self.recorded("joined.json")
+        self.assertEqual(["dydo", "GateMetrics"], [row["assembly"] for row in joined["targets"]])
+        library = next(row for row in joined["modules"] if row["path"] == "src/Widget.cs")
+        method = library["methods"][0]
+        self.assertTrue(method["id"].endswith("|System.Int32 Mini.Widget::Classify(System.Int32)"))
+        self.assertEqual((6, 6, 3, 2), (method["covered"], method["total"], method["cc"],
+                                        method["cognitive"]))
+        self.assertTrue(library["branches"])
+        self.assertTrue(all(hits > 0 for hits in library["branches"].values()))
+        self.assertNotIn("src/Widget.cs", [row["path"] for row in joined["findings"]])
+
+    def test_campaign_identity_validation_rejects_changed_identity_or_changed_bytes(self):
+        pre, artifacts = self.recorded("identity-pre.json"), self.recorded("identity-pre-artifacts.json")
+        assemblies = _candidate_assemblies(self.root)
+        changed = deepcopy(pre)
+        changed[0]["facts"]["module_id"] = "00000000-0000-0000-0000-000000000000"
+        doctored = deepcopy(artifacts)
+        next(row for row in doctored if row["path"].endswith(".cs"))["sha256"] = "0" * 64
+        scratch = self.root / "validation"
+        scratch.mkdir()
+        for message, facts, rows in (("changed portable-PDB identity", changed, artifacts),
+                                     ("changed portable-PDB or source bytes", pre, doctored)):
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                _validate_instrumented(self.root, scratch, self.producer, assemblies, facts, rows)
+        for message, facts, rows in (("artifact restoration mismatch", pre, doctored),
+                                     ("Post-campaign restoration mismatch", changed, artifacts)):
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                _validate_restored(self.root, self.producer, assemblies, facts, rows)
+
+    def test_assembly_identity_rejects_same_name_conflicts_and_producer_failures(self):
+        build = subprocess.run(["dotnet", "build", "DynaDocs.csproj", "-c", "Release",
+                                "-p:RunAnalyzers=false", "-p:NuGetAudit=false",
+                                "-p:UseSharedCompilation=false"],
+                               cwd=self.root, text=True, capture_output=True)
+        self.assertEqual(0, build.returncode, build.stdout + build.stderr)
+        variants = [self.root / "bin/Debug/net10.0/dydo.dll",
+                    self.root / "bin/Release/net10.0/dydo.dll"]
+        with self.assertRaisesRegex(ValueError, "Conflicting same-name assembly identity: dydo"):
+            _identity_classes(self.root, self.producer, variants)
+        unreadable = self.root / "unreadable"
+        unreadable.mkdir()
+        shutil.copy2(variants[0], unreadable / "dydo.dll")
+        with self.assertRaisesRegex(ValueError, "Assembly identity failed"):
+            _assembly_facts(self.root, self.producer, unreadable / "dydo.dll")
+
 
 if __name__ == "__main__":
     unittest.main()

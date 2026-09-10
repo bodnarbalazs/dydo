@@ -21,6 +21,17 @@ from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
 
 
 class CSharpCoverageTests(unittest.TestCase):
+    def test_campaign_mechanism_callables_stay_within_cognitive_budget(self):
+        root = Path(__file__).resolve().parents[3]
+        metrics = subprocess.run([
+            sys.executable, str(root / "DynaDocs.Tests/coverage/python_metrics.py")
+        ], input=(root / "DynaDocs.Tests/coverage/csharp_coverage.py").read_text(encoding="utf-8"),
+            text=True, capture_output=True, check=True)
+        rows = {row["id"].split(":", 1)[0]: row["cognitive"]
+                for row in json.loads(metrics.stdout)["methods"]}
+        self.assertLessEqual(rows["_template_original_map"], 20)
+        self.assertLessEqual(rows["run_campaign"], 20)
+
     def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

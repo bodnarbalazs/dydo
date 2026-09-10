@@ -400,50 +400,41 @@ public class CommandDocConsistencyTests
         var commands = GetDocumentedCommands();
         var commandLookup = commands.ToDictionary(c => c.Path, c => c.Cmd);
         var commandPaths = commands.Select(c => c.Path).OrderByDescending(p => p.Length).ToList();
-
-        var files = new List<string>();
-
-        // Template files
         var templatesDir = FindRepoDir("Templates");
-        files.AddRange(Directory.GetFiles(templatesDir, "*.template.md"));
-
         var codeBlockPattern = new Regex(@"```[\w]*\r?\n(.*?)```", RegexOptions.Singleline);
-        var missing = new List<string>();
+        var missing = Directory.GetFiles(templatesDir, "*.template.md")
+            .SelectMany(file => MissingRequiredFlags(file, commandLookup, commandPaths, codeBlockPattern))
+            .Distinct()
+            .ToList();
 
-        foreach (var file in files)
+        Assert.True(missing.Count == 0,
+            $"Required flags missing from template/mode examples:\n  {string.Join("\n  ", missing)}");
+    }
+
+    private static IEnumerable<string> MissingRequiredFlags(string file,
+        IReadOnlyDictionary<string, Command> commandLookup, List<string> commandPaths, Regex codeBlockPattern)
+    {
+        var content = File.ReadAllText(file);
+        var fileName = Path.GetFileName(file);
+        foreach (Match block in codeBlockPattern.Matches(content))
         {
-            var content = File.ReadAllText(file);
-            var fileName = Path.GetFileName(file);
-
-            foreach (Match block in codeBlockPattern.Matches(content))
+            foreach (var line in block.Groups[1].Value.Split('\n'))
             {
-                foreach (var line in block.Groups[1].Value.Split('\n'))
-                {
-                    var trimmed = line.Trim();
-                    if (!trimmed.StartsWith("dydo ")) continue;
-                    if (trimmed.StartsWith('#')) continue;
+                var trimmed = line.Trim();
+                if (!trimmed.StartsWith("dydo ") || trimmed.StartsWith('#')) continue;
+                var cmdPath = IdentifyCommand(trimmed, commandPaths);
+                if (cmdPath == null || !commandLookup.TryGetValue(cmdPath, out var cmd)) continue;
 
-                    // Identify which command this example invokes
-                    var cmdPath = IdentifyCommand(trimmed, commandPaths);
-                    if (cmdPath == null || !commandLookup.TryGetValue(cmdPath, out var cmd)) continue;
-
-                    var requiredOptions = GetUserOptions(cmd).Where(o => o.Required).ToList();
-                    foreach (var opt in requiredOptions)
-                    {
-                        var hasFlag = GetAllNames(opt).Any(name => trimmed.Contains(name));
-                        // Allow <placeholder> syntax for the flag name
-                        var hasPlaceholder = trimmed.Contains($"<{opt.Name.TrimStart('-')}>");
-                        if (!hasFlag && !hasPlaceholder)
-                            missing.Add($"{fileName}: 'dydo {cmdPath}' example missing required {opt.Name}");
-                    }
-                }
+                foreach (var option in GetUserOptions(cmd).Where(option => option.Required))
+                    if (!ExampleSupplies(trimmed, option))
+                        yield return $"{fileName}: 'dydo {cmdPath}' example missing required {option.Name}";
             }
         }
-
-        var unique = missing.Distinct().ToList();
-        Assert.True(unique.Count == 0,
-            $"Required flags missing from template/mode examples:\n  {string.Join("\n  ", unique)}");
     }
+
+    private static bool ExampleSupplies(string example, Option option) =>
+        GetAllNames(option).Any(example.Contains)
+        || example.Contains($"<{option.Name.TrimStart('-')}>");
 
     // ──────────────────────────────────────────────
     // Test 8: License section is consistent across all README-like files

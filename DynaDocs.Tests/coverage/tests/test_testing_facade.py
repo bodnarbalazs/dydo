@@ -489,11 +489,13 @@ class TestingFacadeTests(unittest.TestCase):
 
     def exit_case(self, code):
         data = manifest()
-        data['stacks'][0]['capabilities']['test'] = unavailable() if code == 2 else configured(['-c', f'raise SystemExit({17 if code == 1 else 0})'])
+        child_exit = {0: 0, 1: 17}[code] if code != 2 else None
+        data['stacks'][0]['capabilities']['test'] = (unavailable() if code == 2
+                                                      else configured(['-c', f'raise SystemExit({child_exit})']))
         p, _, payload = self.invoke(['all'], data)
         self.assert_exit(p, code)
         self.assertEqual(code, payload['aggregateExit'])
-        self.assertEqual(17 if code == 1 else (0 if code == 0 else None), payload['results'][0]['childExit'])
+        self.assertEqual(child_exit, payload['results'][0]['childExit'])
 
     def test_exit_pass(self): self.exit_case(0)
     def test_exit_failure(self): self.exit_case(1)
@@ -527,7 +529,9 @@ class TestingFacadeTests(unittest.TestCase):
         expected = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
         for expected_exit in [0, 1, 2]:
             data = manifest()
-            data['stacks'][0]['capabilities']['test'] = unavailable() if expected_exit == 2 else configured(['-c', f'raise SystemExit({17 if expected_exit == 1 else 0})'])
+            child_exit = {0: 0, 1: 17}.get(expected_exit)
+            data['stacks'][0]['capabilities']['test'] = (unavailable() if expected_exit == 2
+                                                          else configured(['-c', f'raise SystemExit({child_exit})']))
             (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
             p, _, payload = self.invoke(['all'], directory=root)
             self.assert_exit(p, expected_exit)

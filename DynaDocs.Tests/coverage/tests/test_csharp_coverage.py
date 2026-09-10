@@ -20,6 +20,54 @@ from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _iden
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
 
 
+def _materialize_crlf_sources(root, source_commit, sources, destination):
+    for row in sources:
+        path = destination / row["path"]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        blob = subprocess.run(
+            ["git", "-c", f"safe.directory={root.as_posix()}", "show",
+             f"{source_commit}:{row['path']}"], cwd=root, capture_output=True)
+        if blob.returncode:
+            raise AssertionError(blob.stderr.decode("utf-8", errors="replace"))
+        path.write_bytes(blob.stdout.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+
+
+def _write_replay_provenance(root, cache):
+    producer = _identity_producer(root)[1]
+    derived = {name: _source_facts(root, producer, name, cache) for name in ASSEMBLY_PROJECTS}
+    (cache / "source-facts-artifacts.json").write_text(
+        json.dumps(_source_facts_artifacts(root, cache, ASSEMBLY_PROJECTS), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    provenance = cache / "provenance.json"
+    provenance.write_text(json.dumps({
+        "schema": 1, "kind": "newly derived diagnostic replay", "sourceCommit": "ec97c1b4",
+        "retainedInputs": ["identity-pre.json", "identity-pre-artifacts.json",
+                           "template-original-map.json", "coverage.opencover.xml"],
+        "sourceRepresentation": "pinned checkout LF normalized to CRLF for retained checksum validation",
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return derived, provenance
+
+
+def _replay_facts(root, raw):
+    cache = raw / "newly-derived-ec97c1b4"
+    cache.mkdir(exist_ok=True)
+    provenance = cache / "provenance.json"
+    if not provenance.is_file():
+        return _write_replay_provenance(root, cache)
+    derived = {name: json.loads((cache / f"source-facts-{name}.json").read_text(encoding="utf-8"))
+               for name in ASSEMBLY_PROJECTS}
+    return derived, provenance
+
+
+def _retarget_assemblies(xml, root, pre):
+    for equivalence in pre:
+        name, path = equivalence["facts"]["assembly_name"], equivalence["facts"]["path"]
+        old = next(module for module in ET.fromstring(xml).findall("./Modules/Module")
+                   if module.findtext("ModuleName") == name).findtext("ModulePath")
+        xml = xml.replace(old, str(root / path), 1)
+    return xml
+
+
 class CSharpCoverageTests(unittest.TestCase):
     def test_campaign_mechanism_callables_stay_within_cognitive_budget(self):
         root = Path(__file__).resolve().parents[3]
@@ -323,44 +371,17 @@ class CSharpCoverageTests(unittest.TestCase):
         expected = {row["path"]: (row["bytes"], row["sha256"]) for row in sources}
         with tempfile.TemporaryDirectory() as folder:
             diagnostic_root = Path(folder)
-            for row in sources:
-                path = diagnostic_root / row["path"]
-                path.parent.mkdir(parents=True, exist_ok=True)
-                blob = subprocess.run(
-                    ["git", "-c", f"safe.directory={root.as_posix()}", "show",
-                     f"{source_commit}:{row['path']}"], cwd=root, capture_output=True)
-                self.assertEqual(0, blob.returncode, blob.stderr.decode("utf-8", errors="replace"))
-                path.write_bytes(blob.stdout.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+            _materialize_crlf_sources(root, source_commit, sources, diagnostic_root)
             actual = {row["path"]: (row["bytes"], row["sha256"]) for row in
                       snapshot_artifacts(diagnostic_root, [diagnostic_root / row["path"] for row in sources])}
             self.assertEqual(expected, actual)
-            producer = _identity_producer(root)[1]
-            cache = raw / "newly-derived-ec97c1b4"
-            cache.mkdir(exist_ok=True)
-            provenance = cache / "provenance.json"
-            if not provenance.is_file():
-                derived = {name: _source_facts(root, producer, name, cache) for name in ASSEMBLY_PROJECTS}
-                (cache / "source-facts-artifacts.json").write_text(
-                    json.dumps(_source_facts_artifacts(root, cache, ASSEMBLY_PROJECTS), indent=2, sort_keys=True) + "\n",
-                    encoding="utf-8")
-                provenance.write_text(json.dumps({
-                    "schema": 1, "kind": "newly derived diagnostic replay", "sourceCommit": "ec97c1b4",
-                    "retainedInputs": ["identity-pre.json", "identity-pre-artifacts.json",
-                                       "template-original-map.json", "coverage.opencover.xml"],
-                    "sourceRepresentation": "pinned checkout LF normalized to CRLF for retained checksum validation",
-                }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-            else:
-                derived = {name: json.loads((cache / f"source-facts-{name}.json").read_text(encoding="utf-8"))
-                           for name in ASSEMBLY_PROJECTS}
+            derived, provenance = _replay_facts(root, raw)
+            cache = provenance.parent
             self.assertEqual("ec97c1b4", json.loads(provenance.read_text(encoding="utf-8"))["sourceCommit"])
             self.assertEqual(_source_facts_artifacts(root, cache, ASSEMBLY_PROJECTS),
                              json.loads((cache / "source-facts-artifacts.json").read_text(encoding="utf-8")))
-            xml = (raw / "coverage.opencover.xml").read_text(encoding="utf-8-sig")
-            for equivalence in pre:
-                name, path = equivalence["facts"]["assembly_name"], equivalence["facts"]["path"]
-                old = next(module for module in ET.fromstring(xml).findall("./Modules/Module")
-                           if module.findtext("ModuleName") == name).findtext("ModulePath")
-                xml = xml.replace(old, str(root / path), 1)
+            xml = _retarget_assemblies(
+                (raw / "coverage.opencover.xml").read_text(encoding="utf-8-sig"), root, pre)
             template = {path: {int(token): identity for token, identity in methods.items()}
                         for path, methods in json.loads((raw / "template-original-map.json").read_text(encoding="utf-8")).items()}
             self.assertEqual(template, _template_original_map(xml, root, pre))

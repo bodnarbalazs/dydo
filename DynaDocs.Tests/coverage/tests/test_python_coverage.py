@@ -30,6 +30,43 @@ def _counter_receipt(rows, **changes):
     return {"schema": 1, "sources": {"a.py": "a" * 64}, "callables": rows, "modules": [], **changes}
 
 
+_COLD_BOOTSTRAP = """\
+import importlib.util
+import json
+import os
+import sys
+from pathlib import Path
+
+tools, work = (Path(argument).resolve() for argument in sys.argv[1:3])
+sys.path[:0] = [str(tools), str(work)]
+inherited = os.environ.get("DYDO_PYTHON_COVERAGE_CONFIG")
+for cached in ("python_runtime", "positions"):
+    sys.modules.pop(cached, None)
+spec = importlib.util.spec_from_file_location("cold_bootstrap", tools / "python_coverage.py")
+bootstrap = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(bootstrap)
+
+os.environ["DYDO_PYTHON_COVERAGE_CONFIG"] = str(work / "unpinned.json")
+refusal = ""
+try:
+    bootstrap.startup_from_environment()
+except RuntimeError as error:
+    refusal = str(error)
+os.environ["DYDO_PYTHON_COVERAGE_CONFIG"] = str(work / "config.json")
+session = bootstrap.startup_from_environment()
+restarted = session is not bootstrap.startup_from_environment()
+
+import subject
+
+subject.only()
+(work / "observed.json").write_text(json.dumps({
+    "pid": os.getpid(), "inherited": inherited, "refusal": refusal,
+    "started": session is not None, "restarted": restarted,
+    "runtime": sys.modules["python_runtime"].__spec__.origin,
+    "positions": sys.modules["positions"].__spec__.origin}), encoding="utf-8")
+"""
+
+
 class PythonCoverageTests(unittest.TestCase):
     def campaign(self, root, output, sources, command):
         tools = Path(__file__).resolve().parents[1]
@@ -111,6 +148,43 @@ class PythonCoverageTests(unittest.TestCase):
         ):
             with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
                 combine_counters(receipts)
+
+    def assert_campaign_receipt_survived(self, observed):
+        campaign = observed["inherited"]
+        if not campaign:
+            return
+        output = Path(json.loads(Path(campaign).read_text(encoding="utf-8"))["output"])
+        self.assertTrue(list(output.glob(f"counter-{observed['pid']}-*.json")),
+                        "the nested session consumed the inherited campaign receipt")
+
+    def test_startup_bootstraps_a_cold_module_graph_beside_an_inherited_campaign(self):
+        tools = Path(__file__).resolve().parents[1]
+        python = tools.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        with tempfile.TemporaryDirectory() as folder:
+            work = Path(folder)
+            (work / "subject.py").write_text("def only():\n    return 1\n", encoding="utf-8")
+            (work / "cold_start.py").write_text(_COLD_BOOTSTRAP, encoding="utf-8")
+            (work / "unpinned.json").write_text('{"schema": 2}', encoding="utf-8")
+            evidence = work / "evidence"
+            evidence.mkdir()
+            (work / "config.json").write_text(json.dumps({
+                "schema": 1, "root": str(work), "output": str(evidence),
+                "sources": [str(work / "subject.py")]}), encoding="utf-8")
+            child = subprocess.run([str(python), str(work / "cold_start.py"), str(tools), str(work)],
+                                   cwd=work, text=True, capture_output=True)
+            self.assertEqual(0, child.returncode, child.stdout + child.stderr)
+            receipts = list(evidence.glob("counter-*.json"))
+            self.assertEqual(1, len(receipts), child.stdout + child.stderr)
+            self.assertTrue(list(evidence.glob(".coverage.*")))
+            receipt = json.loads(receipts[0].read_text(encoding="utf-8"))
+            observed = json.loads((work / "observed.json").read_text(encoding="utf-8"))
+        self.assertEqual((True, False), (observed["started"], observed["restarted"]))
+        self.assertIn("coverage.py 7.16.0", observed["refusal"])
+        self.assertEqual([str(tools / "python_runtime.py"), str(tools / "positions.py")],
+                         [observed["runtime"], observed["positions"]])
+        self.assertEqual([("only:1:0", 1)],
+                         [(row["id"], row["execution_count"]) for row in receipt["callables"]])
+        self.assert_campaign_receipt_survived(observed)
 
     def test_campaign_refuses_an_empty_selection_or_a_source_outside_the_root(self):
         with tempfile.TemporaryDirectory() as folder:

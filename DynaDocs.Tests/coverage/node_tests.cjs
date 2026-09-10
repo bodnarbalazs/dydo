@@ -27,5 +27,5 @@ function main(args = process.argv.slice(2)) {
   return Number.isInteger(result.status) ? result.status : 130;
 }
 
-module.exports = { discover, main };
+module.exports = { discover };
 if (require.main === module) process.exitCode = main();

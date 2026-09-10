@@ -10,8 +10,8 @@ from gate_diagnostics import normalize_csharp_diagnostics
 
 
 class DiagnosticTests(unittest.TestCase):
-    def fixture(self, root, path, rule='IDE0060', suppressed=False):
-        row = {'ruleId': rule, 'level': 'error', 'message': 'native message',
+    def fixture(self, root, path, rule='IDE0060', suppressed=False, level='error'):
+        row = {'ruleId': rule, 'level': level, 'message': 'native message',
                'locations': [{'resultFile': {'uri': (root / path).as_uri(), 'region': {
                    'startLine': 2, 'startColumn': 3, 'endLine': 2, 'endColumn': 5}}}]}
         if suppressed:
@@ -101,7 +101,8 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(229, report['raw_count'])
         self.assertEqual([], report['errors'])
         normalized = [*report['findings'], *report['generated']]
-        self.assertEqual(229, sum(len(row['witnesses']) for row in normalized))
+        gate_level_count = sum(item['level'] in ('warning', 'error') for item in diagnostics)
+        self.assertEqual(gate_level_count, sum(len(row['witnesses']) for row in normalized))
         feature_witnesses = sum(len(row['witnesses']) for row in report['generated']
                                 if row['locations'][0]['path'].endswith('.feature'))
         self.assertEqual(105, feature_witnesses)
@@ -115,6 +116,25 @@ class DiagnosticTests(unittest.TestCase):
             report = normalize_csharp_diagnostics(root, rows, {'A/File.cs', 'B/File.cs'}, {})
             self.assertEqual(2, len(report['findings']))
             self.assertEqual(2, len(report['findings'][0]['witnesses']))
+            self.assertEqual([], report['errors'])
+
+    def test_configured_dead_code_errors_remain_gate_findings(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            rows = [{'project': 'Product.csproj', 'diagnostic': self.fixture(root, 'Subject.cs', rule)}
+                    for rule in ('IDE0051', 'IDE0052', 'IDE0060')]
+            report = normalize_csharp_diagnostics(root, rows, {'Subject.cs'}, {})
+            self.assertEqual(['IDE0051', 'IDE0052', 'IDE0060'],
+                             [row['rule'] for row in report['findings']])
+
+    def test_note_diagnostics_remain_raw_evidence_but_are_not_gate_findings(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            rows = [{'project': 'Product.csproj',
+                     'diagnostic': self.fixture(root, 'Subject.cs', 'CA1822', level='note')}]
+            report = normalize_csharp_diagnostics(root, rows, {'Subject.cs'}, {})
+            self.assertEqual(1, report['raw_count'])
+            self.assertEqual([], report['findings'])
             self.assertEqual([], report['errors'])
 
     def test_only_exact_semantic_generated_identity_can_be_excluded(self):

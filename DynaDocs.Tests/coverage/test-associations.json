@@ -2,6 +2,42 @@
   "schema": 1,
   "modules": [
     {
+      "module": "Commands/GapCheckCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/GapCheckCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Models/SkillSwitchConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Models/TestingConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs"
+      ]
+    },
+    {
+      "module": "npm/bin/dydo.cjs",
+      "tests": [
+        "npm/test/launcher.test.cjs"
+      ]
+    },
+    {
+      "module": "npm/lib/paths.js",
+      "tests": [
+        "npm/test/launcher.test.cjs"
+      ]
+    },
+    {
+      "module": "npm/lib/platform.js",
+      "tests": [
+        "npm/test/launcher.test.cjs"
+      ]
+    },
+    {
       "module": "Commands/CheckCommand.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"

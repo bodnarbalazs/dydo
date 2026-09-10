@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """Universal DR048 coverage and callable policy."""
-import argparse
-import json
-import sys
-from datetime import datetime, timezone
 from fractions import Fraction
-from pathlib import Path
 
 def _nonnegative_integer(value):
     if type(value) is not int or value < 0:
@@ -138,5 +133,4 @@ def evaluate_policy(modules):
         raise ValueError("Missing or duplicate module identity")
     _validate_body_owners(modules)
     return [finding for module in modules for finding in _module_violations(module)]
-
 

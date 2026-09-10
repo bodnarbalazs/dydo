@@ -97,6 +97,8 @@ def normalize_csharp_diagnostics(root, rows, maintained, generated):
         except (ValueError, KeyError, OSError) as error:
             report['errors'].append({'message': str(error), 'project': row['project'], 'native_row': index})
     for row in unique.values():
+        if row['level'] not in ('warning', 'error'):
+            continue
         category, classified = _classify(row, maintained, generated)
         report[category].append(classified)
     return report

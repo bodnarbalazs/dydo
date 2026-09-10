@@ -159,7 +159,7 @@ function main(args = process.argv.slice(2)) {
   return campaign(values['--root'], values['--output'], JSON.parse(values['--targets-json']), JSON.parse(values['--command-json']));
 }
 
-module.exports = { canonicalRows, rawFunctions, join, campaign };
+module.exports = { canonicalRows, rawFunctions, join };
 if (require.main === module) {
   try { process.exitCode = main(); } catch (error) { console.error(error.message); process.exitCode = 2; }
 }

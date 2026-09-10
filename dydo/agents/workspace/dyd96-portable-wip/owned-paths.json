@@ -3,7 +3,7 @@
   "issue": "DYD-96",
   "productionOrigin": "37acc1f3706bf925e5230fb58c4a790dba769d62",
   "amendmentImplementationBase": "633a78e10dc7fcd5992fcb437e87219486ca534d",
-  "status": "amended full contract, production pending fresh independent SPEC PASS",
+  "status": "production delivered; G-final green under the 2026-09-11 human ruling (gate static + gate coverage, not --force-run). 101 specified paths plus 49 assigned-remediation paths recorded from the measured DR 048 findings; every remediation path traces to a named DYD-96 commit on codex/DYD-96-assurance-adoption.",
   "paths": [
     {
       "path": ".config/dotnet-tools.json",
@@ -509,6 +509,398 @@
       "path": "DynaDocs.Tests/Steps/AssuranceAdoptionSteps.cs",
       "action": "Exact bindings to independently checked real subprocess observations for each new scenario",
       "phase": "production"
+    },
+    {
+      "path": "Commands/GraphCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5a157cd7 DYD-96 fix: remove dead command inputs"
+    },
+    {
+      "path": "Commands/GuardCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Commands/InitCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Commands/SyncCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Commands/TemplateCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5b3c9f84 DYD-96 fix: simplify template and link analysis"
+    },
+    {
+      "path": "DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "55ed8967 DYD-96 simplify remaining test callables"
+    },
+    {
+      "path": "DynaDocs.Tests/Commands/CompleteCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Commands/SyncCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Features/testing-facade.feature",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "c9ffeb16 DYD-96 docs: configure dotnet assurance rows"
+    },
+    {
+      "path": "DynaDocs.Tests/HookTestAssertions.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/GuardIntegrationTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "589216c6 DYD-96 close remaining static review findings"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/GuardWorkerLaneTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/InitCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/IntegrationTestBase.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/TemplateCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/TemplateScaffoldingTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "55ed8967 DYD-96 simplify remaining test callables"
+    },
+    {
+      "path": "DynaDocs.Tests/LinkTestFactory.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/NativeSyncAssertions.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Rules/RuleBaseTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "e0e910ed DYD-96 cover remaining dotnet decisions"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/CompletionProviderTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5a157cd7 DYD-96 fix: remove dead command inputs"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/ConfigServiceTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/DocScannerTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/LinkResolverTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/OffLimitsServiceTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/ShellCompletionInstallerTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/SkillTemplateServiceTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "e0e910ed DYD-96 cover remaining dotnet decisions"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/TemplateSwitchboardSteps.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "55ed8967 DYD-96 simplify remaining test callables"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/WorkflowRetirementAssertionTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/WorkflowRetirementSteps.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "DynaDocs.Tests/TestDirectory.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "Services/BashCommandAnalyzer.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "d90371b8 DYD-96 fix: simplify Bash command analysis"
+    },
+    {
+      "path": "Services/CompletionProvider.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5a157cd7 DYD-96 fix: remove dead command inputs"
+    },
+    {
+      "path": "Services/ConfigFileLocator.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "deleted",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Services/ConfigSaveOperations.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Services/ConfigService.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Services/FolderScaffolder.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Services/FrameworkCatalog.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Services/LinkExtractor.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5b3c9f84 DYD-96 fix: simplify template and link analysis"
+    },
+    {
+      "path": "Services/SkillTemplateService.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "4be9bc97 DYD-96 refactor local skill catalog discovery"
+    },
+    {
+      "path": "Services/TemplateGenerator.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Utils/ConfigFileLocator.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Utils/PathUtils.Discovery.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "npm/lib/paths.js",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "npm/lib/platform.js",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "npm/test/download.test.cjs",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "08b60660 DYD-96 cover npm installation lifecycle"
+    },
+    {
+      "path": "npm/test/install.test.cjs",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "08b60660 DYD-96 cover npm installation lifecycle"
+    },
+    {
+      "path": "npm/test/launcher.test.cjs",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "e8f20493 DYD-105 implement: make npm launcher measurable"
     }
   ],
   "excludedOwnership": [
@@ -524,5 +916,22 @@
     "Shared testing docs before later DYD-117/91 edits",
     "gate inventory interface to DYD-103 after reviewed implemented shape; no parent-Done dependency",
     "Shipped policy template/native reflection only through a later exact owner transfer"
+  ],
+  "deviations": [
+    {
+      "path": "DynaDocs.Tests/Features/testing-facade.feature",
+      "deviation": "The Spec twice says this feature remains unchanged. Two lines changed in commit c9ffeb16 because the scenario embeds the gap_check.json capability manifest verbatim, and the owned gap_check.json gained the configured dotnet static and coverage rows. The edit is the mechanical consequence of an owned change, not new scenario intent.",
+      "disposition": "recorded as a bounded deviation by the issue-captain; no scenario was added, removed or reordered"
+    },
+    {
+      "path": "npm/test/launcher.test.cjs",
+      "deviation": "excludedOwnership names this file as DYD-105's. Commit d4114f64 extended it so the maintained npm launcher paths carry coverage; DYD-105's own change to the same file is already on the integration target 40c35967.",
+      "disposition": "recorded; the two changes are compatible and the integrated file is what the G measured"
+    },
+    {
+      "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/**",
+      "deviation": "gate_inventory now verifies each retained fixture against SHA256SUMS by byte hash. The three Program.cs blobs are stored CRLF and SHA256SUMS matches those bytes, so worktree and blob hashes are identical on this host; a normalising checkout would report fixture-origin-diverged.",
+      "disposition": "investigated and dismissed: no .gitattributes text rule applies to this tree and the blob bytes are what the manifest records"
+    }
   ]
 }

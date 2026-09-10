@@ -71,7 +71,7 @@ Feature: Mutation assurance runs real campaigns over isolated changed code
       | node   | Timeout                             | timeout      |
       | node   | RuntimeError                        | runtimeError |
       | python | survived                            | survived     |
-      | python | killed without a suite completion line | timeout   |
+      | python | killed after the engine timeout     | timeout      |
       | python | skipped                             | unrun        |
 
   Scenario Outline: Missing or invalid measurement is invalid, never a pass

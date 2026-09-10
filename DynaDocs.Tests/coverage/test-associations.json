@@ -645,9 +645,9 @@
       ]
     },
     {
-      "module": "Services/ConfigFileLocator.cs",
+      "module": "Services/ConfigSaveOperations.cs",
       "tests": [
-        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs"
       ]
     },
     {
@@ -672,6 +672,14 @@
       "module": "Services/FolderScaffolder.cs",
       "tests": [
         "DynaDocs.Tests/Services/FolderScaffolderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/FrameworkCatalog.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/SyncCommandTests.cs",
+        "DynaDocs.Tests/Integration/TemplateScaffoldingTests.cs",
+        "DynaDocs.Tests/Services/TemplateUpdateTests.cs"
       ]
     },
     {
@@ -810,6 +818,13 @@
       "module": "Services/ValidationService.cs",
       "tests": [
         "DynaDocs.Tests/Services/ValidationServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/ConfigFileLocator.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs",
+        "DynaDocs.Tests/Services/PathUtilsDiscoveryTests.cs"
       ]
     },
     {

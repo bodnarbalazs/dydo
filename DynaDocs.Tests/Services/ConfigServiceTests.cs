@@ -256,14 +256,14 @@ public class ConfigServiceTests : IDisposable
         Action<FileStream>? durableFlush = null,
         Action<FileStream>? close = null,
         Action<string, string>? replace = null)
-        => new ConfigService().SaveConfig(
-            new DydoConfig { Version = 7 }, path,
-            _ => temporary,
-            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
-            writeAll ?? ((stream, bytes) => stream.Write(bytes)),
-            durableFlush ?? (stream => stream.Flush(flushToDisk: true)),
-            close ?? (stream => stream.Dispose()),
-            replace ?? ((source, target) => File.Move(source, target, overwrite: true)));
+        => new ConfigService().SaveConfig(new DydoConfig { Version = 7 }, path,
+            new ConfigSaveOperations(
+                _ => temporary,
+                candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+                writeAll ?? ((stream, bytes) => stream.Write(bytes)),
+                durableFlush ?? (stream => stream.Flush(flushToDisk: true)),
+                close ?? (stream => stream.Dispose()),
+                replace ?? ((source, target) => File.Move(source, target, overwrite: true))));
 
     [Fact]
     public void SaveConfig_Success_AtomicallyReplacesAndLeavesNoTemporarySibling()

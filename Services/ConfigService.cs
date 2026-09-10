@@ -73,15 +73,7 @@ public partial class ConfigService : IConfigService
     /// over the target, so a failure at any step leaves the original file untouched.
     /// </summary>
     public void SaveConfig(DydoConfig config, string path)
-        => SaveConfig(
-            config,
-            path,
-            TemporarySiblingPath,
-            CreateNewSibling,
-            (stream, bytes) => stream.Write(bytes),
-            stream => stream.Flush(flushToDisk: true),
-            stream => stream.Dispose(),
-            (temporary, target) => File.Move(temporary, target, overwrite: true));
+        => SaveConfig(config, path, ConfigSaveOperations.Default);
 
     // Beside the target on purpose: File.Move is an atomic rename only within one filesystem.
     internal static string TemporarySiblingPath(string target) => $"{target}.{Guid.NewGuid():N}.tmp";
@@ -90,15 +82,7 @@ public partial class ConfigService : IConfigService
     internal static FileStream CreateNewSibling(string path) =>
         new(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 
-    internal void SaveConfig(
-        DydoConfig config,
-        string path,
-        Func<string, string> chooseTemporaryPath,
-        Func<string, FileStream> createNew,
-        Action<FileStream, byte[]> writeAll,
-        Action<FileStream> durableFlush,
-        Action<FileStream> close,
-        Action<string, string> replace)
+    internal void SaveConfig(DydoConfig config, string path, ConfigSaveOperations operations)
     {
         config.Skills = config.Skills
             .OrderBy(entry => entry.Key, StringComparer.Ordinal)
@@ -110,20 +94,20 @@ public partial class ConfigService : IConfigService
         }
         var json = JsonSerializer.Serialize(config, DydoConfigJsonContext.Default.DydoConfig);
         var bytes = Encoding.UTF8.GetBytes(json);
-        var temporaryPath = chooseTemporaryPath(path);
+        var temporaryPath = operations.ChooseTemporaryPath(path);
         FileStream? stream = null;
         // Only a sibling this invocation created is ours to delete: a collision owns nothing,
         // and a successful rename has already consumed it.
         var ownsTemporary = false;
         try
         {
-            stream = createNew(temporaryPath);
+            stream = operations.CreateNew(temporaryPath);
             ownsTemporary = true;
-            writeAll(stream, bytes);
-            durableFlush(stream);
-            close(stream);
+            operations.WriteAll(stream, bytes);
+            operations.DurableFlush(stream);
+            operations.Close(stream);
             stream = null;
-            replace(temporaryPath, path);
+            operations.Replace(temporaryPath, path);
             ownsTemporary = false;
         }
         finally

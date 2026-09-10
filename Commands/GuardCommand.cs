@@ -242,9 +242,7 @@ public static partial class GuardCommand
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
             return ExitCodes.Success;
 
-        var routed = RouteToolLayers(
-            filePath, action, bashCommand, toolName, searchPath,
-            sessionId, offLimitsService, bashAnalyzer, env);
+        var routed = RouteToolLayers(ctx, offLimitsService, bashAnalyzer, env);
         if (routed != null) return routed.Value;
 
         // Reads and writes are allowed for anyone once past off-limits (checked in RouteToolLayers).
@@ -264,41 +262,38 @@ public static partial class GuardCommand
     /// search-tool gating, and plan-mode blocking. Returns an exit code when the
     /// call was fully handled, null to fall through to staged access control.
     /// </summary>
-    private static int? RouteToolLayers(
-        string? filePath, string? action, string? bashCommand, string? toolName,
-        string? searchPath, string? sessionId,
-        OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        GuardEnv env)
+    private static int? RouteToolLayers(GuardContext context, OffLimitsService offLimitsService,
+        IBashCommandAnalyzer bashAnalyzer, GuardEnv env)
     {
         // SECURITY LAYER 1: off-limits patterns for direct file operations, then the protected
         // tier for the mutating ones.
-        if (!string.IsNullOrEmpty(filePath))
+        if (!string.IsNullOrEmpty(context.FilePath))
         {
-            var blocked = BlockIfPathOffLimits(filePath, offLimitsService);
+            var blocked = BlockIfPathOffLimits(context.FilePath, offLimitsService);
             if (blocked != null) return blocked.Value;
 
-            if (IsMutatingCall(action, toolName))
+            if (IsMutatingCall(context.Action, context.ToolName))
             {
-                var protectedBlock = BlockIfPathProtected(filePath, offLimitsService);
+                var protectedBlock = BlockIfPathProtected(context.FilePath, offLimitsService);
                 if (protectedBlock != null) return protectedBlock.Value;
             }
         }
 
         // SECURITY LAYER 2: Bash tool
-        if (ShouldRouteToShellHandler(toolName, bashCommand))
+        if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
-            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, env);
+            return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env);
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — off-limits applies
         // to the search root, and the Agent tool gets the Tier-2 worker-lane notice.
-        if (toolName != null && SearchTools.Contains(toolName))
+        if (context.ToolName != null && SearchTools.Contains(context.ToolName))
         {
-            return HandleSearchTool(searchPath, toolName, offLimitsService);
+            return HandleSearchTool(context.SearchPath, context.ToolName, offLimitsService);
         }
 
         // SECURITY LAYER 2.6: Dydo agents must not use Claude Code's built-in plan mode.
-        if (toolName == "enterplanmode" || toolName == "exitplanmode")
+        if (context.ToolName == "enterplanmode" || context.ToolName == "exitplanmode")
         {
             Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
             Console.Error.WriteLine("  To plan: write a plan record into the repo or Linear, applying the Project Planner or Specifier skill.");

@@ -8,7 +8,8 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_diagnostics import normalize_csharp_diagnostics
-from gate_collect import _collect_analyzer_reports
+from gate_collect import (_collect_analyzer_reports, _generated_diagnostic_findings,
+                          _generated_projects)
 
 
 class DiagnosticTests(unittest.TestCase):
@@ -58,6 +59,24 @@ class DiagnosticTests(unittest.TestCase):
             self.assertTrue(uri.endswith('/Tests/SubjectTests.cs'), uri)
             self.assertEqual(['analyzers-0-prepare', 'analyzers-0'],
                              [name for name, _ in log.commands])
+
+    def test_generated_file_index_keeps_every_owning_project_in_evaluation_order(self):
+        rows = [{'project': 'Product.csproj', 'generated_files': ['obj/Shared.g.cs', 'obj/Only.g.cs']},
+                {'project': 'Tests.csproj', 'generated_files': ['obj/Shared.g.cs']},
+                {'project': 'Empty.csproj', 'generated_files': []}]
+
+        self.assertEqual({'obj/Shared.g.cs': ['Product.csproj', 'Tests.csproj'],
+                          'obj/Only.g.cs': ['Product.csproj']}, _generated_projects(rows))
+
+    def test_only_unsuppressed_gate_level_generated_diagnostics_become_findings(self):
+        rows = [{'rule': 'CS0219', 'level': 'warning', 'suppression_states': []},
+                {'rule': 'CS0162', 'level': 'error', 'suppression_states': ['suppressedInSource']},
+                {'rule': 'CA1822', 'level': 'note', 'suppression_states': []}]
+
+        findings = _generated_diagnostic_findings(rows)
+
+        self.assertEqual([{'gate': 'generated-build-diagnostic', 'rule': 'CS0219', 'level': 'warning',
+                           'suppression_states': []}], findings)
 
     def test_project_relative_feature_requires_unique_same_project_generated_origin(self):
         with tempfile.TemporaryDirectory() as folder:

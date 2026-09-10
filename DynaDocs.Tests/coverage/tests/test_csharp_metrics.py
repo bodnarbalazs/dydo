@@ -11,6 +11,44 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from csharp_coverage import GATE_METRICS_PREBUILT_ENV
+from gate_collect import Collectors, metric_findings
+from gate_run import CommandLog
+
+
+SDK_PROJECT = ('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
+               '</PropertyGroup>{targets}</Project>')
+STOP_BEFORE_COMPILE = ('<Target Name="StopBeforeCompile" BeforeTargets="CoreCompile" '
+                       'Condition="\'$(RunAnalyzers)\' == \'true\'">'
+                       '<Error Text="fixture stops before the compiler runs" /></Target>')
+FAIL_AFTER_COMPILE = ('<Target Name="FailAfterCompile" AfterTargets="CoreCompile" '
+                      'Condition="\'$(RunAnalyzers)\' == \'true\'">'
+                      '<Error Text="fixture fails after the compiler wrote its log" /></Target>')
+DUPLICATE_COMPILE = ('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
+                     '<EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup><ItemGroup>'
+                     '<Compile Include="Thing.cs" /><Compile Include="./Thing.cs" /></ItemGroup></Project>')
+UNCLOSED_PROJECT = '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup>'
+UNCOMPILABLE_SOURCE = "namespace Fixture; public static class Invalid { public static int Value() => absent; }"
+
+
+def tangled_subject():
+    branches = "\n".join(f"        if (value == {index}) {{ value++; }}" for index in range(21))
+    return ("namespace Fixture;\n\npublic sealed class Subject\n{\n"
+            "    public Subject(int a, int b, int c, int d, int e, int f, int g, int h)\n"
+            "    {\n        Total = a + b + c + d + e + f + g + h;\n    }\n\n"
+            "    public int Total { get; }\n\n"
+            "    public int Tangle(int value)\n    {\n" + branches + "\n        return value;\n    }\n}\n")
+
+
+def trivial_class(name, value):
+    return f"namespace Fixture;\n\npublic static class {name}\n{{\n    public static int Value() => {value};\n}}\n"
+
+
+def write_repository(root, files):
+    for relative, text in files.items():
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True, capture_output=True)
 
 
 def gate_metrics_dll(root):
@@ -370,6 +408,170 @@ class C {
                                       "--project", str(project)],
                                      text=True, capture_output=True)
             self.assertEqual(2, missing.returncode)
+
+
+class CSharpCollectorTests(unittest.TestCase):
+    """Drive the C# collectors against a real throwaway repository and its native tools."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tooling = Path(__file__).resolve().parents[1]
+        os.environ["APPDATA"] = str(cls.tooling.parents[1] / "dydo/_system/.local/appdata")
+        os.environ.setdefault("NUGET_PACKAGES", str(Path.home() / ".nuget/packages"))
+        cls.fixture = Path(tempfile.mkdtemp(prefix="dyd96-csharp-collectors-"))
+        write_repository(cls.fixture, {
+            "subject/Subject.csproj": SDK_PROJECT.format(targets=""),
+            "subject/Subject.cs": tangled_subject(),
+            "broken/Broken.csproj": UNCLOSED_PROJECT,
+            "duplicate/Duplicate.csproj": DUPLICATE_COMPILE,
+            "duplicate/Thing.cs": trivial_class("Thing", 1),
+            "invalid/Invalid.csproj": SDK_PROJECT.format(targets=""),
+            "invalid/Invalid.cs": UNCOMPILABLE_SOURCE,
+            "stopped/Stopped.csproj": SDK_PROJECT.format(targets=STOP_BEFORE_COMPILE),
+            "stopped/Stopped.cs": trivial_class("Stopped", 2),
+            "late/Late.csproj": SDK_PROJECT.format(targets=FAIL_AFTER_COMPILE),
+            "late/Late.cs": trivial_class("Late", 3),
+        })
+        collector = Collectors(cls.fixture, cls.fixture / "gate-output")
+        collector.coverage = cls.tooling
+        cls.projects = collector.projects()
+        cls.inventory = collector.source_inventory()
+        cls.stale_associations = collector.associations()
+        cls.source = collector.csharp_source()
+        evaluated = list(collector.project_rows)
+        collector.project_rows = [row for row in evaluated if row["path"].startswith("subject/")]
+        cls.clean_analyzers = collector.csharp_analyzers()
+        collector.project_rows = [row for row in evaluated if not row["path"].startswith("subject/")]
+        cls.gap_analyzers = collector.csharp_analyzers()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.fixture, ignore_errors=True)
+
+    def temporary(self, prefix):
+        folder = Path(tempfile.mkdtemp(prefix=prefix))
+        self.addCleanup(shutil.rmtree, folder, True)
+        return folder
+
+    def detached(self, root, coverage):
+        collector = Collectors.__new__(Collectors)
+        collector.root, collector.coverage = root, coverage
+        collector.output = root / "gate-output"
+        collector.log = CommandLog(root, collector.output / "commands")
+        collector.inventory, collector.project_rows, collector.static = None, [], {}
+        return collector
+
+    def test_every_git_tracked_project_is_evaluated_through_real_msbuild(self):
+        rows = self.projects["facts"]["projects"]
+        self.assertEqual(["invalid/Invalid.csproj", "late/Late.csproj", "stopped/Stopped.csproj",
+                          "subject/Subject.csproj"], [row["path"] for row in rows])
+        subject = rows[-1]
+        self.assertEqual(["subject/Subject.cs"], subject["compile"])
+        self.assertEqual("subject/bin/Debug/net10.0/Subject.dll", subject["assembly"])
+        self.assertFalse(subject["test"])
+
+    def test_unrestorable_and_ambiguous_projects_are_accounted_not_dropped(self):
+        self.assertEqual("error", self.projects["status"])
+        self.assertEqual({"broken/Broken.csproj": "Project restore failed; evaluated imports are unreliable",
+                          "duplicate/Duplicate.csproj": "Duplicate evaluated Compile identity"},
+                         {row["path"]: row["message"] for row in self.projects["errors"]})
+
+    def test_a_repository_without_an_evaluated_project_is_a_measurement_error(self):
+        folder = self.temporary("dyd96-no-project-")
+        write_repository(folder, {"Broken.csproj": UNCLOSED_PROJECT})
+
+        answer = Collectors(folder, folder / "gate-output").projects()
+
+        self.assertEqual("error", answer["status"])
+        self.assertIn({"message": "No evaluated C# projects"}, answer["errors"])
+
+    def test_source_inventory_takes_its_roles_from_evaluated_compile_ownership(self):
+        roles = {row["path"]: row["role"] for row in self.inventory["facts"]["sources"]}
+        self.assertEqual("target", roles["subject/Subject.cs"])
+        self.assertEqual("unknown", roles["duplicate/Thing.cs"])
+        self.assertEqual([{"path": "duplicate/Thing.cs", "type": "missing-evaluated-compile"}],
+                         self.inventory["errors"])
+
+    def test_an_association_manifest_that_misses_the_inventory_is_an_error(self):
+        self.assertEqual("error", self.stale_associations["status"])
+        self.assertEqual(1, len(self.stale_associations["errors"]))
+        self.assertIn("unknown or duplicate associated module",
+                      self.stale_associations["errors"][0]["message"])
+
+    def test_a_matching_manifest_leaves_only_unassociated_targets_as_findings(self):
+        folder = self.temporary("dyd96-associations-")
+        manifest = {"schema": 1, "modules": [{"module": "target.py", "tests": ["tests/test_target.py"]}]}
+        (folder / "test-associations.json").write_text(json.dumps(manifest), encoding="utf-8")
+        collector = self.detached(folder, folder)
+        collector.inventory = {"sources": [
+            {"path": "target.py", "role": "target", "executable": True},
+            {"path": "tests/test_target.py", "role": "test", "executable": True},
+            {"path": "lonely.py", "role": "target", "executable": True}]}
+
+        answer = collector.associations()
+
+        self.assertEqual(manifest, answer["facts"]["manifest"])
+        self.assertEqual([{"gate": "test-association", "path": "lonely.py",
+                           "reason": "non-trivial target has no associated test file"}], answer["findings"])
+
+    def test_collectors_that_need_the_inventory_fail_closed_without_it(self):
+        collector = self.detached(self.temporary("dyd96-no-inventory-"), self.tooling)
+
+        self.assertEqual([{"message": "Source inventory unavailable"}],
+                         collector.associations()["errors"])
+        with self.assertRaisesRegex(ValueError, "Source inventory unavailable"):
+            collector.sources("cs")
+
+    def test_roslyn_source_metrics_gate_cognitive_and_exempt_constructor_parameters(self):
+        self.assertEqual([("subject/Subject.cs", "cognitive", 21)],
+                         [(row["path"], row["gate"], row["actual"]) for row in self.source["findings"]])
+        subject = next(row for row in self.source["facts"]["projects"]
+                       if row["project"] == "subject/Subject.csproj")
+        constructor = next(row for row in subject["files"][0]["methods"] if row["constructor"])
+        self.assertEqual(8, constructor["parameters"])
+        self.assertIn("subject/obj/Debug/net10.0/Subject.AssemblyInfo.cs", subject["generated_files"])
+
+    def test_a_project_the_producer_rejects_does_not_hide_the_measured_projects(self):
+        self.assertEqual("error", self.source["status"])
+        self.assertEqual(["invalid/Invalid.csproj"], [row["path"] for row in self.source["errors"]])
+        self.assertIn("csharp-source-", self.source["errors"][0]["message"])
+        self.assertEqual(["late/Late.csproj", "stopped/Stopped.csproj", "subject/Subject.csproj"],
+                         sorted(row["project"] for row in self.source["facts"]["projects"]))
+
+    def test_a_producer_that_cannot_be_built_stops_csharp_source_measurement(self):
+        folder = self.temporary("dyd96-no-producer-")
+        (folder / "metrics").mkdir()
+        (folder / "metrics/GateMetrics.csproj").write_text(UNCLOSED_PROJECT, encoding="utf-8")
+
+        answer = self.detached(folder, folder).csharp_source()
+
+        self.assertEqual("error", answer["status"])
+        self.assertEqual("Measurement producer build failed", answer["errors"][0]["message"])
+
+    def test_a_clean_analyzer_build_keeps_informational_rows_out_of_the_findings(self):
+        raw = self.clean_analyzers["facts"]["raw"]
+        self.assertEqual("pass", self.clean_analyzers["status"])
+        self.assertEqual(["analyzers-0-prepare", "analyzers-0"],
+                         [row["name"] for row in self.clean_analyzers["facts"]["commands"]])
+        self.assertEqual([0, 0], [row["exit_code"] for row in self.clean_analyzers["facts"]["commands"]])
+        self.assertEqual(["subject/Subject.csproj"], sorted({row["project"] for row in raw}))
+        self.assertEqual(["note"], sorted({row["diagnostic"]["level"] for row in raw}))
+        self.assertEqual([], self.clean_analyzers["findings"])
+
+    def test_each_analyzer_report_gap_is_accounted_against_its_own_project(self):
+        messages = {row["path"]: row["message"] for row in self.gap_analyzers["errors"] if "path" in row}
+        self.assertEqual({"invalid/Invalid.csproj": "Native analyzer preparation build failed",
+                          "late/Late.csproj": "Build failed without complete analyzer diagnostics",
+                          "stopped/Stopped.csproj": "Missing native analyzer SARIF"}, messages)
+        self.assertIn({"message": "Native build failed without an accounted unsuppressed diagnostic"},
+                      self.gap_analyzers["errors"])
+
+    def test_an_invalid_static_method_metric_fails_closed(self):
+        for value in (-1, True, "3", None):
+            method = {"id": "Fixture.Subject::Value", "line": 1, "cognitive": value,
+                      "parameters": 0, "constructor": False}
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "Invalid static method metric"):
+                metric_findings("Subject.cs", [method])
 
 
 if __name__ == "__main__":

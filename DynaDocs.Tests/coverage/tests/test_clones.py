@@ -69,6 +69,13 @@ class NativeCloneCollectionTests(unittest.TestCase):
         self.assertFalse(proofs['small.py']['standard_included'])
         self.assertEqual({'lines': 2, 'tokens': 10}, proofs['small.py']['denominator'])
 
+    def test_the_clone_collector_delegates_to_the_native_gate(self):
+        answer = self.measured(['small.py']).clones()
+
+        self.assertEqual('pass', answer['status'])
+        self.assertEqual(['small.py'], [row['path'] for row in answer['facts']['eligibility']])
+        self.assertFalse(answer['facts']['eligibility'][0]['eligible'])
+
     def test_source_without_a_measurable_identity_is_an_accounted_error(self):
         sources = [{'path': 'first.py', 'language': 'python'}, {'path': 'second.py', 'language': 'python'},
                    {'path': 'small.py'}]

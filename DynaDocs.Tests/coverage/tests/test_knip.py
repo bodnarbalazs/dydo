@@ -91,6 +91,22 @@ class KnipAccountingTests(unittest.TestCase):
         (self.root / 'DynaDocs.Tests/coverage/cross.test.cjs').write_text("require('../../npm/lib.cjs');", encoding='utf-8')
         self.assertEqual(expected | {('npm/lib.cjs', 'used')}, measure())
 
+    def test_an_absent_native_knip_installation_is_never_a_green_gate(self):
+        runner = Collectors.__new__(Collectors)
+        runner.root = self.root
+        runner.coverage = self.root / 'DynaDocs.Tests/coverage'
+        runner.output = self.root / 'knip-output'
+        runner.log = CommandLog(self.root, runner.output / 'commands')
+        runner.inventory = {'sources': [{'path': path, 'language': 'javascript'} for path in self.paths]}
+
+        answer = runner.javascript_unused_exports()
+
+        self.assertEqual('error', answer['status'])
+        self.assertEqual([], answer['findings'])
+        self.assertEqual(1, runner.log.rows[0]['exit_code'])
+        self.assertIn('Native Knip failed without accounted issues',
+                      [row['message'] for row in answer['errors']])
+
     def test_collector_measures_the_real_maintained_javascript_graph(self):
         root = Path(__file__).resolve().parents[3]
         paths = [relative for relative in git_file_state(root)[0]

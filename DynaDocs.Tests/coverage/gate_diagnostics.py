@@ -6,6 +6,9 @@ from urllib.parse import unquote, urlsplit
 from urllib.request import url2pathname
 
 
+_SARIF_LEVELS = frozenset(('none', 'note', 'warning', 'error'))
+
+
 def _relative_generated_location(root, project, uri_path, generated):
     decoded = unquote(uri_path)
     relative = PurePosixPath(decoded)
@@ -55,11 +58,14 @@ def _location(root, project, location, generated):
 
 def _native_row(root, row, generated):
     diagnostic = row['diagnostic']
+    level = diagnostic.get('level')
+    if not isinstance(level, str) or level not in _SARIF_LEVELS:
+        raise ValueError('Unrecognized native analyzer level')
     locations = [_location(root, row['project'], location, generated)
                  for location in diagnostic.get('locations', [])]
     if not locations:
         raise ValueError('Native diagnostic has no exact source location')
-    normalized = {'rule': diagnostic['ruleId'], 'level': diagnostic['level'],
+    normalized = {'rule': diagnostic['ruleId'], 'level': level,
                   'message': diagnostic['message'], 'locations': locations,
                   'suppression_states': sorted(diagnostic.get('suppressionStates', []))}
     return normalized, json.dumps(normalized, sort_keys=True)

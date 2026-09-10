@@ -131,11 +131,25 @@ class DiagnosticTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             rows = [{'project': 'Product.csproj',
-                     'diagnostic': self.fixture(root, 'Subject.cs', 'CA1822', level='note')}]
+                     'diagnostic': self.fixture(root, 'Subject.cs', 'CA1822', level=level)}
+                    for level in ('note', 'none')]
             report = normalize_csharp_diagnostics(root, rows, {'Subject.cs'}, {})
-            self.assertEqual(1, report['raw_count'])
+            self.assertEqual(2, report['raw_count'])
             self.assertEqual([], report['findings'])
             self.assertEqual([], report['errors'])
+
+    def test_unknown_and_malformed_levels_fail_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            rows = [{'project': 'Product.csproj',
+                     'diagnostic': self.fixture(root, 'Subject.cs', level=level)}
+                    for level in ('mystery', {'unexpected': True})]
+            report = normalize_csharp_diagnostics(root, rows, {'Subject.cs'}, {})
+            self.assertEqual(2, report['raw_count'])
+            self.assertEqual([], report['findings'])
+            self.assertEqual([0, 1], [row['native_row'] for row in report['errors']])
+            self.assertTrue(all(row['message'] == 'Unrecognized native analyzer level'
+                                for row in report['errors']))
 
     def test_only_exact_semantic_generated_identity_can_be_excluded(self):
         with tempfile.TemporaryDirectory() as folder:

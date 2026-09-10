@@ -1,6 +1,5 @@
 """The real Roslyn/Sonar producer must preserve callable and language semantics."""
 import json
-import hashlib
 import os
 import shutil
 import subprocess

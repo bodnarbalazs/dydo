@@ -8,6 +8,16 @@ from gate_run import CommandLog, result
 from inventory import git_file_state
 
 
+_DYNAMIC_VULTURE_USES = {
+    ("DynaDocs.Tests/coverage/python_coverage.py", "unused function 'startup_from_environment'"):
+        "python-coverage-startup",
+    ("DynaDocs.Tests/coverage/windows_job.py", "unused attribute 'cb'"):
+        "windows-native-abi",
+    ("DynaDocs.Tests/coverage/windows_job.py", "unused attribute 'flags'"):
+        "windows-native-abi",
+}
+
+
 def read_json(path):
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
 
@@ -64,6 +74,25 @@ def _generated_projects(projects):
 def _generated_diagnostic_findings(diagnostics):
     return [{'gate': 'generated-build-diagnostic', **diagnostic} for diagnostic in diagnostics
             if not diagnostic['suppression_states'] and diagnostic['level'] in ('warning', 'error')]
+
+
+def classify_vulture(lines):
+    findings, semantic_uses, errors = [], [], []
+    for line in lines:
+        match = re.fullmatch(r'(.+):(\d+): (.+) \((\d+)% confidence\)', line)
+        if not match:
+            if line.strip():
+                errors.append({'message': 'Unrecognized pinned Vulture output', 'output': line})
+            continue
+        path = match[1].replace('\\', '/')
+        row = {'gate': 'vulture', 'path': path, 'line': int(match[2]),
+               'message': match[3], 'confidence': int(match[4])}
+        witness = _DYNAMIC_VULTURE_USES.get((path, row['message']))
+        if witness:
+            semantic_uses.append({**row, 'witness': witness})
+        else:
+            findings.append(row)
+    return findings, semantic_uses, errors
 
 
 class Collectors:
@@ -203,16 +232,13 @@ class Collectors:
         if ruff['exit_code'] not in (0, 1):
             errors.append({'message': 'Ruff execution failure', 'command': ruff})
         vulture = self.log.run('vulture', [self.python, '-m', 'vulture', *paths])
-        for line in Path(vulture['stdout']).read_text(encoding='utf-8').splitlines():
-            match = re.fullmatch(r'(.+):(\d+): (.+) \((\d+)% confidence\)', line)
-            if match:
-                findings.append({'gate': 'vulture', 'path': match[1].replace('\\', '/'), 'line': int(match[2]),
-                                 'message': match[3], 'confidence': int(match[4])})
-            elif line.strip():
-                errors.append({'message': 'Unrecognized pinned Vulture output', 'output': line})
+        vulture_findings, semantic_uses, vulture_errors = classify_vulture(
+            Path(vulture['stdout']).read_text(encoding='utf-8').splitlines())
+        findings.extend(vulture_findings)
+        errors.extend(vulture_errors)
         if vulture['exit_code'] not in (0, 3):
             errors.append({'message': 'Vulture execution failure', 'command': vulture})
-        return result({'commands': [ruff, vulture]}, findings, errors)
+        return result({'commands': [ruff, vulture], 'semantic_uses': semantic_uses}, findings, errors)
 
     def python_dependencies(self):
         import ast
@@ -255,35 +281,6 @@ class Collectors:
                 errors.append({'path': source['path'], 'message': str(error)})
         self.static['javascript'] = facts
         return result({'modules': facts}, findings, errors)
-
-    def python_discovery(self):
-        output = self.output / 'python-discovery.json'
-        config = self.output / 'python-discovery-config.json'
-        config.write_text(json.dumps({'root': str(self.root), 'directories': ['DynaDocs.Tests/coverage/tests'],
-                                     'discover_only': True, 'output': str(output)}), encoding='utf-8')
-        row = self.log.run('python-discovery', [self.python, self.coverage / 'test_discovery.py', '--config', config])
-        if row['exit_code'] != 0 or not output.is_file():
-            return result(errors=[{'message': 'Native unittest discovery failed', 'command': row}])
-        facts = read_json(output)
-        self.discovery.extend(facts['cases'])
-        return result(facts)
-
-    def javascript_discovery(self):
-        files = [row['path'] for row in self.sources('javascript') if re.search(r'\.test\.[cm]?js$', row['path'])]
-        if not files:
-            return result(errors=[{'message': 'No explicit Node test files'}])
-        row = self.log.run('node-discovery', ['node', '--test',
-            '--test-reporter=' + (self.coverage / 'test_discovery.cjs').as_uri(), *files], environment={'DYDO_GATE_ROOT': str(self.root)})
-        events = [json.loads(line) for line in Path(row['stdout']).read_text(encoding='utf-8').splitlines() if line]
-        cases = [event for event in events if event.get('kind') == 'case']
-        summaries = [event for event in events if event.get('kind') == 'summary']
-        if len(summaries) != 1 or not cases or summaries[0]['counts']['tests'] != len(cases):
-            return result(errors=[{'message': 'Incomplete native Node discovery', 'command': row}])
-        failures = [{'path': case['file'], 'member': case['id'], 'gate': 'functional', 'error': case['error']}
-                    for case in cases if not case['passed'] or case['skipped'] or case['todo']]
-        errors = [] if row['exit_code'] in (0, 1) else [{'message': 'Native Node discovery command failed', 'command': row}]
-        self.discovery.extend(cases)
-        return result({'cases': cases, 'summary': summaries[0]}, failures, errors)
 
     def clones(self):
         from gate_clones import collect_clones

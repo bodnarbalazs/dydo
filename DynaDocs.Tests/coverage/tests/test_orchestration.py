@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_run import collect_all
+from gate_collect import classify_vulture
 
 
 def passed():
@@ -13,6 +14,22 @@ def passed():
 
 
 class OrchestrationTests(unittest.TestCase):
+    def test_vulture_classification_retains_only_proven_dynamic_uses(self):
+        lines = [
+            "DynaDocs.Tests/coverage/python_coverage.py:89: unused function 'startup_from_environment' (60% confidence)",
+            "DynaDocs.Tests/coverage/windows_job.py:397: unused attribute 'flags' (60% confidence)",
+            "elsewhere.py:4: unused attribute 'flags' (60% confidence)",
+            "unrecognized output",
+        ]
+
+        findings, semantic_uses, errors = classify_vulture(lines)
+
+        self.assertEqual(['elsewhere.py'], [row['path'] for row in findings])
+        self.assertEqual(['python-coverage-startup', 'windows-native-abi'],
+                         [row['witness'] for row in semantic_uses])
+        self.assertEqual([{'message': 'Unrecognized pinned Vulture output',
+                           'output': 'unrecognized output'}], errors)
+
     def test_failed_measurement_does_not_prevent_independent_policy_findings(self):
         observed = []
 

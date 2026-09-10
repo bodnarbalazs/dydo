@@ -156,7 +156,7 @@ def defer_interruption():
     interrupted = False
     previous = {}
 
-    def remember_interrupt(signum, frame):
+    def remember_interrupt(_signum, _frame):
         nonlocal interrupted
         interrupted = True
 

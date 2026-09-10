@@ -100,10 +100,3 @@ def git_file_state(root):
     untracked = [path for path in untracked if path]
     deleted = {path for path in tracked if not (root / path).is_file()}
     return _unique([*tracked, *untracked]), deleted
-
-
-def git_paths(root):
-    paths, deleted = git_file_state(root)
-    if deleted:
-        raise ValueError(f"Deleted maintained inputs require explicit accounting: {sorted(deleted)}")
-    return paths

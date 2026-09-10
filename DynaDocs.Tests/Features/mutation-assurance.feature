@@ -72,6 +72,8 @@ Feature: Mutation assurance runs real campaigns over isolated changed code
       | node   | RuntimeError                        | runtimeError |
       | python | survived                            | survived     |
       | python | killed after the engine timeout     | timeout      |
+      | python | killed with no completion marker    | runtimeError |
+      | python | killed whose marker reads exit=0    | runtimeError |
       | python | skipped                             | unrun        |
 
   Scenario Outline: Missing or invalid measurement is invalid, never a pass
@@ -96,6 +98,7 @@ Feature: Mutation assurance runs real campaigns over isolated changed code
       | node   | a report with an unselected file                       | foreign file                                          |
       | python | a session whose work item has no result                | partial report                                        |
       | python | a worker outcome of exception                          | engine could not run mutant                           |
+      | python | a test outcome of incompetent                          | engine could not run mutant                           |
       | dotnet | a source file changed by the engine and not restored   | candidate changed during the campaign                 |
       | node   | zero generated mutants                                 | zero-mutant campaign                                  |
       | dotnet | every generated mutant a compile error                 | all mutants invalid                                   |

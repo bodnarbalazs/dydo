@@ -363,9 +363,11 @@ correct only for StrykerJS's `commandRunner.command`, which Node runs through a 
 
 **Cosmic Ray baseline.** The python baseline runs that exact rendered command; its seconds feed the
 timeout above. Nonzero exit → 2 (`baseline test run failed (exit N)`); exit 0 whose last non-empty
-stdout line is not the completion marker → 2 (`baseline did not report suite completion`). A campaign
-therefore starts only after the completion witness is proven live for it, so a missing marker on a
-mutant can only mean that mutant's run was cut short.
+stdout line is not exactly `##DYDO-SUITE-COMPLETE exit=0##` → 2 (`baseline did not report suite
+completion`). The baseline runs a green suite, so its marker must read `exit=0`, and that one line
+proves the marker, its placement and its `exit=<code>` field live for this campaign — which is what
+lets a mutant's missing marker mean that mutant's run was cut short, and a mutant's `exit=0` marker
+mean its suite passed.
 
 Effective concurrency: configured 1 is validated in every generated config and passed on the
 Stryker.NET argv; the raw stdout of each engine is retained. The replay gate (below) additionally
@@ -445,10 +447,11 @@ Status mapping (`mutation_summary.py`; both Strykers emit the mutation-testing-r
 | Stryker `Pending`/`NotRun` | unrun | valid | finding |
 | any other Stryker status | unknown | valid | finding |
 | Cosmic Ray `survived` | survived | valid | finding |
-| Cosmic Ray `killed` whose `output` ends with the completion marker | killed | valid | pass |
+| Cosmic Ray `killed` whose completion marker reports a nonzero suite exit | killed | valid | pass |
 | Cosmic Ray `killed` whose `output` is exactly `timeout` | timeout | valid | finding |
-| Cosmic Ray `killed` with neither | runtimeError | valid | finding (`test command did not complete`) |
-| Cosmic Ray `incompetent` | compileError | generated only | excluded from valid |
+| Cosmic Ray `killed` whose completion marker reports `exit=0` | runtimeError | valid | finding (`suite reported success under a killed result`) |
+| Cosmic Ray `killed` with no completion marker | runtimeError | valid | finding (`test command did not complete`) |
+| Cosmic Ray `incompetent`, under either worker outcome | — | — | gap 2 (`engine could not run mutant`) |
 | Cosmic Ray worker outcome `skipped`/`no-test` | unrun | valid | finding |
 | Cosmic Ray worker outcome `exception`/`abnormal` | — | — | gap 2 (`engine could not run mutant`) |
 
@@ -457,14 +460,37 @@ Stryker.NET reports it natively as `NoCoverage`; Cosmic Ray as `survived`. All t
 so "no surviving or uncovered changed-code mutant" is met exactly when every valid generated mutant
 is Killed. Cosmic Ray needs its own witness: it records only the stdout of its test command and calls
 every nonzero exit `killed`, which is equally what a crashed, cut-short or never-started suite does.
-The witness is the marker the generated suite runner writes as its last act — `killed` carrying it is
-a real kill; `killed` whose whole output is `timeout` is Cosmic Ray's own timeout string
-(`testing.py:74` returns `(KILLED, "timeout")` and never reads the pipe); `killed` with neither means
-the suite was cut short, which is a `runtimeError` finding, the same reading Stryker.NET gives a test
-host that died. The marker must be the **last non-empty line** of `output` after trailing whitespace
-is stripped, so the literal occurring inside the suite's own text — the normalizer's own tests carry
-it — is never mistaken for the runner's. A `survived` row needs no marker: it is a finding whatever
-produced it, and the baseline above already proves the marker live for the campaign.
+The witness is the marker the generated suite runner writes as its last act, and the marker's own
+`exit=<code>` field is half of that witness: the runner exits with the suite's code, so only a
+**nonzero** `<code>` says the suite ran and failed, which is what killing a mutant means. Four
+readings of a `killed` row, in this order. Output exactly `timeout` is Cosmic Ray's own timeout
+string (`testing.py:70-74` returns `(KILLED, "timeout")` and never reads the pipe) — a `timeout`
+finding. A last non-empty line exactly `##DYDO-SUITE-COMPLETE exit=<code>##` whose `<code>` is a
+nonzero decimal integer is a real kill. That same marker reading `exit=0` is a `runtimeError`
+finding: the suite completed and reported success, so the mutant survived, and the nonzero process
+exit that made Cosmic Ray write `killed` came from something after the suite — measured, an `atexit`
+handler calling `os._exit(5)` produced output byte-identical to the surviving run's, and the engine
+recorded one `SURVIVED` and the other `KILLED` (Ruled 8). Anything else — no marker, or a last line
+that is not exactly that shape — means the suite was cut short, a `runtimeError` finding, the same
+reading Stryker.NET gives a test host that died. The marker must be the **last non-empty line** of
+`output` after trailing whitespace is stripped, so the literal occurring inside the suite's own text
+— the normalizer's own tests carry it — is never mistaken for the runner's. A `survived` row needs
+no marker: it is a finding whatever produced it, and the baseline above already proves the marker
+and its `exit=<code>` field live for the campaign.
+
+Cosmic Ray rows are read worker outcome first, then test outcome, so no row matches two rules and
+none matches nothing (Ruled 9): `skipped`/`no-test` → `unrun`; `exception`/`abnormal` → gap 2;
+otherwise `normal`, whose test outcome is `survived`, `killed` (the four readings above) or
+`incompetent`; any other worker or test outcome value → gap 2 (`engine could not run mutant`), never
+a count. `incompetent` is that same gap under either worker outcome, because on 8.7.0 it is a run
+that did not happen, not a mutant that did not compile: `TestOutcome.INCOMPETENT` has exactly two
+producers — `testing.py:81-82`, the test command could not be launched or its stdout could not be
+decoded as UTF-8, and `mutating.py:89-92`, the mutation machinery itself raised — and neither is a
+compile check. The engine never parses a mutant (`mutating.py:180-192` parses the original source
+and writes the mutated text; `:75` runs the tests immediately), so an unparseable mutant is a
+`killed` row. Counting `incompetent` as `compileError` would drop the row from `valid`, and a
+survivor whose output failed to decode would then leave the denominator and let the campaign pass
+(Ruled 9).
 
 Reachability of the Cosmic Ray worker outcomes, so the table is read for what it is (Ruled 7 below):
 under the `local` distributor `mutate_and_test` returns only `normal`, `no-test` or `exception`
@@ -520,10 +546,11 @@ spelling; a vendor spelling never reaches the summary.
 | engine not restored | 2 | the exact restore command |
 | `windows_job.preflight` fails | 2 | `unsupported host` |
 | python/node baseline test run nonzero | 2 | `baseline test run failed (exit N)`; mutation on a red baseline measures nothing (invalid), not a policy failure |
-| python baseline exits 0 without the completion marker | 2 | `baseline did not report suite completion` |
+| python baseline exits 0 whose last non-empty stdout line is not exactly `##DYDO-SUITE-COMPLETE exit=0##` | 2 | `baseline did not report suite completion` |
 | a python manifest test command the suite runner cannot dispatch in-process | 2 | `unsupported python test command` |
 | Stryker.NET exits nonzero with no report (initial test run or build failure) | 2 | `no mutation report produced (Stryker.NET exit N)` |
 | report missing / malformed / partial / foreign file / foreign mutant (Stryker.NET) | 2 | the path |
+| a Cosmic Ray row the engine could not run: `incompetent` under either worker outcome, or worker outcome `exception`/`abnormal` | 2 | `engine could not run mutant`; a mutant whose run did not happen is missing measurement, never an excluded one |
 | a report path that maps to no inventory `files[]` row | 2 | `unmappable report path: <key>` |
 | inventory `schema` ≠ 1, `errors` nonempty, identity mismatch at production or acceptance | 2 | the field |
 | a `files[]` row rehash differs after the campaign | 2 | `candidate changed during the campaign: <path>` |
@@ -553,8 +580,8 @@ same fixtures). No unit test launches a real engine.
 
 Fixtures under `DynaDocs.Tests/coverage/tests/fixtures/mutation/` are real engine outputs captured
 from the replay subjects (`origin.json` names the subject, engine version and command per file);
-statuses no subject reproduces (RuntimeError, Pending/NotRun) are real reports with that one field
-edited and marked `derived` in `origin.json`. The fixture tree contains only `.json`, `.sqlite` and
+statuses no subject reproduces (Stryker RuntimeError and Pending/NotRun, Cosmic Ray `abnormal`) are
+real reports or sessions with that one field edited and marked `derived` in `origin.json`. The fixture tree contains only `.json`, `.sqlite` and
 `.txt` files (no source-language files), so DYD-96's inventory never classifies fixtures as maintained
 sources; the temporary repositories used by tests are written from data strings.
 
@@ -635,13 +662,46 @@ gap_check.py gate mutation --since BASE
 2. Restore the three engines with the restore commands; author only the three templates and the
    exclusive manifests/locks/`.gitignore`. Checkable: tool presence checks pass in a scratch run.
 3. Capture real fixtures: run the retained-style strong/weak/no-coverage/timeout/all-invalid subjects
-   (data strings in `test_replay.py`) once through each engine by hand, copy the raw reports and one
-   Cosmic Ray session into `tests/fixtures/mutation/` with `origin.json`; derive the two
-   non-reproducible statuses and mark them. Every Cosmic Ray fixture is captured through the
-   generated suite runner and the `shlex.join` rendering exactly as the adapter emits them, and the
-   set covers all three kill readings: `killed` with the marker, `killed` whose output is exactly
-   `timeout`, and `killed` with neither. Checkable: `origin.json` names every fixture, and its
-   Cosmic Ray `test-command` strings are the ones the adapter would render.
+   (data strings in `test_replay.py`) once through each engine by hand, copy the raw reports and the
+   Cosmic Ray sessions into `tests/fixtures/mutation/` with `origin.json`; derive the two
+   non-reproducible Stryker statuses and mark them. **The Cosmic Ray portion of this step returned at
+   `007c38a7` is superseded and must be recaptured** (Ruled 10): none of its seven sessions meets the
+   amended step. They were captured through the raw manifest argv or a hand-written `runner.py`
+   instead of the generated suite runner; `cosmic-ray-killed.sqlite` witnesses the refuted
+   `Ran N tests in` line; and `cosmic-ray-killed-without-completion-line.sqlite` and
+   `cosmic-ray-incompetent.sqlite` no longer mean what the rules that named them meant. Recapture
+   every Cosmic Ray session below in a throwaway directory outside the repository, with `test-command`
+   rendered exactly as the adapter renders it (`shlex.join([sys.executable, <run>/suite_runner.py,
+   *manifest argv])`, JSON-escaped into the TOML basic string) and the generated in-process suite
+   runner as the command's only entry point — including the sessions whose engine never launches it
+   (`exception`, `no-test`, `partial`, `skipped`), where the rendering is still the adapter's. Delete
+   every Cosmic Ray session file not in this list.
+
+   | Session file | Subject | Native rows | Reading it proves |
+   |---|---|---|---|
+   | `cosmic-ray-killed.sqlite` | strong assertion; the mutant makes the suite fail | `NORMAL/KILLED`, last non-empty line `##DYDO-SUITE-COMPLETE exit=1##` | kill (pass) |
+   | `cosmic-ray-timeout.sqlite` | the mutant makes a test sleep past the session `timeout` | `NORMAL/KILLED`, `output` exactly `timeout` | `timeout` finding |
+   | `cosmic-ray-killed-marker-exit-zero.sqlite` | the suite passes; a module-level `atexit` handler then calls `os._exit(5)` | `NORMAL/KILLED`, last non-empty line `##DYDO-SUITE-COMPLETE exit=0##` | `runtimeError` finding — a survivor the engine recorded `killed` |
+   | `cosmic-ray-killed-without-marker.sqlite` | a test calls `os._exit(1)` when the mutant is present | `NORMAL/KILLED`, empty `output` | `runtimeError` finding |
+   | `cosmic-ray-survived.sqlite` | weak assertion; the mutant survives | `NORMAL/SURVIVED`, last non-empty line `##DYDO-SUITE-COMPLETE exit=0##` | `survived` finding |
+   | `cosmic-ray-incompetent.sqlite` | a test writes a raw non-UTF-8 byte with `sys.stdout.buffer.write(b"\xff")`, past the runner's text layer, so `stdout.decode("utf-8")` raises in `testing.py` | `NORMAL/INCOMPETENT` | gap 2 `engine could not run mutant` |
+   | `cosmic-ray-exception.sqlite` | the module is renamed away between `init` and `exec`, so the mutation machinery raises | `EXCEPTION/INCOMPETENT` | gap 2 `engine could not run mutant` |
+   | `cosmic-ray-no-test.sqlite` | the module loses its mutation site between `init` and `exec` | `NO_TEST` with no test outcome | `unrun` finding |
+   | `cosmic-ray-partial-session.sqlite` | `init` only, `exec` never run | work items with no result | 2 `partial report` |
+   | `cosmic-ray-skipped.sqlite` | `# pragma: no mutate` on the mutated line plus a hand-run `cr-filter-pragma` before `exec` | `SKIPPED` | `unrun` finding |
+
+   The launch-failure route that produced the superseded `cosmic-ray-incompetent.sqlite` cannot be
+   reproduced under the adapter's rendering — `sys.executable` always launches — so the UTF-8 decode
+   route above is the one that survives it; both are the same `testing.py:81-82` producer. Two rows
+   no DYD-103 campaign can produce: `SKIPPED` needs the hand-run filter named above, which
+   `origin.json` records as its capture command so a reader can tell it from a campaign-reachable
+   status; `ABNORMAL` has one producer in 8.7.0 (`distribution/http.py:68`) that the `local`
+   distributor never reaches, so `cosmic-ray-abnormal.sqlite` is `cosmic-ray-survived.sqlite` with
+   that one `worker_outcome` value edited and `"origin": "derived"` in `origin.json`, exactly as the
+   two non-reproducible Stryker statuses are. Checkable: `origin.json` names every fixture; every
+   Cosmic Ray `test-command` string in it is the one the adapter would render for that subject; the
+   ten sessions above plus the derived `cosmic-ray-abnormal.sqlite` are exactly the Cosmic Ray files
+   in the fixture directory; and each of the four `killed` readings is carried by exactly one of them.
 4. Red: commit the failing `test_mutation_summary.py`, `test_mutation_adapter.py`,
    `test_mutation_facade.py` and the Reqnroll step file mapping every scenario to a probe.
    Checkable: gate 1 fails on assertions, not on collection errors; gate 4 fails on assertions.
@@ -797,13 +857,102 @@ Ray 8.7.0 campaigns on throwaway subjects outside the repository. Raw evidence:
    `exception` only. *Corrected:* both stay mapped and are proved by normalization examples over a
    fixture, and the spec now says plainly which outcomes a DYD-103 campaign can produce.
 
-Feature consequence: one row's wording follows entry 3 —
-`python | killed after the engine timeout | timeout` replaces
-`python | killed without a suite completion line | timeout` in "A mutant that is not killed is a
-measured finding", because "without a completion line" no longer picks out one outcome. Nothing else
-in `mutation-assurance.feature` changes and what it demands of the product is untouched. This
-2026-09-10 packet carries entries 3-7 (Engines and pins, Report normalization, Report validation,
-Failure semantics, step 3, Plan review, `owned-paths.json`).
+Feature consequence (corrected by the second packet below). Entry 3 replaced
+`python | killed without a suite completion line | timeout` with
+`python | killed after the engine timeout | timeout` in "A mutant that is not killed is a measured
+finding". That new row names only the `output == "timeout"` reading, so the marker-less kill the old
+row covered was left with no row anywhere in the feature, and the sentence this paragraph used to
+carry — that what the feature demands of the product was untouched — was false: a normalizer mapping
+every marker-less `killed` to `killed` passed every scenario, and the feature no longer demanded at
+the product boundary the one obligation the amendment exists to protect. Three rows are therefore
+added, and they **are** a change in what the feature demands:
+`python | killed with no completion marker | runtimeError` and
+`python | killed whose marker reads exit=0 | runtimeError` in the same outline (entries 3 and 8),
+and `python | a test outcome of incompetent | engine could not run mutant` in "Missing or invalid
+measurement is invalid, never a pass" (entry 9). With them that outline carries every `killed`
+reading which is not a kill — `timeout`, no marker, and `exit=0` — beside `survived` and `skipped`,
+and the gap reading of a run the engine could not perform is demanded at the boundary too. Nothing
+else in `mutation-assurance.feature` changes. This 2026-09-10 packet carries entries 3-7 (Engines
+and pins, Report normalization, Report validation, Failure semantics, step 3, Plan review,
+`owned-paths.json`).
+
+**Ruled — 2026-09-10, second packet** (the binding spec-review FAIL on the amendment at `556000a9`,
+findings 1-3, plus the captain-authorized correction of the accepted `incompetent` row — the same
+class of fail-open defect in the same gate. Every fact below was re-verified at primary source in
+the installed engine under `dydo/_system/.local/mutation/python/Lib/site-packages/cosmic_ray/` and
+against fresh Cosmic Ray 8.7.0 campaigns on throwaway subjects outside the repository, each with
+`test-command` rendered exactly as the adapter renders it and the generated in-process suite runner
+as its entry point. Raw evidence:
+`dydo/agents/workspace/dyd103-portable-wip/evidence/spec-review-close-cosmic-ray-evidence.txt`,
+produced by `spec-review-close-cosmic-ray-drive.py` and `spec-review-close-cosmic-ray-extra.py`
+beside it; all git-ignored. Case names below are that transcript's.)
+
+8. **The kill witness must read the suite's exit code.** *Was specified:* (entry 3) a `killed` row
+   whose `output` ends with the completion marker is a kill, whatever `<code>` the marker reports.
+   *Refuted:* the generated runner exits with the suite's own code, and Cosmic Ray writes `killed`
+   for any nonzero exit of the test process (`testing.py:76-77`) — including one produced after the
+   suite has already reported success. Measured on the installed 8.7.0: a subject whose suite passes
+   and whose module-level `atexit` handler then calls `os._exit(5)` is recorded `NORMAL/KILLED` with
+   `##DYDO-SUITE-COMPLETE exit=0##` as its last non-empty line, and its `output` is byte-identical
+   (SHA-256 `0340dc7dd1865ecf…`) to the surviving run of the same weak subject, which the engine
+   records `NORMAL/SURVIVED`. The rule as written scores the first a kill although the runner itself
+   reported success: a survivor counted as killed is a pass over an unkilled mutant. *Corrected:* a
+   `killed` row is a kill only when the marker's `<code>` is a nonzero decimal integer; that same
+   marker reading `exit=0` is a `runtimeError` finding; and the baseline must exit 0 with its marker
+   reading exactly `exit=0`, which is what proves the field live before any campaign starts.
+   *Proved:* `strong-kill` → `NORMAL/KILLED`, marker `exit=1` (the real kill); `green-then-shutdown-crash`
+   → `NORMAL/KILLED`, marker `exit=0` (the hole); `weak-survive` → `NORMAL/SURVIVED`, marker
+   `exit=0`, byte-identical output; `engine-timeout` → `NORMAL/KILLED`, `output` exactly `timeout`;
+   `crash-midrun` → `NORMAL/KILLED` with zero characters of output.
+9. **Cosmic Ray `incompetent` is a run that did not happen, not a mutant that did not compile.**
+   *Was specified:* (accepted spec) `incompetent → compileError`, counted in `generated` only and
+   excluded from `valid`. *Refuted:* `TestOutcome.INCOMPETENT` has exactly two producers in 8.7.0 —
+   `testing.py:81-82`, where the test command could not be launched or its stdout could not be
+   decoded as UTF-8 (both returns, `:77` and `:79`, decode), and `mutating.py:89-92`, where the
+   mutation machinery itself raised — the only other occurrences being the enum member
+   (`work_item.py:29`) and the HTML/XML reporters. Neither producer is a compile check, and the
+   engine never parses a mutant at all: `mutate_path` parses the *original* source and writes the
+   mutated text (`mutating.py:180-192`), then `mutate_and_test` runs the tests immediately (`:75`).
+   `incompetent` therefore never means "the mutant did not compile", and dropping it from `valid`
+   drops a mutant whose run failed. Measured: a *surviving* mutant whose test wrote a raw `0xFF`
+   byte to `sys.stdout.buffer` was recorded `NORMAL/INCOMPETENT`, its traceback at `testing.py:79` —
+   the SURVIVED branch — so under the accepted mapping that survivor leaves the denominator,
+   `killed == valid`, and the campaign passes. Measured too: a module made unparseable under the
+   test command produced `NORMAL/KILLED` with marker `exit=1` and a `SyntaxError` in its output,
+   never `incompetent`. *Corrected:* `incompetent`, under either worker outcome, is gap 2
+   (`engine could not run mutant`), joining `exception`/`abnormal`; Cosmic Ray rows are read worker
+   outcome first and test outcome second, and any value not named is that same gap, so no row can be
+   silently uncounted. Cosmic Ray never contributes to `compileError`, which stays a Stryker count.
+   *Proved:* `raw-nonutf8-survivor` (`NORMAL/INCOMPETENT` from `:79`), `raw-nonutf8-output` (the same
+   failure from `:77`), `module-hidden-at-exec` (`EXCEPTION/INCOMPETENT`, `FileNotFoundError`),
+   `unparseable-module-at-exec` (`NORMAL/KILLED`).
+10. **The Cosmic Ray fixtures at `007c38a7` are superseded.** *Was specified:* entry 3's step 3
+    required every Cosmic Ray fixture to be captured through the generated suite runner and the
+    `shlex.join` rendering, while production's step-3 return at `007c38a7` stood unchallenged in the
+    plan although none of its seven sessions meets that step: four carry the raw manifest argv
+    (`exception`, `killed-without-completion-line`, `partial-session`, `skipped`),
+    `cosmic-ray-killed.sqlite` was captured through a hand-written `runner.py` witnessing the refuted
+    `Ran N tests in` line, `cosmic-ray-incompetent.sqlite` names an executable that does not exist,
+    and `cosmic-ray-survived.sqlite` is DYD-96's retained `pycase` probe with no recorded
+    configuration at all. *Refuted (the incompetent fixture in particular):* under the adapter's
+    rendering the command always begins with `sys.executable`, which always launches, so its
+    launch-failure route cannot be reproduced and `NORMAL/INCOMPETENT` has exactly one route left —
+    the UTF-8 decode failure of `testing.py:81-82` — which the step did not name. *Corrected:*
+    step 3 states the supersede and carries the exact recapture list: ten sessions captured under
+    the adapter's own rendering, each with its subject, its native rows and the reading it proves,
+    plus the derived `cosmic-ray-abnormal.sqlite`. `cosmic-ray-incompetent.sqlite` keeps its name —
+    the name is the native status it still carries — and takes the decode route;
+    `cosmic-ray-killed-without-completion-line.sqlite` becomes
+    `cosmic-ray-killed-without-marker.sqlite`; and `cosmic-ray-timeout.sqlite`,
+    `cosmic-ray-killed-marker-exit-zero.sqlite` and `cosmic-ray-no-test.sqlite` are new, because
+    entries 8 and 9 leave three readings with no fixture. *Proved:* every subject in that list was
+    run end to end on the installed engine and produced the native rows the list names, `no-test`
+    included (`no-mutation-site-at-exec` → `NO_TEST` with no test outcome); only `SKIPPED` and
+    `ABNORMAL` stay uncapturable, for the reasons the step gives.
+
+This second 2026-09-10 packet carries entries 8-10 (Report normalization's Cosmic Ray status rows
+and the two paragraphs after the table, Engines and pins' Cosmic Ray baseline, Failure semantics,
+step 3, the Feature consequence above, `mutation-assurance.feature`, `owned-paths.json`).
 
 Lanes: `none` (adapter, normalizer, fixtures, probes and steps interlock). Empty hops: none.
 Production prerequisite for final integration (resume condition, never a parent-Done blocker): DYD-96's implemented and

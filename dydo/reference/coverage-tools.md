@@ -79,8 +79,13 @@ repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`.
 `python` and `node` declare verified `in-place` isolation.
 
 Every G row therefore has a real mechanism: three test adapters, three static adapters and three
-coverage adapters. Mutation is the only unavailable capability, and it belongs to DYD-103. Whether
-a given candidate passes is what its result artifact says; no document stands in for a run.
+coverage adapters. Mutation is the only unavailable capability, and it belongs to DYD-103. Its
+policy is already settled and does not wait on the adapter: DynaDocs requires no surviving or
+uncovered changed-code mutants, as the [Testing Strategy](../guides/testing-strategy.md) states it.
+Nothing here measures that today — every stack's mutation row is `unavailable` with the reason
+`Pending DYD-103`, so the gate cannot run, and cannot pass, until that Issue lands a reviewed
+mechanism. Whether a given candidate passes is what its result artifact says; no document stands in
+for a run.
 
 ---
 
@@ -205,6 +210,20 @@ Before collecting, the adapter sets `APPDATA` to `dydo/_system/.local/appdata` a
 | `node` | `javascript-dependencies` | `dependency-cruiser` over the maintained set: cycles and unresolved imports |
 | `node` | `javascript-unused-exports` | `knip` across the `DynaDocs.Tests/coverage` and `npm` packages, its counters cross-checked against the detailed report |
 | `node` | `clones` | `jscpd` over the complete maintained source set of every stack, plus a per-source eligibility proof that a skipped file really is under 15 lines or 100 tokens |
+
+Three of those rows feed one judgment. `csharp-source` derives namespace edges with
+`GateMetrics.NamespaceDependencies`, from every identifier outside a `using` directive whose symbol
+is a type, method, property, field or event, linking the enclosing namespace to the symbol's
+containing namespace and keeping only edges whose two namespaces both declare a type in that
+project's maintained trees; `python-dependencies` derives module edges from the AST import graph;
+and `javascript-dependencies` keeps dependency-cruiser's resolved edges between two maintained
+files. Each stack hands its edges to the same `gate_inventory.dependency_cycles`, which returns the
+strongly connected components of that graph — every component of more than one member, plus any
+self-edge — rather than a bounded search, so no traversal depth can omit a cycle. The `dotnet`
+edges are pooled across every project before the components are computed, so dependency cycles that
+close through a second project are still found. Each one is a single finding carrying its whole
+component as sorted `members`, named `namespace-cycle` on `dotnet` and `module-cycle` on `python`
+and `node`.
 
 Suppression is itself a finding: a suppressed C# analyzer diagnostic on maintained source is
 reported as `maintained-diagnostic-suppression`, an `istanbul`, `c8` or `v8 ignore` comment in

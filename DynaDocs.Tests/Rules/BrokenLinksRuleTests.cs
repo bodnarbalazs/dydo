@@ -61,6 +61,31 @@ public class BrokenLinksRuleTests
     }
 
     [Fact]
+    public void Validate_ReportsMissingNonMarkdownAssetAndKeepsExistingAssetValid()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-broken-assets-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "assets"));
+        File.WriteAllText(Path.Combine(root, "assets", "logo.png"), "fixture");
+        var source = CreateDoc("guide.md", links:
+        [
+            LinkTestFactory.Create("assets/logo.png", LinkType.Markdown),
+            LinkTestFactory.Create("assets/missing.png", LinkType.Markdown)
+        ]);
+
+        try
+        {
+            var violation = Assert.Single(_rule.Validate(source, [source], root));
+
+            Assert.Equal("Broken link: assets/missing.png", violation.Message);
+            Assert.Equal("All internal links must point to existing files and anchors", _rule.Description);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public void Validate_AcceptsValidAnchor()
     {
         var source = CreateDoc("guide.md", links: [LinkTestFactory.CreateWithAnchor("./reference.md", "section-1", LinkType.Markdown)]);

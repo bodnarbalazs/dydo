@@ -593,6 +593,7 @@
     {
       "module": "Rules/RuleBase.cs",
       "tests": [
+        "DynaDocs.Tests/Rules/RuleBaseTests.cs",
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
       ]
     },

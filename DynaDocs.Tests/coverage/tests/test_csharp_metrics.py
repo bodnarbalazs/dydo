@@ -132,6 +132,17 @@ class CSharpMetricsTests(unittest.TestCase):
             self.assertEqual({'System.Int32', 'System.Int64', 'System.String'},
                              {key.rsplit('->', 1)[1] for key in semantic})
 
+    def test_dynamic_parameter_identity_matches_emitted_object_metadata(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source, emitted = self.compiled_facts(Path(folder), {
+                'Source.cs': 'public class C { public dynamic Echo(dynamic value) => value; }'
+            })
+            semantic = {row['key'] for row in source['behavior']['declared_methods']}
+            physical = {row['key'] for row in emitted['methods']}
+
+            self.assertIn('C::Echo`0(System.Object)', semantic)
+            self.assertTrue(semantic <= physical)
+
     def test_missing_workspace_language_service_cannot_fall_back_to_syntax_facts(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

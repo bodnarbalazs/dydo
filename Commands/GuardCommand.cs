@@ -218,13 +218,14 @@ public static partial class GuardCommand
 
         RunDailyValidationIfDue();
 
-        var sessionId = ctx.SessionId;
-
-        var filePath = ResolveTraversal(ctx.FilePath);
-        var action = ctx.Action;
-        var bashCommand = ctx.BashCommand;
-        var toolName = ctx.ToolName;
-        var searchPath = ResolveTraversal(ctx.SearchPath);
+        var normalized = ctx with
+        {
+            FilePath = ResolveTraversal(ctx.FilePath),
+            SearchPath = ResolveTraversal(ctx.SearchPath)
+        };
+        var sessionId = normalized.SessionId;
+        var filePath = normalized.FilePath;
+        var searchPath = normalized.SearchPath;
 
         // ============================================================
         // TIER-2 WORKER LANE (Decision 024): calls carrying agent_id come from
@@ -235,14 +236,14 @@ public static partial class GuardCommand
         // ============================================================
         if (!ctx.HasCliArgs && !string.IsNullOrEmpty(ctx.AgentId))
         {
-            return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, env);
+            return HandleWorkerCall(normalized, filePath, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
         // Native auto-memory (~/.claude/projects/*/memory/) is exempt from off-limits enforcement.
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
             return ExitCodes.Success;
 
-        var routed = RouteToolLayers(ctx, offLimitsService, bashAnalyzer, env);
+        var routed = RouteToolLayers(normalized, offLimitsService, bashAnalyzer, env);
         if (routed != null) return routed.Value;
 
         // Reads and writes are allowed for anyone once past off-limits (checked in RouteToolLayers).

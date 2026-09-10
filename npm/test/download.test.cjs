@@ -38,7 +38,8 @@ test('downloadFile follows a redirect and writes the response body', async (t) =
 });
 
 test('downloadFile rejects a non-success response without creating an archive', async (t) => {
-  t.mock.method(https, 'get', (_url, callback) => {
+  t.mock.method(https, 'get', function missingResponse(...args) {
+    const callback = args[1];
     callback(response(404));
     return new EventEmitter();
   });

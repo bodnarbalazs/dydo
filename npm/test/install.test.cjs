@@ -18,7 +18,7 @@ const originals = {
   log: console.log
 };
 
-afterEach(() => {
+afterEach(function restoreMocks() {
   Object.assign(platform, { getPlatformInfo: originals.getPlatformInfo });
   Object.assign(download, { downloadBinary: originals.downloadBinary });
   Object.assign(paths, {
@@ -41,16 +41,18 @@ function loadInstall(overrides = {}) {
   return require(installPath).install;
 }
 
-test('an unsupported platform warns without failing npm installation', async () => {
+test('an unsupported platform warns without failing npm installation', async function unsupportedPlatformTest() {
   const errors = [];
   const exits = [];
-  console.error = (...args) => errors.push(args.join(' '));
-  process.exit = (code) => {
+  console.error = function recordError(...args) { errors.push(args.join(' ')); };
+  process.exit = function exitProcess(code) {
     exits.push(code);
     throw new Error('process exited');
   };
   const install = loadInstall({
-    platform: { getPlatformInfo: () => ({ supported: false, error: 'unsupported fixture' }) }
+    platform: { getPlatformInfo() {
+      return { supported: false, error: 'unsupported fixture' };
+    } }
   });
 
   await assert.rejects(install(), /process exited/);
@@ -59,16 +61,18 @@ test('an unsupported platform warns without failing npm installation', async () 
   assert.match(errors.join('\n'), /unsupported fixture/);
 });
 
-test('an installed current binary skips the download', async () => {
+test('an installed current binary skips the download', async function currentBinaryTest() {
   let downloads = 0;
   const logs = [];
-  console.log = (...args) => logs.push(args.join(' '));
+  console.log = function recordLog(...args) { logs.push(args.join(' ')); };
   const install = loadInstall({
-    platform: { getPlatformInfo: () => ({ supported: true, binaryName: 'dydo' }) },
-    download: { downloadBinary: async () => { downloads += 1; } },
+    platform: { getPlatformInfo() {
+      return { supported: true, binaryName: 'dydo' };
+    } },
+    download: { async downloadBinary() { downloads += 1; } },
     paths: {
-      getInstalledVersion: () => '3.0.0-beta.3',
-      isBinaryInstalled: () => true
+      getInstalledVersion() { return '3.0.0-beta.3'; },
+      isBinaryInstalled() { return true; }
     }
   });
 
@@ -78,16 +82,20 @@ test('an installed current binary skips the download', async () => {
   assert.match(logs.join('\n'), /already installed/);
 });
 
-test('a successful download records the installed version', async () => {
+test('a successful download records the installed version', async function successfulDownloadTest() {
   const calls = [];
   const install = loadInstall({
-    platform: { getPlatformInfo: () => ({ supported: true, binaryName: 'dydo' }) },
-    download: { downloadBinary: async (...args) => calls.push(['download', ...args]) },
+    platform: { getPlatformInfo() {
+      return { supported: true, binaryName: 'dydo' };
+    } },
+    download: { async downloadBinary(...args) {
+      calls.push(['download', ...args]);
+    } },
     paths: {
-      getInstalledVersion: () => null,
-      isBinaryInstalled: () => false,
-      getBinaryDir: () => 'native-fixture',
-      setInstalledVersion: (version) => calls.push(['version', version])
+      getInstalledVersion() { return null; },
+      isBinaryInstalled() { return false; },
+      getBinaryDir() { return 'native-fixture'; },
+      setInstalledVersion(version) { calls.push(['version', version]); }
     }
   });
 
@@ -99,18 +107,22 @@ test('a successful download records the installed version', async () => {
   ]);
 });
 
-test('a failed download reports recovery instructions and exits one', async () => {
+test('a failed download reports recovery instructions and exits one', async function failedDownloadTest() {
   const errors = [];
   const exits = [];
-  console.error = (...args) => errors.push(args.join(' '));
-  process.exit = (code) => exits.push(code);
+  console.error = function recordError(...args) { errors.push(args.join(' ')); };
+  process.exit = function recordExit(code) { exits.push(code); };
   const install = loadInstall({
-    platform: { getPlatformInfo: () => ({ supported: true, binaryName: 'dydo' }) },
-    download: { downloadBinary: async () => { throw new Error('fixture failure'); } },
+    platform: { getPlatformInfo() {
+      return { supported: true, binaryName: 'dydo' };
+    } },
+    download: { async downloadBinary() {
+      throw new Error('fixture failure');
+    } },
     paths: {
-      getInstalledVersion: () => null,
-      isBinaryInstalled: () => false,
-      getBinaryDir: () => 'native-fixture'
+      getInstalledVersion() { return null; },
+      isBinaryInstalled() { return false; },
+      getBinaryDir() { return 'native-fixture'; }
     }
   });
 

@@ -1270,13 +1270,15 @@ print('INTER_ITERATION_CASES=' + str(count))
             "import signal,sys,time\nfrom pathlib import Path\n"
             "def stop(signum, frame):\n    Path('cleanup.txt').write_text('complete')\n    raise SystemExit(130)\n"
             "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, stop)\n"
+            "Path('ready.txt').write_text('ready')\n"
             "deadline=time.monotonic()+1\n"
             "while time.monotonic()<deadline:\n    print('wake', flush=True)\n    time.sleep(.005)\n"
             "raise SystemExit(99)\n", encoding='utf-8')
-        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'deadline.py'])
+        data['stacks'][0]['capabilities']['test'] = configured(['-I', '-S', '-u', 'deadline.py'])
         (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
         process, _, payload = self.invoke(['all'], directory=root)
         self.assert_exit(process, 130)
+        self.assertEqual('ready', (root / 'ready.txt').read_text(encoding='utf-8'))
         self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
         self.assertFalse((root / 'later-test.txt').exists())
         self.assert_rows(payload, [('first', 'test', 'interrupted')])

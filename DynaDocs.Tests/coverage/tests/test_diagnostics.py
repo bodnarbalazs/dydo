@@ -4,9 +4,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_diagnostics import normalize_csharp_diagnostics
+from gate_collect import _collect_analyzer_reports
 
 
 class DiagnosticTests(unittest.TestCase):
@@ -25,6 +27,37 @@ class DiagnosticTests(unittest.TestCase):
         if suppressed:
             row['suppressionStates'] = ['suppressedInSource']
         return row
+
+    def test_analyzer_collection_isolates_each_project_sarif_from_project_references(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+
+            class Log:
+                def __init__(self):
+                    self.commands = []
+
+                def run(inner, name, argv):
+                    inner.commands.append((name, argv))
+                    error_log = next((value.split('=', 1)[1] for value in map(str, argv)
+                                      if value.startswith('-p:ErrorLog=')), None)
+                    if error_log is None:
+                        return {'exit_code': 0}
+                    isolated = '-p:BuildProjectReferences=false' in argv
+                    path = 'Tests/SubjectTests.cs' if isolated else 'Product/Subject.cs'
+                    Path(error_log).write_text(json.dumps({'runs': [{'results': [
+                        self.fixture(output, path)
+                    ]}]}))
+                    return {'exit_code': 1}
+
+            log = Log()
+            collector = SimpleNamespace(output=output, log=log,
+                                        project_rows=[{'path': 'Tests/Tests.csproj'}])
+            _, raw, errors = _collect_analyzer_reports(collector)
+            self.assertEqual([], errors)
+            uri = raw[0]['diagnostic']['locations'][0]['resultFile']['uri']
+            self.assertTrue(uri.endswith('/Tests/SubjectTests.cs'), uri)
+            self.assertEqual(['analyzers-0-prepare', 'analyzers-0'],
+                             [name for name, _ in log.commands])
 
     def test_project_relative_feature_requires_unique_same_project_generated_origin(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -44,9 +44,18 @@ def _source_stdin(text):
 def _collect_analyzer_reports(collector):
     facts, raw, errors = [], [], []
     for index, project in enumerate(collector.project_rows):
+        prepare = collector.log.run(f'analyzers-{index}-prepare', ['dotnet', 'build', project['path'],
+            '--no-incremental', '--verbosity', 'quiet', '-warnaserror', '-p:RunAnalyzers=false',
+            '-p:NuGetAudit=false'])
+        facts.append(prepare)
+        if prepare['exit_code'] != 0:
+            errors.append({'path': project['path'], 'message': 'Native analyzer preparation build failed',
+                           'command': prepare})
+            continue
         sarif = collector.output / f'analyzers-{index}.sarif'
         row = collector.log.run(f'analyzers-{index}', ['dotnet', 'build', project['path'], '--no-incremental',
-            '--verbosity', 'quiet', '-warnaserror', '-p:RunAnalyzers=true', '-p:RunAnalyzersDuringBuild=true',
+            '--no-restore', '--verbosity', 'quiet', '-warnaserror', '-p:RunAnalyzers=true',
+            '-p:RunAnalyzersDuringBuild=true', '-p:BuildProjectReferences=false',
             '-p:NuGetAudit=false', f'-p:ErrorLog={sarif}'])
         facts.append(row)
         if not sarif.is_file():

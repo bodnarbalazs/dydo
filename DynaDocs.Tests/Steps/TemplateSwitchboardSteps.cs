@@ -345,9 +345,9 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         if (title.StartsWith("Validate sources against", StringComparison.Ordinal))
             await VerifyPostOperationValidation();
         else if (title.StartsWith("Reject a malformed switchboard", StringComparison.Ordinal))
-            await VerifyMalformedSwitch(prose);
+            await VerifyMalformedSwitch();
         else if (title.StartsWith("Check and validate", StringComparison.Ordinal))
-            await VerifyCheckOrValidate(prose);
+            await VerifyCheckOrValidate();
         else if (title.StartsWith("Compile a valid agent", StringComparison.Ordinal))
             VerifyAgentCompilation(prose);
         else if (title.StartsWith("Compile a valid skill-only", StringComparison.Ordinal))
@@ -1650,7 +1650,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         Assert.Equal(before, Manifest());
     }
 
-    private async Task VerifyMalformedSwitch(string prose)
+    private async Task VerifyMalformedSwitch()
     {
         Initialize();
         var validConfig = File.ReadAllText(Path.Combine(_root, "dydo.json"));
@@ -1707,7 +1707,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         }
     }
 
-    private async Task VerifyCheckOrValidate(string prose)
+    private async Task VerifyCheckOrValidate()
     {
         Initialize();
         var defect = QuotedValueAfter(_steps[0], "contains ");

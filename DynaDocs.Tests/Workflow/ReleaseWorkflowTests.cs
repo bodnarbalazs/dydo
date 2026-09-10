@@ -102,13 +102,20 @@ public sealed class ReleaseWorkflowTests
             Assert.True(jobs.TryGetValue(name, out var body), $"Missing publication job '{name}'.");
             Assert.Equal($"${{{{ {AllowedTagGuard} }}}}", JobField(body, "if"));
             Assert.Equal(needs[7..], JobField(body, "needs"));
-            Assert.Contains(name == "release" ? "softprops/action-gh-release@" : name == "nuget" ? "dotnet nuget push" : "npm publish", body);
+            Assert.Contains(PublicationAction(name), body);
         }
 
         AssertReleaseStep(jobs["release"], "Create beta release", "github.ref == 'refs/tags/v3.0.0-beta.3'", "true");
         AssertReleaseStep(jobs["release"], "Create stable release", "github.ref == 'refs/tags/v3.0.0'", "false");
         Assert.Equal(NpmPublishRun, StepField(JobStep(jobs["npm"], "Publish to npm"), "run"));
     }
+
+    private static string PublicationAction(string job) => job switch
+    {
+        "release" => "softprops/action-gh-release@",
+        "nuget" => "dotnet nuget push",
+        _ => "npm publish"
+    };
 
     private static void AssertReleaseStep(string release, string name, string guard, string prerelease)
     {

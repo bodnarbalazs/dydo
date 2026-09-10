@@ -146,6 +146,11 @@ public class DocScannerTests : IDisposable
         public string GetAuditPath(string? startPath = null) => "";
         public string GetChangelogPath(string? startPath = null) => "";
         public (bool CanClaim, string? Error) ValidateAgentClaim(string agentName, string? humanName, DydoConfig? config)
-            => (true, null);
+        {
+            _ = agentName;
+            _ = humanName;
+            _ = config;
+            return (true, null);
+        }
     }
 }

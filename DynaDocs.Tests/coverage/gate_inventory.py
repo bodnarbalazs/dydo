@@ -75,36 +75,52 @@ def _structural_exclusion(root, relative, paths, test_files):
     return None, None
 
 
-def assemble_inventory(root, paths, projects, discovery, deleted=frozenset(), associations=None):
+def _discovered_test_files(paths, discovery):
     test_files = {row['file'] for row in discovery}
     if not test_files <= set(paths):
         raise ValueError('Missing discovered test source in Git inventory')
     identities = [row['id'] for row in discovery]
     if len(identities) != len(set(identities)):
         raise ValueError('Ambiguous discovered test case identity')
+    return test_files
+
+
+def _source_row(root, relative, path, existing, projects, test_files, association_map):
+    language = language_of(path)
+    if language is None:
+        return None, None, []
+    exclusion, exclusion_error = _structural_exclusion(root, relative, existing, test_files)
+    if exclusion:
+        return None, exclusion, []
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    role, owners, role_error = _role(relative, language, projects, test_files)
+    text = path.read_text(encoding='utf-8-sig', errors='replace')
+    executable = bool(text.strip()) and not (language == 'cs' and not any(
+        marker in text for marker in ('=>', '{ get', ' return ', ' if', ' for', ' while', ' throw ', 'Console.', 'await ')))
+    source = {'path': relative, 'sha256': digest, 'language': language, 'role': role,
+              'projects': [owner['path'] for owner in owners], 'executable': executable,
+              'testFiles': association_map.get(relative, [])}
+    return source, None, [error for error in (exclusion_error, role_error) if error]
+
+
+def _source_rows(root, existing, projects, test_files, association_map):
     sources, excluded, errors = [], [], []
-    association_map = {row['module']: sorted(row['tests']) for row in (associations or {}).get('modules', [])}
-    existing = [path for path in paths if path not in deleted]
     for relative, path in checked_paths(root, existing):
-        language = language_of(path)
-        if language is None:
-            continue
-        exclusion, exclusion_error = _structural_exclusion(root, relative, existing, test_files)
+        source, exclusion, row_errors = _source_row(
+            root, relative, path, existing, projects, test_files, association_map)
+        if source:
+            sources.append(source)
         if exclusion:
             excluded.append(exclusion)
-            continue
-        if exclusion_error:
-            errors.append(exclusion_error)
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        role, owners, error = _role(relative, language, projects, test_files)
-        text = path.read_text(encoding='utf-8-sig', errors='replace')
-        executable = bool(text.strip()) and not (language == 'cs' and not any(
-            marker in text for marker in ('=>', '{ get', ' return ', ' if', ' for', ' while', ' throw ', 'Console.', 'await ')))
-        sources.append({'path': relative, 'sha256': digest, 'language': language, 'role': role,
-                        'projects': [owner['path'] for owner in owners], 'executable': executable,
-                        'testFiles': association_map.get(relative, [])})
-        if error:
-            errors.append(error)
+        errors.extend(row_errors)
+    return sources, excluded, errors
+
+
+def assemble_inventory(root, paths, projects, discovery, deleted=frozenset(), associations=None):
+    test_files = _discovered_test_files(paths, discovery)
+    association_map = {row['module']: sorted(row['tests']) for row in (associations or {}).get('modules', [])}
+    existing = [path for path in paths if path not in deleted]
+    sources, excluded, errors = _source_rows(root, existing, projects, test_files, association_map)
     files = build_file_rows(root, paths, deleted)
     return {'schema': 1, 'candidate': {'sourceFingerprint': source_fingerprint(files)},
             'files': files, 'sources': sorted(sources, key=lambda row: row['path']),
@@ -114,8 +130,7 @@ def assemble_inventory(root, paths, projects, discovery, deleted=frozenset(), as
             'errors': errors}
 
 
-def dependency_cycles(edges):
-    """Strongly connected components; no arbitrary DFS depth or traversal omission."""
+def _dependency_graph(edges):
     graph = {}
     for edge in edges:
         if not isinstance(edge, (list, tuple)) or len(edge) != 2 or not all(isinstance(item, str) and item for item in edge):
@@ -123,6 +138,10 @@ def dependency_cycles(edges):
         source, target = edge
         graph.setdefault(source, set()).add(target)
         graph.setdefault(target, set())
+    return graph
+
+
+def _finishing_order(graph):
     pending, visited, order = set(graph), set(), []
     while pending:
         stack = [(min(pending), False)]
@@ -135,21 +154,38 @@ def dependency_cycles(edges):
                 pending.discard(node)
                 stack.append((node, True))
                 stack.extend((child, False) for child in sorted(graph[node], reverse=True) if child not in visited)
+    return order
+
+
+def _reverse_graph(graph):
     reverse = {node: set() for node in graph}
     for source, targets in graph.items():
         for target in targets:
             reverse[target].add(source)
+    return reverse
+
+
+def _dependency_component(node, remaining, reverse):
+    component, stack = set(), [node]
+    while stack:
+        current = stack.pop()
+        if current in remaining:
+            remaining.remove(current)
+            component.add(current)
+            stack.extend(reverse[current])
+    return component
+
+
+def dependency_cycles(edges):
+    """Strongly connected components; no arbitrary DFS depth or traversal omission."""
+    graph = _dependency_graph(edges)
+    order = _finishing_order(graph)
+    reverse = _reverse_graph(graph)
     remaining, cycles = set(graph), []
     for node in reversed(order):
         if node not in remaining:
             continue
-        component, stack = set(), [node]
-        while stack:
-            current = stack.pop()
-            if current in remaining:
-                remaining.remove(current)
-                component.add(current)
-                stack.extend(reverse[current])
+        component = _dependency_component(node, remaining, reverse)
         if len(component) > 1 or node in graph[node]:
             cycles.append(sorted(component))
     return sorted(cycles)

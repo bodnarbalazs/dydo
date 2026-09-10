@@ -49,6 +49,63 @@ function rawFunctions(root, output, targets) {
   return scripts;
 }
 
+function nativeCallableCount(inventories, metric, relative) {
+  let count = 0;
+  let found = false;
+  for (const inventory of inventories) {
+    const raw = inventory.filter(fn => Array.isArray(fn.ranges) && fn.ranges.length
+      && fn.ranges[0].startOffset === metric.start && fn.ranges[0].endOffset === metric.end);
+    if (raw.length > 1) throw new Error(`Ambiguous native V8 callable join: ${relative}:${metric.id}`);
+    if (raw.length === 1) {
+      const value = raw[0].ranges[0].count;
+      if (!Number.isInteger(value) || value < 0) throw new Error('Invalid native V8 function counter');
+      count += value;
+      found = true;
+    }
+  }
+  if (count === 0 && !found) throw new Error(`Missing native V8 callable join: ${relative}:${metric.id}`);
+  return count;
+}
+
+function istanbulCallableCounts(coverage, metric, relative) {
+  const functions = Object.entries(coverage.fnMap || {}).filter(([, fn]) => samePoint(fn.loc.start, { line: metric.line, column: metric.column })
+    && samePoint(fn.loc.end, { line: metric.end_line, column: metric.end_column }));
+  const branches = Object.entries(coverage.branchMap || {}).filter(([, branch]) => branch.locations?.length === 1
+    && samePoint(branch.locations[0].start, { line: metric.line, column: metric.column })
+    && samePoint(branch.locations[0].end, { line: metric.end_line, column: metric.end_column }));
+  if (functions.length > 1 || branches.length > 1) throw new Error(`Ambiguous Istanbul callable join: ${relative}:${metric.id}`);
+  return [functions.length ? coverage.f[functions[0][0]] : null,
+    branches.length ? coverage.b[branches[0][0]][0] : null];
+}
+
+function validateIstanbulCounts(counts, nativeCount, relative, metric) {
+  for (const value of counts.filter(value => value !== null)) {
+    if (!Number.isInteger(value) || value < 0 || value !== nativeCount) {
+      throw new Error(`Disagreeing Istanbul callable join: ${relative}:${metric.id}`);
+    }
+  }
+}
+
+function callableExecutionCount(relative, identity, coverage, native, metric) {
+  if (coverage.all === true) {
+    const functions = Object.entries(coverage.fnMap || {});
+    if (functions.length !== 1 || functions[0][1].name !== '(empty-report)'
+        || Object.values(coverage.f).some(value => value !== 0)) {
+      throw new Error(`Invalid c8 --all zero-hit witness: ${relative}`);
+    }
+    return 0;
+  }
+  const nativeCount = nativeCallableCount(native.get(identity) || [], metric, relative);
+  validateIstanbulCounts(istanbulCallableCounts(coverage, metric, relative),
+    nativeCount, relative, metric);
+  return nativeCount;
+}
+
+function measuredCallable(relative, identity, coverage, native, metric) {
+  const count = callableExecutionCount(relative, identity, coverage, native, metric);
+  return { ...metric, covered: Number(count > 0), total: 1, execution_count: count };
+}
+
 function join(root, output, targets) {
   root = path.resolve(root); output = path.resolve(output);
   const report = JSON.parse(fs.readFileSync(path.join(output, 'coverage-final.json'), 'utf8'));
@@ -66,50 +123,7 @@ function join(root, output, targets) {
     const coverage = rows.get(identity);
     const kind = relative.endsWith('.mjs') ? 'module' : 'commonjs';
     const metrics = analyze(source, kind).methods;
-    const methods = metrics.map(metric => {
-      let count;
-      if (coverage.all === true) {
-        const functions = Object.entries(coverage.fnMap || {});
-        if (functions.length !== 1 || functions[0][1].name !== '(empty-report)'
-            || Object.values(coverage.f).some(value => value !== 0)) {
-          throw new Error(`Invalid c8 --all zero-hit witness: ${relative}`);
-        }
-        count = 0;
-      } else {
-        const scriptInventories = native.get(identity) || [];
-        let nativeCount = 0;
-        for (const inventory of scriptInventories) {
-          const raw = inventory.filter(fn => Array.isArray(fn.ranges) && fn.ranges.length
-            && fn.ranges[0].startOffset === metric.start && fn.ranges[0].endOffset === metric.end);
-          if (raw.length > 1) throw new Error(`Ambiguous native V8 callable join: ${relative}:${metric.id}`);
-          if (raw.length === 1) {
-            const value = raw[0].ranges[0].count;
-            if (!Number.isInteger(value) || value < 0) throw new Error('Invalid native V8 function counter');
-            nativeCount += value;
-          }
-        }
-        if (nativeCount === 0) {
-          const found = scriptInventories.some(inventory => inventory.some(fn => Array.isArray(fn.ranges) && fn.ranges.length
-            && fn.ranges[0].startOffset === metric.start && fn.ranges[0].endOffset === metric.end));
-          if (!found) throw new Error(`Missing native V8 callable join: ${relative}:${metric.id}`);
-        }
-        const functions = Object.entries(coverage.fnMap || {}).filter(([, fn]) => samePoint(fn.loc.start, { line: metric.line, column: metric.column })
-          && samePoint(fn.loc.end, { line: metric.end_line, column: metric.end_column }));
-        const branches = Object.entries(coverage.branchMap || {}).filter(([, branch]) => branch.locations?.length === 1
-          && samePoint(branch.locations[0].start, { line: metric.line, column: metric.column })
-          && samePoint(branch.locations[0].end, { line: metric.end_line, column: metric.end_column }));
-        if (functions.length > 1 || branches.length > 1) throw new Error(`Ambiguous Istanbul callable join: ${relative}:${metric.id}`);
-        const functionCount = functions.length ? coverage.f[functions[0][0]] : null;
-        const branchCount = branches.length ? coverage.b[branches[0][0]][0] : null;
-        for (const value of [functionCount, branchCount].filter(value => value !== null)) {
-          if (!Number.isInteger(value) || value < 0 || value !== nativeCount) {
-            throw new Error(`Disagreeing Istanbul callable join: ${relative}:${metric.id}`);
-          }
-        }
-        count = nativeCount;
-      }
-      return { ...metric, covered: Number(count > 0), total: 1, execution_count: count };
-    });
+    const methods = metrics.map(metric => measuredCallable(relative, identity, coverage, native, metric));
     const lines = {};
     for (const [key, span] of Object.entries(coverage.statementMap || {})) {
       const hits = coverage.s[key];

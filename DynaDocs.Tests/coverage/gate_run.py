@@ -63,7 +63,12 @@ def checked_result(value):
 
 def result(facts=None, findings=None, errors=None):
     findings, errors = findings or [], errors or []
-    return {'status': 'error' if errors else ('fail' if findings else 'pass'),
+    status = 'pass'
+    if findings:
+        status = 'fail'
+    if errors:
+        status = 'error'
+    return {'status': status,
             'facts': facts or {}, 'findings': findings, 'errors': errors}
 
 
@@ -82,4 +87,3 @@ def collect_all(collectors, required):
         rows['unregistered'] = result(errors=[{'message': 'Unregistered collector names', 'names': sorted(set(collectors) - set(required))}])
     code = max({'pass': 0, 'fail': 1, 'error': 2}[row['status']] for row in rows.values())
     return {'version': 1, 'collectors': rows, 'exit_code': code, 'measurement_complete': code != 2}
-

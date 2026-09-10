@@ -162,7 +162,12 @@ def _aggregate(orchestration):
     for name, row in orchestration["collectors"].items():
         findings.extend({"collector": name, **item} for item in row["findings"])
         errors.extend({"collector": name, **item} for item in row["errors"])
-    return {"status": "error" if errors else ("fail" if findings else "pass"),
+    status = "pass"
+    if findings:
+        status = "fail"
+    if errors:
+        status = "error"
+    return {"status": status,
             "facts": orchestration, "findings": findings, "errors": errors}
 
 
@@ -242,14 +247,22 @@ def collect_node_coverage(root, raw):
     if child not in (0, 1):
         return {"status": "error", "facts": {"child_exit": child}, "findings": [],
                 "errors": [{"gate": "javascript-coverage", "message": "native c8 campaign failed"}]}
-    joined = json.loads((raw / "joined.json").read_text(encoding="utf-8")) if child == 0 else {"modules": []}
-    findings = ([{"gate": "functional", "child_exit": child}] if child else [])
+    joined = {"modules": []}
+    findings = []
     if child == 0:
+        joined = json.loads((raw / "joined.json").read_text(encoding="utf-8"))
         findings.extend(evaluate_policy(joined["modules"]))
+    else:
+        findings.append({"gate": "functional", "child_exit": child})
     errors = [{"gate": "extensionless-javascript", "path": path,
                "message": "Native analyzer filename identity pending DYD-105"}
               for path in extensionless]
-    return {"status": "error" if errors else ("fail" if findings else "pass"),
+    status = "pass"
+    if findings:
+        status = "fail"
+    if errors:
+        status = "error"
+    return {"status": status,
             "facts": {"child_exit": child, **joined}, "findings": findings, "errors": errors}
 
 

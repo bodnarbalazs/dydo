@@ -13,6 +13,22 @@ using DynaDocs.Commands;
 [Collection("Integration")]
 public class InitCommandTests : IntegrationTestBase
 {
+    private const string CustomHooks = """
+        {
+          "hooks": {
+            "PreToolUse": [{
+              "matcher": "CustomTool",
+              "hooks": [{ "type": "command", "command": "echo custom" }]
+            }],
+            "PostToolUse": [{
+              "matcher": "AnyTool",
+              "hooks": [{ "type": "command", "command": "echo post" }]
+            }]
+          },
+          "otherSetting": true
+        }
+        """;
+
     [Fact]
     public async Task Join_PostWorkFailure_PreservesOriginalConfigBytes()
     {
@@ -452,22 +468,15 @@ public class InitCommandTests : IntegrationTestBase
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
         WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
         WriteFile(".codex/config.toml", toml);
-        var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
-        var ignore = File.ReadAllBytes(Path.Combine(TestDir, ".gitignore"));
-        var claudeEntryPoint = File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md"));
-        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
-        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+        var preserved = Snapshot("dydo.json", ".gitignore", "CLAUDE.md",
+                                 ".claude/settings.json", ".codex/config.toml");
 
         var result = await JoinProjectAsync("all");
 
         result.AssertExitCode(2);
         result.AssertStderrContains(".codex/config.toml");
         result.AssertStderrContains("malformed");
-        Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
-        Assert.Equal(ignore, File.ReadAllBytes(Path.Combine(TestDir, ".gitignore")));
-        Assert.Equal(claudeEntryPoint, File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md")));
-        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
-        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertUnchanged(preserved);
         AssertFileNotExists("AGENTS.md");
         AssertFileNotExists(".claude/settings.local.json");
         AssertFileNotExists(".codex/hooks.json");
@@ -509,21 +518,14 @@ public class InitCommandTests : IntegrationTestBase
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
         WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
         WriteFile(".codex/config.toml", toml);
-        var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
-        var ignore = File.ReadAllBytes(Path.Combine(TestDir, ".gitignore"));
-        var claudeEntryPoint = File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md"));
-        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
-        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+        var preserved = Snapshot("dydo.json", ".gitignore", "CLAUDE.md",
+                                 ".claude/settings.json", ".codex/config.toml");
 
         var result = await JoinProjectAsync("all");
 
         result.AssertExitCode(2);
         result.AssertStderrContains(".codex/config.toml");
-        Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
-        Assert.Equal(ignore, File.ReadAllBytes(Path.Combine(TestDir, ".gitignore")));
-        Assert.Equal(claudeEntryPoint, File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md")));
-        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
-        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertUnchanged(preserved);
         AssertFileNotExists("AGENTS.md");
         AssertFileNotExists(".claude/settings.local.json");
         AssertFileNotExists(".codex/hooks.json");
@@ -601,35 +603,7 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_Codex_PreservesExistingHooks()
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
-        WriteFile(".codex/hooks.json", """
-            {
-              "hooks": {
-                "PreToolUse": [
-                  {
-                    "matcher": "CustomTool",
-                    "hooks": [
-                      {
-                        "type": "command",
-                        "command": "echo custom"
-                      }
-                    ]
-                  }
-                ],
-                "PostToolUse": [
-                  {
-                    "matcher": "AnyTool",
-                    "hooks": [
-                      {
-                        "type": "command",
-                        "command": "echo post"
-                      }
-                    ]
-                  }
-                ]
-              },
-              "otherSetting": true
-            }
-            """);
+        WriteFile(".codex/hooks.json", CustomHooks);
 
         var result = await InitProjectAsync("codex");
 
@@ -719,18 +693,18 @@ public class InitCommandTests : IntegrationTestBase
         var preToolUse = Assert.IsType<JsonArray>(hooks["PreToolUse"]);
         Assert.Contains(preToolUse, entry =>
             entry?["matcher"]?.GetValue<string>() == "CustomSubstring" &&
-            HookCommands(entry).Contains("echo before dydo guard after"));
+            HookTestAssertions.Commands(entry).Contains("echo before dydo guard after"));
         Assert.Contains(preToolUse, entry =>
             entry?["matcher"]?.GetValue<string>() == "Mixed" &&
-            HookCommands(entry).SequenceEqual(["echo custom"]));
+            HookTestAssertions.Commands(entry).SequenceEqual(["echo custom"]));
         Assert.DoesNotContain(preToolUse, entry =>
             entry?["matcher"]?.GetValue<string>() == "ManagedOnly");
-        Assert.Equal(1, CountExactHookCommand(preToolUse, "dydo guard"));
+        Assert.Equal(1, HookTestAssertions.Count(preToolUse, "dydo guard"));
 
         var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
-        Assert.Contains(stop, entry => HookCommands(entry).SequenceEqual(["echo stop custom"]));
-        Assert.Contains(stop, entry => HookCommands(entry).Contains("echo before dydo guard --stop after"));
-        Assert.Equal(1, CountExactHookCommand(stop, "dydo guard --stop"));
+        Assert.Contains(stop, entry => HookTestAssertions.Commands(entry).SequenceEqual(["echo stop custom"]));
+        Assert.Contains(stop, entry => HookTestAssertions.Commands(entry).Contains("echo before dydo guard --stop after"));
+        Assert.Equal(1, HookTestAssertions.Count(stop, "dydo guard --stop"));
     }
 
     [Fact]
@@ -782,37 +756,8 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Claude_PreservesExistingHooks()
     {
-        // Arrange: Create existing settings with a custom hook
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
-        WriteFile(".claude/settings.local.json", """
-            {
-              "hooks": {
-                "PreToolUse": [
-                  {
-                    "matcher": "CustomTool",
-                    "hooks": [
-                      {
-                        "type": "command",
-                        "command": "echo custom"
-                      }
-                    ]
-                  }
-                ],
-                "PostToolUse": [
-                  {
-                    "matcher": "AnyTool",
-                    "hooks": [
-                      {
-                        "type": "command",
-                        "command": "echo post"
-                      }
-                    ]
-                  }
-                ]
-              },
-              "otherSetting": true
-            }
-            """);
+        WriteFile(".claude/settings.local.json", CustomHooks);
 
         // Act
         var result = await InitProjectAsync("claude");
@@ -925,8 +870,10 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("PowerShell(dydo:*)", content);
     }
 
-    [Fact]
-    public async Task Init_Claude_AllowMergesWithExistingEntries()
+    [Theory]
+    [InlineData("Bash(dydo:*)")]
+    [InlineData("PowerShell(dydo:*)")]
+    public async Task Init_Claude_AllowMergesWithExistingEntries(string expectedEntry)
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
         WriteFile(".claude/settings.local.json", """
@@ -946,31 +893,7 @@ public class InitCommandTests : IntegrationTestBase
         var content = ReadFile(".claude/settings.local.json");
         Assert.Contains("Bash(git:*)", content);
         Assert.Contains("Read(**)", content);
-        Assert.Contains("Bash(dydo:*)", content);
-    }
-
-    [Fact]
-    public async Task Init_Claude_PowerShellAllowMergesWithExistingEntries()
-    {
-        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
-        WriteFile(".claude/settings.local.json", """
-            {
-              "permissions": {
-                "allow": [
-                  "Bash(git:*)",
-                  "Read(**)"
-                ]
-              }
-            }
-            """);
-
-        var result = await InitProjectAsync("claude");
-
-        result.AssertSuccess();
-        var content = ReadFile(".claude/settings.local.json");
-        Assert.Contains("Bash(git:*)", content);
-        Assert.Contains("Read(**)", content);
-        Assert.Contains("PowerShell(dydo:*)", content);
+        Assert.Contains(expectedEntry, content);
     }
 
     [Fact]
@@ -1225,18 +1148,12 @@ public class InitCommandTests : IntegrationTestBase
 
     #endregion
 
-    private static List<string> HookCommands(JsonNode? entry)
-    {
-        var entryObject = Assert.IsType<JsonObject>(entry);
-        var hooks = Assert.IsType<JsonArray>(entryObject["hooks"]);
-        return hooks
-            .OfType<JsonObject>()
-            .Select(hook => hook["command"]?.GetValue<string>())
-            .Where(command => command != null)
-            .Select(command => command!)
-            .ToList();
-    }
+    private Dictionary<string, byte[]> Snapshot(params string[] paths) =>
+        paths.ToDictionary(path => path, path => File.ReadAllBytes(Path.Combine(TestDir, path)));
 
-    private static int CountExactHookCommand(JsonArray entries, string command) =>
-        entries.Sum(entry => HookCommands(entry).Count(existing => existing == command));
+    private void AssertUnchanged(Dictionary<string, byte[]> snapshot)
+    {
+        foreach (var (path, expected) in snapshot)
+            Assert.Equal(expected, File.ReadAllBytes(Path.Combine(TestDir, path)));
+    }
 }

@@ -27,21 +27,7 @@ public class ShellCompletionInstallerTests : IDisposable
             _output.WriteLine($"Cleanup was not confirmed; retained scratch directory: {_testDir}");
             return;
         }
-        if (Directory.Exists(_testDir))
-        {
-            for (var i = 0; i < 3; i++)
-            {
-                try
-                {
-                    Directory.Delete(_testDir, true);
-                    return;
-                }
-                catch (IOException) when (i < 2)
-                {
-                    Thread.Sleep(50 * (i + 1));
-                }
-            }
-        }
+        TestDirectory.Delete(_testDir);
     }
 
     [Fact]

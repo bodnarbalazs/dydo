@@ -278,12 +278,12 @@ def main():
     run = output / "assurance" / ("run-" + uuid.uuid4().hex)
     run.mkdir(parents=True, exist_ok=False)
     summary = output / "adapters" / f"{args.stack}-{args.gate}.json"
+    local = root / "dydo/_system/.local/appdata"
+    os.environ["APPDATA"] = str(local)
+    os.environ.setdefault("NUGET_PACKAGES", str(Path.home() / ".nuget/packages"))
     candidate, _ = _candidate(root)
     inventory, inventory_errors = _inventory_artifact(root, run, candidate)
     try:
-        local = root / "dydo/_system/.local/appdata"
-        os.environ["APPDATA"] = str(local)
-        os.environ.setdefault("NUGET_PACKAGES", str(Path.home() / ".nuget/packages"))
         report = collect_static(root, run / "raw", args.stack) \
             if args.gate == "static" else collect_coverage(root, run, args.stack)
         if inventory_errors:

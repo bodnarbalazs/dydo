@@ -115,6 +115,31 @@ class GateAdapterTests(unittest.TestCase):
             self.assertEqual("MeasurementTimeout", captured["errors"][0]["type"])
             self.assertNotIn("Traceback", stderr.getvalue())
 
+    def test_inventory_evaluation_uses_isolated_appdata_before_collection(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "results"
+            inventory = root / "inventory.json"
+            inventory.write_text('{"schema":1}', encoding="utf-8")
+            observed = {}
+
+            def collect_inventory(*_args):
+                observed["appdata"] = os.environ.get("APPDATA")
+                observed["packages"] = os.environ.get("NUGET_PACKAGES")
+                return inventory, []
+
+            argv = ["gate_adapter.py", "--gate", "static", "--stack", "python",
+                    "--root", str(root), "--output", str(output)]
+            with mock.patch.object(sys, "argv", argv), \
+                    mock.patch.dict(os.environ, {"APPDATA": "foreign", "NUGET_PACKAGES": ""}, clear=False), \
+                    mock.patch.object(gate_adapter, "_candidate", return_value=({"commit": "a" * 40}, [])), \
+                    mock.patch.object(gate_adapter, "_inventory_artifact", side_effect=collect_inventory), \
+                    mock.patch.object(gate_adapter, "collect_static", return_value={"status": "pass", "facts": {}, "findings": [], "errors": []}), \
+                    mock.patch.object(gate_adapter, "publish", return_value=0):
+                self.assertEqual(0, gate_adapter.main())
+            self.assertEqual(str(root / "dydo/_system/.local/appdata"), observed["appdata"])
+            self.assertEqual("", observed["packages"])
+
 
 if __name__ == "__main__":
     unittest.main()

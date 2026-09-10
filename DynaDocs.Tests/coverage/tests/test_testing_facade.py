@@ -541,6 +541,24 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertEqual([], list(root.glob('results/**/*.tmp')))
         self.test_interrupting_the_real_dotnet_adapter_cleans_its_worktree()
 
+    def test_candidate_identity_uses_only_exact_repository_scoped_git_trust(self):
+        candidate = runpy.run_path(str(RUNNER))['candidate_identity']
+        root = Path('C:/fixture/repository')
+        calls = []
+
+        def invoke(command, **kwargs):
+            calls.append((command, kwargs))
+            stdout = 'a' * 40 + '\n' if command[-1] == 'HEAD' else ''
+            return subprocess.CompletedProcess(command, 0, stdout=stdout)
+
+        with mock.patch.object(subprocess, 'run', side_effect=invoke):
+            self.assertEqual({'commit': 'a' * 40, 'dirty': False}, candidate(root))
+        expected = ['git', '-c', f'safe.directory={root.as_posix()}']
+        self.assertEqual(expected + ['rev-parse', 'HEAD'], calls[0][0])
+        self.assertEqual(expected + ['status', '--porcelain'], calls[1][0])
+        self.assertEqual(root, calls[0][1]['cwd'])
+        self.assertEqual(root, calls[1][1]['cwd'])
+
     def test_schema(self):
         p, root, payload = self.invoke(['all'])
         self.assert_exit(p, 0)

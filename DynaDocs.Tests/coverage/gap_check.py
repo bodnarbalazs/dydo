@@ -316,8 +316,9 @@ def request(args):
 
 
 def candidate_identity(root):
-    git = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True)
-    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=root, text=True, capture_output=True)
+    safe = ["git", "-c", f"safe.directory={root.as_posix()}"]
+    git = subprocess.run([*safe, "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True)
+    dirty = subprocess.run([*safe, "status", "--porcelain"], cwd=root, text=True, capture_output=True)
     return {"commit": git.stdout.strip() if git.returncode == 0 else "unknown", "dirty": bool(dirty.stdout)}
 
 

@@ -184,7 +184,10 @@ if plan.get("sleep") and STAGE == "exec":
 
 shutil.copyfile(Path(PLAN["fixtures"]) / plan["fixture"], SESSION)
 connection = sqlite3.connect(str(SESSION))
-connection.execute("update mutation_specs set module_path = ?", (settings["module-path"],))
+# The engine spells what it stores: `str(Path(cfg["module-path"]))` (`cosmic_ray/cli.py:106`,
+# `commands/init.py:67`), so a nested `src/mod.py` comes back as `src\mod.py` on Windows.
+connection.execute("update mutation_specs set module_path = ?",
+                   (str(Path(settings["module-path"])),))
 if STAGE == "init":
     connection.execute("delete from work_results")
 elif not plan.get("foreignNonce"):

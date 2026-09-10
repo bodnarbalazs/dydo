@@ -145,6 +145,13 @@ class SelectionTests(unittest.TestCase):
                       selected=["src/value.cjs"]),
             mutation_adapter.select(orphan, {"src/value.test.cjs": "M"}, "node"))
 
+    def test_an_orphan_test_of_another_language_does_not_widen_this_stack(self):
+        """An orphan test widens the stack that speaks it, and says so; never a neighbour."""
+        foreign = envelope([PYTHON_TARGET, PYTHON_PEER, PYTHON_TEST, NODE_TEST])
+        self.assertEqual(
+            selection("none", "no changed target"),
+            mutation_adapter.select(foreign, {"src/value.test.cjs": "M"}, "python"))
+
     def test_a_deleted_source_widens_the_whole_stack(self):
         self.assertEqual(
             selection("widened", "deleted or renamed source",
@@ -482,6 +489,11 @@ class CampaignRefusalTests(CandidateTestCase):
                                           "--root", str(self.root), "--output", str(summary)])
         return code, json.loads(summary.read_text(encoding="utf-8"))
 
+    def registered(self, snapshot):
+        """Whether Git still attributes the snapshot to the candidate this test built."""
+        with mock.patch.object(mutation_adapter.run_tests, "ROOT", self.root):
+            return mutation_adapter.run_tests.is_registered_worktree(snapshot)
+
     def clear_snapshot(self, remove, snapshot):
         """Remove a snapshot the campaign under test was kept from removing, however it ends.
 
@@ -551,6 +563,46 @@ class CampaignRefusalTests(CandidateTestCase):
              "retained": True},
             {"code": code, "gap": published["gaps"][-1], "retained": retained[0].exists()})
 
+    def test_a_snapshot_left_on_disk_after_its_registration_went_is_invalid(self):
+        """`remove_worktree` unregisters first, then swallows three `OSError`s from `rmtree`.
+
+        A held handle therefore leaves a directory Git no longer attributes: present, unowned,
+        and still the candidate's content. Verified removal is both halves or neither.
+        """
+        retained, remove = [], mutation_adapter.run_tests.remove_worktree
+
+        def unregister_and_leave_the_directory(snapshot):
+            remove(snapshot)
+            snapshot.mkdir(parents=True, exist_ok=True)
+            retained.append(snapshot)
+
+        self.enterContext(mock.patch.object(mutation_adapter.run_tests, "remove_worktree",
+                                            unregister_and_leave_the_directory))
+        code, published = self.drive(self.launcher())
+        self.addCleanup(self.clear_snapshot, remove, retained[0])
+        self.assertEqual(
+            {"code": 2, "gap": {"reason": f"snapshot removal unverified: {retained[0]}"},
+             "present": True, "registered": False},
+            {"code": code, "gap": published["gaps"][-1], "present": retained[0].exists(),
+             "registered": self.registered(retained[0])})
+
+    def test_a_snapshot_still_registered_after_its_directory_went_is_invalid(self):
+        """The other leftover: nothing on disk, and Git still attributing the worktree."""
+        retained = []
+
+        def delete_the_directory_only(snapshot):
+            shutil.rmtree(snapshot)
+            retained.append(snapshot)
+
+        self.enterContext(mock.patch.object(mutation_adapter.run_tests, "remove_worktree",
+                                            delete_the_directory_only))
+        code, published = self.drive(self.launcher())
+        self.assertEqual(
+            {"code": 2, "gap": {"reason": f"snapshot removal unverified: {retained[0]}"},
+             "present": False, "registered": True},
+            {"code": code, "gap": published["gaps"][-1], "present": retained[0].exists(),
+             "registered": self.registered(retained[0])})
+
     def test_a_python_baseline_that_does_not_report_suite_completion_is_invalid(self):
         # A suite leaving by `os._exit` never lets the runner write its completion marker, and
         # the process still exits 0: the campaign has nothing to measure against.
@@ -586,12 +638,40 @@ class CampaignRefusalTests(CandidateTestCase):
             (2, [{"reason": "unsupported python test command: ['python', '-m', 'pytest']"}]),
             (code, published["gaps"]))
 
+    def test_a_current_python_argv_the_runner_cannot_dispatch_is_invalid(self):
+        """The kind the runner needs, carrying neither a module nor a script to dispatch.
+
+        Without this the campaign hands `pytest -q` to `runpy.run_path`, and a suite that never
+        ran is reported as a red baseline instead of a command the runner cannot dispatch.
+        """
+        self.write("DynaDocs.Tests/coverage/gap_check.json",
+                   json.dumps(testing_manifest(argv=["pytest", "-q"]), indent=1))
+        self.commit("a current-python argv the in-process runner cannot dispatch")
+        code, published = self.drive(self.launcher(self.RESTORED))
+        self.assertEqual(
+            (2, [{"reason": "unsupported python test command: ['pytest', '-q']"}]),
+            (code, published["gaps"]))
+
     def test_an_inventory_whose_fingerprint_is_not_the_snapshots_is_invalid(self):
         self.producer(lambda document: {
             **document, "candidate": {**document["candidate"], "sourceFingerprint": "0" * 64}})
         code, published = self.drive(self.launcher(self.RESTORED))
         self.assertEqual(
             (2, [{"reason": "inventory sourceFingerprint does not match the snapshot"}]),
+            (code, published["gaps"]))
+
+    def test_an_inventory_naming_another_commit_is_not_the_snapshots(self):
+        """The snapshot's own fingerprint stays, so identity rests on the commit alone.
+
+        Only both halves keep a summary from recording a `candidate.commit` that is not the
+        commit measured.
+        """
+        foreign = "1" * 40
+        self.producer(lambda document: {
+            **document, "candidate": {**document["candidate"], "commit": foreign}})
+        code, published = self.drive(self.launcher(self.RESTORED))
+        self.assertEqual(
+            (2, [{"reason": f"inventory candidate is not the snapshot: {foreign}"}]),
             (code, published["gaps"]))
 
     def test_a_duplicate_inventory_row_refuses_instead_of_selecting(self):

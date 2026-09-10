@@ -20,6 +20,8 @@ ORIGIN = json.loads((FIXTURES / "origin.json").read_text(encoding="utf-8"))["fix
 FOREIGN_NONCE = "00000000000000000000000000000000"
 # Every captured session is one campaign over one file, and that is the file it must name.
 MODULE_PATH = "mod.py"
+# The same file nested, which is how every python target of this repository is spelled.
+NESTED_PATH = "src/mod.py"
 
 EMPTY_COUNTS = {"generated": 0, "valid": 0, "killed": 0, "survived": 0, "noCoverage": 0,
                 "timeout": 0, "compileError": 0, "ignored": 0, "runtimeError": 0, "unrun": 0,
@@ -429,12 +431,13 @@ class CosmicRaySessionRefusalTests(unittest.TestCase):
     8.7.0 pins, or that names a file this campaign did not mutate, is invalid measurement.
     """
 
-    def reading(self, statement=None):
-        """The captured killed session, or a copy departing from it by one statement."""
+    def reading(self, statement=None, module_path=MODULE_PATH,
+                fixture="cosmic-ray-killed.sqlite"):
+        """One captured session, or a copy departing from it by one statement."""
         directory = tempfile.TemporaryDirectory(prefix="dydo-mutation-session-")
         self.addCleanup(directory.cleanup)
         copy = Path(directory.name) / "session.sqlite"
-        shutil.copyfile(FIXTURES / "cosmic-ray-killed.sqlite", copy)
+        shutil.copyfile(FIXTURES / fixture, copy)
         if statement is not None:
             connection = sqlite3.connect(str(copy))
             try:
@@ -442,8 +445,13 @@ class CosmicRaySessionRefusalTests(unittest.TestCase):
                 connection.commit()
             finally:
                 connection.close()
-        return mutation_summary.read_cosmic_session(
-            copy, cosmic_nonce("cosmic-ray-killed.sqlite"), MODULE_PATH)
+        return mutation_summary.read_cosmic_session(copy, cosmic_nonce(fixture), module_path)
+
+    def nested(self, fixture="cosmic-ray-killed.sqlite"):
+        """That session respelled as the engine stores a nested `module-path` on this host."""
+        return self.reading(
+            f"update mutation_specs set module_path = '{str(Path(NESTED_PATH))}'",
+            module_path=NESTED_PATH, fixture=fixture)
 
     def test_the_unaltered_copy_of_the_captured_session_reads_as_one_kill(self):
         reading = self.reading()
@@ -460,6 +468,35 @@ class CosmicRaySessionRefusalTests(unittest.TestCase):
         self.assertEqual(
             [{"reason": "malformed report", "path": "session.sqlite"}],
             self.reading("update mutation_specs set module_path = 'other.py'")["gaps"])
+
+    def test_a_row_naming_no_file_at_all_is_malformed(self):
+        """`mutation_specs.module_path` is nullable, and a row without one names nothing."""
+        self.assertEqual(
+            [{"reason": "malformed report", "path": "session.sqlite"}],
+            self.reading("update mutation_specs set module_path = null")["gaps"])
+
+    def test_a_row_matching_the_campaigns_file_only_after_case_folding_is_malformed(self):
+        """`Path` equality folds case on Windows; the normalization rule never does."""
+        self.assertEqual(
+            [{"reason": "malformed report", "path": "session.sqlite"}],
+            self.reading("update mutation_specs set module_path = 'Mod.py'")["gaps"])
+
+    def test_a_row_the_engine_respelled_for_this_host_is_the_campaigns_own_file(self):
+        """Cosmic Ray stores `str(Path(module-path))`, so `src/mod.py` comes back `src\\mod.py`.
+
+        The same file, other bytes: a reader comparing bytes refuses every nested python target.
+        """
+        reading = self.nested()
+        self.assertEqual(([], [NESTED_PATH], ["killed"], [NESTED_PATH]),
+                         (reading["gaps"], reading["files"],
+                          [row["status"] for row in reading["rows"]],
+                          [row["path"] for row in reading["rows"]]))
+
+    def test_a_gap_of_a_nested_campaign_names_the_file_the_inventory_spells(self):
+        """No vendor spelling reaches the summary, not even on the refusal path."""
+        self.assertEqual(
+            [{"reason": "engine could not run mutant", "path": NESTED_PATH}],
+            self.nested("cosmic-ray-incompetent.sqlite")["gaps"])
 
 
 class CosmicRaySessionFixtureTests(unittest.TestCase):

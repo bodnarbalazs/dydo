@@ -4,8 +4,9 @@ Three stages, each pure data in and data out, so a captured report replays anywh
 
 1. `read_stryker_report` / `read_cosmic_session` read one engine's own evidence and return
    `{"projectRoot", "files", "rows", "gaps"}`, where every row is
-   `{"path", "id", "mutator", "status", "span", "raw"}` with the engine's own path spelling, the
-   specification's normalized status, and
+   `{"path", "id", "mutator", "status", "span", "raw"}` with the Stryker report's own path
+   spelling -- a Cosmic Ray session is one campaign over one file, so its rows carry that file --
+   the specification's normalized status, and
    `span = {"startLine", "startColumn", "endLine", "endColumn"}` exactly as the engine reported it.
 2. `map_report_paths` maps every vendor path onto the canonical inventory spelling against an
    explicitly supplied snapshot root -- never `cwd`, the environment or a module constant.
@@ -134,17 +135,17 @@ def read_cosmic_session(path, marker_nonce, module_path, report=None):
     for record in records:
         span = tuple(record[field] for field in ("start_line", "start_column",
                                                  "end_line", "end_column"))
-        if record["module_path"] != module_path \
+        if not _same_file(record["module_path"], module_path) \
                 or not isinstance(record["operator_name"], str) \
                 or not all(isinstance(value, int) for value in span):
             return malformed
-        if record["module_path"] not in files:
-            files.append(record["module_path"])
+        if module_path not in files:
+            files.append(module_path)
         status = _cosmic_status(record, marker_nonce)
         if status is None:
-            gaps.append({"reason": "engine could not run mutant", "path": record["module_path"]})
+            gaps.append({"reason": "engine could not run mutant", "path": module_path})
             continue
-        rows.append({"path": record["module_path"], "id": record["job"],
+        rows.append({"path": module_path, "id": record["job"],
                      "mutator": record["operator_name"], "status": status,
                      "span": dict(zip(SPAN_FIELDS, span)),
                      "raw": {"report": report, "id": record["job"]}})
@@ -270,6 +271,17 @@ def _canonical_path(key, project_root, root, inventory):
         return None
     remainder = resolved[len(prefix):].replace(os.sep, "/")
     return remainder if remainder in inventory else None
+
+
+def _same_file(recorded, module_path):
+    """Whether one session row names the campaign's own file, as this host spells that file.
+
+    Cosmic Ray stores `str(Path(cfg["module-path"]))` (`cosmic_ray/cli.py:106`,
+    `commands/init.py:67`), so on Windows the campaign's `src/mod.py` comes back as
+    `src\\mod.py`: the same file, other bytes. Case is never folded -- the normalization rule
+    wants the inventory's exact spelling -- so any other file is refused as before.
+    """
+    return isinstance(recorded, str) and str(Path(recorded)) == str(Path(module_path))
 
 
 def _read_only_uri(path):

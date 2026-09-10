@@ -230,7 +230,7 @@ def run_tests(extra_args=None, coverage=False, assurance_output=None):
     """Create worktree, run tests, clean up. Returns the dotnet exit code."""
     worktree = None
     try:
-        print(f"  Creating test worktree...")
+        print("  Creating test worktree...")
         candidate = Path(tempfile.gettempdir()) / f"dydo-test-{uuid.uuid4().hex[:8]}"
         if candidate.exists() or is_registered_worktree(candidate):
             print(f"Failed to allocate test worktree path at {candidate}", file=sys.stderr)
@@ -264,7 +264,7 @@ def run_tests(extra_args=None, coverage=False, assurance_output=None):
         return result.returncode
     finally:
         if worktree and (worktree.exists() or is_registered_worktree(worktree)):
-            print(f"  Cleaning up worktree...")
+            print("  Cleaning up worktree...")
             remove_worktree(worktree)
 
 
@@ -293,7 +293,7 @@ def main():
     if rc != 0:
         print(f"\n  Tests failed (exit code {rc})")
     else:
-        print(f"\n  Tests passed")
+        print("\n  Tests passed")
 
     sys.exit(rc)
 

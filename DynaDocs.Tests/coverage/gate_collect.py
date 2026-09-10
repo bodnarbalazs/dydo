@@ -31,6 +31,41 @@ def _source_stdin(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
 
 
+def _collect_analyzer_reports(collector):
+    facts, raw, errors = [], [], []
+    for index, project in enumerate(collector.project_rows):
+        sarif = collector.output / f'analyzers-{index}.sarif'
+        row = collector.log.run(f'analyzers-{index}', ['dotnet', 'build', project['path'], '--no-incremental',
+            '--verbosity', 'quiet', '-warnaserror', '-p:RunAnalyzers=true', '-p:RunAnalyzersDuringBuild=true',
+            '-p:NuGetAudit=false', f'-p:ErrorLog={sarif}'])
+        facts.append(row)
+        if not sarif.is_file():
+            errors.append({'path': project['path'], 'message': 'Missing native analyzer SARIF'})
+            continue
+        data = read_json(sarif)
+        diagnostics = [item for run in data['runs'] for item in run.get('results', [])]
+        raw.extend({'project': project['path'], 'diagnostic': diagnostic}
+                   for diagnostic in diagnostics)
+        if row['exit_code'] != 0 and not diagnostics:
+            errors.append({'path': project['path'],
+                           'message': 'Build failed without complete analyzer diagnostics',
+                           'command': row})
+    return facts, raw, errors
+
+
+def _generated_projects(projects):
+    generated = {}
+    for project in projects:
+        for path in project['generated_files']:
+            generated.setdefault(path, []).append(project['project'])
+    return generated
+
+
+def _generated_diagnostic_findings(diagnostics):
+    return [{'gate': 'generated-build-diagnostic', **diagnostic} for diagnostic in diagnostics
+            if not diagnostic['suppression_states'] and diagnostic['level'] in ('warning', 'error')]
+
+
 class Collectors:
     def __init__(self, root, output):
         self.root = Path(root).resolve()
@@ -124,33 +159,13 @@ class Collectors:
 
     def csharp_analyzers(self):
         from gate_diagnostics import normalize_csharp_diagnostics
-        facts, raw, errors = [], [], []
-        for index, project in enumerate(self.project_rows):
-            sarif = self.output / f'analyzers-{index}.sarif'
-            row = self.log.run(f'analyzers-{index}', ['dotnet', 'build', project['path'], '--no-incremental',
-                '--verbosity', 'quiet', '-warnaserror', '-p:RunAnalyzers=true', '-p:RunAnalyzersDuringBuild=true',
-                '-p:NuGetAudit=false', f'-p:ErrorLog={sarif}'])
-            facts.append(row)
-            if not sarif.is_file():
-                errors.append({'path': project['path'], 'message': 'Missing native analyzer SARIF'})
-                continue
-            data = read_json(sarif)
-            diagnostics = [item for run in data['runs'] for item in run.get('results', [])]
-            for diagnostic in diagnostics:
-                raw.append({'project': project['path'], 'diagnostic': diagnostic})
-            if row['exit_code'] != 0 and not diagnostics:
-                errors.append({'path': project['path'], 'message': 'Build failed without complete analyzer diagnostics', 'command': row})
-        generated = {}
-        for project in self.static.get('cs', []):
-            for path in project['generated_files']:
-                generated.setdefault(path, []).append(project['project'])
+        facts, raw, errors = _collect_analyzer_reports(self)
+        generated = _generated_projects(self.static.get('cs', []))
         normalized = normalize_csharp_diagnostics(self.root, raw,
             {row['path'] for row in self.sources('cs')}, generated)
         findings = normalized['findings']
         errors.extend(normalized['errors'])
-        for diagnostic in normalized['generated']:
-            if not diagnostic['suppression_states'] and diagnostic['level'] in ('warning', 'error'):
-                findings.append({'gate': 'generated-build-diagnostic', **diagnostic})
+        findings.extend(_generated_diagnostic_findings(normalized['generated']))
         if any(row['exit_code'] != 0 for row in facts) and not findings:
             errors.append({'message': 'Native build failed without an accounted unsuppressed diagnostic'})
         return result({'commands': facts, 'raw': raw, 'generated': normalized['generated']}, findings, errors)

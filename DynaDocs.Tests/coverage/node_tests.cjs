@@ -18,14 +18,24 @@ function discover(root) {
   return files;
 }
 
+function maintainedTests(root) {
+  const files = [
+    ...discover(path.join(root, 'DynaDocs.Tests', 'coverage', 'tests')),
+    ...discover(path.join(root, 'npm', 'test')),
+  ];
+  files.sort((left, right) => left.localeCompare(right, 'en'));
+  return files;
+}
+
 function main(args = process.argv.slice(2)) {
-  const tests = discover(path.join(__dirname, 'tests'));
+  const root = path.resolve(__dirname, '..', '..');
+  const tests = maintainedTests(root);
   const result = spawnSync(process.execPath, ['--test', ...args, ...tests], {
-    cwd: path.resolve(__dirname, '..', '..'), stdio: 'inherit', env: process.env,
+    cwd: root, stdio: 'inherit', env: process.env,
   });
   if (result.error) throw result.error;
   return Number.isInteger(result.status) ? result.status : 130;
 }
 
-module.exports = { discover };
+module.exports = { discover, maintainedTests };
 if (require.main === module) process.exitCode = main();

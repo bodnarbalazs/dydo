@@ -26,6 +26,18 @@
       ]
     },
     {
+      "module": "npm/install.js",
+      "tests": [
+        "npm/test/install.test.cjs"
+      ]
+    },
+    {
+      "module": "npm/lib/download.js",
+      "tests": [
+        "npm/test/download.test.cjs"
+      ]
+    },
+    {
       "module": "npm/lib/paths.js",
       "tests": [
         "npm/test/launcher.test.cjs"

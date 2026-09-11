@@ -901,6 +901,14 @@
       "change": "modified",
       "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
       "firstCommit": "e8f20493 DYD-105 implement: make npm launcher measurable"
+    },
+    {
+      "path": ".gitattributes",
+      "action": "Pin the retained native-evidence packet to the bytes its SHA256SUMS attests, so the assurance fixture exclusion survives a fresh checkout under core.autocrlf",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 1",
+      "firstCommit": "4e3d806d DYD-96 fix: bind retained evidence bytes to the tree and clear EOF blank lines"
     }
   ],
   "excludedOwnership": [
@@ -930,8 +938,28 @@
     },
     {
       "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/**",
-      "deviation": "gate_inventory now verifies each retained fixture against SHA256SUMS by byte hash. The three Program.cs blobs are stored CRLF and SHA256SUMS matches those bytes, so worktree and blob hashes are identical on this host; a normalising checkout would report fixture-origin-diverged.",
-      "disposition": "investigated and dismissed: no .gitattributes text rule applies to this tree and the blob bytes are what the manifest records"
+      "deviation": "gate_inventory verifies each retained fixture against SHA256SUMS by hashing the bytes on disk. The blobs are LF and the manifest records LF hashes, but core.autocrlf=true is the system gitconfig on this host, so a fresh clone or worktree materialised those files as CRLF and every static and coverage row would have exited 2 with three fixture-origin-diverged errors. An earlier captain record dismissed this on a faulty working-tree measurement; the second whole-Issue review disproved it with git -c core.autocrlf=true checkout-index.",
+      "disposition": "closed in 4e3d806d by .gitattributes rules that pin the packet to its attested rendering, proved by a red clone at e0646589 (0 excluded, 3 fixture-origin-diverged, exit 2) and a green clone at 4e3d806d (3 excluded, 0 errors, exit 0), and pinned by two new tests in test_gate_inventory.py. No production code changed and no DYD-103 pin was renewed."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/csharp_coverage.py",
+      "deviation": "The Spec pins the AltCover runner as --executable=dotnet -- test DynaDocs.sln. The delivered runner is --executable=<python> -- csharp_coverage.py --_subject, which runs that exact dotnet test command and then tests/test_csharp_metrics.py so the GateMetrics producer is exercised under instrumentation.",
+      "disposition": "recorded as a bounded deviation. The Spec separately requires GateMetrics coverage from real fixture calls, and the 2026-09-11 human ruling forbids a second full Python run, so the subject wrapper is how both are satisfied at once. Documented in dydo/reference/coverage-tools.md."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_adapter.py",
+      "deviation": "The Spec says missing tooling yields 2 with the exact restore command. Rows fail closed at 2 when a pinned tool is absent or drifts, but no code emits the restore command text.",
+      "disposition": "recorded as an unmet Spec sentence, not closed. It cannot produce a false green; it costs an operator the one-line hint. A following Issue should either emit the command or amend the sentence."
+    }
+  ],
+  "observations": [
+    {
+      "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/SHA256SUMS",
+      "note": "The manifest is internally inconsistent: 19 entries hash the committed LF object and three .opencover.xml entries hash a CRLF checkout rendering. The .gitattributes rules make it verify 22/22 without changing a recorded hash. Regenerating those three lines to the blob hashes would make the manifest attest git objects rather than platform renderings; that mutates retained evidence and was deliberately not done here."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_adapter.py:414",
+      "note": "The extensionless-JavaScript guard's message still reads 'pending DYD-105', whose rename npm/bin/dydo to npm/bin/dydo.cjs is already at the integration base. The rule is still correct and should stay fail-closed; only the message names a closed Issue. Changing it is a paired code and test edit (test_gate_adapter.py asserts the literal)."
     }
   ]
 }

@@ -5,6 +5,10 @@
     "altcover.global": {
       "version": "9.0.102",
       "commands": ["altcover"]
+    },
+    "dotnet-stryker": {
+      "version": "4.16.0",
+      "commands": ["dotnet-stryker"]
     }
   }
 }

@@ -321,7 +321,7 @@ class _Campaign:
 
     def _produce_inventory(self):
         candidate, _ = gate_adapter._candidate(self.snapshot)
-        self.inventory_path, errors = gate_adapter._inventory_artifact(
+        self.inventory_path, errors, _commands = gate_adapter._inventory_artifact(
             self.snapshot, self.directory, candidate)
         if errors:
             raise _Refusal(gaps=[{"reason": f"inventory errors: {error.get('message', error)}",

@@ -518,7 +518,7 @@ class CampaignRefusalTests(CandidateTestCase):
             path = run / "inventory.json"
             path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n",
                             encoding="utf-8")
-            return path, document["errors"]
+            return path, document["errors"], []
         self.enterContext(mock.patch.object(mutation_adapter.gate_adapter,
                                             "_inventory_artifact", produce))
 

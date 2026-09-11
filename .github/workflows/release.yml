@@ -92,6 +92,13 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Install Python assurance toolchain
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install Node assurance toolchain
+        run: npm ci
+        working-directory: DynaDocs.Tests/coverage
+
       - name: Run isolated test adapter
         run: python DynaDocs.Tests/coverage/run_tests.py
 

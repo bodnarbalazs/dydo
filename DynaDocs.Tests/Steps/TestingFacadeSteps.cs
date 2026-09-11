@@ -182,6 +182,23 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
     [When(@"^the\ facade\ observes\ the\ adapter's\ registered\ temporary\ worktree\ path\ and\ receives\ an\ interrupt$")]
     [When(@"^the\ operation\ completes$")]
     [When(@"^the\ operation\ completes\ with\ pass,\ failure,\ unavailability\ or\ interruption$")]
+    [Given(@"^a\ configured\ coverage\ row\ without\ a\ declaration\ and\ a\ stack\ whose\ coverage\ row\ is\ unavailable$")]
+    [Given(@"^a\ declaring\ stack\ whose\ static\ row\ waits\ for\ an\ interrupt$")]
+    [Given(@"^a\ declared\ suite\ verdict\ stack\ whose\ coverage\ command\ and\ test\ command\ are\ observed$")]
+    [Given(@"^a\ stack\ whose\ coverage\ row\ declares\ a\ suite\ verdict\ and\ publishes\ a\ passing\ suite\ exit$")]
+    [Given(@"^a\ stack\ whose\ coverage\ row\ declares\ a\ suite\ verdict\ with\ "".*""$")]
+    [Given(@"^selected\ independent\ rows\ and\ one\ row\ with\ ""an\ invalid\ suite\ verdict\ declaration""$")]
+    [Then(@"^a\ derived\ test\ row\ records\ empty\ argv,\ the\ suite's\ own\ child\ exit\ and\ a\ reason\ naming\ the\ coverage\ report$")]
+    [Then(@"^both\ plain\ test\ rows\ run\ and\ record\ their\ own\ child\ exits$")]
+    [Then(@"^configured\ rows\ require\ command\ and\ artifacts\ and\ forbid\ reason\ while\ unavailable\ rows\ require\ reason,\ forbid\ command\ and\ artifacts,\ and\ may\ carry\ non\-executable\ exampleArgv,\ and\ a\ configured\ coverage\ row\ may\ additionally\ declare\ suiteVerdict\ with\ exactly\ exit\ and\ failure\ and\ exactly\ one\ required\ artifact$")]
+    [Then(@"^each\ stack's\ coverage\ row\ declares\ the\ suite\ verdict\ its\ test\ row\ is\ derived\ from$")]
+    [Then(@"^every\ valid\ configured\ selected\ command\ runs\ except\ a\ test\ row\ whose\ stack\ declares\ a\ coverage\ suite\ verdict:\ it\ runs\ no\ command\ of\ its\ own\ and\ its\ verdict\ comes\ from\ that\ one\ instrumented\ execution$")]
+    [Then(@"^the\ aggregate\ exit\ is\ .*$")]
+    [Then(@"^the\ coverage\ row\ is\ .*\ with\ resultExit\ .*$")]
+    [Then(@"^the\ derived\ test\ row\ is\ .*\ with\ childExit\ .*\ and\ resultExit\ .*$")]
+    [Then(@"^the\ test\ command\ .*\ and\ the\ coverage\ command\ .*$")]
+    [When(@"^I\ interrupt\ the\ run\ after\ the\ static\ row\ starts$")]
+    [When(@"^I\ run\ the\ invocation\ "".*""$")]
     public void AssertNamedFacadeContract()
     {
         _observation ??= RunProbe(ProbeName());
@@ -222,6 +239,10 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
         "A project adapter places the mutation base in its native argv" => "test_mutation_base",
         "Capabilities report configuration without running it" => "test_capabilities",
         "Full-G compatibility never degrades to tests only" => "test_full_g",
+        "One instrumented execution carries both the coverage measurement and the test verdict" => "test_derived_test_row_passes_from_the_instrumented_run",
+        "An interruption before the coverage row leaves no unresolved test verdict" => "test_deferred_test_row_is_interrupted_when_coverage_never_runs",
+        "Derivation belongs to the invocation, not to the coverage row" => "test_derivation_only_when_both_rows_are_selected",
+        "A stack without a declared suite verdict keeps its own test execution" => "test_undeclared_or_unavailable_coverage_keeps_the_plain_test_row",
         "Independent work is exhausted before aggregation" => "test_aggregation",
         "A started operation leaves one machine-readable result" => "test_result_artifact",
         "Schema 1 has one small concrete manifest and result shape" => "test_schema",
@@ -266,6 +287,17 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
             "130" => "test_interrupting_the_real_dotnet_adapter_cleans_its_worktree",
             _ => throw new InvalidOperationException("Unmapped facade example"),
         },
+        "A derived test verdict fails closed" => context.ScenarioInfo.Arguments["case"]?.ToString() switch
+        {
+            "suite passes and policy passes" => "test_derived_suite_passes_policy_passes",
+            "suite passes and policy fails" => "test_derived_suite_passes_policy_fails",
+            "suite fails" => "test_derived_suite_fails",
+            "the campaign could not measure" => "test_derived_campaign_could_not_measure",
+            "the campaign is invalid but its report records the suite exit" => "test_derived_invalid_campaign_with_usable_report",
+            "the report records no suite exit" => "test_derived_report_records_no_suite_exit",
+            "the coverage row did not attribute the child exit to the suite" => "test_derived_unattributed_child_exit",
+            _ => throw new InvalidOperationException("Unmapped facade example"),
+        },
         "A row-local defect skips only that row" => context.ScenarioInfo.Arguments["problem"]?.ToString() switch
         {
             "an undeclared capability" => "test_row_capability",
@@ -275,6 +307,7 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
             "a missing executable" => "test_row_executable",
             "malformed configured evidence" => "test_row_evidence",
             "a cwd or artifact path escaping the repository" => "test_row_escape",
+            "an invalid suite verdict declaration" => "test_row_suite_verdict",
             _ => throw new InvalidOperationException("Unmapped facade example"),
         },
         _ => throw new InvalidOperationException("Unmapped facade scenario: " + context.ScenarioInfo.Title),

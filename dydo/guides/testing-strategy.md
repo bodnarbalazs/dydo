@@ -30,7 +30,9 @@ BASE` run only that capability. `capabilities` checks the same stack, isolation,
 contracts without running children or creating result artifacts. Valid configuration, including
 declared unavailable capabilities, returns 0; malformed entries are reported as invalid alongside
 valid peers and return 2. Mutation's argv structure is checked without requiring `--since` for inspection.
-`--force-run` selects every test, static, and coverage row; it never runs mutation.
+`--force-run` selects every test, static, and coverage row; it never runs mutation. When a stack's
+coverage row declares its suite verdict, that row's single instrumented run is the stack's one test
+execution and the test row is derived from it instead of launching the suite a second time.
 
 Bare invocation prints help, creates no result, and exits 2. A recognized operation writes one
 `result.json` under the manifest's repository-contained `artifactRoot`. It records schema,
@@ -104,7 +106,10 @@ reports every declared test row and returns 2 until all selected tests are avail
 Global JSON/schema/request errors start nothing. Row-local defects skip only that row; valid peers
 run before aggregate failure is reported. Configured rows require command and artifacts and forbid a
 reason. Unavailable rows require a reason, forbid executable commands/artifacts, and may carry
-non-executable `exampleArgv` for adoption. Do not relabel an unwired available mechanism as a pass.
+non-executable `exampleArgv` for adoption. A configured coverage row may additionally declare
+`suiteVerdict` — an `exit` path and a `failure` match into its required report — so that under
+`--force-run` its test row derives the verdict from that one instrumented execution rather than
+running the suite again. Do not relabel an unwired available mechanism as a pass.
 The example's own static and coverage rows stay unavailable until DYD-91's adoption pass gives each
 applicable row a faithful command and evidence contract; mutation adoption is DYD-103.
 
@@ -119,7 +124,9 @@ registration have disappeared before the result is reported.
 
 Nine rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`
 and `node`. Mutation is unavailable on all three with the reason `Pending DYD-103`, and an
-unavailable capability is a failed-closed 2, never a passing gate. The `dotnet` stack runs inside
+unavailable capability is a failed-closed 2, never a passing gate. Each stack's coverage row
+declares its suite verdict, so under `--force-run` a declaring stack's test verdict comes from its
+coverage row's single instrumented execution. The `dotnet` stack runs inside
 an isolated Git worktree copy of the working candidate; `python` and `node` run in place.
 [Coverage Tools](../reference/coverage-tools.md) holds the exact commands, artifacts, exit meanings
 and summary schema.

@@ -32,6 +32,8 @@ $py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
 `all` runs test rows only. Each `gate` operation runs exactly the named capability, defaulting to
 every declared stack in manifest order. `--force-run` is the compatibility full-G operation: it
 selects test, static and coverage for every stack — nine rows here — and never selects mutation.
+Where a stack's coverage row declares `suiteVerdict`, `--force-run` derives that stack's test row
+from the coverage row's single instrumented run instead of launching the suite a second time.
 
 Rows run one at a time, stack by stack and capability by capability. Each row gets a fresh deadline
 of 1800 seconds of execution plus 30 seconds of cleanup, and the facade exports `DYDO_ROW_DEADLINE`
@@ -60,18 +62,18 @@ unavailable. Inspection needs no mutation comparison base.
 `kind: current-python` prefixes the argv with the interpreter that is running the facade, so the
 caller's identity propagates into every adapter.
 
-| Stack | Capability | Command | Required artifact |
-|---|---|---|---|
-| `dotnet` | test | `<python> -u DynaDocs.Tests/coverage/run_tests.py --` | none |
-| `dotnet` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack dotnet --gate static` | `results/adapters/dotnet-static.json` |
-| `dotnet` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack dotnet --gate coverage` | `results/adapters/dotnet-coverage.json` |
-| `python` | test | `<python> -m unittest discover -s DynaDocs.Tests/coverage/tests -p test_*.py` | none |
-| `python` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack python --gate static` | `results/adapters/python-static.json` |
-| `python` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack python --gate coverage` | `results/adapters/python-coverage.json` |
-| `node` | test | `node DynaDocs.Tests/coverage/node_tests.cjs` | none |
-| `node` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate static` | `results/adapters/node-static.json` |
-| `node` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate coverage` | `results/adapters/node-coverage.json` |
-| every stack | mutation | unavailable, reason `Pending DYD-103` | none |
+| Stack | Capability | Command | Required artifact | Suite verdict |
+|---|---|---|---|---|
+| `dotnet` | test | `<python> -u DynaDocs.Tests/coverage/run_tests.py --` | none | — |
+| `dotnet` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack dotnet --gate static` | `results/adapters/dotnet-static.json` | — |
+| `dotnet` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack dotnet --gate coverage` | `results/adapters/dotnet-coverage.json` | `collectors.csharp-coverage.facts.child_exit`; `collectors.csharp-coverage.findings[gate=functional]` |
+| `python` | test | `<python> -m unittest discover -s DynaDocs.Tests/coverage/tests -p test_*.py` | none | — |
+| `python` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack python --gate static` | `results/adapters/python-static.json` | — |
+| `python` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack python --gate coverage` | `results/adapters/python-coverage.json` | `collectors.python-coverage.facts.child_exit`; `collectors.python-coverage.findings[gate=functional]` |
+| `node` | test | `node DynaDocs.Tests/coverage/node_tests.cjs` | none | — |
+| `node` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate static` | `results/adapters/node-static.json` | — |
+| `node` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate coverage` | `results/adapters/node-coverage.json` | `collectors.javascript-coverage.facts.child_exit`; `collectors.javascript-coverage.findings[gate=functional]` |
+| every stack | mutation | unavailable, reason `Pending DYD-103` | none | — |
 
 Artifact paths are shown relative to `DynaDocs.Tests/coverage/`; the manifest declares them
 repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`. The `dotnet` stack declares isolation
@@ -98,6 +100,7 @@ for a run.
 | `unavailable` | 2 | the manifest declares the capability unavailable, with its reason |
 | `invalid` | 2 | malformed row, unusable destination, an unrefreshed required artifact, or a gate child exit of 2 (evidence-incomplete) |
 | `interrupted` | 130 | deadline or interrupt, after the adapter's own cleanup window |
+| derived test row | 0, 1, 2 or 130 | a test row whose stack declares `suiteVerdict` under `--force-run`: it launches nothing (`argv: []`) and takes `passed` 0 or `failed` 1 from the coverage report; an unestablished verdict is `invalid` 2, or `interrupted` 130 when the coverage row never ran, each with a `reason` naming the coverage report |
 
 Each row keeps the raw child exit in `childExit` beside its `resultExit`; the operation's aggregate
 is the maximum of the row exits. A configured gate row must create or observably refresh every
@@ -247,6 +250,12 @@ exit 2.
 
 A maintained JavaScript file with no filename extension is recorded as a gap naming DYD-105, so the
 row fails closed rather than quietly measuring less than the inventory.
+
+Each row above is the stack's single suite execution under `--force-run`: the declaring stack's test
+row is derived from it and launches nothing of its own. The C# campaign is Windows-only, so a Linux
+host derives no verdict for `dotnet` and keeps that stack's separate test execution. The Python and
+JavaScript collectors need `DynaDocs.Tests/coverage/requirements.lock` and
+`DynaDocs.Tests/coverage`'s npm lock installed, or they cannot launch a suite at all.
 
 `gate_policy.evaluate_policy` judges the joined modules of every stack the same way: line coverage
 at least 80% and branch coverage at least 60% per module, HCRAP

@@ -622,7 +622,7 @@ sources; the temporary repositories used by tests are written from data strings.
 | 1 | `$P -m unittest discover -s DynaDocs.Tests/coverage/tests -p "test_mutation*.py"` | exit 0, every probe passes | testing-strategy: tests are contracts; no engine launched | production-only |
 | 2 | `$P -m unittest discover -s DynaDocs.Tests/coverage/tests -p "test_*.py"` | exit 0 | DYD-96 unit gate plus DYD-103's tests | pre-code (existing suite) and production |
 | 3 | `$P DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal` | exit 0 | isolated .NET suite green | production (pre-code it is red by the new feature's missing steps, which is the intended red-before-green) |
-| 4 | `$P DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal --filter "FullyQualifiedName~MutationAssurance"` | exit 0; every scenario of the feature passes | Reqnroll binding of every scenario | production-only |
+| 4 | `$env:PYTHON="$P"; $P DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal --filter "FullyQualifiedName~MutationAssurance"` | exit 0; every scenario of the feature passes | Reqnroll binding of every scenario | production-only |
 | 5 | `dotnet build DynaDocs.sln -c Release --warnaserror` | exit 0 | build invariants | pre-code and production |
 | 6 | `dydo check` (`dotnet bin/Release/net10.0/dydo.dll check` when the installed dydo lags source) | 0 errors, 0 warnings | documentation graph | pre-code and production |
 | 7 | `$P DynaDocs.Tests/coverage/gap_check.py capabilities` | exit 0; `mutation: configured` for dotnet, python and node | facade inspection | pre-code and production |
@@ -654,6 +654,14 @@ published report. Running gate 9 as written therefore no longer collides with th
 purpose is met by the command itself rather than by comparing the selected plan without executing
 it. `mutation` is still never selected. This changes no acceptance criterion, owned path, gate,
 destination or architecture.
+
+Captain reconciliation — gate 4's environment (2026-09-11). `MutationAssuranceSteps.RunProbe` runs
+each probe under `$PYTHON` and falls back to the Windows launcher `py`, whose default is not the
+pinned CPython; `windows_job.preflight()` refuses any interpreter but CPython 3.12.14, so the probe
+rows went invalid/2 when gate 4 was invoked as previously written. The step's contract already reads
+`PYTHON`; the gate command now exports it (`$env:PYTHON="$P"`), exactly as the facade's own `test`
+row does when it launches `run_tests.py`. The pass condition, tool, filter and policy are unchanged.
+`run_tests.py` is DYD-96-owned and is not edited.
 
 Restore commands (setup, not gates) are the three in the engine table; they run once in the
 production worktree before gates 8 and 10.

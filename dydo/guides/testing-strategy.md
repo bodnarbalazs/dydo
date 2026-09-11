@@ -122,12 +122,14 @@ registration have disappeared before the result is reported.
 
 ## What this repository measures
 
-Nine rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`
-and `node`. Mutation is unavailable on all three with the reason `Pending DYD-103`, and an
-unavailable capability is a failed-closed 2, never a passing gate. Each stack's coverage row
+Twelve rows are configured: a test, a static, a coverage and a mutation adapter for each of
+`dotnet`, `python` and `node`. Each stack's coverage row
 declares its suite verdict, so under `--force-run` a declaring stack's test verdict comes from its
 coverage row's single instrumented execution. The `dotnet` stack runs inside
 an isolated Git worktree copy of the working candidate; `python` and `node` run in place.
+Mutation is a separate operation, never selected by `--force-run`: its adapter snapshots the
+candidate, selects the changed targets of one stack from DYD-96's inventory and fails closed unless
+every valid generated mutant of those targets is killed.
 [Coverage Tools](../reference/coverage-tools.md) holds the exact commands, artifacts, exit meanings
 and summary schema.
 
@@ -145,11 +147,15 @@ runners are measured, while the `DynaDocs.Tests` assembly is instrumented for id
 needs: every executable target module must name at least one associated test file, and one that
 names none is the finding `test-association`.
 
-One gap is recorded rather than dropped or weakened: mutation on every stack, which is DYD-103. The
-JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
-maintained JavaScript file with no filename extension would be reported as a gap naming DYD-105
-rather than measured as less than the inventory, and no maintained JavaScript file here lacks an
-extension.
+Mutation is measured per stack as a separate operation (`gate mutation --since BASE`, or one stack
+with `--stack`). It is Windows-only: the adapter snapshots the candidate, produces DYD-96's
+inventory in the snapshot, selects each stack's changed targets, and refuses (2) rather than widen
+past a changed executable target it cannot select. Two selectability gaps are recorded rather than
+weakened: a changed C# target whose project is outside `DynaDocs.sln` —
+`DynaDocs.Tests/coverage/metrics/GateMetrics.csproj` is a separate executable with no .NET test
+project, so Stryker.NET has no route and a change to it returns 2 — and a maintained JavaScript file
+with no filename extension, which StrykerJS cannot parse and which DYD-105 makes selectable. No
+maintained JavaScript file here lacks an extension.
 
 ## Recorded gate correction: three dynamic Vulture uses
 

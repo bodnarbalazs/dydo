@@ -73,21 +73,20 @@ caller's identity propagates into every adapter.
 | `node` | test | `node DynaDocs.Tests/coverage/node_tests.cjs` | none | — |
 | `node` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate static` | `results/adapters/node-static.json` | — |
 | `node` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate coverage` | `results/adapters/node-coverage.json` | `collectors.javascript-coverage.facts.child_exit`; `collectors.javascript-coverage.findings[gate=functional]` |
-| every stack | mutation | unavailable, reason `Pending DYD-103` | none | — |
+| `dotnet` | mutation | `<python> DynaDocs.Tests/coverage/mutation_adapter.py --stack dotnet --since {base}` | `results/adapters/dotnet-mutation.json` | — |
+| `python` | mutation | `<python> DynaDocs.Tests/coverage/mutation_adapter.py --stack python --since {base}` | `results/adapters/python-mutation.json` | — |
+| `node` | mutation | `<python> DynaDocs.Tests/coverage/mutation_adapter.py --stack node --since {base}` | `results/adapters/node-mutation.json` | — |
 
 Artifact paths are shown relative to `DynaDocs.Tests/coverage/`; the manifest declares them
 repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`. The `dotnet` stack declares isolation
 `git-worktree-copy-working-changes`, verified by the adapter `DynaDocs.Tests/coverage/run_tests.py`;
 `python` and `node` declare verified `in-place` isolation.
 
-Every G row therefore has a real mechanism: three test adapters, three static adapters and three
-coverage adapters. Mutation is the only unavailable capability, and it belongs to DYD-103. Its
-policy is already settled and does not wait on the adapter: DynaDocs requires no surviving or
-uncovered changed-code mutants, as the [Testing Strategy](../guides/testing-strategy.md) states it.
-Nothing here measures that today — every stack's mutation row is `unavailable` with the reason
-`Pending DYD-103`, so the gate cannot run, and cannot pass, until that Issue lands a reviewed
-mechanism. Whether a given candidate passes is what its result artifact says; no document stands in
-for a run.
+Every declared row therefore has a real mechanism: three test adapters, three static adapters, three
+coverage adapters and three mutation adapters. Mutation is a separate operation, never selected by
+`--force-run`; its policy is DynaDocs' requirement that no changed-code mutant survives or is left
+uncovered, as the [Testing Strategy](../guides/testing-strategy.md) states it. Whether a given
+candidate passes is what its result artifact says; no document stands in for a run.
 
 ---
 
@@ -115,7 +114,68 @@ records 130.
 
 ---
 
-## The adapter summary
+## The mutation adapter
+
+`gate mutation --since BASE` runs one stack's campaign with the exclusive
+`DynaDocs.Tests/coverage/mutation_adapter.py`, whose normalizer is
+`DynaDocs.Tests/coverage/mutation_summary.py`. The adapter is its own isolation adapter: unlike the
+`python` and `node` test rows it always snapshots the candidate, so the test rows' in-place
+isolation is unchanged. One campaign per invocation:
+
+1. It takes an exclusive slot (`<summary>.lock`), refuses a collision (2) without touching the
+   foreign lock or summary, and releases the slot last.
+2. It snapshots the candidate exactly as `run_tests.py` does (detached worktree plus dirty, added,
+   untracked and deleted content) and runs every engine and the inventory producer inside that
+   snapshot.
+3. DYD-96's producer writes `inventory.json` (schema 1) in the snapshot; the adapter validates the
+   whole envelope, resolves `--since`, requires it to be an ancestor of `HEAD`, and selects the
+   changed targets of this stack. Selection is `none` (no obligation), `changed` (the changed
+   targets) or `widened` (the whole stack, recorded with its trigger). It never selects narrower
+   than the changed set, and it refuses (2) rather than widen past an executable target it cannot
+   select — `DynaDocs.Tests/coverage/metrics/GateMetrics.csproj` is outside `DynaDocs.sln` with no
+   test project, so Stryker.NET has no route.
+4. It checks the pinned tool, runs the stack's baseline suite where required, generates the engine
+   configuration into the run directory, and launches the engine under `windows_job` with
+   `execution_seconds_maximum=14400`.
+5. It normalizes the engine report, rechecks the candidate fingerprint, hashes the raw reports, and
+   removes and verifies the snapshot before publishing the summary.
+
+| Stack | Engine | Pin and location | Restore (reported in a gap, never run by the adapter) |
+|---|---|---|---|
+| `dotnet` | Stryker.NET | `dotnet-stryker` 4.16.0 in `.config/dotnet-tools.json` | `dotnet tool restore` |
+| `node` | StrykerJS | `@stryker-mutator/core` 9.6.1 in `DynaDocs.Tests/coverage/mutation/package.json` + `package-lock.json`, installed to `DynaDocs.Tests/coverage/mutation/node_modules` | `npm --prefix DynaDocs.Tests/coverage/mutation ci --ignore-scripts` |
+| `python` | Cosmic Ray | `cosmic-ray==8.7.0` in `DynaDocs.Tests/coverage/mutation/requirements.txt` + `requirements.lock`, venv at `dydo/_system/.local/mutation/python` | `$py -m venv dydo/_system/.local/mutation/python` then `dydo/_system/.local/mutation/python/Scripts/python.exe -m pip install --no-deps -r DynaDocs.Tests/coverage/mutation/requirements.lock` |
+
+The mutation slot is Windows-only: any other host returns 2 at preflight. A campaign that exceeds
+the caller's 14400-second maximum, does not complete, or whose snapshot removal cannot be verified
+returns 2; an interrupt returns 130 only after owned teardown, snapshot removal and publication.
+
+### Exits and policy
+
+| Exit | Meaning |
+|---|---|
+| 0 | complete measurement, every valid generated mutant killed |
+| 1 | complete measurement with at least one finding: a surviving, uncovered, timed-out, runtime-error, ignored, unrun or unknown mutant |
+| 2 | invalid, unavailable, missing, malformed or stale evidence, tool missing, lock collision, unsupported host, unresolvable or non-ancestor base, inventory schema error, unselectable target, substantive zero-mutant or all-invalid campaign, limit exceeded or unverified cleanup |
+| 130 | interrupted, after owned cleanup, with the summary published |
+
+A substantive campaign with zero generated mutants, or one with generated mutants but none valid, is
+2 — never a pass. Tool failure, a missing or malformed report, a report path that maps to no
+inventory file, or a mutant whose run did not happen is likewise 2. No fixture is ever presented as
+a measurement.
+
+### Summary and raw evidence
+
+The summary is schema 1 at `DynaDocs.Tests/coverage/results/adapters/<stack>-mutation.json`; the
+same bytes remain at `results/assurance/run-<32 hex>/report.json`, whose directory also holds that
+run's `inventory.json`, the generated engine configurations, each `job-<name>/` output with its
+`stdout.log`, `stderr.log` and `result.json`, and the raw engine reports. `commands[]` records each
+launch's raw vendor exit; `mutation.counts` carries generated, valid, killed, survived, noCoverage,
+timeout, compileError, ignored, runtimeError, unrun and unknown counts; `mutation.score` is
+`100 * killed / valid` or null; `mutation.selection` records the mode, reason, changed targets and
+selected files; `findings[]` names every non-killed valid mutant of a selected file.
+
+---
 
 `gate_adapter.py` publishes one stable summary per row at
 `DynaDocs.Tests/coverage/results/adapters/<stack>-<gate>.json`, written through a temporary file

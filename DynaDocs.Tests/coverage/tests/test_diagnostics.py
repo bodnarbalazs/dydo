@@ -3,7 +3,7 @@ import json
 import sys
 import tempfile
 import unittest
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -28,6 +28,16 @@ class DiagnosticTests(unittest.TestCase):
         if suppressed:
             row['suppressionStates'] = ['suppressedInSource']
         return row
+
+    def rooted_fixture(self, root, project, diagnostic):
+        """Retained SARIF pins the worktree that produced it; replay resolves under the running root."""
+        anchor = f'/{PurePosixPath(project).parent}/'
+        for location in diagnostic['locations']:
+            file = location['resultFile']
+            head, marker, tail = file['uri'].partition(anchor)
+            if marker and head.startswith('file:'):
+                file['uri'] = root.as_uri() + marker + tail
+        return diagnostic
 
     def test_analyzer_collection_isolates_each_project_sarif_from_project_references(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -137,9 +147,10 @@ class DiagnosticTests(unittest.TestCase):
     def test_retained_c89_reqnroll_rows_normalize_without_loss_or_uri_errors(self):
         root = Path(__file__).resolve().parents[3]
         retained = root / 'DynaDocs.Tests/coverage/results/assurance/run-3510c46004a847c4b24a94e4866b6743'
+        project = 'DynaDocs.Tests/DynaDocs.Tests.csproj'
         sarif = json.loads((retained / 'raw/analyzers-0.sarif').read_text(encoding='utf-8-sig'))
         diagnostics = [item for run in sarif['runs'] for item in run.get('results', [])]
-        rows = [{'project': 'DynaDocs.Tests/DynaDocs.Tests.csproj', 'diagnostic': item}
+        rows = [{'project': project, 'diagnostic': self.rooted_fixture(root, project, item)}
                 for item in diagnostics]
         evidence = json.loads((retained / 'report.json').read_text(encoding='utf-8-sig'))
         projects = evidence['collectors']['csharp-source']['facts']['projects']

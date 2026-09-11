@@ -1,0 +1,565 @@
+{
+ "schema": 1,
+ "issue": "DYD-103",
+ "description": "Provenance of every file in this directory. 'captured' files are the unedited bytes an engine wrote; 'derived' files are one of those reports or sessions with exactly one status field edited, for a status no subject reproduces. sha256 is of the file as committed. The directory holds only .json, .sqlite and .txt files, so DYD-96's inventory never classifies a fixture as maintained source; subject sources are recorded here as data and were captured in a throwaway directory outside the repository. Every Cosmic Ray session was captured through the adapter's own rendering -- shlex.join([sys.executable, <run>/python/suite_runner.py, *manifest argv]) JSON-escaped into the TOML basic string, with the generated in-process suite runner as the command's only entry point, including for the sessions whose engine never launches it -- in a run/snapshot layout that matches the adapter's. Each session's 'markerNonce' is the capture nonce substituted into that session's generated runner as the literal the adapter substitutes with its run uuid; the normalization examples pass it to mutation_summary, and a session re-read under any other nonce carries no completion marker.",
+ "host": {
+  "os": "Windows 11",
+  "dotnet": "10.0.300",
+  "node": "v22.13.0",
+  "python": "3.12.14"
+ },
+ "fixtures": {
+  "cosmic-ray-abnormal.sqlite": {
+   "command": "cosmic-ray-survived.sqlite copied, then \"update work_results set worker_outcome = 'ABNORMAL'\"",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "1a89f9e5398c4a7fb1ba774291c6aa37",
+   "nativeStatuses": {
+    "ABNORMAL/SURVIVED": 1
+   },
+   "origin": "derived",
+   "sha256": "45be14eb007bd3599970a62d4baae0f3508de57e65e72762add10be5a76268b3",
+   "subject": {
+    "description": "WorkerOutcome.ABNORMAL has exactly one producer in Cosmic Ray 8.7.0, cosmic_ray/distribution/http.py:68, which the local distributor never reaches, so no DYD-103 campaign can capture it. This is cosmic-ray-survived.sqlite with that single field edited; every other byte of the row, including its completion marker and its markerNonce, is the captured survivor's.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-survived\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"1a89f9e5398c4a7fb1ba774291c6aa37\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_a_bool(self):\n        self.assertIsInstance(mod.flag(), bool)\n"
+    },
+    "name": "the survived subject with its one worker_outcome value edited to ABNORMAL"
+   }
+  },
+  "cosmic-ray-exception.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && rename snapshot/mod.py to snapshot/mod.py.hidden && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "786c1e36bacf42f3b212580a32f0554e",
+   "nativeStatuses": {
+    "EXCEPTION/INCOMPETENT": 1
+   },
+   "origin": "captured",
+   "sha256": "44d9b8433f28edef7aaf4e154fb94ad8db3d297ba2c4b130018a4848c2326885",
+   "subject": {
+    "description": "cosmic_ray.mutating cannot read the module it is asked to mutate, so the mutation machinery itself raises before any test command is launched. Native EXCEPTION/INCOMPETENT. The captured subject directory holds mod.py.hidden.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-exception\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"786c1e36bacf42f3b212580a32f0554e\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_true(self):\n        self.assertTrue(mod.flag())\n"
+    },
+    "name": "the module is renamed away between init and exec"
+   }
+  },
+  "cosmic-ray-incompetent.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "1741abf8b7684c5eba418df0ff88a780",
+   "nativeStatuses": {
+    "NORMAL/INCOMPETENT": 1
+   },
+   "origin": "captured",
+   "sha256": "a0bbbf0aff7c620fe04b8972b50790653c3e7bfdbd9a15db3014a6e825f72ec0",
+   "subject": {
+    "description": "The test writes b'\\xff' straight to sys.stdout.buffer, under the runner's UTF-8 text layer, so cosmic_ray.testing's stdout.decode('utf-8') raises and the row lands as INCOMPETENT although the mutant survived the assertions. Native NORMAL/INCOMPETENT: a run that did not happen, never a mutant that did not compile.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-incompetent\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"1741abf8b7684c5eba418df0ff88a780\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import sys\nimport unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_a_bool(self):\n        sys.stdout.flush()\n        sys.stdout.buffer.write(b'\\xff')\n        sys.stdout.buffer.flush()\n        self.assertIsInstance(mod.flag(), bool)\n"
+    },
+    "name": "a test writes a raw non-UTF-8 byte past the runner's text layer"
+   }
+  },
+  "cosmic-ray-killed-marker-exit-zero.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "e5bf1739efd24bc4a763744d6c461e50",
+   "nativeStatuses": {
+    "NORMAL/KILLED": 1
+   },
+   "origin": "captured",
+   "sha256": "c7c5bfd72f9561a3f6e31b76f737d93380065914451e0ebb48bae61095b005d0",
+   "subject": {
+    "description": "The weak assertion survives the mutant, the runner writes its marker with exit=0, and the registered atexit handler then makes the process exit 5, which Cosmic Ray records as a kill. Native NORMAL/KILLED whose last non-empty output line is ##DYDO-SUITE-COMPLETE <markerNonce> exit=0##: a survivor the engine called killed.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-killed-marker-exit-zero\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"e5bf1739efd24bc4a763744d6c461e50\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import atexit\nimport os\nimport unittest\nimport mod\n\natexit.register(lambda: os._exit(5))\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_a_bool(self):\n        self.assertIsInstance(mod.flag(), bool)\n"
+    },
+    "name": "the suite passes and a module-level atexit handler then calls os._exit(5)"
+   }
+  },
+  "cosmic-ray-killed-without-marker.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "6340b4154caf4a5e9fcc4847a2430c6f",
+   "nativeStatuses": {
+    "NORMAL/KILLED": 1
+   },
+   "origin": "captured",
+   "sha256": "9b85466f777dda7808c6af099fba7982d6e63042d45b0eec3127ec2816205666",
+   "subject": {
+    "description": "The suite dies mid-run under the mutant, so the in-process runner dies with it and no completion marker is ever written. Native NORMAL/KILLED with empty output: the case the witness exists for.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-killed-without-marker\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"6340b4154caf4a5e9fcc4847a2430c6f\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import os\nimport unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_true(self):\n        if not mod.flag():\n            os._exit(1)\n        self.assertTrue(mod.flag())\n"
+    },
+    "name": "a test calls os._exit(1) when the mutant is present"
+   }
+  },
+  "cosmic-ray-killed.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "82787cd5fe884b7cb22ec2eb69b69465",
+   "nativeStatuses": {
+    "NORMAL/KILLED": 1
+   },
+   "origin": "captured",
+   "sha256": "b3dc7d8f7afa0c6495f605c374fcdd0a5f31efa7e4128d45cc6ed09f496bb4ed",
+   "subject": {
+    "description": "The suite asserts the exact value, so the mutant that flips it makes unittest fail and the generated runner exits 1 after writing this campaign's completion marker. Native NORMAL/KILLED whose last non-empty output line is ##DYDO-SUITE-COMPLETE <markerNonce> exit=1##: the one reading that is a real kill.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-killed\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"82787cd5fe884b7cb22ec2eb69b69465\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_true(self):\n        self.assertTrue(mod.flag())\n"
+    },
+    "name": "strong assertion, the mutant makes the suite fail"
+   }
+  },
+  "cosmic-ray-no-test.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && rewrite snapshot/mod.py without its mutation site && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "7ad8ceef25924643a35273878826089b",
+   "nativeStatuses": {
+    "NO_TEST/None": 1
+   },
+   "origin": "captured",
+   "sha256": "1fce0000a2917e1cf27e31899345fc6f7beabfe62da88d0a13408ad749666603",
+   "subject": {
+    "description": "The mutation the session recorded no longer applies to the module on disk, so mutate_and_test returns before running anything. Native NO_TEST with no test outcome.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-no-test\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"7ad8ceef25924643a35273878826089b\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_true(self):\n        self.assertTrue(mod.flag())\n"
+    },
+    "name": "the module loses its mutation site between init and exec"
+   }
+  },
+  "cosmic-ray-partial-session.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "1a4afd74f7424e8faddab4a5af2e1007",
+   "nativeStatuses": {
+    "(no result)": 1
+   },
+   "origin": "captured",
+   "sha256": "49ad015d0c7fc0f2fa308d6d8c1788af6581afef6c701c1c91d8ece2cf90a30b",
+   "subject": {
+    "description": "The session holds its work items and no results at all, which is what an interrupted engine leaves behind. Read as 2, partial report.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-partial-session\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"1a4afd74f7424e8faddab4a5af2e1007\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_true(self):\n        self.assertTrue(mod.flag())\n"
+    },
+    "name": "init only, exec never run"
+   }
+  },
+  "cosmic-ray-skipped.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.tools.filters.pragma_no_mutate run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "2d66228657804462917127526fcbc371",
+   "nativeStatuses": {
+    "SKIPPED/None": 1
+   },
+   "origin": "captured",
+   "sha256": "98e5682ee70b0a5ecb9c7613b169d59d82c207778c24c30879cf948275ed84dc",
+   "subject": {
+    "description": "No DYD-103 campaign can produce SKIPPED: only the cr-filter-* tools write it, and the adapter never runs them. Captured by running 'python -m cosmic_ray.tools.filters.pragma_no_mutate <session>' between init and exec, which the command field records. Native SKIPPED with no test outcome.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-skipped\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"2d66228657804462917127526fcbc371\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True  # pragma: no mutate\n",
+     "snapshot/test_mod.py": "import unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_true(self):\n        self.assertTrue(mod.flag())\n"
+    },
+    "name": "'# pragma: no mutate' on the mutated line, with cr-filter-pragma run by hand"
+   }
+  },
+  "cosmic-ray-survived.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "1a89f9e5398c4a7fb1ba774291c6aa37",
+   "nativeStatuses": {
+    "NORMAL/SURVIVED": 1
+   },
+   "origin": "captured",
+   "sha256": "9813b17e79d04d97d00a3859f43c653062ff28b82527b3a45a20524c13f8b331",
+   "subject": {
+    "description": "The suite only asserts the type, so the mutant survives and the runner exits 0 after its marker. Native NORMAL/SURVIVED whose last non-empty output line is ##DYDO-SUITE-COMPLETE <markerNonce> exit=0##.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-survived\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"1a89f9e5398c4a7fb1ba774291c6aa37\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_a_bool(self):\n        self.assertIsInstance(mod.flag(), bool)\n"
+    },
+    "name": "weak assertion, the mutant survives"
+   }
+  },
+  "cosmic-ray-timeout.sqlite": {
+   "command": "dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli init run/python/session.toml run/python/sessions/1.sqlite && dydo/_system/.local/mutation/python/Scripts/python.exe -m cosmic_ray.cli exec run/python/session.toml run/python/sessions/1.sqlite   (cwd = snapshot/)",
+   "engine": "Cosmic Ray",
+   "engineVersion": "8.7.0",
+   "markerNonce": "8765efaaa7284620a53cfaa5364e4825",
+   "nativeStatuses": {
+    "NORMAL/KILLED": 1
+   },
+   "origin": "captured",
+   "sha256": "2c4b1f7baf6c2349b92f253653c29264a4483e3dc8cf4238914f07d74ac90977",
+   "subject": {
+    "description": "Under the mutant the test sleeps 120 s against the generated session timeout of 60.0 s, so cosmic_ray.testing.run_tests times the command out and returns (KILLED, 'timeout') without ever reading the pipe. Native NORMAL/KILLED whose output is exactly 'timeout'.",
+    "files": {
+     "run/python/session.toml": "[cosmic-ray]\nmodule-path = \"mod.py\"\ntimeout = 60.0\nexcluded-modules = []\ntest-command = \"'C:\\\\Users\\\\User\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\python\\\\python.exe' 'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Projects-DynaDocs\\\\b2ab7e9b-a13d-4f9c-94e8-c50fb5a069de\\\\scratchpad\\\\dyd103-recapture\\\\cosmic-ray-timeout\\\\run\\\\python\\\\suite_runner.py' -m unittest discover -s . -p 'test_*.py'\"\n\n[cosmic-ray.distributor]\nname = \"local\"\n",
+     "run/python/suite_runner.py": "import runpy\nimport sys\n_NONCE = \"8765efaaa7284620a53cfaa5364e4825\"\n_out = sys.stdout\n_out.reconfigure(encoding=\"utf-8\", errors=\"backslashreplace\")\nsys.stderr = _out\nsys.path[0] = \"\"\n_argv = sys.argv[1:]\n_code = 0\ntry:\n    if _argv[0] == \"-m\":\n        sys.argv = _argv[1:]\n        runpy.run_module(_argv[1], run_name=\"__main__\", alter_sys=True)\n    else:\n        sys.argv = _argv\n        runpy.run_path(_argv[0], run_name=\"__main__\")\nexcept SystemExit as request:\n    _code = request.code if isinstance(request.code, int) else (0 if request.code is None else 1)\nprint(chr(10) + \"##DYDO-SUITE-COMPLETE %s exit=%d##\" % (_NONCE, _code), file=_out, flush=True)\nraise SystemExit(_code)\n",
+     "snapshot/mod.py": "def flag():\n    return True\n",
+     "snapshot/test_mod.py": "import time\nimport unittest\nimport mod\n\n\nclass FlagTests(unittest.TestCase):\n    def test_flag_is_true(self):\n        if not mod.flag():\n            time.sleep(120)\n        self.assertTrue(mod.flag())\n"
+    },
+    "name": "the mutant makes a test sleep past the session timeout"
+   }
+  },
+  "stryker-js-killed.json": {
+   "engine": "StrykerJS",
+   "engineVersion": "9.6.1",
+   "origin": "captured",
+   "command": "node node_modules/@stryker-mutator/core/bin/stryker.js run stryker.json",
+   "nativeStatuses": {
+    "Killed": 1
+   },
+   "sha256": "b63b21defdbc50ca394d79da9b309087b4a91b50ea5dda68d712d224002c32bf",
+   "subject": {
+    "name": "exact-assertion subject",
+    "description": "value.cjs exports an arrow function asserted on its exact value, so the ArrowFunction mutant is killed.",
+    "files": {
+     "stryker.json": "{\n  \"testRunner\": \"command\",\n  \"coverageAnalysis\": \"off\",\n  \"disableBail\": true,\n  \"concurrency\": 1,\n  \"thresholds\": { \"high\": 100, \"low\": 100, \"break\": 100 },\n  \"reporters\": [\"json\", \"html\"],\n  \"plugins\": [],\n  \"inPlace\": true,\n  \"allowConsoleColors\": false,\n  \"cleanTempDir\": false,\n  \"mutate\": [\"value.cjs\"],\n  \"commandRunner\": { \"command\": \"node --test test.cjs\" },\n  \"tempDirName\": \".stryker-tmp\",\n  \"jsonReporter\": { \"fileName\": \"reports/mutation.json\" },\n  \"htmlReporter\": { \"fileName\": \"reports/mutation.html\" }\n}\n",
+     "test.cjs": "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\nconst { value } = require('./value.cjs');\n\ntest('value is exactly 1234', () => assert.equal(value(), 1234));\n",
+     "value.cjs": "exports.value = () => 1234;\n"
+    }
+   }
+  },
+  "stryker-js-runtime-error.json": {
+   "engine": "StrykerJS",
+   "engineVersion": "9.6.1",
+   "origin": "derived",
+   "derivedFrom": "stryker-js-killed.json",
+   "editedField": "files['value.cjs'].mutants[0].status: Killed -> RuntimeError",
+   "reason": "No subject reproduces StrykerJS's RuntimeError status; the specification directs one edited field.",
+   "command": "node node_modules/@stryker-mutator/core/bin/stryker.js run stryker.json",
+   "sha256": "f65d7586aef4be40a343b524ba79808628ff9bdf76d1c7bd307e304d73f25b76",
+   "subject": {
+    "name": "exact-assertion subject",
+    "description": "value.cjs exports an arrow function asserted on its exact value, so the ArrowFunction mutant is killed.",
+    "files": {
+     "stryker.json": "{\n  \"testRunner\": \"command\",\n  \"coverageAnalysis\": \"off\",\n  \"disableBail\": true,\n  \"concurrency\": 1,\n  \"thresholds\": { \"high\": 100, \"low\": 100, \"break\": 100 },\n  \"reporters\": [\"json\", \"html\"],\n  \"plugins\": [],\n  \"inPlace\": true,\n  \"allowConsoleColors\": false,\n  \"cleanTempDir\": false,\n  \"mutate\": [\"value.cjs\"],\n  \"commandRunner\": { \"command\": \"node --test test.cjs\" },\n  \"tempDirName\": \".stryker-tmp\",\n  \"jsonReporter\": { \"fileName\": \"reports/mutation.json\" },\n  \"htmlReporter\": { \"fileName\": \"reports/mutation.html\" }\n}\n",
+     "test.cjs": "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\nconst { value } = require('./value.cjs');\n\ntest('value is exactly 1234', () => assert.equal(value(), 1234));\n",
+     "value.cjs": "exports.value = () => 1234;\n"
+    }
+   }
+  },
+  "stryker-js-survived.json": {
+   "engine": "StrykerJS",
+   "engineVersion": "9.6.1",
+   "origin": "captured",
+   "command": "node node_modules/@stryker-mutator/core/bin/stryker.js run stryker.config.json",
+   "nativeStatuses": {
+    "Survived": 1
+   },
+   "sha256": "3726f2add748c5fbdeeecf40fe8c2cd6733dad52b84b4e9cbce67ec4d760ffdd",
+   "subject": {
+    "name": "nodecase weak-assertion probe",
+    "description": "Retained DYD-96 probe: the arrow function is asserted only on its type, so its mutant survives.",
+    "retainedSources": "dydo/_system/.local/dyd96-probes/nodecase/{value.cjs,test.cjs,stryker.config.json}"
+   },
+   "copiedFrom": "dydo/_system/.local/dyd96-probes/nodecase/reports/mutation/mutation.json in the DYD-96 worktree",
+   "copiedFromSha256": "3726f2add748c5fbdeeecf40fe8c2cd6733dad52b84b4e9cbce67ec4d760ffdd"
+  },
+  "stryker-js-timeout.json": {
+   "engine": "StrykerJS",
+   "engineVersion": "9.6.1",
+   "origin": "captured",
+   "command": "node node_modules/@stryker-mutator/core/bin/stryker.js run stryker.json",
+   "nativeStatuses": {
+    "Timeout": 1
+   },
+   "sha256": "30fcf9e9b77c405628ed04dc2c9c96b33403401973e0ea221cad9878d39cce7d",
+   "subject": {
+    "name": "timeout subject",
+    "description": "The single ArrowFunction mutant makes the node:test case await past StrykerJS's timeout window.",
+    "files": {
+     "stryker.json": "{\n  \"testRunner\": \"command\",\n  \"coverageAnalysis\": \"off\",\n  \"disableBail\": true,\n  \"concurrency\": 1,\n  \"thresholds\": { \"high\": 100, \"low\": 100, \"break\": 100 },\n  \"reporters\": [\"json\", \"html\"],\n  \"plugins\": [],\n  \"inPlace\": true,\n  \"allowConsoleColors\": false,\n  \"cleanTempDir\": false,\n  \"mutate\": [\"value.cjs\"],\n  \"commandRunner\": { \"command\": \"node --test test.cjs\" },\n  \"tempDirName\": \".stryker-tmp\",\n  \"jsonReporter\": { \"fileName\": \"reports/mutation.json\" },\n  \"htmlReporter\": { \"fileName\": \"reports/mutation.html\" }\n}\n",
+     "test.cjs": "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\nconst { value } = require('./value.cjs');\n\ntest('value is exactly 1234', async () => {\n  if (value() !== 1234) {\n    await new Promise((resolve) => setTimeout(resolve, 120000));\n  }\n  assert.equal(value(), 1234);\n});\n",
+     "value.cjs": "exports.value = () => 1234;\n"
+    }
+   }
+  },
+  "stryker-js-two-files.json": {
+   "engine": "StrykerJS",
+   "engineVersion": "9.6.1",
+   "origin": "captured",
+   "command": "node node_modules/@stryker-mutator/core/bin/stryker.js run stryker.json",
+   "nativeStatuses": {
+    "Killed": 2
+   },
+   "sha256": "7a79dea76f8df82115b2c27baefa0009cc5c9afd8f95588c6aeee7f6bcafaa89",
+   "subject": {
+    "name": "two-file subject",
+    "description": "alpha.cjs and beta.cjs are both mutated and both killed, so a report file outside a narrower selection exercises the StrykerJS foreign-file rule.",
+    "files": {
+     "alpha.cjs": "exports.alpha = () => 11;\n",
+     "beta.cjs": "exports.beta = () => 22;\n",
+     "stryker.json": "{\n  \"testRunner\": \"command\",\n  \"coverageAnalysis\": \"off\",\n  \"disableBail\": true,\n  \"concurrency\": 1,\n  \"thresholds\": { \"high\": 100, \"low\": 100, \"break\": 100 },\n  \"reporters\": [\"json\", \"html\"],\n  \"plugins\": [],\n  \"inPlace\": true,\n  \"allowConsoleColors\": false,\n  \"cleanTempDir\": false,\n  \"mutate\": [\"alpha.cjs\", \"beta.cjs\"],\n  \"commandRunner\": { \"command\": \"node --test test.cjs\" },\n  \"tempDirName\": \".stryker-tmp\",\n  \"jsonReporter\": { \"fileName\": \"reports/mutation.json\" },\n  \"htmlReporter\": { \"fileName\": \"reports/mutation.html\" }\n}\n",
+     "test.cjs": "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\nconst { alpha } = require('./alpha.cjs');\nconst { beta } = require('./beta.cjs');\n\ntest('alpha is exactly 11', () => assert.equal(alpha(), 11));\ntest('beta is exactly 22', () => assert.equal(beta(), 22));\n"
+    }
+   }
+  },
+  "stryker-js-zero-mutants.json": {
+   "engine": "StrykerJS",
+   "engineVersion": "9.6.1",
+   "origin": "captured",
+   "command": "node node_modules/@stryker-mutator/core/bin/stryker.js run stryker.json",
+   "nativeStatuses": {},
+   "sha256": "1b6eb3556046fb3cf5e45b0576ce220a27b20cfe1827b2c1db75d431cb114008",
+   "subject": {
+    "name": "zero-mutant subject",
+    "description": "value.cjs holds nothing StrykerJS can mutate; the report's files map is empty and the score is NaN.",
+    "files": {
+     "stryker.json": "{\n  \"testRunner\": \"command\",\n  \"coverageAnalysis\": \"off\",\n  \"disableBail\": true,\n  \"concurrency\": 1,\n  \"thresholds\": { \"high\": 100, \"low\": 100, \"break\": 100 },\n  \"reporters\": [\"json\", \"html\"],\n  \"plugins\": [],\n  \"inPlace\": true,\n  \"allowConsoleColors\": false,\n  \"cleanTempDir\": false,\n  \"mutate\": [\"value.cjs\"],\n  \"commandRunner\": { \"command\": \"node --test test.cjs\" },\n  \"tempDirName\": \".stryker-tmp\",\n  \"jsonReporter\": { \"fileName\": \"reports/mutation.json\" },\n  \"htmlReporter\": { \"fileName\": \"reports/mutation.html\" }\n}\n",
+     "test.cjs": "const { test } = require('node:test');\nconst assert = require('node:assert/strict');\nconst { marker } = require('./value.cjs');\n\ntest('marker is undefined', () => assert.equal(marker, undefined));\n",
+     "value.cjs": "exports.marker = undefined;\n"
+    }
+   }
+  },
+  "stryker-net-compile-error.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "nativeStatuses": {
+    "CompileError": 3
+   },
+   "sha256": "01c1c7b10235edfb7297a81c00e8286028f11e6b67ad56e8cdf5154df6d0d2d5",
+   "subject": {
+    "name": "all-invalid subject",
+    "description": "Every string literal of the switch collides with another arm once Stryker.NET rewrites it, so all three generated mutants are CompileError and Stryker.NET reports no mutation score.",
+    "files": {
+     "src/Probe.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+     "tests/Tests.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup><ProjectReference Include=\"../src/Probe.csproj\"/><PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"18.0.1\"/><PackageReference Include=\"xunit\" Version=\"2.9.3\"/><PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.1.5\"/></ItemGroup></Project>",
+     "src/Number.cs": "public static class Number\n{\n    public static int Pick(string key) => key switch\n    {\n        \"alpha\" => 1,\n        \"\" => 2,\n        \"Stryker was here!\" => 3,\n        _ => 0,\n    };\n}\n",
+     "tests/Test.cs": "public class Test\n{\n    [Xunit.Fact] public void PicksAlpha() => Xunit.Assert.Equal(1, Number.Pick(\"alpha\"));\n\n    [Xunit.Fact] public void PicksEmpty() => Xunit.Assert.Equal(2, Number.Pick(\"\"));\n\n    [Xunit.Fact] public void PicksStryker() => Xunit.Assert.Equal(3, Number.Pick(\"Stryker was here!\"));\n\n    [Xunit.Fact] public void PicksDefault() => Xunit.Assert.Equal(0, Number.Pick(\"zzz\"));\n}\n",
+     "tests/stryker-config.json": "{\"stryker-config\":{\"project\":\"Probe.csproj\",\"thresholds\":{\"high\":100,\"low\":100,\"break\":100},\"reporters\":[\"json\",\"html\"],\"concurrency\":1,\"break-on-initial-test-failure\":true}}"
+    }
+   }
+  },
+  "stryker-net-foreign-mutant.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out-foreign --skip-version-check",
+   "nativeStatuses": {
+    "Killed": 2
+   },
+   "sha256": "8f21b6171022ae5a6d0f22454d7a944434a27f9c372db2866cc4cb763a9fcab3",
+   "subject": {
+    "name": "two-file subject without a mutate filter",
+    "description": "The same two files with no mutate filter, so an unselected file carries a non-Ignored (Killed) mutant.",
+    "files": {
+     "src/Probe.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+     "tests/Tests.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup><ProjectReference Include=\"../src/Probe.csproj\"/><PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"18.0.1\"/><PackageReference Include=\"xunit\" Version=\"2.9.3\"/><PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.1.5\"/></ItemGroup></Project>",
+     "src/Number.cs": "public static class Number { public static int Value(int input) => input + 1; }\n",
+     "src/Other.cs": "public static class Other { public static int Twice(int input) => input * 2; }\n",
+     "tests/Test.cs": "public class Test\n{\n    [Xunit.Fact] public void ExactValue() => Xunit.Assert.Equal(2, Number.Value(1));\n\n    [Xunit.Fact] public void ExactTwice() => Xunit.Assert.Equal(6, Other.Twice(3));\n}\n",
+     "tests/stryker-config.json": "{\"stryker-config\":{\"project\":\"Probe.csproj\",\"thresholds\":{\"high\":100,\"low\":100,\"break\":100},\"reporters\":[\"json\",\"html\"],\"concurrency\":1,\"break-on-initial-test-failure\":true}}"
+    }
+   }
+  },
+  "stryker-net-ignored.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "nativeStatuses": {
+    "Killed": 1,
+    "Ignored": 1
+   },
+   "sha256": "a05e83bcca7ae7d9f3270cc3f12909ce3bb79902cd75749218bbf1d12c6462b7",
+   "subject": {
+    "name": "ignored-in-selected-file subject",
+    "description": "A `// Stryker disable once all` comment makes the arithmetic mutant Ignored with statusReason 'Ignored via code comment.' inside the selected file; the block-removal mutant is killed.",
+    "files": {
+     "src/Probe.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+     "tests/Tests.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup><ProjectReference Include=\"../src/Probe.csproj\"/><PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"18.0.1\"/><PackageReference Include=\"xunit\" Version=\"2.9.3\"/><PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.1.5\"/></ItemGroup></Project>",
+     "src/Number.cs": "public static class Number\n{\n    public static int Value(int input)\n    {\n        // Stryker disable once all\n        return input + 1;\n    }\n}\n",
+     "tests/Test.cs": "public class Test { [Xunit.Fact] public void ExactValue() => Xunit.Assert.Equal(2, Number.Value(1)); }\n",
+     "tests/stryker-config.json": "{\"stryker-config\":{\"project\":\"Probe.csproj\",\"thresholds\":{\"high\":100,\"low\":100,\"break\":100},\"reporters\":[\"json\",\"html\"],\"concurrency\":1,\"break-on-initial-test-failure\":true}}"
+    }
+   }
+  },
+  "stryker-net-killed.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "nativeStatuses": {
+    "Killed": 1
+   },
+   "sha256": "16516fbd34d7118301cff4fedd180883e07be04061618569754c1c0d2ff2068f",
+   "subject": {
+    "name": "csmutation exact-assertion probe",
+    "description": "Retained DYD-96 probe: Number.Value(input) => input + 1 with an exact-value xUnit assertion.",
+    "retainedSources": "dydo/_system/.local/dyd96-probes/csmutation/{src/Number.cs,tests/Test.cs,tests/stryker-config.json}"
+   },
+   "copiedFrom": "dydo/_system/.local/dyd96-probes/csmutation/tests/StrykerOutput/2026-09-05.03-14-43/reports/mutation-report.json in the DYD-96 worktree",
+   "copiedFromSha256": "16516fbd34d7118301cff4fedd180883e07be04061618569754c1c0d2ff2068f"
+  },
+  "stryker-net-mutate-filter-ignored.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config-mutate.json --concurrency 1 --output out-mutate --skip-version-check",
+   "nativeStatuses": {
+    "Killed": 1,
+    "Ignored": 1
+   },
+   "sha256": "82856b65297d05f35eb50ef6b5660a635891bf6b27d00824b2f97aaeb4723984",
+   "subject": {
+    "name": "two-file subject under a mutate filter",
+    "description": "mutate ['**/Number.cs'] leaves Other.cs's mutant in the report as Ignored with statusReason 'Removed by mutate filter' - the foreign-file rule the specification pins for Stryker.NET.",
+    "files": {
+     "src/Probe.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+     "tests/Tests.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup><ProjectReference Include=\"../src/Probe.csproj\"/><PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"18.0.1\"/><PackageReference Include=\"xunit\" Version=\"2.9.3\"/><PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.1.5\"/></ItemGroup></Project>",
+     "src/Number.cs": "public static class Number { public static int Value(int input) => input + 1; }\n",
+     "src/Other.cs": "public static class Other { public static int Twice(int input) => input * 2; }\n",
+     "tests/Test.cs": "public class Test\n{\n    [Xunit.Fact] public void ExactValue() => Xunit.Assert.Equal(2, Number.Value(1));\n\n    [Xunit.Fact] public void ExactTwice() => Xunit.Assert.Equal(6, Other.Twice(3));\n}\n",
+     "tests/stryker-config-mutate.json": "{\"stryker-config\":{\"project\":\"Probe.csproj\",\"thresholds\":{\"high\":100,\"low\":100,\"break\":100},\"reporters\":[\"json\",\"html\"],\"concurrency\":1,\"break-on-initial-test-failure\":true,\"mutate\":[\"**/Number.cs\"]}}"
+    }
+   }
+  },
+  "stryker-net-no-coverage.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "nativeStatuses": {
+    "Killed": 1,
+    "NoCoverage": 1
+   },
+   "sha256": "046fd109bcb61e092a761261a23a94f23809fea41d1e5cc26d14aed20e2dd1a4",
+   "subject": {
+    "name": "no-coverage subject",
+    "description": "Number.Value is asserted exactly and Number.Unused is exercised by no test, so its mutant is NoCoverage. A covered sibling is required: with no test touching the mutated assembly at all Stryker.NET aborts coverage capture and reports Survived instead.",
+    "files": {
+     "src/Probe.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+     "tests/Tests.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup><ProjectReference Include=\"../src/Probe.csproj\"/><PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"18.0.1\"/><PackageReference Include=\"xunit\" Version=\"2.9.3\"/><PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.1.5\"/></ItemGroup></Project>",
+     "src/Number.cs": "public static class Number\n{\n    public static int Value(int input) => input + 1;\n\n    public static int Unused(int input) => input + 2;\n}\n",
+     "tests/Test.cs": "public class Test { [Xunit.Fact] public void ExactValue() => Xunit.Assert.Equal(2, Number.Value(1)); }\n",
+     "tests/stryker-config.json": "{\"stryker-config\":{\"project\":\"Probe.csproj\",\"thresholds\":{\"high\":100,\"low\":100,\"break\":100},\"reporters\":[\"json\",\"html\"],\"concurrency\":1,\"break-on-initial-test-failure\":true}}\n"
+    }
+   }
+  },
+  "stryker-net-pending.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "derived",
+   "derivedFrom": "stryker-net-survived.json",
+   "editedField": "files[<Number.cs>].mutants[0].status: Survived -> Pending",
+   "reason": "No subject reproduces Stryker.NET's Pending/NotRun status; the specification directs one edited field.",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "sha256": "249410d7dfdb2c021bbe4f6736859c5f4de979eeda3cf0cb2bbf93ebfd6f4007",
+   "subject": {
+    "name": "csmutation weak-assertion probe",
+    "description": "Retained DYD-96 probe: the same target with a type-only xUnit assertion, so the arithmetic mutant survives.",
+    "retainedSources": "dydo/_system/.local/dyd96-probes/csmutation/{src/Number.cs,tests/Test.cs,tests/stryker-config.json}"
+   }
+  },
+  "stryker-net-runtime-error.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "derived",
+   "derivedFrom": "stryker-net-survived.json",
+   "editedField": "files[<Number.cs>].mutants[0].status: Survived -> RuntimeError",
+   "reason": "No subject reproduces Stryker.NET's RuntimeError status; the specification directs one edited field.",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "sha256": "2f69c7b462f36e78ad0fad36ec5a3fc862dd9d8320b21bf9a85885a20d095665",
+   "subject": {
+    "name": "csmutation weak-assertion probe",
+    "description": "Retained DYD-96 probe: the same target with a type-only xUnit assertion, so the arithmetic mutant survives.",
+    "retainedSources": "dydo/_system/.local/dyd96-probes/csmutation/{src/Number.cs,tests/Test.cs,tests/stryker-config.json}"
+   }
+  },
+  "stryker-net-survived.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "nativeStatuses": {
+    "Survived": 1
+   },
+   "sha256": "abb1280f1babc1c4aaea2e23d97142581cbcae62050c05e26c3b5393b3a91de4",
+   "subject": {
+    "name": "csmutation weak-assertion probe",
+    "description": "Retained DYD-96 probe: the same target with a type-only xUnit assertion, so the arithmetic mutant survives.",
+    "retainedSources": "dydo/_system/.local/dyd96-probes/csmutation/{src/Number.cs,tests/Test.cs,tests/stryker-config.json}"
+   },
+   "copiedFrom": "dydo/_system/.local/dyd96-probes/csmutation/tests/StrykerOutput/2026-09-05.03-15-32/reports/mutation-report.json in the DYD-96 worktree",
+   "copiedFromSha256": "abb1280f1babc1c4aaea2e23d97142581cbcae62050c05e26c3b5393b3a91de4"
+  },
+  "stryker-net-timeout.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "nativeStatuses": {
+    "Timeout": 1
+   },
+   "sha256": "314768bb161b71619e2a5b79bdb54cf6ec9a66f03bdab829df47e19760aa4ccb",
+   "subject": {
+    "name": "timeout subject",
+    "description": "The single arithmetic mutant makes the test sleep past Stryker.NET's timeout window.",
+    "files": {
+     "src/Probe.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+     "tests/Tests.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup><ProjectReference Include=\"../src/Probe.csproj\"/><PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"18.0.1\"/><PackageReference Include=\"xunit\" Version=\"2.9.3\"/><PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.1.5\"/></ItemGroup></Project>",
+     "src/Number.cs": "public static class Number { public static int Value(int input) => input + 1; }\n",
+     "tests/Test.cs": "public class Test\n{\n    [Xunit.Fact]\n    public void ExactValue()\n    {\n        if (Number.Value(1) != 2) { System.Threading.Thread.Sleep(120000); }\n        Xunit.Assert.Equal(2, Number.Value(1));\n    }\n}\n",
+     "tests/stryker-config.json": "{\"stryker-config\":{\"project\":\"Probe.csproj\",\"thresholds\":{\"high\":100,\"low\":100,\"break\":100},\"reporters\":[\"json\",\"html\"],\"concurrency\":1,\"break-on-initial-test-failure\":true}}"
+    }
+   }
+  },
+  "stryker-net-zero-mutants.json": {
+   "engine": "Stryker.NET",
+   "engineVersion": "4.16.0",
+   "origin": "captured",
+   "command": "dotnet-stryker --config-file stryker-config.json --concurrency 1 --output out --skip-version-check",
+   "nativeStatuses": {},
+   "sha256": "385060a78a22ef4dfd3a0accf5f3f3e3ff9b25c3f263c59b82022d05314ccd12",
+   "subject": {
+    "name": "csmutation literal-return probe",
+    "description": "Retained DYD-96 probe: a literal-only return, which generates no mutants at all.",
+    "retainedSources": "dydo/_system/.local/dyd96-probes/csmutation/{src/Number.cs,tests/Test.cs,tests/stryker-config.json}"
+   },
+   "copiedFrom": "dydo/_system/.local/dyd96-probes/csmutation/tests/StrykerOutput/2026-09-05.03-14-11/reports/mutation-report.json in the DYD-96 worktree",
+   "copiedFromSha256": "385060a78a22ef4dfd3a0accf5f3f3e3ff9b25c3f263c59b82022d05314ccd12"
+  }
+ }
+}

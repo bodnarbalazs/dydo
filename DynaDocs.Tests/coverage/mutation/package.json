@@ -1,0 +1,12 @@
+{
+  "name": "dydo-mutation-assurance",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Exclusive StrykerJS pin for the DYD-103 mutation adapter; not the DYD-96 static/coverage manifest.",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@stryker-mutator/core": "9.6.1"
+  }
+}

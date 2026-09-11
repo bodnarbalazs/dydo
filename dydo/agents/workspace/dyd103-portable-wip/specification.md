@@ -625,10 +625,35 @@ sources; the temporary repositories used by tests are written from data strings.
 | 4 | `$P DynaDocs.Tests/coverage/run_tests.py -- --verbosity minimal --filter "FullyQualifiedName~MutationAssurance"` | exit 0; every scenario of the feature passes | Reqnroll binding of every scenario | production-only |
 | 5 | `dotnet build DynaDocs.sln -c Release --warnaserror` | exit 0 | build invariants | pre-code and production |
 | 6 | `dydo check` (`dotnet bin/Release/net10.0/dydo.dll check` when the installed dydo lags source) | 0 errors, 0 warnings | documentation graph | pre-code and production |
-| 7 | `$P DynaDocs.Tests/coverage/gap_check.py capabilities` | exit 0; `mutation: configured` for dotnet, python and node | facade inspection | pre-code (rows unavailable, exit 0) and production (configured) |
+| 7 | `$P DynaDocs.Tests/coverage/gap_check.py capabilities` | exit 0; `mutation: configured` for dotnet, python and node | facade inspection | pre-code and production |
 | 8 | `$P DynaDocs.Tests/coverage/gap_check.py gate mutation --since <production base SHA>` | three rows reported; aggregate 0, or 1 where no finding's `path` is in any stack's `mutation.selection.changedTargets`; never 2; result bound to the exact candidate SHA and raw reports retained. A finding in a changed target is a DYD-103 defect that blocks CODE review | DR 048 §4, AC 6/7 | production-only (final M-measure) |
-| 9 | `$P DynaDocs.Tests/coverage/gap_check.py --force-run` | identical selected rows and aggregate before and after DYD-103's edits on the same base; mutation never selected | facade compatibility unchanged | production-only |
+| 9 | `$P DynaDocs.Tests/coverage/gap_check.py --force-run` | identical selected rows and aggregate before and after DYD-103's edits on the same base; mutation never selected; each stack's suite executes exactly once (the coverage row's instrumented run, with the test row derived) | facade compatibility unchanged | production-only |
 | 10 | `$P -m unittest discover -s DynaDocs.Tests/coverage/mutation/probes -p "test_replay.py"` | exit 0: per engine the exact-assertion subject yields killed 1 / score 100 / adapter exit 0 and the weak-assertion subject yields survived 1 / exit 1; the concurrency witnesses appear in the raw stdout | the retained native strong/weak probes replayed through the completed adapter's engine seam, outside the unit gate | production-only |
+
+**Ruled — 2026-09-11 (gate 9 reconciliation, adoption of DYD-164's text).** DYD-164 (single
+execution under `--force-run`) merged as DYD-166 into the production base `83c89856`. Its
+reconciliation paragraph for this spec's gate 9 is adopted verbatim:
+
+**DYD-103 spec gate 9 (line 630 of
+`.worktrees/dyd103-prod/dydo/agents/workspace/dyd103-portable-wip/specification.md`) —
+"`$P DynaDocs.Tests/coverage/gap_check.py --force-run` | identical
+selected rows and aggregate before and after DYD-103's edits on the same base; mutation never
+selected."** Unchanged, and DYD-103 needs no re-pin on DYD-164's account. That gate compares two legs
+on the base DYD-103 pins; DYD-164 is not one of DYD-103's edits, so if its base includes DYD-164 both
+legs derive identically and if it does not, neither does. Selected rows are unchanged; mutation is
+still never selected by `--force-run`. DYD-103 consumes only the facade's freshness behaviour
+(`artifact_error`, `gap_check.py:273-280`) and the 0/1/2/130 mapping (`EXITS` `:27`, `completed_row`
+`:283-289`); **DYD-164 changes neither**, and nothing it adds applies to a `mutation` row, to
+`gate mutation`, or to any row of a stack whose coverage capability carries no `suiteVerdict`.
+
+Captain reconciliation: the 2026-09-10 human ruling forbids running the same suite twice inside one
+gate run; the captain packet recorded that gate 9 as written collided with it because `--force-run`
+executed the rows. After DYD-164/DYD-166, `--force-run` executes each stack's suite exactly once:
+the coverage row's instrumented run is the execution, and the stack's test row is derived from its
+published report. Running gate 9 as written therefore no longer collides with the ruling, and its
+purpose is met by the command itself rather than by comparing the selected plan without executing
+it. `mutation` is still never selected. This changes no acceptance criterion, owned path, gate,
+destination or architecture.
 
 Restore commands (setup, not gates) are the three in the engine table; they run once in the
 production worktree before gates 8 and 10.

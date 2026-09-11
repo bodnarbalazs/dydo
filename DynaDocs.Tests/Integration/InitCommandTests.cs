@@ -5,6 +5,7 @@ using DynaDocs.Models;
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for the init command.
@@ -757,6 +758,12 @@ public class InitCommandTests : IntegrationTestBase
         var plugin = ReadFile(".opencode/plugins/dydo-guard.js");
         Assert.Contains("export const DydoGuard", plugin);
         Assert.Contains("Dydo guard plugin loaded", plugin);
+        // The generated plugin is the embedded template, not H1's empty hook shell.
+        Assert.Contains("\"tool.execute.before\"", plugin);
+        Assert.Contains("apply_patch", plugin);
+        Assert.Equal(
+            TemplateGenerator.ReadBuiltInTemplate("opencode-guard-plugin.js"),
+            plugin);
 
         // OpenCode's guard is the plugin, not a Claude/Codex hook file.
         AssertFileNotExists(".claude/settings.local.json");

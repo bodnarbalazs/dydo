@@ -170,4 +170,74 @@ public class HookInputExtensionsTests
         var input = MakeInput(toolName);
         Assert.Equal(expected, input.IsFileOperation());
     }
+
+    // ─── GetFilePaths ───
+
+    [Fact]
+    public void GetFilePaths_ReturnsFilePath()
+    {
+        var input = MakeInput("edit", filePath: "/some/file.cs");
+        Assert.Equal(new[] { "/some/file.cs" }, input.GetFilePaths());
+    }
+
+    [Fact]
+    public void GetFilePaths_ReturnsNotebookPath()
+    {
+        var input = new HookInput
+        {
+            ToolName = "notebookedit",
+            ToolInput = new ToolInputData { NotebookPath = "/nb/notebook.ipynb" }
+        };
+        Assert.Equal(new[] { "/nb/notebook.ipynb" }, input.GetFilePaths());
+    }
+
+    [Fact]
+    public void GetFilePaths_ReturnsEmpty_WhenNoToolInput()
+    {
+        var input = new HookInput { ToolName = "apply_patch" };
+        Assert.Empty(input.GetFilePaths());
+    }
+
+    [Fact]
+    public void GetFilePaths_ExtractsEveryPatchMarker()
+    {
+        var input = new HookInput
+        {
+            ToolName = "apply_patch",
+            ToolInput = new ToolInputData
+            {
+                PatchText = """
+                *** Begin Patch
+                *** Add File: src/new.cs
+                +hello
+                *** Update File: src/old.cs
+                @@
+                *** Move to: src/moved.cs
+                *** Delete File: .env
+                *** End Patch
+                """
+            }
+        };
+
+        Assert.Equal(new[] { "src/new.cs", "src/old.cs", "src/moved.cs", ".env" }, input.GetFilePaths());
+    }
+
+    [Fact]
+    public void GetFilePaths_IgnoresUnrecognizedPatchLines()
+    {
+        var input = new HookInput
+        {
+            ToolName = "apply_patch",
+            ToolInput = new ToolInputData
+            {
+                PatchText = """
+                *** Begin Patch
+                *** End Patch
+                not a marker *** Update File: nope.cs
+                """
+            }
+        };
+
+        Assert.Empty(input.GetFilePaths());
+    }
 }

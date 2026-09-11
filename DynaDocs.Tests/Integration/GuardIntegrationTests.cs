@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Integration;
 
+using System.Text.Json;
 using DynaDocs.Commands;
 
 /// <summary>
@@ -545,6 +546,93 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertSuccess();
         Assert.DoesNotContain("NOTICE", result.Stderr);
+    }
+
+    #endregion
+
+    #region OpenCode apply_patch and ignored tools
+
+    private async Task<CommandResult> GuardPatchAsync(string patchText)
+    {
+        var json = JsonSerializer.Serialize(new
+        {
+            session_id = TestSessionId,
+            tool_name = "apply_patch",
+            tool_input = new { patch_text = patchText }
+        });
+        return await GuardWithStdinAsync(json);
+    }
+
+    [Fact]
+    public async Task Guard_ApplyPatch_OffLimitsTargetBlocks()
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardPatchAsync("*** Add File: .env\n+secret\n");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("off-limits");
+    }
+
+    [Fact]
+    public async Task Guard_ApplyPatch_ProtectedTargetBlocks()
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardPatchAsync("*** Update File: dydo/index.md\n@@\n-old\n+new\n");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("protected");
+    }
+
+    [Fact]
+    public async Task Guard_ApplyPatch_MoveToGuardedTargetBlocks()
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardPatchAsync("*** Move to: dydo.json\n");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("protected");
+    }
+
+    [Fact]
+    public async Task Guard_ApplyPatch_MixedPatch_BlocksWhenAnyTargetGuarded()
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardPatchAsync(
+            "*** Add File: src/safe.cs\n+ok\n*** Update File: dydo.json\n@@\n-old\n+new\n");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Fact]
+    public async Task Guard_ApplyPatch_CleanPatchPasses()
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardPatchAsync("*** Add File: src/new.cs\n+hello\n");
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("task")]
+    [InlineData("webfetch")]
+    [InlineData("websearch")]
+    [InlineData("list")]
+    public async Task Guard_IgnoredOpenCodeTool_NeverBinds(string toolName)
+    {
+        await InitProjectAsync("none");
+
+        // Even a payload naming a protected path passes: the tool is not governed at all.
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"file_path\":\"dydo/index.md\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("BLOCKED", result.Stderr);
     }
 
     #endregion

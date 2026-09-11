@@ -16,6 +16,7 @@ public class ToolInputDataTests
         Assert.Null(data.NewString);
         Assert.Null(data.Command);
         Assert.Null(data.Path);
+        Assert.Null(data.PatchText);
         Assert.Null(data.RunInBackground);
     }
 
@@ -30,6 +31,7 @@ public class ToolInputDataTests
             NewString = "new",
             Command = "dotnet build",
             Path = "/src",
+            PatchText = "*** Begin Patch",
             RunInBackground = true
         };
 
@@ -39,6 +41,7 @@ public class ToolInputDataTests
         Assert.Equal("new", data.NewString);
         Assert.Equal("dotnet build", data.Command);
         Assert.Equal("/src", data.Path);
+        Assert.Equal("*** Begin Patch", data.PatchText);
         Assert.True(data.RunInBackground);
     }
 
@@ -53,6 +56,7 @@ public class ToolInputDataTests
             "new_string": "bar",
             "command": "ls",
             "path": "/tmp",
+            "patch_text": "*** Update File: /a.cs",
             "run_in_background": false
         }
         """;
@@ -66,6 +70,7 @@ public class ToolInputDataTests
         Assert.Equal("bar", data.NewString);
         Assert.Equal("ls", data.Command);
         Assert.Equal("/tmp", data.Path);
+        Assert.Equal("*** Update File: /a.cs", data.PatchText);
         Assert.False(data.RunInBackground);
     }
 

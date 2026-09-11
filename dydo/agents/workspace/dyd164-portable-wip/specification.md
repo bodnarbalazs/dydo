@@ -81,10 +81,37 @@ run.
 
 The adapters already record everything needed. Per stack, `gate_adapter` writes
 `collectors.<collector>.facts.child_exit` — the suite's own exit — and, when it judges that exit to
-be the suite's verdict rather than a broken measurement, one finding `{"gate": "functional",
-"child_exit": N}` tagged with its collector (`gate_adapter.py:366-374` python, `:400-412` node,
-`:430-439` dotnet; aggregation `:277-288`; publication `:171-185`). Collector names are
-`python-coverage`, `javascript-coverage`, `csharp-coverage`.
+be the suite's verdict rather than a broken measurement, one finding, verbatim
+`{"gate": "functional", "child_exit": N}` (`gate_adapter.py:368-369` python, `:412` node,
+`:437-438` dotnet). Collector names are `python-coverage`, `javascript-coverage`,
+`csharp-coverage`.
+
+**The finding is untagged, and it is published at two coordinates.** `_aggregate` (`:277-288`) —
+which would prefix every finding with its `{"collector": name}` — is reached from `collect_static`
+alone (`:337`); no coverage path calls it. The coverage path goes through `_coverage_report`
+(`:165-168`), which hands the *same* finding list both to the collector row and to the outer
+`result()` (`gate_run.py:64-72`), and `_publication_payload` publishes that one list unchanged at
+the report's top-level `findings` (`:175, :183`) **and** at `collectors.<collector>.findings`
+(`:182`). Neither copy carries a `collector` key. A declaration that expects one can never match a
+real report; the spec's coordinates below are the ones that do.
+
+**Verified against the real published reports**, not only against the code:
+`.worktrees/dyd96-adoption/DynaDocs.Tests/coverage/results/adapters/{python,node,dotnet}-coverage.json`
+(green campaigns, 2026-09-11). Each has top-level keys `candidate, collectors, commands, exitCode,
+findings, gaps, inventory, measurementComplete, schema, stack, tools`. Each `collectors` object
+holds **exactly one** key — `python-coverage`, `javascript-coverage`, `csharp-coverage` — whose
+value has `artifacts, errors, facts, findings, status`. In all three, `facts.child_exit` is `0`,
+`status` is `"pass"`, and both `findings` arrays are `[]`. So
+`["collectors", "<collector>", "facts", "child_exit"]` and
+`["collectors", "<collector>", "findings", …]` are both live coordinates in the shipped shape.
+
+**One collector per coverage report.** `_coverage_report:168` constructs `{"collectors": {name:
+row}}` from a single name, so a coverage report structurally cannot publish two collectors; all
+three real reports confirm it (`len(collectors) == 1`). The top-level `findings` array is therefore
+unambiguous *today* — but the declaration below scopes `failure` under the collector anyway, so a
+future report that did grow a second collector could not feed another collector's `functional`
+finding into this stack's verdict. The scoping is in the declared path, not in a rule about adapter
+names, which is what keeps `gap_check.py` free of adapter knowledge.
 
 **The coverage row's process exit cannot carry the verdict.** `_publication_payload` maps
 `{"pass":0,"fail":1,"error":2}[status]` (`gate_adapter.py:185`), so a coverage **policy** failure and
@@ -110,13 +137,20 @@ only, as one optional key:
   "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json", "required": true}],
   "suiteVerdict": {
     "exit": ["collectors", "csharp-coverage", "facts", "child_exit"],
-    "failure": ["findings", {"collector": "csharp-coverage", "gate": "functional"}]
+    "failure": ["collectors", "csharp-coverage", "findings", {"gate": "functional"}]
   }
 }
 ```
 
 `python` uses `python-coverage`, `node` uses `javascript-coverage`, in both fields. Exactly these
 three rows in `gap_check.json` gain the key.
+
+Both coordinates were verified against real reports above. The matcher object is
+`{"gate": "functional"}` and nothing more: the published finding carries no `collector` key, and
+`child_exit` is deliberately *not* matched on, because its value is the very number `exit` supplies.
+`failure` is scoped under the same `["collectors", "<collector>"]` prefix as `exit` so that the two
+coordinates always describe the same collector; the equally valid untagged shape
+`["findings", {"gate": "functional"}]` is rejected only because it reads a report-wide bag.
 
 **Validation**, inside `configured_command` (`gap_check.py:143-164`), fails the row closed exactly as
 every other manifest defect does — `invalid`, resultExit 2, valid peers still run:
@@ -130,6 +164,16 @@ every other manifest defect does — `invalid`, resultExit 2, valid peers still 
    nonempty object mapping nonempty strings to `str`, `int` or `bool`.
 5. The row must declare **exactly one** artifact with `"required": true`. That single artifact is the
    report; there is no second path to keep in sync.
+6. `failure` must name at least one container key before its matcher object — `len(failure) >= 2`.
+   A bare `[{…}]` would ask the runner to match the report root itself; the runner never *searches*
+   a report, it only walks a declared path, so an unscoped matcher is a declaration defect.
+
+**The walk is never widened.** Derivation follows `failure`'s leading string keys from the report
+root through object keys only and matches inside the single array it lands on — it never scans
+siblings, never recurses, and never learns a collector name. That is what makes the collector-scoped
+declaration an actual guard rather than a convention: a second collector's findings would live at a
+path this declaration does not name, so they cannot reach this stack's verdict. Gate 7's condition 4
+pins the one-collector fact against the real reports on every acceptance run.
 
 Diagnostic on any defect: `invalid suite verdict declaration`. `capabilities`
 (`gap_check.py:374-384`) reports the same state names as today and gains only this diagnostic
@@ -202,17 +246,36 @@ scenario line `testing-facade.feature:184` are satisfied unchanged.
 Let `C` be the stack's completed coverage row and `R` its single required artifact.
 
 1. `C.state == "interrupted"` → test row `interrupted`, `childExit` null, resultExit 130.
-2. `C.state == "invalid"` → test row `invalid`, `childExit` null, resultExit 2. (`C.state ==
-   "unavailable"` is unreachable here: prepare-time unavailability means no deferral.)
+2. `C.state == "invalid"` → test row `invalid`, `childExit` null, resultExit 2 — **always, with no
+   exception, and `R` is not opened at all.** (`C.state == "unavailable"` is unreachable here:
+   prepare-time unavailability means no deferral.)
+
+   The reason is not freshness. `invalid` has three producers in `run_row` and only one of them
+   says anything about `R`: the freshness failure at `gap_check.py:310-313` (`R` was not produced or
+   not refreshed — absent or stale); `completed_row`'s child-exit-2 branch at `:284-285`, reached
+   through the call at `:314` and therefore *after* the freshness check passed, so `R` is this
+   child's own; and the `except (OSError, ContractError)` branch at `:320-321`, where the child may
+   never have launched at all and `childExit` may be null. The
+   row alone does not distinguish them — the only in-band discriminator is the presence and wording
+   of `reason`, and a verdict must not hang on a diagnostic string. So the rule is the blunt one:
+   `invalid` means the measurement is broken and the suite verdict is not established, whatever the
+   report happens to contain. This is the same fail-closed stance as the crash case recorded below,
+   and it costs nothing an operator needs: the aggregate is already 2, no row reports `passed`, and
+   the `reason` names what was not established.
 3. `C.state in ("passed","failed")` — and only then, because those two states are exactly the ones
-   whose required artifact passed the freshness check (`gap_check.py:310-314`), so `R` is this
-   child's own report and never a stale one. Read `R`, walk `suiteVerdict.exit` through object keys:
+   in which this child both refreshed its required artifact (`artifact_error` at
+   `gap_check.py:310-313` returned no error) **and** exited 0 or 1 (`completed_row:284-287`), so `R`
+   is provably this child's own report and never a stale one. That is the whole discriminator, and
+   it is one sentence: **a coverage row is `passed` or `failed` only after this child refreshed `R`
+   and exited 0 or 1.** Read `R`, walk `suiteVerdict.exit` through object keys:
    - absent / unreadable / not JSON / key missing / value not an `int` (a `bool` is not an `int`
      here) → test row `invalid`, resultExit 2;
    - value `0` → test row `passed`, `childExit` 0;
-   - value `N != 0` and `suiteVerdict.failure` matches (walk its leading keys to an array; some
-     element is an object containing every declared key with the declared value) → test row
-     `failed`, `childExit` N, resultExit 1;
+   - value `N != 0` and `suiteVerdict.failure` matches — walk its leading string keys through
+     object keys to an array, then some element of *that* array is an object containing every
+     declared key with the declared value → test row `failed`, `childExit` N, resultExit 1. For the
+     three DynaDocs rows this is one untagged `{"gate": "functional", "child_exit": N}` inside
+     `collectors.<collector>.findings`;
    - value `N != 0` and no match → test row `invalid`, resultExit 2.
 
 Applied to the real adapters, with the coverage row's own behaviour unchanged:
@@ -221,10 +284,11 @@ Applied to the real adapters, with the coverage row's own behaviour unchanged:
 |---|---|---|---|
 | suite passes, policy passes | `passed` 0 | `passed`, childExit 0, exit 0 | 0 |
 | suite passes, policy fails | `failed` 1 (findings, `child_exit` 0) | `passed`, childExit 0, exit 0 | 1 |
-| suite fails | `failed` 1 (`functional` finding, `child_exit` N) | `failed`, childExit N, exit 1 | 1 |
+| suite fails | `failed` 1 (untagged `{"gate": "functional", "child_exit": N}` at `collectors.<c>.findings`, and the identical object at the report's top-level `findings`) | `failed`, childExit N, exit 1 | 1 |
 | campaign could not measure — build/prepare/instrumentation/tool/join failure, or the adapter raised early so `collectors` falls back to `report["facts"]` (`gate_adapter.py:182`) and the coordinate resolves to nothing | `invalid` 2 | `invalid`, childExit null, exit 2 | 2 |
 | adapter classified a nonzero child exit as a broken campaign (`child not in (0,1)`, `gate_adapter.py:401, :431`) | `invalid` 2 | `invalid`, childExit null, exit 2 | 2 |
-| inventory errors with the suite's exit still recorded (`gate_adapter.py:477-480` keeps `facts`) | `invalid` 2 | derived normally from `child_exit` | 2 |
+| inventory errors, so the campaign is `error` even though `facts` and `findings` survive and `R` still records the suite's own exit (`gate_adapter.py:477-480`) | `invalid` 2 | `invalid`, childExit null, exit 2 — **`R` is not read**, per rule 2 | 2 |
+| the coverage tool itself is missing, so the collector's child fails without launching a test — Node on a runner with no `node_modules`: `javascript_coverage.cjs:157` resolves a c8 that is not there, `spawnSync` at `:162` starts node, node exits 1 on the missing module, `:164` returns 1, and `gate_adapter.py:412` records that 1 as a `functional` finding | `failed` 1 | `failed`, childExit 1, exit 1 — **a failure attributed to a suite that never ran**; see F4 | 1 |
 | coverage row interrupted | `interrupted` 130 | `interrupted`, exit 130 | 130 |
 | an earlier row interrupted, coverage never ran | absent | `interrupted`, exit 130 | 130 |
 | coverage row unavailable or invalid **at prepare time** | 2 | runs plainly, exactly as today | per rows |
@@ -265,6 +329,14 @@ binds one-to-one to a named probe in `DynaDocs.Tests/coverage/tests/test_testing
 Fixture stacks come from `test_testing_facade.py:31-42`; the fixture coverage command writes a JSON
 report at the row's declared required artifact.
 
+**Every fixture report must mirror the real published shape.** A fixture that authors a finding as
+`{"collector": "…", "gate": "functional"}` would make a wrong declaration look correct — that is the
+defect this hop corrects. So each fixture report a scenario writes has, at minimum, a `collectors`
+object with **exactly one** key, that collector's `facts.child_exit`, and — where a suite failure is
+being exercised — that collector's `findings` holding the untagged object `{"gate": "functional",
+"child_exit": N}` and nothing else in it. Confirmed against
+`.worktrees/dyd96-adoption/DynaDocs.Tests/coverage/results/adapters/*-coverage.json`.
+
 **New.**
 
 1. *One instrumented execution carries both the coverage measurement and the test verdict* — a stack
@@ -273,11 +345,29 @@ report at the row's declared required artifact.
    coverage in manifest order, the test row is `passed` with `childExit` 0, empty `argv` and the
    derivation reason, aggregate 0. Probe `test_derived_test_row_passes_from_the_instrumented_run`.
 2. *A derived test verdict fails closed* — Scenario Outline over the per-case table above, one
-   example per row of it (`suite passes and policy passes`, `suite passes and policy fails`,
-   `suite fails`, `the campaign could not measure`, `the report records no suite exit`,
-   `the coverage row did not attribute the child exit to the suite`), each naming the test row's
+   example per distinct facade outcome in it: `suite passes and policy passes`,
+   `suite passes and policy fails`,
+   `suite fails`, `the campaign could not measure`,
+   `the campaign is invalid but its report records the suite exit`,
+   `the report records no suite exit`, and
+   `the coverage row did not attribute the child exit to the suite` — each naming the test row's
    state, childExit and resultExit, the coverage row's state and resultExit, and the aggregate.
-   One probe per example.
+   One probe per example. Two of these examples are the discriminating ones the implementer may
+   not resolve by taste:
+   - `suite fails` writes the **untagged** finding shape above; a probe that passes only against a
+     `collector`-tagged fixture is the defect this correction removes.
+   - `the campaign is invalid but its report records the suite exit` writes a report whose
+     `collectors.<c>.facts.child_exit` is a usable integer *and* whose coverage row is `invalid` 2
+     (fixture coverage command exits 2 after writing the report, so the freshness check passes and
+     `completed_row` maps 2 to `invalid`). The test row must be `invalid`, `childExit` null,
+     resultExit 2 — pinning rule 2's "`R` is not opened" against the one case where opening it
+     would have produced a different answer.
+
+   Two table rows get no example of their own, deliberately. The "adapter classified a nonzero child
+   exit as a broken campaign" row is byte-identical at the facade to `the campaign could not
+   measure`. The missing-tool row is byte-identical at the facade to `suite fails` — the facade
+   cannot tell them apart, and that is precisely why the misattribution has to be fixed in the
+   adapter (F4) rather than papered over with a facade probe.
 3. *An interruption before the coverage row leaves no unresolved test verdict* — the static row is
    interrupted after its cleanup; the coverage command does not run; the test row is `interrupted`
    with resultExit 130 and the deferral reason; aggregate 130. Probe
@@ -354,18 +444,44 @@ Pass condition, all four:
    vector.
 4. In each `DynaDocs.Tests/coverage/results/adapters/<stack>-coverage.json`, `commands[]` holds
    exactly one row named `python-coverage`, `javascript-coverage` or `csharp-campaign` — one
-   instrumented execution per stack — and its `exit` equals the derived test row's `childExit`.
+   instrumented execution per stack — and its `exit` equals the derived test row's `childExit`;
+   and `collectors` holds **exactly one** key, the collector the row's `suiteVerdict` names in both
+   its `exit` and its `failure` path. The second half of that condition is the standing pin against
+   a future two-collector report reaching a declaration written for one.
 
 Corroboration, recorded not asserted: the G's wall clock against the 2026-09-10 baseline of 46
 minutes; the expected drop is roughly the 12 minutes measured there.
 
 **Gate 8's comparison.** `workflow_dispatch` on the branch runs `build` and `validation` only;
 `release`, `nuget` and `npm` are tag-guarded (`release.yml:111-112`), so the dispatch publishes
-nothing. The job's own exit is compared **before and after on the same candidate**, not required to
-be 0 — see flag F1. Pass condition: the same set of failing steps with the same reasons as the base,
-the `Run isolated test adapter` step (`release.yml:95-96`) exiting 0 exactly once, and the
-`Run coverage gate` step's `result.json` showing the `python` and `node` test rows derived and the
-`dotnet` test row `invalid` with the not-established reason.
+nothing. Every `release.yml` line number in this spec is the file **before** this Issue's two added
+steps; after the edit each one below `:93` shifts down by 6. The job's own exit is compared **before and after on the same candidate**, not required to
+be 0 — see flag F1.
+
+The pass condition is written from *measured* runner behaviour, not from expectation: it is the
+"after" column of the release-workflow table below, and every claim in that table that could not be
+traced to a line is marked there as measured-by-this-gate. Gate 8 passes when, in the
+`Run coverage gate` step's `result.json` and in the step logs:
+
+1. **Three suite executions, one per stack, across the whole job.** The job log shows exactly one
+   `dotnet test DynaDocs.sln` run (step `Run isolated test adapter`), exactly one `Ran <n> tests`
+   unittest block, and exactly one Node TAP block — and the latter two appear *inside* the
+   `Run coverage gate` step, launched by the coverage adapters.
+2. **No derived row reports a verdict for a suite that did not run.** For `python` and `node`, the
+   published `<stack>-coverage.json` `commands[]` row carries the collector's `exit`, and the
+   derived test row's `childExit` equals it. If either derived row is `failed` while its stack's
+   suite produced no test output in the log, gate 8 **fails** — that is the F4 misattribution and it
+   must not be signed off as expected.
+3. **`dotnet` is `invalid`, not `failed`.** The `dotnet` coverage row is `invalid` 2 (Windows-only
+   campaign, `windows_job.py:88-89`) and the derived `dotnet` test row is `invalid` with the
+   not-established reason. The .NET suite's real verdict in this job comes from
+   `Run isolated test adapter`, which must still exit 0.
+4. **No new failing step relative to the base**, and no step that failed on the base now silently
+   passing for a reason other than this Issue's change.
+
+If the two new install steps do not make the Python and Node coverage rows launch their suites, the
+implement hop reports a mismatch and stops at the choice — it does not accept a green-looking gate 8
+whose Python and Node suites never ran.
 
 ### Reconciliations — adoptable verbatim
 
@@ -383,7 +499,9 @@ requires every row `passed`; a derived test row is `passed` only when the covera
 interpreter all three coverage rows can complete, so 0 stays reachable on the same host G-final
 already targets.
 
-**DYD-103 spec gate 9 (line 630) — "`$P DynaDocs.Tests/coverage/gap_check.py --force-run` | identical
+**DYD-103 spec gate 9 (line 496 of
+`.worktrees/dyd103-spec/dydo/agents/workspace/dyd103-portable-wip/specification.md`) —
+"`$P DynaDocs.Tests/coverage/gap_check.py --force-run` | identical
 selected rows and aggregate before and after DYD-103's edits on the same base; mutation never
 selected."** Unchanged, and DYD-103 needs no re-pin on DYD-164's account. That gate compares two legs
 on the base DYD-103 pins; DYD-164 is not one of DYD-103's edits, so if its base includes DYD-164 both
@@ -393,30 +511,96 @@ still never selected by `--force-run`. DYD-103 consumes only the facade's freshn
 `:283-289`); **DYD-164 changes neither**, and nothing it adds applies to a `mutation` row, to
 `gate mutation`, or to any row of a stack whose coverage capability carries no `suiteVerdict`.
 
-**The release workflow.** `release.yml:105` keeps calling `--force-run` and is not edited. It does
-not simply get faster: the validation job runs on `ubuntu-latest` with Python 3.13, where the C#
-coverage campaign cannot execute at all — `windows_job.validate` raises on `os.name != "nt"` or a
-Python other than 3.12.14 (`windows_job.py:88-89`), so `_run_assurance_campaign` returns 2
-(`run_tests.py:209-211`) and `collect_dotnet_coverage` records a broken campaign
-(`gate_adapter.py:431-435`). The `dotnet` coverage row is therefore `invalid` 2 there and the derived
-`dotnet` test row is `invalid` 2 with its reason — the .NET suite is not run by `--force-run` on that
-host. What the job does get is the removal of the duplicate .NET execution: today the explicit
-`run_tests.py` step **and** the `--force-run` dotnet test row each run the suite; after this Issue
-the explicit step is the only .NET suite execution in the job, and the Python and Node suites drop
-from two executions to one each. On a Windows host with the pinned interpreter, `--force-run` gets
-faster by the full measured margin.
+### The release workflow — what runs on `ubuntu-latest`, before and after
 
-### The release.yml third execution — decided, no edit
+The earlier version of this section claimed "the Python and Node suites drop from two executions to
+one each". That is false, and correcting it changes this Issue's route. Here is the traced record.
 
-Finding E asked whether to remove `release.yml:95-96`. **Keep it, and touch neither workflow.**
-Removing it would leave the release validation with no .NET suite execution at all, because the
-derived `dotnet` test row cannot be established on `ubuntu-latest` (above). Post-Issue the job runs
-the .NET suite once, the Python suite once and the Node suite once, which is exactly the Outcome's
-scope; the step is the single execution, not a duplicate. `ReleaseWorkflowTests.cs:24` stays correct
-and is **not** needed — no ownership amendment for it. `.github/workflows/ci.yml` was read at
-`112ec76c` and contains no facade call: `actions/checkout`, `setup-dotnet`, `dotnet restore`,
-`dotnet build --no-restore --warnaserror`, `dotnet test --no-build --verbosity normal`
-(`ci.yml:13-28`). Both workflow paths are declared **empty**.
+**The validation job installs nothing.** `.github/workflows/release.yml:69-108` read in full at
+`112ec76c`: `checkout`, `setup-python` 3.13 (`:80-83`), `setup-dotnet` (`:85-88`), `setup-node` 24
+(`:90-93`), then five `run:` steps. There is no `pip install`, no `npm ci`, and no vendored
+`node_modules` — only `DynaDocs.Tests/coverage/requirements.lock` (8 pins, `coverage==7.16.0`) and
+`DynaDocs.Tests/coverage/package.json` + `package-lock.json` (`c8@12.0.0`) are tracked. The file's
+only `apt-get` (`:48-49`) is in the `build` job's Linux-ARM64 leg, a different job.
+
+**Measured today, on the real runner.** GitHub Actions run `34557358149` (2026-09-11, push of the
+merge commit `c4b2f1d1` — this branch's own base): validation steps 1-8 all succeeded, including
+`Run isolated test adapter`; step 9 `Run coverage gate` failed with `Aggregate: 2`; step 10
+`Run mutation gate` was skipped because step 9 failed. Its `--force-run` log shows
+`dotnet test: PASSED (child exit 0)` (a 2377-test `dotnet test DynaDocs.sln`), `Ran 138 tests …
+OK` then `python test: PASSED (child exit 0)`, and a Node TAP block then `node test: PASSED (child
+exit 0)`; all six static and coverage rows printed `UNAVAILABLE: Pending DYD-96`. So the job does
+reach `--force-run` and all three suites do execute there — this is not a hypothetical path.
+
+**Per stack, on that runner.** "Today" = the base above. "After DYD-130" = the same job with
+`gap_check.json`'s coverage rows `configured` (`gap_check.json:13, :25, :37` at `112ec76c`), which is
+DYD-164's production base. "After DYD-164" = with derivation and no workflow edit.
+
+| Stack | Today | After DYD-130, before DYD-164 | After DYD-164 with **no** workflow edit |
+|---|---|---|---|
+| `dotnet` | suite runs **twice**: step `:95-96` and the `--force-run` test row | still twice; coverage row `invalid` 2 — `windows_job.validate` refuses non-Windows / non-3.12.14 (`windows_job.py:88-89`) → `_run_assurance_campaign` returns 2 (`run_tests.py:209-211`) → `child not in (0,1)` → broken campaign (`gate_adapter.py:431-435`) | suite runs **once** (step `:95-96`); derived test row `invalid` 2 with its reason. Correct, and the intended saving. |
+| `python` | suite runs **once**, in the `--force-run` test row (`gap_check.json:23`) — the job's only Python suite execution | still once, in the test row; the coverage row dies before it can launch anything: `python_coverage.collect` does `import coverage` at `python_coverage.py:132`, **before** the suite launch at `:156`. `coverage` is a third-party pin, so `ModuleNotFoundError` — an `ImportError`, absent from `REPORT_DEFECTS` (`gate_adapter.py:25-26`) — escapes `main`'s handler at `:481`, the adapter dies without publishing, and `gap_check`'s freshness check (`:310-314`) makes the row `invalid` 2 | **the Python suite runs zero times.** Test row deferred, coverage row `invalid` → derived test row `invalid` 2 |
+| `node` | suite runs **once**, in the `--force-run` test row (`gap_check.json:35`) — the job's only Node suite execution | still once, in the test row; the coverage row resolves c8 at `DynaDocs.Tests/coverage/node_modules/c8/bin/c8.js` (`javascript_coverage.cjs:157`), which does not exist. `spawnSync` at `:162` succeeds (node exists), the child exits 1 on the missing module, `:164` returns 1, `child in (0,1)` so `gate_adapter.py:412` records `{"gate":"functional","child_exit":1}` → coverage row `failed` 1 | **the Node suite runs zero times, and the derived test row says `failed` 1** — a red test verdict for a suite that never started |
+
+So with no workflow edit this Issue would delete the release validation's only Python and Node suite
+executions (138 Python tests and the whole Node suite) and replace one of them with a false failure.
+That is not the Outcome; it is the Outcome's inverse.
+
+### Decision — the validation job installs the coverage toolchain
+
+`.github/workflows/release.yml` is an Owned path "where they invoke the facade", and making the
+invocation at `:105` measure anything on that runner is inside it. **Edit the validation job; keep
+`Run isolated test adapter` at `:95-96`.**
+
+Two steps, inserted immediately after `Setup Node.js` (`:90-93`) and therefore before every `run:`
+step, so `run_tests.py` and both gate invocations see the same environment:
+
+```yaml
+      - name: Install Python assurance toolchain
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install Node assurance toolchain
+        run: npm ci
+        working-directory: DynaDocs.Tests/coverage
+```
+
+What pins them: `requirements.lock` is the fully pinned transitive list (8 `==` pins, including
+`coverage==7.16.0`) that `gate_tools` already publishes as this gate's Python pin
+(`gate_adapter.py:108`); `npm ci` installs strictly from
+`DynaDocs.Tests/coverage/package-lock.json`, and `package.json` is the same file `gate_tools`
+publishes as the JavaScript pin (`:109`). No version is named in the workflow, so no pin can drift
+out of sync with the gate's own tool record. `package.json` declares `engines.node 22.13.0` while the
+job pins node 24; the repository has no `.npmrc`, so npm's engine check is advisory and `npm ci`
+proceeds — recorded, not relied on: gate 8 sees the install step's exit.
+
+**`Run isolated test adapter` stays.** The `dotnet` coverage row still cannot run on Linux
+(`windows_job.py:88-89` is not something an install fixes), so removing `:95-96` would leave the job
+with no .NET suite execution. Post-Issue the job runs each of the three suites exactly once —
+.NET at `:95-96`, Python and Node inside their coverage rows — which is the Outcome, job-wide.
+
+**`ReleaseWorkflowTests.cs` needs no edit and no ownership amendment.** Every validation assertion is
+`Assert.Contains` on the job's text (`ReleaseWorkflowTests.cs:19-28`); two added steps satisfy all of
+them unchanged. The one prohibition, `Assert.DoesNotContain("continue-on-error:", validation)` at
+`:29`, is respected — neither new step is allowed to carry it, and neither does. Line 24's pin of
+`python DynaDocs.Tests/coverage/run_tests.py` stays true.
+
+**`.github/workflows/ci.yml` stays empty.** Read at `112ec76c`: `actions/checkout`, `setup-dotnet`,
+`dotnet restore`, `dotnet build --no-restore --warnaserror`, `dotnet test --no-build --verbosity
+normal` (`ci.yml:13-28`). No facade call anywhere.
+
+**The one interval that must not open.** Between DYD-130's merge and DYD-166's, nothing is removed:
+the test rows still execute all three suites. But **the workflow edit and the deferral must land in
+the same merge — if the implement hop cannot land the two install steps, DYD-164 must not merge,
+because merging derivation alone deletes release validation's only Python and Node suite
+executions.** Merge DYD-166 checks this explicitly.
+
+**What is measured, not asserted.** That `pip install` and `npm ci` succeed on the runner, and that
+the Python and Node coverage campaigns then complete on Linux, is not traceable to a line — no
+Linux campaign has ever run. Gate 8 measures it, with the pass condition above. If the Python join
+still fails on Linux after the install (`python_coverage.py:157-165` runs `coverage.combine` and the
+counter join after the suite), the Python suite will have *executed* but its verdict will read
+`invalid` — a strictly better state than today's route and than the no-edit route, and one the
+implement hop must report rather than absorb.
 
 ### Interim rule until this lands
 
@@ -455,8 +639,9 @@ Outcome freezes the result schema and `argv == []` plus `reason` already carry t
 `dydo/reference/gap-check.example.py` (regenerated), `DynaDocs.Tests/coverage/gap_check.json`,
 `DynaDocs.Tests/Features/testing-facade.feature`, `DynaDocs.Tests/Steps/TestingFacadeSteps.cs`,
 `DynaDocs.Tests/coverage/tests/test_testing_facade.py`, `dydo/guides/testing-strategy.md`,
-`dydo/reference/coverage-tools.md`. Empty: `.github/workflows/release.yml`,
-`.github/workflows/ci.yml`, `DynaDocs.Tests/Features/assurance-adoption.feature`,
+`dydo/reference/coverage-tools.md`, and `.github/workflows/release.yml` (the two install steps after
+`:93`, nothing else). Empty: `.github/workflows/ci.yml`,
+`DynaDocs.Tests/Features/assurance-adoption.feature`,
 `DynaDocs.Tests/Steps/AssuranceAdoptionSteps.cs`, `dydo/reference/gap-check.example.json`, all four
 coverage adapters.
 
@@ -491,12 +676,21 @@ coverage adapters.
    execution. `dydo/reference/coverage-tools.md`: the grammar paragraph at 32-34; the declared-rows
    table at 63-74 gains the declaration; the row-states table at 94-100 gains the derived row and
    its `reason`; the *Coverage collectors* section at 240-246 states that each row's instrumented
-   run is the stack's single suite execution under `--force-run`, and that the C# campaign is
-   Windows-only so a Linux host derives nothing for `dotnet`. Checkable: gate 6.
-7. **Acceptance.** Gates 5, 6, 2, 3, then 7 on the exact clean candidate, then 8. Post each with
-   candidate, command, environment, exit and result location, per the workspace standard.
-8. **Harden**, then fresh whole-change review, then Merge DYD-166 — after DYD-130 is Done, before
-   DYD-131.
+   run is the stack's single suite execution under `--force-run`, that the C# campaign is
+   Windows-only so a Linux host derives nothing for `dotnet`, and that the Python and JavaScript
+   collectors need `requirements.lock` and `DynaDocs.Tests/coverage`'s npm lock installed or they
+   cannot launch a suite at all. Checkable: gate 6.
+7. **The workflow edit.** Insert the two install steps into `.github/workflows/release.yml`
+   immediately after `Setup Node.js` (`:90-93`), verbatim as specified above, with no
+   `continue-on-error`. Nothing else in either workflow moves. Checkable: gate 4 still green
+   (`ReleaseWorkflowTests` runs inside the .NET suite), and the diff of `release.yml` is exactly
+   those two steps.
+8. **Acceptance.** Gates 5, 6, 2, 3, then 7 on the exact clean candidate, then 8. Post each with
+   candidate, command, environment, exit and result location, per the workspace standard. Gate 8 is
+   the only place the workflow edit can be proved; if it shows a derived row's verdict for a suite
+   with no output in the log, stop and report the mismatch.
+9. **Harden**, then fresh whole-change review, then Merge DYD-166 — after DYD-130 is Done, before
+   DYD-131. Merge DYD-166 refuses a tree that carries the deferral without the workflow edit.
 
 **Edge cases** —
 
@@ -507,6 +701,10 @@ coverage adapters.
 | coverage row declares zero or two required artifacts with `suiteVerdict` | `invalid` 2; the report has no unambiguous path |
 | `exit` resolves to `true` | not an integer → not established → test row `invalid` 2 |
 | `failure` walk reaches a non-array | no match → a nonzero exit is not attributed → `invalid` 2 |
+| `failure` declared with fewer than two items (matcher against the report root) | declaration defect at prepare time: coverage row `invalid` 2, no deferral, test row runs plainly |
+| a report grows a second collector | a `failure` scoped under `["collectors", "<c>"]` cannot see the other collector's findings; gate 7 condition 4 fails first and the change is caught, not absorbed |
+| the coverage row is `invalid` 2 yet its report records a usable `child_exit` (inventory errors, `gate_adapter.py:477-480`) | rule 2 wins with no exception: test row `invalid`, `childExit` null, exit 2; `R` is never opened |
+| the coverage tool is absent so the collector's child fails at launch (Node without `node_modules`) | derived test row `failed` 1 for a suite that never ran — the adapter's own misclassification, F4 |
 | report parses but is an array or a scalar | key walk fails → `invalid` 2 |
 | deferred stack, test row itself `unavailable` or `invalid` at prepare time | no deferral; reported as today without running, coverage still runs |
 | `--stack` narrowing under `--force-run` | `--force-run` accepts no options (`gap_check.py:347`); unreachable |
@@ -529,8 +727,12 @@ coverage adapters.
    `dydo/reference/gap-check.example.json`, every fixture manifest and `test_portable`
    (`test_testing_facade.py:670-691`) are untouched, and that the `gap_check.json` change is
    mirrored byte-for-byte in the feature docstring.
-5. **Workflow drift.** Confirm the Linux argument for keeping `release.yml:95-96`, and that
-   `ReleaseWorkflowTests.cs:24` and `ci.yml` genuinely need nothing.
+5. **Workflow drift.** Confirm the Linux argument for keeping `release.yml:95-96`; confirm the two
+   install steps are the whole `release.yml` diff, carry no `continue-on-error`
+   (`ReleaseWorkflowTests.cs:29`), and satisfy every `Assert.Contains` at `:19-28` unchanged; confirm
+   `ci.yml` genuinely needs nothing. Then probe the substance: after the edit, does each of the three
+   suites execute exactly once in the validation job, and can any derived row report a verdict for a
+   suite that produced no output?
 6. **DYD-103 interface drift.** Confirm `artifact_error`, `EXITS`, `completed_row`, `CAPS` and the
    mutation path are byte-unchanged.
 7. **Portable-example honesty.** `gap_check.py` must gain no knowledge of DynaDocs' adapters; check
@@ -541,8 +743,9 @@ coverage adapters.
 
 **Plan review** — `recommended`. It changes the public facade's execution plan, which governs every G
 in this repository and every downstream adopter of the byte-copied runner; it adds a manifest-schema
-key; and it settles two things the parent criterion left open (the coverage row's true exit on a
-suite failure, and the release workflow's third execution).
+key; and it settles three things the parent criterion left open (the coverage row's true exit on a
+suite failure, the release workflow's third execution, and whether the validation job must install
+the coverage toolchain for `--force-run` to measure anything on `ubuntu-latest`).
 
 ---
 
@@ -552,8 +755,32 @@ suite failure, and the release workflow's third execution).
   `ubuntu-latest` on this base: the C# coverage campaign requires Windows and CPython 3.12.14
   (`windows_job.py:88-89`) while the job pins `ubuntu-latest` and Python 3.13
   (`release.yml:71, :83`), and `gate mutation` at `release.yml:108` is `unavailable` pending DYD-103.
-  Gate 8 is therefore specified as a before/after comparison on the same candidate, not as a green
-  job. Someone owns making that job passable; DYD-164 does not.
+  Measured, not assumed: Actions run `34557358149` on `c4b2f1d1` failed at `Run coverage gate` with
+  `Aggregate: 2` and skipped the mutation step. Gate 8 is therefore specified as a before/after
+  comparison on the same candidate, not as a green job. Someone owns making that job passable;
+  DYD-164 does not.
+- **F5 — decided inside the Owned path, recorded because it changes a workflow.** Post-DYD-130, the
+  validation job's coverage rows cannot measure anything on `ubuntu-latest` because the job installs
+  neither `requirements.lock` nor the `DynaDocs.Tests/coverage` npm lock. **Left alone, DYD-164 would
+  delete release validation's only Python (138 tests) and Node suite executions and publish a false
+  `failed` 1 for the Node suite that never ran.** This spec therefore adds two install steps to
+  `.github/workflows/release.yml` after `:93` — inside the Owned path, at the point where the facade
+  is invoked — so the derived rows are real. `ReleaseWorkflowTests.cs` needs no edit and no ownership
+  amendment. If the admiral would rather the workflow stay untouched, the honest alternative is to
+  **remove the `python` and `node` `suiteVerdict` declarations from `gap_check.json` until a Linux
+  route exists**, keeping their plain test rows; the cost is that a Windows G still runs those two
+  suites twice, which is most of what this Issue exists to remove. Recommendation: take the install
+  steps.
+- **F4 — a follow-up Issue, not DYD-164's and not DYD-96's blocker.** `javascript_coverage.cjs:164`
+  returns c8's status without distinguishing "the suite failed" from "c8 itself failed to start", and
+  `gate_adapter.py:412` turns any child `1` into a `functional` finding. The coverage row has
+  misattributed this since DYD-96; DYD-164 only makes it visible on a test row. It is not fixable
+  inside DYD-164's Owned paths: the adapter clause permits an adapter change **only if the verdict
+  cannot be derived from what the adapters already record**, and here it can — what is wrong is the
+  adapter's classification of its own launch failure, not the recording. The fix belongs where the
+  fact is produced (`javascript_coverage.cjs` should raise rather than return 1 when the c8 entry
+  point is missing, so `gate_adapter` records an error and the row is `invalid` 2). Worth an Issue;
+  gate 8's condition 2 keeps it from being signed off as expected behaviour in the meantime.
 - **F2 — description clarification.** The Outcome's "the coverage row is invalid 2 as today" for a
   failing test is inaccurate; today it is `failed` 1. The spec keeps today's behaviour and states the
   real table.
@@ -561,5 +788,7 @@ suite failure, and the release workflow's third execution).
   .NET campaign and inside the `python` test row. Seconds of work, out of this Issue's scope,
   worth an Issue only if someone measures it as material.
 - **No ownership amendment is requested.** Every path the route needs is inside the Issue's Owned
-  paths, and `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs` is not needed because the release
-  workflow is not edited.
+  paths — including `.github/workflows/release.yml`, which the Owned paths grant "where they invoke
+  the facade". `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs` is still not needed: the two added
+  steps satisfy every existing `Assert.Contains` (`:19-28`) and violate the one prohibition at `:29`
+  in no way.

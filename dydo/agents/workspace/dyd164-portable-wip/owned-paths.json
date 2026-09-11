@@ -24,7 +24,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/gap_check.json",
-      "action": "The row plan needs the declaration: each of the three coverage rows gains `suiteVerdict` with `exit` = [collectors, <collector>, facts, child_exit] and `failure` = [findings, {collector: <collector>, gate: functional}], collectors csharp-coverage / python-coverage / javascript-coverage. No other row touched.",
+      "action": "The row plan needs the declaration: each of the three coverage rows gains `suiteVerdict` with `exit` = [collectors, <collector>, facts, child_exit] and `failure` = [collectors, <collector>, findings, {gate: functional}], collectors csharp-coverage / python-coverage / javascript-coverage. The published finding is UNTAGGED — `_aggregate` (gate_adapter.py:277-288) is reached from collect_static only (:337); the coverage path publishes the raw list through `_coverage_report` (:165-168) at both the report's top-level `findings` (:175, :183) and `collectors.<c>.findings` (:182). A `failure` matcher containing a `collector` key can never match. Both coordinates verified against the real reports in .worktrees/dyd96-adoption/DynaDocs.Tests/coverage/results/adapters/*-coverage.json; the collector-scoped path is chosen so `exit` and `failure` always name the same collector. No other row touched.",
       "ownership": "owned-edited"
     },
     {
@@ -64,8 +64,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "action": "EMPTY. `--force-run` at line 105 is unchanged, and `Run isolated test adapter` at 95-96 is deliberately kept: the validation job runs on ubuntu-latest with Python 3.13, where `windows_job.validate` (windows_job.py:88-89) refuses the C# campaign, so the derived dotnet test row cannot be established there and that step is the job's only .NET suite execution, not a duplicate. Removing it would leave release validation with no .NET suite run at all.",
-      "ownership": "owned-empty"
+      "action": "EDITED: two install steps inserted into the validation job immediately after `Setup Node.js` (:90-93) and before every `run:` step — `python -m pip install -r DynaDocs.Tests/coverage/requirements.lock`, and `npm ci` with `working-directory: DynaDocs.Tests/coverage`. Neither carries `continue-on-error` (ReleaseWorkflowTests.cs:29). Nothing else in the file moves: `--force-run` stays at :105 and `Run isolated test adapter` at :95-96 is deliberately kept, because `windows_job.validate` (windows_job.py:88-89) refuses the C# campaign on ubuntu-latest so the derived dotnet test row cannot be established there and that step is the job's only .NET suite execution. WHY THE EDIT: without it the job installs neither `coverage` nor `c8`, so post-Issue `python_coverage.py:132` dies at `import coverage` before launching the suite and `javascript_coverage.cjs:157` spawns a missing c8 that exits 1, which gate_adapter.py:412 records as a `functional` finding. That would delete release validation's only Python (138 tests) and Node suite executions and publish a false `failed` 1 for the Node suite. Measured baseline: Actions run 34557358149 on c4b2f1d1 shows all three suites executing inside `--force-run` today.",
+      "ownership": "owned-edited"
     },
     {
       "path": ".github/workflows/ci.yml",
@@ -94,7 +94,7 @@
     },
     {
       "path": "DynaDocs.Tests/coverage/javascript_coverage.cjs",
-      "action": "EMPTY. It already returns c8's child status unchanged (lines 162-164).",
+      "action": "EMPTY. It already returns c8's child status unchanged (lines 162-164), so the verdict IS derivable and the Owned paths' adapter clause is not exercised. Recorded, not fixed here: :164 cannot distinguish a failing suite from c8 itself failing to start, so a missing `node_modules` yields a derived test row of `failed` 1 for a suite that never ran — flag F4, a follow-up Issue.",
       "ownership": "owned-empty"
     },
     {
@@ -109,7 +109,7 @@
     },
     {
       "path": "DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs",
-      "action": "Not owned and not needed: line 24 pins the `run_tests.py` validation step, which this Issue keeps. No ownership amendment is requested.",
+      "action": "Not owned and not needed even though release.yml is now edited: every validation assertion is `Assert.Contains` on the job text (:19-28), which two added steps satisfy unchanged, and line 24 pins the `run_tests.py` step this Issue keeps. The one prohibition, `Assert.DoesNotContain(\"continue-on-error:\", validation)` at :29, constrains the new steps rather than requiring an edit. No ownership amendment is requested.",
       "ownership": "not-owned"
     },
     {

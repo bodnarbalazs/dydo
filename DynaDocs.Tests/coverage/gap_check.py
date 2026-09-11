@@ -140,28 +140,68 @@ def resolve_executable(value, working_directory):
     return shutil.which(str(executable), path=search_path)
 
 
-def configured_command(config, root, capability):
-    if set(config) != {"state", "command", "artifacts"}:
-        return None, None, None, "configured capability requires command and artifacts and forbids reason"
-    command = config["command"]
+def suite_verdict_error(declaration):
+    if not isinstance(declaration, dict) or set(declaration) != {"exit", "failure"}:
+        return "invalid suite verdict declaration"
+    exit_path = declaration["exit"]
+    if not isinstance(exit_path, list) or not exit_path or not all(isinstance(item, str) and item for item in exit_path):
+        return "invalid suite verdict declaration"
+    failure = declaration["failure"]
+    if not isinstance(failure, list) or len(failure) < 2:
+        return "invalid suite verdict declaration"
+    if not all(isinstance(item, str) and item for item in failure[:-1]):
+        return "invalid suite verdict declaration"
+    matcher = failure[-1]
+    if (not isinstance(matcher, dict) or not matcher
+            or not all(isinstance(key, str) and key for key in matcher)
+            or not all(type(value) in (str, int, bool) for value in matcher.values())):
+        return "invalid suite verdict declaration"
+    return None
+
+
+def command_argv_error(command):
     if not isinstance(command, dict) or set(command) != {"kind", "argv"} or command["kind"] not in ("argv", "current-python"):
-        return None, None, None, "command kind must be argv or current-python"
+        return "command kind must be argv or current-python"
     argv = command["argv"]
     if not isinstance(argv, list) or not argv or not all(isinstance(x, str) and x for x in argv):
-        return None, None, None, "command argv must be a nonempty array of strings"
+        return "command argv must be a nonempty array of strings"
     if any("\x00" in item for item in argv):
-        return None, None, None, "command argv cannot contain NUL"
+        return "command argv cannot contain NUL"
     if any("<" in x or ">" in x for x in argv):
-        return None, None, None, "command vector contains an angle placeholder"
-    artifacts = config["artifacts"]
+        return "command vector contains an angle placeholder"
+    return None
+
+
+def artifacts_error(artifacts, root):
     if not isinstance(artifacts, list):
-        return None, None, None, "artifacts must be an array"
+        return "artifacts must be an array"
     for item in artifacts:
         if not isinstance(item, dict) or set(item) != {"path", "required"} or not isinstance(item["required"], bool) or not contained(root, item["path"]):
-            return None, None, None, "artifact requires contained path and required boolean"
+            return "artifact requires contained path and required boolean"
+    return None
+
+
+def configured_command(config, root, capability):
+    if "suiteVerdict" in config and capability != "coverage":
+        return None, None, None, "invalid suite verdict declaration"
+    if set(config) - {"suiteVerdict"} != {"state", "command", "artifacts"}:
+        return None, None, None, "configured capability requires command and artifacts and forbids reason"
+    error = command_argv_error(config["command"])
+    if error:
+        return None, None, None, error
+    artifacts = config["artifacts"]
+    error = artifacts_error(artifacts, root)
+    if error:
+        return None, None, None, error
     if capability != "test" and not any(item["required"] for item in artifacts):
         return None, None, None, "configured gates require a required artifact"
-    return command["kind"], argv, artifacts, None
+    if "suiteVerdict" in config:
+        error = suite_verdict_error(config["suiteVerdict"])
+        if error:
+            return None, None, None, error
+        if sum(1 for item in artifacts if item["required"]) != 1:
+            return None, None, None, "invalid suite verdict declaration"
+    return config["command"]["kind"], config["command"]["argv"], artifacts, None
 
 
 def mutation_command(argv, since, inspection):
@@ -321,6 +361,67 @@ def run_row(stack, capability, root, since, forwarded, deadline):
         return result(stack, capability, "invalid", argv=argv, environment=environment, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
 
 
+INTERRUPTED_BEFORE_COVERAGE = "suite verdict not established: the run was interrupted before the coverage row"
+
+
+def deferral_applies(stack, capabilities, root):
+    if "test" not in capabilities or "coverage" not in capabilities:
+        return False
+    _, _, coverage_state, _ = prepare_row(stack, "coverage", root)
+    if coverage_state != "configured":
+        return False
+    if "suiteVerdict" not in stack["capabilities"]["coverage"]:
+        return False
+    _, _, test_state, _ = prepare_row(stack, "test", root)
+    return test_state == "configured"
+
+
+def walk(value, keys):
+    for key in keys:
+        if not isinstance(value, dict) or key not in value:
+            return None
+        value = value[key]
+    return value
+
+
+def failure_matches(report, declaration):
+    container = walk(report, declaration[:-1])
+    if not isinstance(container, list):
+        return False
+    matcher = declaration[-1]
+    return any(isinstance(item, dict) and all(key in item and item[key] == value for key, value in matcher.items())
+               for item in container)
+
+
+def suite_verdict(root, stack, coverage_row):
+    state = coverage_row["state"]
+    if state == "interrupted":
+        return result(stack, "test", "interrupted",
+                      reason=f"suite verdict not established: the coverage row is {state}")
+    if state not in ("passed", "failed"):
+        return result(stack, "test", "invalid",
+                      reason=f"suite verdict not established: the coverage row is {state}")
+    declaration = stack["capabilities"]["coverage"]["suiteVerdict"]
+    exit_path = declaration["exit"]
+    artifact = next(item["path"] for item in coverage_row["artifacts"] if item["required"])
+    unreadable = f'suite verdict not established: {artifact} does not record an integer at {"/".join(exit_path)}'
+    try:
+        report = json.loads((root / artifact).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return result(stack, "test", "invalid", reason=unreadable)
+    value = walk(report, exit_path)
+    if type(value) is not int:
+        return result(stack, "test", "invalid", reason=unreadable)
+    if value == 0:
+        return result(stack, "test", "passed", childExit=0,
+                      reason=f"test verdict derived from the coverage row: suite exit 0 at {artifact}")
+    if failure_matches(report, declaration["failure"]):
+        return result(stack, "test", "failed", childExit=value,
+                      reason=f"test verdict derived from the coverage row: suite exit {value} at {artifact}")
+    return result(stack, "test", "invalid",
+                  reason=f"suite verdict not established: the coverage row did not attribute child exit {value} to the suite")
+
+
 def split_forwarded(args, operation):
     if "--" not in args:
         return args, []
@@ -411,18 +512,34 @@ def selected_stacks(all_stacks, names):
     return [item for item in all_stacks if names is None or item["name"] in names]
 
 
+def print_row(current):
+    child = f" (child exit {current['childExit']})" if current["childExit"] is not None else ""
+    reason = f": {current['reason']}" if current.get("reason") else ""
+    print(f"{current['stack']} {current['capability']}: {current['state'].upper()}{child}{reason}", flush=True)
+
+
 def execute_rows(selected, capabilities, root, since, forwarded):
     rows = []
     for stack in selected:
+        deferred = None
         for capability in capabilities:
+            if capability == "test" and deferral_applies(stack, capabilities, root):
+                deferred = len(rows)
+                rows.append(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE))
+                continue
             deadline = time.monotonic() + EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
             current = run_row(stack, capability, root, since, forwarded, deadline)
             rows.append(current)
-            child = f" (child exit {current['childExit']})" if current["childExit"] is not None else ""
-            reason = f": {current['reason']}" if current.get("reason") else ""
-            print(f"{current['stack']} {capability}: {current['state'].upper()}{child}{reason}", flush=True)
+            print_row(current)
+            if deferred is not None and capability == "coverage":
+                derived = suite_verdict(root, stack, current)
+                rows[deferred] = derived
+                deferred = None
+                print_row(derived)
             if current["state"] == "interrupted":
                 break
+        if deferred is not None:
+            print_row(rows[deferred])
         if rows[-1]["state"] == "interrupted":
             break
     return rows

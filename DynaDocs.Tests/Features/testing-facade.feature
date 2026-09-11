@@ -92,10 +92,57 @@ Feature: One project-local interface runs tests and assurance honestly
     Given valid, unavailable and invalid test, static and coverage rows
     When I run "--force-run"
     Then every declared test, static and coverage row is selected in manifest order
-    And every valid configured selected command runs
+    And every valid configured selected command runs except a test row whose stack declares a coverage suite verdict: it runs no command of its own and its verdict comes from that one instrumented execution
     And unavailable and invalid selected rows are reported without running their commands
     And mutation does not run
     And the command exits 2
+
+  Scenario: One instrumented execution carries both the coverage measurement and the test verdict
+    Given a stack whose coverage row declares a suite verdict and publishes a passing suite exit
+    When I run "--force-run"
+    Then the derived test row is passed with childExit 0 and resultExit 0
+    And the coverage row is passed with resultExit 0
+    And the aggregate exit is 0
+
+  Scenario Outline: A derived test verdict fails closed
+    Given a stack whose coverage row declares a suite verdict with "<case>"
+    When I run "--force-run"
+    Then the derived test row is <state> with childExit <childExit> and resultExit <resultExit>
+    And the coverage row is <coverageState> with resultExit <coverageExit>
+    And the aggregate exit is <aggregate>
+
+    Examples:
+      | case                                                          | state   | childExit | resultExit | coverageState | coverageExit | aggregate |
+      | suite passes and policy passes                                | passed  | 0         | 0          | passed        | 0            | 0         |
+      | suite passes and policy fails                                 | passed  | 0         | 0          | failed        | 1            | 1         |
+      | suite fails                                                   | failed  | 5         | 1          | failed        | 1            | 1         |
+      | the campaign could not measure                                | invalid | null      | 2          | invalid       | 2            | 2         |
+      | the campaign is invalid but its report records the suite exit | invalid | null      | 2          | invalid       | 2            | 2         |
+      | the report records no suite exit                              | invalid | null      | 2          | passed        | 0            | 2         |
+      | the coverage row did not attribute the child exit to the suite | invalid | null     | 2          | failed        | 1            | 2         |
+
+  Scenario: An interruption before the coverage row leaves no unresolved test verdict
+    Given a declaring stack whose static row waits for an interrupt
+    When I interrupt the run after the static row starts
+    Then the derived test row is interrupted with childExit null and resultExit 130
+    And the aggregate exit is 130
+
+  Scenario Outline: Derivation belongs to the invocation, not to the coverage row
+    Given a declared suite verdict stack whose coverage command and test command are observed
+    When I run the invocation "<invocation>"
+    Then the test command <testRuns> and the coverage command <coverageRuns>
+
+    Examples:
+      | invocation                  | testRuns     | coverageRuns |
+      | all                         | runs         | does not run |
+      | test --stack dotnet         | runs         | does not run |
+      | gate coverage --stack dotnet | does not run | runs         |
+      | --force-run                 | does not run | runs         |
+
+  Scenario: A stack without a declared suite verdict keeps its own test execution
+    Given a configured coverage row without a declaration and a stack whose coverage row is unavailable
+    When I run "--force-run"
+    Then both plain test rows run and record their own child exits
 
   Scenario: Independent work is exhausted before aggregation
     Given selected rows that pass, fail, are invalid and are unavailable
@@ -161,7 +208,7 @@ Feature: One project-local interface runs tests and assurance honestly
           "capabilities": {
             "test": {"state": "configured", "command": {"kind": "current-python", "argv": ["-u", "DynaDocs.Tests/coverage/run_tests.py", "--"]}, "artifacts": []},
             "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-static.json", "required": true}]},
-            "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json", "required": true}]},
+            "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json", "required": true}], "suiteVerdict": {"exit": ["collectors", "csharp-coverage", "facts", "child_exit"], "failure": ["collectors", "csharp-coverage", "findings", {"gate": "functional"}]}},
             "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
           }
         }]
@@ -174,7 +221,8 @@ Feature: One project-local interface runs tests and assurance honestly
     And cwd, adapter paths, artifactRoot and declared artifact paths resolve inside the repository root without absolute paths or parent escape
     And command kind is argv or current-python with a nonempty array of string argv items
     And current-python prefixes argv with sys.executable while argv commands execute their array unchanged
-    And configured rows require command and artifacts and forbid reason while unavailable rows require reason, forbid command and artifacts, and may carry non-executable exampleArgv
+    And configured rows require command and artifacts and forbid reason while unavailable rows require reason, forbid command and artifacts, and may carry non-executable exampleArgv, and a configured coverage row may additionally declare suiteVerdict with exactly exit and failure and exactly one required artifact
+    And a derived test row records empty argv, the suite's own child exit and a reason naming the coverage report
     And artifacts is an array of objects with repository-relative path and required boolean
     And non-test configured gates declare at least one required artifact whose normalized path exists after a successful child exit
     And verified in-place evidence has kind direct while every other verified isolation requirement has kind adapter and an existing repository-contained path
@@ -200,6 +248,7 @@ Feature: One project-local interface runs tests and assurance honestly
       | a missing executable                              |
       | malformed configured evidence                     |
       | a cwd or artifact path escaping the repository    |
+      | an invalid suite verdict declaration              |
 
   Scenario: The portable three-stack example is visibly unfinished
     Given the canonical portable testing manifest
@@ -245,6 +294,7 @@ Feature: One project-local interface runs tests and assurance honestly
     And its Python test command invokes unittest discovery for the facade conformance tests
     And its Node test command invokes node --test for the facade conformance test
     And static and coverage are unavailable pending DYD-96
+    And each stack's coverage row declares the suite verdict its test row is derived from
     And mutation is unavailable pending DYD-103
     And its artifact root is DynaDocs.Tests/coverage/results
 

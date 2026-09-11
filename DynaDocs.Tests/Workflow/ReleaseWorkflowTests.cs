@@ -26,6 +26,8 @@ public sealed class ReleaseWorkflowTests
         Assert.Contains("dotnet run --project DynaDocs.csproj -c Release --no-build -- check", validation);
         Assert.Contains("python DynaDocs.Tests/coverage/gap_check.py --force-run", validation);
         Assert.Contains("python DynaDocs.Tests/coverage/gap_check.py gate mutation --since 2e31b1d0915529926a79224424c18620ee8003e1", validation);
+        Assert.Contains("python -m pip install -r DynaDocs.Tests/coverage/requirements.lock", validation);
+        Assert.Contains("run: npm ci\n        working-directory: DynaDocs.Tests/coverage", validation);
         Assert.DoesNotContain("continue-on-error:", validation);
 
         AssertFailClosedPublicationGraph(workflow);

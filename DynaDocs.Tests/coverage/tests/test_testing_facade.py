@@ -42,6 +42,34 @@ def manifest(*stacks):
     return {'schema': 1, 'artifactRoot': 'results', 'stacks': list(stacks or [stack('dotnet')])}
 
 
+def coverage_report(collector, child_exit=None, findings=None):
+    row = {'facts': {}, 'findings': list(findings or [])}
+    if child_exit is not None:
+        row['facts']['child_exit'] = child_exit
+    return {'collectors': {collector: row}}
+
+
+def functional(child_exit):
+    return {'gate': 'functional', 'child_exit': child_exit}
+
+
+def verdict_stack(name='first', collector=None, report=None, coverage_exit=0, declared=True):
+    collector = collector or f'{name}-coverage'
+    item = stack(name)
+    artifact = f'{name}-coverage.json'
+    payload = json.dumps(report if report is not None else coverage_report(collector, 0))
+    code = ("from pathlib import Path; "
+            f"Path({artifact!r}).write_text({payload!r}); "
+            f"print({name + ':coverage'!r}); raise SystemExit({coverage_exit})")
+    item['capabilities']['coverage']['command'] = {'kind': 'current-python', 'argv': ['-c', code]}
+    item['capabilities']['coverage']['artifacts'] = [{'path': artifact, 'required': True}]
+    if declared:
+        item['capabilities']['coverage']['suiteVerdict'] = {
+            'exit': ['collectors', collector, 'facts', 'child_exit'],
+            'failure': ['collectors', collector, 'findings', {'gate': 'functional'}]}
+    return item
+
+
 class TestingFacadeTests(unittest.TestCase):
     runner = RUNNER
 
@@ -198,6 +226,23 @@ class TestingFacadeTests(unittest.TestCase):
                     self.assertIn('peer:', p.stdout)
                     self.assertEqual([], list(root.glob('*.txt')))
                     self.assertIsNone(payload)
+
+    def test_force_run_keeps_malformed_capabilities_container_row_local(self):
+        for malformed in [None, [], 4, 'configured']:
+            with self.subTest(value=malformed):
+                bad = stack('bad')
+                bad['capabilities'] = malformed
+                p, root, payload = self.invoke(['--force-run'], manifest(bad, stack('peer')))
+                self.assert_exit(p, 2)
+                self.assertNotIn('Traceback', p.stderr, p.stderr)
+                self.assertIsNotNone(payload, p.stdout + p.stderr)
+                self.assert_rows(payload, [
+                    ('bad', 'test', 'invalid'), ('bad', 'static', 'invalid'), ('bad', 'coverage', 'invalid'),
+                    ('peer', 'test', 'passed'), ('peer', 'static', 'passed'), ('peer', 'coverage', 'passed')])
+                self.assertFalse((root / 'bad-test.txt').exists())
+                produced = {x.name for x in root.glob('*.txt')}
+                for capability in ('test', 'static', 'coverage'):
+                    self.assertIn(f'peer-{capability}.txt', produced)
 
     def test_capabilities_validates_configuration_without_execution(self):
         cases = [
@@ -437,10 +482,151 @@ class TestingFacadeTests(unittest.TestCase):
         first, second = stack('first'), stack('second')
         first['capabilities']['static'] = unavailable('Pending DYD-96')
         second['capabilities']['coverage']['command']['argv'] = []
-        p, root, payload = self.invoke(['--force-run'], manifest(first, second))
+        third = verdict_stack('third', report=coverage_report('third-coverage', 0), coverage_exit=0)
+        p, root, payload = self.invoke(['--force-run'], manifest(first, second, third))
         self.assert_exit(p, 2)
-        self.assert_rows(payload, [('first', 'test', 'passed'), ('first', 'static', 'unavailable'), ('first', 'coverage', 'passed'), ('second', 'test', 'passed'), ('second', 'static', 'passed'), ('second', 'coverage', 'invalid')])
-        self.assertEqual({'first-test.txt', 'first-coverage.txt', 'second-test.txt', 'second-static.txt'}, {x.name for x in root.glob('*.txt')})
+        self.assert_rows(payload, [('first', 'test', 'passed'), ('first', 'static', 'unavailable'), ('first', 'coverage', 'passed'), ('second', 'test', 'passed'), ('second', 'static', 'passed'), ('second', 'coverage', 'invalid'), ('third', 'test', 'passed'), ('third', 'static', 'passed'), ('third', 'coverage', 'passed')])
+        self.assertEqual({'first-test.txt', 'first-coverage.txt', 'second-test.txt', 'second-static.txt', 'third-static.txt', 'third-coverage.json'}, {x.name for x in root.glob('*.txt')} | {x.name for x in root.glob('*.json') if x.name != 'gap_check.json'})
+        self.assertNotIn('third-test.txt', [x.name for x in root.glob('*.txt')])
+
+    def test_derived_test_row_passes_from_the_instrumented_run(self):
+        item = verdict_stack(report=coverage_report('first-coverage', 0), coverage_exit=0)
+        p, root, payload = self.invoke(['--force-run'], manifest(item))
+        self.assert_exit(p, 0)
+        self.assert_rows(payload, [('first', 'test', 'passed'), ('first', 'static', 'passed'), ('first', 'coverage', 'passed')])
+        row = payload['results'][0]
+        self.assertEqual([], row['argv'])
+        self.assertEqual(0, row['childExit'])
+        self.assertTrue(row['reason'].startswith('test verdict derived from the coverage row'), row['reason'])
+        self.assertNotIn('first-test.txt', [x.name for x in root.glob('*.txt')])
+        self.assertIn('first-coverage.json', [x.name for x in root.glob('*.json')])
+
+    def derived_case(self, report, coverage_exit):
+        item = verdict_stack(report=report, coverage_exit=coverage_exit)
+        return self.invoke(['--force-run'], manifest(item))
+
+    def assert_derived(self, payload, test, coverage, aggregate):
+        row = payload['results'][0]
+        self.assertEqual(test, tuple(row[key] for key in ('state', 'childExit', 'resultExit')))
+        self.assertEqual(coverage, tuple(payload['results'][2][key] for key in ('state', 'resultExit')))
+        self.assertEqual(aggregate, payload['aggregateExit'])
+
+    def test_derived_suite_passes_policy_passes(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 0), 0)
+        self.assert_exit(p, 0)
+        self.assert_derived(payload, ('passed', 0, 0), ('passed', 0), 0)
+
+    def test_derived_suite_passes_policy_fails(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 0), 1)
+        self.assert_exit(p, 1)
+        self.assert_derived(payload, ('passed', 0, 0), ('failed', 1), 1)
+
+    def test_derived_suite_fails(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 5, [functional(5)]), 1)
+        self.assert_exit(p, 1)
+        self.assert_derived(payload, ('failed', 5, 1), ('failed', 1), 1)
+        self.assertTrue(payload['results'][0]['reason'].startswith('test verdict derived from the coverage row'))
+
+    def test_derived_campaign_could_not_measure(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage'), 2)
+        self.assert_exit(p, 2)
+        self.assert_derived(payload, ('invalid', None, 2), ('invalid', 2), 2)
+
+    def test_derived_invalid_campaign_with_usable_report(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 5, [functional(5)]), 2)
+        self.assert_exit(p, 2)
+        self.assert_derived(payload, ('invalid', None, 2), ('invalid', 2), 2)
+
+    def test_derived_report_records_no_suite_exit(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage'), 0)
+        self.assert_exit(p, 2)
+        self.assert_derived(payload, ('invalid', None, 2), ('passed', 0), 2)
+
+    def test_derived_unattributed_child_exit(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 5), 1)
+        self.assert_exit(p, 2)
+        self.assert_derived(payload, ('invalid', None, 2), ('failed', 1), 2)
+
+    def test_derivation_only_when_both_rows_are_selected(self):
+        for args, test_runs, coverage_runs in [
+                (['all'], True, False),
+                (['test', '--stack', 'dotnet'], True, False),
+                (['gate', 'coverage', '--stack', 'dotnet'], False, True),
+                (['--force-run'], False, True)]:
+            with self.subTest(args=args):
+                item = verdict_stack('dotnet', report=coverage_report('dotnet-coverage', 0), coverage_exit=0)
+                p, root, _ = self.invoke(args, manifest(item))
+                self.assert_exit(p, 0)
+                self.assertEqual(test_runs, (root / 'dotnet-test.txt').exists(), args)
+                self.assertEqual(coverage_runs, (root / 'dotnet-coverage.json').exists(), args)
+
+    def test_undeclared_or_unavailable_coverage_keeps_the_plain_test_row(self):
+        undeclared = verdict_stack('undeclared', report=coverage_report('undeclared-coverage', 0), coverage_exit=0, declared=False)
+        absent = stack('absent')
+        absent['capabilities']['coverage'] = unavailable('not adopted')
+        p, root, payload = self.invoke(['--force-run'], manifest(undeclared, absent))
+        self.assert_exit(p, 2)
+        self.assert_rows(payload, [('undeclared', 'test', 'passed'), ('undeclared', 'static', 'passed'), ('undeclared', 'coverage', 'passed'), ('absent', 'test', 'passed'), ('absent', 'static', 'passed'), ('absent', 'coverage', 'unavailable')])
+        for row in payload['results']:
+            if row['capability'] == 'test':
+                self.assertNotEqual([], row['argv'])
+                self.assertEqual(0, row['childExit'])
+        self.assertIn('undeclared-test.txt', [x.name for x in root.glob('*.txt')])
+        self.assertIn('absent-test.txt', [x.name for x in root.glob('*.txt')])
+
+    def test_row_suite_verdict(self):
+        bad = verdict_stack('bad', report=coverage_report('bad-coverage', 0), coverage_exit=0)
+        bad['capabilities']['coverage']['suiteVerdict'] = {'exit': ['collectors', 'bad-coverage', 'facts', 'child_exit']}
+        p, root, payload = self.invoke(['--force-run'], manifest(bad, stack('peer')))
+        self.assert_exit(p, 2)
+        self.assert_rows(payload, [('bad', 'test', 'passed'), ('bad', 'static', 'passed'), ('bad', 'coverage', 'invalid'), ('peer', 'test', 'passed'), ('peer', 'static', 'passed'), ('peer', 'coverage', 'passed')])
+        self.assertIn('invalid suite verdict declaration', payload['results'][2]['reason'])
+        self.assertEqual(['bad-static.txt', 'bad-test.txt', 'peer-coverage.txt', 'peer-static.txt', 'peer-test.txt'], sorted(x.name for x in root.glob('*.txt')))
+
+    def test_deferred_test_row_is_interrupted_when_coverage_never_runs(self):
+        item = verdict_stack(report=coverage_report('first-coverage', 0), coverage_exit=0)
+        data = manifest(item)
+        root = self.fixture(data)
+        (root / 'wait.py').write_text(
+            "import signal,sys,time\nfrom pathlib import Path\n"
+            "def interrupted(signum, frame):\n    raise KeyboardInterrupt\n"
+            "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, interrupted)\n"
+            "try:\n    print('WAITING_FOR_INTERRUPT', flush=True)\n    deadline=time.monotonic()+60\n"
+            "    while time.monotonic()<deadline:\n        time.sleep(0.05)\n"
+            "except KeyboardInterrupt:\n    print('ADAPTER_INTERRUPTED', flush=True)\n    sys.exit(130)\n"
+            "finally:\n    Path('cleanup.txt').write_text('complete')\n", encoding='utf-8')
+        data['stacks'][0]['capabilities']['static'] = configured(['-u', 'wait.py'], [{'path': 'first-static.txt', 'required': True}])
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        facade = subprocess.Popen([sys.executable, '-u', str(root / 'gap_check.py'), '--force-run'],
+            cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8',
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
+            start_new_session=os.name != 'nt')
+        lines, output = queue.Queue(), []
+        def collect():
+            for line in facade.stdout:
+                output.append(line); lines.put(line)
+        reader = threading.Thread(target=collect, daemon=True); reader.start()
+        try:
+            self.assertEqual('WAITING_FOR_INTERRUPT', lines.get(timeout=15).strip())
+            facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
+            facade.wait(timeout=35); reader.join(timeout=5)
+            self.assertEqual(130, facade.returncode, ''.join(output))
+            self.assertEqual('complete', (root / 'cleanup.txt').read_text())
+            self.assertFalse((root / 'first-coverage.json').exists())
+            result_path = next(line.strip()[8:] for line in output if line.startswith('Result: '))
+            payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
+            self.assert_rows(payload, [('first', 'test', 'interrupted'), ('first', 'static', 'interrupted')])
+            self.assertEqual(130, payload['aggregateExit'])
+            row = payload['results'][0]
+            self.assertEqual(('interrupted', None, 130), tuple(row[key] for key in ('state', 'childExit', 'resultExit')))
+            self.assertIn('interrupted before the coverage row', row['reason'])
+        finally:
+            if facade.poll() is None:
+                facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
+                facade.wait(timeout=35)
+            reader.join(timeout=5)
+            facade.stdout.close()
+
 
     def test_aggregation(self):
         good, failed, bad, missing = (stack(n) for n in ['good', 'failed', 'bad', 'missing'])
@@ -628,7 +814,37 @@ class TestingFacadeTests(unittest.TestCase):
         data = manifest(); data['stacks'][0]['capabilities']['static']['artifacts'] = []
         p, _, payload = self.invoke(['gate', 'static'], data)
         self.assert_exit(p, 2); self.assertIn('required artifact', payload['results'][0]['reason'])
+        self.suite_verdict_defects()
         self.test_required_gate_artifact_is_required_after_successful_child_exit()
+
+    def suite_verdict_defects(self):
+        bad = verdict_stack('bad', report=coverage_report('bad-coverage', 0), coverage_exit=0)
+        bad['capabilities']['test']['suiteVerdict'] = {'exit': ['a'], 'failure': ['b', {}]}
+        p, _, payload = self.invoke(['all'], manifest(bad, stack('peer')))
+        self.assert_exit(p, 2)
+        self.assertEqual('invalid', payload['results'][0]['state'])
+        self.assertIn('invalid suite verdict declaration', payload['results'][0]['reason'])
+        declaration = lambda item: item['capabilities']['coverage']['suiteVerdict']
+        defects = [
+            ('extra declaration key', lambda item: declaration(item).update(extra=True)),
+            ('nonstring exit item', lambda item: declaration(item).update(exit=['collectors', 1])),
+            ('empty exit path', lambda item: declaration(item).update(exit=[])),
+            ('short failure path', lambda item: declaration(item).update(failure=['only'])),
+            ('nonstring failure container', lambda item: declaration(item).update(failure=[1, {'gate': 'functional'}])),
+            ('non-object matcher', lambda item: declaration(item).update(failure=['collectors', 'bad-coverage', 'findings', ['nope']])),
+            ('empty matcher', lambda item: declaration(item).update(failure=['collectors', 'bad-coverage', 'findings', {}])),
+            ('complex matcher value', lambda item: declaration(item).update(failure=['collectors', 'bad-coverage', 'findings', {'gate': []}])),
+            ('two required artifacts', lambda item: item['capabilities']['coverage'].update(artifacts=[{'path': 'a', 'required': True}, {'path': 'b', 'required': True}])),
+        ]
+        for name, change in defects:
+            with self.subTest(defect=name):
+                item = verdict_stack('bad', report=coverage_report('bad-coverage', 0), coverage_exit=0)
+                change(item)
+                p, _, payload = self.invoke(['gate', 'coverage', '--stack', 'bad'], manifest(item, stack('peer')))
+                self.assert_exit(p, 2)
+                self.assertEqual('invalid', payload['results'][0]['state'])
+                self.assertIn('invalid suite verdict declaration', payload['results'][0]['reason'])
+
 
     def test_required_gate_artifact_is_required_after_successful_child_exit(self):
         data = manifest()
@@ -717,6 +933,10 @@ class TestingFacadeTests(unittest.TestCase):
                 self.assertEqual('current-python', row['command']['kind'])
                 self.assertEqual(['DynaDocs.Tests/coverage/gate_adapter.py', '--stack', item['name'], '--gate', capability], row['command']['argv'])
                 self.assertEqual([{'path': f'DynaDocs.Tests/coverage/results/adapters/{item["name"]}-{capability}.json', 'required': True}], row['artifacts'])
+                if capability == 'coverage':
+                    collector = {'dotnet': 'csharp-coverage', 'python': 'python-coverage', 'node': 'javascript-coverage'}[item['name']]
+                    self.assertEqual({'exit': ['collectors', collector, 'facts', 'child_exit'],
+                                      'failure': ['collectors', collector, 'findings', {'gate': 'functional'}]}, row['suiteVerdict'])
 
     def test_identity(self):
         self.assertEqual(RUNNER.read_bytes(), PORTABLE.read_bytes())

@@ -8,7 +8,6 @@ reflects the current working state, not just the last commit.
 Usage:
     python DynaDocs.Tests/coverage/run_tests.py                          # plain test run
     python DynaDocs.Tests/coverage/run_tests.py -- --filter Category=Unit  # with dotnet test args
-    python DynaDocs.Tests/coverage/run_tests.py --coverage               # copy coverage XMLs back
 """
 
 import argparse
@@ -24,7 +23,6 @@ from contextlib import contextmanager
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-COVERAGE_XML_GLOB = "DynaDocs.Tests/**/coverage.cobertura.xml"
 
 
 def isolated_environment():
@@ -120,19 +118,6 @@ def copy_dirty_files(worktree):
         shutil.copy2(src, dst)
 
 
-def copy_coverage_back(worktree):
-    """Copy coverage XML files from worktree back to the main tree."""
-    copied = 0
-    for xml in worktree.glob(COVERAGE_XML_GLOB):
-        rel = xml.relative_to(worktree)
-        dst = ROOT / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(str(xml), str(dst))
-        copied += 1
-    if copied:
-        print(f"  Copied {copied} coverage XML(s) back to main tree")
-
-
 def remove_worktree(worktree):
     """Remove the worktree and its directory."""
     _git("worktree", "remove", "--force", str(worktree))
@@ -226,7 +211,7 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
     return owner_result.get("subject_status") if type(owner_result.get("subject_status")) is int else 2
 
 
-def run_tests(extra_args=None, coverage=False, assurance_output=None):
+def run_tests(extra_args=None, assurance_output=None):
     """Create worktree, run tests, clean up. Returns the dotnet exit code."""
     worktree = None
     try:
@@ -258,9 +243,6 @@ def run_tests(extra_args=None, coverage=False, assurance_output=None):
         # Console.KeyAvailable probes the process handle instead of the installed reader.
         result = subprocess.run(cmd, cwd=worktree, env=env, stdin=subprocess.DEVNULL)
 
-        if coverage:
-            copy_coverage_back(worktree)
-
         return result.returncode
     finally:
         if worktree and (worktree.exists() or is_registered_worktree(worktree)):
@@ -272,10 +254,6 @@ def main():
     if sys.platform == "win32":
         signal.signal(signal.SIGBREAK, signal.default_int_handler)
     parser = argparse.ArgumentParser(description="Run dotnet test in a git worktree")
-    parser.add_argument(
-        "--coverage", action="store_true",
-        help="Copy coverage XML files back to the main tree after the run",
-    )
     parser.add_argument("--assurance-output", help=argparse.SUPPRESS)
     args, extra = parser.parse_known_args()
 
@@ -285,8 +263,7 @@ def main():
 
     print("\n--- Running tests (worktree-isolated) ---")
     try:
-        rc = run_tests(extra_args=extra or None, coverage=args.coverage,
-                       assurance_output=args.assurance_output)
+        rc = run_tests(extra_args=extra or None, assurance_output=args.assurance_output)
     except KeyboardInterrupt:
         rc = 130
 

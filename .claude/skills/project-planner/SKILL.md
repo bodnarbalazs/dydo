@@ -93,7 +93,7 @@ linear-project: <the Linear Project URL>
 |---|---|---|---|---|---|
 | <H-1> | <one independently reviewable outcome> | <exclusive surface> | <none or H-n> | <A> | <feature/slug> |
 ### Later bearings — <rough outcomes for orientation, not pickable Issue contracts>
-### Exact gates — <copy-pasteable commands and what their evidence must prove>
+### Exact gates — <copy-pasteable commands and what their evidence must prove, in two lists: the cheap checks and change-relevant tests that prove one hop, and the full suites and whole gate set at the final gates, each merge and the landing>
 ## 5. Ordering and isolation — <kickoff, first merge order, parallel work and hot-file ownership>
 ## 6. Watch-outs — <mistakes the Project's Issue Captains and reviewers would otherwise make>
 ## Not yet specified — <in-scope fog too vague to state as a question; omit when clear>

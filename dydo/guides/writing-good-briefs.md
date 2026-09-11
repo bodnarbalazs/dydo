@@ -24,7 +24,7 @@ Every implementation Issue carries five fields. They are the contract; the rest 
 | **Outcome** | what becomes true, in observable terms — the result, not the route |
 | **Owned paths** | the exact files this Issue may change; everything else belongs to another Issue |
 | **Blockers** | what must land first, wired as Linear blocking relations rather than described in prose |
-| **Exact gates** | the commands that decide done, verbatim, each with its pass condition |
+| **Exact gates** | the commands that decide done, verbatim with their pass conditions, in two lists — what one hop proves, and what the final gates, each merge and the landing prove |
 | **Base branch** | the branch this one is cut from |
 
 What the Issue deliberately does **not** carry is the route. Pre-writing it ages badly and buys
@@ -52,7 +52,7 @@ Give it five things:
    prohibition.
 4. **The return shape** the receiver parses. For a writer: the hop SHA, changed paths, contract-to-proof trace,
    gates and output, and any prepared hand-raise. After FAIL, include its review block in Must-Reads.
-5. **The constraints that decide the verdict** — budget, vocabulary, and the exact gates.
+5. **The constraints that decide the verdict** — budget, vocabulary, and the gates this hop owes.
 
 The same bar applies as to an Issue. If the worker has to infer which of two files you meant, or invent
 a product decision to finish, the brief is not ready.

@@ -23,7 +23,7 @@ public static class InitCommand
         var integrationArgument = new Argument<string>("integration")
         {
             Arity = ArgumentArity.ExactlyOne,
-            Description = "Integration to configure (claude, codex, all, none)"
+            Description = "Integration to configure (claude, codex, opencode, all, none)"
         };
 
         var joinOption = new Option<bool>("--join")
@@ -77,11 +77,14 @@ public static class InitCommand
             foreach (var name in integrations)
                 config.Integrations[name] = true;
 
+            var openCodeJson = integrations.Contains("opencode") ? PrepareOpenCodeSettings(projectRoot) : null;
+
             var configPath = Path.Combine(projectRoot, ConfigService.ConfigFileName);
             configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
             ScaffoldProject(configService, config, configPath, projectRoot, integrations);
+            WriteOpenCodeArtifacts(projectRoot, integrations.Contains("opencode"), openCodeJson);
             PrintInitSummary(integrations);
 
             return ExitCodes.Success;
@@ -93,9 +96,9 @@ public static class InitCommand
         }
     }
 
-    // "all" expands to every hook-wired integration; "claude"/"codex"/"none" stay themselves.
+    // "all" expands to every integration; "claude"/"codex"/"opencode"/"none" stay themselves.
     private static string[] ExpandIntegrations(string integration) =>
-        integration == "all" ? ["claude", "codex"] : [integration];
+        integration == "all" ? ["claude", "codex", "opencode"] : [integration];
 
     private static void ScaffoldProject(ConfigService configService, DydoConfig config,
         string configPath, string projectRoot, string[] integrations)
@@ -107,12 +110,12 @@ public static class InitCommand
             () => TemplateGenerator.GenerateEntryPointMd(projectName),
             "CLAUDE.md (entry point)");
 
-        if (integrations.Contains("codex"))
+        if (integrations.Contains("codex") || integrations.Contains("opencode"))
         {
             WriteIfNotExists(
                 Path.Combine(projectRoot, "AGENTS.md"),
                 () => GenerateAgentsMd(projectName),
-                "AGENTS.md (Codex entry point)");
+                "AGENTS.md (agent entry point)");
         }
 
         var dydoRoot = Path.Combine(projectRoot, config.Structure.Root);
@@ -148,7 +151,7 @@ public static class InitCommand
     {
         Console.WriteLine();
         Console.WriteLine("Documentation funnel created:");
-        if (integrations.Contains("codex"))
+        if (integrations.Contains("codex") || integrations.Contains("opencode"))
             Console.WriteLine("  AGENTS.md -> dydo/index.md (orientation) -> the docs");
         if (!integrations.Contains("codex") || integrations.Contains("claude"))
         {
@@ -192,6 +195,7 @@ public static class InitCommand
             var projectRoot = Path.GetDirectoryName(configPath)!;
             var integrations = ExpandIntegrations(integration);
             var config = configService.LoadConfig(projectRoot);
+            var openCodeJson = integrations.Contains("opencode") ? PrepareOpenCodeSettings(projectRoot) : null;
 
             if (integrations.Contains("claude"))
             {
@@ -204,14 +208,17 @@ public static class InitCommand
                 Console.WriteLine("  ✓ Claude Code hooks configured");
             }
 
-            if (integrations.Contains("codex"))
+            if (integrations.Contains("codex") || integrations.Contains("opencode"))
             {
                 WriteIfNotExists(
                     Path.Combine(projectRoot, "AGENTS.md"),
                     () => GenerateAgentsMd(Path.GetFileName(projectRoot)),
-                    "AGENTS.md (Codex entry point)");
-                ConfigureCodexHooks(projectRoot);
-                Console.WriteLine("  - Codex hooks configured");
+                    "AGENTS.md (agent entry point)");
+                if (integrations.Contains("codex"))
+                {
+                    ConfigureCodexHooks(projectRoot);
+                    Console.WriteLine("  - Codex hooks configured");
+                }
             }
 
             // Joining wires this machine, but the integration set is project state: record it
@@ -223,6 +230,8 @@ public static class InitCommand
                 configService.SaveConfig(config, configPath);
                 Console.WriteLine($"  ✓ Recorded integration(s) in {ConfigService.ConfigFileName}: {string.Join(", ", integrations)}");
             }
+
+            WriteOpenCodeArtifacts(projectRoot, integrations.Contains("opencode"), openCodeJson);
 
             var completionResult = ShellCompletionInstaller.Install();
             if (completionResult != null)
@@ -243,7 +252,7 @@ public static class InitCommand
 
     private static int IntegrationError(string integration)
     {
-        ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, codex, all, none");
+        ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, codex, opencode, all, none");
         return ExitCodes.ToolError;
     }
 
@@ -253,11 +262,96 @@ public static class InitCommand
         {
             "claude" => true,
             "codex" => true,
+            "opencode" => true,
             "all" => true,
             "none" => true,
             _ => false
         };
     }
+
+    /// <summary>
+    /// Merges the OpenCode setting into opencode.json, preserving every other key. Returns the
+    /// serialized content, or null when subagent_depth already satisfies the project (so a repeat
+    /// init/join leaves the file bytes untouched). Throws before any project mutation on a
+    /// malformed or incompatible file.
+    /// </summary>
+    private static string? PrepareOpenCodeSettings(string projectRoot)
+    {
+        const string relativePath = "opencode.json";
+        const string key = "subagent_depth";
+        var path = Path.Combine(projectRoot, relativePath);
+        var changed = !File.Exists(path);
+        JsonObject root;
+        if (!changed)
+        {
+            try
+            {
+                root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject
+                    ?? throw HostSettingError(relativePath, "JSON object root", "non-object root");
+            }
+            catch (JsonException ex)
+            {
+                throw HostSettingError(relativePath, "valid JSON object root", $"malformed JSON ({ex.Message})");
+            }
+        }
+        else
+        {
+            root = new JsonObject();
+        }
+
+        if (!root.TryGetPropertyValue(key, out var depthNode))
+        {
+            root[key] = 3;
+            changed = true;
+        }
+        else if (depthNode is not JsonValue value || !value.TryGetValue<int>(out var depth) || depth < 3)
+        {
+            throw HostSettingError(relativePath, $"{key} integer >= 3", DescribeJson(depthNode));
+        }
+
+        return changed ? root.ToJsonString(WriteOptions) : null;
+    }
+
+    private static void WriteOpenCodeArtifacts(string projectRoot, bool enabled, string? openCodeJson)
+    {
+        if (!enabled)
+            return;
+
+        if (openCodeJson != null)
+            File.WriteAllText(Path.Combine(projectRoot, "opencode.json"), openCodeJson);
+
+        var pluginPath = Path.Combine(projectRoot, ".opencode", "plugins", "dydo-guard.js");
+        Directory.CreateDirectory(Path.GetDirectoryName(pluginPath)!);
+        File.WriteAllText(pluginPath, GuardPluginSource);
+        Console.WriteLine("  ✓ OpenCode plugin configured");
+    }
+
+    // H1 shell: proves the live plugin path loads and logs on OpenCode 1.18.30. H3 replaces the
+    // empty hooks object with the v1 tool.execute.before adapter.
+    private const string GuardPluginSource = """
+        export const DydoGuard = async ({ client }) => {
+          await client.app.log({
+            body: {
+              service: "dydo-guard",
+              level: "info",
+              message: "Dydo guard plugin loaded",
+            },
+          })
+          return {}
+        }
+        """;
+
+    private static ArgumentException HostSettingError(string path, string required, string found) =>
+        new($"Invalid {path}: required {required}; found {found}.");
+
+    private static string DescribeJson(JsonNode? value) => value switch
+    {
+        null => "null",
+        JsonValue jsonValue when jsonValue.TryGetValue<string>(out var text) => $"string \"{text}\"",
+        JsonObject => "object",
+        JsonArray => "array",
+        _ => value.ToJsonString()
+    };
 
     private static readonly string[] DydoAllowEntries =
     {

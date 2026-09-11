@@ -55,6 +55,8 @@ public static partial class SyncCommand
     // root on both, which is why one link rewrite serves them equally.
     private const string ClaudeSkillRoot = ".claude/skills";
     private const string CodexSkillRoot = ".agents/skills";
+    private const string OpenCodeSkillRoot = ".opencode/skills";
+    private const string OpenCodeAgentRoot = ".opencode/agents";
 
     // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
     // Codex target reads a different vendor key from the same tiers map; the agent → tier
@@ -76,31 +78,47 @@ public static partial class SyncCommand
         CleanRetiredArtifacts(projectRoot);
         var config = new ConfigService().LoadConfig(projectRoot);
         var models = config?.Models;
-        var (emitClaude, emitCodex) = ResolveIntegrationTargets(config?.Integrations);
+        var targets = ResolveIntegrationTargets(config?.Integrations);
         var (agents, skills) =
-            SyncDiscoveredSkills(templates, projectRoot, models, emitClaude, emitCodex);
+            SyncDiscoveredSkills(templates, projectRoot, models, targets);
 
-        if (emitCodex)
+        if (targets.Codex)
             WriteCodexHooks(projectRoot);
 
-        var workflows = emitClaude ? SyncWorkflows(projectRoot) : 0;
-        PrintSyncSummary(agents, skills, workflows, emitClaude, emitCodex);
+        var workflows = targets.Claude ? SyncWorkflows(projectRoot) : 0;
+        PrintSyncSummary(agents, skills, workflows, targets);
         return ExitCodes.Success;
+    }
+
+    /// <summary>
+    /// The hosts one sync emits to. The two-argument deconstruction preserves the pre-OpenCode
+    /// <c>(claude, codex)</c> call shape.
+    /// </summary>
+    internal readonly record struct HostTargets(bool Claude, bool Codex, bool OpenCode)
+    {
+        public void Deconstruct(out bool claude, out bool codex)
+        {
+            claude = Claude;
+            codex = Codex;
+        }
     }
 
     /// <summary>
     /// Emit only integrations recorded in dydo.json. A project with neither hook-wired
     /// integration recorded (legacy config, or integration "none") keeps the old emit-everything
-    /// behavior rather than silently emitting nothing.
+    /// behavior for Claude and Codex rather than silently emitting nothing. OpenCode is emitted
+    /// only when explicitly recorded, so a legacy project gains no new tree.
     /// </summary>
-    internal static (bool EmitClaude, bool EmitCodex) ResolveIntegrationTargets(
-        Dictionary<string, bool>? integrations)
+    internal static HostTargets ResolveIntegrationTargets(Dictionary<string, bool>? integrations)
     {
         var anyRecorded = integrations != null
-            && (integrations.GetValueOrDefault("claude") || integrations.GetValueOrDefault("codex"));
-        return (
+            && (integrations.GetValueOrDefault("claude")
+                || integrations.GetValueOrDefault("codex")
+                || integrations.GetValueOrDefault("opencode"));
+        return new HostTargets(
             !anyRecorded || integrations!.GetValueOrDefault("claude"),
-            !anyRecorded || integrations!.GetValueOrDefault("codex"));
+            !anyRecorded || integrations!.GetValueOrDefault("codex"),
+            integrations?.GetValueOrDefault("opencode") == true);
     }
 
     private static (List<SkillTemplate> Agents, List<SkillTemplate> Skills)
@@ -108,21 +126,22 @@ public static partial class SyncCommand
             IReadOnlyCollection<SkillTemplate> templates,
             string projectRoot,
             ModelsConfig? models,
-            bool emitClaude,
-            bool emitCodex)
+            HostTargets targets)
     {
         var agents = templates.Where(skill => skill.EmitAgent).ToList();
         foreach (var skill in agents)
         {
-            if (emitClaude) SyncAgent(skill, projectRoot, models);
-            if (emitCodex) SyncCodexAgent(skill, projectRoot, models);
+            if (targets.Claude) SyncAgent(skill, projectRoot, models);
+            if (targets.Codex) SyncCodexAgent(skill, projectRoot, models);
+            if (targets.OpenCode) SyncOpenCodeAgent(skill, projectRoot);
         }
 
         var skills = templates.Where(skill => !skill.EmitAgent).ToList();
         foreach (var skill in skills)
         {
-            if (emitClaude) SyncSkill(skill, projectRoot);
-            if (emitCodex) SyncCodexSkill(skill, projectRoot);
+            if (targets.Claude) SyncSkill(skill, projectRoot);
+            if (targets.Codex) SyncCodexSkill(skill, projectRoot);
+            if (targets.OpenCode) SyncOpenCodeSkill(skill, projectRoot);
         }
 
         return (agents, skills);
@@ -132,19 +151,25 @@ public static partial class SyncCommand
         IReadOnlyCollection<SkillTemplate> agents,
         IReadOnlyCollection<SkillTemplate> skills,
         int workflows,
-        bool emitClaude,
-        bool emitCodex)
+        HostTargets targets)
     {
-        if (emitClaude)
+        if (targets.Claude)
         {
             Console.WriteLine($"Synced {agents.Count} agent(s) to .claude/ (agents + skills): {string.Join(", ", agents.Select(s => s.Name))}");
             Console.WriteLine($"Synced {skills.Count} skill(s) to .claude/ (skills only): {string.Join(", ", skills.Select(s => s.Name))}");
             Console.WriteLine($"Synced {workflows} workflow(s) to .claude/workflows.");
         }
-        if (emitCodex)
+        if (targets.Codex)
             Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
-        if (!emitClaude || !emitCodex)
-            Console.WriteLine($"Skipped {(emitClaude ? "Codex" : "Claude")} artifacts — not recorded in dydo.json integrations (add it with 'dydo init <integration> --join').");
+        if (targets.OpenCode)
+            Console.WriteLine($"Synced OpenCode artifacts to .opencode/skills and .opencode/agents.");
+        if (!targets.Claude || !targets.Codex)
+        {
+            var skipped = !targets.Claude && !targets.Codex
+                ? "Claude and Codex"
+                : (targets.Claude ? "Codex" : "Claude");
+            Console.WriteLine($"Skipped {skipped} artifacts — not recorded in dydo.json integrations (add it with 'dydo init <integration> --join').");
+        }
     }
 
     /// <summary>
@@ -164,12 +189,15 @@ public static partial class SyncCommand
                 Combine(projectRoot, ClaudeSkillRoot, $"{skillName}/SKILL.md"),
                 Path.Combine(projectRoot, ".codex", "agents", $"{skillName}.toml"),
                 Combine(projectRoot, CodexSkillRoot, $"{skillName}/agents/openai.yaml"),
-                Combine(projectRoot, CodexSkillRoot, $"{skillName}/SKILL.md"));
+                Combine(projectRoot, CodexSkillRoot, $"{skillName}/SKILL.md"),
+                Path.Combine(projectRoot, OpenCodeAgentRoot, $"{skillName}.md"),
+                Combine(projectRoot, OpenCodeSkillRoot, $"{skillName}/SKILL.md"));
 
             // A skill retired after its SKILL.md was already swept keeps its folder alive through
             // agents/openai.yaml alone, so the folder outlives the file DeleteIfPresent emptied.
             DeleteIfEmpty(Combine(projectRoot, ClaudeSkillRoot, skillName));
             DeleteIfEmpty(Combine(projectRoot, CodexSkillRoot, skillName));
+            DeleteIfEmpty(Combine(projectRoot, OpenCodeSkillRoot, skillName));
 
             if (skillRemoved > 0)
                 Console.WriteLine($"Removed retired skill artifacts for '{skillName}'.");
@@ -182,7 +210,8 @@ public static partial class SyncCommand
         foreach (var resource in RetiredSkillResources)
             removed += Sweep(
                 Combine(projectRoot, ClaudeSkillRoot, resource),
-                Combine(projectRoot, CodexSkillRoot, resource));
+                Combine(projectRoot, CodexSkillRoot, resource),
+                Combine(projectRoot, OpenCodeSkillRoot, resource));
 
         return removed;
     }
@@ -271,6 +300,38 @@ public static partial class SyncCommand
 
     internal static void WriteCodexHooks(string projectRoot)
         => InitCommand.ConfigureCodexHooks(projectRoot);
+
+    /// <summary>
+    /// OpenCode's native agent: markdown whose filename is the agent name, a permission profile
+    /// derived from the skill's capabilities, and the Codex-style load line carrying the
+    /// methodology (OpenCode exposes no skill-preload field).
+    /// </summary>
+    internal static void SyncOpenCodeAgent(SkillTemplate skill, string projectRoot)
+    {
+        SyncOpenCodeSkill(skill, projectRoot);
+
+        var agentDir = Path.Combine(projectRoot, ".opencode", "agents");
+        Directory.CreateDirectory(agentDir);
+        WriteLf(Path.Combine(agentDir, $"{skill.Name}.md"),
+            BuildOpenCodeAgent(skill, ExtractMustReads(skill, projectRoot)));
+    }
+
+    /// <summary>
+    /// OpenCode compiles automatic skills to .opencode/skills. Explicit roles become commands in
+    /// H2 and must stay invisible to the skill loader, so they are skipped here.
+    /// </summary>
+    internal static void SyncOpenCodeSkill(SkillTemplate skill, string projectRoot)
+    {
+        if (skill.ExplicitInvocation)
+            return;
+
+        var skillDir = Path.Combine(projectRoot, ".opencode", "skills", skill.Name);
+        Directory.CreateDirectory(skillDir);
+        WriteLf(
+            Path.Combine(skillDir, "SKILL.md"),
+            BuildOpenCodeSkill(skill, CompileSkillBody(skill, projectRoot, OpenCodeSkillRoot)));
+        WriteSkillResources(skill, skillDir);
+    }
 
     private static void WriteSkill(SkillTemplate skill, string projectRoot)
     {
@@ -477,6 +538,50 @@ public static partial class SyncCommand
 
     private static string Article(string noun) =>
         "aeiou".Contains(char.ToLowerInvariant(noun[0])) ? "an" : "a";
+
+    /// <summary>
+    /// OpenCode honors only name/description/license/compatibility/metadata in skill
+    /// frontmatter and silently ignores the rest, so it carries exactly the two dydo needs.
+    /// </summary>
+    private static string BuildOpenCodeSkill(SkillTemplate skill, string methodology) =>
+        $"""
+        ---
+        name: {skill.Name}
+        description: {skill.Description}
+        ---
+
+        {methodology}
+        """;
+
+    /// <summary>
+    /// Permission mapping (OpenCode): a read-only skill denies edits, a non-delegating worker
+    /// denies the task tool so it cannot fan out, and only a web skill may fetch or search.
+    /// </summary>
+    private static string BuildOpenCodeAgent(SkillTemplate skill, List<string> mustReads)
+    {
+        var stance = skill.ReadOnly
+            ? "You are read-only: you assess and report, you do not modify the project's files."
+            : "You produce and modify the project's files as your task requires.";
+        var contextBlock = mustReads.Count == 0 ? "" :
+            "\n\nRead these for project context before working:\n"
+            + string.Join('\n', mustReads.Select(p => $"- {p}"));
+        var permission = (skill.ReadOnly ? "\n  edit: deny" : "")
+            + (skill.Delegates ? "\n  task: allow" : "\n  task: deny")
+            + (skill.Web
+                ? "\n  webfetch: allow\n  websearch: allow"
+                : "\n  webfetch: deny\n  websearch: deny");
+
+        return $"""
+        ---
+        description: {skill.Description}
+        mode: subagent
+        permission:{permission}
+        ---
+
+        You are {Article(skill.Name)} **{skill.Name}**. {skill.Description} {stance}{contextBlock}
+        Load the `{skill.Name}` skill before working.
+        """;
+    }
 
     /// <summary>
     /// Reads the skill template, resolves include tags, strips the frontmatter, and

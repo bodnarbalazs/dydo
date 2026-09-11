@@ -57,6 +57,7 @@ public static partial class SyncCommand
     private const string CodexSkillRoot = ".agents/skills";
     private const string OpenCodeSkillRoot = ".opencode/skills";
     private const string OpenCodeAgentRoot = ".opencode/agents";
+    private const string OpenCodeCommandRoot = ".opencode/commands";
 
     // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
     // Codex target reads a different vendor key from the same tiers map; the agent → tier
@@ -141,7 +142,10 @@ public static partial class SyncCommand
         {
             if (targets.Claude) SyncSkill(skill, projectRoot);
             if (targets.Codex) SyncCodexSkill(skill, projectRoot);
-            if (targets.OpenCode) SyncOpenCodeSkill(skill, projectRoot);
+            if (!targets.OpenCode)
+                continue;
+            if (skill.ExplicitInvocation) SyncOpenCodeCommand(skill, projectRoot);
+            else SyncOpenCodeSkill(skill, projectRoot);
         }
 
         return (agents, skills);
@@ -162,7 +166,7 @@ public static partial class SyncCommand
         if (targets.Codex)
             Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
         if (targets.OpenCode)
-            Console.WriteLine($"Synced OpenCode artifacts to .opencode/skills and .opencode/agents.");
+            Console.WriteLine($"Synced OpenCode artifacts to .opencode/skills, .opencode/agents and .opencode/commands.");
         if (!targets.Claude || !targets.Codex)
         {
             var skipped = !targets.Claude && !targets.Codex
@@ -191,6 +195,7 @@ public static partial class SyncCommand
                 Combine(projectRoot, CodexSkillRoot, $"{skillName}/agents/openai.yaml"),
                 Combine(projectRoot, CodexSkillRoot, $"{skillName}/SKILL.md"),
                 Path.Combine(projectRoot, OpenCodeAgentRoot, $"{skillName}.md"),
+                Path.Combine(projectRoot, OpenCodeCommandRoot, $"{skillName}.md"),
                 Combine(projectRoot, OpenCodeSkillRoot, $"{skillName}/SKILL.md"));
 
             // A skill retired after its SKILL.md was already swept keeps its folder alive through
@@ -317,20 +322,44 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// OpenCode compiles automatic skills to .opencode/skills. Explicit roles become commands in
-    /// H2 and must stay invisible to the skill loader, so they are skipped here.
+    /// OpenCode compiles automatic skills to .opencode/skills. An explicit role is a command and
+    /// must stay invisible to the skill loader, so it is skipped here (see SyncOpenCodeCommand).
     /// </summary>
     internal static void SyncOpenCodeSkill(SkillTemplate skill, string projectRoot)
     {
         if (skill.ExplicitInvocation)
             return;
 
-        var skillDir = Path.Combine(projectRoot, ".opencode", "skills", skill.Name);
+        var skillDir = Path.Combine(projectRoot, OpenCodeSkillRoot, skill.Name);
         Directory.CreateDirectory(skillDir);
         WriteLf(
             Path.Combine(skillDir, "SKILL.md"),
             BuildOpenCodeSkill(skill, CompileSkillBody(skill, projectRoot, OpenCodeSkillRoot)));
         WriteSkillResources(skill, skillDir);
+    }
+
+    /// <summary>
+    /// OpenCode's human-only role: a command at .opencode/commands/&lt;name&gt;.md whose body is the
+    /// whole methodology inlined, with <c>$ARGUMENTS</c> carrying the human's input. No SKILL.md is
+    /// emitted, so the role never enters the model-visible skill set and is reachable only as
+    /// <c>/&lt;name&gt;</c>. A role that ships resources keeps them in the resource-only
+    /// .opencode/skills/&lt;name&gt;/ folder (no SKILL.md): the skill loader ignores a folder without
+    /// one, and the command body links to it from the commands root.
+    /// </summary>
+    internal static void SyncOpenCodeCommand(SkillTemplate skill, string projectRoot)
+    {
+        var commandDir = Path.Combine(projectRoot, OpenCodeCommandRoot);
+        Directory.CreateDirectory(commandDir);
+        WriteLf(
+            Path.Combine(commandDir, $"{skill.Name}.md"),
+            BuildOpenCodeCommand(skill, CompileCommandBody(skill, projectRoot)));
+
+        if (TemplateGenerator.GetSkillResourceTemplateNames(skill.Name).Count == 0)
+            return;
+
+        var resourceRoot = Path.Combine(projectRoot, OpenCodeSkillRoot, skill.Name);
+        Directory.CreateDirectory(resourceRoot);
+        WriteSkillResources(skill, resourceRoot);
     }
 
     private static void WriteSkill(SkillTemplate skill, string projectRoot)
@@ -554,6 +583,23 @@ public static partial class SyncCommand
         """;
 
     /// <summary>
+    /// OpenCode's command file: description frontmatter only (commands take a subset of agent
+    /// fields), the methodology inlined, and <c>$ARGUMENTS</c> at the top so the model reads the
+    /// human's request before the method it must follow. With no argument the placeholder expands
+    /// to an empty line.
+    /// </summary>
+    private static string BuildOpenCodeCommand(SkillTemplate skill, string methodology) =>
+        $"""
+        ---
+        description: {skill.Description}
+        ---
+
+        $ARGUMENTS
+
+        {methodology}
+        """;
+
+    /// <summary>
     /// Permission mapping (OpenCode): a read-only skill denies edits, a non-delegating worker
     /// denies the task tool so it cannot fan out, and only a web skill may fetch or search.
     /// </summary>
@@ -613,6 +659,13 @@ public static partial class SyncCommand
         RewriteSkillLinks(ExtractMethodology(skill, projectRoot), skill.Name, skillRoot);
 
     /// <summary>
+    /// Compiles an explicit role's command body: the methodology with every link rewritten to
+    /// resolve from .opencode/commands/, which sits two levels below the project root.
+    /// </summary>
+    private static string CompileCommandBody(SkillTemplate skill, string projectRoot) =>
+        RewriteCommandLinks(ExtractMethodology(skill, projectRoot), skill.Name);
+
+    /// <summary>
     /// Rewrites the compiled skill body's links (DR 045 §10). Both hosts emit SKILL.md three
     /// levels below the project root, so a dydo document is <c>../../../dydo/&lt;x&gt;</c> on
     /// either — the authored climb out of Templates/ lands one folder short of that. A
@@ -622,13 +675,31 @@ public static partial class SyncCommand
     /// rewrite is a fixed point so a second sync is byte-identical.
     /// </summary>
     internal static string RewriteSkillLinks(string body, string skillName, string skillRoot) =>
-        LinkTargetRegex().Replace(body, match =>
-            $"]({RewriteLinkTarget(match.Groups[1].Value, skillName, skillRoot)})");
+        RewriteLinks(body, resourcePrefix: $"{skillRoot}/{skillName}/", dydoClimb: "../../../");
 
-    private static string RewriteLinkTarget(string target, string skillName, string skillRoot)
+    /// <summary>
+    /// Rewrites an explicit role's command body. The command sits at .opencode/commands/, two
+    /// levels below the project root instead of three, and its resources live in the resource-only
+    /// .opencode/skills/&lt;name&gt;/ folder beside it — so a dydo document climbs <c>../../</c> and
+    /// a <c>resources/&lt;n&gt;.md</c> link becomes <c>../skills/&lt;name&gt;/resources/&lt;n&gt;.md</c>.
+    /// </summary>
+    internal static string RewriteCommandLinks(string body, string skillName) =>
+        RewriteLinks(body, resourcePrefix: $"../skills/{skillName}/", dydoClimb: "../../");
+
+    private static string RewriteLinks(string body, string resourcePrefix, string dydoClimb) =>
+        LinkTargetRegex().Replace(body, match =>
+            $"]({RewriteLinkTarget(match.Groups[1].Value, resourcePrefix, dydoClimb)})");
+
+    private static string RewriteLinkTarget(string target, string resourcePrefix, string dydoClimb)
     {
         if (target.StartsWith("resources/", StringComparison.Ordinal))
-            return $"{skillRoot}/{skillName}/{target}";
+            return $"{resourcePrefix}{target}";
+
+        // A command's emitted resource path (../skills/<name>/…) starts with a climb, unlike a
+        // skill's (.opencode/skills/<name>/…), so leaving it to the climb branch would prefix it a
+        // second time and break the fixed point. Already-emitted targets stay put.
+        if (target.StartsWith(resourcePrefix, StringComparison.Ordinal))
+            return target;
 
         var climb = ClimbPrefixRegex().Match(target);
         var document = target[climb.Length..];
@@ -636,8 +707,8 @@ public static partial class SyncCommand
             return target;
 
         return document.StartsWith("dydo/", StringComparison.Ordinal)
-            ? $"../../../{document}"
-            : $"../../../dydo/{document}";
+            ? $"{dydoClimb}{document}"
+            : $"{dydoClimb}dydo/{document}";
     }
 
     /// <summary>

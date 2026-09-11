@@ -223,6 +223,186 @@ public class SyncCommandTests : IDisposable
         Assert.All(files, path => Assert.Equal(first[path], File.ReadAllBytes(path)));
     }
 
+    // H2: an explicit role is a command, not a model-visible skill. The whole methodology is
+    // inlined and $ARGUMENTS carries the human's input; no .opencode/skills/<name>/SKILL.md and no
+    // agent are emitted, so the role is reachable only as /<name>.
+    [Fact]
+    public void SyncOpenCodeCommand_ExplicitRole_WritesCommandWithInlinedMethodologyAndArguments()
+    {
+        var admiral = SkillTemplateService.DiscoverSkills().Single(skill => skill.Name == "admiral");
+        Assert.True(admiral.ExplicitInvocation);
+
+        SyncCommand.SyncOpenCodeCommand(admiral, _testDir);
+
+        var command = File.ReadAllText(Path.Combine(_testDir, ".opencode", "commands", "admiral.md"));
+        var frontmatter = command.Split("---")[1];
+        Assert.Contains($"description: {admiral.Description}\n", frontmatter);
+        Assert.DoesNotContain("name:", frontmatter);
+        Assert.DoesNotContain("argument-hint", frontmatter);
+        Assert.Contains("\n$ARGUMENTS\n", command);
+        Assert.Equal(
+            Headings(TemplateGenerator.ReadBuiltInTemplate(admiral.TemplateFile)).ToList(),
+            Headings(FrontmatterParser.StripFrontmatter(command)).ToList());
+
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".opencode", "skills", "admiral")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".opencode", "agents", "admiral.md")));
+    }
+
+    // The two resource-bearing explicit roles keep their resources in a resource-only
+    // .opencode/skills/<name>/ folder: resources/ present, SKILL.md absent (invisible to both the
+    // skill loader, which needs SKILL.md, and the command loader, which only reads commands/).
+    [Theory]
+    [InlineData("teach", 4)]
+    [InlineData("improve-codebase-architecture", 1)]
+    public void SyncOpenCodeCommand_ResourceBearingRole_EmitsResourceOnlyFolder(string name, int resourceCount)
+    {
+        var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == name);
+        Assert.True(skill.ExplicitInvocation);
+
+        SyncCommand.SyncOpenCodeCommand(skill, _testDir);
+
+        var skillDir = Path.Combine(_testDir, ".opencode", "skills", name);
+        Assert.False(File.Exists(Path.Combine(skillDir, "SKILL.md")),
+            "a command's resource folder must have no SKILL.md, or it becomes model-visible");
+        Assert.Equal(resourceCount, Directory.GetFiles(Path.Combine(skillDir, "resources"), "*.md").Length);
+        Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "commands", $"{name}.md")));
+    }
+
+    // A command sits at .opencode/commands/, two levels below the project root, so its resource
+    // links climb into the sibling resource-only folder and resolve from the command file.
+    [Fact]
+    public void SyncOpenCodeCommand_ResourceLinksResolveFromTheCommandsRoot()
+    {
+        var teach = SkillTemplateService.DiscoverSkills().Single(skill => skill.Name == "teach");
+
+        SyncCommand.SyncOpenCodeCommand(teach, _testDir);
+
+        var commandDir = Path.Combine(_testDir, ".opencode", "commands");
+        var command = File.ReadAllText(Path.Combine(commandDir, "teach.md"));
+        Assert.Contains("(../skills/teach/resources/mission-format.md)", command);
+        Assert.True(
+            File.Exists(Path.GetFullPath(Path.Combine(commandDir, "../skills/teach/resources/mission-format.md"))),
+            "every command resource link must resolve from the emitted commands folder");
+    }
+
+    // .opencode/commands/ is two levels deep, not three: a dydo document climbs ../../ and lands on
+    // the project root, where the skills' ../../../ climb would overshoot it.
+    [Fact]
+    public void SyncOpenCodeCommand_DydoLinkClimbsTwoLevels()
+    {
+        var improve = SkillTemplateService.DiscoverSkills()
+            .Single(skill => skill.Name == "improve-codebase-architecture");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+        File.WriteAllText(Path.Combine(_testDir, "dydo", "glossary.md"), "# Glossary");
+
+        SyncCommand.SyncOpenCodeCommand(improve, _testDir);
+
+        var commandDir = Path.Combine(_testDir, ".opencode", "commands");
+        var command = File.ReadAllText(Path.Combine(commandDir, "improve-codebase-architecture.md"));
+        Assert.Contains("(../../dydo/glossary.md)", command);
+        Assert.DoesNotContain("../../../dydo/glossary.md", command);
+        Assert.True(File.Exists(Path.GetFullPath(Path.Combine(commandDir, "../../dydo/glossary.md"))));
+    }
+
+    // The command rewrite is the skill rewrite's fixed-point discipline at a different depth: only
+    // path-shaped targets move, and an already-rewritten body compiles unchanged.
+    [Fact]
+    public void RewriteCommandLinks_IsIdempotent_AndLeavesNonPathTargetsAlone()
+    {
+        const string body = "[a](../../../understand/about.md) [b](dydo/index.md) [c](resources/merge.md)\n"
+            + "[d](https://linear.app/x) [e](Linear URL) [f](#anchor)";
+
+        var once = SyncCommand.RewriteCommandLinks(body, "teach");
+
+        Assert.Equal(
+            "[a](../../dydo/understand/about.md) [b](../../dydo/index.md) "
+            + "[c](../skills/teach/resources/merge.md)\n"
+            + "[d](https://linear.app/x) [e](Linear URL) [f](#anchor)",
+            once);
+        Assert.Equal(once, SyncCommand.RewriteCommandLinks(once, "teach"));
+    }
+
+    // A full recorded-OpenCode sync splits the non-agent roles by invocation: explicit → command
+    // file, automatic → SKILL.md, never both. This is the acceptance gate's shape at the tree level.
+    [Fact]
+    public void Execute_OpenCodeIntegration_ExplicitRolesAreCommandsAndNotSkills()
+    {
+        SaveConfigWithIntegrations(claude: false, codex: false, opencode: true);
+        var shipped = SkillTemplateService.DiscoverSkills();
+
+        SyncCommand.Execute(_testDir);
+
+        var explicitRoles = shipped.Where(skill => skill.ExplicitInvocation).ToList();
+        Assert.NotEmpty(explicitRoles);
+        foreach (var skill in explicitRoles)
+        {
+            Assert.True(
+                File.Exists(Path.Combine(_testDir, ".opencode", "commands", $"{skill.Name}.md")),
+                $"{skill.Name} must emit a command");
+            Assert.False(
+                File.Exists(Path.Combine(_testDir, ".opencode", "skills", skill.Name, "SKILL.md")),
+                $"{skill.Name} must not be model-visible as a skill");
+        }
+
+        foreach (var skill in shipped.Where(s => !s.ExplicitInvocation && !s.EmitAgent))
+        {
+            Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "skills", skill.Name, "SKILL.md")));
+            Assert.False(File.Exists(Path.Combine(_testDir, ".opencode", "commands", $"{skill.Name}.md")));
+        }
+    }
+
+    // Idempotency over the whole .opencode tree, not one artifact: a second sync neither rewrites a
+    // byte nor adds or drops a file.
+    [Fact]
+    public void Execute_OpenCodeIntegration_SecondSyncIsByteIdenticalIncludingCommands()
+    {
+        SaveConfigWithIntegrations(claude: false, codex: false, opencode: true);
+        SyncCommand.Execute(_testDir);
+        var root = Path.Combine(_testDir, ".opencode");
+        var first = Directory.GetFiles(root, "*", SearchOption.AllDirectories)
+            .ToDictionary(path => path, File.ReadAllBytes);
+
+        SyncCommand.Execute(_testDir);
+
+        foreach (var (path, bytes) in first)
+            Assert.Equal(bytes, File.ReadAllBytes(path));
+        Assert.Equal(
+            first.Keys.OrderBy(path => path, StringComparer.Ordinal),
+            Directory.GetFiles(root, "*", SearchOption.AllDirectories)
+                .OrderBy(path => path, StringComparer.Ordinal));
+    }
+
+    // The large-body fog: teach's command carries the whole methodology, not a truncated prompt.
+    [Fact]
+    public void SyncOpenCodeCommand_LargeBodyCommand_KeepsTheWholeMethodologyAndArguments()
+    {
+        var teach = SkillTemplateService.DiscoverSkills().Single(skill => skill.Name == "teach");
+
+        SyncCommand.SyncOpenCodeCommand(teach, _testDir);
+
+        var command = File.ReadAllText(Path.Combine(_testDir, ".opencode", "commands", "teach.md"));
+        Assert.True(command.Length > 8000, "teach's command body must carry the whole methodology");
+        Assert.Contains("\n$ARGUMENTS\n", command);
+        Assert.Equal(
+            Headings(TemplateGenerator.ReadBuiltInTemplate(teach.TemplateFile)).ToList(),
+            Headings(FrontmatterParser.StripFrontmatter(command)).ToList());
+    }
+
+    [Fact]
+    public void CleanRetiredArtifacts_RemovesARetiredRolesOpenCodeCommandAndPreservesSiblings()
+    {
+        var command = Path.Combine(_testDir, ".opencode", "commands", "sprint-auditor.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(command)!);
+        File.WriteAllText(command, "stale command");
+        var sibling = Path.Combine(_testDir, ".opencode", "commands", "my-custom-command.md");
+        File.WriteAllText(sibling, "project owned");
+
+        SyncCommand.CleanRetiredArtifacts(_testDir);
+
+        Assert.False(File.Exists(command));
+        Assert.True(File.Exists(sibling), "a project-owned sibling command must survive the sweep");
+    }
+
     [Fact]
     public void CleanRetiredArtifacts_RemovesOpenCodeArtifactsAndPreservesSiblings()
     {

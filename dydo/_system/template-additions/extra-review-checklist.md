@@ -1,4 +1,5 @@
-- [ ] Every gate applicable to this Issue and stage was rerun with the contract-named command.
+- [ ] Every gate this stage owes has its contract-named command and result on this candidate.
+- [ ] A hop's committed run includes every test its change reaches.
 - [ ] Meaningful code changes passed their specified tests.
 - [ ] Combined merge gates passed when this is a merge review.
 - [ ] Final G/M release obligations passed when this is the final release review.

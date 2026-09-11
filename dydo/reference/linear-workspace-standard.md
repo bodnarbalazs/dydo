@@ -180,6 +180,10 @@ required connector capability.
 | `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
 | `Walkthrough` | `## What landed` (branch, SHA, final PASS), the four-part tour, `## Findings` as linked Issues. |
 
+`## Exact gates` lists its two scales separately: the cheap checks and change-relevant tests that
+prove one hop, and the full suites and whole gate set that run at the Issue's final gates, its Merge
+Sub-issue's combined gates and the landing. A worker briefed for one hop takes the first list alone.
+
 ## Communication and evidence
 
 Use metadata first: the current active contract and named evidence only. Keep the stable current

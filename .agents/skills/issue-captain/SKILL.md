@@ -84,9 +84,11 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    the host takes both; where it takes only a model, leave effort host-owned and record that limit.
    Brief the requested value so the worker's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
-   table. Validate uncertain native interface shapes early. Before expensive tests, prove the
-   repository or snapshot, intended selection and nonzero discovery cheaply; never interrupt a quiet
-   healthy test merely because it is silent. **Done:** each candidate accounts for its paths, passes
+   table. Validate uncertain native interface shapes early. Brief each hop's proof focused — the
+   tests its change reaches plus the cheap checks — and name the gate where the full suites run.
+   Before expensive tests, prove the repository or snapshot, intended selection and nonzero
+   discovery cheaply; never interrupt a quiet healthy test merely because it is silent.
+   **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the compact acceptance-contract
    SHA or, when present, the specify SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests and gates go to `hardener`,
@@ -99,12 +101,15 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    findings and wires a prepared Question through the scope rule below. Record each gate result with
    its candidate, command, environment or session, exit and result location. Reuse exact-candidate
    evidence when that gate and environment permit; rerun only after relevant change or concern, or at
-   a distinct mandatory integration or release boundary.
+   a distinct mandatory integration or release boundary. Judge a hop on its focused run instead of
+   scheduling a suite the gate will run.
 6. **Offer.** Direct each passed lane's Merge Sub-issue in order: specifier maps conflicts and
    combined gates, implementer merges, then send `hardener` at `Hardening` if the resolution
    refactored. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain
-   a fresh whole-Issue PASS once all lanes are in. **Done:** push the branch, open the PR with its
-   PASS block on the record and in the body, set `Ready to Merge`, and return `done <key>: PR ready`.
+   a fresh whole-Issue PASS once all lanes are in. The full suites and the Issue's whole gate set
+   run here, again at each Merge Sub-issue's combined gates and at the landing; within one such run
+   each suite executes once. **Done:** push the branch, open the PR with its PASS block on the
+   record and in the body, set `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-issue's blocker clears, resume from the record and direct
    its chain as above into the contract's target. The parent stays `Ready to Merge` while the
    Sub-issue runs; a Merge Sub-issue never enters that status. A landing Merge instead offers its

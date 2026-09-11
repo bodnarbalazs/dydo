@@ -73,7 +73,10 @@ it. This scale rule does not weaken required G/M, integration or release gates, 
 proof is never runtime proof.
 
 Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
-discovery. Record every gate result with candidate, command, environment or session, exit and result
+discovery. An iteration hop and its review prove with the tests relevant to the change and the cheap
+static checks; the full suites and the whole gate set run at the Issue's final gates, its Merge
+Sub-issue's combined gates and the landing. Within one such gate run, each suite executes once.
+Record every gate result with candidate, command, environment or session, exit and result
 location; do not interrupt a quiet healthy test merely because it is silent. Reuse exact-candidate
 evidence only where the gate and environment permit it, rerunning after relevant changes or new
 concerns and at distinct mandatory integration or release boundaries. Validate uncertain native

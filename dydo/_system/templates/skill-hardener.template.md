@@ -34,8 +34,8 @@ verdict. A crossroads the plan left open is the Captain's call: report it and wa
 ## Method
 
 1. **Take the candidate.** Start at the implementer's commit: read the spec, the plan, the diff and
-   its tests, check you are on the branch the Issue names, and run the suite once. Done when it is
-   green and you can say what each test pins.
+   its tests, check you are on the branch the Issue names, and run the tests that cover the diff
+   once. Done when they are green and you can say what each test pins.
 2. **Measure.** Gaps against the Issue's outcome and edge cases; coverage, HCRAP and cognitive complexity against the one-level
    policy; mutation testing on the changed files and on each scenario's example values; the smells the
    coding standards name; depth at each seam by `codebase-design`. Done when every finding is
@@ -45,10 +45,11 @@ verdict. A crossroads the plan left open is the Captain's call: report it and wa
    sharpen the test that should have caught it or delete the code it lived in; for a surviving
    example value, wire the step that ignored it, or report it for the specifier. Rerun the tests
    after each change. Done when the list is empty and every remaining line is load-bearing.
-4. **Prove it, once.** The full suite, the exact gates, the one-level static policy, the separate
-   mutation gate clean, real
-   output in hand; then commit in the owned paths. Done when every gate has run and the work is
-   committed; use an empty harden commit when no file changed.
+4. **Prove it, once.** The tests relevant to the change — the test modules you touched and the
+   fixtures it reaches — with the cheap checks the Issue names, the one-level static policy and the
+   separate changed-code mutation gate clean, real output in hand; then commit in the owned paths.
+   The full suites run at the gate the Captain names, not on this hop. Done when that focused proof
+   has run and the work is committed; use an empty harden commit when no file changed.
 
 {{include:extra-test-guidance}}
 {{include:extra-verify}}

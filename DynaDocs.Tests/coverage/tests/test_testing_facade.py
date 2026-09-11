@@ -227,6 +227,23 @@ class TestingFacadeTests(unittest.TestCase):
                     self.assertEqual([], list(root.glob('*.txt')))
                     self.assertIsNone(payload)
 
+    def test_force_run_keeps_malformed_capabilities_container_row_local(self):
+        for malformed in [None, [], 4, 'configured']:
+            with self.subTest(value=malformed):
+                bad = stack('bad')
+                bad['capabilities'] = malformed
+                p, root, payload = self.invoke(['--force-run'], manifest(bad, stack('peer')))
+                self.assert_exit(p, 2)
+                self.assertNotIn('Traceback', p.stderr, p.stderr)
+                self.assertIsNotNone(payload, p.stdout + p.stderr)
+                self.assert_rows(payload, [
+                    ('bad', 'test', 'invalid'), ('bad', 'static', 'invalid'), ('bad', 'coverage', 'invalid'),
+                    ('peer', 'test', 'passed'), ('peer', 'static', 'passed'), ('peer', 'coverage', 'passed')])
+                self.assertFalse((root / 'bad-test.txt').exists())
+                produced = {x.name for x in root.glob('*.txt')}
+                for capability in ('test', 'static', 'coverage'):
+                    self.assertIn(f'peer-{capability}.txt', produced)
+
     def test_capabilities_validates_configuration_without_execution(self):
         cases = [
             (('kind',), ''),

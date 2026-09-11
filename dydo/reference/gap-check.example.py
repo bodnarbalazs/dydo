@@ -367,11 +367,10 @@ INTERRUPTED_BEFORE_COVERAGE = "suite verdict not established: the run was interr
 def deferral_applies(stack, capabilities, root):
     if "test" not in capabilities or "coverage" not in capabilities:
         return False
-    config = stack.get("capabilities", {}).get("coverage")
-    if not isinstance(config, dict) or "suiteVerdict" not in config:
-        return False
     _, _, coverage_state, _ = prepare_row(stack, "coverage", root)
     if coverage_state != "configured":
+        return False
+    if "suiteVerdict" not in stack["capabilities"]["coverage"]:
         return False
     _, _, test_state, _ = prepare_row(stack, "test", root)
     return test_state == "configured"

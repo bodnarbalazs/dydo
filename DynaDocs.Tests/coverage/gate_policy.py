@@ -133,4 +133,3 @@ def evaluate_policy(modules):
         raise ValueError("Missing or duplicate module identity")
     _validate_body_owners(modules)
     return [finding for module in modules for finding in _module_violations(module)]
-

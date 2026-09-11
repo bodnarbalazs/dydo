@@ -62,4 +62,3 @@ public static class MethodIdentity
         _ => type.FullName
     };
 }
-

@@ -38,4 +38,3 @@ def contains(span, line, column):
     if (start_line, start_column) >= (end_line, end_column):
         raise ValueError("Empty or reversed source span")
     return (start_line, start_column) <= (line, column) < (end_line, end_column)
-

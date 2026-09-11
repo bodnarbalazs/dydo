@@ -124,4 +124,3 @@ if (require.main === module) {
   const fs = require('node:fs');
   process.stdout.write(JSON.stringify(analyze(fs.readFileSync(0, 'utf8'), process.argv[2])));
 }
-

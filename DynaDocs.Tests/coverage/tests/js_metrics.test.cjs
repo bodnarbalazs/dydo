@@ -50,4 +50,3 @@ test('explicit ESM parsing preserves exported function metrics', () => {
   assert.equal(rows[0].cc, 2);
   assert.equal(rows[0].cognitive, 1);
 });
-

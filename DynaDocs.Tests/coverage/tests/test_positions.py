@@ -51,4 +51,3 @@ class PositionTests(unittest.TestCase):
         self.assertTrue(contains(right, 1, 5))
         with self.assertRaises(ValueError):
             contains((0, 0, 1, 5), 1, 2)
-

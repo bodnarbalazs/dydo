@@ -255,4 +255,3 @@ outer()
         self.assertEqual(2, len(rows))
         self.assertTrue(all(row['body_lines'] == {'1' if index == 0 else '2': 0}
                             for index, row in enumerate(rows)))
-

@@ -12,4 +12,3 @@ test('native Knip reporter rejects missing or duplicate workspace identities', a
     await assert.rejects(() => report({ counters: { total: 1 }, includedWorkspaceDirs }), /workspace/);
   }
 });
-

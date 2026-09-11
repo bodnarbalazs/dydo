@@ -3,10 +3,19 @@ import sys
 import tempfile
 import unittest
 import hashlib
+import subprocess
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
+
+_EVIDENCE = 'dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence'
+
+
+def _git(root, *arguments):
+    completed = subprocess.run(['git', '-c', f'safe.directory={root.as_posix()}', *arguments],
+                               cwd=root, check=True, capture_output=True)
+    return completed.stdout.decode('utf-8')
 
 
 class GateInventoryTests(unittest.TestCase):
@@ -133,3 +142,34 @@ class GateInventoryTests(unittest.TestCase):
                                  [row['type'] for row in report['errors']])
                 if expected == 'fixture-origin-diverged':
                     self.assertEqual(digest, report['errors'][0]['actualSha256'])
+
+    def test_a_line_ending_only_worktree_divergence_is_still_denied_its_exclusion(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            digest = hashlib.sha256(b'class Probe {}\n').hexdigest()
+            _, _, paths = self.native_packet(root, f'{digest.upper()}  fixture/Program.cs\n',
+                                             source='class Probe {}\r\n')
+
+            report = assemble_inventory(root, paths, [], [])
+
+            self.assertEqual([], report['excluded'])
+            self.assertEqual([paths[1]], [row['path'] for row in report['sources']])
+            self.assertEqual(['fixture-origin-diverged', 'missing-evaluated-compile'],
+                             [row['type'] for row in report['errors']])
+            self.assertEqual(hashlib.sha256(b'class Probe {}\r\n').hexdigest(),
+                             report['errors'][0]['actualSha256'])
+
+    def test_a_fresh_checkout_of_the_retained_packet_keeps_its_fixture_exclusion(self):
+        repository = Path(__file__).resolve().parents[3]
+        tracked = [row for row in _git(repository, 'ls-files', '-z', '--', _EVIDENCE).split('\0') if row]
+        with tempfile.TemporaryDirectory() as folder:
+            checkout = Path(folder).resolve()
+            _git(repository, '-c', 'core.autocrlf=true', 'checkout-index',
+                 f'--prefix={checkout.as_posix()}/', '--', *tracked)
+
+            report = assemble_inventory(checkout, tracked, [], [])
+
+            self.assertEqual([], report['errors'])
+            self.assertEqual([], report['sources'])
+            self.assertEqual(sorted(row for row in tracked if row.endswith('.cs')),
+                             sorted(row['path'] for row in report['excluded']))

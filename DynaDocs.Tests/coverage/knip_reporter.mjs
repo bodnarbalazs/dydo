@@ -8,4 +8,3 @@ export default async function report(options) {
   await nativeJson(options);
   process.stdout.write(JSON.stringify({ kind: 'measurement', counters, includedWorkspaceDirs }) + '\n');
 }
-

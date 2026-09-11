@@ -34,4 +34,3 @@ def python_tokens(source):
     except (tokenize.TokenError, IndentationError) as error:
         raise ValueError('Incomplete Python native token inventory') from error
     return rows
-

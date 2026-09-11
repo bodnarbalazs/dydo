@@ -206,4 +206,3 @@ class CallableWitness:
         if self._errors:
             raise ValueError('; '.join(sorted(set(self._errors))))
         return [{key: value for key, value in row.items() if not key.startswith('_')} for row in rows]
-

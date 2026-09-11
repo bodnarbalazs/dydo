@@ -112,4 +112,3 @@ def collect_knip(runner):
         answer['errors'].append({'message': 'Native Knip failed without accounted issues', 'command': row})
         answer['status'] = 'error'
     return answer
-

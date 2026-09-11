@@ -72,6 +72,179 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
     }
 
+    // OpenCode is emitted only when recorded, so a legacy project (nothing recorded) gains no
+    // .opencode tree even though it falls back to the Claude + Codex emit-everything behavior.
+    [Fact]
+    public void Execute_NoRecordedIntegrations_EmitsNoOpenCodeTree()
+    {
+        SaveConfigWithIntegrations(claude: false, codex: false);
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".opencode")));
+    }
+
+    [Fact]
+    public void Execute_OpenCodeOnlyIntegration_EmitsOnlyOpenCodeArtifacts()
+    {
+        SaveConfigWithIntegrations(claude: false, codex: false, opencode: true);
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "agents", "reviewer.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "skills", "reviewer", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "skills", "reviewer", "resources", "code.md")));
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude")));
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".agents")));
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".codex")));
+    }
+
+    [Fact]
+    public void Execute_ClaudeOnlyIntegration_SkipsOpenCodeArtifacts()
+    {
+        SaveConfigWithIntegrations(claude: true, codex: false);
+
+        SyncCommand.Execute(_testDir);
+
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".opencode")));
+    }
+
+    [Fact]
+    public void SyncOpenCodeAgent_WritesAgentAndSkillFiles()
+    {
+        SyncCommand.SyncOpenCodeAgent(_reviewer, _testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "agents", "reviewer.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "skills", "reviewer", "SKILL.md")));
+    }
+
+    // OpenCode honors only name/description/license/compatibility/metadata in skill frontmatter,
+    // so the compiler must not carry Claude's invocation policy or argument hint into it.
+    [Fact]
+    public void SyncOpenCodeSkill_FrontmatterCarriesOnlyNameAndDescription()
+    {
+        SyncCommand.SyncOpenCodeSkill(_reviewer, _testDir);
+
+        var skill = File.ReadAllText(
+            Path.Combine(_testDir, ".opencode", "skills", "reviewer", "SKILL.md"));
+        Assert.Contains($"name: {_reviewer.Name}\n", skill);
+        Assert.Contains($"description: {_reviewer.Description}\n", skill);
+        Assert.DoesNotContain("disable-model-invocation", skill);
+        Assert.DoesNotContain("argument-hint", skill);
+    }
+
+    // Explicit roles become .opencode/commands in H2, so H1 must leave them invisible to the
+    // skill loader rather than emitting a model-visible SKILL.md.
+    [Fact]
+    public void SyncOpenCodeSkill_ExplicitInvocation_EmitsNothing()
+    {
+        var explicitSkill = ExplicitSkill();
+
+        SyncCommand.SyncOpenCodeSkill(explicitSkill, _testDir);
+
+        Assert.False(Directory.Exists(Path.Combine(_testDir, ".opencode", "skills", explicitSkill.Name)));
+    }
+
+    [Theory]
+    [InlineData("reviewer")]
+    [InlineData("implementer")]
+    public void SyncOpenCodeAgent_BodyEndsWithTheSkillLoadLine(string skillName)
+    {
+        var skill = SkillTemplateService.DiscoverSkills().Single(s => s.Name == skillName);
+
+        SyncCommand.SyncOpenCodeAgent(skill, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".opencode", "agents", $"{skillName}.md"));
+        Assert.EndsWith($"Load the `{skillName}` skill before working.", agent.TrimEnd('\n'));
+        Assert.Contains("mode: subagent\n", agent);
+    }
+
+    [Fact]
+    public void SyncOpenCodeAgent_ReadOnlyWorker_DeniesEditAndTask()
+    {
+        SyncCommand.SyncOpenCodeAgent(_reviewer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".opencode", "agents", "reviewer.md"));
+        Assert.Contains("\n  edit: deny\n", agent);
+        Assert.Contains("\n  task: deny\n", agent);
+    }
+
+    [Fact]
+    public void SyncOpenCodeAgent_WritableWorker_AllowsEditButStillDeniesTask()
+    {
+        var implementer = SkillTemplateService.DiscoverSkills().Single(s => s.Name == "implementer");
+
+        SyncCommand.SyncOpenCodeAgent(implementer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".opencode", "agents", "implementer.md"));
+        Assert.DoesNotContain("edit: deny", agent);
+        Assert.Contains("\n  task: deny\n", agent);
+    }
+
+    // `delegates` and `web` are the only sources of those grants: a worker that could fan out or
+    // reach the open web without its template asking is an unreviewed capability.
+    [Fact]
+    public void SyncOpenCodeAgent_WebDelegatingSkill_AllowsTaskAndWeb()
+    {
+        var searcher = WebSkill();
+
+        SyncCommand.SyncOpenCodeAgent(searcher, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".opencode", "agents", "searcher.md"));
+        Assert.Contains("\n  task: allow\n", agent);
+        Assert.Contains("\n  webfetch: allow\n  websearch: allow\n", agent);
+    }
+
+    [Fact]
+    public void SyncOpenCodeAgent_NonWebSkill_DeniesWeb()
+    {
+        Assert.False(_reviewer.Web);
+
+        SyncCommand.SyncOpenCodeAgent(_reviewer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".opencode", "agents", "reviewer.md"));
+        Assert.Contains("\n  webfetch: deny\n  websearch: deny\n", agent);
+    }
+
+    [Fact]
+    public void SyncOpenCodeAgent_SecondIsolatedEmit_IsByteIdentical()
+    {
+        SyncCommand.SyncOpenCodeAgent(_reviewer, _testDir);
+        var files = new[]
+        {
+            Path.Combine(_testDir, ".opencode", "agents", "reviewer.md"),
+            Path.Combine(_testDir, ".opencode", "skills", "reviewer", "SKILL.md"),
+            Path.Combine(_testDir, ".opencode", "skills", "reviewer", "resources", "code.md"),
+        };
+        var first = files.ToDictionary(path => path, File.ReadAllBytes);
+
+        SyncCommand.SyncOpenCodeAgent(_reviewer, _testDir);
+
+        Assert.All(files, path => Assert.Equal(first[path], File.ReadAllBytes(path)));
+    }
+
+    [Fact]
+    public void CleanRetiredArtifacts_RemovesOpenCodeArtifactsAndPreservesSiblings()
+    {
+        var stale = new[]
+        {
+            Path.Combine(_testDir, ".opencode", "agents", "sprint-auditor.md"),
+            Path.Combine(_testDir, ".opencode", "skills", "sprint-auditor", "SKILL.md"),
+        };
+        foreach (var file in stale)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "stale generated content");
+        }
+        var sibling = Path.Combine(_testDir, ".opencode", "skills", "sprint-auditor", "project-notes.md");
+        File.WriteAllText(sibling, "project owned");
+
+        SyncCommand.CleanRetiredArtifacts(_testDir);
+
+        Assert.All(stale, file => Assert.False(File.Exists(file), file));
+        Assert.True(File.Exists(sibling));
+    }
+
     [Fact]
     public void Execute_FreshProject_EmitsInquisitorForBothRuntimes()
     {
@@ -331,11 +504,12 @@ public class SyncCommandTests : IDisposable
         Assert.True(File.Exists(sibling), "a shipped skill's folder must survive the sweep");
     }
 
-    private void SaveConfigWithIntegrations(bool claude, bool codex)
+    private void SaveConfigWithIntegrations(bool claude, bool codex, bool opencode = false)
     {
         var config = ConfigFactory.CreateDefault();
         if (claude) config.Integrations["claude"] = true;
         if (codex) config.Integrations["codex"] = true;
+        if (opencode) config.Integrations["opencode"] = true;
         new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
     }
 

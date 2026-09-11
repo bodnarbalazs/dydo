@@ -738,6 +738,81 @@ public class InitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Init OpenCode
+
+    [Fact]
+    public async Task Init_OpenCode_CreatesConfigAgentsJsonAndPlugin()
+    {
+        var result = await InitProjectAsync("opencode");
+
+        result.AssertSuccess();
+        AssertFileContains("dydo.json", "\"opencode\": true");
+        AssertFileExists("AGENTS.md");
+        AssertFileContains("AGENTS.md", "dydo/index.md");
+
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile("opencode.json")));
+        Assert.Equal(3, settings["subagent_depth"]?.GetValue<int>());
+
+        AssertFileExists(".opencode/plugins/dydo-guard.js");
+        var plugin = ReadFile(".opencode/plugins/dydo-guard.js");
+        Assert.Contains("export const DydoGuard", plugin);
+        Assert.Contains("Dydo guard plugin loaded", plugin);
+
+        // OpenCode's guard is the plugin, not a Claude/Codex hook file.
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+    }
+
+    // A project that already carries a satisfying depth and its own keys must not be rewritten:
+    // init merges, it does not reformat the file.
+    [Fact]
+    public async Task Init_OpenCode_PreservesSatisfyingSubagentDepthBytes()
+    {
+        Directory.CreateDirectory(TestDir);
+        WriteFile("opencode.json", "{\n  \"unrelated\": true,\n  \"subagent_depth\": 5\n}\n");
+        var original = File.ReadAllBytes(Path.Combine(TestDir, "opencode.json"));
+
+        var result = await InitProjectAsync("opencode");
+
+        result.AssertSuccess();
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, "opencode.json")));
+    }
+
+    [Theory]
+    [InlineData("{ \"subagent_depth\": 2 }")]
+    [InlineData("{ \"subagent_depth\": \"3\" }")]
+    [InlineData("{ \"subagent_depth\": null }")]
+    public async Task Init_OpenCode_RejectsIncompatibleDepthBeforePartialInit(string json)
+    {
+        WriteFile("opencode.json", json);
+        var original = File.ReadAllBytes(Path.Combine(TestDir, "opencode.json"));
+
+        var result = await InitProjectAsync("opencode");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("opencode.json");
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, "opencode.json")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists(".opencode/plugins/dydo-guard.js");
+    }
+
+    [Fact]
+    public async Task Init_Join_OpenCode_RecordsIntegrationAndWiresPlugin()
+    {
+        await InitProjectAsync("codex");
+
+        var result = await JoinProjectAsync("opencode");
+
+        result.AssertSuccess();
+        AssertFileContains("dydo.json", "\"codex\": true");
+        AssertFileContains("dydo.json", "\"opencode\": true");
+        AssertFileExists("opencode.json");
+        AssertFileExists(".opencode/plugins/dydo-guard.js");
+        AssertFileExists("AGENTS.md");
+    }
+
+    #endregion
+
     #region Init Join
 
     [Fact]
@@ -819,7 +894,7 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("Unknown integration");
-        result.AssertStderrContains("Valid options: claude, codex, all, none");
+        result.AssertStderrContains("Valid options: claude, codex, opencode, all, none");
     }
 
     [Fact]

@@ -92,6 +92,7 @@ public class CliEndToEndTests : IDisposable
     /// </summary>
     [Theory]
     [InlineData("claude")]
+    [InlineData("opencode")]
     [InlineData("none")]
     public async Task Init_CreatesProject(string integration)
     {
@@ -103,6 +104,13 @@ public class CliEndToEndTests : IDisposable
             "dydo.json was not created");
         Assert.True(Directory.Exists(Path.Combine(_testDir, "dydo")),
             "dydo/ directory was not created");
+        if (integration == "opencode")
+        {
+            Assert.True(File.Exists(Path.Combine(_testDir, "opencode.json")),
+                "opencode.json was not created");
+            Assert.True(File.Exists(Path.Combine(_testDir, ".opencode", "plugins", "dydo-guard.js")),
+                "the OpenCode guard plugin was not generated");
+        }
     }
 
     [Fact]

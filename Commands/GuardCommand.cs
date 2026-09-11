@@ -112,6 +112,12 @@ public static partial class GuardCommand
     private static readonly HashSet<string> MutatingTools =
         new(StringComparer.OrdinalIgnoreCase) { "apply_patch" };
 
+    // OpenCode tools the guard does not govern: task (sub-agent delegation), webfetch/websearch
+    // (network) and list. They must be ignored explicitly — a future host that names one of them
+    // in a hook matcher must not let an unmodeled payload reach the file/batch layers.
+    private static readonly HashSet<string> IgnoredTools =
+        new(StringComparer.OrdinalIgnoreCase) { "task", "webfetch", "websearch", "list" };
+
     private static bool IsMutatingCall(string? action, string? toolName) =>
         (action != null && MutatingActions.Contains(action))
         || (toolName != null && MutatingTools.Contains(toolName));
@@ -124,14 +130,15 @@ public static partial class GuardCommand
     }
 
     private record struct GuardContext(
-        string? FilePath, string? Action, string? BashCommand,
+        IReadOnlyList<string> FilePaths, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType);
 
     private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
     {
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
-        string? filePath = null, action = null, bashCommand = null;
+        IReadOnlyList<string> filePaths = [];
+        string? action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
         string? agentId = null, agentType = null;
 
@@ -145,7 +152,7 @@ public static partial class GuardCommand
                     sessionId = hookInput.SessionId;
                     agentId = hookInput.AgentId;
                     agentType = hookInput.AgentType;
-                    filePath = hookInput.GetFilePath();
+                    filePaths = hookInput.GetFilePaths();
                     action = hookInput.GetAction();
                     toolName = hookInput.ToolName?.ToLowerInvariant();
                     bashCommand = hookInput.GetCommand();
@@ -164,8 +171,11 @@ public static partial class GuardCommand
         if (toolName == null && cliCommand != null)
             toolName = "bash";
 
+        if (filePaths.Count == 0 && cliPath != null)
+            filePaths = [cliPath];
+
         return new GuardContext(
-            filePath ?? cliPath,
+            filePaths,
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
@@ -220,11 +230,15 @@ public static partial class GuardCommand
 
         var sessionId = ctx.SessionId;
 
-        var filePath = ResolveTraversal(ctx.FilePath);
+        var filePaths = ctx.FilePaths.Select(p => ResolveTraversal(p)!).ToList();
         var action = ctx.Action;
         var bashCommand = ctx.BashCommand;
         var toolName = ctx.ToolName;
         var searchPath = ResolveTraversal(ctx.SearchPath);
+
+        // Unmodeled OpenCode tools are never governed: allow without touching any layer.
+        if (toolName != null && IgnoredTools.Contains(toolName))
+            return ExitCodes.Success;
 
         // ============================================================
         // TIER-2 WORKER LANE (Decision 024): calls carrying agent_id come from
@@ -235,15 +249,11 @@ public static partial class GuardCommand
         // ============================================================
         if (!ctx.HasCliArgs && !string.IsNullOrEmpty(ctx.AgentId))
         {
-            return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, env);
+            return HandleWorkerCall(ctx, filePaths, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
-        // Native auto-memory (~/.claude/projects/*/memory/) is exempt from off-limits enforcement.
-        if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
-            return ExitCodes.Success;
-
         var routed = RouteToolLayers(
-            filePath, action, bashCommand, toolName, searchPath,
+            filePaths, action, bashCommand, toolName, searchPath,
             sessionId, offLimitsService, bashAnalyzer, env);
         if (routed != null) return routed.Value;
 
@@ -265,15 +275,18 @@ public static partial class GuardCommand
     /// call was fully handled, null to fall through to staged access control.
     /// </summary>
     private static int? RouteToolLayers(
-        string? filePath, string? action, string? bashCommand, string? toolName,
+        IReadOnlyList<string> filePaths, string? action, string? bashCommand, string? toolName,
         string? searchPath, string? sessionId,
         OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env)
     {
-        // SECURITY LAYER 1: off-limits patterns for direct file operations, then the protected
-        // tier for the mutating ones.
-        if (!string.IsNullOrEmpty(filePath))
+        // SECURITY LAYER 1: off-limits / protected tiers for every path the call names.
+        // apply_patch may name several; one guarded target blocks the whole patch.
+        foreach (var filePath in filePaths)
         {
+            if (IsNativeMemoryPath(filePath))
+                continue;
+
             var blocked = BlockIfPathOffLimits(filePath, offLimitsService);
             if (blocked != null) return blocked.Value;
 
@@ -343,7 +356,7 @@ public static partial class GuardCommand
     /// memory exempt). RBAC and must-reads do not apply.
     /// </summary>
     private static int HandleWorkerCall(
-        GuardContext ctx, string? filePath, string? searchPath,
+        GuardContext ctx, IReadOnlyList<string> filePaths, string? searchPath,
         OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env)
     {
@@ -352,20 +365,25 @@ public static partial class GuardCommand
                 ctx.BashCommand!, ctx.SessionId,
                 offLimitsService, bashAnalyzer, env, isWorker: true);
 
-        var checkPath = filePath ?? searchPath;
-        if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
+        foreach (var filePath in filePaths)
         {
-            var offLimitsBlock = BlockIfPathOffLimits(checkPath, offLimitsService);
-            if (offLimitsBlock != null) return offLimitsBlock.Value;
-        }
+            if (IsNativeMemoryPath(filePath))
+                continue;
 
-        if (!string.IsNullOrEmpty(filePath))
-        {
-            if (IsMutatingCall(ctx.Action, ctx.ToolName) && !IsNativeMemoryPath(filePath))
+            var offLimitsBlock = BlockIfPathOffLimits(filePath, offLimitsService);
+            if (offLimitsBlock != null) return offLimitsBlock.Value;
+
+            if (IsMutatingCall(ctx.Action, ctx.ToolName))
             {
                 var protectedBlock = BlockIfPathProtected(filePath, offLimitsService);
                 if (protectedBlock != null) return protectedBlock.Value;
             }
+        }
+
+        if (!string.IsNullOrEmpty(searchPath) && !IsNativeMemoryPath(searchPath))
+        {
+            var offLimitsBlock = BlockIfPathOffLimits(searchPath, offLimitsService);
+            if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
         return ExitCodes.Success;

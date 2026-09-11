@@ -322,24 +322,9 @@ public static class InitCommand
 
         var pluginPath = Path.Combine(projectRoot, ".opencode", "plugins", "dydo-guard.js");
         Directory.CreateDirectory(Path.GetDirectoryName(pluginPath)!);
-        File.WriteAllText(pluginPath, GuardPluginSource);
+        File.WriteAllText(pluginPath, TemplateGenerator.ReadBuiltInTemplate("opencode-guard-plugin.js"));
         Console.WriteLine("  ✓ OpenCode plugin configured");
     }
-
-    // H1 shell: proves the live plugin path loads and logs on OpenCode 1.18.30. H3 replaces the
-    // empty hooks object with the v1 tool.execute.before adapter.
-    private const string GuardPluginSource = """
-        export const DydoGuard = async ({ client }) => {
-          await client.app.log({
-            body: {
-              service: "dydo-guard",
-              level: "info",
-              message: "Dydo guard plugin loaded",
-            },
-          })
-          return {}
-        }
-        """;
 
     private static ArgumentException HostSettingError(string path, string required, string found) =>
         new($"Invalid {path}: required {required}; found {found}.");

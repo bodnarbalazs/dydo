@@ -30,6 +30,13 @@ public class ToolInputData
     [JsonPropertyName("notebook_path")]
     public string? NotebookPath { get; set; }
 
+    /// <summary>
+    /// OpenCode delivers edits as apply_patch: a patch document naming its targets in marker
+    /// lines, with no file_path of its own. HookInputExtensions.GetFilePaths parses them out.
+    /// </summary>
+    [JsonPropertyName("patch_text")]
+    public string? PatchText { get; set; }
+
     [JsonPropertyName("run_in_background")]
     public bool? RunInBackground { get; set; }
 }

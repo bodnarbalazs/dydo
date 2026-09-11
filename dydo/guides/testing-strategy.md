@@ -138,9 +138,11 @@ runners are measured, while the `DynaDocs.Tests` assembly is instrumented for id
 needs: every executable target module must name at least one associated test file, and one that
 names none is the finding `test-association`.
 
-Two gaps are recorded rather than dropped or weakened: mutation on every stack, which is DYD-103,
-and a maintained JavaScript file with no filename extension, which the JavaScript coverage row
-reports as a gap naming DYD-105 instead of measuring less than the inventory.
+One gap is recorded rather than dropped or weakened: mutation on every stack, which is DYD-103. The
+JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
+maintained JavaScript file with no filename extension would be reported as a gap naming DYD-105
+rather than measured as less than the inventory, and no maintained JavaScript file here lacks an
+extension.
 
 ## Recorded gate correction: three dynamic Vulture uses
 
@@ -164,8 +166,13 @@ collector's `semantic_uses`, tagged with its witness.
 
 This is a correction, not a waiver:
 
-- Nothing in the measured source changes. There is no pragma, ignore file, allowlist or per-file
-  exemption, and no other module can inherit the three pairs.
+- Nothing in the measured source changes: there is no pragma, no ignore file, no inline suppression
+  comment and no per-file exemption in the code being measured. The correction lives entirely in the
+  collector, as the exact three-row `(path, message)` table in `gate_collect.py`, and no other module
+  can inherit its pairs. It is the only thing that moves a Vulture row out of the findings, and it
+  cannot hide one: what it takes out it republishes in the collector's `facts.semantic_uses`. Adding
+  a fourth pair is another DR 048 §5 triage to record, not a routine edit; reach for it as somewhere
+  to put an inconvenient finding and it becomes the escape hatch §1 refuses.
 - The pairs are exact, so drift re-raises the finding. Rename the function, rename an attribute, or
   let a Vulture upgrade reword its message, and the row no longer matches and becomes an ordinary
   dead-code finding again. Because Vulture's message does not name the owning structure, the

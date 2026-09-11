@@ -64,8 +64,9 @@ issued the first.
 inherits its blind spot, and one revisiting its own verdict is defending it.
 
 **Rule:** one fresh reviewer per candidate, given the rubric the change targets, reading the candidate
-rather than the story told about it, rerunning the gates itself. Same-vendor review is acceptable; the
-review block names the model, so who judged what stays observable later.
+rather than the story told about it, taking the gates at this stage's scale rather than a claimed
+green. Same-vendor review is acceptable; the review block names the model, so who judged what stays
+observable later.
 
 ## 6. "PASS with notes"
 
@@ -102,9 +103,10 @@ the contract cannot supply.
 **Mechanism:** tests prove the checkout they ran in. They do not prove which commit was judged, which
 worktree supplied it, or whether an edit landed afterwards.
 
-**Rule:** let the review block pin it — candidate and base SHA, gates rerun with their output — posted
-on the Issue and in the PR body. Every merge is followed by its own review of the integrated state, and
-the last one proves the plan's acceptance criteria.
+**Rule:** let the review block pin it — candidate and base SHA, and each gate result recorded against
+that candidate with its command, environment, exit and where the output can be seen — posted on the
+Issue and in the PR body. Every merge is followed by its own review of the integrated state, and the
+last one proves the plan's acceptance criteria.
 
 ## 9. A spawned agent without its methodology
 
@@ -128,6 +130,19 @@ the work — and re-trust the hooks after any change to them.
 **Rule:** Issues carry questions and work; Decision Records carry decisions; guides, plans, audits and
 assimilation briefs carry the rest. Extract the invariant, link the artifact from the Issue, and never
 mirror an Issue body into the repository.
+
+## 11. A template edit the binary never saw
+
+**Symptom:** an edited skill template leaves the catalog under `dydo/_system/templates/` unchanged, and
+`dydo template update` then `dydo sync` still report a clean, green fixed point.
+
+**Mechanism:** templates are embedded resources compiled into the CLI. `template update` reads them out
+of the built binary rather than off `Templates/`, so an edit made after the last build is invisible to
+it, and `sync` recompiles the agents from the stale catalog copy.
+
+**Rule:** rebuild before every `template update`, and run both commands from that fresh build rather
+than the installed CLI. A catalog file that an edited template did not move is the tell, and a fixed
+point proved against a stale binary is no fixed point.
 
 ## Related
 

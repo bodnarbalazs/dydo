@@ -8,7 +8,7 @@ templates. Missing additions resolve to nothing; generated skill files remain ou
 | Tag | Purpose |
 |---|---|
 | `extra-verify` | This repository's isolated test and coverage commands |
-| `extra-review-steps` | Independent execution of the candidate's exact gates |
+| `extra-review-steps` | The gates a review owes at its own stage, from a hop's focused run to a merge's full set |
 | `extra-review-checklist` | Contract- and stage-applicable gate receipts for a review verdict |
 
 Add a new hook only when project-specific guidance cannot live in the shared skill without making that

@@ -47,9 +47,10 @@ words.
    hypotheses with verdicts, and Bugs filed with their reproduction commits. Done when every claim
    traces to the packet, with an empty section explicitly recorded as such; return the exact path
    and blob or content digest for the delivery review and the Inquisition captain's later check.
-5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then `dydo check`
-   and the Issue's exact gates until clean; then commit in the owned paths. Done when the work is
-   committed.
+5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then this hop's
+   proof until clean: `dydo check`, the other cheap checks the Issue names, and the tests your change
+   reaches. Then commit in the owned paths; the full suites wait for the gate the Captain names. Done
+   when that focused proof has run and the work is committed.
 
 ## Return
 

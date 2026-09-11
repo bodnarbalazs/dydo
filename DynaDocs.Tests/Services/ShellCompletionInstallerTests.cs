@@ -486,7 +486,7 @@ public class ShellCompletionInstallerTests : IDisposable
             yield return [name, kind, ending];
     }
 
-    [Theory]
+    [RequiresPowerShell7Theory]
     [MemberData(nameof(NativeProfiles))]
     public async Task PowerShellNativeCandidate_SourcesInstalledProfile(string encodingName, string kind, string ending)
     {
@@ -527,7 +527,7 @@ public class ShellCompletionInstallerTests : IDisposable
         Assert.Contains("PASS: check completion", result.Stdout);
     }
 
-    [Fact]
+    [RequiresPowerShell7Fact]
     public async Task NativeCapture_DrainsBothPipesBeyondBufferCapacity()
     {
         if (!OperatingSystem.IsWindows()) return;
@@ -542,7 +542,7 @@ public class ShellCompletionInstallerTests : IDisposable
         _output.WriteLine($"Captured stdout={result.Stdout.Length}, stderr={result.Stderr.Length} characters concurrently.");
     }
 
-    [Fact]
+    [RequiresPowerShell7Fact]
     public async Task NativeTimeout_KillsDescendantAndDrainsBeforeScratchDeletion()
     {
         if (!OperatingSystem.IsWindows()) return;
@@ -577,7 +577,7 @@ public class ShellCompletionInstallerTests : IDisposable
         _output.WriteLine(stdout);
     }
 
-    [Fact]
+    [RequiresPowerShell7Fact]
     public async Task NativeFailure_RetainsBothStreamsAndExitCodeAfterCleanup()
     {
         if (!OperatingSystem.IsWindows()) return;
@@ -611,7 +611,9 @@ public class ShellCompletionInstallerTests : IDisposable
     private async Task<(int ExitCode, string Stdout, string Stderr)> RunPowerShellAsync(
         string command, Dictionary<string, string>? environment = null, TimeSpan? executionTimeout = null)
     {
-        var startInfo = new ProcessStartInfo("pwsh")
+        var executable = PowerShell7.ExecutablePath;
+        Assert.NotNull(executable);
+        var startInfo = new ProcessStartInfo(executable)
         {
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -692,4 +694,39 @@ public class ShellCompletionInstallerTests : IDisposable
         _ = task.ContinueWith(completed => _ = completed.Exception,
             CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
+}
+
+internal static class PowerShell7
+{
+    internal const string Requirement =
+        "PowerShell 7 (pwsh) is required on PATH for ShellCompletionInstallerTests";
+
+    private static readonly Lazy<string?> Located = new(Locate);
+
+    internal static string? ExecutablePath => Located.Value;
+
+    // Windows-only on purpose: elsewhere the native cases return early at their own
+    // OperatingSystem.IsWindows() guard, so they must report as executed rather than skipped.
+    internal static string? SkipReason =>
+        OperatingSystem.IsWindows() && ExecutablePath is null ? Requirement : null;
+
+    // Probe order, in full: every PATH entry in order, then the standard PowerShell 7 install
+    // root %ProgramFiles%\PowerShell\7. Nothing else is consulted, so a host-local pwsh has to
+    // be on PATH before these cases will use it.
+    private static string? Locate() =>
+        (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Append(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PowerShell", "7"))
+            .Select(directory => Path.Combine(directory, OperatingSystem.IsWindows() ? "pwsh.exe" : "pwsh"))
+            .FirstOrDefault(File.Exists);
+}
+
+public sealed class RequiresPowerShell7FactAttribute : FactAttribute
+{
+    public RequiresPowerShell7FactAttribute() => Skip = PowerShell7.SkipReason;
+}
+
+public sealed class RequiresPowerShell7TheoryAttribute : TheoryAttribute
+{
+    public RequiresPowerShell7TheoryAttribute() => Skip = PowerShell7.SkipReason;
 }

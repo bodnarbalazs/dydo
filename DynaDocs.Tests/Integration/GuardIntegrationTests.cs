@@ -453,6 +453,27 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertStderrContains("off-limits");
     }
 
+    [Theory]
+    [InlineData("Read", "file_path")]
+    [InlineData("Glob", "path")]
+    public async Task Guard_NonWorkerTraversalPath_MatchesDirectOffLimitsBlock(
+        string toolName, string pathProperty)
+    {
+        await InitProjectAsync("none");
+
+        var suffix = toolName == "Glob" ? ",\"pattern\":\"*\"" : "";
+        async Task<CommandResult> Run(string path) => await GuardWithStdinAsync(
+            $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\","
+            + $"\"tool_input\":{{\"{pathProperty}\":\"{path}\"{suffix}}}}}");
+
+        var direct = await Run("dydo/_system/types.json");
+        var traversal = await Run("safe/../dydo/_system/types.json");
+
+        direct.AssertExitCode(2);
+        traversal.AssertExitCode(2);
+        Assert.Equal(direct.Stderr, traversal.Stderr);
+    }
+
     #endregion
 
     #region Git commands (git stash / merge are ordinary now — DR-041 Part B)

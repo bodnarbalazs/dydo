@@ -1,6 +1,5 @@
 namespace DynaDocs.Services;
 
-using DynaDocs.Commands;
 using DynaDocs.Models;
 
 public class FolderScaffolder : IFolderScaffolder
@@ -126,11 +125,11 @@ public class FolderScaffolder : IFolderScaffolder
 
     public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
     {
-        foreach (var relativePath in TemplateCommand.FrameworkDocFiles)
+        foreach (var relativePath in FrameworkCatalog.DocumentFiles)
         {
             var fullPath = Path.Combine(basePath, relativePath);
             if (File.Exists(fullPath))
-                config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
+                config.FrameworkHashes[relativePath] = FrameworkCatalog.ComputeHash(File.ReadAllText(fullPath));
         }
 
 
@@ -138,7 +137,7 @@ public class FolderScaffolder : IFolderScaffolder
         {
             var relativePath = $"_system/templates/{templateName}";
             var fullPath = Path.Combine(basePath, "_system", "templates", templateName);
-            config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
+            config.FrameworkHashes[relativePath] = FrameworkCatalog.ComputeHash(File.ReadAllText(fullPath));
         }
 
         foreach (var skill in SkillTemplateService.DiscoverSkills())

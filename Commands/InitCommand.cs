@@ -367,10 +367,25 @@ public static class InitCommand
         const string relativePath = ".codex/config.toml";
         var path = Path.Combine(projectRoot, ".codex", "config.toml");
         var originalBytes = File.Exists(path) ? File.ReadAllBytes(path) : Array.Empty<byte>();
-        TomlDocument document;
+        var document = ReadTomlDocument(originalBytes, relativePath);
+        var agents = document.RootNode["agents"u8];
+        var hasAgentsTable = ValidateAgentsTable(agents, relativePath);
+        var original = Encoding.UTF8.GetString(originalBytes);
+        var (agentsStart, agentsEnd) = FindAgentsTable(original, relativePath);
+        if (hasAgentsTable && agentsStart < 0)
+            throw HostSettingError(relativePath, "plain [agents] table", "quoted or otherwise ambiguous table header");
+
+        var additions = MissingAgentSettings(agents, hasAgentsTable);
+        if (additions.Count == 0)
+            return null;
+        return (path, InsertAgentSettings(original, agentsStart, agentsEnd, additions));
+    }
+
+    private static TomlDocument ReadTomlDocument(byte[] bytes, string relativePath)
+    {
         try
         {
-            document = CsTomlSerializer.Deserialize<TomlDocument>(originalBytes);
+            return CsTomlSerializer.Deserialize<TomlDocument>(bytes);
         }
         catch (CsTomlSerializeException ex)
         {
@@ -380,8 +395,10 @@ public static class InitCommand
                 : $"line {parse.LineNumber}: {parse.InnerException?.Message ?? parse.Message}";
             throw HostSettingError(relativePath, "valid TOML document", $"malformed TOML ({detail})");
         }
-        var original = Encoding.UTF8.GetString(originalBytes);
-        var agents = document.RootNode["agents"u8];
+    }
+
+    private static bool ValidateAgentsTable(TomlDocumentNode agents, string relativePath)
+    {
         var hasAgentsTable = agents.HasValue && agents.HasNodeOnly && agents.IsTableHeader;
         if (agents.HasValue && !hasAgentsTable)
             throw HostSettingError(relativePath, "explicit [agents] table", "inline, scalar, or array agents value");
@@ -391,11 +408,14 @@ public static class InitCommand
             ValidateTomlInteger(relativePath, agents["max_concurrent_threads_per_session"u8], "max_concurrent_threads_per_session", 16);
             ValidateTomlEnabled(relativePath, agents["enabled"u8]);
         }
+        return hasAgentsTable;
+    }
 
+    private static (int Start, int End) FindAgentsTable(string original, string relativePath)
+    {
         var lines = Regex.Matches(original, @"[^\r\n]*(?:\r\n|\r|\n|$)");
         var agentsStart = -1;
         var agentsEnd = original.Length;
-
         foreach (Match lineMatch in lines)
         {
             if (lineMatch.Length == 0)
@@ -416,33 +436,36 @@ public static class InitCommand
             if (agentsStart >= 0 && agentsEnd == original.Length && trimmed.StartsWith('['))
                 agentsEnd = lineMatch.Index;
         }
+        return (agentsStart, agentsEnd);
+    }
 
-        if (hasAgentsTable && agentsStart < 0)
-            throw HostSettingError(relativePath, "plain [agents] table", "quoted or otherwise ambiguous table header");
-
+    private static List<string> MissingAgentSettings(TomlDocumentNode agents, bool hasAgentsTable)
+    {
         var additions = new List<string>();
         if (!hasAgentsTable || !agents["max_depth"u8].HasValue)
             additions.Add("max_depth = 3");
         if (!hasAgentsTable || !agents["max_concurrent_threads_per_session"u8].HasValue)
             additions.Add("max_concurrent_threads_per_session = 16");
-        if (additions.Count == 0)
-            return null;
+        return additions;
+    }
 
+    private static string InsertAgentSettings(string original, int agentsStart, int agentsEnd,
+        List<string> additions)
+    {
         var newline = original.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        string content;
         if (agentsStart < 0)
         {
-            var separator = original.Length == 0 ? "" : original.EndsWith("\n", StringComparison.Ordinal) || original.EndsWith("\r", StringComparison.Ordinal) ? newline : newline + newline;
-            content = original + separator + "[agents]" + newline + string.Join(newline, additions) + newline;
+            var separator = "";
+            if (original.Length > 0)
+                separator = original.EndsWith("\n", StringComparison.Ordinal) ||
+                            original.EndsWith("\r", StringComparison.Ordinal) ? newline : newline + newline;
+            return original + separator + "[agents]" + newline + string.Join(newline, additions) + newline;
         }
-        else
-        {
-            var prefix = original[..agentsEnd];
-            var suffix = original[agentsEnd..];
-            var separator = prefix.EndsWith("\n", StringComparison.Ordinal) || prefix.EndsWith("\r", StringComparison.Ordinal) ? "" : newline;
-            content = prefix + separator + string.Join(newline, additions) + newline + suffix;
-        }
-        return (path, content);
+        var prefix = original[..agentsEnd];
+        var suffix = original[agentsEnd..];
+        var joiner = prefix.EndsWith("\n", StringComparison.Ordinal) ||
+                     prefix.EndsWith("\r", StringComparison.Ordinal) ? "" : newline;
+        return prefix + joiner + string.Join(newline, additions) + newline + suffix;
     }
 
     private static void ValidateTomlInteger(string path, TomlDocumentNode node, string key, int minimum)

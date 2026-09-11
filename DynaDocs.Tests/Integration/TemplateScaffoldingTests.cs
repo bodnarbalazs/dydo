@@ -114,34 +114,35 @@ public class TemplateScaffoldingTests : IntegrationTestBase
 
         var brokenLinks = new List<string>();
         foreach (var hostRoot in new[] { ".claude/skills", ".agents/skills" })
-        {
-            var files = Directory.GetFiles(Path.Combine(TestDir, hostRoot), "*.md", SearchOption.AllDirectories);
-            Assert.NotEmpty(files);
-            var localLinkCount = 0;
-            foreach (var file in files)
-            {
-                foreach (var link in LinkExtractor.Extract(File.ReadAllText(file)))
-                {
-                    if (link.Type == DynaDocs.Models.LinkType.External ||
-                        (link.Target.Length == 0 && link.Anchor != null))
-                        continue;
-
-                    localLinkCount++;
-                    var origin = link.Target.StartsWith(hostRoot + "/", StringComparison.Ordinal)
-                        ? TestDir
-                        : Path.GetDirectoryName(file)!;
-                    var target = Path.GetFullPath(Path.Combine(origin, link.Target));
-                    var relativeTarget = Path.GetRelativePath(TestDir, target);
-                    var outsideProject = Path.IsPathRooted(relativeTarget) || relativeTarget == ".." ||
-                        relativeTarget.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
-                    if (outsideProject || !File.Exists(target))
-                        brokenLinks.Add($"{Path.GetRelativePath(TestDir, file)}:{link.LineNumber} -> {link.Target}");
-                }
-            }
-            Assert.True(localLinkCount > 0, $"No local Markdown links were inspected under {hostRoot}");
-        }
+            InspectHostLinks(hostRoot, brokenLinks);
 
         Assert.True(brokenLinks.Count == 0, string.Join(Environment.NewLine, brokenLinks));
+    }
+
+    private void InspectHostLinks(string hostRoot, List<string> brokenLinks)
+    {
+        var files = Directory.GetFiles(Path.Combine(TestDir, hostRoot), "*.md", SearchOption.AllDirectories);
+        Assert.NotEmpty(files);
+        var localLinkCount = 0;
+        foreach (var file in files)
+        foreach (var link in LinkExtractor.Extract(File.ReadAllText(file)))
+        {
+            if (link.Type == DynaDocs.Models.LinkType.External ||
+                (link.Target.Length == 0 && link.Anchor != null))
+                continue;
+
+            localLinkCount++;
+            var origin = link.Target.StartsWith(hostRoot + "/", StringComparison.Ordinal)
+                ? TestDir
+                : Path.GetDirectoryName(file)!;
+            var target = Path.GetFullPath(Path.Combine(origin, link.Target));
+            var relativeTarget = Path.GetRelativePath(TestDir, target);
+            var outsideProject = Path.IsPathRooted(relativeTarget) || relativeTarget == ".." ||
+                relativeTarget.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+            if (outsideProject || !File.Exists(target))
+                brokenLinks.Add($"{Path.GetRelativePath(TestDir, file)}:{link.LineNumber} -> {link.Target}");
+        }
+        Assert.True(localLinkCount > 0, $"No local Markdown links were inspected under {hostRoot}");
     }
 
     // The shipped set is the authored set minus retired skills and anything that hangs off them.

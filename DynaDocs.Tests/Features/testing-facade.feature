@@ -160,8 +160,8 @@ Feature: One project-local interface runs tests and assurance honestly
           },
           "capabilities": {
             "test": {"state": "configured", "command": {"kind": "current-python", "argv": ["-u", "DynaDocs.Tests/coverage/run_tests.py", "--"]}, "artifacts": []},
-            "static": {"state": "unavailable", "reason": "Pending DYD-96"},
-            "coverage": {"state": "unavailable", "reason": "Pending DYD-96"},
+            "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-static.json", "required": true}]},
+            "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json", "required": true}]},
             "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
           }
         }]

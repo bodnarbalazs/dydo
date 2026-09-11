@@ -24,7 +24,7 @@ public class WorkflowRetirementAssertionTests
         var output = Summary(host, separator);
         if (ending == "crlf") output = output.Replace("\n", "\r\n", StringComparison.Ordinal);
         if (ending == "none") output = output.TrimEnd('\n');
-        WorkflowRetirementSteps.AssertNativeSummary(new(0, output, ""), host);
+        NativeSyncAssertions.AssertSummary(0, output, "", host);
     }
 
     public static IEnumerable<object[]> RejectedSeparators()
@@ -38,7 +38,7 @@ public class WorkflowRetirementAssertionTests
     [MemberData(nameof(RejectedSeparators))]
     public void NativeSummary_RejectsOtherSeparators(string host, string separator) =>
         Assert.IsAssignableFrom<Xunit.Sdk.XunitException>(Record.Exception(() =>
-            WorkflowRetirementSteps.AssertNativeSummary(new(0, Summary(host, separator), ""), host)));
+            NativeSyncAssertions.AssertSummary(0, Summary(host, separator), "", host)));
 
     public static IEnumerable<object[]> DamagedSummaries()
     {
@@ -73,7 +73,7 @@ public class WorkflowRetirementAssertionTests
     [MemberData(nameof(DamagedSummaries))]
     public void NativeSummary_RejectsDamagedResult(string host, string damage, int exit, string stdout, string stderr)
     {
-        var error = Record.Exception(() => WorkflowRetirementSteps.AssertNativeSummary(new(exit, stdout, stderr), host));
+        var error = Record.Exception(() => NativeSyncAssertions.AssertSummary(exit, stdout, stderr, host));
         Assert.True(error is Xunit.Sdk.XunitException, damage);
     }
 
@@ -81,7 +81,7 @@ public class WorkflowRetirementAssertionTests
     [InlineData("none")]
     [InlineData("all")]
     public void NativeSummary_AcceptsBothHostSelection(string host) =>
-        WorkflowRetirementSteps.AssertNativeSummary(new(0, Claude + Codex, ""), host);
+        NativeSyncAssertions.AssertSummary(0, Claude + Codex, "", host);
 
     [Theory]
     [InlineData("custom.js", false)]
@@ -127,12 +127,12 @@ public class WorkflowRetirementAssertionTests
             scenario.Result.AssertSuccess();
             await scenario.RunAsync("sync");
             scenario.Result.AssertSuccess();
-            WorkflowRetirementSteps.AssertNativeArtifacts(scenario.DirectoryPath, "all");
+            NativeSyncAssertions.AssertArtifacts(scenario.DirectoryPath, "all");
             var path = Path.Combine(scenario.DirectoryPath, relative);
             File.WriteAllBytes(path, []);
-            Assert.IsAssignableFrom<Xunit.Sdk.XunitException>(Record.Exception(() => WorkflowRetirementSteps.AssertNativeArtifacts(scenario.DirectoryPath, "all")));
+            Assert.IsAssignableFrom<Xunit.Sdk.XunitException>(Record.Exception(() => NativeSyncAssertions.AssertArtifacts(scenario.DirectoryPath, "all")));
             File.Delete(path);
-            Assert.IsAssignableFrom<Xunit.Sdk.XunitException>(Record.Exception(() => WorkflowRetirementSteps.AssertNativeArtifacts(scenario.DirectoryPath, "all")));
+            Assert.IsAssignableFrom<Xunit.Sdk.XunitException>(Record.Exception(() => NativeSyncAssertions.AssertArtifacts(scenario.DirectoryPath, "all")));
         }
         finally { scenario.Cleanup(); }
     }

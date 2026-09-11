@@ -2,7 +2,6 @@ namespace DynaDocs.Services;
 
 using System.Reflection;
 using System.Text.RegularExpressions;
-using DynaDocs.Commands;
 using DynaDocs.Models;
 
 /// <summary>
@@ -85,7 +84,7 @@ public static class TemplateGenerator
                      .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md")))
             names.Add(resource["DynaDocs.Templates.".Length..]);
 
-        names.ExceptWith(SyncCommand.RetiredSkills.Select(name => $"skill-{name}.template.md"));
+        names.ExceptWith(FrameworkCatalog.RetiredSkills.Select(name => $"skill-{name}.template.md"));
         return names.ToList();
     }
 

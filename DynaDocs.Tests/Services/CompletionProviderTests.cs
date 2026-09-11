@@ -29,7 +29,7 @@ public class CompletionProviderTests
     [InlineData("template", new[] { "update" })]
     public void Subcommands_ContainsExpectedEntries(string command, string[] expectedSubcommands)
     {
-        var completions = CompletionProvider.GetSubcommandCompletions(command, 2, ["dydo", command]).ToList();
+        var completions = CompletionProvider.GetSubcommandCompletions(command, 2).ToList();
         foreach (var sub in expectedSubcommands)
             Assert.Contains(sub, completions);
     }

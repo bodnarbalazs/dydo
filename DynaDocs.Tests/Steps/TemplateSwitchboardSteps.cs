@@ -294,84 +294,121 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         {
             var title = context.ScenarioInfo.Title;
             var prose = string.Join('\n', _steps);
-            if (title.StartsWith("Initialize the local source", StringComparison.Ordinal))
-                await VerifyInitialization(prose);
-            else if (title.StartsWith("Discover and compile", StringComparison.Ordinal))
-                VerifyCustomDiscovery();
-            else if (title.StartsWith("Accept a minimal", StringComparison.Ordinal))
-                VerifyMinimalSwitch();
-            else if (title.StartsWith("Update shipped", StringComparison.Ordinal)
-                     || title.StartsWith("Repair a malformed", StringComparison.Ordinal)
-                     || title.StartsWith("Upgrade a project", StringComparison.Ordinal)
-                     || title.StartsWith("Preview an update", StringComparison.Ordinal)
-                     || title.StartsWith("Preserve an explicit", StringComparison.Ordinal))
-                await VerifyUpdate(title);
-            else if (title.StartsWith("Disable a skill", StringComparison.Ordinal)
-                     || title.StartsWith("Remove a resource", StringComparison.Ordinal)
-                     || title.StartsWith("Remove Codex metadata", StringComparison.Ordinal)
-                     || title.StartsWith("Remember a switch", StringComparison.Ordinal)
-                     || title.StartsWith("Intentionally delete", StringComparison.Ordinal)
-                     || title.StartsWith("Retire formerly", StringComparison.Ordinal))
-                await VerifyCleanup(title, prose);
-            else if (title.StartsWith("Reject invalid source", StringComparison.Ordinal))
-                await VerifyInvalidSource(prose);
-            else if (title.StartsWith("Validate sources against", StringComparison.Ordinal))
-                await VerifyPostOperationValidation();
-            else if (title.StartsWith("Reject a malformed switchboard", StringComparison.Ordinal))
-                await VerifyMalformedSwitch(prose);
-            else if (title.StartsWith("Check and validate", StringComparison.Ordinal))
-                await VerifyCheckOrValidate(prose);
-            else if (title.StartsWith("Compile a valid agent", StringComparison.Ordinal))
-                VerifyAgentCompilation(prose);
-            else if (title.StartsWith("Compile a valid skill-only", StringComparison.Ordinal))
-                VerifySkillCompilation();
-            else if (title.StartsWith("Preserve the beta hash", StringComparison.Ordinal))
-                await VerifyHashRefresh();
-            else if (title.StartsWith("Reach a post-migration fixed point", StringComparison.Ordinal))
-                await VerifyFixedPoint();
-            else if (title.StartsWith("Resolve resource owners from the complete catalog", StringComparison.Ordinal))
-                await VerifyResourceOwnerCatalog(prose);
-            else if (title.StartsWith("Published notices retain exact source attribution", StringComparison.Ordinal))
-                VerifyNoticeAttribution();
-            else if (title.StartsWith("Identify legacy resources from finite evidence", StringComparison.Ordinal))
-                await VerifyLegacyEvidence(prose);
-            else if (title.StartsWith("Complete canonical resource pairs retain meaning", StringComparison.Ordinal))
-                await VerifyCanonicalPairs(prose);
-            else if (title.StartsWith("Diagnose top-level filename ambiguities", StringComparison.Ordinal))
-                await VerifyFilenameAmbiguities(prose);
-            else if (title.StartsWith("A present owner source determines", StringComparison.Ordinal))
-                await VerifyOwnerState(prose);
-            else if (title.StartsWith("Recognized nested filenames", StringComparison.Ordinal))
-                await VerifyNestedFilenames(prose);
-            else if (title.StartsWith("Unsupported filename shapes", StringComparison.Ordinal))
-                await VerifyUnsupportedFilenames(prose);
-            else if (title.StartsWith("A nested owner cannot confer", StringComparison.Ordinal))
-                await VerifyNestedOwner(prose);
-            else if (title.StartsWith("Pin canonical slug boundaries", StringComparison.Ordinal))
-                await VerifySlugBoundaries(prose);
-            else if (title.StartsWith("Resource content cannot change", StringComparison.Ordinal))
-                await VerifyResourceContent(prose);
-            else if (title.StartsWith("Preserve canonical skills when", StringComparison.Ordinal))
-                await VerifySkillResourceOverlap(prose);
-            else if (title.StartsWith("Do not steal an old resource", StringComparison.Ordinal))
-                await VerifyAmbiguousResourceOwner(prose);
-            else if (title.StartsWith("Legacy diagnostics respect", StringComparison.Ordinal))
-                await VerifyLegacyLocation(prose);
-            else if (title.StartsWith("Replace the positively owned", StringComparison.Ordinal))
-                await VerifyFrameworkTransition(prose);
-            else if (title.StartsWith("Fail framework namespace collisions", StringComparison.Ordinal))
-                await VerifyFrameworkCollisions(prose);
-            else if (title.StartsWith("Sync requires explicit update", StringComparison.Ordinal))
-                await VerifySyncRequiresUpdate();
-            else if (title.StartsWith("Reconcile a partially completed", StringComparison.Ordinal))
-                await VerifyPartialTransition(prose);
-            else
+            if (!await VerifySetupContract(title, prose)
+                && !await VerifyValidationContract(title, prose)
+                && !await VerifyNamespaceContract(title, prose)
+                && !await VerifyTransitionContract(title, prose))
                 throw new Xunit.Sdk.XunitException($"No DYD-111 contract probe is bound for '{title}'.");
         }
         finally
         {
             try { Directory.Delete(_root, recursive: true); } catch { }
         }
+    }
+
+    private async Task<bool> VerifySetupContract(string title, string prose)
+    {
+        if (title.StartsWith("Initialize the local source", StringComparison.Ordinal))
+            await VerifyInitialization(prose);
+        else if (title.StartsWith("Discover and compile", StringComparison.Ordinal))
+            VerifyCustomDiscovery();
+        else if (title.StartsWith("Accept a minimal", StringComparison.Ordinal))
+            VerifyMinimalSwitch();
+        else if (IsUpdateScenario(title))
+            await VerifyUpdate(title);
+        else if (IsCleanupScenario(title))
+            await VerifyCleanup(title, prose);
+        else if (title.StartsWith("Reject invalid source", StringComparison.Ordinal))
+            await VerifyInvalidSource();
+        else
+            return false;
+        return true;
+    }
+
+    private static bool IsUpdateScenario(string title) =>
+        title.StartsWith("Update shipped", StringComparison.Ordinal)
+        || title.StartsWith("Repair a malformed", StringComparison.Ordinal)
+        || title.StartsWith("Upgrade a project", StringComparison.Ordinal)
+        || title.StartsWith("Preview an update", StringComparison.Ordinal)
+        || title.StartsWith("Preserve an explicit", StringComparison.Ordinal);
+
+    private static bool IsCleanupScenario(string title) =>
+        title.StartsWith("Disable a skill", StringComparison.Ordinal)
+        || title.StartsWith("Remove a resource", StringComparison.Ordinal)
+        || title.StartsWith("Remove Codex metadata", StringComparison.Ordinal)
+        || title.StartsWith("Remember a switch", StringComparison.Ordinal)
+        || title.StartsWith("Intentionally delete", StringComparison.Ordinal)
+        || title.StartsWith("Retire formerly", StringComparison.Ordinal);
+
+    private async Task<bool> VerifyValidationContract(string title, string prose)
+    {
+        if (title.StartsWith("Validate sources against", StringComparison.Ordinal))
+            await VerifyPostOperationValidation();
+        else if (title.StartsWith("Reject a malformed switchboard", StringComparison.Ordinal))
+            await VerifyMalformedSwitch();
+        else if (title.StartsWith("Check and validate", StringComparison.Ordinal))
+            await VerifyCheckOrValidate();
+        else if (title.StartsWith("Compile a valid agent", StringComparison.Ordinal))
+            VerifyAgentCompilation(prose);
+        else if (title.StartsWith("Compile a valid skill-only", StringComparison.Ordinal))
+            VerifySkillCompilation();
+        else if (title.StartsWith("Preserve the beta hash", StringComparison.Ordinal))
+            await VerifyHashRefresh();
+        else if (title.StartsWith("Reach a post-migration fixed point", StringComparison.Ordinal))
+            await VerifyFixedPoint();
+        else if (title.StartsWith("Resolve resource owners from the complete catalog", StringComparison.Ordinal))
+            await VerifyResourceOwnerCatalog(prose);
+        else
+            return false;
+        return true;
+    }
+
+    private async Task<bool> VerifyNamespaceContract(string title, string prose)
+    {
+        if (title.StartsWith("Published notices retain exact source attribution", StringComparison.Ordinal))
+            VerifyNoticeAttribution();
+        else if (title.StartsWith("Identify legacy resources from finite evidence", StringComparison.Ordinal))
+            await VerifyLegacyEvidence(prose);
+        else if (title.StartsWith("Complete canonical resource pairs retain meaning", StringComparison.Ordinal))
+            await VerifyCanonicalPairs(prose);
+        else if (title.StartsWith("Diagnose top-level filename ambiguities", StringComparison.Ordinal))
+            await VerifyFilenameAmbiguities(prose);
+        else if (title.StartsWith("A present owner source determines", StringComparison.Ordinal))
+            await VerifyOwnerState(prose);
+        else if (title.StartsWith("Recognized nested filenames", StringComparison.Ordinal))
+            await VerifyNestedFilenames(prose);
+        else if (title.StartsWith("Unsupported filename shapes", StringComparison.Ordinal))
+            await VerifyUnsupportedFilenames(prose);
+        else if (title.StartsWith("A nested owner cannot confer", StringComparison.Ordinal))
+            await VerifyNestedOwner(prose);
+        else if (title.StartsWith("Pin canonical slug boundaries", StringComparison.Ordinal))
+            await VerifySlugBoundaries(prose);
+        else
+            return false;
+        return true;
+    }
+
+    private async Task<bool> VerifyTransitionContract(string title, string prose)
+    {
+        if (title.StartsWith("Resource content cannot change", StringComparison.Ordinal))
+            await VerifyResourceContent(prose);
+        else if (title.StartsWith("Preserve canonical skills when", StringComparison.Ordinal))
+            await VerifySkillResourceOverlap(prose);
+        else if (title.StartsWith("Do not steal an old resource", StringComparison.Ordinal))
+            await VerifyAmbiguousResourceOwner(prose);
+        else if (title.StartsWith("Legacy diagnostics respect", StringComparison.Ordinal))
+            await VerifyLegacyLocation(prose);
+        else if (title.StartsWith("Replace the positively owned", StringComparison.Ordinal))
+            await VerifyFrameworkTransition(prose);
+        else if (title.StartsWith("Fail framework namespace collisions", StringComparison.Ordinal))
+            await VerifyFrameworkCollisions(prose);
+        else if (title.StartsWith("Sync requires explicit update", StringComparison.Ordinal))
+            await VerifySyncRequiresUpdate();
+        else if (title.StartsWith("Reconcile a partially completed", StringComparison.Ordinal))
+            await VerifyPartialTransition(prose);
+        else
+            return false;
+        return true;
     }
 
     private async Task VerifyInitialization(string prose)
@@ -451,7 +488,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var contextPath = Path.Combine(_root, "dydo", "understand", "release-context.md");
         File.WriteAllText(contextPath, "# Release context\n");
         WriteCustom("release-notes", emitAgent: true, hint: "<release>", resources: ["style"],
-            mustRead: "../../../understand/release-context.md");
+            agent: (false, false, "../../../understand/release-context.md"));
         var config = Load();
         config.Skills["writing-for-humans"].Enabled = false;
         Save(config);
@@ -767,39 +804,49 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
             Reset(); Initialize();
             var value = SlugValue(row["component"]);
             var valid = bool.Parse(row["valid"]);
-            string expected;
-            if (kind == "skill")
-            {
-                expected = $"skill-{value}.template.md";
-                File.WriteAllText(Path.Combine(Sources(), expected), valid ? CustomSource(value, false) : "malformed");
-            }
-            else if (kind == "owner")
-            {
-                expected = $"resource-{value}-resource-guide.template.md";
-                File.WriteAllText(Path.Combine(Sources(), $"skill-{value}.template.md"), valid ? CustomSource(value, false, resources: ["guide"]) : "malformed");
-                File.WriteAllText(Path.Combine(Sources(), expected), valid ? "guide\n" : "malformed");
-            }
-            else
-            {
-                expected = $"resource-valid-resource-{value}.template.md";
-                File.WriteAllText(Path.Combine(Sources(), "skill-valid.template.md"), valid ? CustomSource("valid", false, resources: [value]) : "malformed");
-                File.WriteAllText(Path.Combine(Sources(), expected), valid ? "guide\n" : "malformed");
-            }
+            var expected = WriteSlugFixture(kind, value, valid);
             var before = Manifest();
             var result = await RunFilenameOperation(operation);
-            if (valid)
-            {
-                result.AssertSuccess();
-                if (operation == "preview") Assert.Equal(before, Manifest());
-                Assert.Equal(0, SyncCommand.Execute(_root));
-            }
-            else
-            {
-                Assert.NotEqual(0, result.ExitCode);
-                Assert.Contains(expected, result.Stdout + result.Stderr, StringComparison.Ordinal);
-                Assert.Equal(before, Manifest());
-            }
+            AssertSlugResult(operation, valid, expected, before, result);
         }
+    }
+
+    private string WriteSlugFixture(string kind, string value, bool valid)
+    {
+        if (kind == "skill")
+        {
+            var expected = $"skill-{value}.template.md";
+            File.WriteAllText(Path.Combine(Sources(), expected), valid ? CustomSource(value, false) : "malformed");
+            return expected;
+        }
+        if (kind == "owner")
+        {
+            var expected = $"resource-{value}-resource-guide.template.md";
+            var owner = valid ? CustomSource(value, false, resources: ["guide"]) : "malformed";
+            File.WriteAllText(Path.Combine(Sources(), $"skill-{value}.template.md"), owner);
+            File.WriteAllText(Path.Combine(Sources(), expected), valid ? "guide\n" : "malformed");
+            return expected;
+        }
+        var resourceExpected = $"resource-valid-resource-{value}.template.md";
+        var validOwner = valid ? CustomSource("valid", false, resources: [value]) : "malformed";
+        File.WriteAllText(Path.Combine(Sources(), "skill-valid.template.md"), validOwner);
+        File.WriteAllText(Path.Combine(Sources(), resourceExpected), valid ? "guide\n" : "malformed");
+        return resourceExpected;
+    }
+
+    private void AssertSlugResult(string operation, bool valid, string expected,
+        Dictionary<string, string> before, CliResult result)
+    {
+        if (!valid)
+        {
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains(expected, result.Stdout + result.Stderr, StringComparison.Ordinal);
+            Assert.Equal(before, Manifest());
+            return;
+        }
+        result.AssertSuccess();
+        if (operation == "preview") Assert.Equal(before, Manifest());
+        Assert.Equal(0, SyncCommand.Execute(_root));
     }
 
     private async Task VerifyResourceContent(string prose)
@@ -1144,7 +1191,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var mustRead = Path.Combine(_root, "dydo", "understand", "custom-context.md");
         File.WriteAllBytes(mustRead, [0, 1, 2, 255]);
         WriteCustom(customName, emitAgent: false, resources: ["guide"],
-            mustRead: "../../../understand/custom-context.md");
+            agent: (false, false, "../../../understand/custom-context.md"));
         var custom = Path.Combine(Sources(), $"skill-{customName}.template.md");
         var customResource = Path.Combine(Sources(), $"resource-{customName}-resource-guide.template.md");
         var extension = Path.Combine(_root, "dydo", "_system", "template-additions", "reviewer.md");
@@ -1241,211 +1288,213 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     private async Task VerifyCleanup(string title, string prose)
     {
         Initialize();
+        var (enabled, skill, metadataOnly, initialAgent, prior) = PrepareCleanup(title, prose);
+
+        var siblings = CreateProviderSiblings(skill);
+
+        if (title.StartsWith("Retire formerly", StringComparison.Ordinal))
+            await RetireFormerSkill(skill, initialAgent, prior);
+        else if (title.StartsWith("Remove a resource", StringComparison.Ordinal))
+            RemoveResource(skill);
+        else if (title.StartsWith("Remove Codex metadata", StringComparison.Ordinal))
+            RemoveCodexMetadata(skill, prose);
+        else if (title.StartsWith("Remember", StringComparison.Ordinal))
+            RememberSwitch(skill, enabled, metadataOnly, prose);
+        else if (title.StartsWith("Intentionally", StringComparison.Ordinal))
+            PreserveIntentionalDeletion(skill);
+        else
+            DisableSkill(skill, prose, initialAgent, prior);
+        AssertSiblingsPreserved(siblings);
+    }
+
+    private (bool Enabled, string Skill, bool MetadataOnly, bool InitialAgent, SkillSwitchConfig Prior)
+        PrepareCleanup(string title, string prose)
+    {
         var enabled = !prose.Contains("enabled false", StringComparison.OrdinalIgnoreCase);
-        var skill = title.StartsWith("Retire formerly", StringComparison.Ordinal) ? "former-skill"
-            : title.Contains("explicit invocation", StringComparison.Ordinal) ? "invocation-only"
-            : "cleanup-skill";
+        var skill = "cleanup-skill";
+        if (title.StartsWith("Retire formerly", StringComparison.Ordinal))
+            skill = "former-skill";
+        else if (title.Contains("explicit invocation", StringComparison.Ordinal))
+            skill = "invocation-only";
         var removesHint = title.StartsWith("Remove Codex metadata", StringComparison.Ordinal)
             && prose.Contains("argument hint", StringComparison.OrdinalIgnoreCase);
         var metadataOnly = prose.Contains("explicit skill metadata", StringComparison.OrdinalIgnoreCase)
             || title.Contains("Codex metadata", StringComparison.Ordinal);
         var initialAgent = title.StartsWith("Remove a resource", StringComparison.Ordinal) || !metadataOnly;
-        var initialHint = title.StartsWith("Remove a resource", StringComparison.Ordinal)
-            ? null
-            : removesHint || initialAgent ? "<arg>" : null;
+        string? initialHint = null;
+        if (!title.StartsWith("Remove a resource", StringComparison.Ordinal) && (removesHint || initialAgent))
+            initialHint = "<arg>";
+        var invocation = metadataOnly && !removesHint ? "explicit" : "automatic";
         WriteCustom(skill, emitAgent: initialAgent, hint: initialHint,
-            invocation: metadataOnly && !removesHint ? "explicit" : "automatic", resources: ["one", "two"]);
+            invocation: invocation, resources: ["one", "two"]);
         Assert.Equal(0, SyncCommand.Execute(_root));
         var prior = Load().Skills[skill];
         Assert.Equal(initialAgent, prior.EmitAgent);
         Assert.Equal(initialHint != null || (metadataOnly && !removesHint), prior.CodexMetadata);
         Assert.Equal(["one", "two"], prior.Resources);
         AssertManagedArtifacts(skill, initialAgent, prior.CodexMetadata == true, ["one", "two"], true, true);
-
-        var siblings = CreateProviderSiblings(skill);
-
-        if (title.StartsWith("Retire formerly", StringComparison.Ordinal))
-        {
-            var config = Load();
-            config.Skills[skill].Enabled = false;
-            config.Skills[skill].Origin = "shipped";
-            foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md"))
-            {
-                config.FrameworkHashes[$"_system/templates/{Path.GetFileName(source)}"] =
-                    TemplateCommand.ComputeHash(File.ReadAllText(source));
-                File.AppendAllText(source, "\nhard edit");
-            }
-            foreach (var path in ManagedArtifactPaths(skill, ["one", "two"]).Where(File.Exists))
-                File.AppendAllText(path, "\nhard edit");
-            var unrecordedSource = Path.Combine(Sources(), "former-skill-not-managed.txt");
-            File.WriteAllText(unrecordedSource, "unrecorded source");
-            Save(config);
-
-            (await RunAsync("template", "update")).AssertSuccess();
-            Assert.Empty(Directory.GetFiles(Sources(), $"*{skill}*.template.md"));
-            Assert.DoesNotContain(Load().FrameworkHashes.Keys, key => key.Contains(skill, StringComparison.Ordinal));
-            Assert.Equal(0, SyncCommand.Execute(_root));
-            AssertAllManagedAbsent(skill, ["one", "two"]);
-            var tombstone = Load().Skills[skill];
-            Assert.Equal("shipped", tombstone.Origin);
-            Assert.False(tombstone.Enabled);
-            Assert.Equal(initialAgent, tombstone.EmitAgent);
-            Assert.Equal(prior.CodexMetadata, tombstone.CodexMetadata);
-            Assert.Equal(["one", "two"], tombstone.Resources);
-            Assert.Equal("unrecorded source", File.ReadAllText(unrecordedSource));
-        }
-        else if (title.StartsWith("Remove a resource", StringComparison.Ordinal))
-        {
-            var codexSkill = File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "SKILL.md"));
-            var codexTwo = File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "resources", "two.md"));
-            WriteCustom(skill, emitAgent: false, resources: ["two"]);
-            File.Delete(Path.Combine(Sources(), $"resource-{skill}-resource-one.template.md"));
-            SelectOnly("claude");
-            Assert.Equal(0, SyncCommand.Execute(_root));
-            Assert.False(File.Exists(Path.Combine(_root, ".claude", "agents", $"{skill}.md")));
-            Assert.False(File.Exists(Path.Combine(_root, ".codex", "agents", $"{skill}.toml")));
-            Assert.False(File.Exists(Path.Combine(_root, ".claude", "skills", skill, "resources", "one.md")));
-            Assert.False(File.Exists(Path.Combine(_root, ".agents", "skills", skill, "resources", "one.md")));
-            Assert.Equal("# two\n", File.ReadAllText(Path.Combine(_root, ".claude", "skills", skill, "resources", "two.md")));
-            Assert.Equal(codexSkill, File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "SKILL.md")));
-            Assert.Equal(codexTwo, File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "resources", "two.md")));
-            var final = Load().Skills[skill];
-            Assert.False(final.EmitAgent);
-            Assert.False(final.CodexMetadata);
-            Assert.Equal(["two"], final.Resources);
-        }
-        else if (title.StartsWith("Remove Codex metadata", StringComparison.Ordinal))
-        {
-            var metadataPath = Path.Combine(_root, ".agents", "skills", skill, "agents", "openai.yaml");
-            Assert.True(File.Exists(metadataPath));
-            WriteCustom(skill, emitAgent: false, invocation: "automatic", resources: ["one", "two"]);
-            var selected = prose.Contains("\"codex\" is now", StringComparison.Ordinal) ? "codex" : "claude";
-            SelectOnly(selected);
-            Assert.Equal(0, SyncCommand.Execute(_root));
-            Assert.False(File.Exists(metadataPath));
-            var selectedSkill = selected == "codex"
-                ? Path.Combine(_root, ".agents", "skills", skill, "SKILL.md")
-                : Path.Combine(_root, ".claude", "skills", skill, "SKILL.md");
-            Assert.Contains($"# {skill}", File.ReadAllText(selectedSkill), StringComparison.Ordinal);
-            Assert.DoesNotContain("argument-hint", File.ReadAllText(selectedSkill), StringComparison.Ordinal);
-            var final = Load().Skills[skill];
-            Assert.False(final.EmitAgent);
-            Assert.False(final.CodexMetadata);
-            Assert.Equal(["one", "two"], final.Resources);
-        }
-        else if (title.StartsWith("Remember", StringComparison.Ordinal))
-        {
-            var config = Load();
-            config.Skills[skill].Enabled = enabled;
-            Save(config);
-            var remembered = Load().Skills[skill];
-            var selected = prose.Contains("\"codex\" is now", StringComparison.Ordinal) ? "codex" : "claude";
-            SelectOnly(selected);
-            foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md")) File.Delete(source);
-            var result = CaptureSync();
-            Assert.Equal(enabled ? 2 : 0, result.ExitCode);
-            if (enabled)
-                Assert.Contains("source unavailable", result.Stdout + result.Stderr, StringComparison.OrdinalIgnoreCase);
-            AssertAllManagedAbsent(skill, ["one", "two"]);
-            var tombstone = Load().Skills[skill];
-            Assert.Equal("custom", tombstone.Origin);
-            Assert.Equal(enabled, tombstone.Enabled);
-            Assert.Equal(remembered.EmitAgent, tombstone.EmitAgent);
-            Assert.Equal(remembered.CodexMetadata, tombstone.CodexMetadata);
-            Assert.Equal(remembered.Resources, tombstone.Resources);
-
-            WriteCustom(skill, emitAgent: !metadataOnly, hint: metadataOnly ? null : "<arg>",
-                invocation: metadataOnly ? "explicit" : "automatic", resources: ["one", "two"]);
-            Assert.Equal(0, SyncCommand.Execute(_root));
-            Assert.Equal(enabled, Load().Skills[skill].Enabled);
-            if (enabled)
-                AssertManagedArtifacts(skill, !metadataOnly, codexMetadata: true, ["one", "two"],
-                    claude: selected == "claude", codex: selected == "codex");
-            else
-                AssertAllManagedAbsent(skill, ["one", "two"]);
-        }
-        else if (title.StartsWith("Intentionally", StringComparison.Ordinal))
-        {
-            var config = Load();
-            config.Skills[skill].Enabled = false;
-            Save(config);
-            Assert.Equal(0, SyncCommand.Execute(_root));
-            AssertAllManagedAbsent(skill, ["one", "two"]);
-            Assert.True(Directory.GetFiles(Sources(), $"*{skill}*.template.md").Length == 3);
-            Assert.False(Load().Skills[skill].Enabled);
-            foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md")) File.Delete(source);
-            config = Load();
-            config.Skills.Remove(skill);
-            Save(config);
-            var sameNameCustom = new[]
-            {
-                Path.Combine(_root, ".agents", "skills", skill, "SKILL.md"),
-                Path.Combine(_root, ".claude", "skills", skill, "SKILL.md")
-            };
-            foreach (var path in sameNameCustom)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                File.WriteAllText(path, "custom native file");
-            }
-            Assert.Equal(0, SyncCommand.Execute(_root));
-            Assert.False(Load().Skills.ContainsKey(skill));
-            Assert.All(sameNameCustom, path => Assert.Equal("custom native file", File.ReadAllText(path)));
-        }
-        else
-        {
-            var config = Load();
-            config.Skills[skill].Enabled = false;
-            Save(config);
-            var selected = prose.Contains("\"codex\" is now", StringComparison.Ordinal) ? "codex" : "claude";
-            SelectOnly(selected);
-            Assert.Equal(0, SyncCommand.Execute(_root));
-            AssertAllManagedAbsent(skill, ["one", "two"]);
-            var final = Load().Skills[skill];
-            Assert.False(final.Enabled);
-            Assert.Equal("custom", final.Origin);
-            Assert.Equal(initialAgent, final.EmitAgent);
-            Assert.Equal(prior.CodexMetadata, final.CodexMetadata);
-            Assert.Equal(["one", "two"], final.Resources);
-            Assert.False(Directory.Exists(Path.Combine(_root, ".claude", "skills", skill, "resources")));
-            Assert.False(Directory.Exists(Path.Combine(_root, ".agents", "skills", skill, "resources")));
-            Assert.True(Directory.Exists(Path.Combine(_root, ".claude", "skills", skill)));
-            Assert.True(Directory.Exists(Path.Combine(_root, ".agents", "skills", skill)));
-        }
-        AssertSiblingsPreserved(siblings);
+        return (enabled, skill, metadataOnly, initialAgent, prior);
     }
 
-    private async Task VerifyInvalidSource(string prose)
+    private async Task RetireFormerSkill(string skill, bool initialAgent, SkillSwitchConfig prior)
+    {
+        var config = Load();
+        config.Skills[skill].Enabled = false;
+        config.Skills[skill].Origin = "shipped";
+        foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md"))
+        {
+            config.FrameworkHashes[$"_system/templates/{Path.GetFileName(source)}"] =
+                TemplateCommand.ComputeHash(File.ReadAllText(source));
+            File.AppendAllText(source, "\nhard edit");
+        }
+        foreach (var path in ManagedArtifactPaths(skill, ["one", "two"]).Where(File.Exists))
+            File.AppendAllText(path, "\nhard edit");
+        var unrecordedSource = Path.Combine(Sources(), "former-skill-not-managed.txt");
+        File.WriteAllText(unrecordedSource, "unrecorded source");
+        Save(config);
+
+        (await RunAsync("template", "update")).AssertSuccess();
+        Assert.Empty(Directory.GetFiles(Sources(), $"*{skill}*.template.md"));
+        Assert.DoesNotContain(Load().FrameworkHashes.Keys, key => key.Contains(skill, StringComparison.Ordinal));
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        AssertAllManagedAbsent(skill, ["one", "two"]);
+        var tombstone = Load().Skills[skill];
+        Assert.Equal("shipped", tombstone.Origin);
+        Assert.False(tombstone.Enabled);
+        Assert.Equal(initialAgent, tombstone.EmitAgent);
+        Assert.Equal(prior.CodexMetadata, tombstone.CodexMetadata);
+        Assert.Equal(["one", "two"], tombstone.Resources);
+        Assert.Equal("unrecorded source", File.ReadAllText(unrecordedSource));
+    }
+
+    private void RemoveResource(string skill)
+    {
+        var codexSkill = File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "SKILL.md"));
+        var codexTwo = File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "resources", "two.md"));
+        WriteCustom(skill, emitAgent: false, resources: ["two"]);
+        File.Delete(Path.Combine(Sources(), $"resource-{skill}-resource-one.template.md"));
+        SelectOnly("claude");
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        Assert.False(File.Exists(Path.Combine(_root, ".claude", "agents", $"{skill}.md")));
+        Assert.False(File.Exists(Path.Combine(_root, ".codex", "agents", $"{skill}.toml")));
+        Assert.False(File.Exists(Path.Combine(_root, ".claude", "skills", skill, "resources", "one.md")));
+        Assert.False(File.Exists(Path.Combine(_root, ".agents", "skills", skill, "resources", "one.md")));
+        Assert.Equal("# two\n", File.ReadAllText(Path.Combine(_root, ".claude", "skills", skill, "resources", "two.md")));
+        Assert.Equal(codexSkill, File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "SKILL.md")));
+        Assert.Equal(codexTwo, File.ReadAllBytes(Path.Combine(_root, ".agents", "skills", skill, "resources", "two.md")));
+        var final = Load().Skills[skill];
+        Assert.False(final.EmitAgent);
+        Assert.False(final.CodexMetadata);
+        Assert.Equal(["two"], final.Resources);
+    }
+
+    private void RemoveCodexMetadata(string skill, string prose)
+    {
+        var metadataPath = Path.Combine(_root, ".agents", "skills", skill, "agents", "openai.yaml");
+        Assert.True(File.Exists(metadataPath));
+        WriteCustom(skill, emitAgent: false, invocation: "automatic", resources: ["one", "two"]);
+        var selected = prose.Contains("\"codex\" is now", StringComparison.Ordinal) ? "codex" : "claude";
+        SelectOnly(selected);
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        Assert.False(File.Exists(metadataPath));
+        var selectedSkill = selected == "codex"
+            ? Path.Combine(_root, ".agents", "skills", skill, "SKILL.md")
+            : Path.Combine(_root, ".claude", "skills", skill, "SKILL.md");
+        Assert.Contains($"# {skill}", File.ReadAllText(selectedSkill), StringComparison.Ordinal);
+        Assert.DoesNotContain("argument-hint", File.ReadAllText(selectedSkill), StringComparison.Ordinal);
+        var final = Load().Skills[skill];
+        Assert.False(final.EmitAgent);
+        Assert.False(final.CodexMetadata);
+        Assert.Equal(["one", "two"], final.Resources);
+    }
+
+    private void RememberSwitch(string skill, bool enabled, bool metadataOnly, string prose)
+    {
+        var config = Load();
+        config.Skills[skill].Enabled = enabled;
+        Save(config);
+        var remembered = Load().Skills[skill];
+        var selected = prose.Contains("\"codex\" is now", StringComparison.Ordinal) ? "codex" : "claude";
+        SelectOnly(selected);
+        foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md")) File.Delete(source);
+        var result = CaptureSync();
+        Assert.Equal(enabled ? 2 : 0, result.ExitCode);
+        if (enabled)
+            Assert.Contains("source unavailable", result.Stdout + result.Stderr, StringComparison.OrdinalIgnoreCase);
+        AssertAllManagedAbsent(skill, ["one", "two"]);
+        var tombstone = Load().Skills[skill];
+        Assert.Equal("custom", tombstone.Origin);
+        Assert.Equal(enabled, tombstone.Enabled);
+        Assert.Equal(remembered.EmitAgent, tombstone.EmitAgent);
+        Assert.Equal(remembered.CodexMetadata, tombstone.CodexMetadata);
+        Assert.Equal(remembered.Resources, tombstone.Resources);
+
+        WriteCustom(skill, emitAgent: !metadataOnly, hint: metadataOnly ? null : "<arg>",
+            invocation: metadataOnly ? "explicit" : "automatic", resources: ["one", "two"]);
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        Assert.Equal(enabled, Load().Skills[skill].Enabled);
+        if (enabled)
+            AssertManagedArtifacts(skill, !metadataOnly, codexMetadata: true, ["one", "two"],
+                claude: selected == "claude", codex: selected == "codex");
+        else
+            AssertAllManagedAbsent(skill, ["one", "two"]);
+    }
+
+    private void PreserveIntentionalDeletion(string skill)
+    {
+        var config = Load();
+        config.Skills[skill].Enabled = false;
+        Save(config);
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        AssertAllManagedAbsent(skill, ["one", "two"]);
+        Assert.True(Directory.GetFiles(Sources(), $"*{skill}*.template.md").Length == 3);
+        Assert.False(Load().Skills[skill].Enabled);
+        foreach (var source in Directory.GetFiles(Sources(), $"*{skill}*.template.md")) File.Delete(source);
+        config = Load();
+        config.Skills.Remove(skill);
+        Save(config);
+        var sameNameCustom = new[]
+        {
+            Path.Combine(_root, ".agents", "skills", skill, "SKILL.md"),
+            Path.Combine(_root, ".claude", "skills", skill, "SKILL.md")
+        };
+        foreach (var path in sameNameCustom)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "custom native file");
+        }
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        Assert.False(Load().Skills.ContainsKey(skill));
+        Assert.All(sameNameCustom, path => Assert.Equal("custom native file", File.ReadAllText(path)));
+    }
+
+    private void DisableSkill(string skill, string prose, bool initialAgent, SkillSwitchConfig prior)
+    {
+        var config = Load();
+        config.Skills[skill].Enabled = false;
+        Save(config);
+        var selected = prose.Contains("\"codex\" is now", StringComparison.Ordinal) ? "codex" : "claude";
+        SelectOnly(selected);
+        Assert.Equal(0, SyncCommand.Execute(_root));
+        AssertAllManagedAbsent(skill, ["one", "two"]);
+        var final = Load().Skills[skill];
+        Assert.False(final.Enabled);
+        Assert.Equal("custom", final.Origin);
+        Assert.Equal(initialAgent, final.EmitAgent);
+        Assert.Equal(prior.CodexMetadata, final.CodexMetadata);
+        Assert.Equal(["one", "two"], final.Resources);
+        Assert.False(Directory.Exists(Path.Combine(_root, ".claude", "skills", skill, "resources")));
+        Assert.False(Directory.Exists(Path.Combine(_root, ".agents", "skills", skill, "resources")));
+        Assert.True(Directory.Exists(Path.Combine(_root, ".claude", "skills", skill)));
+        Assert.True(Directory.Exists(Path.Combine(_root, ".agents", "skills", skill)));
+    }
+
+    private async Task VerifyInvalidSource()
     {
         Initialize();
         var defect = QuotedValueAfter(_steps[0], "contains ");
         var sourceRoot = Sources();
-        if (defect.Contains("nested skill", StringComparison.Ordinal))
-        {
-            var nested = Path.Combine(sourceRoot, "nested");
-            Directory.CreateDirectory(nested);
-            File.WriteAllText(Path.Combine(nested, "skill-bad.template.md"), CustomSource("bad", false));
-            File.WriteAllText(Path.Combine(nested, "resource-bad-resource-one.template.md"), "nested resource");
-        }
-        else if (defect.Contains("outside 1-64", StringComparison.Ordinal))
-        {
-            File.WriteAllText(Path.Combine(sourceRoot, "skill-Bad.template.md"), CustomSource("Bad", false));
-            var tooLong = new string('a', 65);
-            File.WriteAllText(Path.Combine(sourceRoot, $"skill-{tooLong}.template.md"), CustomSource(tooLong, false));
-        }
-        else if (defect.Contains("protected -resource-", StringComparison.Ordinal))
-            File.WriteAllText(Path.Combine(sourceRoot, "skill-bad-resource-name.template.md"), CustomSource("bad-resource-name", false));
-        else if (defect.Contains("case-insensitive duplicate", StringComparison.Ordinal))
-            WriteDuplicateSwitchKey(JsonNode.Parse(File.ReadAllText(Path.Combine(_root, "dydo.json")))!.AsObject());
-        else if (defect.Contains("newly shipped or retired", StringComparison.Ordinal))
-        {
-            var config = Load();
-            config.Skills["reviewer"].Origin = "custom";
-            Save(config);
-        }
-        else if (defect.Contains("resource with no matching", StringComparison.Ordinal))
-            File.WriteAllText(Path.Combine(sourceRoot, "resource-orphan-resource-one.template.md"), "orphan");
-        else if (defect.Contains("extra resource attached", StringComparison.Ordinal))
-            File.WriteAllText(Path.Combine(sourceRoot, "resource-reviewer-resource-extra.template.md"), "extra");
+        if (WriteInvalidFilenameSource(defect, sourceRoot)) { }
         else if (defect.Contains("missing or blank", StringComparison.Ordinal))
         {
             File.WriteAllText(Path.Combine(sourceRoot, "skill-bad.template.md"), "---\nname: bad\ndescription: \nemit: skill\n---\n");
@@ -1535,6 +1584,40 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         }
     }
 
+    private bool WriteInvalidFilenameSource(string defect, string sourceRoot)
+    {
+        if (defect.Contains("nested skill", StringComparison.Ordinal))
+        {
+            var nested = Path.Combine(sourceRoot, "nested");
+            Directory.CreateDirectory(nested);
+            File.WriteAllText(Path.Combine(nested, "skill-bad.template.md"), CustomSource("bad", false));
+            File.WriteAllText(Path.Combine(nested, "resource-bad-resource-one.template.md"), "nested resource");
+        }
+        else if (defect.Contains("outside 1-64", StringComparison.Ordinal))
+        {
+            File.WriteAllText(Path.Combine(sourceRoot, "skill-Bad.template.md"), CustomSource("Bad", false));
+            var tooLong = new string('a', 65);
+            File.WriteAllText(Path.Combine(sourceRoot, $"skill-{tooLong}.template.md"), CustomSource(tooLong, false));
+        }
+        else if (defect.Contains("protected -resource-", StringComparison.Ordinal))
+            File.WriteAllText(Path.Combine(sourceRoot, "skill-bad-resource-name.template.md"), CustomSource("bad-resource-name", false));
+        else if (defect.Contains("case-insensitive duplicate", StringComparison.Ordinal))
+            WriteDuplicateSwitchKey(JsonNode.Parse(File.ReadAllText(Path.Combine(_root, "dydo.json")))!.AsObject());
+        else if (defect.Contains("newly shipped or retired", StringComparison.Ordinal))
+        {
+            var config = Load();
+            config.Skills["reviewer"].Origin = "custom";
+            Save(config);
+        }
+        else if (defect.Contains("resource with no matching", StringComparison.Ordinal))
+            File.WriteAllText(Path.Combine(sourceRoot, "resource-orphan-resource-one.template.md"), "orphan");
+        else if (defect.Contains("extra resource attached", StringComparison.Ordinal))
+            File.WriteAllText(Path.Combine(sourceRoot, "resource-reviewer-resource-extra.template.md"), "extra");
+        else
+            return false;
+        return true;
+    }
+
     private async Task VerifyPostOperationValidation()
     {
         Initialize();
@@ -1567,7 +1650,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         Assert.Equal(before, Manifest());
     }
 
-    private async Task VerifyMalformedSwitch(string prose)
+    private async Task VerifyMalformedSwitch()
     {
         Initialize();
         var validConfig = File.ReadAllText(Path.Combine(_root, "dydo.json"));
@@ -1624,7 +1707,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         }
     }
 
-    private async Task VerifyCheckOrValidate(string prose)
+    private async Task VerifyCheckOrValidate()
     {
         Initialize();
         var defect = QuotedValueAfter(_steps[0], "contains ");
@@ -1657,7 +1740,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var mustRead = Path.Combine(_root, "dydo", "understand", "delegation-context.md");
         File.WriteAllText(mustRead, "# Delegation context\n");
         WriteCustom("delegation-shape", emitAgent: true, hint: "<task>", resources: ["guide"],
-            delegates: delegates, web: true, mustRead: "../../../understand/delegation-context.md");
+            agent: (delegates, true, "../../../understand/delegation-context.md"));
         var source = File.ReadAllText(Path.Combine(Sources(), "skill-delegation-shape.template.md"));
         Assert.Contains("read-only: true", source, StringComparison.Ordinal);
         Assert.Contains("web: true", source, StringComparison.Ordinal);
@@ -1708,7 +1791,7 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
         var mustRead = Path.Combine(_root, "dydo", "understand", "explicit-context.md");
         File.WriteAllText(mustRead, "# Explicit context\n");
         WriteCustom("explicit-skill", emitAgent: false, hint: "<topic>", invocation: "explicit", resources: ["guide"],
-            mustRead: "../../../understand/explicit-context.md");
+            agent: (false, false, "../../../understand/explicit-context.md"));
         var source = File.ReadAllText(Path.Combine(Sources(), "skill-explicit-skill.template.md"));
         Assert.Contains("emit: skill", source, StringComparison.Ordinal);
         Assert.Contains("invocation: explicit", source, StringComparison.Ordinal);
@@ -1841,12 +1924,12 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     }
 
     private void WriteCustom(string name, bool emitAgent, string? hint = null,
-        string invocation = "automatic", string[]? resources = null, bool delegates = false,
-        bool web = false, string? mustRead = null)
+        string invocation = "automatic", string[]? resources = null,
+        (bool Delegates, bool Web, string? MustRead) agent = default)
     {
         resources ??= [];
         File.WriteAllText(Path.Combine(Sources(), $"skill-{name}.template.md"),
-            CustomSource(name, emitAgent, hint, invocation, resources, delegates, web, mustRead));
+            CustomSource(name, emitAgent, hint, invocation, resources, agent));
         foreach (var resource in resources)
             File.WriteAllText(Path.Combine(Sources(), $"resource-{name}-resource-{resource}.template.md"), $"# {resource}\n");
     }
@@ -1862,14 +1945,14 @@ public sealed class TemplateSwitchboardSteps(ScenarioContext context)
     }
 
     private static string CustomSource(string name, bool emitAgent, string? hint = null,
-        string invocation = "automatic", string[]? resources = null, bool delegates = false,
-        bool web = false, string? mustRead = null)
+        string invocation = "automatic", string[]? resources = null,
+        (bool Delegates, bool Web, string? MustRead) agent = default)
     {
         resources ??= [];
-        var agentFields = emitAgent ? $"read-only: true\ndelegates: {delegates.ToString().ToLowerInvariant()}\nweb: {web.ToString().ToLowerInvariant()}\n" : "";
+        var agentFields = emitAgent ? $"read-only: true\ndelegates: {agent.Delegates.ToString().ToLowerInvariant()}\nweb: {agent.Web.ToString().ToLowerInvariant()}\n" : "";
         var hintField = hint == null ? "" : $"argument-hint: \"{hint}\"\n";
         var links = string.Join('\n', resources.Select(resource => $"- [{resource}](resources/{resource}.md)"));
-        var mustReads = mustRead == null ? "" : $"\n## Must-Reads\n\n- [Context]({mustRead})\n";
+        var mustReads = agent.MustRead == null ? "" : $"\n## Must-Reads\n\n- [Context]({agent.MustRead})\n";
         return $"---\nname: {name}\ndescription: Contract fixture for {name}.\nemit: {(emitAgent ? "agent" : "skill")}\n{agentFields}invocation: {invocation}\n{hintField}---\n\n# {name}\n\n{links}\n{mustReads}";
     }
 

@@ -1,0 +1,679 @@
+{
+  "schema": 1,
+  "issue": "DYD-96",
+  "retainedRoot": "C:/Users/User/Desktop/Projects/DynaDocs/.worktrees/dyd96",
+  "retainedHead": "15cfe48fbb3f6382941dd90b38d10425632e3681",
+  "retainedState": "dirty, inspected read-only; hashes bind working bytes rather than merely HEAD",
+  "dispositions": [
+    {
+      "path": ".config/dotnet-tools.json",
+      "sha256": "ECC2EAC42EC45268B447A61C351CB7840B3EF78EC1634E31F05C77DC3FA226D7",
+      "bytes": 239,
+      "disposition": "adopt-adapt",
+      "destination": ".config/dotnet-tools.json",
+      "reason": "Adopt only coverlet.console6.0.4; mutation-only dotnet-stryker belongs103."
+    },
+    {
+      "path": ".editorconfig",
+      "sha256": "11396564BA402122A49290E427A11201DA6D8EE126D579D73C75DCB05B7C2FC4",
+      "bytes": 350,
+      "disposition": "adapt-without-blanket-suppression",
+      "destination": ".editorconfig",
+      "reason": "Retained blanket analyzer severity none is forbidden; preserve unrelated analyzers and verify selected native errors."
+    },
+    {
+      "path": "Directory.Build.props",
+      "sha256": "4BA96C89FF73A241543E4E33EE11F3DB6B3EADE291DCB63C4C79463353026A4C",
+      "bytes": 430,
+      "disposition": "adopt-adapt",
+      "destination": "Directory.Build.props",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/.gitignore",
+      "sha256": "EE593FE4C8EA8E74A679818BB6DFCF8E4D3704F94700878B3BAEE538A6D45263",
+      "bytes": 61,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/.gitignore",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/associations.py",
+      "sha256": "234FD670A5CC150EE511F4DA1C66495DDACF0410D30070670D8E1AC3069AAE07",
+      "bytes": 4546,
+      "disposition": "rewrite-at-same-seam",
+      "destination": "DynaDocs.Tests/coverage/associations.py",
+      "reason": "Retain strict exact-path schema checks, replace selected case IDs/groups/witnesses with simple source-to-test-file map."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/coverage.runsettings",
+      "sha256": "479CCD458C3C5D432459F3F7ECAB68749BC888401237D51973EE96E14771F49A",
+      "bytes": 600,
+      "disposition": "replace-obsolete-config",
+      "destination": "DynaDocs.Tests/coverage/coverage.runsettings",
+      "reason": "Retained config still omits compiler-generated async bodies and emits Cobertura only; new contract requires complete JSON/OpenCover/Cobertura and target assemblies."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/csharp_join.py",
+      "sha256": "EFF8A7BD1F8B817812DCDDE3BDE5BA91D429CCA9DC0A9D3DBB59AB7444DF1A0E",
+      "bytes": 12507,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/csharp_join.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gap_check.py",
+      "sha256": "FAAA7FD6A0E2F598FB823E0856C2B1F0AED35BE91D80D9AB5053A0027FE0C7E0",
+      "bytes": 10730,
+      "disposition": "extract-policy-only",
+      "destination": "DynaDocs.Tests/coverage/gate_policy.py",
+      "reason": "Keep exact HCRAP/floor arithmetic and validation as input; never replace the accepted facade or retain pending-gap/private public routing."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_clones.py",
+      "sha256": "E6238FF1E007B7F8A8905F28D26A87177B211DC5B38E148BE857DF7D6243D80C",
+      "bytes": 4655,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/gate_clones.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_collect.py",
+      "sha256": "2E0EE140EA7DC5899D0EEC26D60370207E9FADFD5AED842D2B62863BAE18862E",
+      "bytes": 16691,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/gate_collect.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_diagnostics.py",
+      "sha256": "667120A9DA07D2A617BDD6E389F89E628AE33057AAE5258D5ED5DB358BD43B25",
+      "bytes": 3031,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/gate_diagnostics.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_inventory.py",
+      "sha256": "34F023290E4177654FF90B87F9C45ECE54C57883A56A407D8B56A7708847D246",
+      "bytes": 4814,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/gate_inventory.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_knip.py",
+      "sha256": "20B5DEF372A42B8393D03E2427C7A3F1A13C1E21B9F0D09C51178664B96249C9",
+      "bytes": 5845,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/gate_knip.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_run.py",
+      "sha256": "9C5683EF4B1207C7871FF42EF458068B30EFBEDE21F3E445B955D5112AE848C9",
+      "bytes": 3994,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/gate_run.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_versions.py",
+      "sha256": "25E443FAA3439B563486286228E27AE632A121B19B86D19785F3EED2FE581F02",
+      "bytes": 4483,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/gate_versions.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/inventory.py",
+      "sha256": "8F30EC45C8E614E74A538B66067C18CA98EC3971DC2A1E881CBD50FE6AA469C6",
+      "bytes": 3030,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/inventory.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_coverage.cjs",
+      "sha256": "FA16B74F288BF52EA1E7A1ED240043D048A997260E0080C6707A17EE523FAC1F",
+      "bytes": 6116,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Not needed by the reviewed minimal route; preserve original branch and bytes as historical evidence, do not copy into adoption checkout."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_entry.cjs",
+      "sha256": "40760F43A947632731037FC794F16E2839096A21B4F42F34A035BF68B4DC2696",
+      "bytes": 2468,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_loader.mjs",
+      "sha256": "9384F78C3BD60D91DE2B0B760F7F1BFABAE90CD5C0E1386C14AFAF44AC41DFE1",
+      "bytes": 1759,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_metrics.cjs",
+      "sha256": "EC4FF52D86E481A6CA7412BC1D3FBCB4E09655D6ED5143E8DE9868DDD06C756F",
+      "bytes": 6713,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/js_metrics.cjs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_runtime.cjs",
+      "sha256": "509BE55674D05A96FD76FE9F860D6C3E18960B6E0F4FD6CDE710DE0CB7EBD811",
+      "bytes": 16784,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_session.cjs",
+      "sha256": "520D5E91FD1065519869E54340827EA35D033417221250AC9D0DB32C0B377D0C",
+      "bytes": 14937,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/knip_reporter.mjs",
+      "sha256": "079810C1447DF3AB11239C0FC4F424EB816DA72ACCC0CF1A2B4B1F477EF124EA",
+      "bytes": 746,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/knip_reporter.mjs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/AssemblyMetrics.cs",
+      "sha256": "A30778F19ECF56AC3AAAECFC409633EA1BDAADFF77DC4ED2D4AAF164291AA445",
+      "bytes": 3577,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/AssemblyMetrics.cs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj",
+      "sha256": "DED8EB1A0BDC7B89AFA0DD57E395EAD9F651B2E408791B82741A386718707553",
+      "bytes": 817,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/MethodIdentity.cs",
+      "sha256": "2A3A27D7D3AA6963EF6D5B05D01A3199FBABAB92B1F6400E8FF2C46F98ED79EE",
+      "bytes": 3544,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/MethodIdentity.cs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/NamespaceDependencies.cs",
+      "sha256": "BB34425500A98F2A4BB7BB17C8240269BFD636DCFCA3016CC62D6508DA7D7151",
+      "bytes": 2080,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/NamespaceDependencies.cs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/packages.lock.json",
+      "sha256": "DBB24A2952ECA61D195439274214C4CBFCA26F23225DA68655F718E75EA52692",
+      "bytes": 8405,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/packages.lock.json",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/Program.cs",
+      "sha256": "B5DF0FA6031FE4A179B7CF8A68F25D2B46BE25BAE5A03FB88999F6DEA0B61C41",
+      "bytes": 1682,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/Program.cs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ProjectMetrics.cs",
+      "sha256": "C1FCD6BA5F4945652842E4EE3FEF8A0859818CFCB4154A9CF3C71CA752B4C2BA",
+      "bytes": 3555,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/ProjectMetrics.cs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ShadowAssembly.cs",
+      "sha256": "9B3F67BFC45E0FC5768DBA681D8F011059692D33B2DCAE2D33487E5D050FC034",
+      "bytes": 16677,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Shadow assembly/source-document compiler machinery is outside the minimal ordinary native coverage route; preserve original only."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceBehavior.cs",
+      "sha256": "9A219FCEF09BB3E3CC9B7F591C52FE4BF51466EBA00B77FE28CD6D2667D4761C",
+      "bytes": 10299,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/SourceBehavior.cs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceMetrics.cs",
+      "sha256": "1A84DCD9C4E454509CAE70331572280489B9A2672146EBDD8B3B2FF0280AD7D6",
+      "bytes": 6230,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/metrics/SourceMetrics.cs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/mutation_selection.py",
+      "sha256": "B6C220C5232F87E40C4DDCC4293AD5B6073AC892C02F0F3D5A631B6B0B94FFCF",
+      "bytes": 5193,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package-lock.json",
+      "sha256": "0D1BBF791C57DDC7C67765E166B572792F6AAFCE2BF1693DC6347CA82D73FC90",
+      "bytes": 178754,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/package-lock.json",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package.json",
+      "sha256": "C07F01D40930233ACB1AE3634712094DF9CCBE8B8F0B7230B0D867B615213655",
+      "bytes": 387,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/package.json",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/positions.py",
+      "sha256": "7FA9A785C724644DFF9ED897F41DAD6D027C42CE8B06A08C7E76E26CFE65DD1E",
+      "bytes": 1660,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/positions.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_broker.py",
+      "sha256": "5FBFE7F57BE37B42B726B6A339B7522ACB5FFF786AEC51733F00FBCC3D2AEE5F",
+      "bytes": 26164,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_join.py",
+      "sha256": "254D059788C7B679782E0D23DAA98AC72079D4D495D269D1E93830276E1A1678",
+      "bytes": 7380,
+      "disposition": "rewrite-at-same-seam",
+      "destination": "DynaDocs.Tests/coverage/python_join.py",
+      "reason": "Retain native coverage partition checks, replace receipt/session dependencies with ordinary flat process counters."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_metrics.py",
+      "sha256": "F133ABAED0250A35F20B9DABC238B551E57B9224B44B4ED143F1519F72356D5C",
+      "bytes": 7733,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/python_metrics.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_receipts.py",
+      "sha256": "A986ABDBD4E9057FCE537300BFC3318256C4682A99C63AEBDB4149FCD0ED5BA7",
+      "bytes": 13436,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_runtime.py",
+      "sha256": "2FFAF66B6ECFD91F8F25B37820520DBDC44AD6FFCB6E122F3372A49CC9E53047",
+      "bytes": 9115,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/python_runtime.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_session.py",
+      "sha256": "75D272D3671A52E317FC6A8C7DC5AC083E0EE4207AF326FE219898616DF49277",
+      "bytes": 1740,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/report.py",
+      "sha256": "C5DA5807651733283795EA2A0B34B5D4D22A4743C7A0037809189B4DEA2919D0",
+      "bytes": 6821,
+      "disposition": "replace-obsolete-report",
+      "destination": "DynaDocs.Tests/coverage/report.py",
+      "reason": "Old reporter prints CRAP/T1 and directly dotnet-tests; render the current normalized report and invoke tests only through reviewed adapter."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/requirements.lock",
+      "sha256": "90B548EAA231025AFD97D375BEE64391A9B35BFEAF640F321426F0622423E40C",
+      "bytes": 628,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/requirements.lock",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/requirements.txt",
+      "sha256": "F6EBEBC47E4ECA8F35116EFC36A7993E5317EBAB4DD02F8C9A32F7D493477E07",
+      "bytes": 93,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/requirements.txt",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/run_tests.py",
+      "sha256": "9BFE81EC57342D0FF29917202CA636F1067A73CE845FFC1F5F5F29B1558DB4F7",
+      "bytes": 6477,
+      "disposition": "selective-harvest",
+      "destination": "DynaDocs.Tests/coverage/run_tests.py",
+      "reason": "Harvest NUL-safe dirty/deleted/renamed snapshot handling only; current merged runner allocation, ownership and interruption restoration take precedence."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/SonarLint.xml",
+      "sha256": "837325ED1695C3982B2F4FFA5B0811079245B735139C3BA2D18B9E694CAC6C87",
+      "bytes": 324,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/SonarLint.xml",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/source_tokens.py",
+      "sha256": "F0F1348DB8C7F87F4B045A7C1F67B05C2BAAADEC7B468B07193F352CA6676757",
+      "bytes": 1650,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/source_tokens.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test_discovery.cjs",
+      "sha256": "3BCD807A9816BDC18E5CCC0A9F16D7980101E542BD36A43679B890AA2EE48138",
+      "bytes": 3123,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Not needed by the reviewed minimal route; preserve original branch and bytes as historical evidence, do not copy into adoption checkout."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test_discovery.py",
+      "sha256": "27BB01BE37D7A14DCF1AF3B57077A7A9B1F65C3B006D2747099E5ACA67FB1B40",
+      "bytes": 2568,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Not needed by the reviewed minimal route; preserve original branch and bytes as historical evidence, do not copy into adoption checkout."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/js_coverage.test.cjs",
+      "sha256": "F8F42A57DD3B0C0E535B0250703541C42C395508EAB5BC696094FAE4ED813BB8",
+      "bytes": 4903,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Not needed by the reviewed minimal route; preserve original branch and bytes as historical evidence, do not copy into adoption checkout."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/js_discovery.test.cjs",
+      "sha256": "120A89FE7B014589F1A50B2FE5C031C66B9883D718E6D403B5960043A42EC09F",
+      "bytes": 2265,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Not needed by the reviewed minimal route; preserve original branch and bytes as historical evidence, do not copy into adoption checkout."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/js_metrics.test.cjs",
+      "sha256": "F3C9D1512E071E1E9980F74376D399531372C2D1F9B35E2284FBA336FDD713CC",
+      "bytes": 2811,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/js_metrics.test.cjs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/js_session.test.cjs",
+      "sha256": "E145BD57DFCA427359B89084B4421361FBF483860D5A7C56FA4BA9DBC57BA6D8",
+      "bytes": 8249,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/js_views.test.cjs",
+      "sha256": "14220A2FB7A12E5F39BF3330FE535A8E5FC38E70581FE9288929FB7D9C07AF99",
+      "bytes": 14781,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/knip_reporter.test.cjs",
+      "sha256": "0B60CE7DB9C3ABAA40A6DAD847AE38376CE6DB75BB90CBE6F52C8A2636323ED9",
+      "bytes": 716,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/knip_reporter.test.cjs",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_associations.py",
+      "sha256": "F7FF7CCF51ACE0A659FBFD7BFE138302122748095862169741D23936176A373F",
+      "bytes": 3529,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_associations.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_clones.py",
+      "sha256": "A0D42CBFFF4B5E5D9ACC99E9E33026E5AB8F00C42DA1CAB73878B2382F515ABC",
+      "bytes": 1315,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_clones.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+      "sha256": "2EF54B726A49D942E1B4F29CCADB807A37A0C90F8C5286D8AF367751F64FB66D",
+      "bytes": 3299,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
+      "sha256": "2F5E19DD72693FD5DCBF63BCA64D8D05846153ACE533259E97F4E27C96E515A3",
+      "bytes": 21181,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_diagnostics.py",
+      "sha256": "16D8EE368B6F2683716E018E1D60C88D7E0611DA0135821BE1CCDD2BBC7D8A2A",
+      "bytes": 2823,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_diagnostics.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_gate_inventory.py",
+      "sha256": "7C5C701AEAC448A18091EDE31EAB9AA7CE1C7801A403B25B35C4F7B24B13F0B4",
+      "bytes": 2821,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_gate_inventory.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_inventory.py",
+      "sha256": "DAEB53E44F37FF0D99DF8589F74F29B19472AB1A01EE8F4239003463E3A5A168",
+      "bytes": 2780,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_inventory.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
+      "sha256": "69ABD787507BADEA2CB6CD4485D3F0AC71116A08039A61119AAD98F17575B01A",
+      "bytes": 1884,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_knip.py",
+      "sha256": "9E446492ABAE39E39F71027AD169DEF00A36972960F2A3434BF7EE57527EC85D",
+      "bytes": 5498,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_knip.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_mutation_selection.py",
+      "sha256": "7E80C88FF9331C8337FDBF1988765591ACC4F8C96A86B22BB03926ED7B2B7ED0",
+      "bytes": 4570,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_orchestration.py",
+      "sha256": "FCA3D8F540F45B39332C44B54D0A6C6BC371F00CC40C596C59548DAF9004D5D5",
+      "bytes": 2510,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_orchestration.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_policy.py",
+      "sha256": "4D758A1BE996EABA7CEF9694BA58838C9ADC4DA8570DB2E4785D0D5CCA0B26A0",
+      "bytes": 4960,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_policy.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_positions.py",
+      "sha256": "6E713A8113886C8D399AB53B7104F5A48697E82074FA9D6426D6E4B6A5121FF9",
+      "bytes": 1541,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_positions.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_broker.py",
+      "sha256": "34DD40463315C0E89B8BA1544A319E6F0C9D1FBC1FCA9D6ED14C6E21B69BEB9F",
+      "bytes": 34978,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_join.py",
+      "sha256": "A2F2C9EBE3BC541BB2AEA8E5830F8F28D82388671EDB83ED36A959686B233A70",
+      "bytes": 4670,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_python_join.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_metrics.py",
+      "sha256": "2D85AD4585C03C4507D357DEED52F3CA0D937B3D0C823BB8B9B12D019FA6831F",
+      "bytes": 4712,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_python_metrics.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_receipts.py",
+      "sha256": "C0A229109F71A27726F6BA31F9B558169D89202E00536B91D0D17D8CA8965C2B",
+      "bytes": 8338,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_runtime.py",
+      "sha256": "67299A9EABD47ABDCD0C3D6CD16F8B3EF184D99E8CBB824C8C25B8D1FBAA4A25",
+      "bytes": 9263,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_python_runtime.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_session.py",
+      "sha256": "C2334556EBAA48FF0AADDA3674175AB80CC7B891ABB9F69AB93E3F80D3952B08",
+      "bytes": 3202,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_runner.py",
+      "sha256": "D4EBC31468284A76B0E8EF57088CC71936AD2D81131FB1DE217BF09F575F34BB",
+      "bytes": 3907,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_runner.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_source_tokens.py",
+      "sha256": "0CECC379B0586223BB93F65279727A06889D721A27459E68C7CA18307C0156EB",
+      "bytes": 4648,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_source_tokens.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_windows_job.py",
+      "sha256": "6FBC772871B21997D7B999A41751CA48A4F382F3DDDDA34C89B26B3CAF8BEDB4",
+      "bytes": 26119,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/tests/test_windows_job.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tier_registry.json",
+      "sha256": "7F18115F01E1845E481DA1DE9387483B3AF11F95722A61C4074D0D732D586EEE",
+      "bytes": 249,
+      "disposition": "retire-in-adoption",
+      "destination": "DynaDocs.Tests/coverage/tier_registry.json",
+      "reason": "DR048 retires tier registry; retained source/evidence remains untouched."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/windows_job.py",
+      "sha256": "19B03D20234CEC9C38F91F4FB20F2D60AEB9D6E7DAEE7094360DE5B135C33565",
+      "bytes": 21451,
+      "disposition": "adopt-adapt",
+      "destination": "DynaDocs.Tests/coverage/windows_job.py",
+      "reason": "Retained compatible native mechanism or focused proof; adapt to the exact new contract and re-test, never assume prior PASS."
+    },
+    {
+      "path": "stryker-config.json",
+      "sha256": "50F60EA939D913991D9A12D24B9F6FFA9048AFE8926A683F02A0BC788BA90346",
+      "bytes": 287,
+      "disposition": "retain-not-adopted",
+      "destination": null,
+      "reason": "Retired logical-session/receipt/broker/recursive coverage or separate mutation selection; not part of ordinary full-suite G. Preserve original; DYD-103 separately assesses mutation inputs."
+    }
+  ],
+  "otherRetainedInputs": [
+    {
+      "issue": "DYD-103",
+      "root": ".worktrees/dyd103",
+      "head": "70cf3a5e1b267055845404a69a6577abd084aa15",
+      "disposition": "preserve all, no96 adoption or mutation edits; new spec consumes exact inventory interface"
+    },
+    {
+      "issue": "DYD-105",
+      "root": ".worktrees/dyd105",
+      "head": "3833bdca9b8c42e54593d7c45661034831dc0acd",
+      "disposition": "preserve all dirty launcher tests, no96 rename/package edits; known measurement gap until reviewed105"
+    }
+  ]
+}

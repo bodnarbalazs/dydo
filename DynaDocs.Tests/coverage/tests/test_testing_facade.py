@@ -45,17 +45,35 @@ def manifest(*stacks):
 class TestingFacadeTests(unittest.TestCase):
     runner = RUNNER
 
-    def fixture(self, data=None):
+    def fixture(self, data=None, execution_seconds=None, cleanup_seconds=None):
         temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
+        # Both legs run through the same launcher: the derived copy is byte-identical, so its
+        # deadline policy is the project's and every case must hold for it too.
+        launcher = [
+            'import importlib.util, sys',
+            # The derived runner lives outside any ignored tree: caching its bytecode there would
+            # make the candidate dirty and put an untracked artifact in the inventory.
+            'sys.dont_write_bytecode = True',
+            f'spec=importlib.util.spec_from_file_location("gap_check", {str(self.runner)!r})',
+            'module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)',
+            f'module.__file__={str(directory / "gap_check.py")!r}',
+        ]
+        if execution_seconds is not None:
+            launcher.append(f'module.EXECUTION_SECONDS_MAXIMUM={execution_seconds!r}')
+        if cleanup_seconds is not None:
+            launcher.append(f'module.CLEANUP_SECONDS={cleanup_seconds!r}')
+        launcher.append('raise SystemExit(module.main())')
+        (directory / 'run_gap_check.py').write_text('\n'.join(launcher) + '\n', encoding='utf-8')
         (directory / 'gap_check.json').write_text(json.dumps(data or manifest()), encoding='utf-8')
         return directory
 
     def invoke(self, args, data=None, directory=None):
         directory = directory or self.fixture(data)
-        process = subprocess.run([sys.executable, '-u', str(directory / 'gap_check.py'), *args], cwd=directory,
+        runner = directory / 'run_gap_check.py'
+        process = subprocess.run([sys.executable, '-u', str(runner), *args], cwd=directory,
                                  capture_output=True, text=True, encoding='utf-8', timeout=60)
         result_paths = [line[8:] for line in process.stdout.splitlines() if line.startswith('Result: ')]
         payload = json.loads(Path(result_paths[0]).read_text(encoding='utf-8')) if result_paths else None
@@ -480,11 +498,13 @@ class TestingFacadeTests(unittest.TestCase):
 
     def exit_case(self, code):
         data = manifest()
-        data['stacks'][0]['capabilities']['test'] = unavailable() if code == 2 else configured(['-c', f'raise SystemExit({17 if code == 1 else 0})'])
+        child_exit = {0: 0, 1: 17}[code] if code != 2 else None
+        data['stacks'][0]['capabilities']['test'] = (unavailable() if code == 2
+                                                      else configured(['-c', f'raise SystemExit({child_exit})']))
         p, _, payload = self.invoke(['all'], data)
         self.assert_exit(p, code)
         self.assertEqual(code, payload['aggregateExit'])
-        self.assertEqual(17 if code == 1 else (0 if code == 0 else None), payload['results'][0]['childExit'])
+        self.assertEqual(child_exit, payload['results'][0]['childExit'])
 
     def test_exit_pass(self): self.exit_case(0)
     def test_exit_failure(self): self.exit_case(1)
@@ -498,7 +518,9 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertIsInstance(payload['candidate']['dirty'], bool)
         self.assertIn('name', payload['operation'])
         for row in payload['results']:
-            self.assertEqual({'stack', 'capability', 'state', 'argv', 'cwd', 'isolation', 'childExit', 'resultExit', 'artifacts'}, set(row) - {'reason'})
+            fields = {'stack', 'capability', 'state', 'argv', 'cwd', 'isolation',
+                      'environment', 'childExit', 'resultExit', 'artifacts'}
+            self.assertEqual(fields, set(row) - {'reason'})
             self.assertIn(row['state'], ['passed', 'failed', 'unavailable', 'invalid', 'interrupted'])
             self.assertIn(row['resultExit'], [0, 1, 2, 130])
             self.assertTrue(row['childExit'] is None or type(row['childExit']) is int)
@@ -516,7 +538,9 @@ class TestingFacadeTests(unittest.TestCase):
         expected = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
         for expected_exit in [0, 1, 2]:
             data = manifest()
-            data['stacks'][0]['capabilities']['test'] = unavailable() if expected_exit == 2 else configured(['-c', f'raise SystemExit({17 if expected_exit == 1 else 0})'])
+            child_exit = {0: 0, 1: 17}.get(expected_exit)
+            data['stacks'][0]['capabilities']['test'] = (unavailable() if expected_exit == 2
+                                                          else configured(['-c', f'raise SystemExit({child_exit})']))
             (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
             p, _, payload = self.invoke(['all'], directory=root)
             self.assert_exit(p, expected_exit)
@@ -529,6 +553,24 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertEqual(3, len(list(root.glob('results/*/result.json'))))
         self.assertEqual([], list(root.glob('results/**/*.tmp')))
         self.test_interrupting_the_real_dotnet_adapter_cleans_its_worktree()
+
+    def test_candidate_identity_uses_only_exact_repository_scoped_git_trust(self):
+        candidate = runpy.run_path(str(RUNNER))['candidate_identity']
+        root = Path('C:/fixture/repository')
+        calls = []
+
+        def invoke(command, **kwargs):
+            calls.append((command, kwargs))
+            stdout = 'a' * 40 + '\n' if command[-1] == 'HEAD' else ''
+            return subprocess.CompletedProcess(command, 0, stdout=stdout)
+
+        with mock.patch.object(subprocess, 'run', side_effect=invoke):
+            self.assertEqual({'commit': 'a' * 40, 'dirty': False}, candidate(root))
+        expected = ['git', '-c', f'safe.directory={root.as_posix()}']
+        self.assertEqual(expected + ['rev-parse', 'HEAD'], calls[0][0])
+        self.assertEqual(expected + ['status', '--porcelain'], calls[1][0])
+        self.assertEqual(root, calls[0][1]['cwd'])
+        self.assertEqual(root, calls[1][1]['cwd'])
 
     def test_schema(self):
         p, root, payload = self.invoke(['all'])
@@ -666,10 +708,15 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertEqual({'kind': 'current-python', 'argv': ['-u', 'DynaDocs.Tests/coverage/run_tests.py', '--']}, dotnet['capabilities']['test']['command'])
         self.assertEqual({'requirement': 'git-worktree-copy-working-changes', 'evidence': {'state': 'verified', 'kind': 'adapter', 'path': 'DynaDocs.Tests/coverage/run_tests.py'}}, dotnet['isolation'])
         self.assertEqual({'kind': 'current-python', 'argv': ['-m', 'unittest', 'discover', '-s', 'DynaDocs.Tests/coverage/tests', '-p', 'test_*.py']}, python['capabilities']['test']['command'])
-        self.assertEqual(['node', '--test', 'DynaDocs.Tests/coverage/tests/testing_facade.test.mjs'], node['capabilities']['test']['command']['argv'])
+        self.assertEqual(['node', 'DynaDocs.Tests/coverage/node_tests.cjs'], node['capabilities']['test']['command']['argv'])
         for item in data['stacks']:
-            for capability in ['static', 'coverage', 'mutation']:
-                self.assertEqual(unavailable('Pending DYD-103' if capability == 'mutation' else 'Pending DYD-96'), item['capabilities'][capability])
+            self.assertEqual(unavailable('Pending DYD-103'), item['capabilities']['mutation'])
+            for capability in ['static', 'coverage']:
+                row = item['capabilities'][capability]
+                self.assertEqual('configured', row['state'])
+                self.assertEqual('current-python', row['command']['kind'])
+                self.assertEqual(['DynaDocs.Tests/coverage/gate_adapter.py', '--stack', item['name'], '--gate', capability], row['command']['argv'])
+                self.assertEqual([{'path': f'DynaDocs.Tests/coverage/results/adapters/{item["name"]}-{capability}.json', 'required': True}], row['artifacts'])
 
     def test_identity(self):
         self.assertEqual(RUNNER.read_bytes(), PORTABLE.read_bytes())
@@ -680,6 +727,42 @@ class TestingFacadeTests(unittest.TestCase):
         p = subprocess.run(['node', '--test', '--test-reporter=tap', 'DynaDocs.Tests/coverage/tests/testing_facade.test.mjs'], cwd=ROOT, env={**os.environ, 'PYTHON': sys.executable, 'FACADE_RUNNER': str(self.runner)}, capture_output=True, text=True, encoding='utf-8', timeout=60)
         self.assert_exit(p, 0)
         self.assertIn('# pass 1', p.stdout)
+
+    def test_copied_single_file_preserves_child_streams_exit_deadline_and_cleanup(self):
+        with tempfile.TemporaryDirectory(prefix='dydo-standalone-facade-') as temporary:
+            root = Path(temporary)
+            shutil.copyfile(RUNNER, root / 'gap_check.py')
+            (root / 'child.py').write_text(
+                "import math,os,sys,time\nfrom pathlib import Path\n"
+                "try:\n"
+                "    deadline=float(os.environ['DYDO_ROW_DEADLINE'])\n"
+                "    assert math.isfinite(deadline) and deadline > time.monotonic()\n"
+                "    Path('deadline.txt').write_text(str(deadline), encoding='utf-8')\n"
+                "    print('STANDALONE_STDOUT', flush=True)\n"
+                "    print('STANDALONE_STDERR', file=sys.stderr, flush=True)\n"
+                "    raise SystemExit(17)\n"
+                "finally:\n"
+                "    Path('cleanup.txt').write_text('complete', encoding='utf-8')\n",
+                encoding='utf-8')
+            data = manifest(stack('standalone'))
+            data['stacks'][0]['capabilities']['test'] = configured(['-u', 'child.py'])
+            (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+
+            process = subprocess.run([sys.executable, '-u', str(root / 'gap_check.py'),
+                                      'test', '--stack', 'standalone'], cwd=root,
+                                     capture_output=True, text=True, encoding='utf-8', timeout=30)
+
+            self.assertEqual(1, process.returncode, process.stdout + process.stderr)
+            self.assertIn('STANDALONE_STDOUT', process.stdout)
+            self.assertIn('STANDALONE_STDERR', process.stderr)
+            self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+            deadline = float((root / 'deadline.txt').read_text(encoding='utf-8'))
+            self.assertLess(deadline, float('inf'))
+            result_path = next(root.glob('results/*/result.json'))
+            row = json.loads(result_path.read_text(encoding='utf-8'))['results'][0]
+            self.assertEqual(('failed', 17, 1),
+                             (row['state'], row['childExit'], row['resultExit']))
+            self.assertEqual(deadline, float(row['environment']['DYDO_ROW_DEADLINE']))
 
     def test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set(self):
         for path in ['dydo/guides/testing-strategy.md', 'dydo/reference/coverage-tools.md', 'Templates/coding-standards.template.md']:
@@ -1186,6 +1269,50 @@ print('INTER_ITERATION_CASES=' + str(count))
                         facade.wait(timeout=35)
                     reader.join(timeout=5)
                     facade.stdout.close()
+
+    def test_absolute_row_deadline_cleans_cooperative_child_before_publication(self):
+        data = manifest(stack('first'), stack('later'))
+        root = self.fixture(data, execution_seconds=.15, cleanup_seconds=.25)
+        (root / 'deadline.py').write_text(
+            "import signal,sys,time\nfrom pathlib import Path\n"
+            "def stop(signum, frame):\n    Path('cleanup.txt').write_text('complete')\n    raise SystemExit(130)\n"
+            "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, stop)\n"
+            "Path('ready.txt').write_text('ready')\n"
+            "deadline=time.monotonic()+1\n"
+            "while time.monotonic()<deadline:\n    print('wake', flush=True)\n    time.sleep(.005)\n"
+            "raise SystemExit(99)\n", encoding='utf-8')
+        data['stacks'][0]['capabilities']['test'] = configured(['-I', '-S', '-u', 'deadline.py'])
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        process, _, payload = self.invoke(['all'], directory=root)
+        self.assert_exit(process, 130)
+        self.assertEqual('ready', (root / 'ready.txt').read_text(encoding='utf-8'))
+        self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+        self.assertFalse((root / 'later-test.txt').exists())
+        self.assert_rows(payload, [('first', 'test', 'interrupted')])
+        row = payload['results'][0]
+        self.assertEqual(130, row['childExit'])
+        self.assertIn('DYDO_ROW_DEADLINE', row['environment'])
+        self.assertGreater(process.stdout.count('wake'), 5)
+
+    def test_absolute_row_deadline_force_terminates_uncooperative_child(self):
+        data = manifest(stack('first'), stack('later'))
+        root = self.fixture(data, execution_seconds=.1, cleanup_seconds=.15)
+        (root / 'deadline.py').write_text(
+            "import signal,time\n"
+            "signal.signal(signal.SIGINT, signal.SIG_IGN)\n"
+            + ("signal.signal(signal.SIGBREAK, signal.SIG_IGN)\n" if os.name == 'nt' else '')
+            + "deadline=time.monotonic()+1\n"
+            "while time.monotonic()<deadline:\n    time.sleep(.005)\n"
+            "raise SystemExit(99)\n", encoding='utf-8')
+        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'deadline.py'])
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        started = time.monotonic()
+        process, _, payload = self.invoke(['all'], directory=root)
+        self.assertLess(time.monotonic() - started, 2)
+        self.assert_exit(process, 130)
+        self.assertFalse((root / 'later-test.txt').exists())
+        self.assert_rows(payload, [('first', 'test', 'interrupted')])
+        self.assertIn('deadline', payload['results'][0]['reason'])
 
 
 class PortableTestingFacadeTests(TestingFacadeTests):

@@ -798,8 +798,8 @@ public class SyncCommandTests : IDisposable
             Console.SetOut(originalOutput);
         }
 
-        Steps.WorkflowRetirementSteps.AssertNativeSummary(new Steps.CliResult(result, output.ToString(), ""), "none");
-        Steps.WorkflowRetirementSteps.AssertNativeArtifacts(_testDir, "none");
+        NativeSyncAssertions.AssertSummary(result, output.ToString(), "", "none");
+        NativeSyncAssertions.AssertArtifacts(_testDir, "none");
         Assert.False(Directory.Exists(Path.Combine(_testDir, ".claude", "workflows")));
     }
     [Fact]
@@ -1505,36 +1505,21 @@ public class SyncCommandTests : IDisposable
         Assert.Contains(preToolUse, entry => entry?["matcher"]?.GetValue<string>() == "CustomTool");
         Assert.Contains(preToolUse, entry =>
             entry?["matcher"]?.GetValue<string>() == "CustomSubstring" &&
-            HookCommands(entry).Contains("echo before dydo guard after"));
+            HookTestAssertions.Commands(entry).Contains("echo before dydo guard after"));
         Assert.Contains(preToolUse, entry =>
             entry?["matcher"]?.GetValue<string>() == "Mixed" &&
-            HookCommands(entry).SequenceEqual(["echo mixed custom"]));
-        Assert.Equal(1, CountExactHookCommand(preToolUse, "dydo guard"));
+            HookTestAssertions.Commands(entry).SequenceEqual(["echo mixed custom"]));
+        Assert.Equal(1, HookTestAssertions.Count(preToolUse, "dydo guard"));
 
         var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
-        Assert.Contains(stop, entry => HookCommands(entry).SequenceEqual(["echo stop"]));
-        Assert.Contains(stop, entry => HookCommands(entry).Contains("echo before dydo guard --stop after"));
-        Assert.Equal(1, CountExactHookCommand(stop, "dydo guard --stop"));
+        Assert.Contains(stop, entry => HookTestAssertions.Commands(entry).SequenceEqual(["echo stop"]));
+        Assert.Contains(stop, entry => HookTestAssertions.Commands(entry).Contains("echo before dydo guard --stop after"));
+        Assert.Equal(1, HookTestAssertions.Count(stop, "dydo guard --stop"));
     }
 
     private JsonObject ReadCodexHooks() =>
         Assert.IsType<JsonObject>(JsonNode.Parse(
             File.ReadAllText(Path.Combine(_testDir, ".codex", "hooks.json"))));
-
-    private static List<string> HookCommands(JsonNode? entry)
-    {
-        var entryObject = Assert.IsType<JsonObject>(entry);
-        var hooks = Assert.IsType<JsonArray>(entryObject["hooks"]);
-        return hooks
-            .OfType<JsonObject>()
-            .Select(hook => hook["command"]?.GetValue<string>())
-            .Where(command => command != null)
-            .Select(command => command!)
-            .ToList();
-    }
-
-    private static int CountExactHookCommand(JsonArray entries, string command) =>
-        entries.Sum(entry => HookCommands(entry).Count(existing => existing == command));
 
     private void AssertCodexHooksShape()
     {

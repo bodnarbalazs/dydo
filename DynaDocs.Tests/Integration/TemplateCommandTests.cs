@@ -128,8 +128,7 @@ public class TemplateCommandTests : IntegrationTestBase
         var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
             .ToDictionary(file => file, File.ReadAllBytes);
 
-        var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
-            : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+        var result = await RunSourceOperation(operation);
 
         result.AssertSuccess();
         Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
@@ -163,8 +162,7 @@ public class TemplateCommandTests : IntegrationTestBase
         var before = Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories)
             .ToDictionary(file => file, File.ReadAllBytes);
 
-        var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
-            : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+        var result = await RunSourceOperation(operation);
 
         Assert.NotEqual(0, result.ExitCode);
         Assert.Contains(name.Replace('\\', '/'), result.Stderr.Replace('\\', '/'), StringComparison.Ordinal);
@@ -194,14 +192,21 @@ public class TemplateCommandTests : IntegrationTestBase
 
         foreach (var operation in new[] { "sync", "update", "preview" })
         {
-            var result = operation == "sync" ? await RunAsync(SyncCommand.Create())
-                : await RunTemplateUpdateAsync(operation == "preview" ? ["--diff"] : []);
+            var result = await RunSourceOperation(operation);
             Assert.NotEqual(0, result.ExitCode);
             Assert.Contains(Path.GetFileName(path), result.Stderr);
             Assert.Contains(reason, result.Stderr);
             Assert.Equal(before.Keys.Order(), Directory.GetFiles(TestDir, "*", SearchOption.AllDirectories).Order());
             Assert.All(before, entry => Assert.Equal(entry.Value, File.ReadAllBytes(entry.Key)));
         }
+    }
+
+    private Task<CommandResult> RunSourceOperation(string operation)
+    {
+        if (operation == "sync")
+            return RunAsync(SyncCommand.Create());
+        var arguments = operation == "preview" ? new[] { "--diff" } : [];
+        return RunTemplateUpdateAsync(arguments);
     }
 
     [Theory]

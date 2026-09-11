@@ -25,6 +25,9 @@ if sys.platform == "win32":
 
 CAPS = ("test", "static", "coverage", "mutation")
 EXITS = {"passed": 0, "failed": 1, "unavailable": 2, "invalid": 2, "interrupted": 130}
+EXECUTION_SECONDS_MAXIMUM = 1800
+CLEANUP_SECONDS = 30
+ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
 HELP = """Usage: gap_check.py [--force-run] [operation] [options] [-- native arguments]
 
 Project testing facade. It runs manifest argv vectors directly; it never invokes a shell.
@@ -84,7 +87,7 @@ def read_manifest(path):
 def result(stack, capability, state, **values):
     item = {"stack": stack.get("name", "unknown"), "capability": capability, "state": state,
             "argv": [], "cwd": stack.get("cwd", ""), "isolation": stack.get("isolation"),
-            "childExit": None, "resultExit": EXITS[state], "artifacts": []}
+            "environment": {}, "childExit": None, "resultExit": EXITS[state], "artifacts": []}
     item.update(values)
     return item
 
@@ -137,6 +140,40 @@ def resolve_executable(value, working_directory):
     return shutil.which(str(executable), path=search_path)
 
 
+def configured_command(config, root, capability):
+    if set(config) != {"state", "command", "artifacts"}:
+        return None, None, None, "configured capability requires command and artifacts and forbids reason"
+    command = config["command"]
+    if not isinstance(command, dict) or set(command) != {"kind", "argv"} or command["kind"] not in ("argv", "current-python"):
+        return None, None, None, "command kind must be argv or current-python"
+    argv = command["argv"]
+    if not isinstance(argv, list) or not argv or not all(isinstance(x, str) and x for x in argv):
+        return None, None, None, "command argv must be a nonempty array of strings"
+    if any("\x00" in item for item in argv):
+        return None, None, None, "command argv cannot contain NUL"
+    if any("<" in x or ">" in x for x in argv):
+        return None, None, None, "command vector contains an angle placeholder"
+    artifacts = config["artifacts"]
+    if not isinstance(artifacts, list):
+        return None, None, None, "artifacts must be an array"
+    for item in artifacts:
+        if not isinstance(item, dict) or set(item) != {"path", "required"} or not isinstance(item["required"], bool) or not contained(root, item["path"]):
+            return None, None, None, "artifact requires contained path and required boolean"
+    if capability != "test" and not any(item["required"] for item in artifacts):
+        return None, None, None, "configured gates require a required artifact"
+    return command["kind"], argv, artifacts, None
+
+
+def mutation_command(argv, since, inspection):
+    if argv.count("{base}") != 1 or any("{base}" in item and item != "{base}" for item in argv):
+        return None, "mutation requires exactly one argv element equal to {base} and no substring occurrence"
+    if not since and not inspection:
+        return None, "mutation requires --since BASE"
+    if since is not None:
+        argv = [since if item == "{base}" else item for item in argv]
+    return argv, None
+
+
 def command_error(capability, config, root, working_directory, since, inspection=False):
     if not isinstance(config, dict) or config.get("state") not in ("configured", "unavailable"):
         return None, None, "invalid capability state"
@@ -144,37 +181,17 @@ def command_error(capability, config, root, working_directory, since, inspection
         if valid_unavailable(config):
             return None, None, config["reason"]
         return None, None, "unavailable capability requires reason and forbids command and artifacts"
-    if set(config) != {"state", "command", "artifacts"}:
-        return None, None, "configured capability requires command and artifacts and forbids reason"
-    command = config["command"]
-    if not isinstance(command, dict) or set(command) != {"kind", "argv"} or command["kind"] not in ("argv", "current-python"):
-        return None, None, "command kind must be argv or current-python"
-    argv = command["argv"]
-    if not isinstance(argv, list) or not argv or not all(isinstance(x, str) and x for x in argv):
-        return None, None, "command argv must be a nonempty array of strings"
-    if any("\x00" in item for item in argv):
-        return None, None, "command argv cannot contain NUL"
-    if any("<" in x or ">" in x for x in argv):
-        return None, None, "command vector contains an angle placeholder"
-    artifacts = config["artifacts"]
-    if not isinstance(artifacts, list):
-        return None, None, "artifacts must be an array"
-    for item in artifacts:
-        if not isinstance(item, dict) or set(item) != {"path", "required"} or not isinstance(item["required"], bool) or not contained(root, item["path"]):
-            return None, None, "artifact requires contained path and required boolean"
-    if capability != "test" and not any(item["required"] for item in artifacts):
-        return None, None, "configured gates require a required artifact"
+    kind, argv, artifacts, error = configured_command(config, root, capability)
+    if error:
+        return None, None, error
     if capability == "mutation":
-        if argv.count("{base}") != 1 or any("{base}" in x and x != "{base}" for x in argv):
-            return None, None, "mutation requires exactly one argv element equal to {base} and no substring occurrence"
-        if not since and not inspection:
-            return None, None, "mutation requires --since BASE"
-        if since is not None:
-            argv = [since if x == "{base}" else x for x in argv]
-    elif any("{base}" in x for x in argv):
+        argv, error = mutation_command(argv, since, inspection)
+        if error:
+            return None, None, error
+    elif any("{base}" in item for item in argv):
         return None, None, "{base} is only valid for mutation"
-    actual = [sys.executable, *argv] if command["kind"] == "current-python" else list(argv)
-    if command["kind"] == "argv" and not resolve_executable(actual[0], working_directory):
+    actual = [sys.executable, *argv] if kind == "current-python" else list(argv)
+    if kind == "argv" and not resolve_executable(actual[0], working_directory):
         return None, None, f"missing executable: {actual[0]}"
     return actual, artifacts, None
 
@@ -221,45 +238,109 @@ def artifact_snapshot(root, value):
     return snapshot
 
 
-def run_row(stack, capability, root, since, forwarded):
+def stop_child(child, deadline):
+    try:
+        if sys.platform == "win32":
+            child.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            os.killpg(child.pid, signal.SIGINT)
+        child.wait(timeout=max(0, deadline - time.monotonic()))
+    except (OSError, subprocess.TimeoutExpired):
+        if sys.platform == "win32":
+            child.kill()
+        else:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        child.wait()
+
+
+def wait_for_child(child, capability, deadline):
+    execution_deadline = deadline if capability != "test" else deadline - CLEANUP_SECONDS
+    while child.poll() is None:
+        remaining = execution_deadline - time.monotonic()
+        if remaining <= 0:
+            stop_child(child, deadline)
+            return False
+        try:
+            child.wait(timeout=min(0.2, remaining))
+        except subprocess.TimeoutExpired:
+            pass
+    return True
+
+
+def artifact_error(root, capability, artifacts, before):
+    if capability == "test":
+        return None
+    for path, previous in before.items():
+        current = artifact_snapshot(root, path)
+        if current is None or current == previous:
+            return f"required artifact was not produced or refreshed: {path}"
+    return None
+
+
+def completed_row(stack, capability, argv, environment, child, artifacts):
+    if capability != "test" and child.returncode in (2, 130):
+        state = "invalid" if child.returncode == 2 else "interrupted"
+    else:
+        state = "passed" if child.returncode == 0 else "failed"
+    return result(stack, capability, state, argv=argv, environment=environment,
+                  childExit=child.returncode, artifacts=artifacts)
+
+
+def run_row(stack, capability, root, since, forwarded, deadline):
     argv, artifacts, state, reason = prepare_row(stack, capability, root, since)
     if state != "configured":
         return result(stack, capability, state, reason=reason)
     if capability == "test":
         argv += forwarded
     child = None
+    environment = {ROW_DEADLINE_ENV: format(deadline, ".9f")}
     try:
         working_directory = contained(root, stack["cwd"])
         before = {item["path"]: artifact_snapshot(root, item["path"]) for item in artifacts
                   if item["required"] and capability != "test"}
-        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable, **environment}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                                  start_new_session=sys.platform != "win32")
-        while child.poll() is None:
-            try:
-                child.wait(timeout=0.2)
-            except subprocess.TimeoutExpired:
-                pass
-        if child.returncode == 0:
-            for path, previous in before.items():
-                current = artifact_snapshot(root, path)
-                if current is None or current == previous:
-                    return result(stack, capability, "invalid", argv=argv, childExit=0, artifacts=artifacts, reason=f"required artifact was not produced or refreshed: {path}")
-        return result(stack, capability, "passed" if child.returncode == 0 else "failed", argv=argv, childExit=child.returncode, artifacts=artifacts)
+        if not wait_for_child(child, capability, deadline):
+            return result(stack, capability, "interrupted", argv=argv, environment=environment,
+                          childExit=child.returncode, artifacts=artifacts,
+                          reason="row deadline exceeded after adapter cleanup")
+        error = artifact_error(root, capability, artifacts, before)
+        if error:
+            return result(stack, capability, "invalid", argv=argv, environment=environment,
+                          childExit=child.returncode, artifacts=artifacts, reason=error)
+        return completed_row(stack, capability, argv, environment, child, artifacts)
     except KeyboardInterrupt:
         if child is None:
-            return result(stack, capability, "interrupted", argv=argv, artifacts=artifacts, reason="interrupted before adapter launch")
-        try:
-            if sys.platform == "win32":
-                child.send_signal(signal.CTRL_BREAK_EVENT)
-            else:
-                os.killpg(child.pid, signal.SIGINT)
-            child.wait(timeout=30)
-        except (OSError, subprocess.TimeoutExpired):
-            child.kill()
-            child.wait()
-        return result(stack, capability, "interrupted", argv=argv, childExit=child.returncode, artifacts=artifacts, reason="adapter interrupted after cleanup window")
+            return result(stack, capability, "interrupted", argv=argv, environment=environment, artifacts=artifacts, reason="interrupted before adapter launch")
+        stop_child(child, time.monotonic() + CLEANUP_SECONDS)
+        return result(stack, capability, "interrupted", argv=argv, environment=environment, childExit=child.returncode, artifacts=artifacts, reason="adapter interrupted after cleanup window")
     except (OSError, ContractError) as error:
-        return result(stack, capability, "invalid", argv=argv, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
+        return result(stack, capability, "invalid", argv=argv, environment=environment, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
+
+
+def split_forwarded(args, operation):
+    if "--" not in args:
+        return args, []
+    index = args.index("--")
+    if operation != "test":
+        raise ContractError("native arguments are only valid for test")
+    return args[:index], args[index + 1:]
+
+
+def request_options(args):
+    stacks = since = None
+    while args:
+        flag = args.pop(0)
+        if flag == "--stack" and args and stacks is None:
+            stacks = args.pop(0).split(",")
+        elif flag == "--since" and args and since is None:
+            since = args.pop(0)
+        else:
+            raise ContractError("invalid operation syntax")
+    return stacks, since
 
 
 def request(args):
@@ -274,16 +355,8 @@ def request(args):
     if operation == "gate":
         if not args or args[0] not in CAPS[1:]: raise ContractError("gate requires static, coverage or mutation")
         capability = args.pop(0)
-    forwarded = []
-    if "--" in args:
-        index = args.index("--"); forwarded, args = args[index + 1:], args[:index]
-        if operation != "test": raise ContractError("native arguments are only valid for test")
-    stacks = since = None
-    while args:
-        flag = args.pop(0)
-        if flag == "--stack" and args and stacks is None: stacks = args.pop(0).split(",")
-        elif flag == "--since" and args and since is None: since = args.pop(0)
-        else: raise ContractError("invalid operation syntax")
+    args, forwarded = split_forwarded(args, operation)
+    stacks, since = request_options(args)
     if operation == "test" and (stacks is None or len(stacks) != 1 or not stacks[0]):
         raise ContractError("test requires exactly one --stack NAME")
     if capability == "mutation" and not since: raise ContractError("mutation requires --since BASE")
@@ -292,8 +365,9 @@ def request(args):
 
 
 def candidate_identity(root):
-    git = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True)
-    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=root, text=True, capture_output=True)
+    safe = ["git", "-c", f"safe.directory={root.as_posix()}"]
+    git = subprocess.run([*safe, "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True)
+    dirty = subprocess.run([*safe, "status", "--porcelain"], cwd=root, text=True, capture_output=True)
     return {"commit": git.stdout.strip() if git.returncode == 0 else "unknown", "dirty": bool(dirty.stdout)}
 
 
@@ -330,6 +404,30 @@ def prepare_result(destination):
     return run
 
 
+def selected_stacks(all_stacks, names):
+    available = [item["name"] for item in all_stacks]
+    if names is not None and (not names or any(not name or name not in available for name in names)):
+        raise ContractError("unknown selected stack")
+    return [item for item in all_stacks if names is None or item["name"] in names]
+
+
+def execute_rows(selected, capabilities, root, since, forwarded):
+    rows = []
+    for stack in selected:
+        for capability in capabilities:
+            deadline = time.monotonic() + EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
+            current = run_row(stack, capability, root, since, forwarded, deadline)
+            rows.append(current)
+            child = f" (child exit {current['childExit']})" if current["childExit"] is not None else ""
+            reason = f": {current['reason']}" if current.get("reason") else ""
+            print(f"{current['stack']} {capability}: {current['state'].upper()}{child}{reason}", flush=True)
+            if current["state"] == "interrupted":
+                break
+        if rows[-1]["state"] == "interrupted":
+            break
+    return rows
+
+
 def write_result(root, run, operation, selected, rows, candidate):
     if not run.resolve().is_relative_to(root):
         raise ContractError("result artifact escapes repository")
@@ -356,22 +454,12 @@ def main(argv=None):
         name, capabilities, since, names, forwarded = parsed
         data = read_manifest(path)
         destination = artifact_destination(root, data["artifactRoot"])
-        all_stacks = data["stacks"]
-        if names is not None and (not names or any(not x or x not in [item["name"] for item in all_stacks] for x in names)):
-            raise ContractError("unknown selected stack")
-        selected = [item for item in all_stacks if names is None or item["name"] in names]
+        selected = selected_stacks(data["stacks"], names)
         if name == "capabilities":
             return print_capabilities(selected, root)
         candidate = candidate_identity(root)
         run = prepare_result(destination)
-        for stack in selected:
-            for capability in capabilities:
-                current = run_row(stack, capability, root, since, forwarded); rows.append(current)
-                print(f"{current['stack']} {capability}: {current['state'].upper()}" + (f" (child exit {current['childExit']})" if current["childExit"] is not None else "") + (f": {current['reason']}" if current.get("reason") else ""), flush=True)
-                if current["state"] == "interrupted":
-                    break
-            if rows[-1]["state"] == "interrupted":
-                break
+        rows = execute_rows(selected, capabilities, root, since, forwarded)
         return write_result(root, run, {"name": name, **({"since": since} if since else {})}, selected, rows, candidate)
     except (ContractError, OSError) as error:
         print(f"Invalid request or artifact destination: {error}", file=sys.stderr)

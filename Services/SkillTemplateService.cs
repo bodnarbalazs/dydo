@@ -37,81 +37,15 @@ public static partial class SkillTemplateService
 
         var errors = new List<string>();
         var files = Directory.GetFiles(sourceRoot, "*", SearchOption.AllDirectories)
-            .OrderBy(path => path, StringComparer.Ordinal);
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToList();
 
         var skillFiles = new Dictionary<string, string>(StringComparer.Ordinal);
         var resourceFiles = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
-        var allNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var path in files)
-        {
-            var file = Path.GetFileName(path);
-            if (!file.EndsWith(".template.md", StringComparison.Ordinal))
-                continue;
-            var isSkill = file.StartsWith("skill-", StringComparison.Ordinal);
-            var isResource = file.StartsWith("resource-", StringComparison.Ordinal);
-            if (!isSkill && !isResource)
-                continue;
-            if (isResource && !file["resource-".Length..^".template.md".Length]
-                    .Contains("-resource-", StringComparison.Ordinal))
-                continue;
-            if (Path.GetDirectoryName(path) != sourceRoot)
-            {
-                errors.Add($"'{Path.GetRelativePath(sourceRoot, path).Replace('\\', '/')}' is nested; local templates must be top-level.");
-                continue;
-            }
-            if (isSkill)
-            {
-                var slug = file["skill-".Length..^".template.md".Length];
-                if (!ConfigService.IsValidSlug(slug))
-                {
-                    // A historic resource owner may itself begin with `skill-`.  Its exact
-                    // recorded resource provenance settles that finite legacy spelling before
-                    // the modern skill grammar gets a chance to reject the filename.
-                    if (!HasRecordedLegacyResource(file, config))
-                        errors.Add($"'{file}' has an invalid skill name or protected -resource- delimiter.");
-                    continue;
-                }
-                if (!allNames.Add(slug))
-                    errors.Add($"'{file}' collides ordinal-ignore-case with another skill source.");
-                else
-                    skillFiles[slug] = path;
-                continue;
-            }
-
-            var remainder = file["resource-".Length..^".template.md".Length];
-            var delimiter = remainder.IndexOf("-resource-", StringComparison.Ordinal);
-            if (delimiter < 0)
-            {
-                errors.Add($"'{file}' has an invalid skill or resource name.");
-                continue;
-            }
-            var skillName = remainder[..delimiter];
-            var resourceName = remainder[(delimiter + "-resource-".Length)..];
-            if (!ConfigService.IsValidSlug(skillName) || !ConfigService.IsValidSlug(resourceName))
-            {
-                errors.Add($"'{file}' has an invalid skill or resource name.");
-                continue;
-            }
-            var resources = resourceFiles.GetValueOrDefault(skillName);
-            if (resources == null)
-            {
-                resources = new Dictionary<string, string>(StringComparer.Ordinal);
-                resourceFiles[skillName] = resources;
-            }
-            if (resources.Keys.Any(name => name.Equals(resourceName, StringComparison.OrdinalIgnoreCase)))
-                errors.Add($"'{file}' collides ordinal-ignore-case with another resource source.");
-            else
-                resources[resourceName] = path;
-        }
+        CatalogTemplateSources(files, sourceRoot, config, skillFiles, resourceFiles, errors);
 
         errors.AddRange(FindLegacyResourceDiagnostics(files, sourceRoot, projectRoot, skillFiles, config));
-
-        foreach (var (skillName, resources) in resourceFiles)
-        {
-            if (!skillFiles.ContainsKey(skillName))
-                errors.AddRange(resources.Values.Select(path => $"'{Path.GetFileName(path)}' has no matching skill source."));
-        }
+        AddOrphanResourceErrors(resourceFiles, skillFiles, errors);
 
         var shippedSkills = TemplateGenerator.GetBuiltInSkillTemplateNames()
             .Select(file => file["skill-".Length..^".template.md".Length])
@@ -121,69 +55,13 @@ public static partial class SkillTemplateService
             entry => Clone(entry.Value),
             StringComparer.Ordinal);
         var catalog = new List<SkillTemplate>();
+        var catalogState = new CatalogState(
+            projectRoot, shippedSkills, resourceFiles, planned, catalog, errors);
 
         foreach (var (name, path) in skillFiles)
-        {
-            var existing = planned.GetValueOrDefault(name);
-            var shipped = shippedSkills.Contains(name);
-            if (shipped && existing?.Origin == "custom")
-            {
-                errors.Add($"'{Path.GetFileName(path)}' collides with a newly shipped skill named '{name}'.");
-                continue;
-            }
-            if (!shipped && existing?.Origin == "shipped")
-            {
-                errors.Add($"'{Path.GetFileName(path)}' collides with the retired shipped name '{name}'.");
-                continue;
-            }
+            AddCatalogSkill(name, path, catalogState);
 
-            SkillTemplate? skill = null;
-            try
-            {
-                var content = File.ReadAllText(path);
-                ValidateTemplate(path, content, projectRoot);
-                skill = Parse(Path.GetFileName(path), content);
-            }
-            catch (InvalidDataException ex)
-            {
-                errors.Add(ex.Message);
-            }
-            if (skill == null)
-                continue;
-
-            var resources = resourceFiles.GetValueOrDefault(name) ?? new Dictionary<string, string>();
-            var embeddedResources = TemplateGenerator.GetSkillResourceTemplateNames(name)
-                .Select(file => file[$"resource-{name}-resource-".Length..^".template.md".Length])
-                .ToHashSet(StringComparer.Ordinal);
-            if (shipped)
-            {
-                foreach (var resource in resources.Keys.Where(resource => !embeddedResources.Contains(resource)))
-                    errors.Add($"'resource-{name}-resource-{resource}.template.md' adds a resource to shipped skill '{name}'.");
-            }
-
-            var contentWithIncludes = ResolveIncludesStrict(File.ReadAllText(path), projectRoot, path);
-            var references = ResourceLinkRegex().Matches(contentWithIncludes)
-                .Select(match => match.Groups[1].Value)
-                .ToHashSet(StringComparer.Ordinal);
-            foreach (var reference in references.Where(reference => !resources.ContainsKey(reference)))
-                errors.Add($"'{Path.GetFileName(path)}' references missing resource '{reference}'.");
-            foreach (var resource in resources.Keys.Where(resource => !references.Contains(resource)))
-                errors.Add($"'{Path.GetFileName(resources[resource])}' is not referenced by skill '{name}'.");
-
-            existing ??= new SkillSwitchConfig { Enabled = true };
-            existing.Origin = shipped ? "shipped" : "custom";
-            existing.EmitAgent = skill.EmitAgent;
-            existing.CodexMetadata = skill.ExplicitInvocation || skill.ArgumentHint != null;
-            existing.Resources = resources.Keys.OrderBy(resource => resource, StringComparer.Ordinal).ToList();
-            planned[name] = existing;
-            catalog.Add(skill);
-        }
-
-        foreach (var (name, entry) in planned.Where(entry => !skillFiles.ContainsKey(entry.Key)))
-        {
-            if (entry.Origin == null || entry.EmitAgent == null || entry.CodexMetadata == null || entry.Resources == null)
-                errors.Add($"Skill switch '{name}' has no source and no complete prior generated provenance.");
-        }
+        AddMissingProvenanceErrors(planned, skillFiles, errors);
 
         if (errors.Count > 0)
             throw new InvalidDataException(string.Join(Environment.NewLine, errors));
@@ -192,6 +70,203 @@ public static partial class SkillTemplateService
             .OrderBy(entry => entry.Key, StringComparer.Ordinal)
             .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
         return catalog.OrderBy(skill => skill.Name, StringComparer.Ordinal).ToList();
+    }
+
+    private static void CatalogTemplateSources(
+        IEnumerable<string> files,
+        string sourceRoot,
+        DydoConfig config,
+        Dictionary<string, string> skillFiles,
+        Dictionary<string, Dictionary<string, string>> resourceFiles,
+        List<string> errors)
+    {
+        var allNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in files)
+            CatalogTemplateSource(path, sourceRoot, config, skillFiles, resourceFiles, allNames, errors);
+    }
+
+    private static void CatalogTemplateSource(
+        string path,
+        string sourceRoot,
+        DydoConfig config,
+        Dictionary<string, string> skillFiles,
+        Dictionary<string, Dictionary<string, string>> resourceFiles,
+        HashSet<string> allNames,
+        List<string> errors)
+    {
+        var file = Path.GetFileName(path);
+        if (!file.EndsWith(".template.md", StringComparison.Ordinal))
+            return;
+        var isSkill = file.StartsWith("skill-", StringComparison.Ordinal);
+        var isResource = file.StartsWith("resource-", StringComparison.Ordinal);
+        if (!isSkill && !isResource)
+            return;
+        if (isResource && !file["resource-".Length..^".template.md".Length]
+                .Contains("-resource-", StringComparison.Ordinal))
+            return;
+        if (Path.GetDirectoryName(path) != sourceRoot)
+        {
+            errors.Add($"'{Path.GetRelativePath(sourceRoot, path).Replace('\\', '/')}' is nested; local templates must be top-level.");
+            return;
+        }
+        if (isSkill)
+        {
+            AddSkillSource(path, file, config, skillFiles, allNames, errors);
+            return;
+        }
+        AddResourceSource(path, file, resourceFiles, errors);
+    }
+
+    private static void AddSkillSource(
+        string path,
+        string file,
+        DydoConfig config,
+        Dictionary<string, string> skillFiles,
+        HashSet<string> allNames,
+        List<string> errors)
+    {
+        var slug = file["skill-".Length..^".template.md".Length];
+        if (!ConfigService.IsValidSlug(slug))
+        {
+            // A historic resource owner may itself begin with `skill-`. Its exact recorded
+            // resource provenance settles that spelling before the skill grammar rejects it.
+            if (!HasRecordedLegacyResource(file, config))
+                errors.Add($"'{file}' has an invalid skill name or protected -resource- delimiter.");
+            return;
+        }
+        if (!allNames.Add(slug))
+            errors.Add($"'{file}' collides ordinal-ignore-case with another skill source.");
+        else
+            skillFiles[slug] = path;
+    }
+
+    private static void AddResourceSource(
+        string path,
+        string file,
+        Dictionary<string, Dictionary<string, string>> resourceFiles,
+        List<string> errors)
+    {
+        var remainder = file["resource-".Length..^".template.md".Length];
+        var delimiter = remainder.IndexOf("-resource-", StringComparison.Ordinal);
+        if (delimiter < 0)
+        {
+            errors.Add($"'{file}' has an invalid skill or resource name.");
+            return;
+        }
+        var skillName = remainder[..delimiter];
+        var resourceName = remainder[(delimiter + "-resource-".Length)..];
+        if (!ConfigService.IsValidSlug(skillName) || !ConfigService.IsValidSlug(resourceName))
+        {
+            errors.Add($"'{file}' has an invalid skill or resource name.");
+            return;
+        }
+        var resources = resourceFiles.GetValueOrDefault(skillName);
+        if (resources == null)
+        {
+            resources = new Dictionary<string, string>(StringComparer.Ordinal);
+            resourceFiles[skillName] = resources;
+        }
+        if (resources.Keys.Any(name => name.Equals(resourceName, StringComparison.OrdinalIgnoreCase)))
+            errors.Add($"'{file}' collides ordinal-ignore-case with another resource source.");
+        else
+            resources[resourceName] = path;
+    }
+
+    private static void AddOrphanResourceErrors(
+        Dictionary<string, Dictionary<string, string>> resourceFiles,
+        Dictionary<string, string> skillFiles,
+        List<string> errors)
+    {
+        foreach (var (skillName, resources) in resourceFiles)
+        {
+            if (!skillFiles.ContainsKey(skillName))
+                errors.AddRange(resources.Values.Select(path => $"'{Path.GetFileName(path)}' has no matching skill source."));
+        }
+    }
+
+    private static void AddCatalogSkill(
+        string name,
+        string path,
+        CatalogState state)
+    {
+        var existing = state.Planned.GetValueOrDefault(name);
+        var shipped = state.ShippedSkills.Contains(name);
+        if (shipped && existing?.Origin == "custom")
+        {
+            state.Errors.Add($"'{Path.GetFileName(path)}' collides with a newly shipped skill named '{name}'.");
+            return;
+        }
+        if (!shipped && existing?.Origin == "shipped")
+        {
+            state.Errors.Add($"'{Path.GetFileName(path)}' collides with the retired shipped name '{name}'.");
+            return;
+        }
+
+        var skill = ReadCatalogSkill(path, state.ProjectRoot, state.Errors);
+        if (skill == null)
+            return;
+
+        var resources = state.ResourceFiles.GetValueOrDefault(name) ?? new Dictionary<string, string>();
+        var embeddedResources = TemplateGenerator.GetSkillResourceTemplateNames(name)
+            .Select(file => file[$"resource-{name}-resource-".Length..^".template.md".Length])
+            .ToHashSet(StringComparer.Ordinal);
+        if (shipped)
+        {
+            foreach (var resource in resources.Keys.Where(resource => !embeddedResources.Contains(resource)))
+                state.Errors.Add($"'resource-{name}-resource-{resource}.template.md' adds a resource to shipped skill '{name}'.");
+        }
+
+        var contentWithIncludes = ResolveIncludesStrict(File.ReadAllText(path), state.ProjectRoot);
+        var references = ResourceLinkRegex().Matches(contentWithIncludes)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (var reference in references.Where(reference => !resources.ContainsKey(reference)))
+            state.Errors.Add($"'{Path.GetFileName(path)}' references missing resource '{reference}'.");
+        foreach (var resource in resources.Keys.Where(resource => !references.Contains(resource)))
+            state.Errors.Add($"'{Path.GetFileName(resources[resource])}' is not referenced by skill '{name}'.");
+
+        existing ??= new SkillSwitchConfig { Enabled = true };
+        existing.Origin = shipped ? "shipped" : "custom";
+        existing.EmitAgent = skill.EmitAgent;
+        existing.CodexMetadata = skill.ExplicitInvocation || skill.ArgumentHint != null;
+        existing.Resources = resources.Keys.OrderBy(resource => resource, StringComparer.Ordinal).ToList();
+        state.Planned[name] = existing;
+        state.Catalog.Add(skill);
+    }
+
+    private sealed record CatalogState(
+        string ProjectRoot,
+        HashSet<string> ShippedSkills,
+        Dictionary<string, Dictionary<string, string>> ResourceFiles,
+        Dictionary<string, SkillSwitchConfig> Planned,
+        List<SkillTemplate> Catalog,
+        List<string> Errors);
+
+    private static SkillTemplate? ReadCatalogSkill(string path, string projectRoot, List<string> errors)
+    {
+        try
+        {
+            var content = File.ReadAllText(path);
+            ValidateTemplate(path, content, projectRoot);
+            return Parse(Path.GetFileName(path), content);
+        }
+        catch (InvalidDataException ex)
+        {
+            errors.Add(ex.Message);
+            return null;
+        }
+    }
+
+    private static void AddMissingProvenanceErrors(
+        Dictionary<string, SkillSwitchConfig> planned,
+        Dictionary<string, string> skillFiles,
+        List<string> errors)
+    {
+        foreach (var (name, entry) in planned.Where(entry => !skillFiles.ContainsKey(entry.Key)))
+        {
+            if (entry.Origin == null || entry.EmitAgent == null || entry.CodexMetadata == null || entry.Resources == null)
+                errors.Add($"Skill switch '{name}' has no source and no complete prior generated provenance.");
+        }
     }
 
     internal static string ReadSource(SkillTemplate skill, string projectRoot)
@@ -207,7 +282,7 @@ public static partial class SkillTemplateService
         var config = new ConfigService().LoadConfigStrict(projectRoot)
             ?? throw new FileNotFoundException("Local dydo.json is missing; resource emission requires the local catalog.");
         var root = GetSourceRoot(projectRoot, config);
-        var content = ResolveIncludesStrict(ReadSource(skill, projectRoot), projectRoot, skill.TemplateFile);
+        var content = ResolveIncludesStrict(ReadSource(skill, projectRoot), projectRoot);
         var resources = ResourceLinkRegex().Matches(content)
             .Select(match => match.Groups[1].Value)
             .Distinct(StringComparer.Ordinal)
@@ -344,12 +419,12 @@ public static partial class SkillTemplateService
         if (emitsAgent && fields.GetValueOrDefault("invocation") == "explicit")
             throw new InvalidDataException($"Agent template '{Path.GetFileName(path)}' cannot use explicit invocation.");
 
-        var resolved = ResolveIncludesStrict(content, projectRoot, path);
+        var resolved = ResolveIncludesStrict(content, projectRoot);
         ValidateMustReads(resolved, projectRoot, path);
         return resolved;
     }
 
-    private static string ResolveIncludesStrict(string content, string projectRoot, string sourcePath)
+    private static string ResolveIncludesStrict(string content, string projectRoot)
         => TemplateGenerator.ResolveIncludes(content, projectRoot);
 
     private static void ValidateMustReads(string content, string projectRoot, string sourcePath)

@@ -9,12 +9,16 @@ Every project exposes one project-local testing facade. It is a small Python run
 1 JSON manifest. The facade selects declared adapters and executes their argv arrays directly: it
 does not construct a shell command, infer an omitted gate, or turn missing assurance into success.
 
-Run the project runner:
+Run this repository's facade with the pinned local interpreter, because the `dotnet` static row
+measures the caller's own package identities:
 
 ```powershell
-py DynaDocs.Tests/coverage/gap_check.py all
-py DynaDocs.Tests/coverage/gap_check.py --force-run
-py DynaDocs.Tests/coverage/gap_check.py gate mutation --since BASE
+$py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+& $py DynaDocs.Tests/coverage/gap_check.py all
+& $py DynaDocs.Tests/coverage/gap_check.py gate static
+& $py DynaDocs.Tests/coverage/gap_check.py gate coverage
+& $py DynaDocs.Tests/coverage/gap_check.py --force-run
+& $py DynaDocs.Tests/coverage/gap_check.py gate mutation --since BASE
 ```
 
 ## Stable grammar
@@ -69,16 +73,25 @@ all tests passing and a test file for every non-trivial module,
 line coverage of at least 80%, branch coverage of at least 60%, HCRAP at most 20 per method,
 cognitive complexity at most 20, at most seven parameters outside constructors, no supported nested
 ternary, no clone meeting both 15 lines and 100 tokens, and no namespace or module dependency cycles.
-Only code not maintained here (generated, vendored, or minified) is excluded. There are no tiers, classic CRAP thresholds,
-registry, annotations, per-file suppressions, or nesting-depth gate. Mutation is separate: DynaDocs requires
+Only code not maintained here (generated, vendored, or minified) is excluded. There are no tiers,
+classic CRAP thresholds, registry, annotations, or nesting-depth gate, and there are no
+suppressions: a suppressed C# analyzer diagnostic on maintained source, an `istanbul`, `c8` or
+`v8 ignore` comment, and an inline ESLint disable are a finding or ignored input, never an escape.
+What DR 048 permits instead is correcting a gate that is wrong, with the triage recorded; this
+repository's one recorded correction is below. Mutation is separate: DynaDocs requires
 no surviving or uncovered changed-code mutants. A stack
 without a reviewed mechanism reports that gate as unavailable until adoption.
 
-Use `dydo/reference/gap-check.example.py` with its adjacent
-`dydo/reference/gap-check.example.json` as a starting point. Rename both together to
-`gap_check.py` and `gap_check.json` at the chosen project location. The runner discovers the enclosing
-Git root; paths in the manifest resolve from that root. Outside Git, they resolve from the runner's
-folder. The two distributed runner sources are byte-identical.
+`DynaDocs.Tests/coverage/gap_check.py` is the canonical runner and
+`dydo/reference/gap-check.example.py` is its derived copy, not a second maintained source:
+`DynaDocs.Tests/coverage/sync_testing_example.py` writes the example from the canonical bytes, and
+`sync_testing_example.py --check` exits 2 when the two differ. Divergence is a defect to re-sync,
+never a waiver, and the static gate refuses to exclude the derived copy from its source inventory
+unless the canonical runner, the producer and the producer's test are all present and the bytes
+match. Adopt it with its adjacent `dydo/reference/gap-check.example.json`: rename both together to
+`gap_check.py` and `gap_check.json` at the chosen project location. The runner discovers the
+enclosing Git root; paths in the manifest resolve from that root. Outside Git, they resolve from
+the runner's folder.
 
 Replace each project's cwd and artifact placeholders, supply the real isolation adapter, then enable
 its capability with faithful argv. The ASP.NET example shows `dotnet test` but leaves execution
@@ -92,7 +105,8 @@ Global JSON/schema/request errors start nothing. Row-local defects skip only tha
 run before aggregate failure is reported. Configured rows require command and artifacts and forbid a
 reason. Unavailable rows require a reason, forbid executable commands/artifacts, and may carry
 non-executable `exampleArgv` for adoption. Do not relabel an unwired available mechanism as a pass.
-The final operational static/coverage and mutation adoption remains DYD-96/103/91 work.
+The example's own static and coverage rows stay unavailable until DYD-91's adoption pass gives each
+applicable row a faithful command and evidence contract; mutation adoption is DYD-103.
 
 An interrupt goes to the active adapter process group. The facade grants up to 30 seconds for adapter
 cleanup before escalation, preserves raw child exit when observed, stops all remaining rows, and
@@ -101,7 +115,78 @@ own cleanup; the router does not invent worktree or artifact isolation. DynaDocs
 probe uses a safe filtered test and verifies its newly observed worktree directory and Git
 registration have disappeared before the result is reported.
 
+## What this repository measures
+
+Nine rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`
+and `node`. Mutation is unavailable on all three with the reason `Pending DYD-103`, and an
+unavailable capability is a failed-closed 2, never a passing gate. The `dotnet` stack runs inside
+an isolated Git worktree copy of the working candidate; `python` and `node` run in place.
+[Coverage Tools](../reference/coverage-tools.md) holds the exact commands, artifacts, exit meanings
+and summary schema.
+
+Static measurement covers all maintained source of a stack, test files included: complexity,
+parameters, dead code, nested ternaries, dependency cycles, unused exports, clones and the native
+analyzers all read test code as well as product code.
+
+Coverage measures only target modules. The role comes from the build, not from a naming
+convention: for C# from each project's evaluated `IsTestProject`, for Python and JavaScript from
+native test discovery. Test bodies, fixtures and assertion helpers supply the evidence; they are
+not coverage targets and are never required to cover themselves. A maintained gate producer or
+runner is a target even under a test directory — `GateMetrics` and the `DynaDocs.Tests/coverage`
+runners are measured, while the `DynaDocs.Tests` assembly is instrumented for identity only.
+`DynaDocs.Tests/coverage/test-associations.json` carries the file-level intent DR 048's test rule
+needs: every executable target module must name at least one associated test file, and one that
+names none is the finding `test-association`.
+
+One gap is recorded rather than dropped or weakened: mutation on every stack, which is DYD-103. The
+JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
+maintained JavaScript file with no filename extension would be reported as a gap naming DYD-105
+rather than measured as less than the inventory, and no maintained JavaScript file here lacks an
+extension.
+
+## Recorded gate correction: three dynamic Vulture uses
+
+DR 048 admits a gate only where a violation is certainly wrong at a threshold where no exception
+would be accepted, with no per-file suppression, and it makes the transition the validation: when
+the gates first run on existing code, a failure over code that is right as it stands means the gate
+is wrong and is corrected, and the triage is recorded. Dead code is such a gate, run for Python as
+`ruff check --isolated --select F` plus Vulture. Vulture is a heuristic — it reports a name with no
+static reader — and three of its reports here name symbols that a real caller reads at run time
+through a mechanism no static analysis can see.
+
+`DynaDocs.Tests/coverage/gate_collect.py` holds those three as exact `(path, message)` pairs in
+`_DYNAMIC_VULTURE_USES`. `classify_vulture` moves a matching row out of the findings and into the
+collector's `semantic_uses`, tagged with its witness.
+
+| Path | Vulture message | Witness | Why the finding is wrong |
+|---|---|---|---|
+| `DynaDocs.Tests/coverage/python_coverage.py` | `unused function 'startup_from_environment'` | `python-coverage-startup` | `python_coverage.collect` generates `startup/sitecustomize.py`, whose two lines import and call the function, and puts that directory on the child's `PYTHONPATH`. CPython runs it at interpreter startup in every process of the campaign, so the only caller is a file written at run time and no static caller can exist. |
+| `DynaDocs.Tests/coverage/windows_job.py` | `unused attribute 'cb'` | `windows-native-abi` | `Startup.cb` is a `_fields_` member of the ctypes mirror of Win32 `STARTUPINFOW`. `native_run` sets it to `sizeof(StartupEx)`, and the kernel reads it when `CreateProcessW` receives `byref(startup)`. |
+| `DynaDocs.Tests/coverage/windows_job.py` | `unused attribute 'flags'` | `windows-native-abi` | The same ABI: `Startup.flags` carries `STARTF_USESTDHANDLES` for `CreateProcessW`, and `BasicLimits.flags` carries `KILL_ON_JOB_CLOSE` for `SetInformationJobObject`. Python writes them; only the kernel reads them. |
+
+This is a correction, not a waiver:
+
+- Nothing in the measured source changes: there is no pragma, no ignore file, no inline suppression
+  comment and no per-file exemption in the code being measured. The correction lives entirely in the
+  collector, as the exact three-row `(path, message)` table in `gate_collect.py`, and no other module
+  can inherit its pairs. It is the only thing that moves a Vulture row out of the findings, and it
+  cannot hide one: what it takes out it republishes in the collector's `facts.semantic_uses`. Adding
+  a fourth pair is another DR 048 §5 triage to record, not a routine edit; reach for it as somewhere
+  to put an inconvenient finding and it becomes the escape hatch §1 refuses.
+- The pairs are exact, so drift re-raises the finding. Rename the function, rename an attribute, or
+  let a Vulture upgrade reword its message, and the row no longer matches and becomes an ordinary
+  dead-code finding again. Because Vulture's message does not name the owning structure, the
+  `flags` pair covers every `unused attribute 'flags'` row in `windows_job.py` — the
+  `STARTUPINFOEX` one and the two job-limit ones — and would cover a new one added to that file;
+  any other name or file is outside it.
+- The measurement keeps emitting the evidence beside the record. Every reclassified row is
+  published in the `python-dead-code` collector's `facts.semantic_uses` in
+  `DynaDocs.Tests/coverage/results/adapters/python-static.json` with its path, line, message,
+  confidence and witness, so a reader of the artifact sees the raw Vulture output and the triage
+  together.
+
 ## Related
 
-- [Coverage Tools](../reference/coverage-tools.md)
-- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md)
+- [Coverage Tools](../reference/coverage-tools.md) — adapter commands, schemas and provenance
+- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md) —
+  one-level static gates, no escape hatch

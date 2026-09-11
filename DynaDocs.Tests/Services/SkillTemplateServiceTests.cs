@@ -6,6 +6,31 @@ using DynaDocs.Utils;
 
 public class SkillTemplateServiceTests
 {
+    [Theory]
+    [InlineData("emit: both", "emit must be 'agent' or 'skill'")]
+    [InlineData("read-only: yes", "read-only must be a strict boolean")]
+    public void DiscoverLocalCatalog_RejectsInvalidExecutionMetadata(string metadata, string diagnostic)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-catalog-" + Guid.NewGuid().ToString("N"));
+        var sourceRoot = Path.Combine(root, "dydo", "_system", "templates");
+        Directory.CreateDirectory(sourceRoot);
+        File.WriteAllText(Path.Combine(sourceRoot, "skill-my-tool.template.md"),
+            $"---\nname: my-tool\ndescription: My local tool.\n{metadata}\n---\n\n# My Tool\n");
+
+        try
+        {
+            var error = Assert.Throws<InvalidDataException>(
+                () => SkillTemplateService.DiscoverLocalCatalog(root, new DynaDocs.Models.DydoConfig()));
+
+            Assert.Contains("skill-my-tool.template.md", error.Message);
+            Assert.Contains(diagnostic, error.Message);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     [Fact]
     public void DiscoverLocalCatalog_AcceptsMinimalCustomSwitchAndReconcilesGeneratedShape()
     {

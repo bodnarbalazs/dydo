@@ -185,32 +185,37 @@ class GateAdapterTests(unittest.TestCase):
         child.kill.assert_called_once_with()
         self.assertEqual(3, child.wait.call_count)
 
-    def test_coverage_timeout_is_published_as_measurement_error_without_traceback(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            output = root / "results"
-            inventory = root / "inventory.json"
-            inventory.write_text('{"schema":1}', encoding="utf-8")
-            captured = {}
+    # A defect the catch tuple misses leaves main with exit 1 and no summary at all, which the
+    # facade can only report as an unrefreshed artifact rather than a named measurement error.
+    def test_coverage_defects_are_published_as_measurement_errors_without_traceback(self):
+        for defect in (gate_adapter.MeasurementTimeout("row deadline"),
+                       AttributeError("joined row exposes no coverage"),
+                       IndexError("empty measured sequence"),
+                       SyntaxError("no element found in the native report")):
+            with self.subTest(defect=type(defect).__name__), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                output = root / "results"
+                inventory = root / "inventory.json"
+                inventory.write_text('{"schema":1}', encoding="utf-8")
+                captured = {}
 
-            def publication(summary, run, stack, gate, report, candidate, path):
-                captured.update(report)
-                return 2
+                def publication(summary, run, stack, gate, report, candidate, path):
+                    captured.update(report)
+                    return 2
 
-            stderr = io.StringIO()
-            argv = ["gate_adapter.py", "--gate", "coverage", "--stack", "node",
-                    "--root", str(root), "--output", str(output)]
-            with mock.patch.object(sys, "argv", argv), \
-                    mock.patch.object(gate_adapter, "_candidate", return_value=({"commit": "a" * 40}, [])), \
-                    mock.patch.object(gate_adapter, "_inventory_artifact", return_value=(inventory, [], [])), \
-                    mock.patch.object(gate_adapter, "collect_coverage",
-                                      side_effect=gate_adapter.MeasurementTimeout("row deadline")), \
-                    mock.patch.object(gate_adapter, "publish", side_effect=publication), \
-                    redirect_stderr(stderr):
-                self.assertEqual(2, gate_adapter.main())
-            self.assertEqual("error", captured["status"])
-            self.assertEqual("MeasurementTimeout", captured["errors"][0]["type"])
-            self.assertNotIn("Traceback", stderr.getvalue())
+                stderr = io.StringIO()
+                argv = ["gate_adapter.py", "--gate", "coverage", "--stack", "node",
+                        "--root", str(root), "--output", str(output)]
+                with mock.patch.object(sys, "argv", argv), \
+                        mock.patch.object(gate_adapter, "_candidate", return_value=({"commit": "a" * 40}, [])), \
+                        mock.patch.object(gate_adapter, "_inventory_artifact", return_value=(inventory, [], [])), \
+                        mock.patch.object(gate_adapter, "collect_coverage", side_effect=defect), \
+                        mock.patch.object(gate_adapter, "publish", side_effect=publication), \
+                        redirect_stderr(stderr):
+                    self.assertEqual(2, gate_adapter.main())
+                self.assertEqual("error", captured["status"])
+                self.assertEqual(type(defect).__name__, captured["errors"][0]["type"])
+                self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_inventory_evaluation_uses_isolated_appdata_before_collection(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -483,6 +488,9 @@ class CoverageCampaignTests(unittest.TestCase):
                                "path": "lib/arithmetic.py", "threshold": 80}], payload["findings"])
             self.assertEqual([{"message": "No evaluated C# projects"}], payload["gaps"])
             self.assertFalse(payload["measurementComplete"])
+            self.assertEqual(str(STATIC_PYTHON),
+                             payload["tools"]["interpreters"]["caller"]["path"])
+            self.assertEqual(["python-coverage"], [row["name"] for row in payload["commands"]])
 
     def test_python_coverage_gate_reports_a_failed_suite_before_any_policy(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -516,6 +524,36 @@ class CoverageCampaignTests(unittest.TestCase):
             self.assertGreaterEqual(command["elapsedSeconds"], 0)
             with self.assertRaisesRegex(ValueError, "Unknown stack: elixir"):
                 gate_adapter.collect_coverage(root, Path(folder), "elixir", inventory)
+
+    def test_a_measured_csharp_campaign_publishes_its_findings_evidence_and_command(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            finding = {"gate": "line-coverage", "path": "Commands/SyncCommand.cs"}
+            joined = write_file(raw, "raw/joined.json",
+                                json.dumps({"modules": [], "findings": [finding]}))
+
+            with mock.patch.dict(os.environ, {"APPDATA": str(root / "appdata")}, clear=False), \
+                    mock.patch.object(gate_adapter, "run_coverage_command", return_value=0):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            self.assertEqual([finding], answer["findings"])
+            row = collector_row(answer, "csharp-coverage")
+            self.assertEqual(("fail", "raw-abc"), (row["status"], row["facts"]["raw"]))
+            self.assertEqual([{"path": "raw-abc/raw/joined.json",
+                               "sha256": hashlib.sha256(joined.read_bytes()).hexdigest()}],
+                             row["artifacts"])
+            campaign = answer["facts"]["commands"][0]
+            self.assertEqual(str(root), campaign["cwd"])
+            self.assertEqual(str(root / "appdata"), campaign["environment"]["APPDATA"])
+
+    def test_a_failed_csharp_suite_is_a_functional_finding_before_any_join(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            self.assertEqual([{"gate": "functional", "child_exit": 1}], answer["findings"])
 
     def test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target(self):
         with tempfile.TemporaryDirectory() as folder:

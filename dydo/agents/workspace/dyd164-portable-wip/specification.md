@@ -423,11 +423,18 @@ being exercised — that collector's `findings` holding the untagged object `{"g
 | 1 | `$P -m unittest test_testing_facade.TestingFacadeTests.<probe> test_testing_facade.PortableTestingFacadeTests.<probe>` for each touched probe, with `PYTHONPATH=DynaDocs.Tests/coverage/tests` | exit 0; red before green on the specify-committed scenarios | iteration |
 | 2 | `$P DynaDocs.Tests/coverage/sync_testing_example.py --check` | exit 0 | iteration and acceptance |
 | 3 | `$P DynaDocs.Tests/coverage/gap_check.py capabilities` | exit 0; every stack reports `test: configured`, `static: configured`, `coverage: configured`, `mutation: unavailable` | iteration and acceptance |
-| 4 | `$P DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~TestingFacade"` | exit 0; every scenario of the feature binds and passes | iteration |
+| 4 | `$P DynaDocs.Tests/coverage/run_tests.py` with the two-name filter below | exit 0; every scenario of the feature and all three `ReleaseWorkflowTests` facts pass | iteration |
 | 5 | `dotnet build DynaDocs.sln -c Release -warnaserror` | exit 0 | acceptance |
 | 6 | `dotnet bin/Release/net10.0/dydo.dll check` | 0 errors, 0 warnings | acceptance |
 | 7 | one full G on the exact clean candidate: `$P DynaDocs.Tests/coverage/gap_check.py --force-run` | the row evidence below | acceptance |
 | 8 | the release workflow's non-publishing dry run on the candidate | the comparison below | acceptance |
+
+**Gate 4's command**, verbatim — the `|` is a literal character of the filter, which is why the
+command sits here and not in the table cell:
+
+```text
+$P DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~OneProject_LocalInterfaceRunsTestsAndAssuranceHonestlyFeature|FullyQualifiedName~ReleaseWorkflowTests"
+```
 
 **Gate 7's row evidence — the mechanical reviewer check.** From the G's `result.json`:
 
@@ -463,10 +470,14 @@ The pass condition is written from *measured* runner behaviour, not from expecta
 traced to a line is marked there as measured-by-this-gate. Gate 8 passes when, in the
 `Run coverage gate` step's `result.json` and in the step logs:
 
-1. **Three suite executions, one per stack, across the whole job.** The job log shows exactly one
-   `dotnet test DynaDocs.sln` run (step `Run isolated test adapter`), exactly one `Ran <n> tests`
-   unittest block, and exactly one Node TAP block — and the latter two appear *inside* the
-   `Run coverage gate` step, launched by the coverage adapters.
+1. **Three suite executions, one per stack, across the whole job.** (i) the `dotnet test` summary
+   line (`Passed!` / `Failed!  - Failed: …, Total: … - DynaDocs.Tests.dll`) appears exactly once in
+   the job, in `Run isolated test adapter`; (ii) inside `Run coverage gate`, `python test:` and
+   `node test:` each print exactly once, each after its stack's `coverage:` line, with a reason
+   beginning `test verdict derived from the coverage row`; (iii) `python-coverage.json` and
+   `node-coverage.json` `commands[]` each hold exactly one row named `python-coverage` /
+   `javascript-coverage` whose `argv` is the suite argv (`gate_adapter.py:361-362` / `:390`) and
+   whose `exit` equals the derived row's `childExit`.
 2. **No derived row reports a verdict for a suite that did not run.** For `python` and `node`, the
    published `<stack>-coverage.json` `commands[]` row carries the collector's `exit`, and the
    derived test row's `childExit` equals it. If either derived row is `failed` while its stack's
@@ -528,9 +539,10 @@ merge commit `c4b2f1d1` — this branch's own base): validation steps 1-8 all su
 `Run isolated test adapter`; step 9 `Run coverage gate` failed with `Aggregate: 2`; step 10
 `Run mutation gate` was skipped because step 9 failed. Its `--force-run` log shows
 `dotnet test: PASSED (child exit 0)` (a 2377-test `dotnet test DynaDocs.sln`), `Ran 138 tests …
-OK` then `python test: PASSED (child exit 0)`, and a Node TAP block then `node test: PASSED (child
-exit 0)`; all six static and coverage rows printed `UNAVAILABLE: Pending DYD-96`. So the job does
-reach `--force-run` and all three suites do execute there — this is not a hypothetical path.
+OK` then `python test: PASSED (child exit 0)`, and the `node --test` spec-reporter summary
+(`ℹ tests 1`) then `node test: PASSED (child exit 0)`; all six static and coverage rows printed
+`UNAVAILABLE: Pending DYD-96`. So the job does reach `--force-run` and all three suites do execute
+there — this is not a hypothetical path.
 
 **Per stack, on that runner.** "Today" = the base above. "After DYD-130" = the same job with
 `gap_check.json`'s coverage rows `configured` (`gap_check.json:13, :25, :37` at `112ec76c`), which is
@@ -578,11 +590,26 @@ proceeds — recorded, not relied on: gate 8 sees the install step's exit.
 with no .NET suite execution. Post-Issue the job runs each of the three suites exactly once —
 .NET at `:95-96`, Python and Node inside their coverage rows — which is the Outcome, job-wide.
 
-**`ReleaseWorkflowTests.cs` needs no edit and no ownership amendment.** Every validation assertion is
-`Assert.Contains` on the job's text (`ReleaseWorkflowTests.cs:19-28`); two added steps satisfy all of
-them unchanged. The one prohibition, `Assert.DoesNotContain("continue-on-error:", validation)` at
+**`ReleaseWorkflowTests.cs` needs a two-line amendment, requested here.** Every validation assertion
+is `Assert.Contains` on the job's text (`ReleaseWorkflowTests.cs:19-28`); two added steps satisfy all
+of them unchanged. The one prohibition, `Assert.DoesNotContain("continue-on-error:", validation)` at
 `:29`, is respected — neither new step is allowed to carry it, and neither does. Line 24's pin of
-`python DynaDocs.Tests/coverage/run_tests.py` stays true.
+`python DynaDocs.Tests/coverage/run_tests.py` stays true. But that only tests whether the existing
+assertions survive, while this spec makes the two install steps a standing invariant (*The one
+interval that must not open*, below) guarded only by a one-time DYD-166 check — although
+`ReleaseWorkflowTests.cs:19-29` is the repository's existing pin for this job's steps, and F1 records
+the job as permanently red on `ubuntu-latest`, so a later removal of either install step would not
+surface in job status. A consequential regression guard would be missing for a coupling this route
+depends on. This spec therefore **requests an ownership amendment for
+`DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`, limited to two lines inserted after `:28`**:
+
+```csharp
+        Assert.Contains("python -m pip install -r DynaDocs.Tests/coverage/requirements.lock", validation);
+        Assert.Contains("run: npm ci\n        working-directory: DynaDocs.Tests/coverage", validation);
+```
+
+The amendment travels to the admiral through the captain; this spec states the request, it does not
+assume the grant. If the admiral declines, the residual is recorded under F5.
 
 **`.github/workflows/ci.yml` stays empty.** Read at `112ec76c`: `actions/checkout`, `setup-dotnet`,
 `dotnet restore`, `dotnet build --no-restore --warnaserror`, `dotnet test --no-build --verbosity
@@ -682,7 +709,10 @@ coverage adapters.
    cannot launch a suite at all. Checkable: gate 6.
 7. **The workflow edit.** Insert the two install steps into `.github/workflows/release.yml`
    immediately after `Setup Node.js` (`:90-93`), verbatim as specified above, with no
-   `continue-on-error`. Nothing else in either workflow moves. Checkable: gate 4 still green
+   `continue-on-error`. Nothing else in either workflow moves. Then, if the requested ownership
+   amendment is granted, insert the two `Assert.Contains` lines specified above after
+   `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs:28` — nothing else in that file moves; if it is
+   declined, skip this and the residual stands as recorded under F5. Checkable: gate 4 still green
    (`ReleaseWorkflowTests` runs inside the .NET suite), and the diff of `release.yml` is exactly
    those two steps.
 8. **Acceptance.** Gates 5, 6, 2, 3, then 7 on the exact clean candidate, then 8. Post each with
@@ -762,11 +792,16 @@ the coverage toolchain for `--force-run` to measure anything on `ubuntu-latest`)
 - **F5 — decided inside the Owned path, recorded because it changes a workflow.** Post-DYD-130, the
   validation job's coverage rows cannot measure anything on `ubuntu-latest` because the job installs
   neither `requirements.lock` nor the `DynaDocs.Tests/coverage` npm lock. **Left alone, DYD-164 would
-  delete release validation's only Python (138 tests) and Node suite executions and publish a false
-  `failed` 1 for the Node suite that never ran.** This spec therefore adds two install steps to
-  `.github/workflows/release.yml` after `:93` — inside the Owned path, at the point where the facade
-  is invoked — so the derived rows are real. `ReleaseWorkflowTests.cs` needs no edit and no ownership
-  amendment. If the admiral would rather the workflow stay untouched, the honest alternative is to
+  delete release validation's only Python (138 tests on the measured base; larger after DYD-130) and
+  Node suite executions and publish a false `failed` 1 for the Node suite that never ran.** This
+  spec therefore adds two install steps to `.github/workflows/release.yml` after `:93` — inside the
+  Owned path, at the point where the facade is invoked — so the derived rows are real. It also
+  **requests one ownership amendment**, for `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,
+  limited to the two `Assert.Contains` lines inserted after `:28` that pin those two install steps;
+  residual if the admiral declines: the two steps become a standing invariant guarded only by
+  DYD-166's one-time merge check, and because F1 records the validation job as permanently red on
+  `ubuntu-latest`, a later removal of either step would not surface in job status. If the admiral
+  would rather the workflow stay untouched, the honest alternative is to
   **remove the `python` and `node` `suiteVerdict` declarations from `gap_check.json` until a Linux
   route exists**, keeping their plain test rows; the cost is that a Windows G still runs those two
   suites twice, which is most of what this Issue exists to remove. Recommendation: take the install
@@ -787,8 +822,17 @@ the coverage toolchain for `--force-run` to measure anything on `ubuntu-latest`)
 - **F3 — recorded residue.** `DynaDocs.Tests/coverage/tests/test_csharp_metrics.py` runs inside the
   .NET campaign and inside the `python` test row. Seconds of work, out of this Issue's scope,
   worth an Issue only if someone measures it as material.
-- **No ownership amendment is requested.** Every path the route needs is inside the Issue's Owned
-  paths — including `.github/workflows/release.yml`, which the Owned paths grant "where they invoke
-  the facade". `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs` is still not needed: the two added
-  steps satisfy every existing `Assert.Contains` (`:19-28`) and violate the one prohibition at `:29`
-  in no way.
+- **Exactly one ownership amendment is requested, and nothing more.**
+  `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`, limited to two lines inserted after `:28` — the
+  two `Assert.Contains` lines that pin the install steps, given verbatim in *Decision — the
+  validation job installs the coverage toolchain*. Every other path the route needs is already
+  inside the Issue's Owned paths, including `.github/workflows/release.yml`, which the Owned paths
+  grant "where they invoke the facade". The amendment travels to the admiral through the captain;
+  this spec states the request, it does not assume the grant, and F5 records the residual if it is
+  declined.
+- **Released after two review rounds, under the human's standing rule.** Round 1 reviewed candidate
+  `192dbf07` and FAILed on three findings, corrected in candidate `8595fa46`. Round 2 reviewed
+  `8595fa46` and FAILed on three findings — gate 4's filter selecting nothing, gate 8's condition 1
+  naming witnesses that do not exist, and the missing ownership amendment for
+  `ReleaseWorkflowTests.cs`. Those three are folded into this file verbatim in substance, nothing
+  else was changed, and the spec is released without a third review.

@@ -5,9 +5,10 @@
   "productionBase": "feature/dydo-3-consolidation head after DYD-130 (DYD-96 merge); every file:line in specification.md was read at origin/codex/DYD-96-assurance-adoption = 112ec76c067d226793b3838b9b8069ca5321d054; re-pin, do not re-specify, unless a cited contract line moved",
   "mergeOrder": "DYD-164's Merge DYD-166 runs after DYD-130 is Done and before DYD-131",
   "interimRule": "Until DYD-166 merges, captains run G as `gate static` plus `gate coverage`, not `--force-run` (admiral, DYD-170, 2026-09-11)",
-  "ownershipAmendmentsRequested": "none; every path the route needs is inside the Issue's Owned paths",
+  "ownershipAmendmentsRequested": "exactly one: DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs, limited to two lines inserted after :28. Every other path the route needs is inside the Issue's Owned paths. The request travels to the admiral through the captain; the spec does not assume the grant, and F5 records the residual if it is declined",
   "ownership": {
     "owned-edited": "granted by the Issue's Owned paths and edited by this Issue",
+    "owned-edited (amendment requested)": "not granted by the Issue's Owned paths; this spec requests the named amendment and the edit happens only if the admiral grants it",
     "owned-empty": "granted by the Issue's Owned paths and deliberately not edited; the reason is the action text",
     "not-owned": "named so no DYD-164 hop touches it"
   },
@@ -109,8 +110,8 @@
     },
     {
       "path": "DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs",
-      "action": "Not owned and not needed even though release.yml is now edited: every validation assertion is `Assert.Contains` on the job text (:19-28), which two added steps satisfy unchanged, and line 24 pins the `run_tests.py` step this Issue keeps. The one prohibition, `Assert.DoesNotContain(\"continue-on-error:\", validation)` at :29, constrains the new steps rather than requiring an edit. No ownership amendment is requested.",
-      "ownership": "not-owned"
+      "action": "AMENDMENT REQUESTED, limited to two lines inserted after :28 — `Assert.Contains(\"python -m pip install -r DynaDocs.Tests/coverage/requirements.lock\", validation);` and `Assert.Contains(\"run: npm ci\\n        working-directory: DynaDocs.Tests/coverage\", validation);` — the regression guard for the two install steps this Issue adds to release.yml. Every existing validation assertion is `Assert.Contains` on the job text (:19-28), which the two added steps satisfy unchanged, and line 24 pins the `run_tests.py` step this Issue keeps; the one prohibition, `Assert.DoesNotContain(\"continue-on-error:\", validation)` at :29, constrains the new steps. WHY THE AMENDMENT: the spec makes the two install steps a standing invariant guarded only by a one-time DYD-166 merge check, :19-29 is the repository's existing pin for this job's steps, and F1 records the job as permanently red on ubuntu-latest, so a later removal of either install step would not surface in job status. The request travels to the admiral through the captain; if it is declined, no edit happens and F5 records the residual.",
+      "ownership": "owned-edited (amendment requested)"
     },
     {
       "path": "DynaDocs.Tests/coverage/run_tests.py",

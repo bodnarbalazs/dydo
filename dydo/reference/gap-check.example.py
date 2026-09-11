@@ -159,36 +159,49 @@ def suite_verdict_error(declaration):
     return None
 
 
+def command_argv_error(command):
+    if not isinstance(command, dict) or set(command) != {"kind", "argv"} or command["kind"] not in ("argv", "current-python"):
+        return "command kind must be argv or current-python"
+    argv = command["argv"]
+    if not isinstance(argv, list) or not argv or not all(isinstance(x, str) and x for x in argv):
+        return "command argv must be a nonempty array of strings"
+    if any("\x00" in item for item in argv):
+        return "command argv cannot contain NUL"
+    if any("<" in x or ">" in x for x in argv):
+        return "command vector contains an angle placeholder"
+    return None
+
+
+def artifacts_error(artifacts, root):
+    if not isinstance(artifacts, list):
+        return "artifacts must be an array"
+    for item in artifacts:
+        if not isinstance(item, dict) or set(item) != {"path", "required"} or not isinstance(item["required"], bool) or not contained(root, item["path"]):
+            return "artifact requires contained path and required boolean"
+    return None
+
+
 def configured_command(config, root, capability):
     if "suiteVerdict" in config and capability != "coverage":
         return None, None, None, "invalid suite verdict declaration"
     if set(config) - {"suiteVerdict"} != {"state", "command", "artifacts"}:
         return None, None, None, "configured capability requires command and artifacts and forbids reason"
-    command = config["command"]
-    if not isinstance(command, dict) or set(command) != {"kind", "argv"} or command["kind"] not in ("argv", "current-python"):
-        return None, None, None, "command kind must be argv or current-python"
-    argv = command["argv"]
-    if not isinstance(argv, list) or not argv or not all(isinstance(x, str) and x for x in argv):
-        return None, None, None, "command argv must be a nonempty array of strings"
-    if any("\x00" in item for item in argv):
-        return None, None, None, "command argv cannot contain NUL"
-    if any("<" in x or ">" in x for x in argv):
-        return None, None, None, "command vector contains an angle placeholder"
+    error = command_argv_error(config["command"])
+    if error:
+        return None, None, None, error
     artifacts = config["artifacts"]
-    if not isinstance(artifacts, list):
-        return None, None, None, "artifacts must be an array"
-    for item in artifacts:
-        if not isinstance(item, dict) or set(item) != {"path", "required"} or not isinstance(item["required"], bool) or not contained(root, item["path"]):
-            return None, None, None, "artifact requires contained path and required boolean"
+    error = artifacts_error(artifacts, root)
+    if error:
+        return None, None, None, error
     if capability != "test" and not any(item["required"] for item in artifacts):
         return None, None, None, "configured gates require a required artifact"
-    if capability == "coverage" and "suiteVerdict" in config:
+    if "suiteVerdict" in config:
         error = suite_verdict_error(config["suiteVerdict"])
         if error:
             return None, None, None, error
         if sum(1 for item in artifacts if item["required"]) != 1:
             return None, None, None, "invalid suite verdict declaration"
-    return command["kind"], argv, artifacts, None
+    return config["command"]["kind"], config["command"]["argv"], artifacts, None
 
 
 def mutation_command(argv, since, inspection):

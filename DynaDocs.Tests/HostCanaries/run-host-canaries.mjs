@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
 const EXPECTED_FACT = "# Mission: {Topic}";
+const CODEX_IMPLICIT_PROMPT = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
 const PROMPT = "Load the teach skill. Follow its mission-format link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 template from that resource and no other text.";
 const OPENCODE_ARCHIVE_SHA256 = "c8c0e0d05ac3dac544a0edfad8de9eb244bf46c6c7a131c38619d40fcf31bd1f";
 const OPENCODE_EXE_SHA256 = "c1bdbb18767048e1853af4238311b3f7e16ff2f91b68fb4c7ced3c5175347eea";
@@ -102,11 +103,6 @@ async function runCodexCanary() {
   manifest.environment.codexIsolation = { executable: resolvedCodex, argv: [resolvedCodex, "app-server", "--stdio"], env: sanitizeCodexEnv(env, isolation, resolvedCodex) };
   manifest.artifacts["codex-isolation/config.toml"] = { sha256: await sha256(configPath), bytes: (await stat(configPath)).size };
 
-  const implicit = await run(resolvedCodex, ["debug", "prompt-input", "Reply exactly DYDO_IDLE."], { cwd: checkout, env });
-  await writeArtifact("codex-implicit.json", implicit.stdout);
-  const marker = "teach: Teach the human a new skill or concept, within this workspace.";
-  assert(!implicit.stdout.includes(marker) && !implicit.stdout.includes("# Teach") && !implicit.stdout.includes(EXPECTED_FACT), "Codex implicitly injected teach");
-
   const rpc = startJsonRpc(resolvedCodex, ["app-server", "--stdio"], { cwd: checkout, env });
   try {
     await rpc.request({ method: "initialize", id: 1, params: { clientInfo: { name: "dyd91-skill-canary", title: "DYD-91 skill canary", version: "1.0.0" }, capabilities: {} } });
@@ -121,16 +117,29 @@ async function runCodexCanary() {
     assert(typeof selectedPath === "string" && samePath(selectedPath, join(checkout, "skills", "teach", "SKILL.md")), `Codex inventory did not supply teach's canonical SKILL.md path: ${selectedPath}`);
     assert(samePath(await realpath(selectedPath), join(checkout, "skills", "teach", "SKILL.md")), "Codex inventory path did not real-resolve to canonical teach");
 
-    const threadResponse = await rpc.request({ method: "thread/start", id: 3, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "never", sandbox: "read-only", ephemeral: true } });
-    const threadId = threadResponse.result?.thread?.id;
-    assert(typeof threadId === "string", "Codex thread/start did not return result.thread.id");
-    rpc.send({ method: "turn/start", id: 4, params: { threadId, cwd: checkout, sandboxPolicy: { type: "readOnly", networkAccess: false }, input: [{ type: "skill", name: "teach", path: selectedPath }, { type: "text", text: PROMPT }] } });
-    await rpc.wait(message => message.id === 4);
-    await rpc.wait(message => message.method === "turn/completed");
+    const implicitThread = await rpc.request({ method: "thread/start", id: 3, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "never", sandbox: "read-only", ephemeral: true } });
+    const implicitThreadId = implicitThread.result?.thread?.id;
+    assert(typeof implicitThreadId === "string", "Codex implicit thread/start did not return result.thread.id");
+    const implicitStart = rpc.mark();
+    rpc.send({ method: "turn/start", id: 4, params: { threadId: implicitThreadId, cwd: checkout, sandboxPolicy: { type: "readOnly", networkAccess: false }, input: [{ type: "text", text: CODEX_IMPLICIT_PROMPT }] } });
+    await rpc.wait(message => message.id === 4, implicitStart);
+    await rpc.wait(message => message.method === "turn/completed", implicitStart);
+    const implicitIncoming = rpc.incomingSince(implicitStart);
+    assert(!implicitIncoming.some(isCodexToolItem), "Codex implicit control emitted a tool item");
+    assert(exactCodexFinal(implicitIncoming) === "DYDO_TEACH_HIDDEN", "Codex implicit control final was not exactly DYDO_TEACH_HIDDEN");
+    await writeArtifact("codex-implicit.ndjson", implicitIncoming.map(message => JSON.stringify(message)).join("\n") + "\n");
+
+    const explicitThread = await rpc.request({ method: "thread/start", id: 5, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "never", sandbox: "read-only", ephemeral: true } });
+    const explicitThreadId = explicitThread.result?.thread?.id;
+    assert(typeof explicitThreadId === "string", "Codex explicit thread/start did not return result.thread.id");
+    const explicitStart = rpc.mark();
+    rpc.send({ method: "turn/start", id: 6, params: { threadId: explicitThreadId, cwd: checkout, sandboxPolicy: { type: "readOnly", networkAccess: false }, input: [{ type: "skill", name: "teach", path: selectedPath }, { type: "text", text: PROMPT }] } });
+    await rpc.wait(message => message.id === 6, explicitStart);
+    await rpc.wait(message => message.method === "turn/completed", explicitStart);
     await writeArtifact("codex-live.ndjson", rpc.transcript.map(entry => JSON.stringify(entry)).join("\n") + "\n");
     await writeArtifact("codex-app-server.stderr.txt", rpc.stderr());
 
-    const incoming = rpc.transcript.filter(entry => entry.direction === "in").map(entry => entry.message);
+    const incoming = rpc.incomingSince(explicitStart);
     const started = incoming.findIndex(message => message.method === "turn/started");
     const command = incoming.findIndex(message => message.method === "item/completed" && JSON.stringify(message).includes("Get-Content -Raw -LiteralPath") && JSON.stringify(message).includes("mission-format.md") && JSON.stringify(message).includes('"exitCode":0'));
     const message = incoming.findIndex(item => item.method === "item/completed" && findString(item, value => value === EXPECTED_FACT));
@@ -139,9 +148,11 @@ async function runCodexCanary() {
 
     const providerEntries = parseNdjson(await readFile(requestsPath, "utf8"), "Codex provider requests");
     const providerPosts = providerEntries.filter(entry => entry.method === "POST");
-    assert(providerPosts.length === 2 && !providerEntries.some(entry => entry.unexpected), "Codex made a missing, extra, or outbound provider request");
+    assert(providerPosts.length === 3, `Codex made ${providerPosts.length} provider POSTs instead of the expected three`);
+    assert(!providerEntries.some(entry => entry.unexpected), "Codex made an unexpected provider or outbound request");
+    assert(!providerEntries.some(entry => entry.method === "CONNECT"), "Codex deny-proxy transcript was not empty");
     manifest.artifacts["codex-provider-requests.ndjson"] = { sha256: await sha256(requestsPath), bytes: (await stat(requestsPath)).size };
-    pass("Codex app-server inventory and structured explicit loopback resource proof passed");
+    pass("Codex app-server inventory, implicit omission, structured explicit resource proof, and zero-egress gate passed");
   } finally {
     rpc.stop();
     await rpc.done.catch(() => {});
@@ -363,12 +374,12 @@ function startJsonRpc(command, args, { cwd, env }) {
     transcript.push({ direction: "out", message });
     child.stdin.write(`${JSON.stringify(message)}\n`);
   }
-  async function wait(predicate) {
+  async function wait(predicate, after = 0) {
     await waitFor(() => {
       if (parseError) throw parseError;
-      return incoming.some(predicate);
+      return incoming.slice(after).some(predicate);
     }, "Codex app-server message");
-    return incoming.find(predicate);
+    return incoming.slice(after).find(predicate);
   }
   async function request(message) {
     send(message);
@@ -376,7 +387,17 @@ function startJsonRpc(command, args, { cwd, env }) {
     assert(!response.error, `Codex app-server ${message.method} failed: ${JSON.stringify(response.error)}`);
     return response;
   }
-  return { transcript, request, send, wait, stderr: () => stderr, stop: () => child.kill(), done };
+  return {
+    transcript,
+    request,
+    send,
+    wait,
+    mark: () => incoming.length,
+    incomingSince: after => incoming.slice(after),
+    stderr: () => stderr,
+    stop: () => child.kill(),
+    done
+  };
 }
 
 function findSkillRecords(value, name, result = []) {
@@ -515,6 +536,15 @@ function collectSkillNames(value, projectRoot) {
 }
 function extractAbsolutePaths(value) { return [...value.matchAll(/[A-Za-z]:[\\/][^\r\n"]+/g)].map(match => match[0].trim()); }
 function finalText(events) { const strings = []; walk(events, value => { if (typeof value === "string") strings.push(value); }); return strings.filter(value => value.includes(EXPECTED_FACT)).at(-1)?.trim(); }
+function exactCodexFinal(messages) {
+  const strings = [];
+  for (const message of messages.filter(value => value.method === "item/completed")) walk(message, value => { if (typeof value === "string") strings.push(value); });
+  return strings.filter(value => value === "DYDO_TEACH_HIDDEN").at(-1);
+}
+function isCodexToolItem(message) {
+  if (message.method !== "item/started" && message.method !== "item/completed") return false;
+  return /"type":"(?:commandExecution|mcpToolCall|dynamicToolCall|webSearch)"/.test(JSON.stringify(message));
+}
 function walk(value, visit) { visit(value); if (Array.isArray(value)) value.forEach(item => walk(item, visit)); else if (value && typeof value === "object") Object.values(value).forEach(item => walk(item, visit)); }
 async function sha256(file) {
   const hash = createHash("sha256");

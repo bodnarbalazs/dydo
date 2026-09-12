@@ -18,7 +18,7 @@ This command is _informed_ by the project's domain model and built on a shared d
   deletion test, "the interface is the test surface", "one adapter = hypothetical seam, two = real").
   Use these terms exactly in every suggestion, and don't drift into "component," "service," "API," or
   "boundary."
-- The domain language in [`glossary.md`](../../dydo/glossary.md) gives names to good seams; the
+- The domain language in `dydo/glossary.md`, read from the repository root, gives names to good seams; the
   Decision Records in `dydo/project/decisions/` record decisions this command should not re-litigate.
 
 ## Process

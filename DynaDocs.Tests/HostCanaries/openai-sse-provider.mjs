@@ -4,6 +4,8 @@ import path from "node:path";
 
 const args = parseArgs(process.argv.slice(2));
 const expectedFact = "# Mission: {Topic}";
+const teachDescription = "Teach the human a new skill or concept, within this workspace.";
+const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
 const codexPrompt = "Load the teach skill. Follow its mission-format link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 template from that resource and no other text.";
 let state = 0;
 let derivedResourcePath;
@@ -115,11 +117,26 @@ async function handleCodex(request, response, payload) {
   const strings = collectStrings(payload);
   if (state === 0) {
     const body = await readFile(path.join(args.candidate, "skills", "teach", "SKILL.md"), "utf8");
-    assert(countAcross(strings, body) === 1, "Codex first request did not contain the exact canonical teach body once");
-    assert(countAcross(strings, codexPrompt) === 1, "Codex first request did not contain the exact prompt once");
-    assert(countAcross(strings, expectedFact) === 0, "Codex first request pre-inlined the resource-only fact");
-    const offeredTools = Array.isArray(payload.tools) ? payload.tools.map(tool => tool.name ?? tool.type) : [];
-    assert(offeredTools.includes("shell_command"), `Codex first request did not offer shell_command: ${JSON.stringify(offeredTools)}`);
+    const marker = `teach: ${teachDescription}`;
+    const serialized = JSON.stringify(payload);
+    assert(countAcross(strings, implicitPrompt) === 1, "Codex implicit request did not contain the exact control prompt once");
+    assert(countAcross(strings, marker) === 0, "Codex implicit request exposed teach's name-plus-description marker");
+    assert(countAcross(strings, body) === 0, "Codex implicit request injected the canonical teach body");
+    assert(!serialized.includes('"type":"skill"'), "Codex implicit request exposed structured skill input");
+    assert(countAcross(strings, expectedFact) === 0, "Codex implicit request pre-inlined the resource-only fact");
+    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, response: { text: "DYDO_TEACH_HIDDEN" } })}\n`, "utf8");
+    state = 1;
+    return responsesText(response, "DYDO_TEACH_HIDDEN");
+  }
+  if (state === 1) {
+    const body = await readFile(path.join(args.candidate, "skills", "teach", "SKILL.md"), "utf8");
+    assert(countAcross(strings, body) === 1, "Codex explicit request did not contain the exact canonical teach body once");
+    assert(countAcross(strings, codexPrompt) === 1, "Codex explicit request did not contain the exact prompt once");
+    assert(countAcross(strings, expectedFact) === 0, "Codex explicit request pre-inlined the resource-only fact");
+    const execTool = Array.isArray(payload.tools) ? payload.tools.find(tool => tool.name === "exec_command") : undefined;
+    assert(execTool, `Codex explicit request did not offer exec_command: ${JSON.stringify((payload.tools ?? []).map(tool => tool.name ?? tool.type))}`);
+    assert(!(payload.tools ?? []).some(tool => tool.name === "shell_command"), "Codex explicit request unexpectedly offered retired shell_command");
+    assertExecCommandSchema(execTool.parameters);
     const selectedSkill = extractInstalledSkillPath(strings);
     const link = body.match(/\[mission-format\]\(([^)]+)\)/)?.[1];
     assert(link, "canonical teach body did not expose mission-format link");
@@ -129,20 +146,31 @@ async function handleCodex(request, response, payload) {
     assert(isInside(realSkill, realResource), "derived Codex resource escaped the selected skill");
     assert(samePath(realResource, path.join(args.candidate, "skills", "teach", "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
     const command = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
-    const argumentsJson = { command, workdir: args.candidate, timeout_ms: 10000 };
-    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, derivedResourcePath, response: { tool: "shell_command", arguments: argumentsJson } })}\n`, "utf8");
-    state = 1;
-    return responsesTool(response, "dyd91-codex-read", "shell_command", argumentsJson);
+    const argumentsJson = { cmd: command, workdir: args.candidate, yield_time_ms: 10000, max_output_tokens: 2000, shell: "powershell", login: false };
+    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, offeredSchema: execTool, derivedResourcePath, response: { tool: "exec_command", arguments: argumentsJson } })}\n`, "utf8");
+    state = 2;
+    return responsesTool(response, "dyd91-codex-read", "exec_command", argumentsJson);
   }
-  if (state === 1) {
+  if (state === 2) {
     const output = findToolOutput(payload, "dyd91-codex-read");
     assert(output?.includes(expectedFact), "Codex command output omitted the resource-only fact");
     await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, response: { text: expectedFact } })}\n`, "utf8");
-    state = 2;
+    state = 3;
     return responsesText(response, expectedFact);
   }
   await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, unexpected: true })}\n`, "utf8");
   return deny(response, "unexpected extra Codex provider request");
+}
+
+function assertExecCommandSchema(schema) {
+  assert(schema?.type === "object", "Codex exec_command schema was not an object schema");
+  const properties = schema.properties ?? {};
+  assert(properties.cmd?.type === "string", "Codex exec_command schema did not offer string cmd");
+  assert(Array.isArray(schema.required) && schema.required.includes("cmd"), "Codex exec_command schema did not require cmd");
+  for (const name of ["workdir", "yield_time_ms", "max_output_tokens", "shell", "login"])
+    assert(Object.hasOwn(properties, name), `Codex exec_command schema did not offer ${name}`);
+  assert(!Object.hasOwn(properties, "command"), "Codex exec_command schema unexpectedly offered command");
+  assert(!Object.hasOwn(properties, "timeout_ms"), "Codex exec_command schema unexpectedly offered timeout_ms");
 }
 
 function responsesTool(response, callId, name, value) {

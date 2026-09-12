@@ -14,7 +14,7 @@ clear one part of the route at a time.
 The Project Planner charts the first Project map, the admiral works it during delivery, and an Issue
 Captain may chart local fog inside one approved delivery outcome.
 
-For a communication protocol, read only [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence), not the whole workspace standard.
+For a communication protocol, from the repository root read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md`, not the whole workspace standard.
 
 ## Chart as you go
 
@@ -80,8 +80,8 @@ protocol. Assets created while resolving an Issue are linked from it, not pasted
 For the admiral, contracts are Issues under the Project; for a captain they are Sub-issues under
 its Issue. The same Types, statuses and chain hold. The captain specifies its parent before naming
 disjoint parallel lanes, and each merging lane or Issue gets its own Merge Sub-issue in order.
-The standard owns the full Type set and status/priority rules: read
-[linear-workspace-standard.md](../../dydo/reference/linear-workspace-standard.md).
+The standard owns the full Type set and status/priority rules: from the repository root, read
+`dydo/reference/linear-workspace-standard.md`.
 
 ## Issue Types
 

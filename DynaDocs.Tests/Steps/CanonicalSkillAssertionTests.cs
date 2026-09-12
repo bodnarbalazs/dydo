@@ -4,6 +4,32 @@ using System.Text.RegularExpressions;
 
 public sealed class CanonicalSkillAssertionTests
 {
+    internal static readonly string[] ProjectPathGuidance =
+    [
+        "skills/admiral/SKILL.md",
+        "skills/bro/SKILL.md",
+        "skills/chief-of-staff/SKILL.md",
+        "skills/co-thinker/SKILL.md",
+        "skills/diagnosing-bugs/SKILL.md",
+        "skills/docs-writer/SKILL.md",
+        "skills/domain-modeling/SKILL.md",
+        "skills/hardener/SKILL.md",
+        "skills/implementer/SKILL.md",
+        "skills/improve-codebase-architecture/SKILL.md",
+        "skills/inquisitor/SKILL.md",
+        "skills/issue-captain/SKILL.md",
+        "skills/project-planner/SKILL.md",
+        "skills/research/SKILL.md",
+        "skills/reviewer/SKILL.md",
+        "skills/scout/SKILL.md",
+        "skills/specifier/SKILL.md",
+        "skills/wayfinder/SKILL.md",
+        "skills/reviewer/resources/code.md",
+        "skills/reviewer/resources/docs.md",
+        "skills/reviewer/resources/project-plan.md",
+        "skills/writing-for-agents/resources/skill-mechanics.md"
+    ];
+
     internal static readonly string[] CurrentGuidance =
     [
         "README.md",
@@ -55,6 +81,30 @@ public sealed class CanonicalSkillAssertionTests
         {
             var root = Path.Combine(RepositoryRoot(), relative);
             if (Directory.Exists(root)) Assert.Empty(Directory.EnumerateFileSystemEntries(root));
+        }
+    }
+
+    [Fact]
+    public void ProjectKnowledgePaths_AreRepositoryRootLiteralsNotSkillRelativeLinks()
+    {
+        var root = RepositoryRoot();
+        Assert.Equal(22, ProjectPathGuidance.Length);
+        foreach (var relative in ProjectPathGuidance)
+        {
+            var body = File.ReadAllText(Path.Combine(root, relative));
+            Assert.DoesNotMatch(@"\]\((?:\.\./)+dydo/", body);
+            var projectPaths = Regex.Matches(body, @"`(dydo/[^`]+\.md)`")
+                .Select(match => match.Groups[1].Value)
+                .Where(path => !path.Contains('<') && !path.Contains('>'))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            Assert.NotEmpty(projectPaths);
+            foreach (var projectPath in projectPaths)
+            {
+                var target = Path.GetFullPath(Path.Combine(root, projectPath.Replace('/', Path.DirectorySeparatorChar)));
+                Assert.StartsWith(Path.GetFullPath(root) + Path.DirectorySeparatorChar, target);
+                Assert.True(File.Exists(target), $"{relative}: missing repository-root path {projectPath}");
+            }
         }
     }
 

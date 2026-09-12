@@ -9,7 +9,7 @@ description: Build and sharpen a project's domain model. Use when discussing cod
 
 Actively build and sharpen the project's domain model as you design. This is the *active*
 discipline: challenging terms, inventing edge-case scenarios, and writing the glossary and decisions
-down the moment they crystallise. (Merely *reading* [`glossary.md`](../../dydo/glossary.md) for
+down the moment they crystallise. (Merely *reading* `dydo/glossary.md` from the repository root for
 vocabulary is not this skill: that's a one-line habit any skill can do. This skill is for when
 you're changing the model, not just consuming it.)
 
@@ -17,10 +17,10 @@ you're changing the model, not just consuming it.)
 
 Both homes are scaffolded in every project, so nothing is created lazily:
 
-- [`glossary.md`](../../dydo/glossary.md): one glossary per project. Its header states the format and
+- `dydo/glossary.md`, read from the repository root: one glossary per project. Its header states the format and
   the ceiling.
 - `dydo/project/decisions/`: one Decision Record per choice, governed by
-  [`_decisions.md`](../../dydo/project/decisions/_decisions.md) and shaped like the records already
+  `dydo/project/decisions/_decisions.md`, read from the repository root, and shaped like the records already
   there.
 
 ## During the session

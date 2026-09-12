@@ -12,11 +12,11 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
 ## Must-Reads
 
 1. The Linear Project's metadata-first map, each current active contract, and named evidence only.
-2. [wayfinder — Refer by name](../wayfinder/SKILL.md#refer-by-name) — load its titled-reference rule before the first human-facing Project or Issue report.
-3. [working-tree-contract.md](../../dydo/guides/working-tree-contract.md)
-4. [about.md](../../dydo/understand/about.md)
-5. [architecture.md](../../dydo/understand/architecture.md)
-6. [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+2. Load `wayfinder` and read its Refer by name section before the first human-facing Project or Issue report.
+3. From the repository root, read `dydo/guides/working-tree-contract.md`.
+4. From the repository root, read `dydo/understand/about.md`.
+5. From the repository root, read `dydo/understand/architecture.md`.
+6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 

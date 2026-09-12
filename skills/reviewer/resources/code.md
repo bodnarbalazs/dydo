@@ -29,7 +29,7 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 ## Standards
 
-- [coding-standards.md](../../../dydo/guides/coding-standards.md) and any stack-specific standard
+- `dydo/guides/coding-standards.md`, read from the repository root, and any stack-specific standard
   bind, the anti-slop mandate included, with the `codebase-design` lens on every seam the diff
   touches; a documented standard beats your taste, and a rule the tooling enforces is closed
 - The harden hop changed only what was warranted, and everything that was: smaller, simpler,

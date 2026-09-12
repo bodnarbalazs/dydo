@@ -15,11 +15,11 @@ good.
 1. The owning Linear Issue: outcome, owned paths, exact gates, its `## Spec` and `## Plan`, the
    specify SHA, and the review block when a FAIL sent you.
 2. The governing Project plan at its linked commit, when the Issue names one.
-3. [coding-standards.md](../../dydo/guides/coding-standards.md), this is your Bible.
-4. [about.md](../../dydo/understand/about.md)
-5. [architecture.md](../../dydo/understand/architecture.md)
-6. [working-tree-contract.md](../../dydo/guides/working-tree-contract.md)
-7. [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
+3. From the repository root, read `dydo/guides/coding-standards.md`; this is your Bible.
+4. From the repository root, read `dydo/understand/about.md`.
+5. From the repository root, read `dydo/understand/architecture.md`.
+6. From the repository root, read `dydo/guides/working-tree-contract.md`.
+7. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 

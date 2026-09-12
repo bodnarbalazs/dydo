@@ -17,8 +17,8 @@ human approval and open the first work; it certifies a starting route, not a com
    merge. Done when the human knows what approval fixes.
 4. **Inspect the starting route.** Each first Issue is self-contained and vertical, carries outcome,
    owned paths, blockers, gate and base branch, exactly one Type, one Mode and `Todo`; its gate is
-   copy-pasteable. Check status and priority against the
-   [workspace standard](../../../dydo/reference/linear-workspace-standard.md). Owned paths isolate
+   copy-pasteable. Check status and priority against `dydo/reference/linear-workspace-standard.md`,
+   read from the repository root. Owned paths isolate
    parallel work, hot paths are serial, and the first merge order is credible. Done when every
    listed Issue is safe for an Issue Captain to claim.
 5. **Respect the horizon.** Later bearings orient without speculative precision, and every in-scope

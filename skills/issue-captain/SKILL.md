@@ -12,10 +12,10 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 1. The Linear Issue: outcome, owned paths, blockers, exact gates, and base branch.
 2. Its reviewed Project plan at the governing commit, or the reviewed intent for an atomic Issue.
-3. [working-tree-contract.md](../../dydo/guides/working-tree-contract.md)
-4. [about.md](../../dydo/understand/about.md)
-5. [architecture.md](../../dydo/understand/architecture.md)
-6. [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+3. From the repository root, read `dydo/guides/working-tree-contract.md`.
+4. From the repository root, read `dydo/understand/about.md`.
+5. From the repository root, read `dydo/understand/architecture.md`.
+6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 

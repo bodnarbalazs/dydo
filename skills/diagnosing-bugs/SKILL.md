@@ -9,8 +9,8 @@ description: Diagnosis loop for hard bugs and performance regressions. Use when 
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
-When exploring the codebase, read [`glossary.md`](../../dydo/glossary.md) and
-[`architecture.md`](../../dydo/understand/architecture.md) to get a clear mental model of the relevant
+When exploring the codebase, from the repository root read `dydo/glossary.md` and
+`dydo/understand/architecture.md` to get a clear mental model of the relevant
 modules, and check the Decision Records in the area you're touching.
 
 ## Redact

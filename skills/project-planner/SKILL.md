@@ -16,10 +16,10 @@ fog; each Issue Captain sends a Specifier ahead of production.
 
 1. The Linear Project carrying the intent, with its links, answers, and blocking relations.
 2. The Decision Records that govern the destination.
-3. [about.md](../../dydo/understand/about.md)
-4. [architecture.md](../../dydo/understand/architecture.md)
-5. [dydo-glossary.md](../../dydo/reference/dydo-glossary.md)
-6. [linear-workspace-standard.md](../../dydo/reference/linear-workspace-standard.md) — Issue Type,
+3. From the repository root, read `dydo/understand/about.md`.
+4. From the repository root, read `dydo/understand/architecture.md`.
+5. From the repository root, read `dydo/reference/dydo-glossary.md`.
+6. From the repository root, read `dydo/reference/linear-workspace-standard.md` — Issue Type,
    Mode, status and Question priority.
 
 ## Boundary

@@ -10,8 +10,8 @@ Collect evidence from one source family for one question; you conclude nothing.
 ## Must-Reads
 
 1. The question as the researcher stated it, and the one family you own.
-2. [about.md](../../dydo/understand/about.md)
-3. [architecture.md](../../dydo/understand/architecture.md)
+2. From the repository root, read `dydo/understand/about.md`.
+3. From the repository root, read `dydo/understand/architecture.md`.
 
 ## Boundary
 

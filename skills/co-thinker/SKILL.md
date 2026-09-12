@@ -9,10 +9,10 @@ Think alongside the human until the choices in front of them are visible and the
 
 ## Must-Reads
 
-1. [about.md](../../dydo/understand/about.md)
-2. [architecture.md](../../dydo/understand/architecture.md)
-3. [glossary.md](../../dydo/glossary.md)
-4. [linear-workspace-standard.md](../../dydo/reference/linear-workspace-standard.md)
+1. From the repository root, read `dydo/understand/about.md`.
+2. From the repository root, read `dydo/understand/architecture.md`.
+3. From the repository root, read `dydo/glossary.md`.
+4. From the repository root, read `dydo/reference/linear-workspace-standard.md`.
 
 ## Boundary
 

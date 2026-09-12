@@ -21,6 +21,7 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     public void ProjectWithCanonicalSkill(string name)
     {
         CopyDirectory(Path.Combine(RepositoryRoot(), "skills", name), Local("skills", name));
+        Assert.True(Directory.Exists(Local("skills", name)));
         File.Copy(Path.Combine(RepositoryRoot(), "setup-skills.mjs"), Local("setup-skills.mjs"));
         File.WriteAllText(Local(".gitignore"), "/.claude/skills/\n/.agents/skills/\n");
     }
@@ -89,8 +90,7 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         var result = Run("git", "status", "--short");
         result.AssertSuccess();
         Assert.Equal("", result.Stdout);
-        RemoveLink(".claude/skills/teach");
-        RemoveLink(".agents/skills/teach");
+        RemoveHostSkillLinks();
         ClearReadOnly(Local(".git"));
         Directory.Delete(Local(".git"), recursive: true);
     }
@@ -130,20 +130,59 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Then("every skill link resolves when followed from each location")]
     public void EveryLinkResolves(Table locations)
     {
+        CopyRemainingSkills();
+        CopyProjectPathTargets();
         Setup();
         SetupSucceeds();
-        Assert.Equal(3, locations.Rows.Count);
-        foreach (var row in locations.Rows)
+        try
         {
-            var location = row["location"].Replace("<name>", "teach", StringComparison.Ordinal);
-            var basePath = Local(location.Replace('/', Path.DirectorySeparatorChar));
-            var body = File.ReadAllText(Path.Combine(basePath, "SKILL.md"));
-            foreach (var link in MarkdownLinks(body).Where(IsLocalLink))
-                Assert.True(File.Exists(Path.GetFullPath(Path.Combine(basePath, link.Replace('/', Path.DirectorySeparatorChar)))),
-                    $"{location}: {link}");
+            Assert.Equal(3, locations.Rows.Count);
+            var canonicalRoot = Local("skills");
+            foreach (var canonicalSkill in Directory.EnumerateDirectories(canonicalRoot))
+            {
+                var name = Path.GetFileName(canonicalSkill);
+                var markdownFiles = Directory.EnumerateFiles(canonicalSkill, "*.md", SearchOption.AllDirectories).ToArray();
+                Assert.NotEmpty(markdownFiles);
+                foreach (var canonicalFile in markdownFiles)
+                {
+                    var relativeFile = Path.GetRelativePath(canonicalSkill, canonicalFile);
+                    var canonicalBytes = Fingerprint.File(canonicalFile);
+                    var links = MarkdownLinks(File.ReadAllText(canonicalFile)).Where(IsRepositoryRelativeFileLink).ToArray();
+                    foreach (var link in links)
+                    {
+                        var canonicalTarget = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(canonicalFile)!, FileLinkPath(link)));
+                        AssertInside(canonicalSkill, canonicalTarget, $"{Path.GetRelativePath(Local(), canonicalFile)}: {link}");
+                        Assert.True(File.Exists(canonicalTarget), $"Missing skill-local link: {canonicalFile}: {link}");
+                    }
+
+                    foreach (var row in locations.Rows)
+                    {
+                        var location = row["location"].Replace("<name>", name, StringComparison.Ordinal);
+                        var viewRoot = Local(location.Replace('/', Path.DirectorySeparatorChar));
+                        var viewFile = Path.Combine(viewRoot, relativeFile);
+                        Assert.Equal(canonicalBytes, Fingerprint.File(viewFile));
+                        Assert.Equal(Path.GetFullPath(canonicalSkill), RealPath(viewRoot));
+                        foreach (var link in links)
+                        {
+                            var lexicalTarget = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(viewFile)!, FileLinkPath(link)));
+                            Assert.True(File.Exists(lexicalTarget), $"{location}/{relativeFile}: {link}");
+                            var projectedCanonicalTarget = Path.GetFullPath(Path.Combine(RealPath(viewRoot), Path.GetDirectoryName(relativeFile) ?? "", FileLinkPath(link)));
+                            var expectedCanonicalTarget = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(canonicalFile)!, FileLinkPath(link)));
+                            Assert.Equal(expectedCanonicalTarget, projectedCanonicalTarget);
+                            Assert.Equal(Fingerprint.File(expectedCanonicalTarget), Fingerprint.File(lexicalTarget));
+                        }
+                    }
+                }
+            }
+
+            Assert.False(FileSystemInfoExists(Local(".claude", "dydo")));
+            Assert.False(FileSystemInfoExists(Local(".agents", "dydo")));
+            AssertProjectPathsUseRepositoryRoot(locations);
         }
-        RemoveLink(".claude/skills/teach");
-        RemoveLink(".agents/skills/teach");
+        finally
+        {
+            RemoveHostSkillLinks();
+        }
     }
 
     [Then(@"^current documentation and template mirrors describe skills/<name> as the only editable source$")]
@@ -234,11 +273,77 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         _ownedFiles[relative] = Fingerprint.File(full);
     }
 
+    private void CopyProjectPathTargets()
+    {
+        var repository = RepositoryRoot();
+        var targets = CanonicalSkillAssertionTests.ProjectPathGuidance
+            .SelectMany(relative => ProjectPathLiterals(File.ReadAllText(Path.Combine(repository, relative))))
+            .Distinct(StringComparer.Ordinal);
+        foreach (var relative in targets)
+        {
+            var source = Path.Combine(repository, FileLinkPath(relative));
+            var target = Local(FileLinkPath(relative));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(source, target);
+        }
+    }
+
+    private void CopyRemainingSkills()
+    {
+        var root = Path.Combine(RepositoryRoot(), "skills");
+        foreach (var source in Directory.EnumerateDirectories(root))
+        {
+            var target = Local("skills", Path.GetFileName(source));
+            if (!Directory.Exists(target)) CopyDirectory(source, target);
+        }
+    }
+
     private void RecordProjection(string relative) => _projectionTargets[relative] = new DirectoryInfo(Local(relative)).LinkTarget;
     private void RemoveLink(string relative)
     {
         var full = Local(relative.Replace('/', Path.DirectorySeparatorChar));
         if (new DirectoryInfo(full).LinkTarget is not null) Directory.Delete(full);
+    }
+
+    private void RemoveHostSkillLinks()
+    {
+        foreach (var host in new[] { ".claude", ".agents" })
+        {
+            var root = Local(host, "skills");
+            if (!Directory.Exists(root)) continue;
+            foreach (var directory in Directory.EnumerateDirectories(root))
+                if (new DirectoryInfo(directory).LinkTarget is not null) Directory.Delete(directory);
+        }
+    }
+
+    private void AssertProjectPathsUseRepositoryRoot(Table locations)
+    {
+        var projectRoot = Path.GetFullPath(scenario.DirectoryPath);
+        foreach (var relative in CanonicalSkillAssertionTests.ProjectPathGuidance)
+        {
+            var parts = relative.Split('/');
+            var name = parts[1];
+            var relativeFile = Path.Combine(parts.Skip(2).ToArray());
+            var canonicalFile = Local(relative.Replace('/', Path.DirectorySeparatorChar));
+            var canonicalBody = File.ReadAllText(canonicalFile);
+            var projectPaths = ProjectPathLiterals(canonicalBody).ToArray();
+            Assert.NotEmpty(projectPaths);
+            foreach (var row in locations.Rows)
+            {
+                var location = row["location"].Replace("<name>", name, StringComparison.Ordinal);
+                var viewFile = Path.Combine(Local(location.Replace('/', Path.DirectorySeparatorChar)), relativeFile);
+                Assert.Equal(Fingerprint.File(canonicalFile), Fingerprint.File(viewFile));
+                var viewBody = File.ReadAllText(viewFile);
+                Assert.Equal(projectPaths, ProjectPathLiterals(viewBody).ToArray());
+                foreach (var projectPath in projectPaths)
+                {
+                    var target = Path.GetFullPath(Path.Combine(projectRoot, FileLinkPath(projectPath)));
+                    AssertInside(projectRoot, target, $"{location}/{relativeFile}: {projectPath}");
+                    Assert.True(File.Exists(target), $"Missing repository-root project path: {projectPath}");
+                    Assert.NotEmpty(File.ReadAllBytes(target));
+                }
+            }
+        }
     }
 
     private static void ClearReadOnly(string directory)
@@ -284,9 +389,21 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         catch (IOException) { return false; }
     }
     private static string RealPath(string path) => new DirectoryInfo(path).ResolveLinkTarget(true)?.FullName ?? Path.GetFullPath(path);
-    private static bool IsLocalLink(string link) => !link.StartsWith('#') && !Uri.TryCreate(link, UriKind.Absolute, out _);
+    private static bool IsRepositoryRelativeFileLink(string link) => link != "Linear URL" && !link.StartsWith('#') && !Uri.TryCreate(link, UriKind.Absolute, out _);
+    private static string FileLinkPath(string link) => link.Replace('/', Path.DirectorySeparatorChar);
     private static IEnumerable<string> MarkdownLinks(string markdown) => Regex.Matches(markdown, @"\[[^\]]+\]\(([^)#]+)(?:#[^)]+)?\)")
         .Select(match => match.Groups[1].Value);
+    private static IEnumerable<string> ProjectPathLiterals(string markdown) => Regex.Matches(markdown, @"`(dydo/[^`]+\.md)`")
+        .Select(match => match.Groups[1].Value)
+        .Where(path => !path.Contains('<') && !path.Contains('>'))
+        .Distinct(StringComparer.Ordinal);
+
+    private static void AssertInside(string root, string target, string description)
+    {
+        var relative = Path.GetRelativePath(Path.GetFullPath(root), Path.GetFullPath(target));
+        Assert.False(relative == ".." || relative.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal) || Path.IsPathRooted(relative),
+            $"Path escaped {root}: {description}");
+    }
 
     private static void CopyDirectory(string source, string target)
     {

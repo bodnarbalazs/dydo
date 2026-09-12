@@ -10,10 +10,10 @@ Make one documentation change true.
 ## Must-Reads
 
 1. The owning Linear Issue and its linked Project plan, when present.
-2. [writing-docs.md](../../dydo/reference/writing-docs.md)
-3. [about.md](../../dydo/understand/about.md)
-4. [working-tree-contract.md](../../dydo/guides/working-tree-contract.md)
-5. [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
+2. From the repository root, read `dydo/reference/writing-docs.md`.
+3. From the repository root, read `dydo/understand/about.md`.
+4. From the repository root, read `dydo/guides/working-tree-contract.md`.
+5. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 

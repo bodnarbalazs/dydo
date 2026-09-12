@@ -13,11 +13,11 @@ diff.
 
 1. The target Linear Issue or direct lane Sub-issue: its active contract, parent, and blockers; read comments only for a named missing fact or binding review.
 2. The governing Project-plan section and Decision Records.
-3. [working-tree-contract.md](../../dydo/guides/working-tree-contract.md)
-4. [coding-standards.md](../../dydo/guides/coding-standards.md)
-5. [about.md](../../dydo/understand/about.md)
-6. [architecture.md](../../dydo/understand/architecture.md)
-7. [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
+3. From the repository root, read `dydo/guides/working-tree-contract.md`.
+4. From the repository root, read `dydo/guides/coding-standards.md`.
+5. From the repository root, read `dydo/understand/about.md`.
+6. From the repository root, read `dydo/understand/architecture.md`.
+7. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 

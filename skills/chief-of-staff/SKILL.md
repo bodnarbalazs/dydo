@@ -12,10 +12,10 @@ The human's attention is the scarcest resource in this project: triage everythin
 
 1. The human's Linear board: the open `Question` Issues, every Project in flight, and every Issue
    in `Ready to Merge`.
-2. [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
-3. [about.md](../../dydo/understand/about.md)
-4. [architecture.md](../../dydo/understand/architecture.md)
-5. [working-tree-contract.md](../../dydo/guides/working-tree-contract.md)
+2. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+3. From the repository root, read `dydo/understand/about.md`.
+4. From the repository root, read `dydo/understand/architecture.md`.
+5. From the repository root, read `dydo/guides/working-tree-contract.md`.
 
 ## Boundary
 

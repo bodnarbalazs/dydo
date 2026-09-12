@@ -10,9 +10,9 @@ Catch what got through — and refute every catch before it counts.
 ## Must-Reads
 
 1. The assignment: the scope, the one lens, and the evidence the Captain hands over.
-2. [about.md](../../dydo/understand/about.md)
-3. [architecture.md](../../dydo/understand/architecture.md)
-4. [coding-standards.md](../../dydo/guides/coding-standards.md)
+2. From the repository root, read `dydo/understand/about.md`.
+3. From the repository root, read `dydo/understand/architecture.md`.
+4. From the repository root, read `dydo/guides/coding-standards.md`.
 
 ## Boundary
 

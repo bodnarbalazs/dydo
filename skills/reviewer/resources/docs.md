@@ -20,7 +20,7 @@ Every item below is a FAIL when it holds.
 ## Human-facing dydo documents
 
 - Frontmatter, naming, or a link broken against
-  [writing-docs.md](../../../dydo/reference/writing-docs.md).
+  `dydo/reference/writing-docs.md`, read from the repository root.
 - Written for a reader its folder does not name (`understand/` vs `guides/` vs `reference/`).
 - A meaning another document already owns, written a second time here.
 - `dydo check` or an Issue gate left failing on the touched tree.

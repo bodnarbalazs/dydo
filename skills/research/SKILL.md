@@ -12,9 +12,9 @@ Follow every claim back to the source that owns it, and search wide enough to kn
 ## Must-Reads
 
 1. The question as the invoker stated it, and the destination it named for the findings.
-2. [about.md](../../dydo/understand/about.md)
-3. [architecture.md](../../dydo/understand/architecture.md)
-4. [Communication and evidence](../../dydo/reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
+2. From the repository root, read `dydo/understand/about.md`.
+3. From the repository root, read `dydo/understand/architecture.md`.
+4. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 

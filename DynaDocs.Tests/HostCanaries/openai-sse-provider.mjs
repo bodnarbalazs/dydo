@@ -204,7 +204,8 @@ function deny(response, message) {
 function extractSkillBase(serialized) {
   const normalized = serialized.replaceAll("\\\\", "\\");
   const candidates = [
-    /base directory(?: is|:)?\s*([^\n\r"`]+?teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
+    /base directory for this skill:\s*([^\n\r"`]+?teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
+    /base directory(?: is|:)[ \t]*([^\n\r"`]+?teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
     /((?:[A-Za-z]:)?[^\n\r"`]*[\\/]skills[\\/]teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i
   ];
   for (const candidate of candidates) {

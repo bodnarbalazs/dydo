@@ -1,2 +1,4 @@
 policy:
   allow_implicit_invocation: false
+interface:
+  default_prompt: "What will the next session be used for?"

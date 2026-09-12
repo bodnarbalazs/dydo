@@ -1,0 +1,246 @@
+"""AltCover joins use original module identity and physical MethodDef tokens."""
+import hashlib
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from csharp_join import coverage_methods, join_methods
+
+
+class CSharpJoinTests(unittest.TestCase):
+    def fixture(self, root):
+        dll = root / "bin/A.dll"
+        dll.parent.mkdir()
+        dll.write_bytes(b"original")
+        source = root / "A.cs"
+        source.write_text("class A { int M(bool b) => b ? 1 : 2; }")
+        facts = {
+            "assembly_name": "A", "path": "bin/A.dll",
+            "sha1": hashlib.sha1(dll.read_bytes()).hexdigest(),
+            "documents": {str(source): "A.cs"},
+            "methods": [{"token": 100663297, "identity": "System.Int32 A::M(System.Boolean)",
+                         "points": [{"path": "A.cs", "origin": "maintained", "line": 1}]}],
+        }
+        xml = f'''<CoverageSession><Modules><Module hash="{facts['sha1']}">
+          <ModulePath>{dll}</ModulePath><ModuleName>A</ModuleName>
+          <Files><File uid="1" fullPath="{source}" /></Files><Classes><Class><Methods>
+          <Method cyclomaticComplexity="9"><MetadataToken>100663297</MetadataToken>
+          <Name>System.Int32 A::M(System.Boolean)</Name>
+          <SequencePoints><SequencePoint vc="1" uspid="1" ordinal="0" offset="0" sl="1" sc="1" el="1" ec="10" fileid="1" /></SequencePoints>
+          <BranchPoints><BranchPoint vc="0" uspid="7" ordinal="0" offset="2" sl="1" path="0" offsetend="4" fileid="1" /><BranchPoint vc="1" uspid="8" ordinal="1" offset="2" sl="1" path="1" offsetend="8" fileid="1" /></BranchPoints>
+          </Method></Methods></Class></Classes></Module></Modules></CoverageSession>'''
+        return facts, xml
+
+    def test_exact_token_and_native_branch_rows_are_retained(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            facts, xml = self.fixture(root)
+            joined = coverage_methods(xml, root, facts, ["bin/A.dll"])
+            row = joined["System.Int32 A::M(System.Boolean)"]
+            self.assertEqual({"1": 1}, row["files"]["A.cs"]["Lines"])
+            self.assertEqual(2, len(row["files"]["A.cs"]["Branches"]))
+            self.assertNotIn("cc", row)
+
+    def test_token_name_hash_alias_and_native_field_mismatches_fail_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            facts, xml = self.fixture(root)
+            attacks = [
+                ("100663297", "100663298", "token"),
+                ("System.Int32 A::M(System.Boolean)", "System.Int32 A::N(System.Boolean)", "signature"),
+                (facts["sha1"], "0" * 40, "hash"),
+                ('vc="1" uspid="1"', 'vc="-2" uspid="1"', "sequence value"),
+                ('sl="1" sc="1"', 'sl="2" sc="1"', "Sequence source ownership"),
+                (' offsetend="4"', "", "branch"),
+            ]
+            for old, new, message in attacks:
+                with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                    coverage_methods(xml.replace(old, new, 1), root, facts, ["bin/A.dll"])
+            with self.assertRaisesRegex(ValueError, "alias"):
+                coverage_methods(xml, root, facts, ["other/A.dll"])
+
+    def test_report_file_rows_keep_generated_documents_but_require_only_maintained_methods(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            dll = root / "bin/A.dll"
+            dll.parent.mkdir()
+            dll.write_bytes(b"original")
+            package_url = root.parent / "packages/p/1.0/build/Package.cs"
+            generated_url = root / "obj/Gen.cs"
+            facts = {"assembly_name": "A", "sha1": hashlib.sha1(dll.read_bytes()).hexdigest(),
+                     "documents": {str(package_url): "nuget:p/1.0/build/Package.cs",
+                                   str(generated_url): "obj/Gen.cs"},
+                     "methods": [
+                         {"token": 1, "identity": "A::P()", "points": [
+                             {"path": "nuget:p/1.0/build/Package.cs", "origin": "package", "line": 1}]},
+                         {"token": 2, "identity": "A::G()", "points": [
+                             {"path": "obj/Gen.cs", "origin": "generated", "line": 1}]},
+                     ]}
+            xml = f'''<CoverageSession><Modules><Module hash="{facts['sha1']}">
+              <ModulePath>{dll}</ModulePath><ModuleName>A</ModuleName><Files>
+              <File uid="1" fullPath="{package_url}" /><File uid="2" fullPath="{generated_url}" />
+              </Files><Classes><Class><Methods>
+              <Method><MetadataToken>1</MetadataToken><Name>A::P()</Name><SequencePoints><SequencePoint vc="0" uspid="1" ordinal="0" offset="0" sl="1" sc="1" el="1" ec="2" fileid="1" /></SequencePoints><BranchPoints /></Method>
+              <Method><MetadataToken>2</MetadataToken><Name>A::G()</Name><SequencePoints><SequencePoint vc="0" uspid="2" ordinal="0" offset="0" sl="1" sc="1" el="1" ec="2" fileid="2" /></SequencePoints><BranchPoints /></Method>
+              </Methods></Class></Classes></Module></Modules></CoverageSession>'''
+            joined = coverage_methods(xml, root, facts, ["bin/A.dll"])
+            self.assertEqual({}, joined)
+            with self.assertRaisesRegex(ValueError, "outside PDB document inventory"):
+                coverage_methods(xml.replace(str(package_url), str(root.parent / "unknown.cs")),
+                                 root, facts, ["bin/A.dll"])
+
+    def test_join_accounts_generated_only_methods_by_origin(self):
+        source = {"files": [{"path": "A.cs", "methods": []}],
+                  "generated_files": ["obj/Gen.cs", "nuget:p/1.0/build/Package.cs"],
+                  "behavior": {"constructors": [], "fragments": [], "structural_methods": [],
+                               "declared_methods": []}}
+        assembly = {"methods": [
+            {"identity": "A::G()", "points": [{"path": "obj/Gen.cs", "origin": "generated"}]},
+            {"identity": "A::P()", "points": [{"path": "nuget:p/1.0/build/Package.cs",
+                                                   "origin": "package"}]},
+            {"identity": "A::N()", "points": []},
+        ]}
+        joined = join_methods(Path.cwd(), source, assembly, {})
+        reasons = {row["identity"]: row for row in joined["accounting"]}
+        self.assertEqual("excluded by origin", reasons["A::G()"]["reason"])
+        self.assertEqual(["generated"], reasons["A::G()"]["origins"])
+        self.assertEqual(["nuget:p/1.0/build/Package.cs"], reasons["A::P()"]["documents"])
+        self.assertEqual("no non-hidden portable-PDB points", reasons["A::N()"]["reason"])
+
+    def mapped_fixture(self, root):
+        """One authored method, one emitted body, one exact line of coverage."""
+        source_path = root / "A.cs"
+        source_path.write_text("class A { int M() => 1; }")
+        point = {"path": "A.cs", "origin": "maintained", "checksum_algorithm": "SHA256",
+                 "checksum": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+                 "line": 1, "column": 10, "end_line": 1, "end_column": 23}
+        source = {"files": [{"path": "A.cs", "methods": [{
+            "id": "A.M", "line": 1, "column": 10, "end_line": 1, "end_column": 23,
+            "constructor": False, "cognitive": 0, "policy_cc": 1, "parameters": 0}]}],
+            "generated_files": [], "behavior": {"constructors": [], "fragments": [],
+                                                "structural_methods": [], "declared_methods": []}}
+        physical = {"token": 1, "identity": "System.Int32 A::M()", "key": "A::M`0()",
+                    "points": [point]}
+        coverage = {physical["identity"]: {"files": {"A.cs": {"Lines": {"1": 1}, "Branches": []}}}}
+        return source_path, source, {"assembly_name": "A", "methods": [physical]}, coverage
+
+    def test_absent_point_unmapped_author_and_stale_source_cannot_reach_a_verdict(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path, source, assembly, coverage = self.mapped_fixture(root)
+            method = join_methods(root, source, assembly, coverage)["modules"][0]["methods"][0]
+            self.assertEqual((1, 1), (method["covered"], method["total"]))
+
+            elsewhere = {"System.Int32 A::M()": {"files": {"A.cs": {"Lines": {"2": 1}, "Branches": []}}}}
+            with self.assertRaisesRegex(ValueError, "PDB point absent from method coverage"):
+                join_methods(root, source, assembly, elsewhere)
+
+            authored = source["files"][0]["methods"][0]
+            unmapped = {**source, "files": [{"path": "A.cs", "methods": [authored, {
+                **authored, "id": "A.Unemitted", "line": 2, "column": 0,
+                "end_line": 2, "end_column": 5}]}]}
+            with self.assertRaisesRegex(ValueError, "Authored methods absent from emitted coverage join"):
+                join_methods(root, unmapped, assembly, coverage)
+
+            source_path.write_text("class A { int M() => 2; }")
+            with self.assertRaisesRegex(ValueError, "Source/PDB checksum mismatch"):
+                join_methods(root, source, assembly, coverage)
+
+    def test_semantic_synthesized_members_are_audited_without_physical_coverage(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path = root / "A.cs"
+            source_path.write_text("record A { public int Auto { get; set; } }")
+            checksum = hashlib.sha256(source_path.read_bytes()).hexdigest()
+            point = {"path": "A.cs", "origin": "maintained", "checksum_algorithm": "SHA256",
+                     "checksum": checksum, "line": 1, "column": 0, "end_line": 1, "end_column": 45}
+            source = {"files": [{"path": "A.cs", "methods": []}], "generated_files": [],
+                      "behavior": {"constructors": [], "fragments": [], "declared_methods": [],
+                                   "structural_methods": [
+                                       {"key": "A::get_Auto()", "reason": "semantic synthesized auto accessor"},
+                                       {"key": "A::.ctor(A)", "reason": "semantic synthesized record copy constructor"},
+                                   ]}}
+            assembly = {"assembly_name": "A", "methods": [
+                {"token": 1, "identity": "System.Int32 A::get_Auto()", "key": "A::get_Auto()", "points": [point]},
+                {"token": 2, "identity": "System.Void A::.ctor(A)", "key": "A::.ctor(A)", "points": [point]},
+            ]}
+            joined = join_methods(root, source, assembly, {})
+            self.assertEqual([1, 2], [row["token"] for row in joined["accounting"]])
+            self.assertTrue(all(row["reason"] == "semantic synthesized member with no authored executable behavior"
+                                for row in joined["accounting"]))
+            self.assertEqual({"class": "semantic synthesized member",
+                              "reason": "semantic synthesized auto accessor"},
+                             joined["accounting"][0]["sourceBehavior"])
+            self.assertEqual({"total": 2, "groups": [
+                {"reason": "semantic synthesized member with no authored executable behavior", "path": "A.cs", "count": 2}
+            ]}, joined["accountingSummary"])
+
+    def test_authored_or_generated_named_members_are_never_excluded_without_source_behavior(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path = root / "A.cs"
+            source_path.write_text("class A { int Auto { get => 1; } }")
+            point = {"path": "A.cs", "origin": "maintained", "checksum_algorithm": "SHA256",
+                     "checksum": hashlib.sha256(source_path.read_bytes()).hexdigest(), "line": 1,
+                     "column": 0, "end_line": 1, "end_column": 36}
+            source = {"files": [{"path": "A.cs", "methods": []}], "generated_files": [],
+                      "behavior": {"constructors": [], "fragments": [], "declared_methods": [],
+                                   "structural_methods": []}}
+            for physical in (
+                {"token": 1, "identity": "System.Int32 A::get_Auto()", "key": "A::get_Auto()",
+                 "generated": True, "points": [point]},
+                {"token": 2, "identity": "System.Void A::.ctor()", "key": "A::.ctor()",
+                 "generated": True, "points": [point]},
+            ):
+                with self.subTest(identity=physical["identity"]), self.assertRaisesRegex(ValueError, "Missing physical method coverage"):
+                    join_methods(root, source, {"assembly_name": "A", "methods": [physical]}, {})
+
+    def test_expression_bodied_property_uses_containing_declared_span_without_exclusion(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path = root / "Services/LegacyPmManifestService.cs"
+            source_path.parent.mkdir()
+            source_path.write_text("\n" * 40)
+            point = {"path": "Services/LegacyPmManifestService.cs", "origin": "maintained",
+                     "checksum_algorithm": "SHA256", "checksum": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+                     "line": 20, "column": 20, "end_line": 20, "end_column": 35}
+            key = "DynaDocs.Services.LegacyPmManifestService::get_IsActive`0()"
+            source = {"files": [{"path": point["path"], "methods": [{
+                "id": "LegacyPmManifestService.IsActive", "line": 20, "column": 12,
+                "end_line": 20, "end_column": 40, "constructor": False,
+                "cognitive": 0, "policy_cc": 1, "parameters": 0,
+            }]}], "generated_files": [], "behavior": {"constructors": [], "fragments": [],
+                "structural_methods": [], "declared_methods": [{
+                    "key": key, "path": point["path"], "line": 20, "column": 0,
+                    "end_line": 20, "end_column": 41,
+                }]}}
+            physical = {"token": 1, "identity": "System.Boolean DynaDocs.Services.LegacyPmManifestService::get_IsActive()",
+                        "key": key, "points": [point]}
+            coverage = {physical["identity"]: {"files": {point["path"]: {
+                "Lines": {"20": 1}, "Branches": []}}}}
+            joined = join_methods(root, source, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+            self.assertEqual(1, joined["modules"][0]["methods"][0]["covered"])
+
+            for declared, message in (
+                ({"key": key, "path": "Other.cs", "line": 20, "column": 0, "end_line": 20, "end_column": 41},
+                 "Semantic/PDB method owner mismatch"),
+                ({"key": key, "path": point["path"], "line": 19, "column": 30, "end_line": 20, "end_column": 30},
+                 "Semantic/PDB method owner mismatch"),
+            ):
+                invalid = {**source, "behavior": {**source["behavior"], "declared_methods": [declared]}}
+                with self.subTest(declared=declared), self.assertRaisesRegex(ValueError, message):
+                    join_methods(root, invalid, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+            ambiguous = {**source, "files": [{"path": point["path"], "methods": [
+                *source["files"][0]["methods"], {**source["files"][0]["methods"][0], "id": "other"}]}]}
+            with self.assertRaisesRegex(ValueError, "Missing or ambiguous source owner"):
+                join_methods(root, ambiguous, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+            duplicate = {**source, "behavior": {**source["behavior"], "declared_methods": [
+                *source["behavior"]["declared_methods"], source["behavior"]["declared_methods"][0]]}}
+            with self.assertRaisesRegex(ValueError, "Duplicate SourceBehavior declared member"):
+                join_methods(root, duplicate, {"assembly_name": "dydo", "methods": [physical]}, coverage)
+
+
+if __name__ == "__main__":
+    unittest.main()

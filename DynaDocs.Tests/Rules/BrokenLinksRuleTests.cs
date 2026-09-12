@@ -18,7 +18,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_AcceptsValidRelativeLink()
     {
-        var source = CreateDoc("guide.md", links: [CreateLink("./reference.md", LinkType.Markdown)]);
+        var source = CreateDoc("guide.md", links: [LinkTestFactory.Create("./reference.md", LinkType.Markdown)]);
         var target = CreateDoc("reference.md");
         var allDocs = new List<DocFile> { source, target };
 
@@ -30,7 +30,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_ReportsBrokenLink()
     {
-        var source = CreateDoc("guide.md", links: [CreateLink("./nonexistent.md", LinkType.Markdown)]);
+        var source = CreateDoc("guide.md", links: [LinkTestFactory.Create("./nonexistent.md", LinkType.Markdown)]);
         var allDocs = new List<DocFile> { source };
 
         var violations = _rule.Validate(source, allDocs, BasePath).ToList();
@@ -43,7 +43,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_SkipsExternalLinks()
     {
-        var doc = CreateDoc("guide.md", links: [CreateLink("https://example.com", LinkType.External)]);
+        var doc = CreateDoc("guide.md", links: [LinkTestFactory.Create("https://example.com", LinkType.External)]);
 
         var violations = _rule.Validate(doc, [doc], BasePath).ToList();
 
@@ -53,7 +53,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_SkipsWikilinks()
     {
-        var doc = CreateDoc("guide.md", links: [CreateLink("SomePage", LinkType.Wikilink)]);
+        var doc = CreateDoc("guide.md", links: [LinkTestFactory.Create("SomePage", LinkType.Wikilink)]);
 
         var violations = _rule.Validate(doc, [doc], BasePath).ToList();
 
@@ -61,9 +61,34 @@ public class BrokenLinksRuleTests
     }
 
     [Fact]
+    public void Validate_ReportsMissingNonMarkdownAssetAndKeepsExistingAssetValid()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dydo-broken-assets-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "assets"));
+        File.WriteAllText(Path.Combine(root, "assets", "logo.png"), "fixture");
+        var source = CreateDoc("guide.md", links:
+        [
+            LinkTestFactory.Create("assets/logo.png", LinkType.Markdown),
+            LinkTestFactory.Create("assets/missing.png", LinkType.Markdown)
+        ]);
+
+        try
+        {
+            var violation = Assert.Single(_rule.Validate(source, [source], root));
+
+            Assert.Equal("Broken link: assets/missing.png", violation.Message);
+            Assert.Equal("All internal links must point to existing files and anchors", _rule.Description);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public void Validate_AcceptsValidAnchor()
     {
-        var source = CreateDoc("guide.md", links: [CreateLinkWithAnchor("./reference.md", "section-1", LinkType.Markdown)]);
+        var source = CreateDoc("guide.md", links: [LinkTestFactory.CreateWithAnchor("./reference.md", "section-1", LinkType.Markdown)]);
         var target = CreateDoc("reference.md", anchors: ["section-1", "section-2"]);
         var allDocs = new List<DocFile> { source, target };
 
@@ -75,7 +100,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_ReportsInvalidAnchor()
     {
-        var source = CreateDoc("guide.md", links: [CreateLinkWithAnchor("./reference.md", "nonexistent-section", LinkType.Markdown)]);
+        var source = CreateDoc("guide.md", links: [LinkTestFactory.CreateWithAnchor("./reference.md", "nonexistent-section", LinkType.Markdown)]);
         var target = CreateDoc("reference.md", anchors: ["section-1"]);
         var allDocs = new List<DocFile> { source, target };
 
@@ -89,7 +114,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_AcceptsLinkToNestedFile()
     {
-        var source = CreateDoc("index.md", links: [CreateLink("./guides/how-to.md", LinkType.Markdown)]);
+        var source = CreateDoc("index.md", links: [LinkTestFactory.Create("./guides/how-to.md", LinkType.Markdown)]);
         var target = CreateDoc("guides/how-to.md");
         var allDocs = new List<DocFile> { source, target };
 
@@ -101,7 +126,7 @@ public class BrokenLinksRuleTests
     [Fact]
     public void Validate_AcceptsParentDirectoryLink()
     {
-        var source = CreateDoc("guides/how-to.md", links: [CreateLink("../index.md", LinkType.Markdown)]);
+        var source = CreateDoc("guides/how-to.md", links: [LinkTestFactory.Create("../index.md", LinkType.Markdown)]);
         var target = CreateDoc("index.md");
         var allDocs = new List<DocFile> { source, target };
 
@@ -115,8 +140,8 @@ public class BrokenLinksRuleTests
     {
         var links = new List<LinkInfo>
         {
-            CreateLink("./missing1.md", LinkType.Markdown),
-            CreateLink("./missing2.md", LinkType.Markdown)
+            LinkTestFactory.Create("./missing1.md", LinkType.Markdown),
+            LinkTestFactory.Create("./missing2.md", LinkType.Markdown)
         };
         var source = CreateDoc("guide.md", links: links);
 
@@ -128,22 +153,11 @@ public class BrokenLinksRuleTests
     #region Exclusions
 
     [Fact]
-    public void Validate_SkipsTemplateFiles()
-    {
-        var source = CreateDoc("_system/template-additions/skill-implementer.template.md",
-            links: [CreateLink("../../../understand/about.md", LinkType.Markdown)]);
-
-        var violations = _rule.Validate(source, [source], BasePath).ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
     public void Validate_SkipsAutoGeneratedFiles()
     {
         var source = CreateDoc("project/generated/_index.md",
             content: "<!-- Auto-generated by 'dydo fix'. Do not edit - changes will be overwritten. -->\n[x](#missing)",
-            links: [CreateLinkWithAnchor("", "missing", LinkType.Markdown)]);
+            links: [LinkTestFactory.CreateWithAnchor("", "missing", LinkType.Markdown)]);
 
         var violations = _rule.Validate(source, [source], BasePath).ToList();
 
@@ -155,7 +169,7 @@ public class BrokenLinksRuleTests
     {
         var source = CreateDoc("project/generated/_index.md",
             content: "[x](#missing)",
-            links: [CreateLinkWithAnchor("", "missing", LinkType.Markdown)]);
+            links: [LinkTestFactory.CreateWithAnchor("", "missing", LinkType.Markdown)]);
 
         var violations = _rule.Validate(source, [source], BasePath).ToList();
 
@@ -166,8 +180,8 @@ public class BrokenLinksRuleTests
     public void Validate_ReportsBrokenLinksWhenProseQuotesAutoGeneratedMarker()
     {
         var source = CreateDoc("project/generated/guide.md",
-            content: $"The generated-file marker is `{HubGenerator.AutoGenComment}`.\n[x](#missing)",
-            links: [CreateLinkWithAnchor("", "missing", LinkType.Markdown)]);
+            content: "The generated-file marker is `<!-- Auto-generated by 'dydo fix'. Do not edit - changes will be overwritten. -->`.\n[x](#missing)",
+            links: [LinkTestFactory.CreateWithAnchor("", "missing", LinkType.Markdown)]);
 
         var violations = _rule.Validate(source, [source], BasePath).ToList();
 
@@ -182,7 +196,7 @@ public class BrokenLinksRuleTests
     public void Validate_AcceptsCrossFolderLink_WhenAllDocsContainsTarget()
     {
         var source = CreateDoc("project/decisions/0001-foo.md",
-            links: [CreateLink("../../understand/architecture.md", LinkType.Markdown)]);
+            links: [LinkTestFactory.Create("../../understand/architecture.md", LinkType.Markdown)]);
         var target = CreateDoc("understand/architecture.md");
         var allDocs = new List<DocFile> { source, target };
 
@@ -195,7 +209,7 @@ public class BrokenLinksRuleTests
     public void Validate_AcceptsTwoLevelParentLink_AcrossFolders()
     {
         var source = CreateDoc("a/b/c/source.md",
-            links: [CreateLink("../../foo/bar.md", LinkType.Markdown)]);
+            links: [LinkTestFactory.Create("../../foo/bar.md", LinkType.Markdown)]);
         var target = CreateDoc("a/foo/bar.md");
         var allDocs = new List<DocFile> { source, target };
 
@@ -213,7 +227,7 @@ public class BrokenLinksRuleTests
     {
         var source = CreateDoc("guide.md",
             anchors: ["section"],
-            links: [CreateLinkWithAnchor("", "section", LinkType.Markdown)]);
+            links: [LinkTestFactory.CreateWithAnchor("", "section", LinkType.Markdown)]);
 
         var violations = _rule.Validate(source, [source], BasePath).ToList();
 
@@ -225,7 +239,7 @@ public class BrokenLinksRuleTests
     {
         var source = CreateDoc("guide.md",
             anchors: ["section"],
-            links: [CreateLinkWithAnchor("", "missing", LinkType.Markdown)]);
+            links: [LinkTestFactory.CreateWithAnchor("", "missing", LinkType.Markdown)]);
 
         var violations = _rule.Validate(source, [source], BasePath).ToList();
 
@@ -238,7 +252,7 @@ public class BrokenLinksRuleTests
     {
         var source = CreateDoc("guide.md",
             anchors: ["section"],
-            links: [CreateLinkWithAnchor("", "missing", LinkType.Markdown)]);
+            links: [LinkTestFactory.CreateWithAnchor("", "missing", LinkType.Markdown)]);
 
         var violations = _rule.Validate(source, [source], BasePath).ToList();
 
@@ -262,27 +276,4 @@ public class BrokenLinksRuleTests
         };
     }
 
-    private static LinkInfo CreateLink(string target, LinkType type)
-    {
-        return new LinkInfo(
-            RawText: $"[link]({target})",
-            DisplayText: "link",
-            Target: target,
-            Anchor: null,
-            Type: type,
-            LineNumber: 1
-        );
-    }
-
-    private static LinkInfo CreateLinkWithAnchor(string target, string anchor, LinkType type)
-    {
-        return new LinkInfo(
-            RawText: $"[link]({target}#{anchor})",
-            DisplayText: "link",
-            Target: target,
-            Anchor: anchor,
-            Type: type,
-            LineNumber: 1
-        );
-    }
 }

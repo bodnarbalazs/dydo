@@ -1,2 +1,0 @@
-- [ ] The exact tests passed through the worktree-isolated runner.
-- [ ] Forced coverage passed with zero failing modules.

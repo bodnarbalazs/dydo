@@ -17,7 +17,7 @@ public static class HelpCommand
 
     public static void PrintHelp()
     {
-        Console.WriteLine("DynaDocs (dydo) - Durable project knowledge and shared role compilation for AI coding assistants.");
+        Console.WriteLine("DynaDocs (dydo) - Durable project knowledge and native skills for AI coding assistants.");
         Console.WriteLine();
         Console.WriteLine("Setup Commands:");
         Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, codex, all, none)");
@@ -33,14 +33,9 @@ public static class HelpCommand
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
         Console.WriteLine();
-        Console.WriteLine("Role Commands:");
-        Console.WriteLine("  sync                   Compile skill templates into native Claude + Codex agents/skills");
-        Console.WriteLine();
         Console.WriteLine("Validation Commands:");
-        Console.WriteLine("  validate               Validate config and templates");
-        Console.WriteLine();
-        Console.WriteLine("Template Commands:");
-        Console.WriteLine("  template update        Update framework docs");
+        Console.WriteLine("  validate               Validate local configuration and nudges");
+        Console.WriteLine("  gap-check [args]       Run the configured coverage gap check");
         Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");

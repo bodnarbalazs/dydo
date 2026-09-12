@@ -27,18 +27,18 @@ public static class FixCommand
         return command;
     }
 
-    private static int Execute(string? path)
+    internal static int Execute(string? path, Action? beforeConfigCommit = null)
     {
         try
         {
-            var scope = ResolveScope(path);
+            var scope = ResolveScope(path, out var scopeError);
             if (scope == null)
             {
-                ConsoleOutput.WriteError("Could not find docs folder.");
+                ConsoleOutput.WriteError(scopeError ?? "Could not find docs folder.");
                 return ExitCodes.ToolError;
             }
 
-            Console.WriteLine($"Fixing {scope.FilePath ?? scope.CorpusRoot}...");
+            Console.WriteLine($"Fixing {scope.FilePath ?? scope.DirectoryPath ?? scope.CorpusRoot}...");
             Console.WriteLine();
 
             var configService = new ConfigService();
@@ -50,10 +50,10 @@ public static class FixCommand
 
             Console.WriteLine("FIXED:");
 
-            var configFixCount = RestoreScanExcludeInvariants(configService, scope.CorpusRoot);
+            var pendingConfig = RestoreScanExcludeInvariants(configService, scope.CorpusRoot);
             var renamedFilePath = scope.FilePath == null ? null : GetKebabDestination(scope.FilePath);
             var (renamed, nameConflicts) = FixFileHandler.FixNaming(docs);
-            var fixedCount = configFixCount + renamed;
+            var fixedCount = (pendingConfig?.Added ?? 0) + renamed;
 
             if (renamedFilePath != null && renamed == 1)
                 scope = scope with { FilePath = renamedFilePath };
@@ -68,12 +68,6 @@ public static class FixCommand
             {
                 ConsoleOutput.WriteSuccess($"  ✓ Converted {linksConverted} wikilinks to relative paths");
                 fixedCount += linksConverted;
-            }
-
-            if (scope.FilePath == null)
-            {
-                fixedCount += FixHubHandler.RegenerateHubs(scope.CorpusRoot, scanner, docs);
-                fixedCount += FixHubHandler.CreateMissingMetaFiles(scope.CorpusRoot, scanner, docs);
             }
 
             resolutionCorpus = scanner.ScanDirectory(scope.CorpusRoot);
@@ -100,7 +94,14 @@ public static class FixCommand
                 Console.WriteLine($"{manualFixNeeded.Distinct().Count()} issues require manual attention.");
             }
 
-            return nameConflicts.Count > 0 ? ExitCodes.ValidationErrors : ExitCodes.Success;
+            if (nameConflicts.Count > 0)
+                return ExitCodes.ValidationErrors;
+            if (pendingConfig is (var config, var configPath, _))
+            {
+                beforeConfigCommit?.Invoke();
+                configService.SaveConfig(config, configPath);
+            }
+            return ExitCodes.Success;
         }
         catch (Exception ex)
         {
@@ -109,22 +110,38 @@ public static class FixCommand
         }
     }
 
-    private static FixScope? ResolveScope(string? path)
+    private static FixScope? ResolveScope(string? path, out string? error)
     {
+        error = null;
         if (!string.IsNullOrEmpty(path))
         {
             if (Directory.Exists(path))
-                return new FixScope(Path.GetFullPath(path), null);
+            {
+                var directoryPath = Path.GetFullPath(path);
+                var corpusRoot = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+                if (corpusRoot == null)
+                    return null;
+
+                corpusRoot = Path.GetFullPath(corpusRoot);
+                if (CheckDocValidator.IsUnderScope(corpusRoot, directoryPath))
+                    return new FixScope(corpusRoot, null, null);
+                if (!CheckDocValidator.IsUnderScope(directoryPath, corpusRoot))
+                {
+                    error = $"Path is outside the docs tree: {path}";
+                    return null;
+                }
+                return new FixScope(corpusRoot, null, directoryPath);
+            }
             if (File.Exists(path))
             {
                 var filePath = Path.GetFullPath(path);
-                return new FixScope(FindContainingCorpusRoot(filePath), filePath);
+                return new FixScope(FindContainingCorpusRoot(filePath), filePath, null);
             }
             return null;
         }
 
         var docsPath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
-        return docsPath == null ? null : new FixScope(Path.GetFullPath(docsPath), null);
+        return docsPath == null ? null : new FixScope(Path.GetFullPath(docsPath), null, null);
     }
 
     private static string FindContainingCorpusRoot(string filePath)
@@ -145,7 +162,9 @@ public static class FixCommand
     private static List<DocFile>? SelectDocs(FixScope scope, List<DocFile> resolutionCorpus)
     {
         if (scope.FilePath == null)
-            return resolutionCorpus;
+            return scope.DirectoryPath == null
+                ? resolutionCorpus
+                : resolutionCorpus.Where(doc => CheckDocValidator.IsUnderScope(doc.FilePath, scope.DirectoryPath)).ToList();
 
         var selected = resolutionCorpus.Where(doc =>
             PathUtils.NormalizePath(Path.GetFullPath(doc.FilePath)).Equals(
@@ -164,24 +183,27 @@ public static class FixCommand
         return Path.Combine(Path.GetDirectoryName(filePath)!, fileName);
     }
 
-    private static int RestoreScanExcludeInvariants(IConfigService configService, string startPath)
+    // The restored config still to be committed, or null when there is nothing to commit: no
+    // loadable config in this corpus, or every invariant already present.
+    private static (DydoConfig Config, string Path, int Added)? RestoreScanExcludeInvariants(
+        IConfigService configService,
+        string startPath)
     {
         var configPath = configService.FindConfigFile(startPath);
         if (configPath == null)
-            return 0;
+            return null;
 
         var config = configService.LoadConfig(startPath);
         if (config == null)
-            return 0;
+            return null;
 
         var added = ConfigFactory.EnsureDefaultScanExclude(config);
         if (added == 0)
-            return 0;
+            return null;
 
-        configService.SaveConfig(config, configPath);
         ConsoleOutput.WriteSuccess($"  ✓ Restored {added} scanExclude invariant(s) in dydo.json");
-        return added;
+        return (config, configPath, added);
     }
 
-    private sealed record FixScope(string CorpusRoot, string? FilePath);
+    private sealed record FixScope(string CorpusRoot, string? FilePath, string? DirectoryPath);
 }

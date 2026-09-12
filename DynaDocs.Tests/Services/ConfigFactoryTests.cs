@@ -45,19 +45,18 @@ public class ConfigFactoryTests
 
         // The alternation lists exactly the commands Program.cs registers — nothing retired.
         Assert.Equal(
-            ["check", "fix", "index", "init", "graph", "guard", "sync",
-                "completions", "complete", "template", "validate", "version", "help"],
+            ["check", "fix", "index", "init", "graph", "guard",
+                "completions", "complete", "validate", "version", "help"],
             Regex.Match(nudge.Pattern, @"\(\?:([\w|]+)\)\\b").Groups[1].Value.Split('|'));
     }
 
     [Fact]
-    public void CreateDefaultModels_UsesDistinctOpenAiTiers()
+    public void CreateDefault_HasNoModelPolicy()
     {
-        var openAi = ConfigFactory.CreateDefaultModels().Tiers["openai"];
+        var json = JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig);
 
-        Assert.Equal("gpt-5.6-sol", openAi["strong"]);
-        Assert.Equal("gpt-5.6-terra", openAi["standard"]);
-        Assert.Equal("gpt-5.6-luna", openAi["light"]);
+        Assert.DoesNotContain("\"models\"", json);
+        Assert.DoesNotContain("Models", typeof(DydoConfig).GetProperties().Select(property => property.Name));
     }
 
     [Fact]
@@ -152,17 +151,6 @@ public class ConfigFactoryTests
         ConfigFactory.EnsureDefaultNudges(config);
 
         Assert.Equal("worker", config.Nudges.Single(n => n.Pattern == "custom-pattern").Audience);
-    }
-
-    [Fact]
-    public void CreateDefaultModels_BindsTheDr045Agents()
-    {
-        var agents = ConfigFactory.CreateDefaultModels().Agents;
-
-        Assert.Equal("strong", agents["project-planner"]);
-        Assert.Equal("strong", agents["specifier"]);
-        Assert.Equal("strong", agents["issue-captain"]);
-        Assert.Equal("standard", agents["research"]);
     }
 
     [Fact]

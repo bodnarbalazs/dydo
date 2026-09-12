@@ -1,9 +1,69 @@
 namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
+using DynaDocs.Models;
+using DynaDocs.Services;
 
 public class CheckDocValidatorTests
 {
+    [Theory]
+    [InlineData("# Document\n\n## Details\n\nUseful content.")]
+    [InlineData("# Document\n\n- First item\n- Second item")]
+    [InlineData("# Document")]
+    [InlineData("# Document\n\n(One-line summary)")]
+    public void Validate_OptionalSummaryContent_HasNoDocumentViolations(string body)
+    {
+        var result = ValidateDocument(body);
+
+        Assert.Empty(result.Violations);
+    }
+
+    [Fact]
+    public void Validate_MissingTitle_ReportsTitleError()
+    {
+        var result = ValidateDocument("## Details\n\nUseful content.");
+
+        var violation = Assert.Single(result.Violations);
+        Assert.Equal(ViolationSeverity.Error, violation.Severity);
+        Assert.Equal("Missing title (# heading)", violation.Message);
+    }
+
+    [Fact]
+    public void Validate_NoSummary_BrokenLinkRemainsAnError()
+    {
+        var result = ValidateDocument("# Document\n\n## Details\n\n[Missing](./missing.md)");
+
+        var violation = Assert.Single(result.Violations);
+        Assert.Equal("BrokenLinks", violation.RuleName);
+        Assert.Equal(ViolationSeverity.Error, violation.Severity);
+        Assert.Equal("Broken link: ./missing.md", violation.Message);
+    }
+
+    [Fact]
+    public void OptionalOpeningProse_RemainsAvailableToNavigation()
+    {
+        var summary = new MarkdownParser().ExtractSummaryParagraph(
+            "# Document\n\nA useful navigation description.\n\n## Details");
+
+        Assert.Equal("A useful navigation description.", summary);
+    }
+
+    private static ValidationResult ValidateDocument(string body)
+    {
+        var basePath = Path.Combine(Path.GetTempPath(), $"check-summary-policy-{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(basePath);
+            File.WriteAllText(Path.Combine(basePath, "document.md"),
+                "---\narea: general\ntype: reference\n---\n\n" + body);
+            return CheckDocValidator.Validate(basePath);
+        }
+        finally
+        {
+            Directory.Delete(basePath, recursive: true);
+        }
+    }
+
     [Fact]
     public void IsUnderScope_ReturnsTrue_WhenPathEqualsScope()
     {

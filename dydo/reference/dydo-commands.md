@@ -7,8 +7,8 @@ type: reference
 
 Complete reference for dydo's local documentation, compilation, guard, and configuration commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-caches, polls, or mirrors a Linear object. FutureFeatures stay repo-native ideas under
-`dydo/project/future-features/` and are promoted only by a human.
+caches, polls, or mirrors a Linear object. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
+durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
 and reads it from the current directory. `dydo help` prints the one-screen summary;
@@ -27,38 +27,18 @@ dydo init <integration>              # claude, codex, all, or none
 dydo init <integration> --join       # wire this machine, or an added runtime, into an existing project
 ```
 
-Writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents and
-`files-off-limits.md`, updates
-`.gitignore`, and writes the `CLAUDE.md` entry point — plus `AGENTS.md` when `codex` is selected.
-`claude` and `codex` also install that runtime's `PreToolUse` hook, so every matched tool call reaches
-`dydo guard`; `none` creates the documentation framework with no runtime integration. Nothing is
-compiled here — run `dydo sync` next.
+Writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents,
+`files-off-limits.md`, `_system/types.json`, updates `.gitignore`, and writes the `CLAUDE.md` entry
+point — plus `AGENTS.md` when `codex` is selected. `claude` and `codex` also install that runtime's
+`PreToolUse` hook, so every matched tool call reaches `dydo guard`; `none` creates the documentation
+framework with no runtime integration.
 
 `--join` targets an already-initialized project: a fresh clone, or a second runtime added later. It
 wires this machine's hook and entry point without re-scaffolding or overwriting the tree, and records
-the integration in `dydo.json` so `dydo sync` emits for it.
+the integration in `dydo.json`.
 
-### dydo sync
-
-Compile the authored skill templates into native Claude Code and Codex artifacts.
-
-```bash
-dydo sync
-```
-
-Roles are discovered by enumerating `skill-<name>.template.md`: the shipped set.
-Frontmatter decides each artifact's shape — `emit: agent` (the default) produces an agent definition
-*and* a skill, `emit: skill` produces the skill alone, `read-only: true` withholds the editing tools,
-`delegates: true` grants the `Agent` tool, and `invocation: explicit` disables model invocation on
-both hosts. A role's `## Must-Reads` links become its agent's context list, links in the compiled body
-are rewritten to resolve from the emitted skill folder, `<role>-resource-<name>.template.md` files
-compile into that skill's `resources/`, and workflow harnesses compile into Claude's workflow folder.
-
-Only the integrations recorded in `dydo.json` are emitted; a project with neither recorded — `none`,
-or a `dydo.json` from before integrations were recorded — emits for both hosts. Every run also deletes
-outputs dydo no longer ships: retired workflows, resources retired by rename, and retired roles.
-
-Change the source template and re-run this command; never hand-edit a compiled artifact.
+dydo does not compile or install skills. A role is a plain `SKILL.md` folder committed under
+`.claude/skills/` and `.agents/skills/`, edited directly.
 
 ---
 
@@ -66,8 +46,8 @@ Change the source template and re-run this command; never hand-edit a compiled a
 
 ### dydo check
 
-Validate documentation naming, frontmatter, summaries, links, hub and folder-meta coverage, orphans,
-the off-limits file, FutureFeature shape under `project/future-features/`, retired v2 work records,
+Validate documentation naming, frontmatter, titles, links, and project-specific rules. It also validates
+the off-limits file, legacy FutureFeature shape under `project/future-features/`, retired v2 work records,
 uncustomized foundation docs (warning), and `dydo.json` itself; config errors count toward exit `1`.
 
 ```bash
@@ -86,7 +66,7 @@ dydo fix
 dydo fix <path>
 ```
 
-Repairs include filename normalization, wikilink conversion, index/meta maintenance, and restoration of
+Repairs include filename normalization, wikilink conversion, and restoration of
 required scan exclusions. Review the Git diff afterward.
 
 ### dydo index
@@ -145,30 +125,6 @@ wiring keeps resolving.
 
 ---
 
-## Template Command
-
-### dydo template update
-
-Refresh this project's framework-owned documents to the running dydo version.
-
-```bash
-dydo template update
-dydo template update --diff
-```
-
-- `--diff` previews changes without writing.
-
-The framework documents in
-`dydo/reference/` and `dydo/guides/` are compared against the shipped set. An unmodified copy is
-overwritten. An edited framework document is left alone and reported instead. The run also tops up
-default nudges, scan exclusions, and frontmatter types. Warnings exit `1`.
-
-Durable customization belongs in the `{{include:...}}` fragments under
-`dydo/_system/template-additions/`, which this command never rewrites; other edits to framework-owned
-files can be replaced.
-
----
-
 ## Validation Command
 
 ### dydo validate
@@ -180,6 +136,24 @@ dydo validate
 ```
 
 This validates dydo's local configuration. It does not validate or provision Linear.
+
+---
+
+## Testing Command
+
+### dydo gap-check
+
+Run the project-configured coverage gap check.
+
+```bash
+dydo gap-check
+dydo gap-check --force-run
+```
+
+The nearest `dydo.json` must contain `testing.runner`: a nonempty string array whose first item is
+the executable and whose remaining items are fixed arguments. `dydo gap-check` starts it directly in
+the configuration directory and appends every caller argument exactly as supplied. Its exit code is the
+runner's exit code; configuration, startup, and cancellation failures exit `2`.
 
 ---
 

@@ -20,21 +20,7 @@ public class CompleteCommandTests : IDisposable
     public void Dispose()
     {
         Environment.CurrentDirectory = _originalDir;
-        if (Directory.Exists(_testDir))
-        {
-            for (var i = 0; i < 3; i++)
-            {
-                try
-                {
-                    Directory.Delete(_testDir, true);
-                    return;
-                }
-                catch (IOException) when (i < 2)
-                {
-                    Thread.Sleep(50 * (i + 1));
-                }
-            }
-        }
+        TestDirectory.Delete(_testDir);
     }
 
     [Fact]
@@ -48,6 +34,7 @@ public class CompleteCommandTests : IDisposable
         Assert.DoesNotContain("review", completions);
         Assert.DoesNotContain("clean", completions);
         Assert.Contains("completions", completions);
+        Assert.Contains("gap-check", completions);
     }
 
     [Theory]

@@ -35,6 +35,6 @@ For conceptual background, use `understand/`. For reference specs, use `referenc
 
 - [About DynaDocs](../reference/about-dynadocs.md)
 - [Writing Documentation](../reference/writing-docs.md)
-- [Understand](../understand/_index.md)
-- [Reference](../reference/_index.md)
-- [Project](../project/_index.md)
+- [Understand](../understand/_understand.md)
+- [Reference](../reference/_reference.md)
+- [Project](../project/_project.md)

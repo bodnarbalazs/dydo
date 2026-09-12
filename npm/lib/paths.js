@@ -39,7 +39,6 @@ function setInstalledVersion(version) {
 }
 
 module.exports = {
-  getInstallDir,
   getBinaryDir,
   getBinaryPath,
   isBinaryInstalled,

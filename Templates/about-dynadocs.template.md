@@ -8,9 +8,10 @@ type: reference
 Own your project's knowledge, use Linear for live work, and let native coding agents execute.
 
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
-durable project knowledge explicit and versioned, compiles shared role methods for Claude Code and
-Codex, and enforces project rules through hooks. Linear owns the live Initiative/Project/Issue graph;
-the coding platform owns sessions, worktrees, delegation, and scheduling.
+durable project knowledge explicit and versioned, authors shared role methods as native skills for
+Claude Code and Codex, and enforces project rules through hooks.
+Linear owns the live Initiative/Project/Issue graph; the coding platform owns sessions, worktrees,
+delegation, and scheduling.
 
 This project is an opinionated personal harness, not a compatibility-first product. It evolves with the
 needs of the projects using it and deliberately removes machinery that native runtimes or dedicated
@@ -27,8 +28,9 @@ priority, assignee, dependencies, current updates, and review state. dydo does n
 Markdown. Linear links to durable repository artifacts; knowledge discovered during execution flows
 back into the appropriate Decision, guide, plan, audit, or assimilation brief.
 
-FutureFeatures are distinct unscheduled strategic possibilities in Linear. They stay in `Backlog`
-until the human promotes or cancels them; durable knowledge they uncover flows into dydo.
+FutureFeatures are distinct unscheduled strategic possibilities in Linear. They stay in `FutureFeature`
+until the human promotes or cancels them; durable knowledge they uncover flows into dydo. The
+[Linear Workspace Standard](./linear-workspace-standard.md) defines the promotion paths.
 
 ## Stop Doing Agent Work Yourself
 
@@ -39,8 +41,8 @@ review, coordinate, and audit from independently reviewable contracts.
   keep Linear current.
 - Execution roles implement one Linear Issue, prove its gates, and return commit and test evidence.
 - A fresh agent independently reviews each implementation Issue before human harmonization.
-- A coordinated Project closes only after an integrated audit against its linked plan and a durable
-  assimilation brief proportionate to the change.
+- The [Working-Tree Contract](../guides/working-tree-contract.md) governs Project integration,
+  optional Inquisition record delivery, and landing.
 
 Branches, worktrees, sessions, subagents, commits, PRs, and reviewer attempts are execution evidence
 linked to an Issue. They are not additional work types.
@@ -52,20 +54,21 @@ linked to an Issue. They are not additional work types.
 A structured tree (`understand/`, `guides/`, `reference/`, and durable `project/` knowledge) with
 validation, auto-fixing, indexes, and graph tooling. This is the context that compounds across sessions.
 
-### 2. One source for native roles and skills
+### 2. One role, native on each host
 
-`dydo sync` compiles role templates and resources into Claude Code and Codex artifacts. Edit the source
-once; both runtimes receive the same method. The host runtime owns agent identity and orchestration.
+A role is a plain `SKILL.md` folder in the cross-vendor format, committed to each host's discovery
+path: `.claude/skills/<role>/` and `.agents/skills/<role>/`. There is no compile step and no
+generated agent definition. The host runtime owns agent identity and orchestration.
 
 ### 3. Enforced project rules
 
-`dydo guard` checks every tool call, including subagents and workflows. Off-limits paths and dangerous
+`dydo guard` checks every tool call, including native subagents. Off-limits paths and dangerous
 commands hard-block; project nudges add configurable notices, warnings, and blocks.
 
 ### 4. An opinionated scaffold
 
-`dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, role templates,
-guard wiring, and runtime entry files. It does not create a second live work graph; use Linear for work
+`dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, guard wiring,
+and runtime entry files. It does not create a second live work graph; use Linear for work
 management, including FutureFeatures.
 
 ## How Work Runs
@@ -75,8 +78,11 @@ management, including FutureFeatures.
    work links to one reviewed repository Project plan.
 3. **Execute Issues** — native agents work in isolated branches/worktrees and attach governing commits,
    tests, reviews, and delivery evidence to the Issue.
-4. **Audit Projects** — verify the combined result against the linked plan, then publish durable audit and
-   assimilation evidence.
+4. **Inquisition, when confirmed** — this optional, human-confirmed audit files Bugs and delivers its
+   record to the feature before landing, following the Working-Tree Contract above.
+5. **Land and inspect** — the landing Merge obtains acceptance review, the human lands the feature,
+   then a Walkthrough inspects it. An empty Walkthrough closes the Project; findings reopen the lap
+   in the same Project.
 
 No dydo command reads, writes, caches, polls, provisions, or mirrors Linear. Agents use Linear's official
 MCP, UI, API, and integrations outside the dydo runtime.
@@ -95,7 +101,6 @@ dotnet tool install -g dydo
 
 ```bash
 dydo init codex       # or: dydo init claude / dydo init all
-dydo sync             # compile shared roles and skills
 dydo check            # validate the documentation tree
 dydo fix              # repair supported documentation issues
 ```
@@ -107,35 +112,33 @@ runtime or machine into an existing project.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`
-- **Roles** — shipped source templates
-- **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks
+- **Roles** — plain `SKILL.md` folders under `.claude/skills/` and `.agents/skills/`, edited directly
 
-Do not hand-edit compiled skills or agents. Change their source templates and run `dydo sync`.
+Edit the skill folder in place. A project's copy is its own; there is no automatic reconciliation.
 
 ## Folder Structure
 
 ```
 project/
-|-- dydo.json                    # Model tiers, integrations, nudges
+|-- dydo.json                    # Integrations, scan exclusions, nudges, testing
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/                     # Compiled Claude agents, skills, and workflows
-|-- .codex/agents/               # Compiled Codex agents
-|-- .agents/skills/              # Compiled Codex skills
+|-- .claude/skills/              # Claude skill folders (SKILL.md + resources)
+|-- .agents/skills/              # Codex skill folders (SKILL.md + resources + openai.yaml)
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture
     |-- guides/                  # How-to guidance
     |-- reference/               # Exact commands and specifications
     |-- project/                 # Durable knowledge and delivery proof
-    |-- _system/template-additions/
+    |-- _system/                 # types.json and local runtime state
     `-- _assets/
 ```
 
 ## Command Reference
 
-See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, role-compilation,
-guard, validation, template, and utility commands.
+See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, guard,
+validation, testing, and utility commands.
 
 ## License
 

@@ -43,4 +43,4 @@ Required sections:
 
 ## Related
 
-- [Decisions](../decisions/_index.md) - Why choices were made
+- [Decisions](../decisions/_decisions.md) - Why choices were made

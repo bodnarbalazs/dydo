@@ -5,3 +5,14 @@
 Templates/*.js text eol=lf
 .claude/agents/*.md text eol=lf
 .claude/skills/**/*.md text eol=lf
+.agents/skills/**/*.md text=auto eol=lf
+.agents/skills/*/agents/openai.yaml text=auto eol=lf
+.codex/agents/*.toml text=auto eol=lf
+
+# The retained DYD-96 native evidence packet is hashed, not read: its SHA256SUMS
+# is authoritative for every other file in that directory, and the assurance
+# gate's fixture exclusion (gate_inventory._fixture_exclusion) hashes the bytes
+# on disk. Without these rules a fresh checkout applies core.autocrlf and the
+# packet materializes as checkout artifacts no manifest entry vouches for.
+dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/** -text
+dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/**/*.opencover.xml text eol=crlf

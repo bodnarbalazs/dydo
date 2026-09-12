@@ -1,0 +1,8 @@
+colorama==0.4.6
+complexipy==8.0.0
+coverage==7.16.0
+mando==0.7.1
+radon==6.0.1
+ruff==0.16.6
+six==1.17.0
+vulture==2.16

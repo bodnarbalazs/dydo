@@ -300,9 +300,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         if (!match.Success)
             return (false, null, null);
 
-        var cdPath = match.Groups[1].Success ? match.Groups[1].Value
-                   : match.Groups[2].Success ? match.Groups[2].Value
-                   : match.Groups[3].Value;
+        var cdPath = match.Groups[1].Value;
+        if (!match.Groups[1].Success)
+            cdPath = match.Groups[2].Success ? match.Groups[2].Value : match.Groups[3].Value;
 
         return (true, cdPath, match.Groups[4].Value.Trim());
     }
@@ -408,6 +408,20 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return 0;
     }
 
+    private static bool AppendQuote(char c, StringBuilder current,
+        ref bool inSingleQuote, ref bool inDoubleQuote)
+    {
+        if (c == '\'' && !inDoubleQuote)
+            inSingleQuote = !inSingleQuote;
+        else if (c == '"' && !inSingleQuote)
+            inDoubleQuote = !inDoubleQuote;
+        else
+            return false;
+
+        current.Append(c);
+        return true;
+    }
+
     private static IEnumerable<string> SplitCommand(string command)
     {
         var parts = new List<string>();
@@ -434,19 +448,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 continue;
             }
 
-            if (c == '\'' && !inDoubleQuote)
-            {
-                inSingleQuote = !inSingleQuote;
-                current.Append(c);
+            if (AppendQuote(c, current, ref inSingleQuote, ref inDoubleQuote))
                 continue;
-            }
-
-            if (c == '"' && !inSingleQuote)
-            {
-                inDoubleQuote = !inDoubleQuote;
-                current.Append(c);
-                continue;
-            }
 
             if (!inSingleQuote && !inDoubleQuote)
             {

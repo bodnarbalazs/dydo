@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>../../../../../../DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/Microsoft.CodeAnalysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>../../../../../../DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="SonarAnalyzer.CSharp">
+      <HintPath>../../../../../../DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/SonarAnalyzer.CSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

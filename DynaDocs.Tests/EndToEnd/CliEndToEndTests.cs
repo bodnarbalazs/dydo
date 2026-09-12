@@ -62,6 +62,18 @@ public class CliEndToEndTests : IDisposable
         Assert.Contains("dydo", result.Stdout);
     }
 
+    [Fact]
+    public async Task VersionCommands_ReportTheBetaPackageVersion()
+    {
+        var option = await RunDydoAsync("--version");
+        var command = await RunDydoAsync("version");
+
+        Assert.Equal(0, option.ExitCode);
+        Assert.Equal(0, command.ExitCode);
+        Assert.Contains("3.0.0-beta.3", option.Stdout);
+        Assert.Contains("dydo version 3.0.0-beta.3", command.Stdout);
+    }
+
     /// <summary>
     /// Verify all subcommands can show help without crashing.
     /// This catches command construction errors like the AuditCommand whitespace alias bug.
@@ -122,6 +134,21 @@ public class CliEndToEndTests : IDisposable
         Assert.True(checkResult.ExitCode <= 1,
             $"check crashed:\nStderr: {checkResult.Stderr}\nStdout: {checkResult.Stdout}");
         Assert.Contains("Checking", checkResult.Stdout); // Verify it actually ran
+    }
+
+    [Fact]
+    public async Task Init_All_WritesAndRetainsHostAgentSettingsThroughJoin()
+    {
+        var init = await RunDydoAsync("init all");
+        Assert.Equal(0, init.ExitCode);
+        Assert.Contains("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", File.ReadAllText(Path.Combine(_testDir, ".claude", "settings.json")));
+        var codexPath = Path.Combine(_testDir, ".codex", "config.toml");
+        var before = File.ReadAllBytes(codexPath);
+        Assert.Contains("max_concurrent_threads_per_session = 16", File.ReadAllText(codexPath));
+
+        var join = await RunDydoAsync("init all --join");
+        Assert.Equal(0, join.ExitCode);
+        Assert.Equal(before, File.ReadAllBytes(codexPath));
     }
 
     /// <summary>
@@ -210,32 +237,6 @@ public class CliEndToEndTests : IDisposable
             $"check crashed on empty directory:\nStderr: {result.Stderr}");
         Assert.False(string.IsNullOrEmpty(result.Stderr) && string.IsNullOrEmpty(result.Stdout),
             "Should show some output explaining the error");
-    }
-
-    #endregion
-
-    #region Template Update Tests
-
-    [Fact]
-    public async Task TemplateUpdate_EndToEnd_ShippedHooks()
-    {
-        // Init project, create addition file, run update, verify addition survives
-        var initResult = await RunDydoAsync("init none");
-        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
-
-        // Create an addition file
-        var additionsPath = Path.Combine(_testDir, "dydo", "_system", "template-additions");
-        File.WriteAllText(Path.Combine(additionsPath, "extra-verify.md"),
-            "5. Run gap_check.py — Custom verification");
-
-        // Run template update
-        var updateResult = await RunDydoAsync("template update");
-        Assert.True(updateResult.ExitCode == 0,
-            $"template update failed: {updateResult.Stderr}\nStdout: {updateResult.Stdout}");
-        Assert.Contains("Template update complete:", updateResult.Stdout);
-
-        // Addition file should still exist
-        Assert.True(File.Exists(Path.Combine(additionsPath, "extra-verify.md")));
     }
 
     #endregion

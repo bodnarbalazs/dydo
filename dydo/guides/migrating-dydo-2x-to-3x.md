@@ -9,26 +9,28 @@ dydo 3 keeps durable project knowledge in Git and uses Linear for live project m
 longer contains a local Notion provider, watchdog, token store, or external-data sync engine.
 
 Keep active work, status, priority, assignment, and dependencies in Linear; keep Decisions, plans,
-guides, release evidence, and FutureFeatures in the repository.
+guides and release evidence in the repository. FutureFeatures live in Linear.
 
 ## Migrate a project
 
 The order matters: every `dydo.json` edit below must land before the first dydo 3 command rewrites
-the file, because that rewrite drops the old keys unread.
+the file, because that rewrite drops the old keys unread. `dydo sync`, `dydo template update`,
+`dydo fix` and `dydo init <host> --join` each rewrite an existing config as the last thing they do,
+and only once everything before it has succeeded: a command that exits nonzero — a template-update
+warning, a fix validation error, any other failure — leaves the original bytes exactly as they were,
+retired keys included. Every write is atomic, going to a temporary sibling that is flushed to disk
+and then renamed over the file, so no failure leaves a half-written config.
 
 1. Upgrade dydo to 3.0.
-2. Rename `models.roles` to `models.agents` in `dydo.json` before running `dydo template update`,
-   `dydo init <host> --join`, or `dydo fix` — the first always rewrites the file and the other two
-   rewrite it whenever they change it, and a rewrite keeps only the keys 3.0 names, without a
-   warning. Renaming afterwards means recovering the map from version control: the rewrite leaves
-   `models.agents` empty and every compiled agent then carries `model: inherit`.
-   In the renamed map, delete `planner`, `test-writer`, `code-writer` and `issue-planner` (no such
-   agents: `code-writer` became `implementer` and `issue-planner` became `specifier` in DR 046) and
-   add a tier for `implementer`, `hardener`, `specifier`, `project-planner`, `issue-captain`,
-   `research`, and `scout` — nothing merges the shipped defaults into an existing config.
+2. Delete the whole `models` object from `dydo.json`, `models.roles` and `models.agents` alike.
+   dydo 3 has no model or effort property: a config `dydo init` creates never contains one, and
+   compiled roles are left unbound so that the delegating admiral or Issue Captain chooses the
+   model — and the effort where the host exposes one — for each task. A `models` block left in
+   place loads without effect and disappears at the first rewrite that succeeds. See
+   [Customizing Roles](./customizing-roles.md).
 3. Delete the rest of the retired configuration in the same pass, since the first rewrite drops it
-   silently: `name`, `paths` (with its `pathSets`), `structure.tasks`, `structure.issues`,
-   `models.efforts`, `models.fallback`, `notion`, and every nudge's `tools`. A nudge's `audience` key
+   silently: `name`, `paths` (with its `pathSets`), `structure.tasks`, `structure.issues`, `notion`,
+   and every nudge's `tools`. A nudge's `audience` key
    survives the rewrite and is still validated, but no longer scopes anything. Removing the `notion`
    object deletes no remote content and no local rollback store; delete those separately, and only
    after confirming that no rollback is needed.
@@ -47,18 +49,18 @@ the file, because that rewrite drops the old keys unread.
    `dydo/_system/roles/` and `dydo/_system/sync-model.json` if either is present. For a retired
    external-sync store such as `dydo/_system/notion_sync_spine/`, either add it to `scanExclude` or
    delete it after confirming that no rollback is needed.
-7. Delete every `dydo/_system/template-additions/extra-*.md` whose tag no shipped template carries.
-   The live tags are `extra-must-reads`, `extra-test-guidance`, `extra-verify`, `extra-review-steps`,
-   and `extra-review-checklist`; `grep -rn "{{include:" Templates/` in the dydo repository lists them.
-8. Run `dydo template update`. It refreshes the six framework-owned documents under `reference/` and
-   `guides/`, prunes every `frameworkHashes` key that does not name one of them, and adds the missing
-   default nudges. Never hand-edit `frameworkHashes`.
-9. Run `dydo sync`. It compiles the 3.0 skills and agents from the shipped templates and sweeps every
-   retired skill's artifacts — `agents/openai.yaml` included — from both hosts. Then run `dydo check`
+7. Delete `dydo/_system/template-additions/` and `dydo/_system/templates/`; `{{include:...}}` tags are
+   retired by Decision 049. Project-specific guidance moves into the skill bodies and project documents
+   directly.
+8. Delete the `skills` and `frameworkHashes` keys from `dydo.json` and `_system/templates/` from its
+   `scanExclude`. A role is now a plain `SKILL.md` folder, not a switchboard entry.
+9. Replace the compiled `.claude/skills/`, `.claude/agents/`, `.agents/skills/` and `.codex/agents/`
+   trees with the shipped native skill folders (`.claude/skills/<role>/SKILL.md` and
+   `.agents/skills/<role>/SKILL.md`), and delete the generated agent definitions. Then run `dydo check`
    and resolve what it reports.
 
-## What remains unchanged
+## Live work and host ownership
 
-FutureFeatures remain repository-native ideas. A human promotes one to a Linear Initiative, Project,
-or Issue when it becomes live work. Claude Code and Codex continue to own runtime identity,
+FutureFeatures are Linear Issues in the FutureFeature status. The human promotes a retained
+possibility to contracted work or graduates its intent through `to-project`. Claude Code and Codex continue to own runtime identity,
 permissions, isolation, and native coordination.

@@ -3,7 +3,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 const { spawnSync } = require('node:child_process');
-const { analyze, moduleMetrics } = require('./js_metrics.cjs');
+
+function loadMetrics() {
+  try {
+    return require('./js_metrics.cjs');
+  } catch (error) {
+    throw new Error(`JavaScript coverage tool unavailable: ${error.message}`);
+  }
+}
 
 function canonical(root, candidate) {
   const value = candidate.startsWith('file:') ? fileURLToPath(candidate) : candidate;
@@ -106,7 +113,8 @@ function measuredCallable(relative, identity, coverage, native, metric) {
   return { ...metric, covered: Number(count > 0), total: 1, execution_count: count };
 }
 
-function join(root, output, targets) {
+function join(root, output, targets, metrics = loadMetrics()) {
+  const { analyze, moduleMetrics } = metrics;
   root = path.resolve(root); output = path.resolve(output);
   const report = JSON.parse(fs.readFileSync(path.join(output, 'coverage-final.json'), 'utf8'));
   const rows = canonicalRows(root, report);
@@ -156,6 +164,7 @@ function campaign(root, output, targets, command) {
   }
   const c8 = path.join(__dirname, 'node_modules', 'c8', 'bin', 'c8.js');
   if (!fs.existsSync(c8) || !fs.statSync(c8).isFile()) throw new Error(`c8 coverage tool unavailable: ${c8}`);
+  const metrics = loadMetrics();
   const argv = [c8, '--all', '--exclude-after-remap=false', '--reports-dir', output,
     '--temp-directory', path.join(output, 'tmp'), '--reporter=json', '--reporter=lcov'];
   for (const target of targets) argv.push('--include', target.replaceAll('\\', '/'));
@@ -163,7 +172,7 @@ function campaign(root, output, targets, command) {
   const result = spawnSync(process.execPath, argv, { cwd: root, stdio: 'inherit', env: process.env });
   if (result.error) throw result.error;
   if (result.status !== 0) return Number.isInteger(result.status) ? result.status : 130;
-  fs.writeFileSync(path.join(output, 'joined.json'), JSON.stringify(join(root, output, targets), null, 2) + '\n');
+  fs.writeFileSync(path.join(output, 'joined.json'), JSON.stringify(join(root, output, targets, metrics), null, 2) + '\n');
   return 0;
 }
 

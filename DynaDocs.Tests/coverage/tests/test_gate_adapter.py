@@ -768,11 +768,15 @@ class CoverageCampaignTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "repo"
             write_file(root, "lib/sum.cjs", NODE_SOURCE)
-            write_file(root, ".gitignore", NODE_IGNORED)
             write_file(root, "DynaDocs.Tests/coverage/javascript_coverage.cjs",
                        (TOOLS / "javascript_coverage.cjs").read_text(encoding="utf-8"))
             write_file(root, "DynaDocs.Tests/coverage/js_metrics.cjs",
-                       "module.exports={analyze(){return {methods:[]}},moduleMetrics(){return {}}};\n")
+                       (TOOLS / "js_metrics.cjs").read_text(encoding="utf-8"))
+            write_file(root, "DynaDocs.Tests/coverage/package.json",
+                       (TOOLS / "package.json").read_text(encoding="utf-8"))
+            write_file(root, ".gitignore", NODE_IGNORED +
+                       "DynaDocs.Tests/coverage/js_metrics.cjs\n" +
+                       "DynaDocs.Tests/coverage/package.json\n")
             write_file(root, "DynaDocs.Tests/coverage/node_tests.cjs", NODE_TEST_DRIVER)
             write_file(root, "DynaDocs.Tests/coverage/tests/sum.test.cjs", NODE_SUITE)
             git_repository(root)
@@ -784,6 +788,21 @@ class CoverageCampaignTests(unittest.TestCase):
             self.assertEqual("error", answer["status"])
             self.assertEqual([], answer["findings"])
             self.assertEqual(2, collector_row(answer, "javascript-coverage")["facts"]["child_exit"])
+
+    def test_node_coverage_with_available_c8_preserves_a_real_failing_suite(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = self.node_repository(folder, NODE_SOURCE)
+            write_file(root, "DynaDocs.Tests/coverage/tests/sum.test.cjs",
+                       NODE_SUITE.replace("assert.strictEqual(sum(1, 2), 3)",
+                                          "assert.fail('fixture regression')"))
+            raw = Path(folder) / "output/raw"
+            raw.parent.mkdir()
+
+            answer = gate_adapter.collect_node_coverage(root, raw)
+
+            self.assertEqual("fail", answer["status"])
+            self.assertEqual([], answer["errors"])
+            self.assertEqual([{"gate": "functional", "child_exit": 1}], answer["findings"])
 
 
 if __name__ == "__main__":

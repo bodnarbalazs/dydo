@@ -16,7 +16,7 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal(5, CountOccurrences(jobs["build"], "rid:"));
 
         var validation = jobs["validation"];
-        Assert.Contains("runs-on: ubuntu-latest", validation);
+        Assert.Contains("runs-on: windows-latest", validation);
         Assert.Contains("fetch-depth: 0", validation);
         Assert.Contains("actions/setup-python", validation);
         Assert.Contains("actions/setup-dotnet", validation);

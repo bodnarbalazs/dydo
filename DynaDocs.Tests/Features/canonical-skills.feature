@@ -17,14 +17,19 @@ Feature: One canonical skill tree reaches every supported host
     Then setup succeeds
     And the host projections are unchanged
     And every unrelated skill and host configuration file keeps its recorded bytes
+    And the Git working tree is clean
 
   Scenario: Keep both hosts' metadata and resources beside one body
     Then the canonical "teach" skill keeps its Claude invocation frontmatter
     And the canonical "teach" skill keeps its Codex invocation metadata
     And every resource linked by the canonical "teach" body resolves inside its skill directory
 
-  Scenario: Resolve project knowledge from the canonical directory
-    Then every project-knowledge link in the canonical skill tree resolves from skills/<name>
+  Scenario: Resolve skill links from canonical and projected locations
+    Then every skill link resolves when followed from each location
+      | location                       |
+      | skills/<name>                  |
+      | .claude/skills/<name>          |
+      | .agents/skills/<name>          |
 
   Scenario: Refuse a human-owned host directory before changing another host
     Given a human-owned Claude "teach" directory

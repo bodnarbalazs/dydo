@@ -19,6 +19,7 @@ public sealed class ReleaseWorkflowTests
         Assert.Contains("runs-on: windows-latest", validation);
         Assert.Contains("fetch-depth: 0", validation);
         Assert.Contains("actions/setup-python", validation);
+        Assert.Equal("'3.12.14'", StepField(JobStep(validation, "Setup Python"), "python-version"));
         Assert.Contains("actions/setup-dotnet", validation);
         Assert.Contains("actions/setup-node", validation);
         Assert.Contains("python DynaDocs.Tests/coverage/run_tests.py", validation);

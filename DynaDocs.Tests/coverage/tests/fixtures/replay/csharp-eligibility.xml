@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CoverageSession xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Modules>
+    <Module hash="8D-A5-3C-4B-33-22-19-90-D4-AF-98-39-E1-84-98-77-9E-26-5B-47">
+      <ModuleName>dydo</ModuleName>
+      <ModulePath>bin/Debug/net10.0/dydo.dll</ModulePath>
+      <Files>
+        <File uid="71" fullPath="Rules/TitleRule.cs" />
+      </Files>
+      <Classes>
+        <Class>
+          <Methods>
+            <Method visited="true" cyclomaticComplexity="1" nPathComplexity="0" sequenceCoverage="100" branchCoverage="0" isConstructor="false" isStatic="false" isGetter="true" isSetter="false" crapScore="1">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="1" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="0" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" minCrapScore="1" maxCrapScore="1" />
+              <MetadataToken>100663984</MetadataToken>
+              <Name>System.String DynaDocs.Rules.TitleRule::get_Name()</Name>
+              <FileRef uid="71" />
+              <SequencePoints>
+                <SequencePoint vc="4" uspid="9760" ordinal="0" offset="0" sl="8" sc="36" el="8" ec="43" bec="0" bev="0" fileid="71" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint xsi:type="SequencePoint" vc="4" uspid="9760" ordinal="0" offset="0" sl="8" sc="36" el="8" ec="43" bec="0" bev="0" fileid="71" />
+            </Method>
+          </Methods>
+        </Class>
+      </Classes>
+    </Module>
+  </Modules>
+</CoverageSession>

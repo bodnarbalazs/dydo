@@ -3,7 +3,7 @@ import json
 import sys
 import tempfile
 import unittest
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -28,16 +28,6 @@ class DiagnosticTests(unittest.TestCase):
         if suppressed:
             row['suppressionStates'] = ['suppressedInSource']
         return row
-
-    def rooted_fixture(self, root, project, diagnostic):
-        """Retained SARIF pins the worktree that produced it; replay resolves under the running root."""
-        anchor = f'/{PurePosixPath(project).parent}/'
-        for location in diagnostic['locations']:
-            file = location['resultFile']
-            head, marker, tail = file['uri'].partition(anchor)
-            if marker and head.startswith('file:'):
-                file['uri'] = root.as_uri() + marker + tail
-        return diagnostic
 
     def test_analyzer_collection_isolates_each_project_sarif_from_project_references(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -144,22 +134,24 @@ class DiagnosticTests(unittest.TestCase):
                     self.assertEqual(1, len(report['errors']))
                     self.assertEqual([], report['generated'])
 
-    def test_retained_c89_reqnroll_rows_normalize_without_loss_or_uri_errors(self):
+    def test_tracked_reqnroll_rows_normalize_without_loss_or_uri_errors(self):
         root = Path(__file__).resolve().parents[3]
-        retained = root / 'DynaDocs.Tests/coverage/results/assurance/run-3510c46004a847c4b24a94e4866b6743'
-        project = 'DynaDocs.Tests/DynaDocs.Tests.csproj'
-        sarif = json.loads((retained / 'raw/analyzers-0.sarif').read_text(encoding='utf-8-sig'))
-        diagnostics = [item for run in sarif['runs'] for item in run.get('results', [])]
-        rows = [{'project': project, 'diagnostic': self.rooted_fixture(root, project, item)}
-                for item in diagnostics]
-        evidence = json.loads((retained / 'report.json').read_text(encoding='utf-8-sig'))
-        projects = evidence['collectors']['csharp-source']['facts']['projects']
-        generated = {}
-        for project in projects:
-            for path in project['generated_files']:
-                generated.setdefault(path, []).append(project['project'])
-        inventory = json.loads((retained / 'inventory.json').read_text(encoding='utf-8-sig'))
-        maintained = {row['path'] for row in inventory['sources'] if row['language'] == 'cs'}
+        fixture = Path(__file__).resolve().parent / 'fixtures/replay/reqnroll.json'
+        replay = json.loads(fixture.read_text(encoding='utf-8'))
+        diagnostics = []
+        for (rule, level, message, suppression, uri, start_line, start_column,
+             end_line, end_column) in replay['diagnostics']:
+            resolved_uri = (root / uri).as_uri() if uri.startswith('DynaDocs.Tests/') else uri
+            diagnostic = {'ruleId': rule, 'level': level, 'message': f'message-{message}',
+                          'locations': [{'resultFile': {'uri': resolved_uri, 'region': {
+                              'startLine': start_line, 'startColumn': start_column,
+                              'endLine': end_line, 'endColumn': end_column}}}]}
+            if suppression:
+                diagnostic['suppressionStates'] = suppression
+            diagnostics.append(diagnostic)
+        rows = [{'project': replay['project'], 'diagnostic': item} for item in diagnostics]
+        maintained = set(replay['maintained'])
+        generated = replay['generated']
         report = normalize_csharp_diagnostics(root, rows, maintained, generated)
         self.assertEqual(229, report['raw_count'])
         self.assertEqual([], report['errors'])

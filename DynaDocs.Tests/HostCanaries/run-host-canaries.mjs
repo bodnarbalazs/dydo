@@ -49,6 +49,7 @@ async function prepareCandidate() {
   manifest.candidateSha = sha;
 
   await rm(evidence, { recursive: true, force: true });
+  await mkdir(evidence, { recursive: true });
   checkout = await mkdtemp(join(tmpdir(), "dyd91-host-canary-"));
   await mkdir(checkout, { recursive: true });
   await archiveCommit(sha, checkout);

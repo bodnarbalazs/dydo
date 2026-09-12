@@ -155,7 +155,8 @@ async function runOpenCodeCanary() {
 
     const debugPaths = await run(exe, ["--pure", "debug", "paths"], { cwd: checkout, env });
     const debugPathValues = extractAbsolutePaths(debugPaths.stdout);
-    assert(debugPathValues.length > 0 && debugPathValues.every(value => isInside(isolation, value)), "OpenCode reported a mutable path outside isolation");
+    const resolvedDebugPaths = await Promise.all(debugPathValues.map(value => realpath(value)));
+    assert(resolvedDebugPaths.length > 0 && resolvedDebugPaths.every(value => isInside(isolation, value)), `OpenCode reported a mutable path outside isolation: ${JSON.stringify(debugPathValues)}`);
     const inventory = await run(exe, ["--pure", "debug", "skill"], { cwd: checkout, env });
     await writeArtifact("opencode-inventory.json", inventory.stdout);
     const parsedInventory = JSON.parse(inventory.stdout);

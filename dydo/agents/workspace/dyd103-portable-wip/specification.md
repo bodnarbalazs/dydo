@@ -147,10 +147,11 @@ paths, and every source path occurs once in `files` with the same `sha256` and i
 `excluded` is validated even when no changed path would use it. Each row is exactly
 `{path,reason,origin}`, with a canonical path occurring once and an origin object whose exact keys
 and positive evidence match its reason (`derived-copy` carries `source`, `canonicalSourceSha256`,
-`producer`, `producerTest`; `native-evidence-fixture` carries `manifest`, `manifestSha256`).
+`producer`, `producerTest`; `native-evidence-fixture` carries `manifest`, `entry`, `sha256`,
+`manifestSha256`).
 `projects` is likewise always validated even when no C# target is selected: every row is exactly
-`{path,compile,testProject,assembly}`, with canonical sorted `compile` paths, a boolean
-`testProject`, and a root-relative `assembly` path or null. Duplicate or case-alias paths across
+`{path,compile,testProject,assembly}`, with canonical unique `compile` paths in the evaluated-project
+order the producer emits, a boolean `testProject`, and a root-relative `assembly` path or null. Duplicate or case-alias paths across
 the applicable inventory collections, unsorted `files`/`sources`/`projects`/nested path lists,
 or any added property are rejected with adapter exit/result 2. These checks occur before selection,
 so malformed or ambiguous inventory data cannot become an empty or widened campaign.
@@ -1108,3 +1109,22 @@ independently checked inventory artifact at the integrated feature head after DY
 head (DYD-96's production hop implements it; absent at `cc6705b0`), plus an integrated passing
 baseline (`run_tests.py` green at that head); a whole-M pass additionally needs DYD-105 merged
 (extensionless JavaScript target).
+
+**Ruled — 2026-09-12 (admiral-authorized consumer-drift correction; gate 8 aggregate 2).** The
+`native-evidence-fixture` `excluded[].origin` field table above was pinned to two keys
+(`manifest`, `manifestSha256`), but the merged, reviewed DYD-96 producer
+(`gate_inventory._fixture_exclusion`, `gate_inventory.py:71-73`) emits exactly
+`{manifest, entry, sha256, manifestSha256}`. Consumer drift in
+`mutation_adapter.INVENTORY_ORIGIN_KEYS` made every stack refuse the tracked fixture with
+`invalid inventory: excluded row` before selection, so gate 8 returned aggregate 2. DYD-96 is
+authoritative and merged; this amendment changes no acceptance criterion, owned path, gate or
+destination, and DYD-96 is not edited. `derived-copy` is unchanged and already matches the
+producer. The same consumer-drift class then surfaced at `projects[].compile`: the table pinned
+*sorted* compile paths, while `gate_inventory.assemble_inventory` (`gate_inventory.py:157-158`)
+emits them in evaluated-project order unsorted. The table now pins canonical unique paths, and the
+adapter validates canonical-and-unique order-insensitively; the adapter reads project membership
+from `sources[].projects`, never from `projects[].compile`, so compile order carries no selection
+meaning. The admiral's 2026-09-12 ruling authorizes the correction in both this table and the
+adapter, and authorizes the companion edit to the DYD-113 probe below (a not-owned path, recorded
+here for DYD-113/DYD-91: `test_active_manifest` now expects the configured mutation row, mirroring
+DYD-96's `0d3f0995`).

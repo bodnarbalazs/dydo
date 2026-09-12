@@ -128,7 +128,8 @@ INVENTORY_SOURCE_KEYS = {"path", "sha256", "language", "role", "projects", "exec
 INVENTORY_PROJECT_KEYS = {"path", "compile", "testProject", "assembly"}
 INVENTORY_ORIGIN_KEYS = {"derived-copy": {"source", "canonicalSourceSha256", "producer",
                                           "producerTest"},
-                         "native-evidence-fixture": {"manifest", "manifestSha256"}}
+                         "native-evidence-fixture": {"manifest", "entry", "sha256",
+                                                     "manifestSha256"}}
 
 
 def select(candidate, changed, stack, languages=None):
@@ -852,7 +853,7 @@ def _validate_inventory(payload):
                  and set(row["origin"]) == INVENTORY_ORIGIN_KEYS.get(row["reason"], set())
                  and all(row["origin"].values()), f"excluded row {row.get('path')}")
     for row in _rows(payload, "projects"):
-        _require(set(row) == INVENTORY_PROJECT_KEYS and _sorted_unique(row["compile"])
+        _require(set(row) == INVENTORY_PROJECT_KEYS and _sorted_unique(sorted(row["compile"]))
                  and isinstance(row["testProject"], bool)
                  and (row["assembly"] is None or isinstance(row["assembly"], str)),
                  f"project row {row.get('path')}")

@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import subprocess
 import sys
 import time
@@ -70,6 +71,17 @@ def config_hash(value):
 EXECUTION_SECONDS_MAXIMUM = 1800
 
 
+def runtime_evidence():
+    implementation = platform.python_implementation()
+    if os.name != "nt" or implementation != "CPython" or sys.version_info[:2] != (3, 12):
+        raise ValueError("Owner requires Windows CPython 3.12")
+    return {"implementation": implementation, "version": list(sys.version_info[:3]),
+            "executable": sys.executable,
+            "executable_sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
+            "base_executable": sys._base_executable,
+            "base_sha256": hashlib.sha256(Path(sys._base_executable).read_bytes()).hexdigest()}
+
+
 def request(argv, cwd, output, execution_seconds=60, teardown_seconds=10):
     value = {"version": 1, "owner_id": uuid.uuid4().hex, "argv": list(argv),
              "cwd": str(Path(cwd).resolve()), "output": str(Path(output).resolve()),
@@ -85,8 +97,7 @@ def validate(value, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM):
     if (set(value) != keys or type(value["version"]) is not int or value["version"] != 1
             or value["config_sha256"] != config_hash(value)):
         raise ValueError("Invalid owner configuration")
-    if os.name != "nt" or sys.version_info[:3] != (3, 12, 14):
-        raise ValueError("Owner requires Windows Python 3.12.14")
+    runtime = runtime_evidence()
     if value["helper_sha256"] != hashlib.sha256(Path(__file__).read_bytes()).hexdigest():
         raise ValueError("Owner source changed")
     argv = value["argv"]
@@ -101,6 +112,7 @@ def validate(value, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM):
             raise ValueError("Invalid owner deadline")
     if not isinstance(value["owner_id"], str) or len(value["owner_id"]) != 32 or any(char not in "0123456789abcdef" for char in value["owner_id"]):
         raise ValueError("Invalid owner identity")
+    return runtime
 
 
 def bindings():
@@ -418,8 +430,7 @@ def native_run(value, environment, output, result):
 
 
 def preflight():
-    if os.name != "nt" or sys.version_info[:3] != (3, 12, 14):
-        raise ValueError("Owner requires Windows Python 3.12.14")
+    runtime = runtime_evidence()
     import msvcrt
     kernel = bindings()
     with ExitStack() as stack:
@@ -431,11 +442,8 @@ def preflight():
         files = [stack.enter_context(open(os.devnull, "rb")) for _ in range(3)]
         handles = [msvcrt.get_osfhandle(value.fileno()) for value in files]
         attributes(kernel, job, handles, stack)
-    return {"version": list(sys.version_info[:3]), "executable": sys.executable,
-            "executable_sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
-            "base_executable": sys._base_executable,
-            "base_sha256": hashlib.sha256(Path(sys._base_executable).read_bytes()).hexdigest(),
-            "helper_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "capability": True}
+    return {**runtime, "helper_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "capability": True}
 
 
 def run(value, environment=None, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM):
@@ -448,7 +456,7 @@ def run(value, environment=None, execution_seconds_maximum=EXECUTION_SECONDS_MAX
               "execution_seconds": value.get("execution_seconds"), "teardown_seconds": value.get("teardown_seconds")}
     output = None
     try:
-        validate(value, execution_seconds_maximum=execution_seconds_maximum)
+        result.update(validate(value, execution_seconds_maximum=execution_seconds_maximum))
         candidate = Path(value["output"])
         candidate.mkdir(parents=True, exist_ok=False)
         output = candidate

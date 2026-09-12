@@ -118,7 +118,8 @@ async function handleCodex(request, response, payload) {
     assert(countAcross(strings, body) === 1, "Codex first request did not contain the exact canonical teach body once");
     assert(countAcross(strings, codexPrompt) === 1, "Codex first request did not contain the exact prompt once");
     assert(countAcross(strings, expectedFact) === 0, "Codex first request pre-inlined the resource-only fact");
-    assert(JSON.stringify(payload).includes('"shell_command"'), "Codex first request did not offer shell_command");
+    const offeredTools = Array.isArray(payload.tools) ? payload.tools.map(tool => tool.name ?? tool.type) : [];
+    assert(offeredTools.includes("shell_command"), `Codex first request did not offer shell_command: ${JSON.stringify(offeredTools)}`);
     const selectedSkill = extractInstalledSkillPath(strings);
     const link = body.match(/\[mission-format\]\(([^)]+)\)/)?.[1];
     assert(link, "canonical teach body did not expose mission-format link");

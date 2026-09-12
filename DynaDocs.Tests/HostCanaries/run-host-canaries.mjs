@@ -317,6 +317,8 @@ function codexEnv(isolation, home, executable, port) {
     TMP: join(isolation, "temp"),
     CODEX_HOME: home,
     CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG: "1",
+    CODEX_INTERNAL_APP_SERVER_REMOTE_CONTROL_DISABLED: "1",
+    CODEX_MANAGED_BY_NPM: "1",
     HTTP_PROXY: denyProxy,
     HTTPS_PROXY: denyProxy,
     ALL_PROXY: denyProxy,

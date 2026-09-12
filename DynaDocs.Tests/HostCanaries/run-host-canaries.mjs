@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { access, cp, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -15,7 +16,7 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const options = parseArgs(process.argv.slice(2));
 const candidate = resolve(options.candidate);
 const evidence = resolve(options.evidence);
-const checkout = join(evidence, "candidate");
+let checkout;
 const manifest = { issue: "DYD-91 — Make one canonical skill tree easy to install for Claude, Codex, and OpenCode", startedAt: new Date().toISOString(), commands: [], assertions: [], environment: {}, artifacts: {} };
 
 try {
@@ -36,7 +37,7 @@ try {
   process.stderr.write(`${manifest.error}\n`);
   process.exitCode = 1;
 } finally {
-  await rm(checkout, { recursive: true, force: true }).catch(() => {});
+  if (checkout) await rm(checkout, { recursive: true, force: true }).catch(() => {});
 }
 
 async function prepareCandidate() {
@@ -48,6 +49,7 @@ async function prepareCandidate() {
   manifest.candidateSha = sha;
 
   await rm(evidence, { recursive: true, force: true });
+  checkout = await mkdtemp(join(tmpdir(), "dyd91-host-canary-"));
   await mkdir(checkout, { recursive: true });
   await archiveCommit(sha, checkout);
   await run(process.execPath, ["setup-skills.mjs"], { cwd: checkout });
@@ -161,7 +163,7 @@ async function runOpenCodeCanary() {
     await writeArtifact("opencode-inventory.json", inventory.stdout);
     const parsedInventory = JSON.parse(inventory.stdout);
     const expectedNames = (await readdir(join(checkout, "skills"), { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => entry.name).sort();
-    const actualNames = collectSkillNames(parsedInventory).sort();
+    const actualNames = collectSkillNames(parsedInventory, checkout).sort();
     assert(JSON.stringify(actualNames) === JSON.stringify(expectedNames), "OpenCode inventory did not exactly match canonical skills/*");
     for (const name of expectedNames) {
       const reported = findString(parsedInventory, value => new RegExp(`[\\\\/]skills[\\\\/]${escapeRegex(name)}(?:[\\\\/]SKILL\\.md)?$`, "i").test(value));
@@ -330,7 +332,14 @@ function escapeRegex(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"
 function parseJsonLines(value) { return value.split(/\r?\n/).filter(Boolean).flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } }); }
 function parseNdjson(value, label) { const lines = value.split(/\r?\n/).filter(Boolean); const parsed = lines.map(line => JSON.parse(line)); assert(parsed.length > 0, `${label} was empty`); return parsed; }
 function findString(value, predicate) { if (typeof value === "string") return predicate(value) ? value : undefined; if (Array.isArray(value)) { for (const item of value) { const found = findString(item, predicate); if (found) return found; } } else if (value && typeof value === "object") { for (const item of Object.values(value)) { const found = findString(item, predicate); if (found) return found; } } }
-function collectSkillNames(value) { if (Array.isArray(value)) return value.flatMap(collectSkillNames); if (!value || typeof value !== "object") return []; if (typeof value.name === "string" && typeof value.location === "string") return [value.name]; return Object.values(value).flatMap(collectSkillNames); }
+function collectSkillNames(value, projectRoot) {
+  if (Array.isArray(value)) return value.flatMap(item => collectSkillNames(item, projectRoot));
+  if (!value || typeof value !== "object") return [];
+  if (typeof value.name === "string" && typeof value.location === "string") {
+    return isInside(projectRoot, value.location) ? [value.name] : [];
+  }
+  return Object.values(value).flatMap(item => collectSkillNames(item, projectRoot));
+}
 function extractAbsolutePaths(value) { return [...value.matchAll(/[A-Za-z]:[\\/][^\r\n"]+/g)].map(match => match[0].trim()); }
 function finalText(events) { const strings = []; walk(events, value => { if (typeof value === "string") strings.push(value); }); return strings.filter(value => value.includes(EXPECTED_FACT)).at(-1)?.trim(); }
 function walk(value, visit) { visit(value); if (Array.isArray(value)) value.forEach(item => walk(item, visit)); else if (value && typeof value === "object") Object.values(value).forEach(item => walk(item, visit)); }

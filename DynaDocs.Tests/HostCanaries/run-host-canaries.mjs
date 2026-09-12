@@ -255,10 +255,14 @@ async function startProvider(requestsPath, mode = "opencode", providerCandidate)
 async function resolveCodexExecutable() {
   const command = "(Get-Command codex -CommandType Application).Source";
   const result = await run("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command]);
-  const executable = result.stdout.trim();
-  assert(executable.toLowerCase().endsWith("codex.exe"), `could not resolve codex.exe: ${executable}`);
-  await access(executable);
-  return executable;
+  const candidates = result.stdout.split(/\r?\n/).map(value => value.trim()).filter(value => value.toLowerCase().endsWith("codex.exe"));
+  for (const executable of candidates) {
+    try {
+      await access(executable);
+      return executable;
+    } catch {}
+  }
+  throw new Error(`could not resolve codex.exe: ${result.stdout.trim()}`);
 }
 
 function codexEnv(isolation, home, executable, port) {

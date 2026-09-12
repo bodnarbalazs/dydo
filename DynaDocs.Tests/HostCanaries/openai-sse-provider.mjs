@@ -35,8 +35,9 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (state === 1) {
-      assert(serialized.includes("mission-format.md"), "native skill result omitted the mission-format link");
-      const base = extractSkillBase(serialized);
+      const skillResult = findToolOutput(payload, "dyd91-skill");
+      assert(skillResult?.includes("mission-format.md"), "native skill result omitted the mission-format link");
+      const base = extractSkillBase(skillResult);
       derivedResourcePath = path.resolve(base, "resources", "mission-format.md");
       const fact = await readFile(derivedResourcePath, "utf8");
       assert(fact.includes(expectedFact), "derived resource did not contain the expected fact");
@@ -211,6 +212,21 @@ function extractSkillBase(serialized) {
     if (match) return match[1].trim().replace(/^<|>$/g, "");
   }
   throw new Error("could not derive teach's installed base from the native skill result");
+}
+
+function findToolOutput(value, callId) {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findToolOutput(item, callId);
+      if (found) return found;
+    }
+  } else if (value && typeof value === "object") {
+    if (value.type === "function_call_output" && value.call_id === callId && typeof value.output === "string") return value.output;
+    for (const item of Object.values(value)) {
+      const found = findToolOutput(item, callId);
+      if (found) return found;
+    }
+  }
 }
 
 function readBody(request) {

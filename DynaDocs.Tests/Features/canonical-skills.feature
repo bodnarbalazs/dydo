@@ -31,6 +31,10 @@ Feature: One canonical skill tree reaches every supported host
       | .claude/skills/<name>          |
       | .agents/skills/<name>          |
 
+  Scenario: Remove stale two-source guidance
+    Then current documentation and template mirrors describe skills/<name> as the only editable source
+    And canonical agent guidance does not instruct agents to maintain or compare per-host skill copies
+
   Scenario: Refuse a human-owned host directory before changing another host
     Given a human-owned Claude "teach" directory
     When I set up the canonical skills

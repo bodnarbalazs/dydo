@@ -1,0 +1,323 @@
+TAP version 13
+# Subtest: real c8 campaign keeps child-only, never-imported, and same-line callable identities
+not ok 1 - real c8 campaign keeps child-only, never-imported, and same-line callable identities
+  ---
+  duration_ms: 41.0836
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/cjs/loader:1247
+      throw err;
+      ^
+    
+    Error: Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\package.json
+        at Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+        at Function._load (node:internal/modules/cjs/loader:1070:27)
+        at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+        at Module.require (node:internal/modules/cjs/loader:1335:12)
+        at require (node:internal/modules/helpers:136:16)
+        at Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+        at Module._compile (node:internal/modules/cjs/loader:1562:14)
+        at Object..js (node:internal/modules/cjs/loader:1699:10)
+        at Module.load (node:internal/modules/cjs/loader:1313:32) {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: [
+        'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\package.json'
+      ]
+    }
+    
+    Node.js v22.13.0
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32) {
+    TestContext.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\tests\javascript_coverage.test.cjs:30:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:931:25)
+    Test.start (node:internal/test_runner/test:829:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: ambiguous coverage source identities fail closed
+not ok 2 - ambiguous coverage source identities fail closed
+  ---
+  duration_ms: 2.1789
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:49:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\package.json
+  code: 'MODULE_NOT_FOUND'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32)
+  ...
+# Subtest: duplicate native V8 script identities in one raw artifact fail closed
+not ok 3 - duplicate native V8 script identities in one raw artifact fail closed
+  ---
+  duration_ms: 1.5559
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:56:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\package.json
+  code: 'MODULE_NOT_FOUND'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32)
+  ...
+# Subtest: native V8 callable counts sum across inventories with an absent row contributing zero
+not ok 4 - native V8 callable counts sum across inventories with an absent row contributing zero
+  ---
+  duration_ms: 0.8343
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:69:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\package.json
+  code: 'MODULE_NOT_FOUND'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-73a22aa2\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32)
+  ...
+# node:internal/modules/cjs/loader:1247
+#   throw err;
+#   ^
+# Error: Cannot find module 'eslint'
+# Require stack:
+# - C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\package.json
+#     at Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+#     at Function._load (node:internal/modules/cjs/loader:1070:27)
+#     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+#     at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+#     at Module.require (node:internal/modules/cjs/loader:1335:12)
+#     at require (node:internal/modules/helpers:136:16)
+#     at Object.<anonymous> (C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\js_metrics.cjs:5:20)
+#     at Module._compile (node:internal/modules/cjs/loader:1562:14)
+#     at Object..js (node:internal/modules/cjs/loader:1699:10)
+#     at Module.load (node:internal/modules/cjs/loader:1313:32) {
+#   code: 'MODULE_NOT_FOUND',
+#   requireStack: [
+#     'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\dydo-mutation-73a22aa2\\\\DynaDocs.Tests\\\\coverage\\\\package.json'
+#   ]
+# }
+# Node.js v22.13.0
+# Subtest: C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\js_metrics.test.cjs
+not ok 2 - C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\js_metrics.test.cjs
+  ---
+  duration_ms: 39.7449
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\js_metrics.test.cjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: native Knip reporter rejects corrupt counters before producing policy output
+not ok 6 - native Knip reporter rejects corrupt counters before producing policy output
+  ---
+  duration_ms: 5.9208
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\knip_reporter.test.cjs:4:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot find module 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\node_modules\\knip\\dist\\reporters\\json.js' imported from C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\knip_reporter.mjs"
+  code: 'ERR_MODULE_NOT_FOUND'
+  stack: |-
+    finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    moduleResolve (node:internal/modules/esm/resolve:932:10)
+    defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)
+    #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)
+    ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)
+    ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)
+    ModuleJob._link (node:internal/modules/esm/module_job:135:49)
+  ...
+# Subtest: native Knip reporter rejects missing or duplicate workspace identities
+not ok 7 - native Knip reporter rejects missing or duplicate workspace identities
+  ---
+  duration_ms: 0.6548
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\tests\\knip_reporter.test.cjs:9:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot find module 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\node_modules\\knip\\dist\\reporters\\json.js' imported from C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-73a22aa2\\DynaDocs.Tests\\coverage\\knip_reporter.mjs"
+  code: 'ERR_MODULE_NOT_FOUND'
+  stack: |-
+    finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    moduleResolve (node:internal/modules/esm/resolve:932:10)
+    defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)
+    #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)
+    ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)
+    ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)
+    ModuleJob._link (node:internal/modules/esm/module_job:135:49)
+  ...
+# Subtest: discovery is recursive, exact, sorted, and excludes ordinary helpers
+ok 8 - discovery is recursive, exact, sorted, and excludes ordinary helpers
+  ---
+  duration_ms: 10.4175
+  ...
+# Subtest: missing Node tests fail closed
+ok 9 - missing Node tests fail closed
+  ---
+  duration_ms: 0.8669
+  ...
+# Subtest: maintained test command includes coverage and npm lifecycle suites
+ok 10 - maintained test command includes coverage and npm lifecycle suites
+  ---
+  duration_ms: 4.4867
+  ...
+# Subtest: configured Node adapter preserves literal argv, streams, and raw child exit 17
+ok 11 - configured Node adapter preserves literal argv, streams, and raw child exit 17
+  ---
+  duration_ms: 172.1458
+  ...
+# Subtest: downloadFile follows a redirect and writes the response body
+# [dydo] Downloading v3.0.0 for linux-x64...
+ok 12 - downloadFile follows a redirect and writes the response body
+  ---
+  duration_ms: 6.2712
+  ...
+# Subtest: downloadFile rejects a non-success response without creating an archive
+ok 13 - downloadFile rejects a non-success response without creating an archive
+  ---
+  duration_ms: 0.589
+  ...
+# Subtest: downloadFile removes a partial archive when the file stream fails
+ok 14 - downloadFile removes a partial archive when the file stream fails
+  ---
+  duration_ms: 0.5009
+  ...
+# Subtest: downloadFile rejects redirect loops and request errors
+ok 15 - downloadFile rejects redirect loops and request errors
+  ---
+  duration_ms: 0.6621
+  ...
+# Subtest: extractArchive expands a tar archive into the destination
+ok 16 - extractArchive expands a tar archive into the destination
+  ---
+  duration_ms: 28.3344
+  ...
+# Subtest: extractArchive expands a zip archive into the destination
+ok 17 - extractArchive expands a zip archive into the destination
+  ---
+  duration_ms: 946.8642
+  ...
+# [dydo] Download complete, extracting...
+# [dydo] Installation complete.
+# Subtest: downloadBinary downloads, extracts, cleans up, and returns the native path
+ok 18 - downloadBinary downloads, extracts, cleans up, and returns the native path
+  ---
+  duration_ms: 27.2361
+  ...
+# Subtest: an unsupported platform warns without failing npm installation
+ok 19 - an unsupported platform warns without failing npm installation
+  ---
+  duration_ms: 2.7682
+  ...
+# Subtest: an installed current binary skips the download
+ok 20 - an installed current binary skips the download
+  ---
+  duration_ms: 0.5661
+  ...
+# Subtest: a successful download records the installed version
+ok 21 - a successful download records the installed version
+  ---
+  duration_ms: 0.4619
+  ...
+# Subtest: a failed download reports recovery instructions and exits one
+ok 22 - a failed download reports recovery instructions and exits one
+  ---
+  duration_ms: 0.4893
+  ...
+# Subtest: canonical launcher reports unsupported and missing-binary failures
+ok 23 - canonical launcher reports unsupported and missing-binary failures
+  ---
+  duration_ms: 2.7479
+  ...
+# Subtest: canonical launcher preserves child error, code, and signal exits
+ok 24 - canonical launcher preserves child error, code, and signal exits
+  ---
+  duration_ms: 1.8338
+  ...
+# Subtest: canonical platform and path helpers retain supported, unsupported, and marker behavior
+ok 25 - canonical platform and path helpers retain supported, unsupported, and marker behavior
+  ---
+  duration_ms: 0.5225
+  ...
+# Subtest: reports a missing native binary with the documented exit status
+ok 26 - reports a missing native binary with the documented exit status
+  ---
+  duration_ms: 41.0181
+  ...
+# Subtest: preserves Node 22 synchronous spawn failure for an invalid Windows executable
+ok 27 - preserves Node 22 synchronous spawn failure for an invalid Windows executable
+  ---
+  duration_ms: 52.8116
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 0
+ok 28 - forwards representative arguments and streams from a native exit 0
+  ---
+  duration_ms: 208.4452
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 23
+ok 29 - forwards representative arguments and streams from a native exit 23
+  ---
+  duration_ms: 213.2142
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 77
+ok 30 - forwards representative arguments and streams from a native exit 77
+  ---
+  duration_ms: 196.5564
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 23
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1094.639

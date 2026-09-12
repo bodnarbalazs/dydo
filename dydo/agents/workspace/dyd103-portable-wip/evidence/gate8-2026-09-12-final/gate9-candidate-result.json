@@ -1,0 +1,271 @@
+{
+  "schema": 1,
+  "candidate": {
+    "commit": "3b9ba6d3c0440a8015bb7ecbc3564a959411e678",
+    "dirty": false
+  },
+  "operation": {
+    "name": "force-run"
+  },
+  "selectedStacks": [
+    "dotnet",
+    "python",
+    "node"
+  ],
+  "results": [
+    {
+      "stack": "dotnet",
+      "capability": "test",
+      "state": "passed",
+      "argv": [],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "git-worktree-copy-working-changes",
+        "evidence": {
+          "state": "verified",
+          "kind": "adapter",
+          "path": "DynaDocs.Tests/coverage/run_tests.py"
+        }
+      },
+      "environment": {},
+      "childExit": 0,
+      "resultExit": 0,
+      "artifacts": [],
+      "reason": "test verdict derived from the coverage row: suite exit 0 at DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json"
+    },
+    {
+      "stack": "dotnet",
+      "capability": "static",
+      "state": "invalid",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "dotnet",
+        "--gate",
+        "static"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "git-worktree-copy-working-changes",
+        "evidence": {
+          "state": "verified",
+          "kind": "adapter",
+          "path": "DynaDocs.Tests/coverage/run_tests.py"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "324698.125000000"
+      },
+      "childExit": 2,
+      "resultExit": 2,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/dotnet-static.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "stack": "dotnet",
+      "capability": "coverage",
+      "state": "passed",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "dotnet",
+        "--gate",
+        "coverage"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "git-worktree-copy-working-changes",
+        "evidence": {
+          "state": "verified",
+          "kind": "adapter",
+          "path": "DynaDocs.Tests/coverage/run_tests.py"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "324769.812000000"
+      },
+      "childExit": 0,
+      "resultExit": 0,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "stack": "python",
+      "capability": "test",
+      "state": "invalid",
+      "argv": [],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {},
+      "childExit": null,
+      "resultExit": 2,
+      "artifacts": [],
+      "reason": "suite verdict not established: the coverage row is invalid"
+    },
+    {
+      "stack": "python",
+      "capability": "static",
+      "state": "invalid",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "python",
+        "--gate",
+        "static"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "325696.328000000"
+      },
+      "childExit": 2,
+      "resultExit": 2,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/python-static.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "stack": "python",
+      "capability": "coverage",
+      "state": "invalid",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "python",
+        "--gate",
+        "coverage"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "325727.375000000"
+      },
+      "childExit": 1,
+      "resultExit": 2,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/python-coverage.json",
+          "required": true
+        }
+      ],
+      "reason": "required artifact was not produced or refreshed: DynaDocs.Tests/coverage/results/adapters/python-coverage.json"
+    },
+    {
+      "stack": "node",
+      "capability": "test",
+      "state": "failed",
+      "argv": [],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {},
+      "childExit": 1,
+      "resultExit": 1,
+      "artifacts": [],
+      "reason": "test verdict derived from the coverage row: suite exit 1 at DynaDocs.Tests/coverage/results/adapters/node-coverage.json"
+    },
+    {
+      "stack": "node",
+      "capability": "static",
+      "state": "invalid",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "node",
+        "--gate",
+        "static"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "325743.406000000"
+      },
+      "childExit": 2,
+      "resultExit": 2,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/node-static.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "stack": "node",
+      "capability": "coverage",
+      "state": "failed",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "node",
+        "--gate",
+        "coverage"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "325775.187000000"
+      },
+      "childExit": 1,
+      "resultExit": 1,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/node-coverage.json",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "aggregateExit": 2
+}

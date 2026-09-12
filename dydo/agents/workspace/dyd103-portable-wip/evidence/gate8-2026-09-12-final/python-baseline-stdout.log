@@ -1,0 +1,900 @@
+.............EEE......E....EE...................................................................E.........FFFEE...............E..........................FFEF.F...F.HEAD is now at 7a3c8e2 two changed C# targets
+.HEAD is now at 5231071 a current-python argv the in-process runner cannot dispatch
+.HEAD is now at 62dd7dd change the python target
+..HEAD is now at db0836f change the python target
+.HEAD is now at f3658ff change the python target
+.HEAD is now at 871fd9c a python test command no in-process runner can dispatch
+.HEAD is now at d4f6a9f change the python target
+.HEAD is now at 6a4a13e change the python target
+.HEAD is now at 3651f30 change the python target
+.HEAD is now at ea66af2 change the python target
+.HEAD is now at ea66af2 change the python target
+.HEAD is now at 78ffd22 change the python target
+...HEAD is now at 32fd3e3 base
+.HEAD is now at a7c9ec9 base
+.........................................................................................................................................................................E..EEE..FE...E.E..E...FFE....................................F...derived runner differs: C:\Users\User\AppData\Local\Temp\tmpzh_hk6ya\example.py
+.........................  Creating test worktree...
+  Worktree: C:\Users\User\AppData\Local\Temp\dydo-runner-stdin-_97dzqiq\dydo-test-stdin001
+  Running: dotnet test DynaDocs.sln -- RunConfiguration.TreatNoTestsAsError=true
+  Cleaning up worktree...
+.....................................F................................................  Creating test worktree...
+  Worktree: C:\Users\User\AppData\Local\Temp\dydo-runner-stdin-6z2rdh6l\dydo-test-stdin001
+  Running: dotnet test DynaDocs.sln -- RunConfiguration.TreatNoTestsAsError=true
+  Cleaning up worktree...
+.....................................F..........................................................................
+======================================================================
+ERROR: test_batch_duplicate_and_per_source_eligibility_are_measured_together (test_clones.NativeCloneCollectionTests.test_batch_duplicate_and_per_source_eligibility_are_measured_together)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_clones.py", line 58, in test_batch_duplicate_and_per_source_eligibility_are_measured_together
+    answer = collect_clones(self.measured(['first.py', 'second.py', 'small.py']))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_clones.py", line 80, in collect_clones
+    batch = _native(runner, paths, 'all')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_clones.py", line 43, in _native
+    raise ValueError('Native jscpd command failed: ' + command['stderr'])
+ValueError: Native jscpd command failed: C:\Users\User\AppData\Local\Temp\tmpnbqrfjce\output\commands\0000-jscpd-all.stderr
+
+======================================================================
+ERROR: test_source_without_a_measurable_identity_is_an_accounted_error (test_clones.NativeCloneCollectionTests.test_source_without_a_measurable_identity_is_an_accounted_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_clones.py", line 83, in test_source_without_a_measurable_identity_is_an_accounted_error
+    answer = collect_clones(self.runner(sources))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_clones.py", line 80, in collect_clones
+    batch = _native(runner, paths, 'all')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_clones.py", line 43, in _native
+    raise ValueError('Native jscpd command failed: ' + command['stderr'])
+ValueError: Native jscpd command failed: C:\Users\User\AppData\Local\Temp\tmpb_16rdvq\output\commands\0000-jscpd-all.stderr
+
+======================================================================
+ERROR: test_the_clone_collector_delegates_to_the_native_gate (test_clones.NativeCloneCollectionTests.test_the_clone_collector_delegates_to_the_native_gate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_clones.py", line 73, in test_the_clone_collector_delegates_to_the_native_gate
+    answer = self.measured(['small.py']).clones()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_collect.py", line 296, in clones
+    return collect_clones(self)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_clones.py", line 80, in collect_clones
+    batch = _native(runner, paths, 'all')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_clones.py", line 43, in _native
+    raise ValueError('Native jscpd command failed: ' + command['stderr'])
+ValueError: Native jscpd command failed: C:\Users\User\AppData\Local\Temp\tmp7ghm_lx1\output\commands\0000-jscpd-all.stderr
+
+======================================================================
+ERROR: test_campaign_mechanism_callables_stay_within_cognitive_budget (test_csharp_coverage.CSharpCoverageTests.test_campaign_mechanism_callables_stay_within_cognitive_budget)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_csharp_coverage.py", line 242, in test_campaign_mechanism_callables_stay_within_cognitive_budget
+    metrics = subprocess.run([
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_hop3_05_replay_applies_physical_eligibility_to_retained_collector_output (test_csharp_coverage.CSharpCoverageTests.test_hop3_05_replay_applies_physical_eligibility_to_retained_collector_output)
+Replay only: retained source facts are absent, so this deliberately stops before join.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_csharp_coverage.py", line 636, in test_hop3_05_replay_applies_physical_eligibility_to_retained_collector_output
+    pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\results\\native-g-20260909-hop3-05\\raw\\identity-pre.json'
+
+======================================================================
+ERROR: test_hop3_06_newly_derived_crlf_replay_completes_retained_join (test_csharp_coverage.CSharpCoverageTests.test_hop3_06_newly_derived_crlf_replay_completes_retained_join)
+Replay only: SourceBehavior and CRLF source bytes are newly derived from pinned ec97c1b4.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_csharp_coverage.py", line 655, in test_hop3_06_newly_derived_crlf_replay_completes_retained_join
+    pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\results\\native-g-20260909-hop3-06\\raw\\identity-pre.json'
+
+======================================================================
+ERROR: test_retained_c89_reqnroll_rows_normalize_without_loss_or_uri_errors (test_diagnostics.DiagnosticTests.test_retained_c89_reqnroll_rows_normalize_without_loss_or_uri_errors)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_diagnostics.py", line 151, in test_retained_c89_reqnroll_rows_normalize_without_loss_or_uri_errors
+    sarif = json.loads((retained / 'raw/analyzers-0.sarif').read_text(encoding='utf-8-sig'))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\results\\assurance\\run-3510c46004a847c4b24a94e4866b6743\\raw\\analyzers-0.sarif'
+
+======================================================================
+ERROR: test_python_coverage_gate_publishes_measured_findings_beside_inventory_gaps (test_gate_adapter.CoverageCampaignTests.test_python_coverage_gate_publishes_measured_findings_beside_inventory_gaps)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 483, in test_python_coverage_gate_publishes_measured_findings_beside_inventory_gaps
+    process = self.coverage_gate(root, output)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 464, in coverage_gate
+    return subprocess.run([str(STATIC_PYTHON), str(TOOLS / "gate_adapter.py"),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_python_coverage_gate_reports_a_failed_suite_before_any_policy (test_gate_adapter.CoverageCampaignTests.test_python_coverage_gate_reports_a_failed_suite_before_any_policy)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 500, in test_python_coverage_gate_reports_a_failed_suite_before_any_policy
+    process = self.coverage_gate(root, output)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 464, in coverage_gate
+    return subprocess.run([str(STATIC_PYTHON), str(TOOLS / "gate_adapter.py"),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_tools_name_both_interpreters_and_every_resolved_tool_pin (test_gate_adapter.PublishedProvenanceTests.test_tools_name_both_interpreters_and_every_resolved_tool_pin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 260, in test_tools_name_both_interpreters_and_every_resolved_tool_pin
+    self.assertEqual(hashlib.sha256(STATIC_PYTHON.read_bytes()).hexdigest(),
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1019, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\dydo\\_system\\.local\\static-gates\\python\\Scripts\\python.exe'
+
+======================================================================
+ERROR: test_the_native_dependency_graph_separates_cycles_gaps_and_foreign_modules (test_javascript_metrics.JavaScriptCollectorTests.test_the_native_dependency_graph_separates_cycles_gaps_and_foreign_modules)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_javascript_metrics.py", line 73, in test_the_native_dependency_graph_separates_cycles_gaps_and_foreign_modules
+    answer = runner.javascript_dependencies()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_collect.py", line 300, in javascript_dependencies
+    native = self.command_json('dependency-cruiser', ['node',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_collect.py", line 123, in command_json
+    raise ValueError(f"{name} failed with exit {row['exit_code']}; evidence {row['stderr']}")
+ValueError: dependency-cruiser failed with exit 1; evidence C:\Users\User\AppData\Local\Temp\dyd96-javascript-collectors-ln6v3cl9\gate-output\commands\0000-dependency-cruiser.stderr
+
+======================================================================
+ERROR: test_campaign_refuses_an_empty_selection_or_a_source_outside_the_root (test_python_coverage.PythonCoverageTests.test_campaign_refuses_an_empty_selection_or_a_source_outside_the_root)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_coverage.py", line 212, in test_campaign_refuses_an_empty_selection_or_a_source_outside_the_root
+    empty = _facade(root, root / "empty-selection", [], ["{python}"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_coverage.py", line 16, in _facade
+    return subprocess.run([
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_project_facade_tests_execute_the_canonical_source_identity (test_python_coverage.PythonCoverageTests.test_project_facade_tests_execute_the_canonical_source_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_coverage.py", line 87, in test_project_facade_tests_execute_the_canonical_source_identity
+    counters = self.campaign(root, Path(folder) / "evidence", [source],
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_coverage.py", line 74, in campaign
+    result = subprocess.run([
+             ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_real_unittest_and_python_child_share_native_campaign (test_python_coverage.PythonCoverageTests.test_real_unittest_and_python_child_share_native_campaign)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_coverage.py", line 118, in test_real_unittest_and_python_child_share_native_campaign
+    counters = self.campaign(root, output, ["subject.py"],
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_coverage.py", line 74, in campaign
+    result = subprocess.run([
+             ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_startup_bootstraps_a_cold_module_graph_beside_an_inherited_campaign (test_python_coverage.PythonCoverageTests.test_startup_bootstraps_a_cold_module_graph_beside_an_inherited_campaign)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_coverage.py", line 193, in test_startup_bootstraps_a_cold_module_graph_beside_an_inherited_campaign
+    child = subprocess.run([str(python), str(work / "cold_start.py"), str(tools), str(work)],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_a_source_vulture_cannot_parse_is_an_accounted_execution_failure (test_python_metrics.PythonCollectorTests.test_a_source_vulture_cannot_parse_is_an_accounted_execution_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 209, in test_a_source_vulture_cannot_parse_is_an_accounted_execution_failure
+    answer = self.collector(["unparsable.py"]).python_dead_code()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_collect.py", line 237, in python_dead_code
+    ruff = self.log.run('ruff', [self.python, '-m', 'ruff', 'check', '--isolated', '--select', 'F',
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_run.py", line 34, in run
+    result = subprocess.run(row['command'], cwd=row['cwd'], env=env, input=stdin,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_real_ruff_and_vulture_report_every_dead_python_identity (test_python_metrics.PythonCollectorTests.test_real_ruff_and_vulture_report_every_dead_python_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 197, in test_real_ruff_and_vulture_report_every_dead_python_identity
+    answer = runner.python_dead_code()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_collect.py", line 237, in python_dead_code
+    ruff = self.log.run('ruff', [self.python, '-m', 'ruff', 'check', '--isolated', '--select', 'F',
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\gate_run.py", line 34, in run
+    result = subprocess.run(row['command'], cwd=row['cwd'], env=env, input=stdin,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_decorated_callables_and_unicode_columns_use_exact_source_spans (test_python_metrics.PythonMetricsTests.test_decorated_callables_and_unicode_columns_use_exact_source_spans)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 145, in test_decorated_callables_and_unicode_columns_use_exact_source_spans
+    result = subprocess.run([str(python), str(Path(__file__).resolve().parents[1] / "python_metrics.py")],
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_module_metrics_keep_class_initializers_and_definition_expressions (test_python_metrics.PythonMetricsTests.test_module_metrics_keep_class_initializers_and_definition_expressions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 28, in test_module_metrics_keep_class_initializers_and_definition_expressions
+    result = subprocess.run([str(python), str(Path(__file__).resolve().parents[1] / "python_metrics.py")],
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+ERROR: test_real_complexipy_and_radon_score_nested_callables_separately (test_python_metrics.PythonMetricsTests.test_real_complexipy_and_radon_score_nested_callables_separately)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 134, in test_real_complexipy_and_radon_score_nested_callables_separately
+    result = subprocess.run([str(python), str(Path(__file__).resolve().parents[1] / "python_metrics.py")],
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+======================================================================
+FAIL: test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target (test_gate_adapter.CoverageCampaignTests.test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 566, in test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target
+    self.assertEqual("pass", answer["status"], json.dumps(answer["findings"]))
+AssertionError: 'pass' != 'fail'
+- pass
++ fail
+ : [{"gate": "functional", "child_exit": 1}]
+
+======================================================================
+FAIL: test_node_coverage_refuses_a_reused_output_and_deleted_maintained_inputs (test_gate_adapter.CoverageCampaignTests.test_node_coverage_refuses_a_reused_output_and_deleted_maintained_inputs)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 606, in test_node_coverage_refuses_a_reused_output_and_deleted_maintained_inputs
+    self.assertEqual("error", answer["status"])
+AssertionError: 'error' != 'fail'
+- error
++ fail
+
+
+======================================================================
+FAIL: test_node_coverage_reports_uncovered_targets_beside_extensionless_gaps (test_gate_adapter.CoverageCampaignTests.test_node_coverage_reports_uncovered_targets_beside_extensionless_gaps)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_gate_adapter.py", line 593, in test_node_coverage_reports_uncovered_targets_beside_extensionless_gaps
+    self.assertEqual(["line-coverage"], [row["gate"] for row in answer["findings"]])
+AssertionError: Lists differ: ['line-coverage'] != ['functional']
+
+First differing element 0:
+'line-coverage'
+'functional'
+
+- ['line-coverage']
++ ['functional']
+
+======================================================================
+FAIL: test_a_module_the_metrics_producer_rejects_is_an_accounted_error (test_javascript_metrics.JavaScriptCollectorTests.test_a_module_the_metrics_producer_rejects_is_an_accounted_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_javascript_metrics.py", line 66, in test_a_module_the_metrics_producer_rejects_is_an_accounted_error
+    self.assertEqual(["orphan.cjs"], [row["path"] for row in answer["facts"]["modules"]])
+AssertionError: Lists differ: ['orphan.cjs'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'orphan.cjs'
+
+- ['orphan.cjs']
++ []
+
+======================================================================
+FAIL: test_real_sonarjs_metrics_are_measured_for_both_module_kinds (test_javascript_metrics.JavaScriptCollectorTests.test_real_sonarjs_metrics_are_measured_for_both_module_kinds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_javascript_metrics.py", line 52, in test_real_sonarjs_metrics_are_measured_for_both_module_kinds
+    self.assertEqual("fail", answer["status"])
+AssertionError: 'fail' != 'error'
+- fail
++ error
+
+
+======================================================================
+FAIL: test_official_metrics_and_failure_contracts (test_javascript_metrics.JavaScriptMetricsTests.test_official_metrics_and_failure_contracts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_javascript_metrics.py", line 98, in test_official_metrics_and_failure_contracts
+    self.assertEqual(0, result["subject_status"], stdout + stderr)
+AssertionError: 0 != 1 : TAP version 13
+# Subtest: real c8 campaign keeps child-only, never-imported, and same-line callable identities
+not ok 1 - real c8 campaign keeps child-only, never-imported, and same-line callable identities
+  ---
+  duration_ms: 38.8284
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/cjs/loader:1247
+      throw err;
+      ^
+    
+    Error: Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\package.json
+        at Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+        at Function._load (node:internal/modules/cjs/loader:1070:27)
+        at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+        at Module.require (node:internal/modules/cjs/loader:1335:12)
+        at require (node:internal/modules/helpers:136:16)
+        at Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+        at Module._compile (node:internal/modules/cjs/loader:1562:14)
+        at Object..js (node:internal/modules/cjs/loader:1699:10)
+        at Module.load (node:internal/modules/cjs/loader:1313:32) {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: [
+        'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\package.json'
+      ]
+    }
+    
+    Node.js v22.13.0
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32) {
+    TestContext.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\javascript_coverage.test.cjs:30:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:931:25)
+    Test.start (node:internal/test_runner/test:829:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: ambiguous coverage source identities fail closed
+not ok 2 - ambiguous coverage source identities fail closed
+  ---
+  duration_ms: 1.9561
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:49:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\package.json
+  code: 'MODULE_NOT_FOUND'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32)
+  ...
+# Subtest: duplicate native V8 script identities in one raw artifact fail closed
+not ok 3 - duplicate native V8 script identities in one raw artifact fail closed
+  ---
+  duration_ms: 1.2203
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:56:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\package.json
+  code: 'MODULE_NOT_FOUND'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32)
+  ...
+# Subtest: native V8 callable counts sum across inventories with an absent row contributing zero
+not ok 4 - native V8 callable counts sum across inventories with an absent row contributing zero
+  ---
+  duration_ms: 0.6016
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\javascript_coverage.test.cjs:69:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cannot find module 'eslint'
+    Require stack:
+    - C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\package.json
+  code: 'MODULE_NOT_FOUND'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    Function._load (node:internal/modules/cjs/loader:1070:27)
+    TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    Module.require (node:internal/modules/cjs/loader:1335:12)
+    require (node:internal/modules/helpers:136:16)
+    Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    Module._compile (node:internal/modules/cjs/loader:1562:14)
+    Object..js (node:internal/modules/cjs/loader:1699:10)
+    Module.load (node:internal/modules/cjs/loader:1313:32)
+  ...
+# node:internal/modules/cjs/loader:1247
+#   throw err;
+#   ^
+# Error: Cannot find module 'eslint'
+# Require stack:
+# - C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\package.json
+#     at Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+#     at Function._load (node:internal/modules/cjs/loader:1070:27)
+#     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+#     at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+#     at Module.require (node:internal/modules/cjs/loader:1335:12)
+#     at require (node:internal/modules/helpers:136:16)
+#     at Object.<anonymous> (C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\js_metrics.cjs:5:20)
+#     at Module._compile (node:internal/modules/cjs/loader:1562:14)
+#     at Object..js (node:internal/modules/cjs/loader:1699:10)
+#     at Module.load (node:internal/modules/cjs/loader:1313:32) {
+#   code: 'MODULE_NOT_FOUND',
+#   requireStack: [
+#     'C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\dydo-mutation-d35336a3\\\\DynaDocs.Tests\\\\coverage\\\\package.json'
+#   ]
+# }
+# Node.js v22.13.0
+# Subtest: C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\js_metrics.test.cjs
+not ok 2 - C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\js_metrics.test.cjs
+  ---
+  duration_ms: 38.344
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\js_metrics.test.cjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: native Knip reporter rejects corrupt counters before producing policy output
+not ok 6 - native Knip reporter rejects corrupt counters before producing policy output
+  ---
+  duration_ms: 6.8925
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\knip_reporter.test.cjs:4:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot find module 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\node_modules\\knip\\dist\\reporters\\json.js' imported from C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\knip_reporter.mjs"
+  code: 'ERR_MODULE_NOT_FOUND'
+  stack: |-
+    finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    moduleResolve (node:internal/modules/esm/resolve:932:10)
+    defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)
+    #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)
+    ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)
+    ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)
+    ModuleJob._link (node:internal/modules/esm/module_job:135:49)
+  ...
+# Subtest: native Knip reporter rejects missing or duplicate workspace identities
+not ok 7 - native Knip reporter rejects missing or duplicate workspace identities
+  ---
+  duration_ms: 0.6489
+  location: 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\tests\\knip_reporter.test.cjs:9:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot find module 'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\node_modules\\knip\\dist\\reporters\\json.js' imported from C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\knip_reporter.mjs"
+  code: 'ERR_MODULE_NOT_FOUND'
+  stack: |-
+    finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    moduleResolve (node:internal/modules/esm/resolve:932:10)
+    defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)
+    #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)
+    ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)
+    ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)
+    ModuleJob._link (node:internal/modules/esm/module_job:135:49)
+  ...
+# Subtest: discovery is recursive, exact, sorted, and excludes ordinary helpers
+ok 8 - discovery is recursive, exact, sorted, and excludes ordinary helpers
+  ---
+  duration_ms: 10.0304
+  ...
+# Subtest: missing Node tests fail closed
+ok 9 - missing Node tests fail closed
+  ---
+  duration_ms: 0.8443
+  ...
+# Subtest: maintained test command includes coverage and npm lifecycle suites
+ok 10 - maintained test command includes coverage and npm lifecycle suites
+  ---
+  duration_ms: 3.883
+  ...
+# Subtest: configured Node adapter preserves literal argv, streams, and raw child exit 17
+ok 11 - configured Node adapter preserves literal argv, streams, and raw child exit 17
+  ---
+  duration_ms: 165.4573
+  ...
+# Subtest: downloadFile follows a redirect and writes the response body
+# [dydo] Downloading v3.0.0 for linux-x64...
+ok 12 - downloadFile follows a redirect and writes the response body
+  ---
+  duration_ms: 5.7104
+  ...
+# Subtest: downloadFile rejects a non-success response without creating an archive
+ok 13 - downloadFile rejects a non-success response without creating an archive
+  ---
+  duration_ms: 0.5137
+  ...
+# Subtest: downloadFile removes a partial archive when the file stream fails
+ok 14 - downloadFile removes a partial archive when the file stream fails
+  ---
+  duration_ms: 0.4189
+  ...
+# Subtest: downloadFile rejects redirect loops and request errors
+ok 15 - downloadFile rejects redirect loops and request errors
+  ---
+  duration_ms: 0.5821
+  ...
+# Subtest: extractArchive expands a tar archive into the destination
+ok 16 - extractArchive expands a tar archive into the destination
+  ---
+  duration_ms: 30.87
+  ...
+# Subtest: extractArchive expands a zip archive into the destination
+ok 17 - extractArchive expands a zip archive into the destination
+  ---
+  duration_ms: 1059.8782
+  ...
+# [dydo] Download complete, extracting...
+# [dydo] Installation complete.
+# Subtest: downloadBinary downloads, extracts, cleans up, and returns the native path
+ok 18 - downloadBinary downloads, extracts, cleans up, and returns the native path
+  ---
+  duration_ms: 28.0335
+  ...
+# Subtest: an unsupported platform warns without failing npm installation
+ok 19 - an unsupported platform warns without failing npm installation
+  ---
+  duration_ms: 2.8555
+  ...
+# Subtest: an installed current binary skips the download
+ok 20 - an installed current binary skips the download
+  ---
+  duration_ms: 0.4857
+  ...
+# Subtest: a successful download records the installed version
+ok 21 - a successful download records the installed version
+  ---
+  duration_ms: 0.4632
+  ...
+# Subtest: a failed download reports recovery instructions and exits one
+ok 22 - a failed download reports recovery instructions and exits one
+  ---
+  duration_ms: 0.5232
+  ...
+# Subtest: canonical launcher reports unsupported and missing-binary failures
+ok 23 - canonical launcher reports unsupported and missing-binary failures
+  ---
+  duration_ms: 2.7182
+  ...
+# Subtest: canonical launcher preserves child error, code, and signal exits
+ok 24 - canonical launcher preserves child error, code, and signal exits
+  ---
+  duration_ms: 1.7081
+  ...
+# Subtest: canonical platform and path helpers retain supported, unsupported, and marker behavior
+ok 25 - canonical platform and path helpers retain supported, unsupported, and marker behavior
+  ---
+  duration_ms: 0.53
+  ...
+# Subtest: reports a missing native binary with the documented exit status
+ok 26 - reports a missing native binary with the documented exit status
+  ---
+  duration_ms: 41.1429
+  ...
+# Subtest: preserves Node 22 synchronous spawn failure for an invalid Windows executable
+ok 27 - preserves Node 22 synchronous spawn failure for an invalid Windows executable
+  ---
+  duration_ms: 49.6646
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 0
+ok 28 - forwards representative arguments and streams from a native exit 0
+  ---
+  duration_ms: 213.0662
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 23
+ok 29 - forwards representative arguments and streams from a native exit 23
+  ---
+  duration_ms: 209.0639
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 77
+ok 30 - forwards representative arguments and streams from a native exit 77
+  ---
+  duration_ms: 209.6026
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 23
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1209.4247
+
+
+======================================================================
+FAIL: test_collector_measures_the_real_maintained_javascript_graph (test_knip.KnipAccountingTests.test_collector_measures_the_real_maintained_javascript_graph)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_knip.py", line 123, in test_collector_measures_the_real_maintained_javascript_graph
+    self.assertEqual([], answer['errors'])
+AssertionError: Lists differ: [] != [{'message': 'Incomplete or duplicate nati[1108 chars]32}}]
+
+Second list contains 2 additional elements.
+First extra element 0:
+{'message': 'Incomplete or duplicate native report rows'}
+
+Diff is 1566 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_native_single_graph_preserves_cross_package_test_only_consumer (test_knip.KnipAccountingTests.test_native_single_graph_preserves_cross_package_test_only_consumer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_knip.py", line 90, in test_native_single_graph_preserves_cross_package_test_only_consumer
+    self.assertEqual(expected, measure())
+                               ^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_knip.py", line 87, in measure
+    self.assertEqual([], report['errors'])
+AssertionError: Lists differ: [] != [{'message': 'Incomplete or duplicate native report rows'}]
+
+Second list contains 1 additional elements.
+First extra element 0:
+{'message': 'Incomplete or duplicate native report rows'}
+
+- []
++ [{'message': 'Incomplete or duplicate native report rows'}]
+
+======================================================================
+FAIL: test_a_module_over_the_cognitive_ceiling_is_its_own_finding (test_python_metrics.PythonCollectorTests.test_a_module_over_the_cognitive_ceiling_is_its_own_finding)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 184, in test_a_module_over_the_cognitive_ceiling_is_its_own_finding
+    self.assertEqual([{"path": "tangled.py", "member": "<module>", "gate": "cognitive",
+AssertionError: Lists differ: [{'path': 'tangled.py', 'member': '<module[51 chars] 20}] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+{'path': 'tangled.py', 'member': '<module>', 'gate': 'cognitive', 'actual': 42, 'threshold': 20}
+
++ []
+- [{'actual': 42,
+-   'gate': 'cognitive',
+-   'member': '<module>',
+-   'path': 'tangled.py',
+-   'threshold': 20}]
+
+======================================================================
+FAIL: test_python_source_metrics_normalize_crlf_only_for_subprocess_transport (test_python_metrics.PythonMetricsTests.test_python_source_metrics_normalize_crlf_only_for_subprocess_transport)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 78, in test_python_source_metrics_normalize_crlf_only_for_subprocess_transport
+    self.assertEqual("pass", measured["status"], measured)
+AssertionError: 'pass' != 'error'
+- pass
++ error
+ : {'status': 'error', 'facts': {'modules': []}, 'findings': [], 'errors': [{'path': 'subject.py', 'message': 'Python metric process failed (C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\dydo\\_system\\.local\\static-gates\\python\\Scripts\\python.exe): [WinError 2] The system cannot find the file specified'}]}
+
+======================================================================
+FAIL: test_python_source_metrics_use_local_process_and_missing_interpreter_fails_closed (test_python_metrics.PythonMetricsTests.test_python_source_metrics_use_local_process_and_missing_interpreter_fails_closed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_python_metrics.py", line 48, in test_python_source_metrics_use_local_process_and_missing_interpreter_fails_closed
+    self.assertEqual("pass", measured["status"], measured)
+AssertionError: 'pass' != 'error'
+- pass
++ error
+ : {'status': 'error', 'facts': {'modules': []}, 'findings': [], 'errors': [{'path': 'subject.py', 'message': 'Python metric process failed (C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\dydo\\_system\\.local\\static-gates\\python\\Scripts\\python.exe): [WinError 2] The system cannot find the file specified'}]}
+
+======================================================================
+FAIL: test_javascript_native_tokens_exclude_comments_and_preserve_shebang (test_source_tokens.SourceTokenTests.test_javascript_native_tokens_exclude_comments_and_preserve_shebang)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_source_tokens.py", line 43, in test_javascript_native_tokens_exclude_comments_and_preserve_shebang
+    before = facts('const text="雪😀"; const a=()=>1, b=()=>2;')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_source_tokens.py", line 41, in facts
+    self.assertEqual(0, result.returncode, result.stderr)
+AssertionError: 0 != 1 : node:internal/modules/cjs/loader:1247
+  throw err;
+  ^
+
+Error: Cannot find module 'eslint'
+Require stack:
+- C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\package.json
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+    at Function._load (node:internal/modules/cjs/loader:1070:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    at Module.require (node:internal/modules/cjs/loader:1335:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\js_metrics.cjs:5:20)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object..js (node:internal/modules/cjs/loader:1699:10)
+    at Module.load (node:internal/modules/cjs/loader:1313:32) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3\\DynaDocs.Tests\\coverage\\package.json'
+  ]
+}
+
+Node.js v22.13.0
+
+
+======================================================================
+FAIL: test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set (test_testing_facade.PortableTestingFacadeTests.test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_testing_facade.py", line 1001, in test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set
+    self.assertTrue('no surviving or uncovered changed-code mutants' in normalized
+AssertionError: False is not true : dydo/reference/coverage-tools.md
+
+======================================================================
+FAIL: test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set (test_testing_facade.TestingFacadeTests.test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dydo-mutation-d35336a3\DynaDocs.Tests\coverage\tests\test_testing_facade.py", line 1001, in test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set
+    self.assertTrue('no surviving or uncovered changed-code mutants' in normalized
+AssertionError: False is not true : dydo/reference/coverage-tools.md
+
+----------------------------------------------------------------------
+Ran 637 tests in 450.396s
+
+FAILED (failures=14, errors=20)
+
+##DYDO-SUITE-COMPLETE 68c0599f068441a58689f097843dea9f exit=1##

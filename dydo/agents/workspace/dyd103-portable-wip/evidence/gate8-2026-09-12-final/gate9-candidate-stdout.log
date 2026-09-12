@@ -1,0 +1,19 @@
+dotnet static: INVALID (child exit 2)
+HEAD is now at 3b9ba6d3 DYD-103 fix: admit the configured mutation row in the inline facade contract
+
+--- Running tests (worktree-isolated) ---
+  Creating test worktree...
+  Worktree: C:\Users\User\AppData\Local\Temp\dydo-test-a6cda400
+  Cleaning up worktree...
+
+  Tests passed
+dotnet coverage: PASSED (child exit 0)
+dotnet test: PASSED (child exit 0): test verdict derived from the coverage row: suite exit 0 at DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json
+python static: INVALID (child exit 2)
+python coverage: INVALID (child exit 1): required artifact was not produced or refreshed: DynaDocs.Tests/coverage/results/adapters/python-coverage.json
+python test: INVALID: suite verdict not established: the coverage row is invalid
+node static: INVALID (child exit 2)
+node coverage: FAILED (child exit 1)
+node test: FAILED (child exit 1): test verdict derived from the coverage row: suite exit 1 at DynaDocs.Tests/coverage/results/adapters/node-coverage.json
+Aggregate: 2
+Result: C:\Users\User\Desktop\Projects\DynaDocs\.worktrees\dyd103-prod\DynaDocs.Tests\coverage\results\run-1789210008854-7d27750e\result.json

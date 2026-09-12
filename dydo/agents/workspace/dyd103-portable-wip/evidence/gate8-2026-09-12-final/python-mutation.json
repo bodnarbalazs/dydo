@@ -1,0 +1,2077 @@
+{
+  "candidate": {
+    "commit": "3b9ba6d3c0440a8015bb7ecbc3564a959411e678",
+    "dirty": false,
+    "sourceFingerprint": "31dbd3d1c18abf8c2c5154ad6745deca92f47ac12ed2a3002496ec983ee4cc2c"
+  },
+  "collectors": {
+    "mutation": {
+      "raw": [
+        {
+          "path": "python/suite_runner.py",
+          "sha256": "e48e40a3b4647f1583a45daf5b429da36451256116f82a380cc71405b831ad6e"
+        }
+      ],
+      "status": "error"
+    }
+  },
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.worktrees\\dyd103-prod\\dydo\\_system\\.local\\mutation\\python\\Scripts\\python.exe",
+        "-B",
+        "-c",
+        "import importlib.metadata as m;print(m.version('cosmic-ray'))"
+      ],
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3",
+      "elapsedSeconds": 0.09399999998277053,
+      "exit": 0,
+      "name": "cosmic-ray-version",
+      "sha256s": {
+        "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout.log": "aa969f4403e9e133911d6f1ae1b20331fa52f6ca6a5e610946935d28215b41e8"
+      },
+      "stderr": "python/job-cosmic-ray-version/stderr.log",
+      "stdout": "python/job-cosmic-ray-version/stdout.log"
+    },
+    {
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.worktrees\\dyd103-prod\\DynaDocs.Tests\\coverage\\results\\assurance\\run-68c0599f068441a58689f097843dea9f\\python\\suite_runner.py",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "DynaDocs.Tests/coverage/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dydo-mutation-d35336a3",
+      "elapsedSeconds": 451.0469999999623,
+      "exit": 1,
+      "name": "baseline",
+      "sha256s": {
+        "stderr.log": "b964e7063fab3d306dfe385fa1d09c91125ecba9399e90945a000b29ccbad63a",
+        "stdout.log": "682ab32cfe5e35cd5e339569bbabe02f8629fcfe4232d375193c20ecb208bbae"
+      },
+      "stderr": "python/job-baseline/stderr.log",
+      "stdout": "python/job-baseline/stdout.log"
+    }
+  ],
+  "exitCode": 2,
+  "findings": [],
+  "gaps": [
+    {
+      "reason": "baseline test run failed (exit 1)"
+    }
+  ],
+  "gate": "mutation",
+  "inventory": {
+    "path": "assurance/run-68c0599f068441a58689f097843dea9f/inventory.json",
+    "sha256": "bcba65692d222c76c6d0ce7e3a3a595b8c9d3964f7429f2953ea5455646c2841"
+  },
+  "measurementComplete": false,
+  "mutation": {
+    "base": "2e31b1d0915529926a79224424c18620ee8003e1",
+    "baseline": {
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.worktrees\\dyd103-prod\\DynaDocs.Tests\\coverage\\results\\assurance\\run-68c0599f068441a58689f097843dea9f\\python\\suite_runner.py",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "DynaDocs.Tests/coverage/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "exit": 1,
+      "seconds": 451.0469999999623
+    },
+    "counts": {
+      "compileError": 0,
+      "generated": 0,
+      "ignored": 0,
+      "killed": 0,
+      "noCoverage": 0,
+      "runtimeError": 0,
+      "survived": 0,
+      "timeout": 0,
+      "unknown": 0,
+      "unrun": 0,
+      "valid": 0
+    },
+    "rawReports": [
+      {
+        "path": "python/suite_runner.py",
+        "sha256": "e48e40a3b4647f1583a45daf5b429da36451256116f82a380cc71405b831ad6e"
+      }
+    ],
+    "score": null,
+    "selection": {
+      "changedTargets": [
+        "DynaDocs.Tests/coverage/associations.py",
+        "DynaDocs.Tests/coverage/csharp_coverage.py",
+        "DynaDocs.Tests/coverage/csharp_join.py",
+        "DynaDocs.Tests/coverage/gap_check.py",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "DynaDocs.Tests/coverage/gate_clones.py",
+        "DynaDocs.Tests/coverage/gate_collect.py",
+        "DynaDocs.Tests/coverage/gate_diagnostics.py",
+        "DynaDocs.Tests/coverage/gate_inventory.py",
+        "DynaDocs.Tests/coverage/gate_knip.py",
+        "DynaDocs.Tests/coverage/gate_policy.py",
+        "DynaDocs.Tests/coverage/gate_run.py",
+        "DynaDocs.Tests/coverage/gate_versions.py",
+        "DynaDocs.Tests/coverage/inventory.py",
+        "DynaDocs.Tests/coverage/mutation_adapter.py",
+        "DynaDocs.Tests/coverage/mutation_summary.py",
+        "DynaDocs.Tests/coverage/positions.py",
+        "DynaDocs.Tests/coverage/python_coverage.py",
+        "DynaDocs.Tests/coverage/python_join.py",
+        "DynaDocs.Tests/coverage/python_metrics.py",
+        "DynaDocs.Tests/coverage/python_runtime.py",
+        "DynaDocs.Tests/coverage/report.py",
+        "DynaDocs.Tests/coverage/run_tests.py",
+        "DynaDocs.Tests/coverage/source_tokens.py",
+        "DynaDocs.Tests/coverage/sync_testing_example.py",
+        "DynaDocs.Tests/coverage/windows_job.py"
+      ],
+      "mode": "widened",
+      "reason": "excluded source changed",
+      "selected": [
+        "DynaDocs.Tests/coverage/associations.py",
+        "DynaDocs.Tests/coverage/csharp_coverage.py",
+        "DynaDocs.Tests/coverage/csharp_join.py",
+        "DynaDocs.Tests/coverage/gap_check.py",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "DynaDocs.Tests/coverage/gate_clones.py",
+        "DynaDocs.Tests/coverage/gate_collect.py",
+        "DynaDocs.Tests/coverage/gate_diagnostics.py",
+        "DynaDocs.Tests/coverage/gate_inventory.py",
+        "DynaDocs.Tests/coverage/gate_knip.py",
+        "DynaDocs.Tests/coverage/gate_policy.py",
+        "DynaDocs.Tests/coverage/gate_run.py",
+        "DynaDocs.Tests/coverage/gate_versions.py",
+        "DynaDocs.Tests/coverage/inventory.py",
+        "DynaDocs.Tests/coverage/mutation_adapter.py",
+        "DynaDocs.Tests/coverage/mutation_summary.py",
+        "DynaDocs.Tests/coverage/positions.py",
+        "DynaDocs.Tests/coverage/python_coverage.py",
+        "DynaDocs.Tests/coverage/python_join.py",
+        "DynaDocs.Tests/coverage/python_metrics.py",
+        "DynaDocs.Tests/coverage/python_runtime.py",
+        "DynaDocs.Tests/coverage/report.py",
+        "DynaDocs.Tests/coverage/run_tests.py",
+        "DynaDocs.Tests/coverage/source_tokens.py",
+        "DynaDocs.Tests/coverage/sync_testing_example.py",
+        "DynaDocs.Tests/coverage/windows_job.py"
+      ],
+      "witness": [
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/admiral/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/bro/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/chief-of-staff/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/co-thinker/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/code-writer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/codebase-design/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/codebase-design/resources/deepening.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/codebase-design/resources/design-it-twice.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/diagnosing-bugs/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/docs-writer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/domain-modeling/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/grill-me/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/grilling/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/handoff/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/handoff/agents/openai.yaml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/hardener/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/implementer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/implementer/resources/mocking.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/implementer/resources/tests.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/improve-codebase-architecture/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/improve-codebase-architecture/resources/html-report.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/inquisitor/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/issue-captain/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/issue-planner/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/manager/agents/openai.yaml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/project-planner/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/prototype/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/prototype/resources/logic.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/prototype/resources/ui.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/research/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/resources/code.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/resources/docs.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/resources/issue-plan.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/resources/merge.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/resources/project-plan.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/resources/spec.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/reviewer/resources/tests.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/scout/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/self-improvement/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/show-me/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/specifier/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/specifier/resources/bug.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/specifier/resources/inquisition.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/specifier/resources/merge.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/teach/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/teach/agents/openai.yaml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/teach/resources/glossary-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/teach/resources/learning-record-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/teach/resources/mission-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/teach/resources/resources-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/test-writer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/to-project/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/to-project/agents/openai.yaml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/walkthrough/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/wayfinder/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/wizard/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/wizard/resources/template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/writing-for-agents/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/writing-for-agents/resources/skill-mechanics.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".agents/skills/writing-for-humans/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/code-writer.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/docs-writer.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/hardener.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/implementer.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/inquisitor.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/issue-captain.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/issue-planner.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/project-planner.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/research.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/reviewer.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/scout.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/specifier.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/agents/test-writer.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/admiral/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/bro/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/chief-of-staff/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/co-thinker/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/code-writer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/codebase-design/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/codebase-design/resources/deepening.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/codebase-design/resources/design-it-twice.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/diagnosing-bugs/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/docs-writer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/domain-modeling/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/grill-me/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/grilling/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/handoff/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/hardener/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/implementer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/implementer/resources/mocking.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/implementer/resources/tests.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/improve-codebase-architecture/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/improve-codebase-architecture/resources/html-report.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/inquisitor/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/issue-captain/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/issue-planner/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/project-planner/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/prototype/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/prototype/resources/logic.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/prototype/resources/ui.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/research/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/resources/code.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/resources/docs.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/resources/issue-plan.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/resources/merge.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/resources/project-plan.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/resources/spec.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/reviewer/resources/tests.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/scout/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/self-improvement/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/show-me/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/specifier/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/specifier/resources/bug.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/specifier/resources/inquisition.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/specifier/resources/merge.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/teach/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/teach/resources/glossary-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/teach/resources/learning-record-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/teach/resources/mission-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/teach/resources/resources-format.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/test-writer/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/to-project/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/walkthrough/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/wayfinder/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/wizard/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/wizard/resources/template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/writing-for-agents/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/writing-for-agents/resources/skill-mechanics.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".claude/skills/writing-for-humans/SKILL.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/code-writer.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/docs-writer.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/hardener.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/implementer.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/inquisitor.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/issue-captain.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/issue-planner.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/project-planner.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/research.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/reviewer.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/scout.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/specifier.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".codex/agents/test-writer.toml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".config/dotnet-tools.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".editorconfig"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".gitattributes"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".github/workflows/release.yml"
+        },
+        {
+          "classification": "no obligation",
+          "path": ".gitignore"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Directory.Build.props"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Acceptance/GapCheckAotSmoke.ps1"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Acceptance/RunExperimentalBeta.ps1"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/DynaDocs.Tests.csproj"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/assurance-adoption.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/dynamic-task-model-selection.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/experimental-beta.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/fresh-installation.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/mutation-assurance.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/optional-summaries.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/template-switchboard.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/testing-facade.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/Features/workflow-retirement.feature"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/.gitignore"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/SonarLint.xml"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/coverage.runsettings"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/metrics/packages.lock.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/mutation/.gitignore"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/mutation/package-lock.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/mutation/package.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/mutation/stryker-js.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/mutation/stryker-net.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/package-lock.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/package.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-abnormal.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-exception.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-incompetent.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-killed-marker-exit-zero.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-killed-without-marker.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-killed.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-no-test.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-partial-session.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-skipped.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-survived.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/cosmic-ray-timeout.sqlite"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/origin.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-js-killed.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-js-runtime-error.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-js-survived.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-js-timeout.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-js-two-files.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-js-zero-mutants.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-compile-error.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-foreign-mutant.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-ignored.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-killed.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-mutate-filter-ignored.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-no-coverage.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-pending.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-runtime-error.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-survived.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-timeout.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tests/fixtures/mutation/stryker-net-zero-mutants.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/coverage/tier_registry.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.Tests/reqnroll.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "DynaDocs.csproj"
+        },
+        {
+          "classification": "no obligation",
+          "path": "README.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "THIRD-PARTY-NOTICES.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/_changelog.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/_decisions.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/_guides.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/_pitfalls.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/_reference.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/_understand.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/about-dynadocs.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/codebase-design-resource-deepening.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/codebase-design-resource-design-it-twice.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/coding-standards.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/dydo-commands.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/dydo-glossary.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/implementer-resource-mocking.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/implementer-resource-tests.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/improve-codebase-architecture-resource-html-report.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/index.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/linear-workspace-standard.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/prototype-resource-logic.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/prototype-resource-ui.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-codebase-design-resource-deepening.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-codebase-design-resource-design-it-twice.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-implementer-resource-mocking.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-implementer-resource-tests.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-improve-codebase-architecture-resource-html-report.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-prototype-resource-logic.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-prototype-resource-ui.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-reviewer-resource-code.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-reviewer-resource-docs.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-reviewer-resource-merge.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-reviewer-resource-project-plan.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-reviewer-resource-spec.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-specifier-resource-bug.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-specifier-resource-inquisition.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-specifier-resource-merge.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-teach-resource-glossary-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-teach-resource-learning-record-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-teach-resource-mission-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-teach-resource-resources-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-wizard-resource-template.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/resource-writing-for-agents-resource-skill-mechanics.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/reviewer-resource-code.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/reviewer-resource-docs.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/reviewer-resource-merge.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/reviewer-resource-project-plan.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/reviewer-resource-spec.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-admiral.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-chief-of-staff.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-co-thinker.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-docs-writer.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-domain-modeling.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-hardener.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-implementer.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-inquisitor.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-issue-captain.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-project-planner.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-prototype.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-research.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-reviewer.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-specifier.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-to-project.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-walkthrough.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-wayfinder.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/skill-wizard.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/teach-resource-glossary-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/teach-resource-learning-record-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/teach-resource-mission-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/teach-resource-resources-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/welcome.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/working-tree-contract.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/writing-docs.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "Templates/writing-for-agents-resource-skill-mechanics.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/template-additions/_README.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/template-additions/extra-review-checklist.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/template-additions/extra-review-steps.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/template-additions/extra-verify.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-codebase-design-resource-deepening.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-codebase-design-resource-design-it-twice.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-implementer-resource-mocking.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-implementer-resource-tests.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-improve-codebase-architecture-resource-html-report.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-prototype-resource-logic.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-prototype-resource-ui.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-reviewer-resource-code.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-reviewer-resource-docs.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-reviewer-resource-merge.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-reviewer-resource-project-plan.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-reviewer-resource-spec.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-specifier-resource-bug.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-specifier-resource-inquisition.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-specifier-resource-merge.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-teach-resource-glossary-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-teach-resource-learning-record-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-teach-resource-mission-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-teach-resource-resources-format.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-wizard-resource-template.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/resource-writing-for-agents-resource-skill-mechanics.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-admiral.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-bro.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-chief-of-staff.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-co-thinker.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-codebase-design.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-diagnosing-bugs.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-docs-writer.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-domain-modeling.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-grill-me.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-grilling.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-handoff.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-hardener.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-implementer.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-improve-codebase-architecture.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-inquisitor.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-issue-captain.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-project-planner.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-prototype.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-research.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-reviewer.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-scout.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-self-improvement.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-show-me.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-specifier.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-teach.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-to-project.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-walkthrough.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-wayfinder.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-wizard.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-writing-for-agents.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/_system/templates/skill-writing-for-humans.template.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/captain-packet-2026-09-10.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/gate8-2026-09-12/dotnet-mutation.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/gate8-2026-09-12/gate-mutation-result.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/gate8-2026-09-12/node-mutation.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/gate8-2026-09-12/python-mutation.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/gate8-2026-09-12/stderr.log"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/gate8-2026-09-12/stdout.log"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/production-hop-2026-09-11.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/production-hop-2026-09-12.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/production-hop-2026-09-12b.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/evidence/production-hop-2026-09-12c.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/owned-paths.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/retained-disposition.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd103-portable-wip/specification.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd141-capacity-evidence.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd141-capacity-spec.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd164-portable-wip/captain-packet-2026-09-11.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd164-portable-wip/owned-paths.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd164-portable-wip/specification.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd86-host-agent-settings-spec.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/PROGRESS.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/SHA256SUMS"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/adoption-specification.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/implementation-producer-brief.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/mechanism-amendment-SHA256SUMS"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/README.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/SHA256SUMS"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/cfg-probe/CfgProbe.csproj"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/cfg-probe/Directory.Build.props"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/cfg-probe/results.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-diagnosis-commands.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-diagnosis-research.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-fixture/Directory.Build.props"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-fixture/NuGet.Config"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-fixture/SameLineChildProbe.csproj"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-fixture/default-failure.opencover.xml"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-fixture/eager-success.opencover.xml"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-fixture/raw/save.xml.0.acv"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/child-fixture/raw/save.xml.1.acv"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/physical-fixture/Directory.Build.props"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/physical-fixture/NativeLambdaProbe.csproj"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/physical-fixture/NuGet.Config"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/physical-fixture/collected.opencover.xml"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/physical-probe-commands.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/physical-probe-research.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/owned-paths.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/pdb-document-classification-evidence.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/proof-summary.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/retained-disposition.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/showgenerated-marker-evidence.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/spec-review.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/agents/workspace/dyd96-portable-wip/specifier-return.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/glossary.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/_guides.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/coding-standards.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/customizing-roles.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/getting-started.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/migrating-dydo-2x-to-3x.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/orchestration-pitfalls.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/testing-strategy.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/troubleshooting.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/working-tree-contract.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/guides/writing-good-briefs.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/_project.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-03-07/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-03-08/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-03-13/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-03-19/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-03-25/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-03-27/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-03-30/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-02/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-05/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-09/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-11/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-15/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-20/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-26/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-27/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-29/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-04-30/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-05-04/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-05-06/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-05-08/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-05-18/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-05-21/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-07-08/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-08-27/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-09-09/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-09-09/dyd118-beta2-refresh.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/2026-09-10/dyd151-beta3-preparation.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/2026/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/_changelog.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/changelog/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/decisions/023-backlog-doc-category.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/decisions/028-model-tier-abstraction.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/decisions/037-cross-vendor-dispatch-same-vendor-default.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/decisions/_decisions.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/decisions/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/future-features/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/inquisitions/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/migrations/3.0-linear-context-consolidation.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/migrations/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/pitfalls/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/pitfalls/_pitfalls.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/plans/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/plans/dydo-3-completion.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/plans/dydo-3-consolidation.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/project/releases/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/_reference.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/about-dynadocs.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/audit-system.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/configuration.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/coverage-tools.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/dydo-commands.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/dydo-glossary.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/gap-check.example.json"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/linear-workspace-standard.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/reference/writing-docs.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/_index.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/_understand.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/about.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/architecture.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/control-flow.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/documentation-model.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/task-lifecycle.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/templates-and-customization.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/understand/work-model.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "dydo/welcome.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "npm/README.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "npm/THIRD-PARTY-NOTICES.md"
+        },
+        {
+          "classification": "no obligation",
+          "path": "npm/package.json"
+        }
+      ]
+    }
+  },
+  "schema": 1,
+  "stack": "python",
+  "tools": {
+    "cosmic-ray": "8.7.0",
+    "python": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "venv": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.worktrees\\dyd103-prod\\dydo\\_system\\.local\\mutation\\python\\Scripts\\python.exe"
+  }
+}

@@ -258,7 +258,13 @@ function portableEnv(paths, configPath, port) {
     NO_PROXY: port ? `127.0.0.1,localhost` : "127.0.0.1,localhost",
     no_proxy: port ? `127.0.0.1,localhost` : "127.0.0.1,localhost"
   };
-  if (configPath) env.OPENCODE_CONFIG = configPath;
+  if (configPath) {
+    const denyProxy = `http://127.0.0.1:${port}`;
+    env.OPENCODE_CONFIG = configPath;
+    env.HTTP_PROXY = denyProxy;
+    env.HTTPS_PROXY = denyProxy;
+    env.ALL_PROXY = denyProxy;
+  }
   return env;
 }
 

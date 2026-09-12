@@ -10,6 +10,7 @@ let derivedResourcePath;
 const server = http.createServer(async (request, response) => {
   try {
     if (request.method !== "POST") {
+      await appendFile(args.requests, `${JSON.stringify({ state, method: request.method, url: request.url, unexpected: true })}\n`, "utf8");
       return deny(response, `unexpected ${request.method} ${request.url}`);
     }
 
@@ -55,6 +56,12 @@ const server = http.createServer(async (request, response) => {
   } catch (error) {
     return deny(response, error instanceof Error ? error.message : String(error));
   }
+});
+
+server.on("connect", async (request, socket) => {
+  await appendFile(args.requests, `${JSON.stringify({ state, method: "CONNECT", url: request.url, unexpected: true })}\n`, "utf8").catch(() => {});
+  process.stderr.write(`unexpected CONNECT ${request.url}\n`);
+  socket.end("HTTP/1.1 409 Conflict\r\nConnection: close\r\n\r\n");
 });
 
 server.listen(0, "127.0.0.1", () => {

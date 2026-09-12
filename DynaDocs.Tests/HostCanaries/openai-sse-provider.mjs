@@ -59,6 +59,7 @@ const server = http.createServer(async (request, response) => {
 });
 
 server.on("connect", async (request, socket) => {
+  socket.on("error", () => {});
   await appendFile(args.requests, `${JSON.stringify({ state, method: "CONNECT", url: request.url, unexpected: true })}\n`, "utf8").catch(() => {});
   process.stderr.write(`unexpected CONNECT ${request.url}\n`);
   socket.end("HTTP/1.1 409 Conflict\r\nConnection: close\r\n\r\n");

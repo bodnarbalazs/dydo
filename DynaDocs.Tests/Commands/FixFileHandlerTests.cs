@@ -202,17 +202,6 @@ public class FixFileHandlerTests : IDisposable
     }
 
     [Fact]
-    public void FindManualFixes_ExcludedPath_Skipped()
-    {
-        var doc = CreateDocFile("_system/template-additions/test.md", "no frontmatter");
-        doc.HasFrontmatter = false;
-
-        var fixes = FixFileHandler.FindManualFixes([doc]);
-
-        Assert.Empty(fixes);
-    }
-
-    [Fact]
     public void FindManualFixes_AgentsPath_Skipped()
     {
         var doc = CreateDocFile("agents/Grace/workflow.md", "no frontmatter");

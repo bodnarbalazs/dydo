@@ -8,9 +8,10 @@ type: reference
 Own your project's knowledge, use Linear for live work, and let native coding agents execute.
 
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
-durable project knowledge explicit and versioned, compiles shared role methods for Claude Code and
-Codex, and enforces project rules through hooks. Linear owns the live Initiative/Project/Issue graph;
-the coding platform owns sessions, worktrees, delegation, and scheduling.
+durable project knowledge explicit and versioned, authors shared role methods as native skills for
+Claude Code and Codex, and enforces project rules through hooks.
+Linear owns the live Initiative/Project/Issue graph; the coding platform owns sessions, worktrees,
+delegation, and scheduling.
 
 This project is an opinionated personal harness, not a compatibility-first product. It evolves with the
 needs of the projects using it and deliberately removes machinery that native runtimes or dedicated

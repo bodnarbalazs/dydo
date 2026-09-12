@@ -8,12 +8,6 @@
       ]
     },
     {
-      "module": "Models/SkillSwitchConfig.cs",
-      "tests": [
-        "DynaDocs.Tests/Services/ConfigServiceTests.cs"
-      ]
-    },
-    {
       "module": "Models/TestingConfig.cs",
       "tests": [
         "DynaDocs.Tests/Services/ConfigServiceTests.cs"
@@ -123,18 +117,6 @@
     },
     {
       "module": "Commands/InitCommand.cs",
-      "tests": [
-        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
-      ]
-    },
-    {
-      "module": "Commands/SyncCommand.cs",
-      "tests": [
-        "DynaDocs.Tests/Commands/SyncCommandTests.cs"
-      ]
-    },
-    {
-      "module": "Commands/TemplateCommand.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
       ]
@@ -495,12 +477,6 @@
       ]
     },
     {
-      "module": "Models/SkillTemplate.cs",
-      "tests": [
-        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
-      ]
-    },
-    {
       "module": "Models/StructureConfig.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
@@ -672,15 +648,7 @@
     {
       "module": "Services/FolderScaffolder.cs",
       "tests": [
-        "DynaDocs.Tests/Services/FolderScaffolderTests.cs"
-      ]
-    },
-    {
-      "module": "Services/FrameworkCatalog.cs",
-      "tests": [
-        "DynaDocs.Tests/Commands/SyncCommandTests.cs",
-        "DynaDocs.Tests/Integration/TemplateScaffoldingTests.cs",
-        "DynaDocs.Tests/Services/TemplateUpdateTests.cs"
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
       ]
     },
     {
@@ -804,15 +772,9 @@
       ]
     },
     {
-      "module": "Services/SkillTemplateService.cs",
-      "tests": [
-        "DynaDocs.Tests/Services/SkillTemplateServiceTests.cs"
-      ]
-    },
-    {
       "module": "Services/TemplateGenerator.cs",
       "tests": [
-        "DynaDocs.Tests/Services/TemplateGeneratorTests.cs"
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
       ]
     },
     {
@@ -867,7 +829,7 @@
     {
       "module": "Utils/RuleSkipPaths.cs",
       "tests": [
-        "DynaDocs.Tests/Utils/RuleSkipPathsTests.cs"
+        "DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs"
       ]
     },
     {

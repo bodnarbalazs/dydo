@@ -7,8 +7,7 @@ public static class CompletionProvider
     private static readonly string[] TopLevelCommands =
     [
         "check", "fix", "index", "init", "graph", "guard",
-        "sync",
-        "completions", "complete", "template", "validate", "gap-check",
+        "completions", "complete", "validate", "gap-check",
         "version", "help"
     ];
 
@@ -20,7 +19,6 @@ public static class CompletionProvider
         ["init"] = ["claude", "codex", "all", "none"],
         ["completions"] = ["bash", "zsh", "powershell"],
         ["graph"] = ["stats"],
-        ["template"] = ["update"],
     };
 
     private static readonly Dictionary<string, Func<IEnumerable<string>>> OptionValueHandlers = new()

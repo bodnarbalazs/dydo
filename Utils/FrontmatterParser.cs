@@ -101,7 +101,7 @@ public static class FrontmatterParser
     }
 
     /// <summary>The single shared boundary of a leading frontmatter block, resolved identically for every
-    /// frontmatter reader — this parser and <c>SyncCommand</c> — so their opener,
+    /// frontmatter reader — this parser and the skill-folder readers — so their opener,
     /// empty-block, and closer semantics can never diverge (finding 8). The opener is <c>---</c> on the first
     /// line (trailing whitespace tolerated); the closer is the first LATER line that is <c>---</c> with only
     /// trailing whitespace, so a <c>---</c> inside a value is never the terminator and an EMPTY block

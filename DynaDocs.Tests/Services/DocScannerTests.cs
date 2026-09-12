@@ -90,18 +90,6 @@ public class DocScannerTests : IDisposable
     }
 
     [Fact]
-    public void ScanDirectory_DoesNotExcludeTemplates()
-    {
-        WriteDoc("_system/template-additions/foo.template.md");
-        WriteDoc("_system/template-additions/extra-x.md");
-
-        var docs = NewScanner().ScanDirectory(_tempDir);
-
-        Assert.Contains(docs, d => PathUtils.NormalizePath(d.RelativePath).EndsWith("foo.template.md"));
-        Assert.Contains(docs, d => PathUtils.NormalizePath(d.RelativePath).EndsWith("extra-x.md"));
-    }
-
-    [Fact]
     public void ScanDirectory_HonorsUserAddedScanExclude()
     {
         WriteDoc("understand/about.md");

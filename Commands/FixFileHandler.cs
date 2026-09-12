@@ -104,9 +104,6 @@ internal static class FixFileHandler
     {
         var normalized = PathUtils.NormalizePath(relativePath);
 
-        if (normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
-            return true;
-
         if (normalized.StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
             return true;
 

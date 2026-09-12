@@ -20,7 +20,7 @@ public class CheckCommandTests : IDisposable
     public void Check_MissingRequiredScanExclusionFailsInsteadOfReportingSuccess()
     {
         File.WriteAllText(Path.Combine(_root, "dydo.json"),
-            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},\"scanExclude\":[\"_system/templates/\"]}");
+            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},\"scanExclude\":[\"agents/\"]}");
         Directory.CreateDirectory(Path.Combine(_root, "dydo"));
 
         var (code, stdout, stderr) = ConsoleCapture.All(() => CheckCommand.Create().Parse("").Invoke());

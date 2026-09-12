@@ -21,7 +21,7 @@ if (args.Length > 0 && args[0] == "gap-check")
     }
 }
 
-var rootCommand = new RootCommand("DynaDocs (dydo) - Durable project knowledge and shared role compilation for AI coding assistants.");
+var rootCommand = new RootCommand("DynaDocs (dydo) - Durable project knowledge and native skills for AI coding assistants.");
 
 rootCommand.Subcommands.Add(CheckCommand.Create());
 rootCommand.Subcommands.Add(FixCommand.Create());

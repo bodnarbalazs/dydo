@@ -55,8 +55,7 @@ public static class TemplateGenerator
 
     /// <summary>
     /// dydo/guides/working-tree-contract.md — the shared branch, worktree and cleanup contract
-    /// every parallel agent follows (DR 045 §8). A framework document, so `dydo init` scaffolds
-    /// it and `dydo template update` tracks it.
+    /// every parallel agent follows (DR 045 §8). A framework document, so `dydo init` scaffolds it.
     /// </summary>
     public static string GenerateWorkingTreeContractMd() =>
         ReadBuiltInTemplate("working-tree-contract.template.md");

@@ -291,18 +291,6 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Fix_DoesNotReportManualFixesForTemplates()
-    {
-        await InitProjectAsync("none");
-
-        var result = await FixAsync();
-
-        result.AssertSuccess();
-        // Should not report template additions as needing frontmatter fixes
-        Assert.DoesNotContain("_system/template-additions", result.Stdout);
-    }
-
-    [Fact]
     public async Task Fix_DoesNotReportManualFixesForAgentFiles()
     {
         await InitProjectAsync("none");

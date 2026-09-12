@@ -926,7 +926,13 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertEqual({'kind': 'current-python', 'argv': ['-m', 'unittest', 'discover', '-s', 'DynaDocs.Tests/coverage/tests', '-p', 'test_*.py']}, python['capabilities']['test']['command'])
         self.assertEqual(['node', 'DynaDocs.Tests/coverage/node_tests.cjs'], node['capabilities']['test']['command']['argv'])
         for item in data['stacks']:
-            self.assertEqual(unavailable('Pending DYD-103'), item['capabilities']['mutation'])
+            self.assertEqual(
+                {'state': 'configured',
+                 'command': {'kind': 'current-python',
+                             'argv': ['DynaDocs.Tests/coverage/mutation_adapter.py',
+                                      '--stack', item['name'], '--since', '{base}']},
+                 'artifacts': [{'path': f'DynaDocs.Tests/coverage/results/adapters/{item["name"]}-mutation.json', 'required': True}]},
+                item['capabilities']['mutation'])
             for capability in ['static', 'coverage']:
                 row = item['capabilities'][capability]
                 self.assertEqual('configured', row['state'])

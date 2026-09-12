@@ -4,6 +4,7 @@ public sealed class ReleaseWorkflowTests
 {
     private const string AllowedTagGuard = "github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0')";
     private const string NpmPublishRun = "npm publish --access public --provenance --tag ${{ github.ref == 'refs/tags/v3.0.0-beta.3' && 'beta' || 'latest' }}";
+    private const string PythonVersionFile = "DynaDocs.Tests/coverage/.python-version";
 
     [Fact]
     public void ReleaseWorkflow_ValidatesTheBuildBeforeEveryPublicationAction()
@@ -16,16 +17,17 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal(5, CountOccurrences(jobs["build"], "rid:"));
 
         var validation = jobs["validation"];
-        Assert.Contains("runs-on: ubuntu-latest", validation);
+        Assert.Contains("runs-on: windows-latest", validation);
         Assert.Contains("fetch-depth: 0", validation);
         Assert.Contains("actions/setup-python", validation);
+        AssertValidationPythonContract(workflow, PythonRuntimePin());
         Assert.Contains("actions/setup-dotnet", validation);
         Assert.Contains("actions/setup-node", validation);
         Assert.Contains("python DynaDocs.Tests/coverage/run_tests.py", validation);
         Assert.Contains("dotnet build DynaDocs.sln -c Release --warnaserror", validation);
         Assert.Contains("dotnet run --project DynaDocs.csproj -c Release --no-build -- check", validation);
         Assert.Contains("python DynaDocs.Tests/coverage/gap_check.py --force-run", validation);
-        Assert.Contains("python DynaDocs.Tests/coverage/gap_check.py gate mutation --since 2e31b1d0915529926a79224424c18620ee8003e1", validation);
+        Assert.DoesNotContain("gate mutation", ActiveText(workflow), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("python -m pip install -r DynaDocs.Tests/coverage/requirements.lock", validation);
         Assert.Contains("run: npm ci\n        working-directory: DynaDocs.Tests/coverage", validation);
         Assert.DoesNotContain("continue-on-error:", validation);
@@ -40,6 +42,20 @@ public sealed class ReleaseWorkflowTests
         Assert.DoesNotContain("id-token:", jobs["release"]);
         Assert.Contains("permissions:\n      contents: read\n      id-token: write", jobs["nuget"]);
         Assert.Contains("permissions:\n      contents: read\n      id-token: write", jobs["npm"]);
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_RejectsInlineFloatingOrMalformedPythonPins()
+    {
+        var workflow = Workflow();
+        var versionFileField = $"python-version-file: '{PythonVersionFile}'";
+
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(
+            workflow.Replace(versionFileField, "python-version: '3.12.10'", StringComparison.Ordinal), PythonRuntimePin()));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(
+            workflow.Replace(versionFileField, "python-version: '3.12'", StringComparison.Ordinal), PythonRuntimePin()));
+        foreach (var pin in new[] { "", "3.12", "3.12.x", ">=3.12", "3.12.10\n3.12.11\n", " 3.12.10\n" })
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(workflow, pin));
     }
 
     [Fact]
@@ -77,6 +93,19 @@ public sealed class ReleaseWorkflowTests
     }
 
     private static void AssertRejected(string workflow) => Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertFailClosedPublicationGraph(workflow));
+
+    private static void AssertValidationPythonContract(string workflow, string pin)
+    {
+        var setup = JobStep(ActiveJobs(workflow)["validation"], "Setup Python");
+        Assert.Equal("actions/setup-python@v5", StepField(setup, "uses"));
+        Assert.Equal($"'{PythonVersionFile}'", StepField(setup, "python-version-file"));
+        Assert.Null(StepField(setup, "python-version"));
+        Assert.Equal("3.12.10\n", pin.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.True(Version.TryParse(pin.TrimEnd('\r', '\n'), out var version));
+        Assert.Equal(3, version.Major);
+        Assert.Equal(12, version.Minor);
+        Assert.True(version.Build >= 0);
+    }
 
     private static void AssertFailClosedPublicationGraph(string workflow)
     {
@@ -230,6 +259,8 @@ public sealed class ReleaseWorkflowTests
     }
 
     private static string Workflow() => File.ReadAllText(RepositoryFile(".github", "workflows", "release.yml"));
+
+    private static string PythonRuntimePin() => File.ReadAllText(RepositoryFile("DynaDocs.Tests", "coverage", ".python-version"));
 
     private static int CountOccurrences(string text, string value)
     {

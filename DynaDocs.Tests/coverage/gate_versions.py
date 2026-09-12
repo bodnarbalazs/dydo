@@ -3,6 +3,7 @@ import importlib.metadata
 import json
 import platform
 import re
+import sys
 from pathlib import Path
 
 from gate_run import file_hash, result
@@ -13,6 +14,10 @@ def _json(path):
 
 
 def python_versions(coverage):
+    runtime_pin = coverage / '.python-version'
+    pin_text = runtime_pin.read_text(encoding='utf-8')
+    if not re.fullmatch(r'3\.12\.10\r?\n?', pin_text):
+        raise ValueError('Python runtime pin must contain exactly 3.12.10')
     rows = []
     for line in (coverage / 'requirements.lock').read_text(encoding='utf-8').splitlines():
         match = re.fullmatch(r'([A-Za-z0-9_.-]+)==([^\s]+)', line)
@@ -22,9 +27,12 @@ def python_versions(coverage):
         if actual != match[2]:
             raise ValueError(f'Python resolved version mismatch: {match[1]} expected {match[2]}, found {actual}')
         rows.append({'name': match[1], 'version': actual})
-    if platform.python_version() != '3.12.14':
-        raise ValueError('The monitoring collector requires pinned CPython3.12.14')
-    return {'runtime': platform.python_version(), 'packages': rows,
+    implementation = platform.python_implementation()
+    if implementation != 'CPython' or sys.version_info[:2] != (3, 12):
+        raise ValueError('The monitoring collector requires CPython 3.12')
+    return {'declared_runtime': pin_text.rstrip('\r\n'), 'runtime': platform.python_version(),
+            'implementation': implementation, 'packages': rows,
+            'runtime_pin_sha256': file_hash(runtime_pin),
             'lock_sha256': file_hash(coverage / 'requirements.lock')}
 
 

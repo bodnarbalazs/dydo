@@ -6,6 +6,39 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { spawnSync } = require('node:child_process');
 
+test('missing c8 is an unavailable measurement with exit 2', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd171-js-no-c8-'));
+  const tools = path.join(root, 'tools');
+  fs.mkdirSync(tools);
+  fs.copyFileSync(path.resolve(__dirname, '..', 'javascript_coverage.cjs'),
+    path.join(tools, 'javascript_coverage.cjs'));
+  fs.copyFileSync(path.resolve(__dirname, '..', 'js_metrics.cjs'),
+    path.join(tools, 'js_metrics.cjs'));
+  fs.copyFileSync(path.resolve(__dirname, '..', 'package.json'), path.join(tools, 'package.json'));
+  fs.writeFileSync(path.join(root, 'target.cjs'), 'module.exports=1;\n');
+  const result = spawnSync(process.execPath, [path.join(tools, 'javascript_coverage.cjs'),
+    '--root', root, '--output', path.join(root, 'evidence'),
+    '--targets-json', '["target.cjs"]', '--command-json', '["{node}","target.cjs"]'],
+    { cwd: root, encoding: 'utf8' });
+  assert.equal(result.status, 2, result.stdout + result.stderr);
+  assert.match(result.stderr, /c8.*unavailable/i);
+  fs.rmSync(root, { recursive: true });
+});
+
+test('available c8 preserves a failing suite exit 1', () => {
+  const tools = path.resolve(__dirname, '..');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd171-js-failing-suite-'));
+  fs.writeFileSync(path.join(root, 'target.cjs'), 'module.exports=1;\n');
+  const result = spawnSync(process.execPath, [path.join(tools, 'javascript_coverage.cjs'),
+    '--root', root, '--output', path.join(root, 'evidence'),
+    '--targets-json', '["target.cjs"]',
+    '--command-json', '["{node}","-e","process.exit(1)"]'],
+    { cwd: root, encoding: 'utf8' });
+  assert.equal(result.status, 1, result.stdout + result.stderr);
+  assert.doesNotMatch(result.stderr, /unavailable/i);
+  fs.rmSync(root, { recursive: true });
+});
+
 test('real c8 campaign keeps child-only, never-imported, and same-line callable identities', () => {
   const tools = path.resolve(__dirname, '..');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd96-js-coverage-'));

@@ -134,7 +134,7 @@ async function runOpenCodeCanary() {
   let provider;
   try {
     const rgVersion = (await run(`${drive}:\\bin\\rg.exe`, ["--version"])).stdout.split(/\r?\n/)[0];
-    assert(rgVersion === "ripgrep 15.2.0", `unexpected Ripgrep version: ${rgVersion}`);
+    assert(/^ripgrep 15\.2\.0(?: \(rev [0-9a-f]+\))?$/.test(rgVersion), `unexpected Ripgrep version: ${rgVersion}`);
     const version = (await run(exe, ["--version"], { env: portableEnv(paths) })).stdout.trim();
     assert(version === "1.18.30", `unexpected OpenCode version: ${version}`);
     manifest.environment.opencode = { version, archiveSha256: OPENCODE_ARCHIVE_SHA256, executableSha256: OPENCODE_EXE_SHA256, ripgrepSha256: RIPGREP_SHA256, rgVersion };

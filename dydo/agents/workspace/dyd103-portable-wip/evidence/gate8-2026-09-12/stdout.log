@@ -1,0 +1,8 @@
+HEAD is now at c8234037 DYD-103 specify: record the production-hop evidence
+dotnet mutation: INVALID (child exit 2)
+HEAD is now at c8234037 DYD-103 specify: record the production-hop evidence
+python mutation: INVALID (child exit 2)
+HEAD is now at c8234037 DYD-103 specify: record the production-hop evidence
+node mutation: INVALID (child exit 2)
+Aggregate: 2
+Result: C:\Users\User\Desktop\Projects\DynaDocs\.worktrees\dyd103-prod\DynaDocs.Tests\coverage\results\run-1789204185142-fc25b499\result.json

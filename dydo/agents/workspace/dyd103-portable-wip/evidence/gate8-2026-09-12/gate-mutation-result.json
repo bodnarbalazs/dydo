@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "candidate": {
+    "commit": "c8234037120753cd6dd0cfa41ffbaa0b912f17cb",
+    "dirty": true
+  },
+  "operation": {
+    "name": "gate mutation",
+    "since": "2e31b1d0915529926a79224424c18620ee8003e1"
+  },
+  "selectedStacks": [
+    "dotnet",
+    "python",
+    "node"
+  ],
+  "results": [
+    {
+      "stack": "dotnet",
+      "capability": "mutation",
+      "state": "invalid",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/mutation_adapter.py",
+        "--stack",
+        "dotnet",
+        "--since",
+        "2e31b1d0915529926a79224424c18620ee8003e1"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "git-worktree-copy-working-changes",
+        "evidence": {
+          "state": "verified",
+          "kind": "adapter",
+          "path": "DynaDocs.Tests/coverage/run_tests.py"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "318874.453000000"
+      },
+      "childExit": 2,
+      "resultExit": 2,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/dotnet-mutation.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "stack": "python",
+      "capability": "mutation",
+      "state": "invalid",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/mutation_adapter.py",
+        "--stack",
+        "python",
+        "--since",
+        "2e31b1d0915529926a79224424c18620ee8003e1"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "318911.421000000"
+      },
+      "childExit": 2,
+      "resultExit": 2,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/python-mutation.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "stack": "node",
+      "capability": "mutation",
+      "state": "invalid",
+      "argv": [
+        "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "DynaDocs.Tests/coverage/mutation_adapter.py",
+        "--stack",
+        "node",
+        "--since",
+        "2e31b1d0915529926a79224424c18620ee8003e1"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "318944.156000000"
+      },
+      "childExit": 2,
+      "resultExit": 2,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/node-mutation.json",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "aggregateExit": 2
+}

@@ -1,0 +1,50 @@
+{
+  "candidate": {
+    "commit": "c8234037120753cd6dd0cfa41ffbaa0b912f17cb",
+    "dirty": true,
+    "sourceFingerprint": null
+  },
+  "collectors": {
+    "mutation": {
+      "raw": [],
+      "status": "error"
+    }
+  },
+  "commands": [],
+  "exitCode": 2,
+  "findings": [],
+  "gaps": [
+    {
+      "reason": "invalid inventory: excluded row dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/cfg-probe/Program.cs"
+    }
+  ],
+  "gate": "mutation",
+  "inventory": {
+    "path": "assurance/run-0d3102577a194cd48950b98d0500c7e4/inventory.json",
+    "sha256": "dd32a3fd72b952e4132b194c2664bc2c609680ffb26df7ca718913e7dc391130"
+  },
+  "measurementComplete": false,
+  "mutation": {
+    "base": null,
+    "baseline": null,
+    "counts": {
+      "compileError": 0,
+      "generated": 0,
+      "ignored": 0,
+      "killed": 0,
+      "noCoverage": 0,
+      "runtimeError": 0,
+      "survived": 0,
+      "timeout": 0,
+      "unknown": 0,
+      "unrun": 0,
+      "valid": 0
+    },
+    "rawReports": [],
+    "score": null,
+    "selection": null
+  },
+  "schema": 1,
+  "stack": "python",
+  "tools": {}
+}

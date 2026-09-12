@@ -136,9 +136,6 @@ async function runCodexCanary() {
     rpc.send({ method: "turn/start", id: 6, params: { threadId: explicitThreadId, cwd: checkout, sandboxPolicy: { type: "readOnly", networkAccess: false }, input: [{ type: "skill", name: "teach", path: selectedPath }, { type: "text", text: PROMPT }] } });
     await rpc.wait(message => message.id === 6, explicitStart);
     await rpc.wait(message => message.method === "turn/completed", explicitStart);
-    await writeArtifact("codex-live.ndjson", rpc.transcript.map(entry => JSON.stringify(entry)).join("\n") + "\n");
-    await writeArtifact("codex-app-server.stderr.txt", rpc.stderr());
-
     const incoming = rpc.incomingSince(explicitStart);
     const started = incoming.findIndex(message => message.method === "turn/started");
     const command = incoming.findIndex(message => message.method === "item/completed" && JSON.stringify(message).includes("Get-Content -Raw -LiteralPath") && JSON.stringify(message).includes("mission-format.md") && JSON.stringify(message).includes('"exitCode":0'));
@@ -154,6 +151,11 @@ async function runCodexCanary() {
     manifest.artifacts["codex-provider-requests.ndjson"] = { sha256: await sha256(requestsPath), bytes: (await stat(requestsPath)).size };
     pass("Codex app-server inventory, implicit omission, structured explicit resource proof, and zero-egress gate passed");
   } finally {
+    await writeArtifact("codex-live.ndjson", rpc.transcript.map(entry => JSON.stringify(entry)).join("\n") + "\n");
+    await writeArtifact("codex-app-server.stderr.txt", rpc.stderr());
+    if (await fileExists(requestsPath)) {
+      manifest.artifacts["codex-provider-requests.ndjson"] = { sha256: await sha256(requestsPath), bytes: (await stat(requestsPath)).size };
+    }
     rpc.stop();
     await rpc.done.catch(() => {});
     provider.child.kill("SIGTERM");
@@ -294,6 +296,7 @@ async function startProvider(requestsPath, mode = "opencode", providerCandidate)
   child.stdout.setEncoding("utf8").on("data", chunk => { stdout += chunk; });
   child.stderr.setEncoding("utf8").on("data", chunk => { stderr += chunk; });
   const done = new Promise((resolveDone, reject) => child.once("exit", code => code === 0 ? resolveDone() : reject(new Error(`provider exited ${code}: ${stderr}`))));
+  done.catch(() => {});
   await waitFor(() => parseJsonLines(stdout)[0]?.port, "loopback provider port");
   return { child, done, port: parseJsonLines(stdout)[0].port };
 }
@@ -557,6 +560,7 @@ async function sha256(file) {
   return hash.digest("hex");
 }
 async function findFile(root, name) { for (const entry of await readdir(root, { withFileTypes: true })) { const value = join(root, entry.name); if (entry.isDirectory()) { const found = await findFile(value, name).catch(() => undefined); if (found) return found; } else if (entry.name.toLowerCase() === name.toLowerCase()) return value; } throw new Error(`${name} was not found under ${root}`); }
+async function fileExists(path) { try { await access(path); return true; } catch { return false; } }
 
 function nativeOpenCodeRoots() {
   const user = process.env.USERPROFILE;

@@ -9,16 +9,17 @@ const implicitPrompt = "If the project skill teach appears in the model-visible 
 const codexPrompt = "Load the teach skill. Follow its mission-format link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 template from that resource and no other text.";
 let state = 0;
 let derivedResourcePath;
+let eventSequence = 0;
 
 const server = http.createServer(async (request, response) => {
   try {
     if (args.mode === "codex" && request.method === "GET" && request.url === "/v1/models") {
-      await appendFile(args.requests, `${JSON.stringify({ state, method: "GET", url: request.url, response: { model: "skill-canary" } })}\n`, "utf8");
+      await record({ state, method: "GET", url: request.url, response: { model: "skill-canary" } });
       response.writeHead(200, { "content-type": "application/json" });
       return response.end(JSON.stringify({ object: "list", data: [{ id: "skill-canary", object: "model", created: 0, owned_by: "dyd91" }] }));
     }
     if (request.method !== "POST") {
-      await appendFile(args.requests, `${JSON.stringify({ state, method: request.method, url: request.url, unexpected: true })}\n`, "utf8");
+      await record({ state, method: request.method, url: request.url, unexpected: true });
       return deny(response, `unexpected ${request.method} ${request.url}`);
     }
 
@@ -30,8 +31,8 @@ const server = http.createServer(async (request, response) => {
       return deny(response, "request body was not JSON");
     }
 
-    if (args.mode === "codex") return handleCodex(request, response, payload);
-    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload })}\n`, "utf8");
+    if (args.mode === "codex") return await handleCodex(request, response, payload);
+    await record({ state, method: "POST", url: request.url, payload });
     const serialized = JSON.stringify(payload);
     if (!request.url?.endsWith("/chat/completions") && !request.url?.endsWith("/responses")) {
       return deny(response, `unexpected provider endpoint ${request.url}`);
@@ -69,7 +70,7 @@ const server = http.createServer(async (request, response) => {
 
 server.on("connect", async (request, socket) => {
   socket.on("error", () => {});
-  await appendFile(args.requests, `${JSON.stringify({ state, method: "CONNECT", url: request.url, unexpected: true })}\n`, "utf8").catch(() => {});
+  await record({ state, method: "CONNECT", url: request.url, unexpected: true }).catch(() => {});
   process.stderr.write(`unexpected CONNECT ${request.url}\n`);
   socket.end("HTTP/1.1 409 Conflict\r\nConnection: close\r\n\r\n");
 });
@@ -124,7 +125,7 @@ async function handleCodex(request, response, payload) {
     assert(countAcross(strings, body) === 0, "Codex implicit request injected the canonical teach body");
     assert(!serialized.includes('"type":"skill"'), "Codex implicit request exposed structured skill input");
     assert(countAcross(strings, expectedFact) === 0, "Codex implicit request pre-inlined the resource-only fact");
-    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, response: { text: "DYDO_TEACH_HIDDEN" } })}\n`, "utf8");
+    await record({ state, method: "POST", url: request.url, payload, response: { text: "DYDO_TEACH_HIDDEN" } });
     state = 1;
     return responsesText(response, "DYDO_TEACH_HIDDEN");
   }
@@ -147,18 +148,18 @@ async function handleCodex(request, response, payload) {
     assert(samePath(realResource, path.join(args.candidate, "skills", "teach", "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
     const command = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
     const argumentsJson = { cmd: command, workdir: args.candidate, yield_time_ms: 10000, max_output_tokens: 2000, shell: "powershell", login: false };
-    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, offeredSchema: execTool, derivedResourcePath, response: { tool: "exec_command", arguments: argumentsJson } })}\n`, "utf8");
+    await record({ state, method: "POST", url: request.url, payload, offeredSchema: execTool, derivedResourcePath, response: { tool: "exec_command", arguments: argumentsJson } });
     state = 2;
     return responsesTool(response, "dyd91-codex-read", "exec_command", argumentsJson);
   }
   if (state === 2) {
     const output = findToolOutput(payload, "dyd91-codex-read");
+    await record({ state, method: "POST", url: request.url, payload, observedCommandOutput: output, intendedResponse: { text: expectedFact } });
     assert(output?.includes(expectedFact), "Codex command output omitted the resource-only fact");
-    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, response: { text: expectedFact } })}\n`, "utf8");
     state = 3;
     return responsesText(response, expectedFact);
   }
-  await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, unexpected: true })}\n`, "utf8");
+  await record({ state, method: "POST", url: request.url, payload, unexpected: true });
   return deny(response, "unexpected extra Codex provider request");
 }
 
@@ -277,6 +278,10 @@ function deny(response, message) {
   process.stderr.write(`${message}\n`);
   response.writeHead(409, { "content-type": "application/json" });
   response.end(JSON.stringify({ error: { message, type: "dyd91_unexpected_request" } }));
+}
+
+function record(value) {
+  return appendFile(args.requests, `${JSON.stringify({ sequence: eventSequence++, at: new Date().toISOString(), ...value })}\n`, "utf8");
 }
 
 function extractSkillBase(serialized) {

@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CoverageSession>
+  <Modules>
+    <Module hash="EB-4D-66-2A-7B-3E-A1-81-48-75-B4-71-07-52-CD-9F-45-64-A8-7A">
+      <ModuleName>dydo</ModuleName>
+      <ModulePath>bin/Debug/net10.0/dydo.dll</ModulePath>
+      <Files>
+        <File uid="71" fullPath="Rules/TitleRule.cs" />
+      </Files>
+      <Classes>
+        <Class>
+          <Methods>
+            <Method>
+              <MetadataToken>100663984</MetadataToken>
+              <Name>System.String DynaDocs.Rules.TitleRule::get_Name()</Name>
+              <SequencePoints>
+                <SequencePoint vc="4" uspid="9760" ordinal="0" offset="0" sl="8" sc="36" el="8" ec="43" fileid="71" />
+              </SequencePoints>
+            </Method>
+          </Methods>
+        </Class>
+      </Classes>
+    </Module>
+  </Modules>
+</CoverageSession>

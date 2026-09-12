@@ -139,13 +139,14 @@ and blocks reject the action. Nudges enforce project process; they do not create
 
 ## Customization points
 
-- `.claude/skills/<role>/` and `.agents/skills/<role>/` — the role folders; edit each host's copy directly.
+- `skills/<role>/` — the only editable role folders. Run `node setup-skills.mjs` to create the ignored
+  Claude and Codex discovery projections; OpenCode reads both compatibility roots.
 - `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
   read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.
   Whitelist entries lift off-limits patterns only; [Guard System](../understand/guard-system.md) owns
   how each tier binds.
 
-A role is its own source. Edit the skill folder in place; there is no compile step and no automatic
+A role's canonical folder is its source. Edit it in place; there is no compile step and no automatic
 reconciliation.
 
 ## Documentation exclusion layers

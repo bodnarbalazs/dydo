@@ -58,11 +58,13 @@ dydo fix
 The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical
 evidence is needed; do not recreate repository work records to address a current problem.
 
-## Skill edit drift
+## Skill setup collision
 
-A role is a plain `SKILL.md` folder committed to each host's discovery path; edit both copies by
-hand. There is no compile step and no generated agent definition. Run `dydo check` to validate the
-documentation tree.
+A role is authored once under `skills/<name>/`; never maintain a host copy. Run
+`node setup-skills.mjs` after checkout. If it names a collision, the existing file, directory, or
+wrong-target link is human-owned and remains untouched. Decide whether to keep or relocate it, then
+rerun setup. Existing correct links are accepted. There is no compile step, copy reconciliation, or
+generated agent definition. Run `dydo check` to validate the documentation tree.
 
 ## Linear boundary mistakes
 

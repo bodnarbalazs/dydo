@@ -28,21 +28,21 @@ explicit role costs no context and has to be remembered instead, which is why th
 
 ## What each host reads
 
-| Artifact | Claude Code | Codex |
+| Artifact | Canonical path | Host behavior |
 |---|---|---|
-| the skill | `.claude/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` |
-| the role's own resource | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
-| explicit invocation | `disable-model-invocation: true` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` |
-| an argument hint | `argument-hint:` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `interface.default_prompt` |
+| the skill | `skills/<name>/SKILL.md` | Claude Code, Codex, and OpenCode read the same body through their discovery roots. |
+| the role's own resource | `skills/<name>/resources/<n>.md` | Relative links resolve from the whole-folder projection. |
+| explicit invocation | `disable-model-invocation: true` in `SKILL.md`; `skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` | Claude Code and Codex respectively. Stable OpenCode has no claimed explicit-only control. |
+| an argument hint | `argument-hint:` in `SKILL.md`; `skills/<name>/agents/openai.yaml` with `interface.default_prompt` | Claude Code and Codex respectively. |
 
-Nothing generates these files. A change edits each host's copy by hand. The two differ only in that
-host-specific metadata; the body is the same prose on both.
+Nothing generates the canonical files. `node setup-skills.mjs` creates only host discovery links;
+edit `skills/<name>/` once.
 
 ## The context a role carries
 
 **`## Must-Reads`** — markdown links under that heading. Write each target as the document's path
-under `dydo/`, behind a `../../../` climb (`../../../dydo/understand/architecture.md`); both hosts
-place a skill three levels below the repository root, so one climb resolves on either. A project adds
+under `dydo/`, behind a `../../` climb (`../../dydo/understand/architecture.md`). Whole-directory
+projections keep that canonical lexical base. A project adds
 its own context by editing the skill body directly.
 
 **Resources** — a role's own reference behind a file boundary, read only by the branches that need

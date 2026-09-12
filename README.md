@@ -4,7 +4,7 @@ Own your project's durable knowledge, use Linear for live work, and let native c
 
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
 project knowledge explicit and versioned in Git, authors shared role methods as native skills for
-Claude Code and Codex, and enforces project rules through hooks. Linear owns the live
+Claude Code, Codex, and OpenCode, and enforces project rules through hooks. Linear owns the live
 Initiative/Project/Issue graph; the coding platform owns sessions, worktrees, delegation, and scheduling.
 
 This project is an opinionated personal harness, not a compatibility-first product. It evolves with the
@@ -36,9 +36,11 @@ reading only the durable context relevant to the current Issue.
 
 ### One role, native on each host
 
-A role is a plain `SKILL.md` folder committed to each host's discovery path
-(`.claude/skills/<role>/` and `.agents/skills/<role>/`). There is no compile step; edit both copies
-directly. The host runtime owns agent identity and orchestration.
+A role is one plain `skills/<role>/` folder in the cross-vendor `SKILL.md` format. Run
+`node setup-skills.mjs` once after checkout: it exposes each whole folder at Claude Code's
+`.claude/skills/<role>/` and Codex's `.agents/skills/<role>/` discovery paths. OpenCode reads those
+compatibility roots, so setup creates no third copy. There is no compile step. The host runtime owns
+agent identity and orchestration.
 
 ### Enforced project rules
 
@@ -96,13 +98,19 @@ runtime or machine into an existing project. The full checklist, Linear workspac
 configuration included, is [Getting Started](dydo/guides/getting-started.md); point an agent at it
 to set dydo up in a project.
 
+For this repository's roles, also run `node setup-skills.mjs`. It is safe to rerun. Setup accepts
+only missing projections or links already aimed at the canonical folder; it reports every collision
+before creating anything and never replaces host configuration or unrelated skills. Resolve the named
+collision yourself, then rerun. OpenCode may report each name from both compatibility roots; both
+entries resolve to the same canonical directory.
+
 Keep current work in Linear. Put information in Git only when it should remain useful and reviewable
 after current workflow state changes.
 
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`.
-- **Roles** — plain `SKILL.md` folders under `.claude/skills/` and `.agents/skills/`, edited directly.
+- **Roles** — plain `skills/<role>/` folders, edited directly and exposed to hosts by `setup-skills.mjs`.
 
 A role is its own source; there is no compile step and no automatic reconciliation.
 
@@ -113,8 +121,10 @@ project/
 |-- dydo.json                    # Integrations, scan exclusions, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/skills/              # Claude skill folders (SKILL.md + resources)
-|-- .agents/skills/              # Codex skill folders (SKILL.md + resources + openai.yaml)
+|-- setup-skills.mjs             # Create safe host discovery projections
+|-- skills/                      # One canonical folder per role
+|-- .claude/skills/              # Ignored per-skill Claude projections
+|-- .agents/skills/              # Ignored per-skill Codex projections; OpenCode also reads both roots
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture

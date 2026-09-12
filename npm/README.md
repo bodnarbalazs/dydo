@@ -1,7 +1,7 @@
 # DynaDocs (dydo)
 
 Own your project's durable knowledge, use Linear for live work, and author shared methods as native
-skills for Claude Code and Codex.
+skills for Claude Code, Codex, and OpenCode.
 
 dydo is a documentation, skill-authoring, and guardrail framework for AI coding assistants. It keeps
 reviewed project knowledge in Git, authors each role as a native skill folder, and applies
@@ -12,8 +12,8 @@ identity, delegation, scheduling, and worktree isolation.
 
 - A structured knowledge tree for architecture, decisions, guides, plans, audits, changelog, and
   FutureFeature ideas.
-- Native role folders under `.claude/skills/` and `.agents/skills/` — committed, edited directly,
-  with no compile step.
+- One canonical `skills/<role>/` tree, exposed through host-native discovery paths by the repository's
+  dependency-free `setup-skills.mjs`, with no compile step.
 - `dydo guard` to apply off-limits paths, dangerous-command checks, and configurable nudges.
 - `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` to maintain the documentation graph.
 
@@ -42,7 +42,7 @@ Fill in `dydo/understand/about.md` and `dydo/understand/architecture.md`, then a
 `dydo/guides/coding-standards.md` and `dydo.json`. Use `dydo init <integration> --join` when wiring
 another runtime or machine into an existing project.
 
-Edit both role folders directly; there is no compile step and no automatic reconciliation.
+Edit the canonical `skills/<role>/` folder directly; there is no compile step or automatic reconciliation.
 
 ## Commands
 

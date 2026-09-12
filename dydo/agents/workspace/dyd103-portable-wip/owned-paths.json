@@ -37,7 +37,7 @@
     {"path": "DynaDocs.Tests/coverage/gap_check.py", "action": "DYD-113 public facade; no edit", "ownership": "not-owned"},
     {"path": "dydo/reference/gap-check.example.py", "action": "DYD-113/DYD-91 derived copy; no edit", "ownership": "not-owned"},
     {"path": "dydo/reference/gap-check.example.json", "action": "DYD-91 portable example; no edit", "ownership": "not-owned"},
-    {"path": "DynaDocs.Tests/Features/testing-facade.feature", "action": "DYD-113 contract; cited only", "ownership": "not-owned"},
+    {"path": "DynaDocs.Tests/Features/testing-facade.feature", "action": "DYD-113 contract; admiral-authorized 2026-09-12 edit of only the inline dotnet stack's mutation row to configured (mirroring DYD-96 c9ffeb16); nothing else changed", "ownership": "not-owned"},
     {"path": "DynaDocs.Tests/coverage/tests/test_testing_facade.py", "action": "Admiral-authorized 2026-09-12 integration edit: test_active_manifest expects the configured mutation row after step 7; DYD-113/DYD-91 contract", "ownership": "not-owned"},
     {"path": "DynaDocs.Tests/Features/assurance-adoption.feature", "action": "DYD-96 contract; cited only", "ownership": "not-owned"},
     {"path": "DynaDocs.Tests/coverage/inventory.py", "action": "DYD-96; absent at 1bc93c5d, delivered at 0d3f0995 and landed by DYD-130 before production; consumed functions pinned in the spec", "ownership": "not-owned"},

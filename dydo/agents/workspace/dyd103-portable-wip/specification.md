@@ -1127,4 +1127,5 @@ from `sources[].projects`, never from `projects[].compile`, so compile order car
 meaning. The admiral's 2026-09-12 ruling authorizes the correction in both this table and the
 adapter, and authorizes the companion edit to the DYD-113 probe below (a not-owned path, recorded
 here for DYD-113/DYD-91: `test_active_manifest` now expects the configured mutation row, mirroring
-DYD-96's `0d3f0995`).
+DYD-96's `0d3f0995`, and the inline documented dotnet stack in `testing-facade.feature` carries the
+configured mutation row, mirroring DYD-96's docs hop `c9ffeb16`).

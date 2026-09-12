@@ -209,7 +209,7 @@ Feature: One project-local interface runs tests and assurance honestly
             "test": {"state": "configured", "command": {"kind": "current-python", "argv": ["-u", "DynaDocs.Tests/coverage/run_tests.py", "--"]}, "artifacts": []},
             "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-static.json", "required": true}]},
             "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "dotnet", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-coverage.json", "required": true}], "suiteVerdict": {"exit": ["collectors", "csharp-coverage", "facts", "child_exit"], "failure": ["collectors", "csharp-coverage", "findings", {"gate": "functional"}]}},
-            "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
+            "mutation": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/mutation_adapter.py", "--stack", "dotnet", "--since", "{base}"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/dotnet-mutation.json", "required": true}]}
           }
         }]
       }

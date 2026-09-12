@@ -3,11 +3,13 @@ import hashlib
 import importlib.metadata
 import inspect
 import json
+import platform
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import gate_versions
@@ -53,20 +55,61 @@ class GateVersionTests(unittest.TestCase):
     def test_python_lock_pins_are_measured_against_the_installed_distribution(self):
         lock = self.root / 'requirements.lock'
         lock.write_text(f'six=={INSTALLED}\n', encoding='utf-8')
+        runtime_pin = self.root / '.python-version'
+        runtime_pin.write_text('3.12.10\n', encoding='utf-8')
 
         facts = gate_versions.python_versions(self.root)
 
         self.assertEqual([{'name': 'six', 'version': INSTALLED}], facts['packages'])
-        self.assertEqual('3.12.14', facts['runtime'])
+        self.assertEqual('3.12.10', facts['declared_runtime'])
+        self.assertEqual(platform.python_version(), facts['runtime'])
+        self.assertEqual('CPython', facts['implementation'])
+        self.assertEqual(hashlib.sha256(runtime_pin.read_bytes()).hexdigest(), facts['runtime_pin_sha256'])
         self.assertEqual(hashlib.sha256(lock.read_bytes()).hexdigest(), facts['lock_sha256'])
 
     def test_unpinned_absent_and_mismatched_python_requirements_fail_closed(self):
         lock = self.root / 'requirements.lock'
+        (self.root / '.python-version').write_text('3.12.10\n', encoding='utf-8')
         cases = [(f'six>={INSTALLED}\n', ValueError), ('dydo-absent-distribution==1.0\n',
                  importlib.metadata.PackageNotFoundError), ('six==0.0.1\n', ValueError)]
         for text, failure in cases:
             lock.write_text(text, encoding='utf-8')
             with self.subTest(lock=text.strip()), self.assertRaises(failure):
+                gate_versions.python_versions(self.root)
+
+    def test_python_runtime_pin_must_be_one_exact_single_line_version(self):
+        (self.root / 'requirements.lock').write_text(f'six=={INSTALLED}\n', encoding='utf-8')
+        pin = self.root / '.python-version'
+        cases = (None, '', '3.12', '3.12.x', '3.12.11\n', '>=3.12',
+                 '3.12.10\n3.12.11\n', ' 3.12.10\n')
+        for value in cases:
+            if pin.exists():
+                pin.unlink()
+            if value is not None:
+                pin.write_text(value, encoding='utf-8')
+            with self.subTest(pin=value), self.assertRaises((OSError, ValueError)):
+                gate_versions.python_versions(self.root)
+
+    def test_python_runtime_accepts_any_cpython_312_patch_and_reports_the_observed_version(self):
+        (self.root / 'requirements.lock').write_text(f'six=={INSTALLED}\n', encoding='utf-8')
+        (self.root / '.python-version').write_text('3.12.10\n', encoding='utf-8')
+
+        with patch.object(gate_versions.platform, 'python_implementation', return_value='CPython'), \
+             patch.object(gate_versions.platform, 'python_version', return_value='3.12.99'), \
+             patch.object(gate_versions.sys, 'version_info', (3, 12, 99)):
+            facts = gate_versions.python_versions(self.root)
+
+        self.assertEqual('3.12.10', facts['declared_runtime'])
+        self.assertEqual('3.12.99', facts['runtime'])
+
+    def test_python_runtime_rejects_non_cpython_and_wrong_series(self):
+        (self.root / 'requirements.lock').write_text(f'six=={INSTALLED}\n', encoding='utf-8')
+        (self.root / '.python-version').write_text('3.12.10\n', encoding='utf-8')
+        for implementation, version in (('PyPy', (3, 12, 10)), ('CPython', (3, 11, 10))):
+            with self.subTest(implementation=implementation, version=version), \
+                 patch.object(gate_versions.platform, 'python_implementation', return_value=implementation), \
+                 patch.object(gate_versions.sys, 'version_info', version), \
+                 self.assertRaisesRegex(ValueError, 'requires CPython 3.12'):
                 gate_versions.python_versions(self.root)
 
     def test_javascript_lock_requires_every_declared_exact_version(self):

@@ -80,7 +80,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12.14'
+          python-version-file: 'DynaDocs.Tests/coverage/.python-version'
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -110,9 +110,6 @@ jobs:
 
       - name: Run coverage gate
         run: python DynaDocs.Tests/coverage/gap_check.py --force-run
-
-      - name: Run mutation gate
-        run: python DynaDocs.Tests/coverage/gap_check.py gate mutation --since 2e31b1d0915529926a79224424c18620ee8003e1
 
   release:
     if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}

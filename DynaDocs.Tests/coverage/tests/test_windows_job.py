@@ -4,6 +4,7 @@ from contextlib import ExitStack, redirect_stdout
 import io
 import json
 import os
+import platform
 from pathlib import Path
 import shutil
 import sys
@@ -76,6 +77,12 @@ class WindowsJobTests(unittest.TestCase):
         result = self.run_subject(source, args, environment)
         self.assertTrue(result["complete"], result)
         self.assertEqual(23, result["subject_status"])
+        self.assertEqual("CPython", result["implementation"])
+        self.assertEqual(list(sys.version_info[:3]), result["version"])
+        self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
+                         result["executable_sha256"])
+        self.assertEqual(hashlib.sha256(Path(sys._base_executable).read_bytes()).hexdigest(),
+                         result["base_sha256"])
         self.assertEqual(args[1:], json.loads((self.root / "observed.json").read_text(encoding="utf-8")))
         self.assertEqual(before, environment)
         self.assertEqual("out", Path(result["stdout_path"]).read_text())
@@ -133,6 +140,31 @@ class WindowsJobTests(unittest.TestCase):
         value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
         self.assertEqual(hashlib.sha256(Path(windows_job.__file__).read_bytes()).hexdigest(), value["helper_sha256"])
         self.assertNotIn("environment", value)
+
+    def test_runtime_contract_accepts_any_cpython_312_patch_and_reports_exact_evidence(self):
+        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
+        with patch.object(windows_job.platform, "python_implementation", return_value="CPython"), \
+             patch.object(windows_job.sys, "version_info", (3, 12, 99)):
+            evidence = windows_job.validate(value)
+            capability = windows_job.preflight()
+
+        self.assertEqual("CPython", evidence["implementation"])
+        self.assertEqual([3, 12, 99], evidence["version"])
+        self.assertEqual([3, 12, 99], capability["version"])
+        self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
+                         evidence["executable_sha256"])
+        self.assertEqual(hashlib.sha256(Path(sys._base_executable).read_bytes()).hexdigest(),
+                         evidence["base_sha256"])
+
+    def test_runtime_contract_rejects_non_cpython_and_wrong_series_in_validate_and_preflight(self):
+        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
+        for implementation, version in (("PyPy", (3, 12, 10)), ("CPython", (3, 11, 10))):
+            for operation in (lambda: windows_job.validate(value), windows_job.preflight):
+                with self.subTest(implementation=implementation, version=version, operation=operation.__name__), \
+                     patch.object(windows_job.platform, "python_implementation", return_value=implementation), \
+                     patch.object(windows_job.sys, "version_info", version), \
+                     self.assertRaisesRegex(ValueError, "requires Windows CPython 3.12"):
+                    operation()
 
     def test_boolean_protocol_version_is_not_version_one(self):
         value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"], self.root, self.root / "evidence", 1, 1)
@@ -364,7 +396,8 @@ class WindowsJobTests(unittest.TestCase):
             self.assertEqual(0, windows_job.main())
         result = json.loads(stream.getvalue())
         self.assertTrue(result["capability"])
-        self.assertEqual([3, 12, 14], result["version"])
+        self.assertEqual(list(sys.version_info[:3]), result["version"])
+        self.assertEqual(platform.python_implementation(), result["implementation"])
         self.assertEqual(hashlib.sha256(Path(windows_job.__file__).read_bytes()).hexdigest(), result["helper_sha256"])
 
     def test_main_malformed_request_is_incomplete_without_native_launch(self):

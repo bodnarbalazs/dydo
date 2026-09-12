@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { access, cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { access, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -87,6 +87,7 @@ async function runCodexCanary() {
   manifest.environment.codex = version;
   const yaml = await readFile(join(checkout, "skills", "teach", "agents", "openai.yaml"), "utf8");
   assert(yaml.includes("allow_implicit_invocation: false"), "canonical teach lost its Codex explicit-only control");
+  await recordCodexProjection();
 
   const isolation = join(evidence, "codex-isolation");
   const home = join(isolation, "home");
@@ -97,7 +98,7 @@ async function runCodexCanary() {
   const configPath = join(home, "config.toml");
   await writeFile(configPath, config, "utf8");
   const env = codexEnv(isolation, home, resolvedCodex, provider.port);
-  manifest.environment.codexIsolation = { executable: resolvedCodex, argv: [resolvedCodex, "app-server", "--stdio"], env };
+  manifest.environment.codexIsolation = { executable: resolvedCodex, argv: [resolvedCodex, "app-server", "--stdio"], env: sanitizeCodexEnv(env, isolation, resolvedCodex) };
   manifest.artifacts["codex-isolation/config.toml"] = { sha256: await sha256(configPath), bytes: (await stat(configPath)).size };
 
   const implicit = await run(resolvedCodex, ["debug", "prompt-input", "Reply exactly DYDO_IDLE."], { cwd: checkout, env });
@@ -116,7 +117,7 @@ async function runCodexCanary() {
     assert(record.description === "Teach the human a new skill or concept, within this workspace.", "Codex inventory lost teach's exact description");
     const selectedPath = record.path;
     await writeArtifact("codex-explicit.json", JSON.stringify({ selectedSkill: record }, null, 2));
-    assert(typeof selectedPath === "string" && /[\\/]\.agents[\\/]skills[\\/]teach[\\/]SKILL\.md$/i.test(selectedPath), `Codex inventory did not supply teach's projected SKILL.md path: ${selectedPath}`);
+    assert(typeof selectedPath === "string" && samePath(selectedPath, join(checkout, "skills", "teach", "SKILL.md")), `Codex inventory did not supply teach's canonical SKILL.md path: ${selectedPath}`);
     assert(samePath(await realpath(selectedPath), join(checkout, "skills", "teach", "SKILL.md")), "Codex inventory path did not real-resolve to canonical teach");
 
     const threadResponse = await rpc.request({ method: "thread/start", id: 3, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "never", sandbox: "read-only", ephemeral: true } });
@@ -146,6 +147,39 @@ async function runCodexCanary() {
     provider.child.kill("SIGTERM");
     await provider.done.catch(() => {});
   }
+}
+
+async function recordCodexProjection() {
+  const projectedDirectory = join(checkout, ".agents", "skills", "teach");
+  const projectedBody = join(projectedDirectory, "SKILL.md");
+  const projectedResource = join(projectedDirectory, "resources", "mission-format.md");
+  const canonicalBody = join(checkout, "skills", "teach", "SKILL.md");
+  const canonicalResource = join(checkout, "skills", "teach", "resources", "mission-format.md");
+  const entry = await lstat(projectedDirectory);
+  assert(entry.isSymbolicLink(), "Codex teach projection was not a directory link/junction");
+  assert((await stat(projectedDirectory)).isDirectory(), "Codex teach projection did not target a directory");
+  const storedTarget = await readlink(projectedDirectory);
+  const projectedBodyReal = await realpath(projectedBody);
+  const projectedResourceReal = await realpath(projectedResource);
+  assert(samePath(projectedBodyReal, canonicalBody), "Codex projected body did not real-resolve canonical");
+  assert(samePath(projectedResourceReal, canonicalResource), "Codex projected resource did not real-resolve canonical");
+  const bodyHashes = { projected: await sha256(projectedBody), canonical: await sha256(canonicalBody) };
+  const resourceHashes = { projected: await sha256(projectedResource), canonical: await sha256(canonicalResource) };
+  assert(bodyHashes.projected === bodyHashes.canonical, "Codex projected body bytes differed from canonical");
+  assert(resourceHashes.projected === resourceHashes.canonical, "Codex projected resource bytes differed from canonical");
+  const cleanBefore = (await run("git", ["status", "--porcelain=v1", "--untracked-files=all"], { cwd: candidate })).stdout;
+  const cleanAfter = (await run("git", ["status", "--porcelain=v1", "--untracked-files=all"], { cwd: candidate })).stdout;
+  assert(cleanBefore === "" && cleanAfter === "", "Codex projection proof observed a dirty source candidate");
+  const setupRuns = manifest.commands.filter(command => command.command === process.execPath && command.args[0] === "setup-skills.mjs").map(command => ({ argv: [command.command, ...command.args], exitCode: command.exitCode }));
+  assert(setupRuns.length === 2 && setupRuns.every(runResult => runResult.exitCode === 0), "Codex projection proof did not observe two successful setup runs");
+  await writeArtifact("codex-projection.json", JSON.stringify({
+    candidateSha: manifest.candidateSha,
+    setupRuns,
+    link: { path: projectedDirectory, entryType: process.platform === "win32" ? "directory-junction" : "directory-symlink", storedTarget },
+    body: { projectedLexicalPath: projectedBody, canonicalRealPath: projectedBodyReal, sha256: bodyHashes, readSucceeded: (await readFile(projectedBody, "utf8")).length > 0 },
+    resource: { projectedLexicalPath: projectedResource, canonicalRealPath: projectedResourceReal, sha256: resourceHashes, readSucceeded: (await readFile(projectedResource, "utf8")).includes(EXPECTED_FACT) },
+    git: { before: cleanBefore, after: cleanAfter }
+  }, null, 2));
 }
 
 async function runOpenCodeCanary() {
@@ -288,6 +322,14 @@ function codexEnv(isolation, home, executable, port) {
     NO_PROXY: "127.0.0.1,localhost",
     no_proxy: "127.0.0.1,localhost"
   };
+}
+
+function sanitizeCodexEnv(env, isolation, executable) {
+  const executableDirectory = dirname(executable);
+  return Object.fromEntries(Object.entries(env).map(([key, value]) => [key, value
+    .replaceAll(isolation, "<codex-isolation>")
+    .replaceAll(executableDirectory, "<codex-bin>")
+    .replace(/http:\/\/127\.0\.0\.1:\d+/g, "<loopback>")]));
 }
 
 function startJsonRpc(command, args, { cwd, env }) {

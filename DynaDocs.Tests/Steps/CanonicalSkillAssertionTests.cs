@@ -19,7 +19,9 @@ public sealed class CanonicalSkillAssertionTests
         "dydo/guides/customizing-roles.md",
         "dydo/guides/getting-started.md",
         "dydo/guides/migrating-dydo-2x-to-3x.md",
+        "dydo/guides/orchestration-pitfalls.md",
         "dydo/guides/troubleshooting.md",
+        "dydo/project/future-features/routine-admiral.md",
         "dydo/reference/about-dynadocs.md",
         "dydo/reference/configuration.md",
         "dydo/reference/dydo-commands.md"

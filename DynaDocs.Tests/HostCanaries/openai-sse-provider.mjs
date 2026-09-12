@@ -292,7 +292,7 @@ function countAcross(strings, needle) {
 
 function extractInstalledSkillPath(strings) {
   for (const value of strings) {
-    const match = value.match(/([A-Za-z]:[\\/][^\n\r"`<>]*[\\/]\.agents[\\/]skills[\\/]teach[\\/]SKILL\.md)/i);
+    const match = value.match(/([A-Za-z]:[\\/][^\n\r"`<>]*[\\/]skills[\\/]teach[\\/]SKILL\.md)/i);
     if (match) return match[1];
   }
   throw new Error("Codex first request did not expose the selected installed skill path");

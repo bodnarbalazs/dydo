@@ -98,8 +98,6 @@ public abstract class IntegrationTestBase : IDisposable
     // Test session ID for integration tests
     protected const string TestSessionId = "test-integration-session";
 
-    private const int ExitCodeToolError = 2;
-
     /// <summary>
     /// Run check command.
     /// </summary>

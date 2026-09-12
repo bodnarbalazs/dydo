@@ -191,26 +191,6 @@ public class NamingRuleTests
     #region Exclusions
 
     [Fact]
-    public void Validate_SkipsTemplateFiles()
-    {
-        var doc = CreateDoc("agent-workflow.template.md", "_system/template-additions/agent-workflow.template.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
-    public void Validate_SkipsTemplateAdditions()
-    {
-        var doc = CreateDoc("NOTES.md", "_system/template-additions/NOTES.md");
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
-    [Fact]
     public void Validate_DoesNotSkipNonAgentPascalCaseFolders()
     {
         var doc = CreateDoc("test.md", "BadFolder/test.md");

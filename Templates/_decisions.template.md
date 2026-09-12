@@ -40,4 +40,4 @@ Required frontmatter:
 
 ## Related
 
-- [Pitfalls](../pitfalls/_index.md) - Known issues from past decisions
+- [Pitfalls](../pitfalls/_pitfalls.md) - Known issues from past decisions

@@ -18,7 +18,7 @@ status circle from its position in its category.
 |---|---|
 | `Backlog` | A possible Project retained for later; no admiral has taken it. |
 | `Planning` | The admiral's project-planner is charting the first low-resolution map, and the review loop runs. |
-| `Planned` | The plan passed independent review and human approval; the admiral opens the feature. |
+| `Planned` | The plan passed independent review and human approval; the admiral commissions the first Issue Captain to open the feature. |
 | `In Progress` | The admiral is working the map through Issue Captains toward the destination. |
 | `Completed` | The destination landed and a walkthrough found nothing more. |
 | `Canceled` | The destination was consciously abandoned; the Project records why. |
@@ -37,7 +37,7 @@ every chain spawn, and nothing else flips it.
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the human's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
 | `Specifying` | started | The specifier is spawned. |
-| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep and proofs. |
+| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep, proofs and final retention verification. |
 | `Implementing` | started | The implementer is spawned, a fix hop after a FAIL included. |
 | `Hardening` | started | The hardener is spawned. |
 | `In Review` | started | Any reviewer is spawned, spec review included. A FAIL returns the record to the hop that fixes it. |
@@ -69,15 +69,18 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Bug` | captain | any | Restore intended behaviour. The record holds the defect and its fix. | the behaviour restored | `#EB5757` |
 | `Merge` | captain | any; the landing is the only primary one | One merge operation: lanes into a parent, a primary into the feature, the feature into main. | the merge review PASS | `#4EA7FC` |
 | `Enablement` | captain | any | Access, environment, credentials or material other work needs; `wizard` guides the steps only the human can do. | the condition true, with evidence | `#26B5CE` |
-| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses turned into tests; Bugs filed. | the Bugs filed and the record written | `#5E6AD2` |
+| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses turned into tests; Bugs filed. | Bugs filed, record delivered to the retained feature, exact content and merge reachability verified | `#5E6AD2` |
 | `Prototype` | captain | any | A design question raised to fidelity the human can react to; fast sketches, the human is the review. | the human's verdict on the Issue | `#F2994A` |
 | `Question` | map holder | any | One prepared, discrete question whose answer blocks named work. | the human's answer on the Issue | `#F2C94C` |
 | `Research` | map holder | any | A factual answer whose investigation needs its own owner, status or evidence. | cited findings on the Issue | `#95A2B3` |
 | `Grilling` | map holder | any | A tree of intent or specification choices resolved with the human. | shared understanding recorded, with its Decision Records linked | `#D4A017` |
 | `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
-A captain-held Issue runs the chain [specifier] → [implementer] → [hardener] → [reviewer] on its own
-record or on its lanes; the captain decides, through its spec, which hops are empty. A map-holder-held Issue is run
+A captain-held Issue normally uses one author and one fresh independent whole-change reviewer for a
+small prompt or documentation change. A separate specifier or hardener needs one short concrete risk
+reason; persistence, migrations, permissions and uncertain native interfaces are examples needing
+stronger stages. Required G/M, integration and release gates remain. The captain records one compact
+acceptance contract and points to its evidence. A map-holder-held Issue is run
 directly by the admiral or captain whose map it clears; it receives no captain, branch, PR or review
 loop. `Task` names the captain-held Issue's role on a map; it is not a label.
 
@@ -120,9 +123,9 @@ files a `Question` only when judgment remains.
 | `Research` | `Todo` → `In Progress` → `Done` |
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
-| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and the proofs → `Done` |
-| captain-held | `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
-| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
+| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
+| captain-held default, subject to the Type exceptions | Small prompt/docs: `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`; stronger routes: `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
+| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`; it merges, it is never merged |
 
 A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,
@@ -132,6 +135,14 @@ needs splitting is replaced by sibling lanes. When the answer can change other I
 contract, or the Project's destination, scope, acceptance criteria or governing architecture, the
 captain prepares the packet and the admiral creates and wires the Project-level Issue. Native blocker
 relations connect every waiting record to what it waits on.
+
+The Bug Type template is a narrow exception to parallel delivery lanes: its captain may retain
+ordered reproduce-or-identify and fix Sub-issues, with fix natively blocked by reproduction and
+shared paths transferred only after reproduction closes with its evidence recorded. Each stage
+keeps the parent's Type and Mode and has its own contract, chain, branch and worktree; every actual
+integration has a Merge Sub-issue. For a simple Bug, collapse the staged placeholders into parent
+hops and close the unused records `Canceled` with the reason. Joining acceptance and final review
+stay on the parent; the exception creates no overlapping parallel ownership.
 
 ## Question Issues
 
@@ -151,8 +162,10 @@ If the answer determines which implementation Issue should exist, resolve the Qu
 
 ## Issue templates
 
-One Linear Issue template per Type, named after it. The human creates them from the bodies below; an
-agent lists and reads them over MCP and fills them in.
+One Linear Issue template per Type, named after it, is a workspace-UI convenience. Create it from
+the body below where the connected tools or UI permit. Agents read this standard and the Issue
+contract, then use the capabilities actually available; template listing or retrieval is not a
+required connector capability.
 
 | Template | Body |
 |---|---|
@@ -167,6 +180,56 @@ agent lists and reads them over MCP and fills them in.
 | `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
 | `Walkthrough` | `## What landed` (branch, SHA, final PASS), the four-part tour, `## Findings` as linked Issues. |
 
+`## Exact gates` lists its two scales separately: the cheap checks and change-relevant tests that
+prove one hop, and the full suites and whole gate set that run at the Issue's final gates, its Merge
+Sub-issue's combined gates and the landing. A worker briefed for one hop takes the first list alone.
+
+## Communication and evidence
+
+Use metadata first: the current active contract and named evidence only. Keep the stable current
+contract and state in the description. Read comments only for a named missing fact or binding review;
+comments have no assumed order. Filter tool output before it enters model context.
+
+Keep existing historical originals accessible. Put new full raw proof and native gate logs once in a
+durable, linked Git or document artifact; do not dump them into PRs or comments. Each gate result
+names its candidate, command, environment or session, exit and result location. Before expensive tests,
+record cheap proof of repository or snapshot, intended selection and nonzero discovery; a quiet healthy
+test continues. Reuse exact-candidate evidence only when the gate and environment permit it, rerunning
+after relevant changes or new concerns and at mandatory integration or release boundaries. Issue-and-PR
+binding review stays compact but complete. Ordinary updates expose only counts, exits, failure excerpts,
+and an evidence link. Do not repeat contracts, hashes, full returns, passing-test name dumps, unchanged
+updates, or token, cost, or latency claims. Review gates stay where their workflows require.
+
+Start each post with the applicable form:
+
+- `PASS — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
+- `FAIL — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
+- `HARDENED — hop/candidate <SHA>; probes: <probes> → <outcomes>; gaps: <none or named gaps>; next: <action>; evidence: <link>.`
+- `SPECIFIED` or `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
+- `STATE — <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
+
+Brevity is soft: ordinary events aim for at most 800 characters, descriptions and state for at most
+1,500 characters or 12 lines. A necessary finding, gap, blocker, or evidence may exceed those aims;
+omit narration and repetition either way. A writer's successful delivery is never an independent
+`PASS`.
+
+### Truthful comment signatures
+
+Every agent-authored Linear comment identifies its acting role and truthful model identity. State the
+effective identity when trustworthy runtime information exposes it. Otherwise qualify a family or a
+requested/configured value; never infer an alias resolution, parent model, or effort. State effort
+only when it is known and useful. A captain relay preserves the original author or reviewer identity
+and distinguishes the captain's posting identity. The reviewer field in a reviewer block is its
+signature, so do not add a second or conflicting one. Historical comments stay untouched.
+
+Examples:
+
+- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
+- `PASS — rubric/type: docs; candidate <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
+- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
+- `STATE — Implementing; owner: implementer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
+
 ## Decision Records
 
 Linear records the decision-making work; dydo records a qualifying decision. Link the Question or
@@ -176,10 +239,5 @@ Linear.
 
 ## Related
 
-- [Linear Issue Lifecycle](../understand/task-lifecycle.md) — How Issues move through planning,
-  execution, review, and escalation.
+- [Working-Tree Contract](../guides/working-tree-contract.md) — Branches, hops, review and merge ownership.
 - [dydo Glossary](./dydo-glossary.md) — Locked definitions for the Linear-native work model.
-- [DR 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) — The
-  governing flow map, question model, and human gates.
-- [DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) —
-  Supersymmetry, the twelve statuses and their order, the Type set, priority, merges as Issues.

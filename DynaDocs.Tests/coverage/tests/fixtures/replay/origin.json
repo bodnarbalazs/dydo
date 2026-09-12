@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "fixtures": {
+    "csharp-eligibility.xml": {
+      "sources": [
+        {
+          "session": "native-g-20260909-hop3-05",
+          "path": "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-05/raw/coverage.opencover.xml"
+        }
+      ],
+      "trimmingRule": "Keep the dydo module and retained TitleRule.get_Name MethodDef row only; keep its referenced file row and rewrite the module and document paths to repository-relative paths. This is a trimmed replay fixture, not raw AltCover output."
+    },
+    "csharp-join.xml": {
+      "sources": [
+        {
+          "session": "native-g-20260909-hop3-06",
+          "path": "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw/coverage.opencover.xml"
+        }
+      ],
+      "trimmingRule": "Keep the dydo module and retained TitleRule.get_Name MethodDef row only; keep its referenced file row and rewrite the module and document paths to repository-relative paths. This is a trimmed replay fixture, not raw AltCover output."
+    },
+    "csharp.json": {
+      "sources": [
+        {
+          "session": "native-g-20260909-hop3-05",
+          "path": "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-05/raw/identity-pre.json"
+        },
+        {
+          "session": "native-g-20260909-hop3-06",
+          "path": "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw/identity-pre.json"
+        },
+        {
+          "session": "native-g-20260909-hop3-06",
+          "path": "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw/identity-pre-artifacts.json"
+        },
+        {
+          "session": "native-g-20260909-hop3-06/newly-derived-ec97c1b4",
+          "path": "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw/newly-derived-ec97c1b4/source-facts-dydo.json",
+          "sourceCommit": "ec97c1b44015d83992303ea3dc9a9c045a82587e"
+        }
+      ],
+      "trimmingRule": "Keep the TitleRule.get_Name physical/source method, its CRLF source artifact identity, and one FolderSpec structural method required to prove physical exclusion. Remove unrelated assemblies, files, methods, behavior, and artifact rows; rewrite PDB document keys to repository-relative paths. This is derived test data, not any source file verbatim."
+    },
+    "reqnroll.json": {
+      "sources": [
+        {
+          "session": "assurance/run-3510c46004a847c4b24a94e4866b6743",
+          "path": "DynaDocs.Tests/coverage/results/assurance/run-3510c46004a847c4b24a94e4866b6743/raw/analyzers-0.sarif"
+        },
+        {
+          "session": "assurance/run-3510c46004a847c4b24a94e4866b6743",
+          "path": "DynaDocs.Tests/coverage/results/assurance/run-3510c46004a847c4b24a94e4866b6743/report.json"
+        },
+        {
+          "session": "assurance/run-3510c46004a847c4b24a94e4866b6743",
+          "path": "DynaDocs.Tests/coverage/results/assurance/run-3510c46004a847c4b24a94e4866b6743/inventory.json"
+        }
+      ],
+      "trimmingRule": "Keep all 229 diagnostic rows because raw and witness counts assert every row; keep only rule, level, suppression state, one exact location, and a stable message-equivalence id. Rewrite absolute producer URIs to repository-relative paths, remove message text and SARIF envelope metadata, and keep only maintained/generated inventory entries needed to classify those rows. This is a compact derived replay, not raw SARIF or a raw gate report."
+    }
+  }
+}

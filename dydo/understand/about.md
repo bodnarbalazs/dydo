@@ -6,8 +6,8 @@ type: context
 # About This Project
 
 DynaDocs (dydo) is a documentation, skill-authoring, and guardrail framework for AI coding assistants.
-It makes durable project context explicit and versioned, then compiles shared methods for native coding
-agent runtimes. Linear owns live project management; dydo/Git owns knowledge and reviewed proof.
+It makes durable project context explicit and versioned, then authors shared methods as native skills
+for coding agent runtimes. Linear owns live project management; dydo/Git owns knowledge and reviewed proof.
 
 This repository is both the dydo implementation and a living example of its documentation model. Claude
 Code and Codex own runtime identity, permissions, process lifecycle, worktree isolation, and native
@@ -16,7 +16,7 @@ agent coordination.
 ## What dydo does
 
 - **Documentation as memory** — agents onboard from structured, reviewable project knowledge.
-- **Native-runtime compilation** — `dydo sync` compiles shared roles, skills, resources, and workflows.
+- **Native skill authoring** — roles are plain `SKILL.md` folders under `.claude/skills/` and `.agents/skills/`, edited directly; there is no compile step.
 - **Guard enforcement** — `dydo guard` applies universal off-limits rules and project nudges.
 - **Documentation tooling** — `dydo check`, `dydo fix`, indexes, and graph commands keep knowledge usable.
 - **Reviewed delivery knowledge** — Decisions, Project plans, audits, and assimilation evidence remain in Git.

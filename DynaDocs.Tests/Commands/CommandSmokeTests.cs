@@ -20,13 +20,12 @@ public class CommandSmokeTests
             CompletionsCommand.Create,
             FixCommand.Create,
             GraphCommand.Create,
+            GapCheckCommand.Create,
             GuardCommand.Create,
             HelpCommand.Create,
             IndexCommand.Create,
             InitCommand.Create,
-            TemplateCommand.Create,
-            ValidateCommand.Create,
-            SyncCommand.Create
+            ValidateCommand.Create
         };
 
         foreach (var createCommand in commands)
@@ -49,20 +48,19 @@ public class CommandSmokeTests
                 CompletionsCommand.Create(),
                 FixCommand.Create(),
                 GraphCommand.Create(),
+                GapCheckCommand.Create(),
                 GuardCommand.Create(),
                 HelpCommand.Create(),
                 IndexCommand.Create(),
                 InitCommand.Create(),
-                TemplateCommand.Create(),
                 ValidateCommand.Create(),
-                SyncCommand.Create(),
             };
 
             // version is the only command created inline in Program.cs
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
-            // Must match Program.cs: 12 Create() commands + 1 inline (version) = 13
-            Assert.Equal(13, rootCommand.Subcommands.Count);
+            // Must match Program.cs: 11 Create() commands + 1 inline (version) = 12
+            Assert.Equal(12, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

@@ -1,7 +1,5 @@
 namespace DynaDocs.Utils;
 
-using DynaDocs.Services;
-
 public static partial class PathUtils
 {
     /// <summary>
@@ -10,10 +8,9 @@ public static partial class PathUtils
     /// </summary>
     public static string? FindDydoRoot(string? startPath = null)
     {
-        var configService = new ConfigService();
-        var projectRoot = configService.GetProjectRoot(startPath);
+        var projectRoot = ConfigFileLocator.FindProjectRoot(startPath);
         if (projectRoot == null) return null;
-        return configService.GetDydoRoot(startPath);
+        return ConfigFileLocator.GetDydoRoot(projectRoot);
     }
 
     /// <summary>
@@ -21,8 +18,7 @@ public static partial class PathUtils
     /// </summary>
     public static string? FindProjectRoot(string? startPath = null)
     {
-        var configService = new ConfigService();
-        return configService.GetProjectRoot(startPath);
+        return ConfigFileLocator.FindProjectRoot(startPath);
     }
 
     /// <summary>
@@ -47,8 +43,7 @@ public static partial class PathUtils
     {
         var projectRoot = FindMainProjectRoot(startPath);
         if (projectRoot == null) return null;
-        var configService = new ConfigService();
-        return configService.GetDydoRoot(projectRoot);
+        return ConfigFileLocator.GetDydoRoot(projectRoot);
     }
 
     public static string ResolvePath(string sourcePath, string relativePath)
@@ -60,12 +55,11 @@ public static partial class PathUtils
 
     public static string? FindDocsFolder(string startPath)
     {
-        var configService = new ConfigService();
-        var projectRoot = configService.GetProjectRoot(startPath);
+        var projectRoot = ConfigFileLocator.FindProjectRoot(startPath);
 
         if (projectRoot != null)
         {
-            var dydoRoot = configService.GetDydoRoot(startPath);
+            var dydoRoot = ConfigFileLocator.GetDydoRoot(projectRoot);
             if (Directory.Exists(dydoRoot) && File.Exists(Path.Combine(dydoRoot, "index.md")))
                 return dydoRoot;
         }

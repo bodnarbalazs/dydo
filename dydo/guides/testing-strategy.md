@@ -3,169 +3,197 @@ area: guides
 type: guide
 ---
 
-# Testing Strategy — Three-Tier System
+# Testing Strategy
 
-A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested. Every source module is checked against its tier's thresholds.
+Every project exposes one project-local testing facade. It is a small Python runner beside a schema
+1 JSON manifest. The facade selects declared adapters and executes their argv arrays directly: it
+does not construct a shell command, infer an omitted gate, or turn missing assurance into success.
 
----
+Run this repository's facade with the pinned local interpreter, because the `dotnet` static row
+measures the caller's own package identities:
 
-## The Three Tiers
-
-### T1 — Baseline
-
-**Everything is T1 by default.** No annotation needed.
-
-- **Tests:** Every non-trivial source module must have at least one corresponding test file
-- **Coverage:** ≥ 80% line coverage, ≥ 60% branch coverage
-- **Character:** "Does it work correctly under normal use?"
-- **What to test:** Happy paths, common error states, basic input validation
-- **Examples:** Utility services, standard command handlers, configuration parsing
-
-### T2 — Thorough
-
-For important code that handles significant business logic or user-facing workflows.
-
-- **Coverage:** 100% line coverage, ≥ 80% branch coverage, edge cases systematically covered
-- **Character:** "Does it hold up under pressure?"
-- **What to test:** Boundary conditions, error states, concurrent scenarios, complex state transitions, all error paths
-- **Examples:** Guard enforcement, bash command analysis, sync compilation
-
-No `coverage:ignore` escape hatches. If code is unreachable, delete it. If a guard triggers rarely, that's exactly what T2 testing should catch.
-
-### T3 — Hardened
-
-For mission-critical code where failure has severe consequences. Applied sparingly — expect a handful of classes total.
-
-- **Coverage:** 100% line coverage, 100% branch coverage, adversarial testing
-- **Character:** "Can it be broken?"
-- **What to test:** Everything in T2, plus: security tests (injection, malicious input), fuzzing, abuse scenarios
-- **Examples:** Hook enforcement (PreToolUse guard), permission validation, audit integrity
-
----
-
-## Assigning Tiers
-
-T1 is the default. Only T2 and T3 need explicit marking via a comment annotation in the first 10 lines of the **test file**:
-
-```csharp
-// @test-tier: 2
+```powershell
+$py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+& $py DynaDocs.Tests/coverage/gap_check.py all
+& $py DynaDocs.Tests/coverage/gap_check.py gate static
+& $py DynaDocs.Tests/coverage/gap_check.py gate coverage
+& $py DynaDocs.Tests/coverage/gap_check.py --force-run
+& $py DynaDocs.Tests/coverage/gap_check.py gate mutation --since BASE
 ```
 
-The test-file marker is authoritative. A T2 component might have some T1 utility tests alongside T2 edge-case tests — the file-level marker reflects what standard *that specific test file* is held to.
+## Stable grammar
 
----
+`test --stack NAME -- ARGS` runs only one selected test adapter and forwards the arguments
+after `--` as literal argv items. `all` runs every declared test adapter by default, or the
+selected stacks in manifest order. `gate static`, `gate coverage`, and `gate mutation --since
+BASE` run only that capability. `capabilities` checks the same stack, isolation, command and path
+contracts without running children or creating result artifacts. Valid configuration, including
+declared unavailable capabilities, returns 0; malformed entries are reported as invalid alongside
+valid peers and return 2. Mutation's argv structure is checked without requiring `--since` for inspection.
+`--force-run` selects every test, static, and coverage row; it never runs mutation. When a stack's
+coverage row declares its suite verdict, that row's single instrumented run is the stack's one test
+execution and the test row is derived from it instead of launching the suite a second time.
 
-## CRAP Score Thresholds
+Bare invocation prints help, creates no result, and exits 2. A recognized operation writes one
+`result.json` under the manifest's repository-contained `artifactRoot`. It records schema,
+candidate commit and dirty state, operation, selected stacks, ordered rows, and aggregate exit.
+Each row records its stack, capability, state, argv, working directory, isolation requirement and
+evidence, raw child exit, result exit, artifacts, and any reason.
+The result destination is prepared before dispatch. An unusable destination starts no adapter;
+filesystem failures are reported as exit 2, while an already interrupted operation retains exit 130.
 
-Each tier has a **CRAP score** target — a single metric combining cyclomatic complexity (CC) and code coverage. Formula: `CRAP = CC² × (1 - cov)³ + CC`.
+Exit 0 means every selected configured row passed. Exit 1 means a measurement failed. Exit 2 means
+invalid, missing, malformed, unsupported, or unavailable work. Exit 130 means an interrupted
+adapter completed cleanup. The aggregate preserves that priority: interruption, then unavailable or
+invalid work, then measured failure, then pass.
 
-| Tier | CRAP ≤ | What it takes |
-|------|--------|---------------|
-| **T1** | 30 | Test it or keep it simple. At 80% line coverage, CC up to ~25 passes. |
-| **T2** | 15 | Real testing investment. CC = 10 needs ~80% coverage. |
-| **T3** | 5 | Forced decomposition. Even at 100% coverage, max CC = 4. |
+## Manifest and adaptation
 
-Key properties of CRAP:
-- At 100% coverage, CRAP equals CC — a pure complexity measure.
-- At 0% coverage, CRAP = CC² + CC — untested complex code is severely penalized.
-- The metric rewards either reducing complexity or increasing coverage (ideally both).
+The manifest has schema `1`, a repository-relative artifact root, and an ordered array of uniquely
+named stacks. A stack declares `name`, `kind`, `cwd`, `isolation`, and all four capabilities:
+`test`, `static`, `coverage`, and `mutation`. A configured capability owns an `argv` or
+`current-python` command and artifact declarations; `current-python` prefixes argv with the
+running interpreter. An unavailable capability has a reason and is a failed-closed result, not a
+passing gate.
 
-CRAP uses the **per-method max** cyclomatic complexity, not the class-level sum. See [Decision 009](../project/decisions/009-crap-per-method-metric.md) for why.
+An `argv` executable path is resolved from the stack's declared working directory while the argv
+record stays unchanged. Bare executable names use the platform search rules.
 
-Auto-generated code (e.g., source generators, `obj/` artifacts) is excluded.
+Manifest cwd, adapter and artifact paths are repository-relative and contained. A configured non-test
+gate must declare required artifacts and create or observably refresh each one during its successful
+child invocation. The facade compares file metadata and content, recursively for directory artifacts;
+an unchanged old report cannot pass. It never deletes or modifies old evidence to manufacture freshness.
+This comparison establishes an observable change inside the child-operation interval; the isolation
+adapter remains responsible for preventing another process from writing the same evidence path.
+Mutation has exactly one argv item equal to `{base}`; the
+facade replaces that one item with `--since`'s value. Isolation is a project adapter claim:
+in-place work has direct evidence, while worktree and per-run requirements name a verified adapter.
+The facade does not invent isolation.
 
-### Diagnosing a CRAP failure
+DR 048 has one policy for every maintained module: warnings as errors and strict types, no dead code,
+all tests passing and a test file for every non-trivial module,
+line coverage of at least 80%, branch coverage of at least 60%, HCRAP at most 20 per method,
+cognitive complexity at most 20, at most seven parameters outside constructors, no supported nested
+ternary, no clone meeting both 15 lines and 100 tokens, and no namespace or module dependency cycles.
+Only code not maintained here (generated, vendored, or minified) is excluded. There are no tiers,
+classic CRAP thresholds, registry, annotations, or nesting-depth gate, and there are no
+suppressions: a suppressed C# analyzer diagnostic on maintained source, an `istanbul`, `c8` or
+`v8 ignore` comment, and an inline ESLint disable are a finding or ignored input, never an escape.
+What DR 048 permits instead is correcting a gate that is wrong, with the triage recorded; this
+repository's one recorded correction is below. Mutation is separate: DynaDocs requires
+no surviving or uncovered changed-code mutants. A stack
+without a reviewed mechanism reports that gate as unavailable until adoption.
 
-Because the gate is CRAP — not a plain line-% threshold — **adding a few guard branches to a T1 file can tip it red even when every test passes**. At CC = 30, full coverage puts CRAP at exactly 30 (pass); 93% coverage puts it at 30.3 (fail). Conversely, adding tests that only re-cover already-covered lines does nothing.
+`DynaDocs.Tests/coverage/gap_check.py` is the canonical runner and
+`dydo/reference/gap-check.example.py` is its derived copy, not a second maintained source:
+`DynaDocs.Tests/coverage/sync_testing_example.py` writes the example from the canonical bytes, and
+`sync_testing_example.py --check` exits 2 when the two differ. Divergence is a defect to re-sync,
+never a waiver, and the static gate refuses to exclude the derived copy from its source inventory
+unless the canonical runner, the producer and the producer's test are all present and the bytes
+match. Adopt it with its adjacent `dydo/reference/gap-check.example.json`: rename both together to
+`gap_check.py` and `gap_check.json` at the chosen project location. The runner discovers the
+enclosing Git root; paths in the manifest resolve from that root. Outside Git, they resolve from
+the runner's folder.
 
-Diagnose with:
+Replace each project's cwd and artifact placeholders, supply the real isolation adapter, then enable
+its capability with faithful argv. The ASP.NET example shows `dotnet test` but leaves execution
+unavailable until a worktree adapter copies working changes. The React/Vite example shows Node
+running `node_modules/vitest/vitest.mjs run`; its adapter must arrange per-run artifacts. The Python
+example uses `uv run --locked --extra dev -m pytest` from the adapted Python project directory.
+A fully adapted targeted test can run while other stacks remain unfinished. Default `all` still
+reports every declared test row and returns 2 until all selected tests are available and valid.
 
-```bash
-python DynaDocs.Tests/coverage/gap_check.py --inspect <ModuleName>
-```
+Global JSON/schema/request errors start nothing. Row-local defects skip only that row; valid peers
+run before aggregate failure is reported. Configured rows require command and artifacts and forbid a
+reason. Unavailable rows require a reason, forbid executable commands/artifacts, and may carry
+non-executable `exampleArgv` for adoption. A configured coverage row may additionally declare
+`suiteVerdict` — an `exit` path and a `failure` match into its required report — so that under
+`--force-run` its test row derives the verdict from that one instrumented execution rather than
+running the suite again. Do not relabel an unwired available mechanism as a pass.
+The example's own static and coverage rows stay unavailable until DYD-91's adoption pass gives each
+applicable row a faithful command and evidence contract; mutation adoption is DYD-103.
 
-It prints `lines: x/y`, `branches: %`, `CRAP`, `CC`, the uncovered line numbers, and partial branches.
+An interrupt goes to the active adapter process group. The facade grants up to 30 seconds for adapter
+cleanup before escalation, preserves raw child exit when observed, stops all remaining rows, and
+records exit 130. Adapters
+own cleanup; the router does not invent worktree or artifact isolation. DynaDocs' real cancellation
+probe uses a safe filtered test and verifies its newly observed worktree directory and Git
+registration have disappeared before the result is reported.
 
-Two levers to get back under the threshold, best used together:
+## What this repository measures
 
-1. **Cut complexity** — e.g. collapse a dead disjunct like `loaded == null || (models = loaded?.Models) == null` into `if (loaded?.Models is not { } models)`; that removes a branch *and* null-narrows `loaded`. Each −1 CC gives real headroom.
-2. **Cover the error paths** — not-in-project, corrupt-input, and missing-section branches are the usual uncovered culprits in a service.
+Nine rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`
+and `node`. Mutation is unavailable on all three with the reason `Pending DYD-103`, and an
+unavailable capability is a failed-closed 2, never a passing gate. Each stack's coverage row
+declares its suite verdict, so under `--force-run` a declaring stack's test verdict comes from its
+coverage row's single instrumented execution. The `dotnet` stack runs inside
+an isolated Git worktree copy of the working candidate; `python` and `node` run in place.
+[Coverage Tools](../reference/coverage-tools.md) holds the exact commands, artifacts, exit meanings
+and summary schema.
 
----
+Static measurement covers all maintained source of a stack, test files included: complexity,
+parameters, dead code, nested ternaries, dependency cycles, unused exports, clones and the native
+analyzers all read test code as well as product code.
 
-## Tier Summary
+Coverage measures only target modules. The role comes from the build, not from a naming
+convention: for C# from each project's evaluated `IsTestProject`, for Python and JavaScript from
+native test discovery. Test bodies, fixtures and assertion helpers supply the evidence; they are
+not coverage targets and are never required to cover themselves. A maintained gate producer or
+runner is a target even under a test directory — `GateMetrics` and the `DynaDocs.Tests/coverage`
+runners are measured, while the `DynaDocs.Tests` assembly is instrumented for identity only.
+`DynaDocs.Tests/coverage/test-associations.json` carries the file-level intent DR 048's test rule
+needs: every executable target module must name at least one associated test file, and one that
+names none is the finding `test-association`.
 
-| Metric               | T1                       | T2               | T3                           |
-| -------------------- | ------------------------ | ---------------- | ---------------------------- |
-| **Line coverage**    | ≥ 80%                    | 100%             | 100%                         |
-| **Branch coverage**  | ≥ 60%                    | ≥ 80%            | 100%                         |
-| **CRAP score**       | ≤ 30                     | ≤ 15             | ≤ 5                          |
-| **Edge cases**       | Key ones                 | Systematic       | Exhaustive + adversarial     |
-| **Security testing** | —                        | Input validation | Injection, escaping, fuzzing |
+One gap is recorded rather than dropped or weakened: mutation on every stack, which is DYD-103. The
+JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
+maintained JavaScript file with no filename extension would be reported as a gap naming DYD-105
+rather than measured as less than the inventory, and no maintained JavaScript file here lacks an
+extension.
 
-### What counts as "non-trivial"
+## Recorded gate correction: three dynamic Vulture uses
 
-Excluded from the "has tests" requirement:
-- Auto-generated code (source generators, EF migrations, `*.g.cs`)
-- Pure data models / record types with no logic (≤ 3 executable lines)
-- Program.cs entry point
+DR 048 admits a gate only where a violation is certainly wrong at a threshold where no exception
+would be accepted, with no per-file suppression, and it makes the transition the validation: when
+the gates first run on existing code, a failure over code that is right as it stands means the gate
+is wrong and is corrected, and the triage is recorded. Dead code is such a gate, run for Python as
+`ruff check --isolated --select F` plus Vulture. Vulture is a heuristic — it reports a name with no
+static reader — and three of its reports here name symbols that a real caller reads at run time
+through a mechanism no static analysis can see.
 
-Everything else — services, command handlers, validators, utilities — needs a test file.
+`DynaDocs.Tests/coverage/gate_collect.py` holds those three as exact `(path, message)` pairs in
+`_DYNAMIC_VULTURE_USES`. `classify_vulture` moves a matching row out of the findings and into the
+collector's `semantic_uses`, tagged with its witness.
 
----
+| Path | Vulture message | Witness | Why the finding is wrong |
+|---|---|---|---|
+| `DynaDocs.Tests/coverage/python_coverage.py` | `unused function 'startup_from_environment'` | `python-coverage-startup` | `python_coverage.collect` generates `startup/sitecustomize.py`, whose two lines import and call the function, and puts that directory on the child's `PYTHONPATH`. CPython runs it at interpreter startup in every process of the campaign, so the only caller is a file written at run time and no static caller can exist. |
+| `DynaDocs.Tests/coverage/windows_job.py` | `unused attribute 'cb'` | `windows-native-abi` | `Startup.cb` is a `_fields_` member of the ctypes mirror of Win32 `STARTUPINFOW`. `native_run` sets it to `sizeof(StartupEx)`, and the kernel reads it when `CreateProcessW` receives `byref(startup)`. |
+| `DynaDocs.Tests/coverage/windows_job.py` | `unused attribute 'flags'` | `windows-native-abi` | The same ABI: `Startup.flags` carries `STARTF_USESTDHANDLES` for `CreateProcessW`, and `BasicLimits.flags` carries `KILL_ON_JOB_CLOSE` for `SetInformationJobObject`. Python writes them; only the kernel reads them. |
 
-## Worktree-isolated execution
+This is a correction, not a waiver:
 
-Run tests through the repository's isolated runner so concurrent agents cannot contend for build output:
-
-```bash
-py DynaDocs.Tests/coverage/run_tests.py
-py DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~MyTests
-```
-
-Do not invoke `dotnet test` directly during agent work. The runner creates a temporary Git worktree,
-executes the suite there, and preserves the current implementation worktree for review.
-
-## Tooling
-
-`gap_check.py` in `DynaDocs.Tests/coverage/` enforces these tiers:
-
-```bash
-python DynaDocs.Tests/coverage/gap_check.py                    # auto-detect: skip or run tests
-python DynaDocs.Tests/coverage/gap_check.py --force-run        # always run tests
-python DynaDocs.Tests/coverage/gap_check.py --detail           # show uncovered lines
-python DynaDocs.Tests/coverage/gap_check.py --inspect Guard    # inspect matching modules
-```
-
-See [Coverage Tools](../reference/coverage-tools.md) for full usage reference.
-
-### Enforcement status
-
-Tier thresholds are a completion gate for implementation Issues and independent review. A non-zero
-`gap_check.py` result blocks completion even when focused tests pass.
-
----
-
-## Cross-Platform CI: Windows-Only Test Traps
-
-CI (`.github/workflows/ci.yml`) runs `dotnet test` on **ubuntu-latest as a non-root user**, while development happens on Windows — so Windows-only test assumptions pass locally and forever redden CI. When master CI is red but local Windows tests pass, suspect **platform-specific test bugs**, not whatever commit the timeline happens to blame: the same failures are usually red on the prior commit too, with product code correct and cross-platform.
-
-Two recurring traps:
-
-1. **File locking** — holding a `FileStream(..., FileShare.None)` handle to force `File.Delete` to throw only blocks deletion on Windows; POSIX lets you unlink an open file, so the test fails with "No exception was thrown" on Linux. On Unix, unlink permission is governed by the **parent directory** — induce a delete failure by making the parent dir non-writable (`File.SetUnixFileMode`), not by locking the file. Use the cross-platform helper `DynaDocs.Tests/UndeletableFile.cs`.
-2. **Hardcoded `C:\...` path literals** — on Linux `\` is an ordinary filename character, so `Path.GetFileName(@"C:\x\dir")` returns the whole string. Use forward-slash literals; they parse identically on both OSes.
-
-Also: guard Unix-only calls (`File.SetUnixFileMode`) with `OperatingSystem.IsWindows()`, not just a nullness check — the CA1416 analyzer can't correlate `_field != null` with platform, and `TreatWarningsAsErrors=true` (set in `Directory.Build.props`) turns that warning into a CI build break.
-
-### Verifying a Linux fix from Windows
-
-Without burning CI cycles: `git archive HEAD` → overlay your dirty files → run inside `mcr.microsoft.com/dotnet/sdk:10.0` as a **non-root** user (`useradd`, `chown`, `su`). Root would bypass the directory-permission check and mask the lock test. Run plain `dotnet test` (not `--warnaserror`) to avoid a false SourceLink "unable to locate repository" error from the missing `.git`.
-
----
+- Nothing in the measured source changes: there is no pragma, no ignore file, no inline suppression
+  comment and no per-file exemption in the code being measured. The correction lives entirely in the
+  collector, as the exact three-row `(path, message)` table in `gate_collect.py`, and no other module
+  can inherit its pairs. It is the only thing that moves a Vulture row out of the findings, and it
+  cannot hide one: what it takes out it republishes in the collector's `facts.semantic_uses`. Adding
+  a fourth pair is another DR 048 §5 triage to record, not a routine edit; reach for it as somewhere
+  to put an inconvenient finding and it becomes the escape hatch §1 refuses.
+- The pairs are exact, so drift re-raises the finding. Rename the function, rename an attribute, or
+  let a Vulture upgrade reword its message, and the row no longer matches and becomes an ordinary
+  dead-code finding again. Because Vulture's message does not name the owning structure, the
+  `flags` pair covers every `unused attribute 'flags'` row in `windows_job.py` — the
+  `STARTUPINFOEX` one and the two job-limit ones — and would cover a new one added to that file;
+  any other name or file is outside it.
+- The measurement keeps emitting the evidence beside the record. Every reclassified row is
+  published in the `python-dead-code` collector's `facts.semantic_uses` in
+  `DynaDocs.Tests/coverage/results/adapters/python-static.json` with its path, line, message,
+  confidence and witness, so a reader of the artifact sees the raw Vulture output and the triage
+  together.
 
 ## Related
 
-- [Coverage Tools](../reference/coverage-tools.md) — Tool usage reference (gap_check.py)
-- [CRAP Per-Method Metric](../project/decisions/009-crap-per-method-metric.md) — Why per-method max CC, not class-level sum
-- [Coding Standards](./coding-standards.md) — Code conventions
-- [Orchestration Pitfalls](./orchestration-pitfalls.md) — How concurrent work can collide through global gates
+- [Coverage Tools](../reference/coverage-tools.md) — adapter commands, schemas and provenance
+- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md) —
+  one-level static gates, no escape hatch

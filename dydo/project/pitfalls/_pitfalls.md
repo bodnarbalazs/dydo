@@ -33,4 +33,4 @@ Required sections:
 
 ## Related
 
-- [Decisions](../decisions/_index.md) - Decisions that may have caused pitfalls
+- [Decisions](../decisions/_decisions.md) - Decisions that may have caused pitfalls

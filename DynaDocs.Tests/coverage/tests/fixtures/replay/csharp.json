@@ -1,0 +1,126 @@
+{
+  "eligibility": {
+    "coveredToken": 100663984,
+    "equivalence": {
+      "aliases": [
+        "bin/Debug/net10.0/dydo.dll"
+      ],
+      "facts": {
+        "assembly_name": "dydo",
+        "documents": {
+          "Rules/TitleRule.cs": "Rules/TitleRule.cs",
+          "Services/FolderScaffolder.cs": "Services/FolderScaffolder.cs"
+        },
+        "methods": [
+          {
+            "identity": "System.String DynaDocs.Services.FolderScaffolder/FolderSpec::get_Path()",
+            "key": "DynaDocs.Services.FolderScaffolder/FolderSpec::get_Path`0()",
+            "points": [
+              {
+                "origin": "maintained",
+                "path": "Services/FolderScaffolder.cs"
+              }
+            ],
+            "token": 100664494
+          },
+          {
+            "identity": "System.String DynaDocs.Rules.TitleRule::get_Name()",
+            "key": "DynaDocs.Rules.TitleRule::get_Name`0()",
+            "points": [
+              {
+                "checksum": "1bd20d7e2fccd4705099df70e0fe595d94025e79ae6b711ee2181ab9ec5ccd7a",
+                "checksum_algorithm": "SHA256",
+                "column": 35,
+                "end_column": 42,
+                "end_line": 8,
+                "line": 8,
+                "origin": "maintained",
+                "path": "Rules/TitleRule.cs"
+              }
+            ],
+            "token": 100663984
+          }
+        ],
+        "sha1": "8da53c4b33221990d4af9839e18498779e265b47"
+      }
+    },
+    "sourceBehavior": {
+      "structural_methods": [
+        {
+          "key": "DynaDocs.Services.FolderScaffolder/FolderSpec::get_Path`0()",
+          "reason": "semantic synthesized member without authored body"
+        }
+      ]
+    },
+    "structuralToken": 100664494
+  },
+  "join": {
+    "equivalence": {
+      "aliases": [
+        "bin/Debug/net10.0/dydo.dll"
+      ],
+      "facts": {
+        "assembly_name": "dydo",
+        "documents": {
+          "Rules/TitleRule.cs": "Rules/TitleRule.cs"
+        },
+        "methods": [
+          {
+            "identity": "System.String DynaDocs.Rules.TitleRule::get_Name()",
+            "key": "DynaDocs.Rules.TitleRule::get_Name`0()",
+            "points": [
+              {
+                "checksum": "1bd20d7e2fccd4705099df70e0fe595d94025e79ae6b711ee2181ab9ec5ccd7a",
+                "checksum_algorithm": "SHA256",
+                "column": 35,
+                "end_column": 42,
+                "end_line": 8,
+                "line": 8,
+                "origin": "maintained",
+                "path": "Rules/TitleRule.cs"
+              }
+            ],
+            "token": 100663984
+          }
+        ],
+        "sha1": "eb4d662a7b3ea1814875b4710752cd9f4564a87a"
+      }
+    },
+    "sourceArtifacts": [
+      {
+        "bytes": 636,
+        "path": "Rules/TitleRule.cs",
+        "sha256": "1bd20d7e2fccd4705099df70e0fe595d94025e79ae6b711ee2181ab9ec5ccd7a"
+      }
+    ],
+    "sourceFacts": {
+      "behavior": {
+        "constructors": [],
+        "declared_methods": [],
+        "fragments": [],
+        "structural_methods": []
+      },
+      "files": [
+        {
+          "methods": [
+            {
+              "cognitive": 0,
+              "column": 4,
+              "constructor": false,
+              "end_column": 43,
+              "end_line": 8,
+              "id": "DynaDocs.Rules.TitleRule::get_Name@120:39",
+              "line": 8,
+              "parameters": 0,
+              "policy_cc": 1
+            }
+          ],
+          "path": "Rules/TitleRule.cs"
+        }
+      ],
+      "generated_files": []
+    }
+  },
+  "schema": 1,
+  "sourceCommit": "ec97c1b44015d83992303ea3dc9a9c045a82587e"
+}

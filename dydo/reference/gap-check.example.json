@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "artifactRoot": "results",
+  "stacks": [
+    {
+      "name": "dotnet",
+      "kind": "aspnet",
+      "cwd": ".",
+      "isolation": {
+        "requirement": "git-worktree-copy-working-changes",
+        "evidence": {
+          "state": "unavailable",
+          "reason": "Replace with the project's verified worktree adapter."
+        }
+      },
+      "capabilities": {
+        "test": {
+          "state": "unavailable",
+          "reason": "Replace the project path and adapter evidence before enabling dotnet test.",
+          "exampleArgv": [
+            "dotnet",
+            "test",
+            "<backend-solution-or-project>",
+            "--no-restore"
+          ]
+        },
+        "static": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed static gate."
+        },
+        "coverage": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed coverage gate."
+        },
+        "mutation": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed mutation gate."
+        }
+      }
+    },
+    {
+      "name": "frontend",
+      "kind": "react-vite",
+      "cwd": "<frontend-project-path>",
+      "isolation": {
+        "requirement": "per-run-artifacts",
+        "evidence": {
+          "state": "verified",
+          "kind": "adapter",
+          "path": "<frontend-adapter-path>"
+        }
+      },
+      "capabilities": {
+        "test": {
+          "state": "configured",
+          "command": {
+            "kind": "argv",
+            "argv": [
+              "node",
+              "node_modules/vitest/vitest.mjs",
+              "run"
+            ]
+          },
+          "artifacts": [
+            {
+              "path": "<frontend-run-artifact-path>",
+              "required": false
+            }
+          ]
+        },
+        "static": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed static gate."
+        },
+        "coverage": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed coverage gate."
+        },
+        "mutation": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed mutation gate."
+        }
+      }
+    },
+    {
+      "name": "python",
+      "kind": "python-uv",
+      "cwd": "<python-project-path>",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "capabilities": {
+        "test": {
+          "state": "configured",
+          "command": {
+            "kind": "argv",
+            "argv": [
+              "uv",
+              "run",
+              "--locked",
+              "--extra",
+              "dev",
+              "-m",
+              "pytest"
+            ]
+          },
+          "artifacts": []
+        },
+        "static": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed static gate."
+        },
+        "coverage": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed coverage gate."
+        },
+        "mutation": {
+          "state": "unavailable",
+          "reason": "Adopt a reviewed mutation gate."
+        }
+      }
+    }
+  ]
+}

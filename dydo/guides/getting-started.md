@@ -25,10 +25,9 @@ dotnet tool install -g dydo
 dydo version
 ```
 
-Done when `dydo version` prints; step 2's template update reports whether the tree is behind it. An
-older install is updated the same way.
+Done when `dydo version` prints. An older install is updated the same way.
 
-## 2. Initialize a fresh tree, or update an existing one
+## 2. Initialize a fresh tree, or join an existing one
 
 Fresh tree:
 
@@ -41,28 +40,16 @@ wire the guard hooks for the chosen runtimes, and Codex selections add `AGENTS.m
 creates durable Decisions, changelog, pitfalls and FutureFeature documentation; live work stays in
 Linear.
 
-Existing tree, which has `dydo.json` at its root: do not run `init` again. Refresh the
-framework-owned documents instead, and show the human the diff before anything is replaced:
+An existing tree, which has `dydo.json` at its root, is not re-initialized. The framework documents
+under `dydo/` are the project's own from then on; edit them in place. Another machine or runtime
+joining an already-initialized project runs `dydo init codex --join` or `dydo init claude --join`,
+which wires the local runtime without touching the documentation tree.
 
-```bash
-dydo template update --diff
-dydo template update
-```
+## 3. Author the skills
 
-A copy the report calls user-edited is compared against the shipped template. If it is only older,
-delete the copy and run the update again; if it carries the project's own edits, keep them and move
-on. Another machine or runtime joining a project already initialized runs `dydo init codex --join`
-or `dydo init claude --join`, which wires the local runtime without touching the documentation tree.
-
-## 3. Compile the skills
-
-```bash
-dydo sync
-```
-
-Compiles the role templates and resources into the native skills and agents of every wired runtime.
-Run it again after any template change. Done when `.claude/skills/` or `.agents/skills/` carries
-every shipped role.
+A role is a plain `SKILL.md` folder under `.claude/skills/<role>/` and `.agents/skills/<role>/`,
+committed and edited directly; there is no compile step. Done when both discovery paths carry the
+role folders the project uses — for a project dogfooding dydo, every shipped role.
 
 ## 4. Connect Linear
 
@@ -109,7 +96,7 @@ the workspace's project settings list the six Project statuses, which no MCP too
 - `dydo/understand/about.md`: purpose and domain;
 - `dydo/understand/architecture.md`: components and boundaries;
 - `dydo/guides/coding-standards.md`: repository conventions;
-- `dydo.json`: the model tiers per vendor and the agent bindings, the nudges, the scan exclusions;
+- `dydo.json`: the nudges and the scan exclusions;
   see [Configuration](../reference/configuration.md).
 
 Done when `dydo check` no longer warns about uncustomized foundation documents.
@@ -118,11 +105,14 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 
 The crew tree needs three layers below a session: admiral, issue-captain, worker, scout.
 
-- Claude Code: `.claude/settings.json` gains `"env": { "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "3" }`.
-- Codex: the project's `.codex/config.toml` gains `[agents]` with `max_depth = 3`.
+- Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
+- Codex: the project's `.codex/config.toml` contains `[agents]` with `max_depth = 3` and
+  `max_concurrent_threads_per_session = 16`.
 
-`dydo init` writes both once DYD-86 lands; until then, by hand. Done when both files carry the key.
-Claude Code's default is already 3, so today only the Codex file changes behaviour.
+`dydo init claude`, `codex`, or `all` writes the selected project settings and rejects conflicting
+managed values instead of replacing them. These settings express project configuration intent; they do
+not prove host acceptance or available runtime capacity. Codex V2 and configuration reload behavior
+remain host qualifications. Done when the selected files carry the keys.
 
 ## 8. Check
 

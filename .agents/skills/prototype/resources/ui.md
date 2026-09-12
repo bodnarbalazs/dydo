@@ -6,6 +6,9 @@ Generate **several radically different UI variations** on a single route, switch
 bottom bar. The human flips between variants in the browser, picks one (or steals bits from each),
 then throws the rest away.
 
+If the question is about logic/state rather than what something looks like, this is the wrong branch.
+Use [logic](logic.md).
+
 ## When this is the right shape
 
 - "What should this page look like?"
@@ -20,14 +23,18 @@ header, real sidebar, real data, real density. A throwaway route on its own is a
 variant looks fine in isolation. Default to sub-shape A whenever there's a plausible existing page
 to host the variants. Only reach for sub-shape B if the prototype genuinely has no nearby home.
 
-**Sub-shape A: adjustment to an existing page (preferred).** The route already exists. Variants are
+### Sub-shape A: adjustment to an existing page (preferred)
+
+The route already exists. Variants are
 rendered **on the same route**, gated by a `?variant=` URL search param. The existing data fetching,
 params, and auth all stay. Only the rendering swaps. This is the default; pick it unless there's a
 specific reason not to. If the prototype is for something that doesn't yet have a page but *would
 naturally live inside one* (a new section of the dashboard, a new card on the settings screen, a new
 step in an existing flow), it's still sub-shape A. Mount the variants inside the host page.
 
-**Sub-shape B: a new page (last resort).** Only use this when the thing being prototyped genuinely
+### Sub-shape B: a new page (last resort)
+
+Only use this when the thing being prototyped genuinely
 has no existing page to live inside (e.g. an entirely new top-level surface, or a flow that can't be
 embedded anywhere sensible). Create a **throwaway route** following whatever routing convention the
 project already uses. Don't invent a new top-level structure. Name it so it's obviously a prototype
@@ -37,7 +44,9 @@ An empty route hides design problems that a populated one would expose.
 
 In both sub-shapes the floating bottom bar is identical.
 
-## 1. State the question and pick N
+## Process
+
+### 1. State the question and pick N
 
 Default to **3 variants**. More than 5 stops being radically different and starts being noise, so
 cap there.
@@ -49,7 +58,7 @@ Write down the plan in one line, in the prototype's location or a top-of-file co
 
 This works whether the human is here to push back or not.
 
-## 2. Generate radically different variants
+### 2. Generate radically different variants
 
 Draft each variant. Hold each one to:
 
@@ -62,7 +71,7 @@ different primary affordance, not just different colours. Three slightly-tweaked
 UI prototype, it's wallpaper. If two drafts come out too similar, redo one with explicit "do not use
 a card grid" guidance.
 
-## 3. Wire them together
+### 3. Wire them together
 
 Create a single switcher component on the route:
 
@@ -84,7 +93,7 @@ rendered subtree changes per variant.
 
 For sub-shape B (new page): the throwaway route under `/prototype/<name>` mounts the same switcher.
 
-## 4. Build the floating switcher
+### 4. Build the floating switcher
 
 A small fixed-position bar at the bottom-centre of the screen with three pieces:
 
@@ -102,18 +111,18 @@ Behaviour:
 - Visually distinct from the page (e.g. high-contrast pill, subtle shadow) so it's obviously not
   part of the design being evaluated.
 - Hidden in production builds: gate on `process.env.NODE_ENV !== 'production'` or an equivalent
-  check, so a stray prototype merge can't ship the bar.
+  check, so a stray prototype merge can't ship the bar to users.
 
 Put the switcher in a single shared component so both sub-shapes can reuse it. Locate it wherever
 shared UI lives in the project.
 
-## 5. Hand it over
+### 5. Hand it over
 
 Surface the URL (and the `?variant=` keys). The human will flip through whenever they get to it. The
 interesting feedback is usually **"I want the header from B with the sidebar from C"**, which is the
 actual design they want.
 
-## 6. Capture the answer and clean up
+### 6. Capture the answer and clean up
 
 Once a variant has won, capture the answer (which variant and why), then capture the prototype the
 way rule 6 describes. Fold the winner into the real code and move the rest onto the

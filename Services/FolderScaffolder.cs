@@ -1,26 +1,23 @@
 namespace DynaDocs.Services;
 
-using DynaDocs.Commands;
-using DynaDocs.Models;
-
 public class FolderScaffolder : IFolderScaffolder
 {
-    private readonly record struct FolderSpec(string Path, string Description, string Area);
+    private readonly record struct FolderSpec(string Path);
 
     private static readonly FolderSpec[] Folders =
     [
-        new("understand", "Core concepts, domain knowledge, and architecture", "understand"),
-        new("guides", "Task-oriented development guides", "guides"),
-        new("reference", "API specs, configuration, and tool documentation", "reference"),
-        new("project", "Decisions, pitfalls, changelog, and meta documentation", "project"),
-        new("project/decisions", "Decision records", "project"),
-        new("project/changelog", "Change history", "project"),
-        new("project/pitfalls", "Known issues and gotchas", "project"),
-        new("project/releases", "Release records and durable release evidence", "project"),
-        new("project/future-features", "Ideas not in scope for current version", "project"),
-        new("_system", "System configuration (committed)", "_system"),
-        new("_system/.local", "Machine-local runtime state (not committed)", "_system"),
-        new("_assets", "Documentation assets (images, diagrams)", "_assets")
+        new("understand"),
+        new("guides"),
+        new("reference"),
+        new("project"),
+        new("project/decisions"),
+        new("project/changelog"),
+        new("project/pitfalls"),
+        new("project/releases"),
+        new("project/future-features"),
+        new("_system"),
+        new("_system/.local"),
+        new("_assets")
     ];
 
     private static readonly (string RelativePath, Func<string> Generate)[] DocFiles =
@@ -57,7 +54,6 @@ public class FolderScaffolder : IFolderScaffolder
         // is assigned at spawn, nothing owns a named workspace).
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
-        ScaffoldTemplateAdditions(basePath);
         ScaffoldTypesJson(basePath);
         CopyBuiltInAssets(basePath);
 
@@ -66,29 +62,12 @@ public class FolderScaffolder : IFolderScaffolder
             TemplateGenerator.GenerateIndexMd());
 
         ScaffoldDocFiles(basePath);
-        GenerateHubFiles(basePath);
     }
 
     private void ScaffoldDocFiles(string basePath)
     {
         foreach (var (relativePath, generate) in DocFiles)
             WriteIfNotExists(Path.Combine(basePath, relativePath), generate());
-    }
-
-    private void GenerateHubFiles(string basePath)
-    {
-        var parser = new MarkdownParser();
-        var scanner = new DocScanner(parser);
-        var docs = scanner.ScanDirectory(basePath);
-
-        var hubs = HubGenerator.GenerateAllHubs(basePath, docs);
-
-        foreach (var (relativePath, content) in hubs)
-        {
-            var fullPath = Path.Combine(basePath, relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-            File.WriteAllText(fullPath, content);
-        }
     }
 
     private void CopyBuiltInAssets(string basePath)
@@ -113,30 +92,6 @@ public class FolderScaffolder : IFolderScaffolder
         var path = Path.Combine(basePath, FrontmatterTypesService.TypesJsonRelativePath);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         WriteIfNotExists(path, TemplateGenerator.ReadBuiltInTemplate("types.json.template"));
-    }
-
-    private void ScaffoldTemplateAdditions(string basePath)
-    {
-        var destPath = Path.Combine(basePath, "_system", "template-additions");
-        Directory.CreateDirectory(destPath);
-
-        WriteIfNotExists(
-            Path.Combine(destPath, "_README.md"),
-            TemplateGenerator.ReadBuiltInTemplate("template-additions-readme.md"));
-
-        WriteIfNotExists(
-            Path.Combine(destPath, "extra-verify.md.example"),
-            TemplateGenerator.ReadBuiltInTemplate("extra-verify.example.md"));
-    }
-
-    public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
-    {
-        foreach (var relativePath in TemplateCommand.FrameworkDocFiles)
-        {
-            var fullPath = Path.Combine(basePath, relativePath);
-            if (File.Exists(fullPath))
-                config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
-        }
     }
 
     private static void WriteIfNotExists(string path, string content)

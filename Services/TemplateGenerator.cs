@@ -1,9 +1,6 @@
 namespace DynaDocs.Services;
 
 using System.Reflection;
-using System.Text.RegularExpressions;
-using DynaDocs.Commands;
-using DynaDocs.Models;
 
 /// <summary>
 /// Generates documentation files by reading templates from embedded resources
@@ -12,53 +9,6 @@ using DynaDocs.Models;
 public static class TemplateGenerator
 {
     private static readonly Assembly _assembly = Assembly.GetExecutingAssembly();
-
-    /// <summary>
-    /// Lists a skill's resource templates — files named
-    /// `&lt;skill&gt;-resource-&lt;name&gt;.template.md` ("resource" is the protected word) — as
-    /// (fileName, content) pairs. `dydo sync` compiles each into the skill folder as
-    /// `resources/&lt;name&gt;.md`.
-    /// </summary>
-    public static IEnumerable<(string FileName, string Content)> GetSkillResources(string skillName)
-    {
-        foreach (var templateName in GetSkillResourceTemplateNames(skillName))
-        {
-            var name = templateName[$"{skillName}-resource-".Length..^".template.md".Length];
-            yield return ($"{name}.md", ReadBuiltInTemplate(templateName));
-        }
-    }
-
-    /// <summary>
-    /// The workflow harness scripts dydo ships (Templates/workflow-&lt;name&gt;.js — "workflow-"
-    /// is the protected prefix). `dydo sync` compiles each to `.claude/workflows/&lt;name&gt;.js`.
-    /// Claude-only for now; a codex equivalent gets a matching emit path when one exists.
-    /// </summary>
-    public static IEnumerable<(string FileName, string Content)> GetWorkflowScripts()
-    {
-        const string prefix = "DynaDocs.Templates.workflow-";
-        foreach (var resource in _assembly.GetManifestResourceNames()
-                     .Where(r => r.StartsWith(prefix) && r.EndsWith(".js"))
-                     .OrderBy(r => r, StringComparer.Ordinal))
-        {
-            using var stream = _assembly.GetManifestResourceStream(resource);
-            if (stream == null) continue;
-            using var reader = new StreamReader(stream);
-            yield return (resource[prefix.Length..], reader.ReadToEnd());
-        }
-    }
-
-    /// <summary>
-    /// Embedded template names matching `&lt;skill&gt;-resource-*.template.md`.
-    /// </summary>
-    public static IReadOnlyList<string> GetSkillResourceTemplateNames(string skillName)
-    {
-        var prefix = $"DynaDocs.Templates.{skillName}-resource-";
-        return _assembly.GetManifestResourceNames()
-            .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md"))
-            .Select(r => r["DynaDocs.Templates.".Length..])
-            .OrderBy(n => n, StringComparer.Ordinal)
-            .ToList();
-    }
 
     /// <summary>
     /// Reads a template from embedded resources.
@@ -75,103 +25,15 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Reads a shipped template and returns its content: the source Templates/ folder in
-    /// dev-mode, embedded resources otherwise.
+    /// Reads a shipped template from the executable's embedded snapshot.
     /// </summary>
     public static string ReadBuiltInTemplate(string templateName)
     {
-        // Dev-mode: when running within the DynaDocs source tree,
-        // prefer source Templates/ over potentially stale embedded resources
-        var devPath = Path.Combine("Templates", templateName);
-        if (File.Exists(devPath) && File.Exists("DynaDocs.csproj"))
-            return File.ReadAllText(devPath);
-
         var content = ReadEmbeddedTemplate(templateName);
         if (content != null)
             return content;
 
         throw new FileNotFoundException($"Built-in template not found: {templateName}");
-    }
-
-    /// <summary>
-    /// The shipped skill templates (skill-*.template.md) — the sources `dydo sync` compiles.
-    /// Enumerated from embedded resources, plus source Templates/ in dev-mode so a
-    /// not-yet-rebuilt template still counts.
-    ///
-    /// A retired skill's template is excluded even while the file still ships through a
-    /// transition. This is the single place the exclusion has to happen: everything downstream
-    /// reads the shipped set, so a retired name is not discovered.
-    /// </summary>
-    public static IReadOnlyList<string> GetBuiltInSkillTemplateNames()
-    {
-        const string prefix = "DynaDocs.Templates.skill-";
-        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var resource in _assembly.GetManifestResourceNames()
-                     .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md")))
-            names.Add(resource["DynaDocs.Templates.".Length..]);
-
-        // Dev-mode parity with ReadBuiltInTemplate: prefer the source tree's Templates/.
-        if (File.Exists("DynaDocs.csproj") && Directory.Exists("Templates"))
-        {
-            names.RemoveWhere(n => !File.Exists(Path.Combine("Templates", n)));
-            foreach (var file in Directory.GetFiles("Templates", "skill-*.template.md"))
-                names.Add(Path.GetFileName(file));
-        }
-
-        names.ExceptWith(SyncCommand.RetiredSkills.Select(name => $"skill-{name}.template.md"));
-        return names.ToList();
-    }
-
-    /// <summary>
-    /// The shipped template inventory: every skill template (skill-*.template.md) — the source
-    /// `dydo sync` compiles into native agents and skills — plus each skill's resource templates
-    /// (&lt;skill&gt;-resource-&lt;name&gt;.template.md).
-    /// </summary>
-    public static IReadOnlyList<string> GetAllTemplateNames()
-    {
-        var names = new List<string>();
-        foreach (var templateFile in GetBuiltInSkillTemplateNames())
-        {
-            names.Add(templateFile);
-            var skillName = templateFile["skill-".Length..^".template.md".Length];
-            names.AddRange(GetSkillResourceTemplateNames(skillName));
-        }
-        return names;
-    }
-
-    private static string? GetTemplateAdditionsPath(string? basePath = null)
-    {
-        basePath ??= Environment.CurrentDirectory;
-
-        var inside = Path.Combine(basePath, "_system", "template-additions");
-        if (Directory.Exists(inside))
-            return inside;
-
-        var fromRoot = Path.Combine(basePath, "dydo", "_system", "template-additions");
-        if (Directory.Exists(fromRoot))
-            return fromRoot;
-
-        return null;
-    }
-
-    public static string ResolveIncludes(string content, string? basePath = null)
-    {
-        var additionsPath = GetTemplateAdditionsPath(basePath);
-
-        content = Regex.Replace(content, @"\{\{include:([a-zA-Z0-9_-]+)\}\}", match =>
-        {
-            var name = match.Groups[1].Value;
-            if (additionsPath == null) return "";
-
-            var filePath = Path.Combine(additionsPath, $"{name}.md");
-            return File.Exists(filePath) ? File.ReadAllText(filePath).TrimEnd() : "";
-        });
-
-        // Collapse the blank-line pile-up an empty include leaves behind. Must match
-        // CRLF runs too: template sources are CRLF on Windows checkouts, and an
-        // uncollapsed \r\n\r\n\r\n survives the .claude/ LF-normalization as \n\n\n.
-        return Regex.Replace(content, @"(\r?\n){3,}", "\n\n");
     }
 
     /// <summary>
@@ -193,8 +55,7 @@ public static class TemplateGenerator
 
     /// <summary>
     /// dydo/guides/working-tree-contract.md — the shared branch, worktree and cleanup contract
-    /// every parallel agent follows (DR 045 §8). A framework document, so `dydo init` scaffolds
-    /// it and `dydo template update` tracks it.
+    /// every parallel agent follows (DR 045 §8). A framework document, so `dydo init` scaffolds it.
     /// </summary>
     public static string GenerateWorkingTreeContractMd() =>
         ReadBuiltInTemplate("working-tree-contract.template.md");
@@ -221,31 +82,6 @@ public static class TemplateGenerator
     /// Coding standards template.
     /// </summary>
     public static string GenerateCodingStandardsMd() => ReadBuiltInTemplate("coding-standards.template.md");
-
-    /// <summary>
-    /// Generate a hub _index.md file for a folder.
-    /// </summary>
-    public static string GenerateHubIndex(string folderName, string description, string area)
-    {
-        var title = char.ToUpper(folderName[0]) + folderName[1..];
-
-        return $"""
-            ---
-            area: {area}
-            type: hub
-            ---
-
-            # {title}
-
-            {description}
-
-            ---
-
-            ## Contents
-
-            *Add links to documents in this section.*
-            """;
-    }
 
     /// <summary>
     /// Generate the about.md file for understanding the project.
@@ -307,30 +143,6 @@ public static class TemplateGenerator
         using var memoryStream = new MemoryStream();
         stream.CopyTo(memoryStream);
         return memoryStream.ToArray();
-    }
-
-    /// <summary>
-    /// Generate a hub _index.md file for a project subfolder.
-    /// Minimal content since the meta file has the details.
-    /// </summary>
-    public static string GenerateProjectSubfolderHub(string folderName, string description)
-    {
-        var title = char.ToUpper(folderName[0]) + folderName[1..];
-
-        return $"""
-            ---
-            area: project
-            type: hub
-            ---
-
-            # {title}
-
-            {description}
-
-            ## Contents
-
-            *No documents in this folder yet.*
-            """;
     }
 
     /// <summary>

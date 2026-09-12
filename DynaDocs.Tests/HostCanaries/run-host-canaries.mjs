@@ -82,33 +82,70 @@ async function runClaudeCanary() {
 }
 
 async function runCodexCanary() {
-  const version = (await run("codex", ["--version"])).stdout.trim();
+  const resolvedCodex = await resolveCodexExecutable();
+  const version = (await run(resolvedCodex, ["--version"])).stdout.trim();
   manifest.environment.codex = version;
-  const inventory = await codexSkillsList();
-  const inventoryText = JSON.stringify(inventory);
-  const occurrences = [...inventoryText.matchAll(/"name"\s*:\s*"teach"/g)].length;
-  assert(occurrences === 1, `Codex inventory contained teach ${occurrences} times`);
-  assert(inventoryText.includes("Teach the human a new skill or concept, within this workspace."), "Codex inventory lost teach's description");
-  const installedPath = findString(inventory, value => /[\\/]\.agents[\\/]skills[\\/]teach(?:[\\/]SKILL\.md)?$/i.test(value));
-  assert(installedPath, "Codex inventory did not report teach from .agents/skills");
-  assert(samePath(await realpath(installedPath), join(checkout, "skills", "teach", "SKILL.md")), "Codex inventory path did not resolve to the canonical skill");
+  const yaml = await readFile(join(checkout, "skills", "teach", "agents", "openai.yaml"), "utf8");
+  assert(yaml.includes("allow_implicit_invocation: false"), "canonical teach lost its Codex explicit-only control");
 
-  const implicit = await run("codex", ["debug", "prompt-input", "Reply exactly DYDO_IDLE."], { cwd: checkout });
+  const isolation = join(evidence, "codex-isolation");
+  const home = join(isolation, "home");
+  for (const name of ["home", "appdata", "localappdata", "temp"]) await mkdir(join(isolation, name), { recursive: true });
+  const requestsPath = join(evidence, "codex-provider-requests.ndjson");
+  const provider = await startProvider(requestsPath, "codex", checkout);
+  const config = `model = "skill-canary"\nmodel_provider = "dyd91_loopback"\napproval_policy = "never"\nsandbox_mode = "read-only"\ndisable_response_storage = true\n\n[model_providers.dyd91_loopback]\nname = "DYD-91 loopback Responses mock"\nbase_url = "http://127.0.0.1:${provider.port}/v1"\nwire_api = "responses"\nrequires_openai_auth = false\nsupports_websockets = false\nrequest_max_retries = 0\nstream_max_retries = 0\n`;
+  const configPath = join(home, "config.toml");
+  await writeFile(configPath, config, "utf8");
+  const env = codexEnv(isolation, home, resolvedCodex, provider.port);
+  manifest.environment.codexIsolation = { executable: resolvedCodex, argv: [resolvedCodex, "app-server", "--stdio"], env };
+  manifest.artifacts["codex-isolation/config.toml"] = { sha256: await sha256(configPath), bytes: (await stat(configPath)).size };
+
+  const implicit = await run(resolvedCodex, ["debug", "prompt-input", "Reply exactly DYDO_IDLE."], { cwd: checkout, env });
   await writeArtifact("codex-implicit.json", implicit.stdout);
-  assert(!implicit.stdout.includes("mission-format.md") && !implicit.stdout.includes(EXPECTED_FACT), "Codex implicitly injected teach");
-  const explicit = await run("codex", ["debug", "prompt-input", `$teach ${PROMPT}`], { cwd: checkout });
-  await writeArtifact("codex-explicit.json", explicit.stdout);
-  assert(count(explicit.stdout, "mission-format.md") === 1, "Codex explicit prompt did not inject the teach body exactly once");
-  assert(!explicit.stdout.includes(EXPECTED_FACT), "Codex explicit prompt pre-inlined the linked resource");
+  const marker = "teach: Teach the human a new skill or concept, within this workspace.";
+  assert(!implicit.stdout.includes(marker) && !implicit.stdout.includes("# Teach") && !implicit.stdout.includes(EXPECTED_FACT), "Codex implicitly injected teach");
 
-  const live = await run("codex", ["exec", "--cd", ".", "--ephemeral", "--json", "--sandbox", "read-only", "--ignore-user-config", `$teach ${PROMPT}`], { cwd: checkout });
-  await writeArtifact("codex-live.ndjson", live.stdout);
-  const events = parseNdjson(live.stdout, "Codex live output");
-  const text = JSON.stringify(events);
-  assert(text.includes("mission-format.md") && text.includes(EXPECTED_FACT), "Codex live canary did not read the linked resource");
-  assert(finalText(events) === EXPECTED_FACT, "Codex live final response was not exact");
-  assert(text.includes("thread.started") && text.includes("turn.started") && text.includes("turn.completed"), "Codex live lifecycle was incomplete");
-  pass("Codex inventory, explicit prompt expansion, and read-only live resource proof passed");
+  const rpc = startJsonRpc(resolvedCodex, ["app-server", "--stdio"], { cwd: checkout, env });
+  try {
+    await rpc.request({ method: "initialize", id: 1, params: { clientInfo: { name: "dyd91-skill-canary", title: "DYD-91 skill canary", version: "1.0.0" }, capabilities: {} } });
+    rpc.send({ method: "initialized", params: {} });
+    const inventoryResponse = await rpc.request({ method: "skills/list", id: 2, params: { cwds: [checkout], forceReload: true } });
+    const records = findSkillRecords(inventoryResponse.result, "teach");
+    assert(records.length === 1, `Codex inventory returned ${records.length} enabled repository teach skills`);
+    const record = records[0];
+    assert(record.description === "Teach the human a new skill or concept, within this workspace.", "Codex inventory lost teach's exact description");
+    const selectedPath = record.path;
+    assert(typeof selectedPath === "string" && /[\\/]\.agents[\\/]skills[\\/]teach[\\/]SKILL\.md$/i.test(selectedPath), "Codex inventory did not supply teach's projected SKILL.md path");
+    assert(samePath(await realpath(selectedPath), join(checkout, "skills", "teach", "SKILL.md")), "Codex inventory path did not real-resolve to canonical teach");
+    await writeArtifact("codex-explicit.json", JSON.stringify({ selectedSkill: record }, null, 2));
+
+    const threadResponse = await rpc.request({ method: "thread/start", id: 3, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "never", sandbox: "read-only", ephemeral: true } });
+    const threadId = threadResponse.result?.thread?.id;
+    assert(typeof threadId === "string", "Codex thread/start did not return result.thread.id");
+    rpc.send({ method: "turn/start", id: 4, params: { threadId, cwd: checkout, sandboxPolicy: { type: "readOnly", networkAccess: false }, input: [{ type: "skill", name: "teach", path: selectedPath }, { type: "text", text: PROMPT }] } });
+    await rpc.wait(message => message.id === 4);
+    await rpc.wait(message => message.method === "turn/completed");
+    await writeArtifact("codex-live.ndjson", rpc.transcript.map(entry => JSON.stringify(entry)).join("\n") + "\n");
+    await writeArtifact("codex-app-server.stderr.txt", rpc.stderr());
+
+    const incoming = rpc.transcript.filter(entry => entry.direction === "in").map(entry => entry.message);
+    const started = incoming.findIndex(message => message.method === "turn/started");
+    const command = incoming.findIndex(message => message.method === "item/completed" && JSON.stringify(message).includes("Get-Content -Raw -LiteralPath") && JSON.stringify(message).includes("mission-format.md") && JSON.stringify(message).includes('"exitCode":0'));
+    const message = incoming.findIndex(item => item.method === "item/completed" && findString(item, value => value === EXPECTED_FACT));
+    const completed = incoming.findIndex(item => item.method === "turn/completed" && !JSON.stringify(item).includes('"status":"failed"'));
+    assert(started >= 0 && command > started && message > command && completed > message, "Codex transcript lacked the ordered successful turn/read/agent-message/completion sequence");
+
+    const providerEntries = parseNdjson(await readFile(requestsPath, "utf8"), "Codex provider requests");
+    const providerPosts = providerEntries.filter(entry => entry.method === "POST");
+    assert(providerPosts.length === 2 && !providerEntries.some(entry => entry.unexpected), "Codex made a missing, extra, or outbound provider request");
+    manifest.artifacts["codex-provider-requests.ndjson"] = { sha256: await sha256(requestsPath), bytes: (await stat(requestsPath)).size };
+    pass("Codex app-server inventory and structured explicit loopback resource proof passed");
+  } finally {
+    rpc.stop();
+    await rpc.done.catch(() => {});
+    provider.child.kill("SIGTERM");
+    await provider.done.catch(() => {});
+  }
 }
 
 async function runOpenCodeCanary() {
@@ -200,29 +237,12 @@ async function runOpenCodeCanary() {
   }
 }
 
-async function codexSkillsList() {
-  const child = spawn("codex", ["app-server", "--stdio"], { cwd: checkout, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
-  let output = "";
-  let error = "";
-  child.stdout.setEncoding("utf8").on("data", chunk => { output += chunk; });
-  child.stderr.setEncoding("utf8").on("data", chunk => { error += chunk; });
-  const initialize = { method: "initialize", id: 1, params: { clientInfo: { name: "dyd91-skill-canary", title: "DYD-91 skill canary", version: "1.0.0" }, capabilities: {} } };
-  child.stdin.write(`${JSON.stringify(initialize)}\n`);
-  await waitFor(() => parseJsonLines(output).some(item => item.id === 1), "Codex initialize response");
-  child.stdin.write(`${JSON.stringify({ method: "initialized", params: {} })}\n`);
-  child.stdin.write(`${JSON.stringify({ method: "skills/list", id: 2, params: { cwds: [checkout], forceReload: true } })}\n`);
-  await waitFor(() => parseJsonLines(output).some(item => item.id === 2), "Codex skills/list response");
-  child.kill();
-  const messages = parseJsonLines(output);
-  const result = messages.find(item => item.id === 2)?.result;
-  assert(result, `Codex skills/list returned no result: ${error}`);
-  return result;
-}
-
-async function startProvider(requestsPath) {
+async function startProvider(requestsPath, mode = "opencode", providerCandidate) {
   await writeFile(requestsPath, "");
   const providerScript = join(scriptDirectory, "openai-sse-provider.mjs");
-  const child = spawn(process.execPath, [providerScript, "--requests", requestsPath], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  const providerArgs = [providerScript, "--requests", requestsPath, "--mode", mode];
+  if (providerCandidate) providerArgs.push("--candidate", providerCandidate);
+  const child = spawn(process.execPath, providerArgs, { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
   let stdout = "";
   let stderr = "";
   child.stdout.setEncoding("utf8").on("data", chunk => { stdout += chunk; });
@@ -230,6 +250,93 @@ async function startProvider(requestsPath) {
   const done = new Promise((resolveDone, reject) => child.once("exit", code => code === 0 ? resolveDone() : reject(new Error(`provider exited ${code}: ${stderr}`))));
   await waitFor(() => parseJsonLines(stdout)[0]?.port, "loopback provider port");
   return { child, done, port: parseJsonLines(stdout)[0].port };
+}
+
+async function resolveCodexExecutable() {
+  const command = "(Get-Command codex -CommandType Application).Source";
+  const result = await run("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command]);
+  const executable = result.stdout.trim();
+  assert(executable.toLowerCase().endsWith("codex.exe"), `could not resolve codex.exe: ${executable}`);
+  await access(executable);
+  return executable;
+}
+
+function codexEnv(isolation, home, executable, port) {
+  const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
+  const denyProxy = `http://127.0.0.1:${port}`;
+  return {
+    SystemRoot: systemRoot,
+    WINDIR: systemRoot,
+    ComSpec: join(systemRoot, "System32", "cmd.exe"),
+    PATHEXT: ".COM;.EXE;.BAT;.CMD",
+    PATH: [dirname(executable), systemRoot, join(systemRoot, "System32"), join(systemRoot, "System32", "WindowsPowerShell", "v1.0")].join(";"),
+    HOME: home,
+    USERPROFILE: home,
+    APPDATA: join(isolation, "appdata"),
+    LOCALAPPDATA: join(isolation, "localappdata"),
+    TEMP: join(isolation, "temp"),
+    TMP: join(isolation, "temp"),
+    CODEX_HOME: home,
+    CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG: "1",
+    HTTP_PROXY: denyProxy,
+    HTTPS_PROXY: denyProxy,
+    ALL_PROXY: denyProxy,
+    NO_PROXY: "127.0.0.1,localhost",
+    no_proxy: "127.0.0.1,localhost"
+  };
+}
+
+function startJsonRpc(command, args, { cwd, env }) {
+  const child = spawn(command, args, { cwd, env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  const transcript = [];
+  const incoming = [];
+  let stdoutBuffer = "";
+  let stderr = "";
+  let parseError;
+  child.stdout.setEncoding("utf8").on("data", chunk => {
+    stdoutBuffer += chunk;
+    const lines = stdoutBuffer.split(/\r?\n/);
+    stdoutBuffer = lines.pop() ?? "";
+    for (const line of lines.filter(Boolean)) {
+      try {
+        const message = JSON.parse(line);
+        incoming.push(message);
+        transcript.push({ direction: "in", message });
+      } catch (error) {
+        parseError = new Error(`malformed Codex app-server JSON: ${line}: ${error.message}`);
+      }
+    }
+  });
+  child.stderr.setEncoding("utf8").on("data", chunk => { stderr += chunk; });
+  const done = exitCode(child);
+  function send(message) {
+    assert(!parseError, parseError?.message);
+    transcript.push({ direction: "out", message });
+    child.stdin.write(`${JSON.stringify(message)}\n`);
+  }
+  async function wait(predicate) {
+    await waitFor(() => {
+      if (parseError) throw parseError;
+      return incoming.some(predicate);
+    }, "Codex app-server message");
+    return incoming.find(predicate);
+  }
+  async function request(message) {
+    send(message);
+    const response = await wait(item => item.id === message.id);
+    assert(!response.error, `Codex app-server ${message.method} failed: ${JSON.stringify(response.error)}`);
+    return response;
+  }
+  return { transcript, request, send, wait, stderr: () => stderr, stop: () => child.kill(), done };
+}
+
+function findSkillRecords(value, name, result = []) {
+  if (Array.isArray(value)) value.forEach(item => findSkillRecords(item, name, result));
+  else if (value && typeof value === "object") {
+    if (value.name === name && typeof value.path === "string" && value.enabled !== false) result.push(value);
+    else Object.values(value).forEach(item => findSkillRecords(item, name, result));
+  }
+  return result;
 }
 
 function portableEnv(paths, configPath, port) {
@@ -253,6 +360,8 @@ function portableEnv(paths, configPath, port) {
     XDG_CACHE_HOME: paths.cache,
     XDG_STATE_HOME: paths.state,
     OPENCODE_DISABLE_AUTOUPDATE: "1",
+    OPENCODE_DISABLE_DEFAULT_PLUGINS: "1",
+    OPENCODE_DISABLE_LSP_DOWNLOAD: "1",
     OPENCODE_DISABLE_MODELS_FETCH: "1",
     OPENCODE_DISABLE_PRUNE: "1",
     OPENCODE_DISABLE_SHARE: "1",

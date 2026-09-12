@@ -1,14 +1,20 @@
-import { appendFile, readFile } from "node:fs/promises";
+import { appendFile, readFile, realpath } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 
 const args = parseArgs(process.argv.slice(2));
 const expectedFact = "# Mission: {Topic}";
+const codexPrompt = "Load the teach skill. Follow its mission-format link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 template from that resource and no other text.";
 let state = 0;
 let derivedResourcePath;
 
 const server = http.createServer(async (request, response) => {
   try {
+    if (args.mode === "codex" && request.method === "GET" && request.url === "/v1/models") {
+      await appendFile(args.requests, `${JSON.stringify({ state, method: "GET", url: request.url, response: { model: "skill-canary" } })}\n`, "utf8");
+      response.writeHead(200, { "content-type": "application/json" });
+      return response.end(JSON.stringify({ object: "list", data: [{ id: "skill-canary", object: "model", created: 0, owned_by: "dyd91" }] }));
+    }
     if (request.method !== "POST") {
       await appendFile(args.requests, `${JSON.stringify({ state, method: request.method, url: request.url, unexpected: true })}\n`, "utf8");
       return deny(response, `unexpected ${request.method} ${request.url}`);
@@ -22,7 +28,8 @@ const server = http.createServer(async (request, response) => {
       return deny(response, "request body was not JSON");
     }
 
-    await appendFile(args.requests, `${JSON.stringify({ state, url: request.url, payload })}\n`, "utf8");
+    if (args.mode === "codex") return handleCodex(request, response, payload);
+    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload })}\n`, "utf8");
     const serialized = JSON.stringify(payload);
     if (!request.url?.endsWith("/chat/completions") && !request.url?.endsWith("/responses")) {
       return deny(response, `unexpected provider endpoint ${request.url}`);
@@ -101,6 +108,40 @@ function providerTool(url, response, id, name, value) {
 function providerText(url, response, content) {
   if (url.endsWith("/responses")) return responsesText(response, content);
   return chatText(response, content);
+}
+
+async function handleCodex(request, response, payload) {
+  if (!request.url?.endsWith("/responses")) return deny(response, `unexpected Codex provider endpoint ${request.url}`);
+  const strings = collectStrings(payload);
+  if (state === 0) {
+    const body = await readFile(path.join(args.candidate, "skills", "teach", "SKILL.md"), "utf8");
+    assert(countAcross(strings, body) === 1, "Codex first request did not contain the exact canonical teach body once");
+    assert(countAcross(strings, codexPrompt) === 1, "Codex first request did not contain the exact prompt once");
+    assert(countAcross(strings, expectedFact) === 0, "Codex first request pre-inlined the resource-only fact");
+    assert(JSON.stringify(payload).includes('"shell_command"'), "Codex first request did not offer shell_command");
+    const selectedSkill = extractInstalledSkillPath(strings);
+    const link = body.match(/\[mission-format\]\(([^)]+)\)/)?.[1];
+    assert(link, "canonical teach body did not expose mission-format link");
+    derivedResourcePath = path.resolve(path.dirname(selectedSkill), link);
+    const realResource = await realpath(derivedResourcePath);
+    const realSkill = await realpath(path.dirname(selectedSkill));
+    assert(isInside(realSkill, realResource), "derived Codex resource escaped the selected skill");
+    assert(samePath(realResource, path.join(args.candidate, "skills", "teach", "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
+    const command = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
+    const argumentsJson = { command, workdir: args.candidate, timeout_ms: 10000 };
+    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, derivedResourcePath, response: { tool: "shell_command", arguments: argumentsJson } })}\n`, "utf8");
+    state = 1;
+    return responsesTool(response, "dyd91-codex-read", "shell_command", argumentsJson);
+  }
+  if (state === 1) {
+    const output = findToolOutput(payload, "dyd91-codex-read");
+    assert(output?.includes(expectedFact), "Codex command output omitted the resource-only fact");
+    await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, response: { text: expectedFact } })}\n`, "utf8");
+    state = 2;
+    return responsesText(response, expectedFact);
+  }
+  await appendFile(args.requests, `${JSON.stringify({ state, method: "POST", url: request.url, payload, unexpected: true })}\n`, "utf8");
+  return deny(response, "unexpected extra Codex provider request");
 }
 
 function responsesTool(response, callId, name, value) {
@@ -238,6 +279,34 @@ function findToolOutput(value, callId) {
   }
 }
 
+function collectStrings(value, result = []) {
+  if (typeof value === "string") result.push(value);
+  else if (Array.isArray(value)) value.forEach(item => collectStrings(item, result));
+  else if (value && typeof value === "object") Object.values(value).forEach(item => collectStrings(item, result));
+  return result;
+}
+
+function countAcross(strings, needle) {
+  return strings.reduce((total, value) => total + value.split(needle).length - 1, 0);
+}
+
+function extractInstalledSkillPath(strings) {
+  for (const value of strings) {
+    const match = value.match(/([A-Za-z]:[\\/][^\n\r"`<>]*[\\/]\.agents[\\/]skills[\\/]teach[\\/]SKILL\.md)/i);
+    if (match) return match[1];
+  }
+  throw new Error("Codex first request did not expose the selected installed skill path");
+}
+
+function samePath(left, right) {
+  return path.resolve(left).toLowerCase() === path.resolve(right).toLowerCase();
+}
+
+function isInside(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
 function readBody(request) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -252,12 +321,17 @@ function assert(condition, message) {
 }
 
 function parseArgs(argv) {
-  const result = {};
+  const result = { mode: "opencode" };
   for (let index = 0; index < argv.length; index += 2) {
     const key = argv[index];
-    if (key !== "--requests" || !argv[index + 1]) throw new Error("usage: openai-sse-provider.mjs --requests <path>");
-    result.requests = path.resolve(argv[index + 1]);
+    const value = argv[index + 1];
+    if (!value || !["--requests", "--mode", "--candidate"].includes(key)) throw new Error("usage: openai-sse-provider.mjs --requests <path> [--mode opencode|codex] [--candidate <path>]");
+    if (key === "--requests") result.requests = path.resolve(value);
+    if (key === "--mode") result.mode = value;
+    if (key === "--candidate") result.candidate = path.resolve(value);
   }
   if (!result.requests) throw new Error("--requests is required");
+  if (!["opencode", "codex"].includes(result.mode)) throw new Error("--mode must be opencode or codex");
+  if (result.mode === "codex" && !result.candidate) throw new Error("--candidate is required for Codex mode");
   return result;
 }

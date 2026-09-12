@@ -115,9 +115,9 @@ async function runCodexCanary() {
     const record = records[0];
     assert(record.description === "Teach the human a new skill or concept, within this workspace.", "Codex inventory lost teach's exact description");
     const selectedPath = record.path;
-    assert(typeof selectedPath === "string" && /[\\/]\.agents[\\/]skills[\\/]teach[\\/]SKILL\.md$/i.test(selectedPath), "Codex inventory did not supply teach's projected SKILL.md path");
-    assert(samePath(await realpath(selectedPath), join(checkout, "skills", "teach", "SKILL.md")), "Codex inventory path did not real-resolve to canonical teach");
     await writeArtifact("codex-explicit.json", JSON.stringify({ selectedSkill: record }, null, 2));
+    assert(typeof selectedPath === "string" && /[\\/]\.agents[\\/]skills[\\/]teach[\\/]SKILL\.md$/i.test(selectedPath), `Codex inventory did not supply teach's projected SKILL.md path: ${selectedPath}`);
+    assert(samePath(await realpath(selectedPath), join(checkout, "skills", "teach", "SKILL.md")), "Codex inventory path did not real-resolve to canonical teach");
 
     const threadResponse = await rpc.request({ method: "thread/start", id: 3, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "never", sandbox: "read-only", ephemeral: true } });
     const threadId = threadResponse.result?.thread?.id;

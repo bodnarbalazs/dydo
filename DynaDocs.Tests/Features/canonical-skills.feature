@@ -7,13 +7,16 @@ Feature: One canonical skill tree reaches every supported host
     Given a project containing the canonical "teach" skill and the skill setup script
 
   Scenario: Project whole skill directories into Claude and Codex
+    Given unrelated Claude and Codex skills and host configuration files with recorded bytes
     When I set up the canonical skills
     Then setup succeeds
     And the Claude and Codex "teach" entries resolve to the canonical skill directory
     And no OpenCode "teach" projection is created
+    And every unrelated skill and host configuration file keeps its recorded bytes
     When I set up the canonical skills again
     Then setup succeeds
     And the host projections are unchanged
+    And every unrelated skill and host configuration file keeps its recorded bytes
 
   Scenario: Keep both hosts' metadata and resources beside one body
     Then the canonical "teach" skill keeps its Claude invocation frontmatter
@@ -28,6 +31,13 @@ Feature: One canonical skill tree reaches every supported host
     When I set up the canonical skills
     Then setup fails without changing the human-owned directory
     And no Codex "teach" projection is created
+
+  Scenario: Preflight every deterministic collision before creating a projection
+    Given no Claude "teach" entry exists
+    And a human-owned Codex "teach" directory exists
+    When I set up the canonical skills
+    Then setup fails without changing the human-owned directory
+    And no Claude "teach" projection is created
 
   Scenario: Refuse a host link that targets another skill tree
     Given the Claude "teach" entry links to a different directory

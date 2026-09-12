@@ -84,8 +84,9 @@ repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`.
 
 Every declared row therefore has a real mechanism: three test adapters, three static adapters, three
 coverage adapters and three mutation adapters. Mutation is a separate operation, never selected by
-`--force-run`; its policy is DynaDocs' requirement that no changed-code mutant survives or is left
-uncovered, as the [Testing Strategy](../guides/testing-strategy.md) states it. Whether a given
+`--force-run`; its policy is DynaDocs' requirement that no surviving or uncovered changed-code
+mutants remain — no changed-code mutant survives or is left uncovered, as the
+[Testing Strategy](../guides/testing-strategy.md) states it. Whether a given
 candidate passes is what its result artifact says; no document stands in for a run.
 
 ---

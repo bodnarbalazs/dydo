@@ -155,6 +155,7 @@ function campaign(root, output, targets, command) {
     if (!absolute.startsWith(root + path.sep) || !fs.statSync(absolute).isFile()) throw new Error(`Invalid JavaScript target: ${target}`);
   }
   const c8 = path.join(__dirname, 'node_modules', 'c8', 'bin', 'c8.js');
+  if (!fs.existsSync(c8) || !fs.statSync(c8).isFile()) throw new Error(`c8 coverage tool unavailable: ${c8}`);
   const argv = [c8, '--all', '--exclude-after-remap=false', '--reports-dir', output,
     '--temp-directory', path.join(output, 'tmp'), '--reporter=json', '--reporter=lcov'];
   for (const target of targets) argv.push('--include', target.replaceAll('\\', '/'));

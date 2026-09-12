@@ -217,6 +217,45 @@ class GateAdapterTests(unittest.TestCase):
                 self.assertEqual(type(defect).__name__, captured["errors"][0]["type"])
                 self.assertNotIn("Traceback", stderr.getvalue())
 
+    def test_candidate_and_inventory_setup_defects_use_the_adapter_error_path(self):
+        cases = (("candidate", OSError("git unavailable")),
+                 ("candidate", subprocess.CalledProcessError(128, ["git", "status"])),
+                 ("inventory", ValueError("inventory unavailable")))
+        for seam, defect in cases:
+            with self.subTest(seam=seam), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                output = root / "results"
+                captured = {}
+
+                def publication(summary, run, stack, gate, report, candidate, inventory):
+                    captured.update(report=report, candidate=candidate, inventory=inventory)
+                    return 2
+
+                argv = ["gate_adapter.py", "--gate", "static", "--stack", "python",
+                        "--root", str(root), "--output", str(output)]
+                candidate = mock.patch.object(
+                    gate_adapter, "_candidate",
+                    side_effect=defect if seam == "candidate" else None,
+                    return_value=({"commit": "a" * 40, "dirty": False,
+                                   "sourceFingerprint": "b" * 64}, []))
+                inventory = mock.patch.object(
+                    gate_adapter, "_inventory_artifact", side_effect=defect)
+                with mock.patch.object(sys, "argv", argv), candidate, \
+                        (inventory if seam == "inventory" else mock.patch.object(
+                            gate_adapter, "_inventory_artifact")), \
+                        mock.patch.object(gate_adapter, "collect_static") as collect, \
+                        mock.patch.object(gate_adapter, "publish", side_effect=publication), \
+                        redirect_stderr(io.StringIO()) as stderr:
+                    self.assertEqual(2, gate_adapter.main())
+
+                collect.assert_not_called()
+                self.assertEqual("error", captured["report"]["status"])
+                self.assertEqual(type(defect).__name__, captured["report"]["errors"][0]["type"])
+                self.assertTrue(Path(captured["inventory"]).is_file())
+                if seam == "candidate":
+                    self.assertIsNone(captured["candidate"]["sourceFingerprint"])
+                self.assertNotIn("Traceback", stderr.getvalue())
+
     def test_inventory_evaluation_uses_isolated_appdata_before_collection(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -313,7 +352,8 @@ class PublishedProvenanceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             run = Path(folder)
             evidence = run / "raw-abc/raw"
-            write_file(evidence, "altcover-runner.stdout", "collected\n")
+            stdout = write_file(evidence, "altcover-runner.stdout", "collected\n")
+            stderr = write_file(evidence, "altcover-runner.stderr", "warning\n")
             write_file(evidence, "commands.json", json.dumps([
                 {"name": "altcover-runner", "argv": ["dotnet", "tool", "run"], "cwd": str(run),
                  "environment": {"MSBUILDDISABLENODEREUSE": "1"}, "exit": 0,
@@ -327,7 +367,15 @@ class PublishedProvenanceTests(unittest.TestCase):
             self.assertEqual("raw-abc/raw/altcover-runner.stderr", rows[0]["stderr"])
             self.assertEqual(211.938, rows[0]["elapsedSeconds"])
             self.assertEqual({"MSBUILDDISABLENODEREUSE": "1"}, rows[0]["environment"])
+            self.assertEqual(hashlib.sha256(stdout.read_bytes()).hexdigest(),
+                             rows[0]["stdoutSha256"])
+            self.assertEqual(hashlib.sha256(stderr.read_bytes()).hexdigest(),
+                             rows[0]["stderrSha256"])
             self.assertEqual([], gate_adapter._campaign_commands(run / "absent", run))
+
+            stderr.unlink()
+            with self.assertRaises(OSError):
+                gate_adapter._campaign_commands(evidence, run)
 
     def test_a_path_outside_the_report_directory_stays_absolute(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -429,7 +477,7 @@ class CandidateInventoryTests(unittest.TestCase):
     def test_inventory_artifact_retains_the_candidate_roles_and_the_missing_project_gap(self):
         with tempfile.TemporaryDirectory() as folder:
             root = python_repository(folder)
-            candidate = {"commit": "a" * 40, "dirty": False, "sourceFingerprint": "b" * 64}
+            candidate, _ = gate_adapter._candidate(root)
 
             inventory, errors, commands = gate_adapter._inventory_artifact(
                 root, Path(folder) / "run", candidate)
@@ -442,8 +490,24 @@ class CandidateInventoryTests(unittest.TestCase):
             self.assertEqual("test", roles["DynaDocs.Tests/coverage/tests/test_arithmetic.py"])
             self.assertEqual([], commands)
 
+    def test_inventory_artifact_does_not_overwrite_a_mismatched_source_fingerprint(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = python_repository(folder)
+            candidate, _ = gate_adapter._candidate(root)
+            candidate["sourceFingerprint"] = "b" * 64
+
+            inventory, errors, _ = gate_adapter._inventory_artifact(
+                root, Path(folder) / "run", candidate)
+
+            payload = json.loads(inventory.read_text(encoding="utf-8"))
+            actual = payload["candidate"]["sourceFingerprint"]
+            self.assertNotEqual(candidate["sourceFingerprint"], actual)
+            self.assertIn({"message": "Outer and inventory source fingerprints differ",
+                           "outerSourceFingerprint": candidate["sourceFingerprint"],
+                           "inventorySourceFingerprint": actual}, errors)
+
     def test_static_gate_registers_the_collectors_its_stack_owns(self):
-        shared = {"projects", "source-inventory", "associations"}
+        shared = {"projects", "source-inventory", "associations", "repository-inputs"}
         expected = {
             "python": shared | {"python-source", "python-dead-code", "python-dependencies"},
             "node": shared | {"javascript-source", "javascript-dependencies",
@@ -457,6 +521,60 @@ class CandidateInventoryTests(unittest.TestCase):
                 self.assertEqual(names, set(answer["facts"]["collectors"]), stack)
             with self.assertRaisesRegex(ValueError, "Unknown stack: elixir"):
                 gate_adapter.collect_static(root, Path(folder) / "static-elixir", "elixir")
+
+    def test_each_static_stack_invalidates_when_repository_inputs_change_during_collection(self):
+        from gate_run import result
+        for stack in ("dotnet", "python", "node"):
+            with self.subTest(stack=stack), tempfile.TemporaryDirectory() as folder:
+                root = python_repository(folder)
+                target = root / "lib/arithmetic.py"
+
+                def mutate():
+                    target.write_text(PYTHON_TARGET + "# changed during collection\n",
+                                      encoding="utf-8")
+                    return result(findings=[{"gate": "probe"}])
+
+                with mock.patch.object(gate_adapter, "_stack_methods",
+                                       return_value={"probe": mutate}):
+                    answer = gate_adapter.collect_static(
+                        root, Path(folder) / ("static-" + stack), stack)
+
+                self.assertEqual("error", answer["status"])
+                self.assertEqual([{"collector": "probe", "gate": "probe"}],
+                                 answer["findings"])
+                integrity = collector_row(answer, "repository-inputs")
+                self.assertEqual("error", integrity["status"])
+                self.assertEqual("Repository inputs changed during collection",
+                                 integrity["errors"][0]["message"])
+
+    def test_repository_input_check_invalidates_changed_deleted_and_new_files(self):
+        from gate_collect import repository_inputs
+        for mutation in ("changed", "deleted", "new"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as folder:
+                root = python_repository(folder)
+                initial, _ = gate_adapter._candidate(root)
+                if mutation == "changed":
+                    write_file(root, "lib/arithmetic.py", PYTHON_TARGET + "# changed\n")
+                elif mutation == "deleted":
+                    (root / "lib/arithmetic.py").unlink()
+                else:
+                    write_file(root, "lib/extra.py", "value = 1\n")
+
+                answer = repository_inputs(root, initial["sourceFingerprint"])
+
+                self.assertEqual("error", answer["status"])
+                self.assertEqual("Repository inputs changed during collection",
+                                 answer["errors"][0]["message"])
+
+    def test_repository_input_recheck_failure_is_a_measurement_error(self):
+        from gate_collect import repository_inputs
+        with mock.patch("gate_collect.git_file_state", side_effect=OSError("unreadable")):
+            answer = repository_inputs(Path.cwd(), "a" * 64)
+
+        self.assertEqual("error", answer["status"])
+        self.assertEqual("Repository inputs could not be rechecked",
+                         answer["errors"][0]["message"])
+        self.assertIsNone(answer["facts"]["currentSourceFingerprint"])
 
 
 class CoverageCampaignTests(unittest.TestCase):
@@ -609,6 +727,63 @@ class CoverageCampaignTests(unittest.TestCase):
             (root / "lib/sum.cjs").unlink()
             with self.assertRaisesRegex(ValueError, "Deleted maintained inputs"):
                 gate_adapter.collect_node_coverage(root, Path(folder) / "output/second")
+
+    def test_node_coverage_retains_a_child_failure_but_invalidates_changed_inputs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = self.node_repository(folder, NODE_SOURCE)
+            raw = Path(folder) / "output/raw"
+            raw.parent.mkdir()
+
+            def mutate(*_args):
+                write_file(root, "lib/sum.cjs", NODE_SOURCE + "// changed during campaign\n")
+                return 1
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", side_effect=mutate):
+                answer = gate_adapter.collect_node_coverage(root, raw)
+
+            self.assertEqual("error", answer["status"])
+            self.assertEqual([{"gate": "functional", "child_exit": 1}], answer["findings"])
+            self.assertEqual("Repository inputs changed during collection",
+                             answer["errors"][-1]["message"])
+
+    def test_node_coverage_does_not_join_successful_evidence_after_inputs_change(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = self.node_repository(folder, NODE_SOURCE)
+            raw = Path(folder) / "output/raw"
+            raw.parent.mkdir()
+
+            def mutate(*_args):
+                write_file(root, "lib/sum.cjs", NODE_SOURCE + "// changed during campaign\n")
+                return 0
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", side_effect=mutate):
+                answer = gate_adapter.collect_node_coverage(root, raw)
+
+            self.assertEqual("error", answer["status"])
+            self.assertEqual([], answer["findings"])
+            self.assertEqual("Repository inputs changed during collection",
+                             answer["errors"][-1]["message"])
+
+    def test_node_coverage_without_c8_is_measurement_error_not_functional_failure(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "repo"
+            write_file(root, "lib/sum.cjs", NODE_SOURCE)
+            write_file(root, ".gitignore", NODE_IGNORED)
+            write_file(root, "DynaDocs.Tests/coverage/javascript_coverage.cjs",
+                       (TOOLS / "javascript_coverage.cjs").read_text(encoding="utf-8"))
+            write_file(root, "DynaDocs.Tests/coverage/js_metrics.cjs",
+                       "module.exports={analyze(){return {methods:[]}},moduleMetrics(){return {}}};\n")
+            write_file(root, "DynaDocs.Tests/coverage/node_tests.cjs", NODE_TEST_DRIVER)
+            write_file(root, "DynaDocs.Tests/coverage/tests/sum.test.cjs", NODE_SUITE)
+            git_repository(root)
+            raw = Path(folder) / "output/raw"
+            raw.parent.mkdir()
+
+            answer = gate_adapter.collect_node_coverage(root, raw)
+
+            self.assertEqual("error", answer["status"])
+            self.assertEqual([], answer["findings"])
+            self.assertEqual(2, collector_row(answer, "javascript-coverage")["facts"]["child_exit"])
 
 
 if __name__ == "__main__":

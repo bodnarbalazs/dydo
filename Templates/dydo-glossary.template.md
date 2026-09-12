@@ -53,7 +53,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 ## Roles and skills
 
-- **Role** — an authored skill source compiled by dydo: a hat, a worker, a method, or a human command.
+- **Role** — an authored native skill folder: a hat, a worker, a method, or a human command.
 - **Skill** — the runtime package of a role's methodology and resources.
 - **Agent** — a native-platform instance of a spawned role: a worker, a Project Planner, or an Issue
   Captain that an admiral keeps in flight.

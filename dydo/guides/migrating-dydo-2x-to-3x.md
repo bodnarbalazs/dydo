@@ -49,14 +49,14 @@ and then renamed over the file, so no failure leaves a half-written config.
    `dydo/_system/roles/` and `dydo/_system/sync-model.json` if either is present. For a retired
    external-sync store such as `dydo/_system/notion_sync_spine/`, either add it to `scanExclude` or
    delete it after confirming that no rollback is needed.
-7. Delete every `dydo/_system/template-additions/extra-*.md` whose tag no shipped template carries.
-   The live tags are `extra-must-reads`, `extra-test-guidance`, `extra-verify`, `extra-review-steps`,
-   and `extra-review-checklist`; `grep -rn "{{include:" Templates/` in the dydo repository lists them.
-8. Run `dydo template update`. It refreshes the six framework-owned documents under `reference/` and
-   `guides/`, prunes every `frameworkHashes` key that does not name one of them, and adds the missing
-   default nudges. Never hand-edit `frameworkHashes`.
-9. Run `dydo sync`. It compiles the 3.0 skills and agents from the shipped templates and sweeps every
-   retired skill's artifacts — `agents/openai.yaml` included — from both hosts. Then run `dydo check`
+7. Delete `dydo/_system/template-additions/` and `dydo/_system/templates/`; `{{include:...}}` tags are
+   retired by Decision 049. Project-specific guidance moves into the skill bodies and project documents
+   directly.
+8. Delete the `skills` and `frameworkHashes` keys from `dydo.json` and `_system/templates/` from its
+   `scanExclude`. A role is now a plain `SKILL.md` folder, not a switchboard entry.
+9. Replace the compiled `.claude/skills/`, `.claude/agents/`, `.agents/skills/` and `.codex/agents/`
+   trees with the shipped native skill folders (`.claude/skills/<role>/SKILL.md` and
+   `.agents/skills/<role>/SKILL.md`), and delete the generated agent definitions. Then run `dydo check`
    and resolve what it reports.
 
 ## Live work and host ownership

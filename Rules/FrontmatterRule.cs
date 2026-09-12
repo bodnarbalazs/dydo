@@ -18,14 +18,6 @@ public class FrontmatterRule : RuleBase
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
-        var normalized = PathUtils.NormalizePath(doc.RelativePath);
-
-        // Skip template files and template additions
-        if (RuleSkipPaths.IsTemplateAddition(normalized))
-        {
-            yield break;
-        }
-
         // Skip files-off-limits.md which uses type: config
         if (doc.FileName.Equals("files-off-limits.md", StringComparison.OrdinalIgnoreCase))
         {

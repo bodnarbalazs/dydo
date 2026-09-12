@@ -13,7 +13,6 @@ public static class ConfigFactory
     [
         "_system/.local/",
         "_system/audit/",
-        "_system/templates/",
         // The shared scratch workspace (dydo/agents/workspace/): agent work products,
         // not documentation — never scanned, never validated, never mirrored.
         "agents/"
@@ -35,7 +34,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|sync|completions|complete|template|validate|version|help)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|version|help)\b.*)",
             Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },

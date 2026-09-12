@@ -53,11 +53,11 @@ linked to an Issue. They are not additional work types.
 A structured tree (`understand/`, `guides/`, `reference/`, and durable `project/` knowledge) with
 validation, auto-fixing, indexes, and graph tooling. This is the context that compounds across sessions.
 
-### 2. One source for native roles and skills
+### 2. One role, native on each host
 
-`dydo sync` compiles enabled local role templates and resources from `dydo/_system/templates/` into
-Claude Code and Codex artifacts. Distinctly named custom sources share the same format; shipped copies
-are refreshed by `dydo template update`. The host runtime owns agent identity and orchestration.
+A role is a plain `SKILL.md` folder in the cross-vendor format, committed to each host's discovery
+path: `.claude/skills/<role>/` and `.agents/skills/<role>/`. There is no compile step and no
+generated agent definition. The host runtime owns agent identity and orchestration.
 
 ### 3. Enforced project rules
 
@@ -66,8 +66,8 @@ commands hard-block; project nudges add configurable notices, warnings, and bloc
 
 ### 4. An opinionated scaffold
 
-`dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, role templates,
-guard wiring, and runtime entry files. It does not create a second live work graph; use Linear for work
+`dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, guard wiring,
+and runtime entry files. It does not create a second live work graph; use Linear for work
 management, including FutureFeatures.
 
 ## How Work Runs
@@ -100,7 +100,6 @@ dotnet tool install -g dydo
 
 ```bash
 dydo init codex       # or: dydo init claude / dydo init all
-dydo sync             # compile shared roles and skills
 dydo check            # validate the documentation tree
 dydo fix              # repair supported documentation issues
 ```
@@ -112,36 +111,33 @@ runtime or machine into an existing project.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`
-- **Roles** — enabled shipped or custom sources under `dydo/_system/templates/`
-- **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks
+- **Roles** — plain `SKILL.md` folders under `.claude/skills/` and `.agents/skills/`, edited directly
 
-Do not hand-edit compiled skills or agents. Change their source templates and run `dydo sync`.
+Edit the skill folder in place. A project's copy is its own; there is no automatic reconciliation.
 
 ## Folder Structure
 
 ```
 project/
-|-- dydo.json                    # Integrations, skills, nudges
+|-- dydo.json                    # Integrations, scan exclusions, nudges, testing
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/                     # Compiled Claude agents, skills, and skill resources
-|-- .codex/agents/               # Compiled Codex agents
-|-- .agents/skills/              # Compiled Codex skills
+|-- .claude/skills/              # Claude skill folders (SKILL.md + resources)
+|-- .agents/skills/              # Codex skill folders (SKILL.md + resources + openai.yaml)
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture
     |-- guides/                  # How-to guidance
     |-- reference/               # Exact commands and specifications
     |-- project/                 # Durable knowledge and delivery proof
-    |-- _system/templates/      # Flat local skill and resource sources
-    |-- _system/template-additions/
+    |-- _system/                 # types.json and local runtime state
     `-- _assets/
 ```
 
 ## Command Reference
 
-See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, role-compilation,
-guard, validation, template, and utility commands.
+See [dydo Commands Reference](./dydo-commands.md) for the surviving documentation, guard,
+validation, testing, and utility commands.
 
 ## License
 

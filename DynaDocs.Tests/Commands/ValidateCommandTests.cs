@@ -84,19 +84,6 @@ public class ValidateCommandTests : IDisposable
     }
 
     [Fact]
-    public void Validate_MalformedSwitchboardNamesTheEntryAndField()
-    {
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
-            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},\"skills\":{\"Local\":{\"enabled\":true}}}");
-
-        var (_, stderr) = CaptureOutput(() =>
-            DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
-
-        Assert.Contains("dydo.json", stderr);
-        Assert.Contains("Local", stderr);
-    }
-
-    [Fact]
     public void Validate_AcceptsValidTestingRunner()
     {
         SetupValidProjectNoWarnings();

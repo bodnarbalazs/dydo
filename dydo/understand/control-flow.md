@@ -32,8 +32,8 @@ conversation with the human.
 
 ## 1. Roster
 
-The actors: every hat and every worker. A hat is top-level when a session wears it; the captain also
-compiles as an agent so an admiral can spawn one per Issue.
+The actors: every hat and every worker. A hat is top-level when a session wears it; a captain is also
+a skill a session can load, so an admiral can direct one per Issue.
 
 | Role | Kind | Runs as | Invoked by | Works in | Does | Returns to |
 |---|---|---|---|---|---|---|
@@ -737,14 +737,14 @@ Completed rows below name the source, not a claim that generated runtime output 
 | ~~co-thinker~~ | Authored: explicit to-project graduation, atomic five-field contract, FutureFeature status. |
 | ~~wayfinder~~ | Authored: map holder at both levels, local/Project Question scope, Merge order. |
 | ~~to-project, wizard~~ | Authored imports with pinned MIT provenance; wizard shell example shipped through Markdown resource. |
-| compiler workflow emission | Removed in source: no workflow discovery, emission, or summary; the exact retired-file sweep preserves custom siblings and removes empty directories. Generated artifact reflection remains DYD-75. |
+| compiler workflow emission | Retired by DR 049: the compiler is gone, so there is no workflow discovery, emission, or summary. Roles are native `SKILL.md` folders. |
 | ~~types.json~~ | Inspected: document vocabulary already has inquisition and no workflow; Linear's ten Types are a separate standard. |
 | dydo init | Deferred to DYD-86: native nesting depth and host setup proof. |
 | ~~working-tree contract~~ | Authored/local twin: captain's Merge at each level, branch exceptions, Specifying, release and merge-commit landing. |
 | getting-started | Deferred to DYD-91: framework setup checklist and template registration. |
 | ~~dydo.json~~ | Removed in source: no model or effort property remains; the delegating hat chooses both at dispatch (DYD-134). |
 | ~~work-model, task-lifecycle, dydo-glossary~~ | Authored/local prose: current flow, Types, release, Questions, inquisition and supersymmetry. |
-| generated skills, agents, framework hashes and host reflection | Deferred to DYD-75 after source/compiler integration; independent review repeats on the compiled surface. |
+| generated skills, agents, framework hashes and host reflection | Retired by DR 049: roles are native `SKILL.md` folders, edited directly; no compiler, hashes, or generated agent files remain. |
 
 ## Related
 

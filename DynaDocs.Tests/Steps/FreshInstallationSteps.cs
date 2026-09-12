@@ -8,7 +8,6 @@ using Reqnroll;
 [Binding]
 public class FreshInstallationSteps(CliScenario scenario)
 {
-    private Dictionary<string, byte[]> _artifacts = [];
     private Dictionary<string, byte[]> _foundationDocuments = [];
 
     [Given("an empty project directory")]
@@ -105,46 +104,13 @@ public class FreshInstallationSteps(CliScenario scenario)
         }
     }
 
-    [When("I synchronize the native artifacts")]
-    public async Task FirstSync()
-    {
-        await scenario.RunAsync("sync");
-        _artifacts = Snapshot();
-    }
-
-    [When("I synchronize the native artifacts again")]
-    public Task SecondSync() => scenario.RunAsync("sync");
-
-    [Then("the native artifacts have identical paths and bytes")]
-    public void IdenticalArtifacts()
-    {
-        Assert.NotEmpty(_artifacts);
-        var current = Snapshot();
-        Assert.Equal(_artifacts.Keys.Order(), current.Keys.Order());
-        foreach (var (path, bytes) in _artifacts)
-            Assert.Equal(bytes, current[path]);
-    }
-
     [Given("a user-owned file named {string} containing {string}")]
     public void UserFile(string name, string content) => File.WriteAllBytes(
         Path.Combine(scenario.DirectoryPath, name), Encoding.UTF8.GetBytes(content));
 
-    [When("I update the framework templates")]
-    public Task Update() => scenario.RunAsync("template", "update");
-
     [Then("the user-owned file named {string} still contains {string}")]
     public void PreservedUserFile(string name, string content) => Assert.Equal(
         Encoding.UTF8.GetBytes(content), File.ReadAllBytes(Path.Combine(scenario.DirectoryPath, name)));
-
-    private Dictionary<string, byte[]> Snapshot()
-    {
-        string[] folders = [".claude/agents", ".claude/skills", ".claude/workflows", ".agents/skills", ".codex/agents"];
-        var files = folders.Select(folder => Path.Combine(scenario.DirectoryPath, folder))
-            .Where(Directory.Exists).SelectMany(folder => Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories));
-        string[] config = [".codex/hooks.json", ".codex/config.toml"];
-        return files.Concat(config.Select(path => Path.Combine(scenario.DirectoryPath, path)).Where(File.Exists))
-            .ToDictionary(path => Path.GetRelativePath(scenario.DirectoryPath, path), File.ReadAllBytes);
-    }
 
     private const string About = """
         ---

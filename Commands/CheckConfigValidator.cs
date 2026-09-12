@@ -15,11 +15,7 @@ internal static class CheckConfigValidator
     {
         var errors = new List<string>();
 
-        // A pre-source-layer project remains valid until `template update` migrates it, so only
-        // the source directory may be absent. The established internal exclusions stay required.
         var missing = ConfigFactory.FindMissingScanExcludeInvariants(config);
-        if (config.Skills.Count == 0)
-            missing.RemoveAll(entry => entry.Equals("_system/templates/", StringComparison.OrdinalIgnoreCase));
         foreach (var entry in missing)
         {
             errors.Add(

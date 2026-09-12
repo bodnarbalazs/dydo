@@ -5,7 +5,7 @@
 Several dydo skill templates contain adaptations of material from
 [mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
 `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
-header, as do the skills `dydo sync` compiles
+header, as do the committed skill folders
 into `.claude/skills/` and `.agents/skills/`.
 
 | Upstream skill | Adapted in |
@@ -58,7 +58,7 @@ SOFTWARE.
 One dydo skill template contains an adaptation of material from
 [humanlayer/skills](https://github.com/humanlayer/skills), pinned at commit
 `6ab9013a10c28f5046f7f999549cd5328a0b30d7`. The adapted file repeats the attribution in its own
-header, as does the skill `dydo sync` compiles from it.
+header, as does the skill folder authored from it.
 
 | Upstream skill | Adapted in |
 |---|---|
@@ -91,7 +91,7 @@ SOFTWARE.
 One dydo skill template contains an adaptation of material from
 [cursor/plugins](https://github.com/cursor/plugins), `pstack`, pinned at commit
 `7314f723a487ec406b6369fe5865ba034cfed166`. The adapted file repeats the attribution in its own
-header, as does the skill `dydo sync` compiles from it.
+header, as does the skill folder authored from it.
 
 | Upstream skill | Adapted in |
 |---|---|

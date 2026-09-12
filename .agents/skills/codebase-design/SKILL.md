@@ -136,8 +136,8 @@ Good interfaces make testing natural:
 
 ## Going deeper
 
-- **Deepening a cluster given its dependencies**, see [deepening](.agents/skills/codebase-design/resources/deepening.md): dependency
+- **Deepening a cluster given its dependencies**, see [deepening](resources/deepening.md): dependency
   categories, seam discipline, and replace-don't-layer testing.
-- **Exploring alternative interfaces**, see [design-it-twice](.agents/skills/codebase-design/resources/design-it-twice.md): spin up
+- **Exploring alternative interfaces**, see [design-it-twice](resources/design-it-twice.md): spin up
   parallel sub-agents to design the interface several radically different ways, then compare on depth,
   locality, and seam placement.

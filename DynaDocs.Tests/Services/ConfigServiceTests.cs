@@ -121,50 +121,6 @@ public class ConfigServiceTests : IDisposable
         Assert.Contains("Invalid JSON", error.Message);
     }
 
-    [Theory]
-    [InlineData("\"skills\": []", "skills must be an object")]
-    [InlineData("\"skills\": { \"custom\": {} }", "enabled")]
-    [InlineData("\"skills\": { \"Custom\": { \"enabled\": true } }", "Custom")]
-    [InlineData("\"skills\": { \"custom\": { \"enabled\": true, \"extra\": 1 } }", "extra")]
-    [InlineData("\"skills\": { \"custom\": { \"enabled\": true, \"origin\": 1 } }", "origin")]
-    public void LoadConfigStrict_RejectsMalformedSwitchboard(string skillsJson, string expected)
-    {
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
-            {
-              "version": 1,
-              "structure": { "root": "dydo" },
-              {{skillsJson}}
-            }
-            """);
-
-        var error = Assert.Throws<InvalidDataException>(
-            () => new ConfigService().LoadConfigStrict(_testDir));
-
-        Assert.Contains(expected, error.Message);
-    }
-
-    [Fact]
-    public void SaveConfig_OrdersSkillSwitchesAndGeneratedResourcesOrdinally()
-    {
-        var config = new DydoConfig
-        {
-            Skills = new Dictionary<string, SkillSwitchConfig>
-            {
-                ["zeta"] = new() { Enabled = true, Resources = ["two", "one"] },
-                ["alpha"] = new() { Enabled = false }
-            }
-        };
-        var path = Path.Combine(_testDir, "ordered.json");
-
-        new ConfigService().SaveConfig(config, path);
-
-        var json = File.ReadAllText(path);
-        Assert.True(json.IndexOf("\"alpha\"", StringComparison.Ordinal)
-            < json.IndexOf("\"zeta\"", StringComparison.Ordinal));
-        Assert.True(json.IndexOf("\"one\"", StringComparison.Ordinal)
-            < json.IndexOf("\"two\"", StringComparison.Ordinal));
-    }
-
     [Fact]
     public void LoadConfig_ReturnsConfig_WhenValid()
     {

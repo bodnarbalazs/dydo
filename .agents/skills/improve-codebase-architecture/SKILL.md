@@ -84,7 +84,7 @@ when the friction is real enough to warrant revisiting the record. Mark it clear
 warning callout: _"contradicts DR 007, but worth reopening because…"_). Don't list every theoretical
 refactor a Decision Record forbids.
 
-See [html-report](.agents/skills/improve-codebase-architecture/resources/html-report.md) for the full HTML scaffold, diagram patterns, and styling
+See [html-report](resources/html-report.md) for the full HTML scaffold, diagram patterns, and styling
 guidance.
 
 Do NOT propose interfaces yet. After the file is written, ask the human: "Which of these would you

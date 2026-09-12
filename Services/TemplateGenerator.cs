@@ -1,8 +1,6 @@
 namespace DynaDocs.Services;
 
 using System.Reflection;
-using System.Text.RegularExpressions;
-using DynaDocs.Models;
 
 /// <summary>
 /// Generates documentation files by reading templates from embedded resources
@@ -11,34 +9,6 @@ using DynaDocs.Models;
 public static class TemplateGenerator
 {
     private static readonly Assembly _assembly = Assembly.GetExecutingAssembly();
-
-    /// <summary>
-    /// Lists a skill's resource templates — files named
-    /// `resource-&lt;skill&gt;-resource-&lt;name&gt;.template.md` — as
-    /// (fileName, content) pairs. `dydo sync` compiles each into the skill folder as
-    /// `resources/&lt;name&gt;.md`.
-    /// </summary>
-    public static IEnumerable<(string FileName, string Content)> GetSkillResources(string skillName)
-    {
-        foreach (var templateName in GetSkillResourceTemplateNames(skillName))
-        {
-            var name = templateName[$"resource-{skillName}-resource-".Length..^".template.md".Length];
-            yield return ($"{name}.md", ReadBuiltInTemplate(templateName));
-        }
-    }
-
-    /// <summary>
-    /// Embedded template names matching `resource-&lt;skill&gt;-resource-*.template.md`.
-    /// </summary>
-    public static IReadOnlyList<string> GetSkillResourceTemplateNames(string skillName)
-    {
-        var prefix = $"DynaDocs.Templates.resource-{skillName}-resource-";
-        return _assembly.GetManifestResourceNames()
-            .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md"))
-            .Select(r => r["DynaDocs.Templates.".Length..])
-            .OrderBy(n => n, StringComparer.Ordinal)
-            .ToList();
-    }
 
     /// <summary>
     /// Reads a template from embedded resources.
@@ -64,79 +34,6 @@ public static class TemplateGenerator
             return content;
 
         throw new FileNotFoundException($"Built-in template not found: {templateName}");
-    }
-
-    /// <summary>
-    /// The shipped skill templates (skill-*.template.md) — the sources `dydo sync` compiles.
-    /// Enumerated from embedded resources only, so a consumer's working directory cannot
-    /// change the executable's shipped inventory.
-    ///
-    /// A retired skill's template is excluded even while the file still ships through a
-    /// transition. This is the single place the exclusion has to happen: everything downstream
-    /// reads the shipped set, so a retired name is not discovered.
-    /// </summary>
-    public static IReadOnlyList<string> GetBuiltInSkillTemplateNames()
-    {
-        const string prefix = "DynaDocs.Templates.skill-";
-        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var resource in _assembly.GetManifestResourceNames()
-                     .Where(r => r.StartsWith(prefix) && r.EndsWith(".template.md")))
-            names.Add(resource["DynaDocs.Templates.".Length..]);
-
-        names.ExceptWith(FrameworkCatalog.RetiredSkills.Select(name => $"skill-{name}.template.md"));
-        return names.ToList();
-    }
-
-    /// <summary>
-    /// The shipped template inventory: every skill template (skill-*.template.md) — the source
-    /// `dydo sync` compiles into native agents and skills — plus each skill's resource templates
-    /// (resource-&lt;skill&gt;-resource-&lt;name&gt;.template.md).
-    /// </summary>
-    public static IReadOnlyList<string> GetAllTemplateNames()
-    {
-        var names = new List<string>();
-        foreach (var templateFile in GetBuiltInSkillTemplateNames())
-        {
-            names.Add(templateFile);
-            var skillName = templateFile["skill-".Length..^".template.md".Length];
-            names.AddRange(GetSkillResourceTemplateNames(skillName));
-        }
-        return names;
-    }
-
-    private static string? GetTemplateAdditionsPath(string? basePath = null)
-    {
-        basePath ??= Environment.CurrentDirectory;
-
-        var inside = Path.Combine(basePath, "_system", "template-additions");
-        if (Directory.Exists(inside))
-            return inside;
-
-        var fromRoot = Path.Combine(basePath, "dydo", "_system", "template-additions");
-        if (Directory.Exists(fromRoot))
-            return fromRoot;
-
-        return null;
-    }
-
-    public static string ResolveIncludes(string content, string? basePath = null)
-    {
-        var additionsPath = GetTemplateAdditionsPath(basePath);
-
-        content = Regex.Replace(content, @"\{\{include:([a-zA-Z0-9_-]+)\}\}", match =>
-        {
-            var name = match.Groups[1].Value;
-            if (additionsPath == null) return "";
-
-            var filePath = Path.Combine(additionsPath, $"{name}.md");
-            return File.Exists(filePath) ? File.ReadAllText(filePath).TrimEnd() : "";
-        });
-
-        // Collapse the blank-line pile-up an empty include leaves behind. Must match
-        // CRLF runs too: template sources are CRLF on Windows checkouts, and an
-        // uncollapsed \r\n\r\n\r\n survives the .claude/ LF-normalization as \n\n\n.
-        return Regex.Replace(content, @"(\r?\n){3,}", "\n\n");
     }
 
     /// <summary>

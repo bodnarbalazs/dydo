@@ -3,9 +3,9 @@
 Own your project's durable knowledge, use Linear for live work, and let native coding agents execute.
 
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
-project knowledge explicit and versioned in Git, compiles shared role methods for Claude Code and
-Codex, and enforces project rules through hooks. Linear owns the live Initiative/Project/Issue graph;
-the coding platform owns sessions, worktrees, delegation, and scheduling.
+project knowledge explicit and versioned in Git, authors shared role methods as native skills for
+Claude Code and Codex, and enforces project rules through hooks. Linear owns the live
+Initiative/Project/Issue graph; the coding platform owns sessions, worktrees, delegation, and scheduling.
 
 This project is an opinionated personal harness, not a compatibility-first product. It evolves with the
 projects using it and deliberately removes machinery that native runtimes or dedicated work-management
@@ -34,10 +34,11 @@ A structured tree (`understand/`, `guides/`, `reference/`, and durable `project/
 validation, auto-fixing, indexes, and graph tooling. Agents onboard through progressive disclosure,
 reading only the durable context relevant to the current Issue.
 
-### One source for native roles and skills
+### One role, native on each host
 
-`dydo sync` compiles role templates and resources into Claude Code and Codex artifacts. Edit the source
-once; both runtimes receive the same method. The host runtime owns agent identity and orchestration.
+A role is a plain `SKILL.md` folder committed to each host's discovery path
+(`.claude/skills/<role>/` and `.agents/skills/<role>/`). There is no compile step; edit both copies
+directly. The host runtime owns agent identity and orchestration.
 
 ### Enforced project rules
 
@@ -85,7 +86,6 @@ Run from the project root:
 
 ```bash
 dydo init codex       # or: dydo init claude / dydo init all / dydo init none
-dydo sync             # compile shared roles and skills
 dydo check            # validate the documentation tree
 dydo fix              # repair supported documentation issues
 ```
@@ -102,22 +102,19 @@ after current workflow state changes.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`.
-- **Roles** — shipped source templates.
-- **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks.
+- **Roles** — plain `SKILL.md` folders under `.claude/skills/` and `.agents/skills/`, edited directly.
 
-Do not hand-edit compiled skills, agents, or workflows. Change their source templates and run
-`dydo sync`.
+A role is its own source; there is no compile step and no automatic reconciliation.
 
 ## Folder Structure
 
 ```text
 project/
-|-- dydo.json                    # Integrations, skills, nudges
+|-- dydo.json                    # Integrations, scan exclusions, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/                     # Compiled Claude agents, skills, and workflows
-|-- .codex/agents/               # Compiled Codex agents
-|-- .agents/skills/              # Compiled Codex skills
+|-- .claude/skills/              # Claude skill folders (SKILL.md + resources)
+|-- .agents/skills/              # Codex skill folders (SKILL.md + resources + openai.yaml)
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture
@@ -129,7 +126,7 @@ project/
     |   |-- future-features/     # Unscheduled repo-native ideas
     |   |-- changelog/           # Completed change and release history
     |   `-- pitfalls/            # Recurring gotchas and constraints
-    |-- _system/template-additions/
+    |-- _system/                 # types.json and local runtime state
     `-- _assets/
 ```
 
@@ -149,13 +146,12 @@ work graph in repository files.
 
 ## Command Reference
 
-### Setup and compilation
+### Setup
 
 | Command | Description |
 |---|---|
 | `dydo init <integration>` | Initialize for `claude`, `codex`, `all`, or `none` |
 | `dydo init <integration> --join` | Wire another runtime or machine into an existing project |
-| `dydo sync` | Compile shared roles, skills, resources, and workflows |
 
 ### Documentation and validation
 
@@ -168,12 +164,11 @@ work graph in repository files.
 | `dydo graph stats [--top N]` | Summarize graph connectivity |
 | `dydo validate` | Validate local configuration and nudges |
 
-### Guard, templates
+### Guard
 
 | Command | Description |
 |---|---|
 | `dydo guard` | Evaluate universal hook rules |
-| `dydo template update [--diff]` | Update or preview framework-owned docs |
 
 See the [complete CLI reference](dydo/reference/dydo-commands.md) for options, examples, transition-only
 commands, and exit codes.

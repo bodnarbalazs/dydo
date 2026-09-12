@@ -288,7 +288,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dotnet dydo agent claim auto")]
     [InlineData("dotnet tool run dydo agent claim auto")]
     [InlineData("dotnet run -- guard --action read --path foo.cs")]
-    [InlineData("dotnet run -- sync")]
     [InlineData("dotnet run -- validate")]
     [InlineData("bash dydo agent claim auto")]
     [InlineData("sh dydo agent claim auto")]

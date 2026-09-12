@@ -17,29 +17,10 @@ public class CheckCommandTests : IDisposable
     }
 
     [Fact]
-    public void Check_MalformedSwitchboardFailsInsteadOfReportingSuccess()
+    public void Check_MissingRequiredScanExclusionFailsInsteadOfReportingSuccess()
     {
         File.WriteAllText(Path.Combine(_root, "dydo.json"),
-            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},\"skills\":{\"local\":{}}}");
-        Directory.CreateDirectory(Path.Combine(_root, "dydo"));
-
-        var (code, stdout, stderr) = ConsoleCapture.All(() => CheckCommand.Create().Parse("").Invoke());
-
-        Assert.NotEqual(0, code);
-        Assert.Contains("dydo.json", stderr);
-        Assert.Contains("enabled", stderr);
-        Assert.DoesNotContain("All checks passed", stdout);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void Check_PreSourceLayerStillRequiresEstablishedScanExclusions(bool omitSkills)
-    {
-        var skills = omitSkills ? "" : ",\"skills\":{}";
-        File.WriteAllText(Path.Combine(_root, "dydo.json"),
-            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},"
-            + "\"scanExclude\":[\"_system/templates/\"]" + skills + "}");
+            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},\"scanExclude\":[\"_system/templates/\"]}");
         Directory.CreateDirectory(Path.Combine(_root, "dydo"));
 
         var (code, stdout, stderr) = ConsoleCapture.All(() => CheckCommand.Create().Parse("").Invoke());

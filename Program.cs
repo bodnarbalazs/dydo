@@ -29,10 +29,8 @@ rootCommand.Subcommands.Add(IndexCommand.Create());
 rootCommand.Subcommands.Add(InitCommand.Create());
 rootCommand.Subcommands.Add(GraphCommand.Create());
 rootCommand.Subcommands.Add(GuardCommand.Create());
-rootCommand.Subcommands.Add(SyncCommand.Create());
 rootCommand.Subcommands.Add(CompletionsCommand.Create());
 rootCommand.Subcommands.Add(CompleteCommand.Create());
-rootCommand.Subcommands.Add(TemplateCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
 rootCommand.Subcommands.Add(GapCheckCommand.Create());
 

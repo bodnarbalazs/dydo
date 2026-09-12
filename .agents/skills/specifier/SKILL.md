@@ -32,8 +32,8 @@ Project, return it untouched and name `project-planner`.
    one Type and one Mode, and has no open blocker. The Captain sets `Specifying` when spawning you.
    Match its outcome, owned paths, gates, base branch, base SHA, branch, isolated worktree, and clean
    state. A parallel lane owns a disjoint subset of its parent; a retained Bug stage carries its
-   serial ownership bound. Load [Bug](.agents/skills/specifier/resources/bug.md),
-   [Merge](.agents/skills/specifier/resources/merge.md), or [Inquisition](.agents/skills/specifier/resources/inquisition.md) when that is the Type.
+   serial ownership bound. Load [Bug](resources/bug.md),
+   [Merge](resources/merge.md), or [Inquisition](resources/inquisition.md) when that is the Type.
    Done when the contract and all five pre-edit checks agree, or a mismatch has been returned.
 2. **Find the pattern.** Read the Decisions, Project plan, specifications, code, and tests; cite the
    working pattern instead of inventing a new one. Done when each proposed seam cites a verified

@@ -58,17 +58,11 @@ dydo fix
 The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical
 evidence is needed; do not recreate repository work records to address a current problem.
 
-## Compiled artifact drift
+## Skill edit drift
 
-Change the source under `Templates/`, then run:
-
-```bash
-dydo template update --diff
-dydo sync
-dydo check
-```
-
-Do not patch `.claude/`, `.codex/`, or `.agents/skills/` by hand.
+A role is a plain `SKILL.md` folder committed to each host's discovery path; edit both copies by
+hand. There is no compile step and no generated agent definition. Run `dydo check` to validate the
+documentation tree.
 
 ## Linear boundary mistakes
 

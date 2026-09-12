@@ -10,7 +10,7 @@
         <Version>3.0.0-beta.3</Version>
         <InformationalVersion>3.0.0-beta.3</InformationalVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-        <Description>Documentation, native skill compilation, and guardrails for AI coding assistants.</Description>
+        <Description>Documentation, native skill authoring, and guardrails for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/bodnarbalazs/dydo</PackageProjectUrl>
@@ -19,7 +19,7 @@
         <PackageTags>codex;claude;documentation;ai-agents;cli</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>dydo 3.0 adopts Linear for live work and focuses on durable knowledge, shared role compilation, and guardrails.</PackageReleaseNotes>
+        <PackageReleaseNotes>dydo 3.0 adopts Linear for live work and focuses on durable knowledge, native skills, and guardrails.</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>

@@ -69,7 +69,7 @@ public class FixCommandIntegrationTests : IntegrationTestBase
     private void RemoveScanExcludeInvariant(string configPath)
     {
         var config = new ConfigService().LoadConfigStrict(TestDir)!;
-        config.ScanExclude.Remove("_system/templates/");
+        config.ScanExclude.Remove("_system/.local/");
         new ConfigService().SaveConfig(config, configPath);
     }
 

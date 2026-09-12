@@ -60,7 +60,7 @@ with the reason. This mode proves the problem; it does not make the test green b
    names, not on this hop. Investigate an unexpected failure until you can name its cause. Done when
    that focused proof has run and the work is committed.
 
-[tests](.agents/skills/implementer/resources/tests.md) shows the good and bad shapes; [mocking](.agents/skills/implementer/resources/mocking.md) says where
+[tests](resources/tests.md) shows the good and bad shapes; [mocking](resources/mocking.md) says where
 a mock belongs.
 
 Run .NET tests through the worktree-isolated runner, never `dotnet test` directly; pass test

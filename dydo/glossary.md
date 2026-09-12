@@ -33,8 +33,7 @@ system files. Explicit allow rules can carve narrowly scoped exceptions.
 
 ## Template Addition
 
-A Markdown fragment under `dydo/_system/template-additions/` injected through a `{{include:name}}` tag.
-It extends a compiled skill without editing the built-in source template.
+Retired with the compiler by Decision 049. Customization is a direct edit to the skill folder; a project document linked under ## Must-Reads carries shared context.
 
 ## Related
 

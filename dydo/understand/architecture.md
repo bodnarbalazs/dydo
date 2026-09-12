@@ -5,18 +5,16 @@ type: concept
 
 # Architecture Overview
 
-DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, compiles shared agent
-methods into native host artifacts, and enforces universal guard rules. Linear sits outside the runtime
+DynaDocs is a .NET 10 CLI that authors and validates durable project knowledge, authors shared agent
+methods as native host skills, and enforces universal guard rules. Linear sits outside the runtime
 boundary and remains the sole owner of live project-management state.
 
 ## Main flows
 
-1. `dydo init` scaffolds the documentation tree, template sources, runtime entry files, and guard hooks.
+1. `dydo init` scaffolds the documentation tree, runtime entry files, and guard hooks.
 2. The host runtime sends matched tool calls to `dydo guard`.
 3. The guard evaluates path tiers, dangerous commands, and configured nudges.
-4. `dydo sync` compiles skill and resource templates into native Claude Code and Codex agents and skills.
-5. `dydo template update` refreshes framework-owned documents.
-6. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
+4. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
 
 No step provisions, polls, caches, or mirrors Linear. Agents reach Linear through its official MCP, UI,
 API, and integrations, outside dydo.
@@ -28,7 +26,7 @@ Commands/        System.CommandLine factories and handlers
 Services/        Documentation, configuration, template, and guard behavior
 Models/          Configuration and parsing data types
 Rules/           Documentation validation rules
-Templates/       Embedded framework, skill, and resource sources
+Templates/       Embedded framework document templates
 DynaDocs.Tests/  Unit, integration, E2E, and coverage gates
 npm/             Native-binary npm wrapper
 ```
@@ -36,30 +34,22 @@ npm/             Native-binary npm wrapper
 Services are instantiated directly; interfaces provide test seams without a dependency-injection
 container. JSON serialization is source-generated for Native AOT compatibility.
 
-## The compiler
+## Native skills
 
-`Templates/skill-<name>.template.md` is the role: its frontmatter carries the metadata, its body
-carries the whole methodology. `dydo sync` validates the flat local source catalog and emits every
-enabled shipped or custom skill to the selected providers:
+A role is a plain `SKILL.md` folder authored directly in the cross-vendor
+[agentskills.io](https://agentskills.io) format — there is no compile step
+([Decision 049](../project/decisions/049-skills-are-the-source-retire-the-compiler.md)). The
+canonical folder is `.claude/skills/<role>/SKILL.md`; its committed Codex copy is
+`.agents/skills/<role>/SKILL.md`, joining `agents/openai.yaml` where explicit invocation or an
+argument hint is declared. Both hosts read the body where it lives.
 
-| Output | Host | Emitted for |
-|---|---|---|
-| `.claude/skills/<role>/SKILL.md` and its `resources/` | Claude Code | every role |
-| `.claude/agents/<role>.md` | Claude Code | roles that emit an agent |
-| `.agents/skills/<role>/SKILL.md` and its `resources/` | Codex | every role; `agents/openai.yaml` joins it for explicit invocation or an argument hint |
-| `.codex/agents/<role>.toml` | Codex | roles that emit an agent |
-
-DR 047 retires Workflow as an operating-model concept. Sync no longer discovers or emits workflows.
-It removes only the retired `.claude/workflows/run-sprint.js` and `inquisition.js` root files,
-preserves custom siblings and nested files, and removes the directory only when empty.
-The guarantees this compilation owes a spawned agent are
-[Decision 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) §10's;
-what each frontmatter key compiles to is in [Customizing Roles](../guides/customizing-roles.md), and
-the pipeline — update, cleanup — in
+Committed per-host copies were chosen over symlinks because a checkout with symlinks disabled
+materialises a link as a text file, stranding the host. DR 047 retires Workflow as an operating-model
+concept; no workflow scripts exist. What each frontmatter key means is in
+[Customizing Roles](../guides/customizing-roles.md), the shapes and link rules in
 [Templates and Customization](./templates-and-customization.md).
 
-The compiler-emitted agents, skills, and resources under `.claude/`, `.codex/`, and
-`.agents/` are build products: change the source template and sync.
+The skill folders under `.claude/skills/` and `.agents/skills/` are the source: edit them directly.
 
 ## Knowledge and work boundary
 
@@ -94,7 +84,7 @@ rules check titles, links, filenames, and project-specific invariants.
 - **Dedicated live-work owner** — Linear manages volatile project state; dydo does not duplicate it.
 - **Git-native durable knowledge** — decisions and proof stay reviewable at exact commits.
 - **Host-native execution** — Claude Code and Codex own delegation, isolation, and lifecycle.
-- **One authored source per role** — a single template compiles to both supported runtimes.
+- **Committed native skills per host** — one role, authored as a plain `SKILL.md` folder in each host's discovery path.
 - **Universal guard rules** — enforcement is independent of any dydo-managed identity.
 - **No DI framework** — direct construction keeps the Native AOT CLI small.
 

@@ -33,7 +33,7 @@ words.
    Cut whatever the code already states plainly. Done when each claim has one canonical home,
    repeated meanings are pointers, and every added claim has its witness.
 3. **Edit the source; regeneration writes the rest.** Author navigation pages when the docs need them;
-   compiled skills under `.claude/`, `.codex/` and `.agents/` are `dydo sync`'s. Done when every edit
+   the skill folders under `.claude/skills/` and `.agents/skills/` are their own source, edited by hand. Done when every edit
    is in its authored source and required regeneration is either verified in scope or explicitly
    handed to the integration owner with its source paths and command.
 4. **Write the inquisition record** when the separate record Feature's captain hands you its

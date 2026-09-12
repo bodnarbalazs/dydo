@@ -41,7 +41,7 @@ corrective for agent-speak, at any stage.
   post-landing tour, the admiral opens the Walkthrough Issue and asks the human to invoke
   `walkthrough` in that same session before facilitating it.
 
-The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them compiles from a template — see
+The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder — see
 [Templates and Customization](./templates-and-customization.md).
 
 A captain's Issue is a Project one level down: the same Types, statuses and chain, with a different

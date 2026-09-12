@@ -241,32 +241,6 @@ public class CliEndToEndTests : IDisposable
 
     #endregion
 
-    #region Template Update Tests
-
-    [Fact]
-    public async Task TemplateUpdate_EndToEnd_ShippedHooks()
-    {
-        // Init project, create addition file, run update, verify addition survives
-        var initResult = await RunDydoAsync("init none");
-        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
-
-        // Create an addition file
-        var additionsPath = Path.Combine(_testDir, "dydo", "_system", "template-additions");
-        File.WriteAllText(Path.Combine(additionsPath, "extra-verify.md"),
-            "5. Run gap_check.py — Custom verification");
-
-        // Run template update
-        var updateResult = await RunDydoAsync("template update");
-        Assert.True(updateResult.ExitCode == 0,
-            $"template update failed: {updateResult.Stderr}\nStdout: {updateResult.Stdout}");
-        Assert.Contains("Template update complete:", updateResult.Stdout);
-
-        // Addition file should still exist
-        Assert.True(File.Exists(Path.Combine(additionsPath, "extra-verify.md")));
-    }
-
-    #endregion
-
     private async Task<CliResult> RunDydoAsync(string args)
     {
         var psi = new ProcessStartInfo

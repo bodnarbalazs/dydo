@@ -36,9 +36,9 @@ type: guide
 
 ### Role Context Reads
 
-Role skill templates can include a `## Must-Reads` section whose markdown links are compiled into
-the generated agent definition by `dydo sync`. This selects role context; documentation
-frontmatter itself does not enforce reads.
+Role skills can include a `## Must-Reads` section whose markdown links resolve from the skill
+folder, carrying its context. This selects role context; documentation frontmatter itself does not
+enforce reads.
 
 ---
 

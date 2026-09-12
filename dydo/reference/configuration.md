@@ -25,23 +25,12 @@ through Linear's official surfaces.
     "claude": true,
     "codex": true
   },
-  "skills": {
-    "writing-for-humans": {
-      "enabled": true,
-      "origin": "shipped",
-      "emitAgent": false,
-      "codexMetadata": false,
-      "resources": []
-    }
-  },
   "scanExclude": [
     "_system/.local/",
     "_system/audit/",
-    "_system/templates/",
     "agents/"
   ],
   "nudges": [],
-  "frameworkHashes": {},
   "testing": {
     "runner": ["python", "scripts/gap_check.py"]
   }
@@ -56,24 +45,13 @@ through Linear's official surfaces.
 | `structure.root` | string | Documentation root; defaults to `dydo`. |
 | `integrations.claude` | boolean | Whether Claude Code integration is wired. |
 | `integrations.codex` | boolean | Whether Codex integration is wired. |
-| `skills.<name>.enabled` | boolean | The human-authored switch controlling whether the local source emits. |
-| `skills.<name>.origin` | `shipped` \| `custom` | Generated source ownership and retirement provenance. |
-| `skills.<name>.emitAgent` | boolean | Generated prior agent-output shape used for exact cleanup. |
-| `skills.<name>.codexMetadata` | boolean | Generated prior `agents/openai.yaml` shape, emitted by explicit invocation or an argument hint. |
-| `skills.<name>.resources` | string[] | Generated, sorted prior resource-output shape used for exact cleanup. |
 | `scanExclude` | string[] | Paths excluded from documentation scanning. |
 | `nudges` | object[] | Project guard rules. |
-| `frameworkHashes` | object | Product-managed hashes used by `dydo template update`. |
 | `testing.runner` | nonempty string[] | Executable followed by fixed arguments for `dydo gap-check`. The executable is the first item; later empty arguments are preserved. |
 
-Older 2.x configuration may still contain repository work-path fields. The 3.x runtime ignores those
-unknown properties safely and does not migrate them into another local work model. A fresh
-initialization emits `structure.root` and no retired work-path fields.
-
-`enabled` is the only hand-authored member of a skill switch. A new custom source may begin with the
-minimal `{ "enabled": true }`; the next successful sync fills the generated members. Discovery adds
-a valid source missing from the switchboard as enabled and never changes an existing true or false.
-Malformed switches fail update, sync, check, and validate rather than receiving defaults.
+Older 2.x configuration may still contain repository work-path, `skills` or `frameworkHashes`
+fields. The 3.x runtime ignores those unknown properties safely. A fresh initialization emits
+`structure.root` and no retired fields. A role is a plain skill folder, not a configuration entry.
 
 `testing` is optional. When present, it must be an object containing a nonempty `runner` array of
 strings, whose first item is a nonblank executable. The launcher starts that executable directly from
@@ -99,18 +77,17 @@ orchestration to the host runtime.
 
 ## Model and effort at dispatch
 
-`dydo.json` carries no model and no effort. `dydo sync` emits every role in the shape that leaves
-its host selectable, and the delegating admiral or Issue Captain chooses the model — and the effort
-where the host exposes one — for each task it hands out.
+`dydo.json` carries no model and no effort, and a skill binds neither. The delegating admiral or
+Issue Captain chooses the model — and the effort where the host exposes one — for each task it hands
+out. There is no generated agent file carrying a default.
 
-| Host | The generated agent carries | Left to the caller |
+| Host | What the caller sets | Left to the session |
 |---|---|---|
-| Claude Code | `model: inherit`, and no effort key | the model on each Agent call; effort from the session |
-| Codex | neither `model` nor `model_reasoning_effort` | both values on each spawn |
+| Claude Code | the model on each Agent call | effort from the session |
+| Codex | model and supported reasoning effort on each spawn | — |
 
-`model: inherit` is inheritance behaviour rather than a pinned model: it resolves to the main
-conversation's model. Codex omits both keys because a custom agent file's own keys are the last
-word over everything below, so emitting either would defeat the caller's choice.
+A role reached as a skill inherits the session's model and effort. An explicit spawn value is the
+last word over the host's agents defaults.
 
 ### Claude Code precedence
 
@@ -126,7 +103,7 @@ model for a blocked one, so the model that runs is not always the model that was
 
 Claude Code exposes no per-Agent-call effort argument: effort belongs to the session (`--effort`)
 and to the environment variable that outranks it, and an agent file's own `effort` overrides the
-session but not that variable. dydo emits none, so the session's effort stands for every role.
+session but not that variable. dydo writes no agent file, so the session's effort stands for every role.
 
 ### Codex precedence
 
@@ -162,15 +139,14 @@ and blocks reject the action. Nudges enforce project process; they do not create
 
 ## Customization points
 
-- `dydo/_system/template-additions/` — durable `{{include:name}}` fragments.
-- `dydo/_system/templates/` — flat local skill/resource sources; shipped copies are overwritten on update and distinctly named custom sources survive.
+- `.claude/skills/<role>/` and `.agents/skills/<role>/` — the role folders; edit each host's copy directly.
 - `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
   read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.
   Whitelist entries lift off-limits patterns only; [Guard System](../understand/guard-system.md) owns
   how each tier binds.
 
-Change source templates and run `dydo sync`; never hand-edit compiled `.claude/`, `.codex/`, or
-`.agents/skills/` artifacts.
+A role is its own source. Edit the skill folder in place; there is no compile step and no automatic
+reconciliation.
 
 ## Documentation exclusion layers
 

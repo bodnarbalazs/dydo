@@ -1,7 +1,5 @@
 namespace DynaDocs.Services;
 
-using DynaDocs.Models;
-
 public class FolderScaffolder : IFolderScaffolder
 {
     private readonly record struct FolderSpec(string Path);
@@ -18,7 +16,6 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/releases"),
         new("project/future-features"),
         new("_system"),
-        new("_system/templates"),
         new("_system/.local"),
         new("_assets")
     ];
@@ -57,8 +54,6 @@ public class FolderScaffolder : IFolderScaffolder
         // is assigned at spawn, nothing owns a named workspace).
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
-        ScaffoldTemplateAdditions(basePath);
-        ScaffoldSkillTemplates(basePath);
         ScaffoldTypesJson(basePath);
         CopyBuiltInAssets(basePath);
 
@@ -97,64 +92,6 @@ public class FolderScaffolder : IFolderScaffolder
         var path = Path.Combine(basePath, FrontmatterTypesService.TypesJsonRelativePath);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         WriteIfNotExists(path, TemplateGenerator.ReadBuiltInTemplate("types.json.template"));
-    }
-
-    private void ScaffoldTemplateAdditions(string basePath)
-    {
-        var destPath = Path.Combine(basePath, "_system", "template-additions");
-        Directory.CreateDirectory(destPath);
-
-        WriteIfNotExists(
-            Path.Combine(destPath, "_README.md"),
-            TemplateGenerator.ReadBuiltInTemplate("template-additions-readme.md"));
-
-        WriteIfNotExists(
-            Path.Combine(destPath, "extra-verify.md.example"),
-            TemplateGenerator.ReadBuiltInTemplate("extra-verify.example.md"));
-    }
-
-    private static void ScaffoldSkillTemplates(string basePath)
-    {
-        var templateRoot = Path.Combine(basePath, "_system", "templates");
-        Directory.CreateDirectory(templateRoot);
-        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
-            WriteIfNotExists(
-                Path.Combine(templateRoot, templateName),
-                TemplateGenerator.ReadBuiltInTemplate(templateName));
-    }
-
-    public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
-    {
-        foreach (var relativePath in FrameworkCatalog.DocumentFiles)
-        {
-            var fullPath = Path.Combine(basePath, relativePath);
-            if (File.Exists(fullPath))
-                config.FrameworkHashes[relativePath] = FrameworkCatalog.ComputeHash(File.ReadAllText(fullPath));
-        }
-
-
-        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
-        {
-            var relativePath = $"_system/templates/{templateName}";
-            var fullPath = Path.Combine(basePath, "_system", "templates", templateName);
-            config.FrameworkHashes[relativePath] = FrameworkCatalog.ComputeHash(File.ReadAllText(fullPath));
-        }
-
-        foreach (var skill in SkillTemplateService.DiscoverSkills())
-        {
-            var resources = TemplateGenerator.GetSkillResourceTemplateNames(skill.Name)
-                .Select(name => name[$"resource-{skill.Name}-resource-".Length..^".template.md".Length])
-                .OrderBy(name => name, StringComparer.Ordinal)
-                .ToList();
-            config.Skills[skill.Name] = new SkillSwitchConfig
-            {
-                Enabled = true,
-                Origin = "shipped",
-                EmitAgent = skill.EmitAgent,
-                CodexMetadata = skill.ExplicitInvocation || skill.ArgumentHint != null,
-                Resources = resources
-            };
-        }
     }
 
     private static void WriteIfNotExists(string path, string content)

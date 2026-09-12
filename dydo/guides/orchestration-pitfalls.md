@@ -131,18 +131,12 @@ the work — and re-trust the hooks after any change to them.
 assimilation briefs carry the rest. Extract the invariant, link the artifact from the Issue, and never
 mirror an Issue body into the repository.
 
-## 11. A template edit the binary never saw
+## 11. A template edit the binary never saw (retired)
 
-**Symptom:** an edited skill template leaves the catalog under `dydo/_system/templates/` unchanged, and
-`dydo template update` then `dydo sync` still report a clean, green fixed point.
-
-**Mechanism:** templates are embedded resources compiled into the CLI. `template update` reads them out
-of the built binary rather than off `Templates/`, so an edit made after the last build is invisible to
-it, and `sync` recompiles the agents from the stale catalog copy.
-
-**Rule:** rebuild before every `template update`, and run both commands from that fresh build rather
-than the installed CLI. A catalog file that an edited template did not move is the tell, and a fixed
-point proved against a stale binary is no fixed point.
+The `dydo template update` and `dydo sync` fixed point this section described is retired by
+[Decision 049](../project/decisions/049-skills-are-the-source-retire-the-compiler.md). A role is a
+plain `SKILL.md` folder now; edit it directly and delete the old template mirror. There is no
+embedded catalog to go stale.
 
 ## Related
 

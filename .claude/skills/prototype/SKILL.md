@@ -14,10 +14,10 @@ A prototype is **throwaway code that answers a question**. The question decides 
 Identify which question is being answered, using the Prototype Issue, the prompt and surrounding
 code. A worker returns a missing choice to the Captain, whose HITL session reaches the human:
 
-- **"Does this logic / state model feel right?"** → [logic](.claude/skills/prototype/resources/logic.md). Build a single
+- **"Does this logic / state model feel right?"** → [logic](resources/logic.md). Build a single
   shareable HTML file (free-play buttons plus tabbed guided walkthroughs) that pushes the state
   machine through cases that are hard to reason about on paper, and that a non-developer can drive.
-- **"What should this look like?"** → [ui](.claude/skills/prototype/resources/ui.md). Generate several radically different
+- **"What should this look like?"** → [ui](resources/ui.md). Generate several radically different
   UI variations on a single route, switchable via a URL search param and a floating bottom bar.
 
 The two branches produce very different artifacts, so getting this wrong wastes the whole prototype.

@@ -255,22 +255,6 @@ public class DocumentationTests : IntegrationTestBase
     #region Fix Exclusions
 
     [Fact]
-    public async Task Fix_DoesNotRenameTemplateFiles()
-    {
-        await InitProjectAsync("none");
-
-        // The additions README isn't kebab-case; verify it exists and isn't renamed
-        AssertFileExists("dydo/_system/template-additions/_README.md");
-
-        var result = await FixAsync();
-
-        result.AssertSuccess();
-        // The file should still exist with its original name
-        AssertFileExists("dydo/_system/template-additions/_README.md");
-        Assert.DoesNotContain("_README.md", result.Stdout);
-    }
-
-    [Fact]
     public async Task Fix_DoesNotCreateHubFilesInAgentFolders()
     {
         await InitProjectAsync("none");
@@ -295,15 +279,15 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // _system/template-additions has files but no _index.md (by design)
-        AssertDirectoryExists("dydo/_system/template-additions");
-        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/template-additions/_index.md")));
+        // The _system folder holds files but no _index.md (by design)
+        AssertDirectoryExists("dydo/_system");
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/_index.md")));
 
         var result = await FixAsync();
 
         result.AssertSuccess();
-        // Should NOT create _index.md in _system/template-additions
-        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/template-additions/_index.md")));
+        // Should NOT create _index.md in _system
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/_index.md")));
     }
 
     [Fact]

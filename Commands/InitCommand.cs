@@ -90,7 +90,7 @@ public static class InitCommand
             configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
-            ScaffoldProject(configService, config, configPath, projectRoot, integrations);
+            ScaffoldProject(config, projectRoot, integrations);
             WriteHostSettings(hostSettings);
             PrintInitSummary(integrations);
 
@@ -107,8 +107,8 @@ public static class InitCommand
     private static string[] ExpandIntegrations(string integration) =>
         integration == "all" ? ["claude", "codex"] : [integration];
 
-    private static void ScaffoldProject(ConfigService configService, DydoConfig config,
-        string configPath, string projectRoot, string[] integrations)
+    private static void ScaffoldProject(DydoConfig config,
+        string projectRoot, string[] integrations)
     {
         var projectName = Path.GetFileName(projectRoot);
 
@@ -130,9 +130,7 @@ public static class InitCommand
 
         var scaffolder = new FolderScaffolder();
         scaffolder.Scaffold(dydoRoot);
-        FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
-        configService.SaveConfig(config, configPath);
-        Console.WriteLine($"  ✓ {config.Structure.Root}/ structure with workflows");
+        Console.WriteLine($"  ✓ {config.Structure.Root}/ documentation structure");
 
         WriteIfNotExists(
             Path.Combine(dydoRoot, "files-off-limits.md"),

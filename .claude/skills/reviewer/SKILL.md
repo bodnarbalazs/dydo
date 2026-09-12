@@ -23,9 +23,9 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 
 ## Method
 
-1. **Read the rubric you were given.** [code](.claude/skills/reviewer/resources/code.md) · [docs](.claude/skills/reviewer/resources/docs.md) ·
-   [project-plan](.claude/skills/reviewer/resources/project-plan.md) · [spec](.claude/skills/reviewer/resources/spec.md) ·
-   [merge](.claude/skills/reviewer/resources/merge.md), exactly the one the invoker named. Done when you can restate every
+1. **Read the rubric you were given.** [code](resources/code.md) · [docs](resources/docs.md) ·
+   [project-plan](resources/project-plan.md) · [spec](resources/spec.md) ·
+   [merge](resources/merge.md), exactly the one the invoker named. Done when you can restate every
    item it asks of you.
 2. **Pin the contract and the candidate.** The contract at its governing commit, the candidate at its
    SHA, the base SHA. Done when another reviewer could open the same contract and candidate.

@@ -45,18 +45,6 @@ public class TitleRuleTests
         Assert.Equal("Missing title (# heading)", violation.Message);
     }
 
-    [Theory]
-    [InlineData("_system/template-additions/extra-foo.md")]
-    [InlineData("_system/template-additions/skill-implementer.template.md")]
-    public void Validate_SkipsTemplateAdditionWithNoTitle(string relativePath)
-    {
-        var doc = CreateDoc(title: null, summary: null, relativePath: relativePath);
-
-        var violations = _rule.Validate(doc, [], "/base").ToList();
-
-        Assert.Empty(violations);
-    }
-
     private static DocFile CreateDoc(string? title, string? summary, string relativePath = "test.md")
     {
         return new DocFile

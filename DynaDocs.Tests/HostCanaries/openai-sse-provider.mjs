@@ -23,7 +23,7 @@ const server = http.createServer(async (request, response) => {
 
     await appendFile(args.requests, `${JSON.stringify({ state, url: request.url, payload })}\n`, "utf8");
     const serialized = JSON.stringify(payload);
-    if (!request.url?.endsWith("/chat/completions")) {
+    if (!request.url?.endsWith("/chat/completions") && !request.url?.endsWith("/responses")) {
       return deny(response, `unexpected provider endpoint ${request.url}`);
     }
 
@@ -31,7 +31,7 @@ const server = http.createServer(async (request, response) => {
       assert(serialized.includes('"skill"'), "first request did not expose the native skill tool");
       assert(serialized.includes("teach"), "first request did not expose teach in the native inventory");
       state = 1;
-      return chatTool(response, "dyd91-skill", "skill", { name: "teach" });
+      return providerTool(request.url, response, "dyd91-skill", "skill", { name: "teach" });
     }
 
     if (state === 1) {
@@ -41,13 +41,13 @@ const server = http.createServer(async (request, response) => {
       const fact = await readFile(derivedResourcePath, "utf8");
       assert(fact.includes(expectedFact), "derived resource did not contain the expected fact");
       state = 2;
-      return chatTool(response, "dyd91-read", "read", { filePath: derivedResourcePath });
+      return providerTool(request.url, response, "dyd91-read", "read", { filePath: derivedResourcePath });
     }
 
     if (state === 2) {
       assert(serialized.includes(expectedFact), "native read result omitted the expected fact");
       state = 3;
-      return chatText(response, expectedFact);
+      return providerText(request.url, response, expectedFact);
     }
 
     return deny(response, "unexpected extra provider request (including title generation)");
@@ -82,6 +82,87 @@ function chatTool(response, id, name, value) {
       choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }]
     }
   ]);
+}
+
+function providerTool(url, response, id, name, value) {
+  if (url.endsWith("/responses")) return responsesTool(response, id, name, value);
+  return chatTool(response, id, name, value);
+}
+
+function providerText(url, response, content) {
+  if (url.endsWith("/responses")) return responsesText(response, content);
+  return chatText(response, content);
+}
+
+function responsesTool(response, callId, name, value) {
+  const itemId = `fc_${callId}`;
+  const args = JSON.stringify(value);
+  const item = { id: itemId, type: "function_call", status: "completed", arguments: args, call_id: callId, name };
+  responsesStream(response, [
+    ["response.created", { response: responseObject("in_progress", []) }],
+    ["response.output_item.added", { output_index: 0, item: { ...item, status: "in_progress", arguments: "" } }],
+    ["response.function_call_arguments.delta", { item_id: itemId, output_index: 0, delta: args }],
+    ["response.function_call_arguments.done", { item_id: itemId, output_index: 0, arguments: args }],
+    ["response.output_item.done", { output_index: 0, item }],
+    ["response.completed", { response: responseObject("completed", [item]) }]
+  ]);
+}
+
+function responsesText(response, content) {
+  const itemId = "msg_dyd91";
+  const part = { type: "output_text", text: content, annotations: [], logprobs: [] };
+  const item = { id: itemId, type: "message", status: "completed", role: "assistant", content: [part] };
+  responsesStream(response, [
+    ["response.created", { response: responseObject("in_progress", []) }],
+    ["response.output_item.added", { output_index: 0, item: { ...item, status: "in_progress", content: [] } }],
+    ["response.content_part.added", { item_id: itemId, output_index: 0, content_index: 0, part: { ...part, text: "" } }],
+    ["response.output_text.delta", { item_id: itemId, output_index: 0, content_index: 0, delta: content, logprobs: [] }],
+    ["response.output_text.done", { item_id: itemId, output_index: 0, content_index: 0, text: content, logprobs: [] }],
+    ["response.content_part.done", { item_id: itemId, output_index: 0, content_index: 0, part }],
+    ["response.output_item.done", { output_index: 0, item }],
+    ["response.completed", { response: responseObject("completed", [item]) }]
+  ]);
+}
+
+function responseObject(status, output) {
+  return {
+    id: "resp_dyd91",
+    object: "response",
+    created_at: 0,
+    status,
+    error: null,
+    incomplete_details: null,
+    instructions: null,
+    max_output_tokens: null,
+    model: "skill-canary",
+    output,
+    parallel_tool_calls: true,
+    previous_response_id: null,
+    reasoning: { effort: null, summary: null },
+    store: false,
+    temperature: 0,
+    text: { format: { type: "text" } },
+    tool_choice: "auto",
+    tools: [],
+    top_p: 1,
+    truncation: "disabled",
+    usage: status === "completed" ? { input_tokens: 1, input_tokens_details: { cached_tokens: 0 }, output_tokens: 1, output_tokens_details: { reasoning_tokens: 0 }, total_tokens: 2 } : null,
+    user: null,
+    metadata: {}
+  };
+}
+
+function responsesStream(response, events) {
+  response.writeHead(200, {
+    "content-type": "text/event-stream",
+    "cache-control": "no-cache",
+    connection: "keep-alive"
+  });
+  let sequence = 0;
+  for (const [type, value] of events) {
+    response.write(`event: ${type}\ndata: ${JSON.stringify({ type, sequence_number: sequence++, ...value })}\n\n`);
+  }
+  response.end();
 }
 
 function chatText(response, content) {

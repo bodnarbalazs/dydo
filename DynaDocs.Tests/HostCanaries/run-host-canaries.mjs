@@ -174,11 +174,19 @@ async function runOpenCodeCanary() {
     const live = await run(exe, ["--pure", "run", "--dir", ".", "--title", "DYD-91-skill-canary", "--model", "openai/skill-canary", "--format", "json", PROMPT], { cwd: checkout, env });
     await writeArtifact("opencode-live.ndjson", live.stdout);
     const events = parseNdjson(live.stdout, "OpenCode live output");
-    const eventText = JSON.stringify(events);
-    assert(eventText.includes("teach") && eventText.includes("mission-format.md") && eventText.includes(EXPECTED_FACT), "OpenCode live events did not record the skill/read/final sequence");
-    assert(finalText(events) === EXPECTED_FACT, "OpenCode live final response was not exact");
+    const skillIndex = events.findIndex(event => event.type === "tool_use" && event.part?.tool === "skill" && event.part?.state?.status === "completed" && event.part?.state?.input?.name === "teach");
+    const readIndex = events.findIndex(event => event.type === "tool_use" && event.part?.tool === "read" && event.part?.state?.status === "completed" && event.part?.state?.input?.filePath?.endsWith("mission-format.md"));
+    const textIndex = events.findIndex(event => event.type === "text" && event.part?.text === EXPECTED_FACT);
+    assert(skillIndex >= 0 && readIndex > skillIndex && textIndex > readIndex, "OpenCode live events did not record the ordered completed skill/read/final sequence");
+    assert(events[skillIndex].part.state.output.includes("[mission-format](resources/mission-format.md)"), "OpenCode's native skill result lost the resource link");
+    const readPath = await realpath(events[readIndex].part.state.input.filePath);
+    assert(samePath(readPath, join(checkout, "skills", "teach", "resources", "mission-format.md")), "OpenCode read did not resolve to the canonical resource");
+    assert(events[readIndex].part.state.output.includes(EXPECTED_FACT), "OpenCode native read result omitted the resource fact");
+    assert(events.filter(event => event.type === "text").map(event => event.part?.text).join("") === EXPECTED_FACT, "OpenCode live final response was not exact");
     const requests = parseNdjson(await readFile(requestsPath, "utf8"), "OpenCode provider requests");
     assert(requests.length === 3, `OpenCode made ${requests.length} provider requests instead of the expected three`);
+    const firstRequest = JSON.stringify(requests[0].payload);
+    for (const name of expectedNames) assert(firstRequest.includes(`<name>${name}</name>`), `OpenCode's first provider request omitted ${name} from the native skill inventory`);
     manifest.artifacts["opencode-provider-requests.ndjson"] = { sha256: await sha256(requestsPath), bytes: (await stat(requestsPath)).size };
     pass("Pinned OpenCode discovered canonical skills directly and completed the deterministic loopback skill/read proof");
   } finally {

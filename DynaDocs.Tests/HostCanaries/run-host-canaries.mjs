@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { access, cp, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -332,7 +333,16 @@ function collectSkillNames(value) { if (Array.isArray(value)) return value.flatM
 function extractAbsolutePaths(value) { return [...value.matchAll(/[A-Za-z]:[\\/][^\r\n"]+/g)].map(match => match[0].trim()); }
 function finalText(events) { const strings = []; walk(events, value => { if (typeof value === "string") strings.push(value); }); return strings.filter(value => value.includes(EXPECTED_FACT)).at(-1)?.trim(); }
 function walk(value, visit) { visit(value); if (Array.isArray(value)) value.forEach(item => walk(item, visit)); else if (value && typeof value === "object") Object.values(value).forEach(item => walk(item, visit)); }
-async function sha256(file) { const bytes = await readFile(file); return createHash("sha256").update(bytes).digest("hex"); }
+async function sha256(file) {
+  const hash = createHash("sha256");
+  await new Promise((resolveHash, reject) => {
+    const input = createReadStream(file);
+    input.on("data", chunk => hash.update(chunk));
+    input.on("end", resolveHash);
+    input.on("error", reject);
+  });
+  return hash.digest("hex");
+}
 async function findFile(root, name) { for (const entry of await readdir(root, { withFileTypes: true })) { const value = join(root, entry.name); if (entry.isDirectory()) { const found = await findFile(value, name).catch(() => undefined); if (found) return found; } else if (entry.name.toLowerCase() === name.toLowerCase()) return value; } throw new Error(`${name} was not found under ${root}`); }
 
 function nativeOpenCodeRoots() {

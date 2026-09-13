@@ -84,23 +84,37 @@ jobs:
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.300'
+
+      - name: Verify .NET SDK
+        run: if ((dotnet --version) -ne '10.0.300') { throw 'Expected .NET SDK 10.0.300.' }
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22.13.0'
+
+      - name: Create Python assurance environment
+        run: python -m venv dydo/_system/.local/static-gates/python
 
       - name: Install Python assurance toolchain
-        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+        run: dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Restore AltCover
+        run: dotnet tool restore --tool-manifest .config/dotnet-tools.json
+
+      - name: Restore coverage metrics
+        run: dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 
       - name: Install Node assurance toolchain
         run: npm ci
         working-directory: DynaDocs.Tests/coverage
 
       - name: Run isolated test adapter
-        run: python DynaDocs.Tests/coverage/run_tests.py
+        run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/run_tests.py
 
       - name: Build release with warnings as errors
         run: dotnet build DynaDocs.sln -c Release --warnaserror
@@ -109,7 +123,7 @@ jobs:
         run: dotnet run --project DynaDocs.csproj -c Release --no-build -- check
 
       - name: Run coverage gate
-        run: python DynaDocs.Tests/coverage/gap_check.py --force-run
+        run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
 
   release:
     if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}

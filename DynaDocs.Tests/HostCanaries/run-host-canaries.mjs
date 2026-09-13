@@ -306,7 +306,7 @@ async function runClaudeCanary() {
   await writeArtifact("candidate-CLAUDE.md", claudeInstructions);
   const version = (await run("claude", ["--version"])).stdout.trim();
   manifest.environment.claude = { version, instructions: { path: claudeInstructionsPath, sha256: await sha256(claudeInstructionsPath), bytes: (await stat(claudeInstructionsPath)).size } };
-  const common = ["--output-format", "stream-json", "--verbose", "--no-session-persistence", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];
+  const common = ["--output-format", "stream-json", "--verbose", "--no-session-persistence", "--setting-sources", "project", "--strict-mcp-config", "--no-chrome", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];
   await writeArtifact("claude-session-settings.json", JSON.stringify({ executable: "claude", cwd: checkout, promptPlacement: "immediately after --print", commonArgv: common }, null, 2));
   const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
   const implicit = await capture("claude", ["--print", implicitPrompt, ...common], { cwd: checkout });

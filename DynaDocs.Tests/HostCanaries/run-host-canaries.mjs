@@ -301,19 +301,22 @@ async function candidateFingerprint(root) {
 }
 
 async function runClaudeCanary() {
+  const claudeConfig = join(hostsRoot, "claude-config");
+  await mkdir(claudeConfig, { recursive: true });
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: claudeConfig };
   const claudeInstructionsPath = join(checkout, "CLAUDE.md");
   const claudeInstructions = await readFile(claudeInstructionsPath, "utf8");
   await writeArtifact("candidate-CLAUDE.md", claudeInstructions);
-  const version = (await run("claude", ["--version"])).stdout.trim();
-  manifest.environment.claude = { version, instructions: { path: claudeInstructionsPath, sha256: await sha256(claudeInstructionsPath), bytes: (await stat(claudeInstructionsPath)).size } };
+  const version = (await run("claude", ["--version"], { env })).stdout.trim();
+  manifest.environment.claude = { version, configDir: claudeConfig, settingSources: ["project"], strictMcpConfig: true, chrome: false, instructions: { path: claudeInstructionsPath, sha256: await sha256(claudeInstructionsPath), bytes: (await stat(claudeInstructionsPath)).size } };
   const common = ["--output-format", "stream-json", "--verbose", "--no-session-persistence", "--setting-sources", "project", "--strict-mcp-config", "--no-chrome", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];
   await writeArtifact("claude-session-settings.json", JSON.stringify({ executable: "claude", cwd: checkout, promptPlacement: "immediately after --print", commonArgv: common }, null, 2));
   const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
-  const implicit = await capture("claude", ["--print", implicitPrompt, ...common], { cwd: checkout });
+  const implicit = await capture("claude", ["--print", implicitPrompt, ...common], { cwd: checkout, env });
   await writeArtifact("claude-implicit.ndjson", implicit.stdout);
   await writeArtifact("claude-implicit.stderr.txt", implicit.stderr);
   assert(implicit.exitCode === 0, `Claude implicit canary exited ${implicit.exitCode}: ${redact(implicit.stderr || implicit.stdout)}`);
-  const explicit = await capture("claude", ["--print", `/teach ${PROMPT}`, ...common], { cwd: checkout });
+  const explicit = await capture("claude", ["--print", `/teach ${PROMPT}`, ...common], { cwd: checkout, env });
   await writeArtifact("claude-explicit.ndjson", explicit.stdout);
   await writeArtifact("claude-explicit.stderr.txt", explicit.stderr);
   assert(explicit.exitCode === 0, `Claude explicit canary exited ${explicit.exitCode}: ${redact(explicit.stderr || explicit.stdout)}`);

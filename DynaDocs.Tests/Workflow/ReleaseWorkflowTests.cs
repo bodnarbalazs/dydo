@@ -62,7 +62,6 @@ public sealed class ReleaseWorkflowTests
         var localPip = $"{AssurancePythonExecutable} -m pip install -r DynaDocs.Tests/coverage/requirements.lock";
         var localAdapter = $"{AssurancePythonExecutable} DynaDocs.Tests/coverage/run_tests.py";
         var localCoverage = $"{AssurancePythonExecutable} DynaDocs.Tests/coverage/gap_check.py --force-run";
-        var validation = ActiveJobs(workflow)["validation"];
 
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
             workflow.Replace("- name: Create Python assurance environment", "- name: Removed Python assurance environment", StringComparison.Ordinal)));

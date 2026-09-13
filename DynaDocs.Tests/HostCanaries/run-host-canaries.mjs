@@ -306,13 +306,17 @@ async function runClaudeCanary() {
   await writeArtifact("candidate-CLAUDE.md", claudeInstructions);
   const version = (await run("claude", ["--version"])).stdout.trim();
   manifest.environment.claude = { version, instructions: { path: claudeInstructionsPath, sha256: await sha256(claudeInstructionsPath), bytes: (await stat(claudeInstructionsPath)).size } };
-  const common = ["--print", "--output-format", "stream-json", "--verbose", "--no-session-persistence", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];
-  await writeArtifact("claude-session-settings.json", JSON.stringify({ executable: "claude", cwd: checkout, commonArgv: common }, null, 2));
+  const common = ["--output-format", "stream-json", "--verbose", "--no-session-persistence", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];
+  await writeArtifact("claude-session-settings.json", JSON.stringify({ executable: "claude", cwd: checkout, promptPlacement: "immediately after --print", commonArgv: common }, null, 2));
   const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
-  const implicit = await run("claude", [...common, "--", implicitPrompt], { cwd: checkout });
+  const implicit = await capture("claude", ["--print", implicitPrompt, ...common], { cwd: checkout });
   await writeArtifact("claude-implicit.ndjson", implicit.stdout);
-  const explicit = await run("claude", [...common, "--", `/teach ${PROMPT}`], { cwd: checkout });
+  await writeArtifact("claude-implicit.stderr.txt", implicit.stderr);
+  assert(implicit.exitCode === 0, `Claude implicit canary exited ${implicit.exitCode}: ${redact(implicit.stderr || implicit.stdout)}`);
+  const explicit = await capture("claude", ["--print", `/teach ${PROMPT}`, ...common], { cwd: checkout });
   await writeArtifact("claude-explicit.ndjson", explicit.stdout);
+  await writeArtifact("claude-explicit.stderr.txt", explicit.stderr);
+  assert(explicit.exitCode === 0, `Claude explicit canary exited ${explicit.exitCode}: ${redact(explicit.stderr || explicit.stdout)}`);
 
   const implicitEvents = parseNdjson(implicit.stdout, "Claude implicit output");
   const explicitEvents = parseNdjson(explicit.stdout, "Claude explicit output");

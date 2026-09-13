@@ -20,6 +20,13 @@ PORTABLE = ROOT / 'dydo/reference/gap-check.example.py'
 CAPABILITIES = ('test', 'static', 'coverage', 'mutation')
 
 
+def has_worktree_identity(listing, path):
+    prefix = 'worktree '
+    identity = path.resolve()
+    return any(Path(line[len(prefix):]).resolve() == identity
+               for line in listing.splitlines() if line.startswith(prefix))
+
+
 def unavailable(reason='not adopted'):
     return {'state': 'unavailable', 'reason': reason}
 
@@ -1083,7 +1090,7 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertEqual('foreign owner', (candidate / 'foreign-marker.txt').read_text(encoding='utf-8'))
             listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
                                      text=True, capture_output=True, check=True).stdout
-            self.assertNotIn('worktree ' + candidate.as_posix(), listing)
+            self.assertFalse(has_worktree_identity(listing, candidate))
 
     def test_dotnet_adapter_closes_inherited_stdin(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
@@ -1401,56 +1408,71 @@ print('INTER_ITERATION_CASES=' + str(count))
             self.assertFalse(candidate.exists(), output)
             listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
                                      text=True, capture_output=True, check=True).stdout
-            self.assertNotIn('worktree ' + candidate.as_posix(), listing)
+            self.assertFalse(has_worktree_identity(listing, candidate))
 
     def test_interrupting_the_real_dotnet_adapter_cleans_its_worktree(self):
-        command = [sys.executable, '-u', str(RUNNER), 'test', '--stack', 'dotnet', '--', '--filter', 'FullyQualifiedName~ConsoleCaptureTests.Stderr_RestoresConsoleError_WhenActionSucceeds']
-        facade = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                  text=True, encoding='utf-8', errors='replace',
-                                  creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
-                                  start_new_session=os.name != 'nt')
-        lines, output = queue.Queue(), []
-        def collect():
-            for line in facade.stdout:
-                output.append(line); lines.put(line)
-        reader = threading.Thread(target=collect, daemon=True); reader.start()
-        worktree, deadline = None, time.monotonic() + 60
-        try:
-            while time.monotonic() < deadline and worktree is None:
-                try: line = lines.get(timeout=1).strip()
-                except queue.Empty: continue
-                if line.startswith('Worktree: '): worktree = Path(line[10:])
-            self.assertIsNotNone(worktree, ''.join(output))
-            listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT, text=True, capture_output=True, check=True).stdout
-            self.assertIn('worktree ' + worktree.as_posix(), listing)
-            started = time.monotonic()
-            facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
-            facade.wait(timeout=35); reader.join(timeout=5)
-            self.assertEqual(130, facade.returncode, ''.join(output))
-            self.assertLess(time.monotonic() - started, 35)
-            self.assertFalse(worktree.exists(), ''.join(output))
-            after = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT, text=True, capture_output=True, check=True).stdout
-            self.assertNotIn('worktree ' + worktree.as_posix(), after)
-            result_line = next(x.strip()[8:] for x in output if x.startswith('Result: '))
-            payload = json.loads(Path(result_line).read_text(encoding='utf-8'))
-            self.assertEqual(130, payload['aggregateExit'])
-            row = payload['results'][0]
-            self.assertEqual(('interrupted', 130), (row['state'], row['resultExit']))
-            self.assertEqual(130, row['childExit'])
-            self.assertLess(next(i for i,x in enumerate(output) if 'Cleaning up worktree' in x), next(i for i,x in enumerate(output) if x.startswith('Result: ')))
-        finally:
-            if facade.poll() is None:
+        with tempfile.TemporaryDirectory(prefix='dydo-interrupt-spelling-') as temporary:
+            target, alias = Path(temporary) / 'target', Path(temporary) / 'alias'
+            target.mkdir()
+            if os.name == 'nt':
+                created = subprocess.run(
+                    [os.environ['COMSPEC'], '/d', '/c', 'mklink', '/J', str(alias), str(target)],
+                    capture_output=True, text=True, encoding='utf-8')
+                self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+            else:
+                alias.symlink_to(target, target_is_directory=True)
+            environment = os.environ.copy()
+            environment.update({'TEMP': str(alias), 'TMP': str(alias), 'TMPDIR': str(alias)})
+            command = [sys.executable, '-u', str(RUNNER), 'test', '--stack', 'dotnet', '--', '--filter', 'FullyQualifiedName~ConsoleCaptureTests.Stderr_RestoresConsoleError_WhenActionSucceeds']
+            facade = subprocess.Popen(command, cwd=ROOT, env=environment,
+                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                      text=True, encoding='utf-8', errors='replace',
+                                      creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
+                                      start_new_session=os.name != 'nt')
+            lines, output = queue.Queue(), []
+            def collect():
+                for line in facade.stdout:
+                    output.append(line); lines.put(line)
+            reader = threading.Thread(target=collect, daemon=True); reader.start()
+            worktree, deadline = None, time.monotonic() + 60
+            try:
+                while time.monotonic() < deadline and worktree is None:
+                    try: line = lines.get(timeout=1).strip()
+                    except queue.Empty: continue
+                    if line.startswith('Worktree: '): worktree = Path(line[10:])
+                self.assertIsNotNone(worktree, ''.join(output))
+                listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT, text=True, capture_output=True, check=True).stdout
+                self.assertTrue(has_worktree_identity(listing, worktree))
+                self.assertTrue(has_worktree_identity(listing, ROOT))
+                started = time.monotonic()
                 facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
-                facade.wait(timeout=35)
-            reader.join(timeout=5)
-            facade.stdout.close()
+                facade.wait(timeout=35); reader.join(timeout=5)
+                self.assertEqual(130, facade.returncode, ''.join(output))
+                self.assertLess(time.monotonic() - started, 35)
+                self.assertFalse(worktree.exists(), ''.join(output))
+                after = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT, text=True, capture_output=True, check=True).stdout
+                self.assertFalse(has_worktree_identity(after, worktree))
+                self.assertTrue(has_worktree_identity(after, ROOT))
+                result_line = next(x.strip()[8:] for x in output if x.startswith('Result: '))
+                payload = json.loads(Path(result_line).read_text(encoding='utf-8'))
+                self.assertEqual(130, payload['aggregateExit'])
+                row = payload['results'][0]
+                self.assertEqual(('interrupted', 130), (row['state'], row['resultExit']))
+                self.assertEqual(130, row['childExit'])
+                self.assertLess(next(i for i,x in enumerate(output) if 'Cleaning up worktree' in x), next(i for i,x in enumerate(output) if x.startswith('Result: ')))
+            finally:
+                if facade.poll() is None:
+                    facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
+                    facade.wait(timeout=35)
+                reader.join(timeout=5)
+                facade.stdout.close()
 
     def test_interrupt_during_real_worktree_registration_cleans_the_attributed_path(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
         for registration_only in [False, True]:
             with self.subTest(registration_only=registration_only):
                 harness = (
-                    "import importlib.util,shutil,sys\nfrom pathlib import Path\n"
+                    "import importlib.util,json,shutil,sys\nfrom pathlib import Path\n"
                     f"spec=importlib.util.spec_from_file_location('run_tests_probe', {str(adapter)!r})\n"
                     "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
                     "original=module._git\n"
@@ -1460,9 +1482,10 @@ print('INTER_ITERATION_CASES=' + str(count))
                     "    result=original(*args, capture=capture)\n"
                     "    if args[:3] == ('worktree', 'add', '--detach') and result.returncode == 0:\n"
                     "        listing,rc=original('worktree', 'list', '--porcelain', capture=True)\n"
-                    "        assert rc == 0 and ('worktree ' + args[3].replace('\\\\', '/')) in listing.splitlines()\n"
+                    "        assert rc == 0\n"
                     f"        if {registration_only!r}: shutil.rmtree(args[3])\n"
                     "        print('REGISTERED: ' + args[3], flush=True)\n"
+                    "        print('REGISTERED_LISTING: ' + json.dumps(listing), flush=True)\n"
                     "        raise KeyboardInterrupt\n"
                     "    return result\n"
                     "module._git=delayed_git\n"
@@ -1474,16 +1497,22 @@ print('INTER_ITERATION_CASES=' + str(count))
                 output = process.stdout + process.stderr
                 registered = next((line[12:] for line in process.stdout.splitlines()
                                    if line.startswith('REGISTERED: ')), None)
+                registered_listing = next((json.loads(line[20:]) for line in process.stdout.splitlines()
+                                           if line.startswith('REGISTERED_LISTING: ')), None)
                 attributed = Path(registered) if registered else None
                 try:
                     self.assertIsNotNone(attributed, output)
+                    self.assertIsNotNone(registered_listing, output)
+                    self.assertTrue(has_worktree_identity(registered_listing, attributed), output)
+                    self.assertTrue(has_worktree_identity(registered_listing, ROOT), output)
                     self.assertFalse(any(line.strip().startswith('Worktree: ')
                                          for line in process.stdout.splitlines()), output)
                     self.assertEqual(130, process.returncode, output)
                     self.assertFalse(attributed.exists(), output)
                     listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
                                              text=True, capture_output=True, check=True).stdout
-                    self.assertNotIn('worktree ' + attributed.as_posix(), listing)
+                    self.assertFalse(has_worktree_identity(listing, attributed))
+                    self.assertTrue(has_worktree_identity(listing, ROOT))
                 finally:
                     if attributed is not None:
                         subprocess.run(['git', 'worktree', 'remove', '--force', str(attributed)], cwd=ROOT,

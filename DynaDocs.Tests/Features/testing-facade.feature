@@ -191,6 +191,15 @@ Feature: One project-local interface runs tests and assurance honestly
     And each result records stack, capability, state, argv, working directory, isolation requirement, adapter evidence, child exit, artifacts and reason as applicable
     And the human-readable summary prints that result path
 
+  Scenario: Equivalent root spellings preserve a contained artifact destination
+    Given a copied project runner outside Git is reached through a deterministic non-canonical spelling of its actual directory
+    And its manifest declares a relative artifact root contained by that directory
+    When I run "all" through the copied runner
+    Then the configured test command runs once
+    And one JSON result is written beneath the canonical artifact root
+    And the result reports the configured row as passed
+    And the command succeeds
+
   Scenario: Schema 1 has one small concrete manifest and result shape
     Given this schema 1 manifest shape:
       """

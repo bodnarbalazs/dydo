@@ -309,9 +309,9 @@ async function runClaudeCanary() {
   const common = ["--print", "--output-format", "stream-json", "--verbose", "--no-session-persistence", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];
   await writeArtifact("claude-session-settings.json", JSON.stringify({ executable: "claude", cwd: checkout, commonArgv: common }, null, 2));
   const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
-  const implicit = await run("claude", [...common, implicitPrompt], { cwd: checkout });
+  const implicit = await run("claude", [...common, "--", implicitPrompt], { cwd: checkout });
   await writeArtifact("claude-implicit.ndjson", implicit.stdout);
-  const explicit = await run("claude", [...common, `/teach ${PROMPT}`], { cwd: checkout });
+  const explicit = await run("claude", [...common, "--", `/teach ${PROMPT}`], { cwd: checkout });
   await writeArtifact("claude-explicit.ndjson", explicit.stdout);
 
   const implicitEvents = parseNdjson(implicit.stdout, "Claude implicit output");

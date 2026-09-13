@@ -29,7 +29,7 @@ public class DocumentationTests : IntegrationTestBase
             .Select(Path.GetFileName)
             .OrderBy(name => name)
             .ToArray();
-        Assert.Equal(new[] { "_future-features.md", "_index.md" }, futureFeatureFiles);
+        Assert.Equal(new[] { "_future-features.md" }, futureFeatureFiles);
 
         var futureFeatureContract = File.ReadAllText(
             Path.Combine(futureFeaturesRoot, "_future-features.md"));
@@ -210,203 +210,46 @@ public class DocumentationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Fix_CreatesMissingHubFiles()
+    public async Task Fix_ReportsManualFixNeeded()
     {
         await InitProjectAsync("none");
-
-        // Create a subfolder without _index.md
-        WriteFile("dydo/guides/tutorials/first.md", """
-            ---
-            area: guides
-            type: tutorial
-            ---
-
-            # First Tutorial
-
-            Content here.
-            """);
+        WriteFile("dydo/guides/needs-manual.md", "# Needs Manual Fix\n");
 
         var result = await FixAsync();
 
         result.AssertSuccess();
-        AssertFileExists("dydo/guides/tutorials/_index.md");
-    }
-
-    [Fact]
-    public async Task Fix_ReportsManualFixNeeded()
-    {
-        await InitProjectAsync("none");
-
-        // Create a doc without frontmatter (can't be auto-fixed)
-        WriteFile("dydo/guides/needs-manual.md", "# Needs Manual Fix\n\nNo frontmatter.");
-
-        var result = await FixAsync();
-
-        result.AssertSuccess(); // Fix command still succeeds
         result.AssertStdoutContains("NEEDS MANUAL FIX");
         result.AssertStdoutContains("needs-manual.md");
     }
 
     [Fact]
-    public async Task Fix_HubFiles_ContainActualLinks()
+    public async Task Fix_DoesNotCreateMissingHubOrMetaFiles()
     {
         await InitProjectAsync("none");
-
-        // Create a subfolder with docs but no hub
-        WriteFile("dydo/guides/tutorials/getting-started.md", """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            # Getting Started
-
-            This guide helps you get started quickly.
-            """);
+        WriteFile("dydo/guides/tutorials/first.md", "---\narea: guides\ntype: guide\n---\n\n# First\n");
 
         var result = await FixAsync();
 
         result.AssertSuccess();
-        AssertFileExists("dydo/guides/tutorials/_index.md");
-
-        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
-        Assert.Contains("[Getting Started](./getting-started.md)", hubContent);
-        Assert.Contains("This guide helps you get started quickly.", hubContent);
-        Assert.DoesNotContain("TODO", hubContent);
+        AssertFileNotExists("dydo/guides/tutorials/_index.md");
+        AssertFileNotExists("dydo/guides/tutorials/_tutorials.md");
     }
 
     [Fact]
-    public async Task Fix_HubFiles_SortsLinksAlphabetically()
+    public async Task Fix_PreservesCustomNavigationAndSibling()
     {
         await InitProjectAsync("none");
+        const string hub = "# Custom navigation\n";
+        const string meta = "---\narea: guides\ntype: folder-meta\n---\n\n# Tutorials\n";
+        WriteFile("dydo/guides/tutorials/_index.md", hub);
+        WriteFile("dydo/guides/tutorials/_tutorials.md", meta);
+        WriteFile("dydo/guides/tutorials/notes.md", "---\narea: guides\ntype: guide\n---\n\n# Notes\n");
 
-        // Create multiple docs - they should be sorted alphabetically by title
-        WriteFile("dydo/guides/tutorials/zebra.md", """
-            ---
-            area: guides
-            type: guide
-            ---
+        (await FixAsync()).AssertSuccess();
 
-            # Zebra Guide
-
-            About zebras.
-            """);
-
-        WriteFile("dydo/guides/tutorials/alpha.md", """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            # Alpha Guide
-
-            About alphas.
-            """);
-
-        var result = await FixAsync();
-
-        result.AssertSuccess();
-
-        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
-        var alphaIndex = hubContent.IndexOf("[Alpha Guide]");
-        var zebraIndex = hubContent.IndexOf("[Zebra Guide]");
-
-        Assert.True(alphaIndex < zebraIndex, "Alpha should come before Zebra (alphabetical order)");
-    }
-
-    [Fact]
-    public async Task Fix_HubFiles_FallsBackToFilenameWhenNoTitle()
-    {
-        await InitProjectAsync("none");
-
-        // Create a doc without a # title heading
-        WriteFile("dydo/guides/tutorials/user-authentication.md", """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            Some content without a title heading.
-            """);
-
-        var result = await FixAsync();
-
-        result.AssertSuccess();
-
-        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
-        // Should convert "user-authentication" to "User Authentication"
-        Assert.Contains("[User Authentication](./user-authentication.md)", hubContent);
-    }
-
-    [Fact]
-    public async Task Fix_HubFiles_ShowsLinkCountInOutput()
-    {
-        await InitProjectAsync("none");
-
-        WriteFile("dydo/guides/tutorials/doc1.md", """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            # Doc One
-
-            First doc.
-            """);
-
-        WriteFile("dydo/guides/tutorials/doc2.md", """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            # Doc Two
-
-            Second doc.
-            """);
-
-        var result = await FixAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("(2 docs,");
-    }
-
-    [Fact]
-    public async Task Fix_HubFiles_ExcludesIndexFiles()
-    {
-        await InitProjectAsync("none");
-
-        // Create a folder that already has index.md (not _index.md)
-        WriteFile("dydo/guides/tutorials/index.md", """
-            ---
-            area: guides
-            type: hub
-            ---
-
-            # Tutorials Index
-
-            This is an index file.
-            """);
-
-        WriteFile("dydo/guides/tutorials/actual-guide.md", """
-            ---
-            area: guides
-            type: guide
-            ---
-
-            # Actual Guide
-
-            Real content.
-            """);
-
-        var result = await FixAsync();
-
-        result.AssertSuccess();
-
-        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
-        // Should include actual-guide but not index.md
-        Assert.Contains("[Actual Guide]", hubContent);
-        Assert.DoesNotContain("[Tutorials Index]", hubContent);
+        Assert.Equal(hub, ReadFile("dydo/guides/tutorials/_index.md"));
+        Assert.Equal(meta, ReadFile("dydo/guides/tutorials/_tutorials.md"));
+        AssertFileExists("dydo/guides/tutorials/notes.md");
     }
 
     #region Fix Exclusions
@@ -520,9 +363,37 @@ public class DocumentationTests : IntegrationTestBase
         var result = await IndexAsync();
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Scanned top-level hubs");
+        result.AssertStdoutContains("Scanned documentation sections");
         result.AssertStdoutContains("understand");
         result.AssertStdoutContains("guides");
+    }
+
+    [Fact]
+    public async Task Index_ReportsPopulatedSectionWithoutOptionalNavigationPage()
+    {
+        await InitProjectAsync("none");
+        File.Delete(Path.Combine(TestDir, "dydo", "guides", "_guides.md"));
+
+        var result = await IndexAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("guides (");
+        Assert.DoesNotContain("guides/_guides.md", result.Stdout);
+        var index = ReadFile("dydo/index.md");
+        Assert.DoesNotContain("./guides/_guides.md", index);
+        Assert.DoesNotContain("guides/ folder not found", index);
+    }
+
+    [Fact]
+    public async Task Index_GeneratedRootPassesCheck()
+    {
+        await InitProjectAsync("none");
+
+        (await IndexAsync()).AssertSuccess();
+
+        var check = await CheckAsync();
+        check.AssertSuccess();
+        Assert.DoesNotContain("Broken link", check.Stdout);
     }
 
     [Fact]

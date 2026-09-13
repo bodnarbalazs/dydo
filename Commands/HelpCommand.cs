@@ -38,6 +38,7 @@ public static class HelpCommand
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate config and templates");
+        Console.WriteLine("  gap-check [args]       Run the configured coverage gap check");
         Console.WriteLine();
         Console.WriteLine("Template Commands:");
         Console.WriteLine("  template update        Update framework docs");

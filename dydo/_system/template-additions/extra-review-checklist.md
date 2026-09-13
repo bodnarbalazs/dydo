@@ -1,2 +1,4 @@
-- [ ] The exact tests passed through the worktree-isolated runner.
-- [ ] Forced coverage passed with zero failing modules.
+- [ ] Every gate applicable to this Issue and stage was rerun with the contract-named command.
+- [ ] Meaningful code changes passed their specified tests.
+- [ ] Combined merge gates passed when this is a merge review.
+- [ ] Final G/M release obligations passed when this is the final release review.

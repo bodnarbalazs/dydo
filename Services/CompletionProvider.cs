@@ -8,7 +8,7 @@ public static class CompletionProvider
     [
         "check", "fix", "index", "init", "graph", "guard",
         "sync",
-        "completions", "complete", "template", "validate",
+        "completions", "complete", "template", "validate", "gap-check",
         "version", "help"
     ];
 

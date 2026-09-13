@@ -23,19 +23,19 @@ If you're new here:
 
 ## Documentation Sections
 
-### [Understand](./understand/_index.md)
+### [Understand](./understand/_understand.md)
 
 Why things exist and how they fit together — architecture, guard system, roles, dispatch, agent lifecycle.
 
-### [Guides](./guides/_index.md)
+### [Guides](./guides/_guides.md)
 
 How-to instructions — coding standards, writing documentation, troubleshooting.
 
-### [Reference](./reference/_index.md)
+### [Reference](./reference/_reference.md)
 
 Technical details for quick lookup — CLI commands, configuration, audit system, role definitions.
 
-### [Project](./project/_index.md)
+### [Project](./project/_project.md)
 
 How we work on this project — architecture decisions, known pitfalls, changelog, release plans.
 

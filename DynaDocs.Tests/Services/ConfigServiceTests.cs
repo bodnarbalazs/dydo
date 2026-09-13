@@ -110,6 +110,62 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
+    public void LoadConfigStrict_DistinguishesMalformedFromMissingConfiguration()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "{ not-json");
+
+        var error = Assert.Throws<InvalidDataException>(
+            () => new ConfigService().LoadConfigStrict(_testDir));
+
+        Assert.Contains("dydo.json", error.Message);
+        Assert.Contains("Invalid JSON", error.Message);
+    }
+
+    [Theory]
+    [InlineData("\"skills\": []", "skills must be an object")]
+    [InlineData("\"skills\": { \"custom\": {} }", "enabled")]
+    [InlineData("\"skills\": { \"Custom\": { \"enabled\": true } }", "Custom")]
+    [InlineData("\"skills\": { \"custom\": { \"enabled\": true, \"extra\": 1 } }", "extra")]
+    [InlineData("\"skills\": { \"custom\": { \"enabled\": true, \"origin\": 1 } }", "origin")]
+    public void LoadConfigStrict_RejectsMalformedSwitchboard(string skillsJson, string expected)
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
+            {
+              "version": 1,
+              "structure": { "root": "dydo" },
+              {{skillsJson}}
+            }
+            """);
+
+        var error = Assert.Throws<InvalidDataException>(
+            () => new ConfigService().LoadConfigStrict(_testDir));
+
+        Assert.Contains(expected, error.Message);
+    }
+
+    [Fact]
+    public void SaveConfig_OrdersSkillSwitchesAndGeneratedResourcesOrdinally()
+    {
+        var config = new DydoConfig
+        {
+            Skills = new Dictionary<string, SkillSwitchConfig>
+            {
+                ["zeta"] = new() { Enabled = true, Resources = ["two", "one"] },
+                ["alpha"] = new() { Enabled = false }
+            }
+        };
+        var path = Path.Combine(_testDir, "ordered.json");
+
+        new ConfigService().SaveConfig(config, path);
+
+        var json = File.ReadAllText(path);
+        Assert.True(json.IndexOf("\"alpha\"", StringComparison.Ordinal)
+            < json.IndexOf("\"zeta\"", StringComparison.Ordinal));
+        Assert.True(json.IndexOf("\"one\"", StringComparison.Ordinal)
+            < json.IndexOf("\"two\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void LoadConfig_ReturnsConfig_WhenValid()
     {
         var service = new ConfigService();
@@ -136,6 +192,215 @@ public class ConfigServiceTests : IDisposable
         Assert.True(File.Exists(path));
         var content = File.ReadAllText(path);
         Assert.Contains("\"version\"", content);
+    }
+
+    [Fact]
+    public void SaveConfig_OmitsAbsentTestingConfiguration()
+    {
+        var path = Path.Combine(_testDir, "without-testing.json");
+
+        new ConfigService().SaveConfig(new DydoConfig(), path);
+
+        Assert.DoesNotContain("\"testing\"", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void LoadConfigStrict_PreservesValidTestingRunnerAndSecondSaveIsByteIdentical()
+    {
+        var path = Path.Combine(_testDir, "dydo.json");
+        var service = new ConfigService();
+        service.SaveConfig(new DydoConfig
+        {
+            Testing = new TestingConfig { Runner = ["runner with spaces", "", "fixed space", "固定λ"] }
+        }, path);
+        var first = File.ReadAllBytes(path);
+
+        var config = service.LoadConfigStrict(_testDir)!;
+        Assert.Equal(["runner with spaces", "", "fixed space", "固定λ"], config.Testing!.Runner);
+        service.SaveConfig(config, path);
+
+        Assert.Equal(first, File.ReadAllBytes(path));
+    }
+
+    [Theory]
+    [InlineData("{\"testing\":[]}")]
+    [InlineData("{\"testing\":{}}")]
+    [InlineData("{\"testing\":{\"runner\":[]}}")]
+    [InlineData("{\"testing\":{\"runner\":[\"\"]}}")]
+    [InlineData("{\"testing\":{\"runner\":[1]}}")]
+    [InlineData("{\"testing\":{\"runner\":[\"runner\",\"\\u0000\"]}}")]
+    public void LoadConfigStrict_RejectsInvalidTestingRunner(string json)
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);
+
+        var error = Assert.Throws<InvalidDataException>(() => new ConfigService().LoadConfigStrict(_testDir));
+
+        Assert.Contains("dydo.json testing.runner", error.Message);
+    }
+
+    [Fact]
+    public void LoadConfigStrict_PropagatesAnUnreadableConfiguration()
+    {
+        var path = Path.Combine(_testDir, "dydo.json");
+        using var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        Assert.Throws<IOException>(() => new ConfigService().LoadConfigStrict(_testDir));
+    }
+
+    // The six injected boundaries of the atomic save, each spelled here rather than taken from a
+    // production global, so one test replaces exactly the boundary it fails.
+    private static void SaveWith(
+        string path,
+        string temporary,
+        Action<FileStream, byte[]>? writeAll = null,
+        Action<FileStream>? durableFlush = null,
+        Action<FileStream>? close = null,
+        Action<string, string>? replace = null)
+        => new ConfigService().SaveConfig(
+            new DydoConfig { Version = 7 }, path,
+            _ => temporary,
+            candidate => new FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None),
+            writeAll ?? ((stream, bytes) => stream.Write(bytes)),
+            durableFlush ?? (stream => stream.Flush(flushToDisk: true)),
+            close ?? (stream => stream.Dispose()),
+            replace ?? ((source, target) => File.Move(source, target, overwrite: true)));
+
+    [Fact]
+    public void SaveConfig_Success_AtomicallyReplacesAndLeavesNoTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "atomic-success.json");
+        var temporary = path + ".owned.tmp";
+        File.WriteAllBytes(path, "ORIGINAL"u8.ToArray());
+
+        SaveWith(path, temporary);
+
+        Assert.Contains("\"version\": 7", File.ReadAllText(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_PartialTemporaryWriteFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "partial-write.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-PARTIAL-WRITE"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary, writeAll: (stream, bytes) =>
+        {
+            stream.Write(bytes.AsSpan(0, 3));
+            throw new IOException("injected partial write failure");
+        }));
+
+        Assert.Equal("injected partial write failure", failure.Message);
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_FlushFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "flush.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-FLUSH"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary,
+            durableFlush: _ => throw new IOException("injected durable flush failure")));
+
+        Assert.Equal("injected durable flush failure", failure.Message);
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_CloseFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "close.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-CLOSE"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary, close: stream =>
+        {
+            stream.Dispose();
+            throw new IOException("injected close failure");
+        }));
+
+        Assert.Equal("injected close failure", failure.Message);
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_ReplacementFailure_PreservesOriginalAndCleansTemporarySibling()
+    {
+        var path = Path.Combine(_testDir, "replace.json");
+        var temporary = path + ".owned.tmp";
+        var original = "ORIGINAL-REPLACE"u8.ToArray();
+        File.WriteAllBytes(path, original);
+
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary,
+            replace: (_, _) => throw new IOException("injected replacement failure")));
+
+        Assert.Equal("injected replacement failure", failure.Message);
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.False(File.Exists(temporary));
+    }
+
+    [Fact]
+    public void SaveConfig_TemporaryNameCollision_PreservesBothFiles()
+    {
+        var path = Path.Combine(_testDir, "collision.json");
+        var temporary = path + ".collision.tmp";
+        var original = "ORIGINAL-COLLISION"u8.ToArray();
+        var collision = "PREEXISTING-SIBLING"u8.ToArray();
+        File.WriteAllBytes(path, original);
+        File.WriteAllBytes(temporary, collision);
+
+        var failure = Assert.Throws<IOException>(() => SaveWith(path, temporary));
+
+        Assert.Contains("already exists", failure.Message);
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Equal(collision, File.ReadAllBytes(temporary));
+    }
+
+    // The two production boundaries the injected tests above cannot reach: where the sibling
+    // goes, and how it is opened.
+    [Fact]
+    public void TemporarySiblingPath_IsAUniqueTmpBesideTheTarget()
+    {
+        var target = Path.Combine(_testDir, "dydo.json");
+
+        var first = ConfigService.TemporarySiblingPath(target);
+        var second = ConfigService.TemporarySiblingPath(target);
+
+        Assert.Equal(_testDir, Path.GetDirectoryName(first));
+        Assert.Matches(@"^dydo\.json\.[0-9a-f]{32}\.tmp$", Path.GetFileName(first));
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
+    public void CreateNewSibling_RefusesAnExistingFile()
+    {
+        var sibling = Path.Combine(_testDir, "dydo.json.taken.tmp");
+        File.WriteAllBytes(sibling, "PREEXISTING"u8.ToArray());
+
+        Assert.Throws<IOException>(() => ConfigService.CreateNewSibling(sibling));
+
+        Assert.Equal("PREEXISTING"u8.ToArray(), File.ReadAllBytes(sibling));
+    }
+
+    [Fact]
+    public void CreateNewSibling_OpensWriteOnlyAndExcludesOtherHandles()
+    {
+        var sibling = Path.Combine(_testDir, "dydo.json.fresh.tmp");
+
+        using var stream = ConfigService.CreateNewSibling(sibling);
+
+        Assert.True(stream.CanWrite);
+        Assert.False(stream.CanRead);
+        Assert.Throws<IOException>(() => File.OpenRead(sibling));
     }
 
     [Fact]
@@ -317,9 +582,7 @@ public class ConfigServiceTests : IDisposable
         Assert.Equal("dotnet test.*coverlet", config.Nudges[0].Pattern);
         Assert.Equal("warn", config.Nudges[0].Severity);
         Assert.Equal("rm -rf", config.Nudges[1].Pattern);
-        Assert.NotNull(config.Models);
-        Assert.Equal("claude-opus-4", config.Models!.Tiers["anthropic"]["strong"]);
-        Assert.Empty(config.Models.Agents);
+        Assert.DoesNotContain("Models", typeof(DydoConfig).GetProperties().Select(property => property.Name));
         Assert.True(config.Integrations["claude"]);
         Assert.False(config.Integrations["codex"]);
     }

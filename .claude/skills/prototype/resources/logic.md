@@ -11,6 +11,8 @@ Because it's one file with nothing to install, you can hand it to a non-develope
 a domain expert) and let them feel the model for themselves. So it speaks their language, not the
 code's.
 
+If the question is "what should this look like," this is the wrong branch. Use [ui](ui.md).
+
 ## When this is the right shape
 
 - "I'm not sure if this state machine handles the edge case where X then Y."
@@ -18,14 +20,16 @@ code's.
 - "I want to feel out what the API should look like before writing it."
 - Anything where someone wants to **press buttons and watch state change**.
 
-## 1. State the question
+## Process
+
+### 1. State the question
 
 Before writing code, write down what state model and what question you're prototyping. One
 paragraph, at the top of the demo (in a visible intro, not just a comment). A logic prototype that
 answers the wrong question is pure waste, so make the question explicit so it can be checked
 later, whether the human is watching now or returning to it AFK.
 
-## 2. Isolate the logic in a portable module
+### 2. Isolate the logic in a portable module
 
 Put the actual logic (the bit that's answering the question) in a single `<script>` block written as
 a small, pure module that could be lifted out and dropped into the real codebase later. The page
@@ -48,7 +52,7 @@ into it; nothing flows the other direction. This is what makes the prototype use
 lifetime: once the question's answered, the validated reducer / machine / function set lifts into
 the real module on its own.
 
-## 3. Build the shareable HTML file
+### 3. Build the shareable HTML file
 
 One file, plain HTML/CSS/JS: no framework, no bundler, no server, everything inline so it opens by
 double-click and survives being emailed around. Anyone should be able to run it by opening it.
@@ -76,14 +80,14 @@ happy path, a tricky edge case, an attempt at something that should be illegal.
 Keep it beautiful but restrained: clean typography, generous spacing, one accent colour. No
 animations, no gimmicks: nothing that competes with the state and the buttons.
 
-## 4. Hand it over
+### 4. Hand it over
 
 Send them the file, or open it for them. They'll click through the walkthroughs and free-play
 whenever they get to it; the interesting moments are when they say "wait, that shouldn't be
 possible" or "huh, I assumed X would be different"; those are the bugs in the _idea_, which is the
 whole point. If they want new actions or a new scenario, add them. Prototypes evolve.
 
-## 5. Capture the answer and the prototype
+### 5. Capture the answer and the prototype
 
 Once the prototype has answered its question, capture the answer, then capture the prototype the way
 rule 6 describes. The logic-specific mapping: the validated reducer / machine / function set lifts
@@ -93,6 +97,9 @@ trivially re-runnable there.
 
 ## Anti-patterns
 
+- **Don't add tests.** A prototype that needs tests is no longer a prototype.
+- **Don't wire it to the real database.** Use in-memory state unless the question is specifically about
+  persistence.
 - **Don't generalise.** No "what if we wanted to support X later." The prototype answers one
   question.
 - **Don't blur the logic and the page together.** If the pure module references the DOM, `document`,

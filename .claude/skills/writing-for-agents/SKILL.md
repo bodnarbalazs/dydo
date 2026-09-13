@@ -1,6 +1,6 @@
 ---
 name: writing-for-agents
-description: Pointers and prompt files. Use when creating or editing a skill, an AGENTS.md or CLAUDE.md, or a document an agent reaches by pointer; when one fires at the wrong time or never fires; when a prompt file has sprawled past one sitting.
+description: Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 ---
 
 <!-- Adapted from mattpocock/skills writing-for-agents at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
@@ -9,9 +9,7 @@ description: Pointers and prompt files. Use when creating or editing a skill, an
 
 Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
-When the document is a dydo skill, read [`skill-mechanics`](.claude/skills/writing-for-agents/resources/skill-mechanics.md) first: frontmatter keys, the invocation choice, Must-Reads, resources, and what `dydo sync` compiles.
-
-When the same friction returns run after run, the lever is the harness rather than the document in front of you: that is `self-improvement`'s trigger.
+When the document is a dydo skill, read [`skill-mechanics`](.claude/skills/writing-for-agents/resources/skill-mechanics.md) first: frontmatter keys, the invocation choice, Must-Reads, resources, and what `dydo sync` compiles. When the text is the reply only the human will read, `writing-for-humans` is this skill's pair.
 
 ## Context pointers
 

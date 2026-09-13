@@ -12,7 +12,11 @@ public class WayfinderHarmonyTests : IDisposable
         _testDir = Path.Combine(
             Path.GetTempPath(), "dydo-wayfinder-harmony-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
-        new FolderScaffolder().Scaffold(Path.Combine(_testDir, "dydo"));
+        var config = ConfigFactory.CreateDefault();
+        var dydoRoot = Path.Combine(_testDir, config.Structure.Root);
+        new FolderScaffolder().Scaffold(dydoRoot);
+        FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
+        new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
     }
 
     public void Dispose()
@@ -42,7 +46,9 @@ public class WayfinderHarmonyTests : IDisposable
             {
                 Assert.StartsWith(climb, target);
 
-                var document = target[climb.Length..].Replace('/', Path.DirectorySeparatorChar);
+                var fragment = target.IndexOf('#');
+                var document = target[climb.Length..(fragment < 0 ? target.Length : fragment)]
+                    .Replace('/', Path.DirectorySeparatorChar);
                 var resolved = Path.Combine(repositoryDydo, document);
                 Assert.True(File.Exists(resolved),
                     $"{skill.Name}: compiled link '{target}' names no document ({resolved})");

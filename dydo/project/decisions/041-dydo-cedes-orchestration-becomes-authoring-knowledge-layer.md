@@ -11,6 +11,8 @@ participants: [balazs, Adele]
 
 **Status: ACCEPTED — executed 2026-07-15/16** (the simplification campaign, commits `c6a46f23`..`53340a31`; see [handback](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/backlog/simplification-campaign-handback.md)). This record captures a strategic pivot decided 2026-07-13/14. It is the successor to [DR-024](./024-dydo-2-native-pivot.md) (the "go native" pivot that outsourced orchestration but *kept top-level dispatch*) and it finishes that pivot by removing the piece DR-024 left in.
 
+**Amended by [Decision 049](./049-skills-are-the-source-retire-the-compiler.md) (2026-09-12):** the compiler is retired as the distribution mechanism — skills are authored natively in the cross-vendor `SKILL.md` format, and host agent configuration is minimal and hand-maintained. The rest of this record (ceding orchestration; policy and knowledge as dydo's job) stands.
+
 ## The decision, in one line
 
 **dydo is the vendor-agnostic SOURCE and BRAIN, not the RUNTIME.** It authors skills/agents/roles/policy once and compiles them to each vendor's native format; it holds the documentation and project-management structure. It does **not** run, coordinate, wake, or babysit agents — the coding platforms (Claude Code, Codex) own that, and are actively perfecting it.

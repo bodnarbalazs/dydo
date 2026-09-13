@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 namespace DynaDocs.Tests.Integration;
 
@@ -12,6 +13,53 @@ using DynaDocs.Commands;
 [Collection("Integration")]
 public class InitCommandTests : IntegrationTestBase
 {
+    [Fact]
+    public async Task Join_PostWorkFailure_PreservesOriginalConfigBytes()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var (exitCode, stdout, stderr) = ConsoleCapture.All(() =>
+            InitCommand.ExecuteJoin("codex", () => throw new IOException("injected post-work failure")));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("injected post-work failure", stderr);
+        // Hook wiring and the integration report precede the commit seam.
+        AssertFileExists(".codex/hooks.json");
+        Assert.Contains("Codex hooks configured", stdout);
+        Assert.Contains("Recorded integration(s) in dydo.json: codex", stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    [Fact]
+    public async Task Join_AlreadyRecordedIntegration_LeavesConfigBytesUntouched()
+    {
+        (await InitProjectAsync("codex")).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        AddLegacyModels(configPath);
+        var original = File.ReadAllBytes(configPath);
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Recorded integration(s)", result.Stdout);
+        Assert.Equal(original, File.ReadAllBytes(configPath));
+        Assert.Contains("\"models\"", File.ReadAllText(configPath));
+        Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
+    }
+
+    private static void AddLegacyModels(string configPath)
+    {
+        var raw = JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();
+        raw["models"] = JsonNode.Parse("""{"agents":{"reviewer":"strong"},"tiers":{"openai":{"strong":"legacy"}}}""");
+        raw["unrelated"] = JsonNode.Parse("""{"sentinel":[3,1,4]}""");
+        File.WriteAllText(configPath, raw.ToJsonString());
+    }
+
     #region Init None
 
     [Fact]
@@ -126,18 +174,18 @@ public class InitCommandTests : IntegrationTestBase
             .Select(Path.GetFileName)
             .OrderBy(name => name)
             .ToArray();
-        Assert.Equal(new[] { "_future-features.md", "_index.md" }, futureFeatureFiles);
+        Assert.Equal(new[] { "_future-features.md" }, futureFeatureFiles);
 
         // Decisions folder - hub and meta
-        AssertFileExists("dydo/project/decisions/_index.md");
+        AssertFileNotExists("dydo/project/decisions/_index.md");
         AssertFileExists("dydo/project/decisions/_decisions.md");
 
         // Changelog folder - hub and meta
-        AssertFileExists("dydo/project/changelog/_index.md");
+        AssertFileNotExists("dydo/project/changelog/_index.md");
         AssertFileExists("dydo/project/changelog/_changelog.md");
 
         // Pitfalls folder - hub and meta
-        AssertFileExists("dydo/project/pitfalls/_index.md");
+        AssertFileNotExists("dydo/project/pitfalls/_index.md");
         AssertFileExists("dydo/project/pitfalls/_pitfalls.md");
     }
 
@@ -191,6 +239,326 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileContains("dydo.json", "\"codex\": true");
         result.AssertStdoutContains("AGENTS.md -> dydo/index.md");
         AssertFileNotExists(".claude/settings.local.json");
+    }
+
+    [Fact]
+    public async Task Init_All_WritesHostAgentSettings()
+    {
+        var result = await InitProjectAsync("all");
+
+        result.AssertSuccess();
+        var claude = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.json")));
+        var env = Assert.IsType<JsonObject>(claude["env"]);
+        Assert.Equal("3", env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"]?.GetValue<string>());
+        Assert.Equal("[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n",
+            ReadFile(".codex/config.toml"));
+    }
+
+    [Fact]
+    public async Task Init_HostAgentSettings_PreserveSatisfyingValuesAndRepeatBytes()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", "{\n  \"other\": true,\n  \"env\": { \"CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH\": \"4\" }\n}\n");
+        WriteFile(".codex/config.toml", "# retain this\ncustom = true\n\n[agents]\nmax_depth = +5\nmax_concurrent_threads_per_session = +20\n");
+
+        (await InitProjectAsync("all")).AssertSuccess();
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        (await JoinProjectAsync("all")).AssertSuccess();
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+    }
+
+    [Theory]
+    [InlineData("\"03\"")]
+    [InlineData("\"+3\"")]
+    [InlineData("\" 3\"")]
+    [InlineData("\"2\"")]
+    [InlineData("3")]
+    public async Task Init_ClaudeHostSetting_RejectsNoncanonicalOrIncompatibleValue(string value)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        WriteFile(".claude/settings.json", $$"""{ "env": { "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": {{value}} } }""");
+        var original = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+
+        var result = await InitProjectAsync("claude");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".claude/settings.json");
+        result.AssertStderrContains("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH");
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists(".claude/settings.local.json");
+    }
+
+    [Theory]
+    [InlineData("max_depth = 2\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("max_depth = 3\nmax_concurrent_threads_per_session = 15")]
+    [InlineData("enabled = false\nmax_depth = 3\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("enabled = \"true\"\nmax_depth = 3\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("max_depth = \"3\"\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("max_depth = 3.0\nmax_concurrent_threads_per_session = 16")]
+    [InlineData("max_depth = true\nmax_concurrent_threads_per_session = 16")]
+    public async Task Init_CodexHostSetting_RejectsConflictWithoutPartialInit(string agents)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", "[agents]\n" + agents + "\n");
+        var original = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await InitProjectAsync("codex");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".codex/config.toml");
+        result.AssertStderrContains("agents");
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists(".codex/hooks.json");
+        AssertFileNotExists("AGENTS.md");
+    }
+
+    [Theory]
+    [InlineData("[agents]\nmax_depth = 3\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n")]
+    [InlineData("agents = { max_depth = 3, max_concurrent_threads_per_session = 16 }\n")]
+    [InlineData("agents = 3\n")]
+    [InlineData("agents = []\n")]
+    [InlineData("[[agents]]\nmax_depth = 3\n")]
+    [InlineData("agents.max_depth = 3\n")]
+    [InlineData("[ agents ]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n")]
+    [InlineData("[\"agents\"]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n")]
+    public async Task Init_CodexHostSetting_RejectsAmbiguousTomlBeforePartialInit(string toml)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", toml);
+        var original = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await InitProjectAsync("codex");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".codex/config.toml");
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists(".codex/hooks.json");
+        AssertFileNotExists("AGENTS.md");
+    }
+
+    [Theory]
+    [InlineData("{ \"env\": null }")]
+    [InlineData("{ \"env\": { \"CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH\": null } }")]
+    public async Task Init_ClaudeHostSetting_RejectsNullManagedMembersBeforePartialInit(string json)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        WriteFile(".claude/settings.json", json);
+        var original = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+
+        var result = await InitProjectAsync("claude");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".claude/settings.json");
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists(".claude/settings.local.json");
+    }
+
+    [Theory]
+    [InlineData("claude")]
+    [InlineData("codex")]
+    public async Task Init_All_PreflightsBothHostsBeforeAnyProjectMutation(string invalidHost)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", invalidHost == "claude"
+            ? "{ \"env\": { \"CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH\": \"02\" } }"
+            : "{ \"env\": { \"custom\": \"preserve\" } }");
+        WriteFile(".codex/config.toml", invalidHost == "codex"
+            ? "[agents\nmax_depth = 3\n"
+            : "# existing\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n");
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await InitProjectAsync("all");
+
+        result.AssertExitCode(2);
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists("CLAUDE.md");
+        AssertFileNotExists("AGENTS.md");
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+        AssertFileNotExists(".gitignore");
+    }
+
+    [Fact]
+    public async Task Join_All_PreflightFailurePreservesExistingProjectAndBothHosts()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
+        WriteFile(".codex/config.toml", "[agents]\nmax_depth = 2\nmax_concurrent_threads_per_session = 16\n");
+        var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await JoinProjectAsync("all");
+
+        result.AssertExitCode(2);
+        Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+        AssertFileNotExists("AGENTS.md");
+    }
+
+    [Theory]
+    [InlineData("unrelated = true\nunrelated = false\n")]
+    [InlineData("unrelated = \"unterminated\n")]
+    [InlineData("[agents]\nmax_depth = 9223372036854775808\n")]
+    public async Task Init_All_MalformedCodexTomlPreservesBothHostsAndAllSideEffects(string toml)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
+        WriteFile(".codex/config.toml", toml);
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await InitProjectAsync("all");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".codex/config.toml");
+        result.AssertStderrContains("malformed");
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists("CLAUDE.md");
+        AssertFileNotExists("AGENTS.md");
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+        AssertFileNotExists(".gitignore");
+    }
+
+    [Theory]
+    [InlineData("unrelated = true\nunrelated = false\n")]
+    [InlineData("unrelated = \"unterminated\n")]
+    [InlineData("[agents]\nmax_depth = 9223372036854775808\n")]
+    public async Task Join_All_MalformedCodexTomlPreservesBothHostsAndAllSideEffects(string toml)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
+        WriteFile(".codex/config.toml", toml);
+        var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
+        var ignore = File.ReadAllBytes(Path.Combine(TestDir, ".gitignore"));
+        var claudeEntryPoint = File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md"));
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await JoinProjectAsync("all");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".codex/config.toml");
+        result.AssertStderrContains("malformed");
+        Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
+        Assert.Equal(ignore, File.ReadAllBytes(Path.Combine(TestDir, ".gitignore")));
+        Assert.Equal(claudeEntryPoint, File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md")));
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("AGENTS.md");
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+    }
+
+    [Theory]
+    [InlineData("agents . max_depth = 3\n")]
+    [InlineData("\"agents\".max_depth = 3\n")]
+    public async Task Init_All_RejectsSemanticDottedAgentsBeforeAnySideEffect(string toml)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
+        WriteFile(".codex/config.toml", toml);
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await InitProjectAsync("all");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".codex/config.toml");
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("dydo.json");
+        AssertFileNotExists("CLAUDE.md");
+        AssertFileNotExists("AGENTS.md");
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+        AssertFileNotExists(".gitignore");
+    }
+
+    [Theory]
+    [InlineData("agents . max_depth = 3\n")]
+    [InlineData("\"agents\".max_depth = 3\n")]
+    public async Task Join_All_RejectsSemanticDottedAgentsBeforeAnySideEffect(string toml)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
+        WriteFile(".codex/config.toml", toml);
+        var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
+        var ignore = File.ReadAllBytes(Path.Combine(TestDir, ".gitignore"));
+        var claudeEntryPoint = File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md"));
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await JoinProjectAsync("all");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".codex/config.toml");
+        Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
+        Assert.Equal(ignore, File.ReadAllBytes(Path.Combine(TestDir, ".gitignore")));
+        Assert.Equal(claudeEntryPoint, File.ReadAllBytes(Path.Combine(TestDir, "CLAUDE.md")));
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("AGENTS.md");
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+    }
+
+    [Fact]
+    public async Task Init_Codex_PreservesUnrelatedAgentsHistoryArrayAndRepeatBytes()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", "[[agents_history]]\nname = \"retain\"\n");
+
+        (await InitProjectAsync("codex")).AssertSuccess();
+        var config = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        (await JoinProjectAsync("codex")).AssertSuccess();
+        Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        Assert.Contains("[[agents_history]]", ReadFile(".codex/config.toml"));
+    }
+
+    [Theory]
+    [InlineData("3", "16")]
+    [InlineData("+3", "+16")]
+    [InlineData("0x3", "0x10")]
+    [InlineData("0o3", "0o20")]
+    [InlineData("0b11", "0b10000")]
+    public async Task Init_Codex_RetainsIntegerAgentCapacityValuesAndRepeatBytes(string depth, string concurrency)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", $"[agents]\nmax_depth = {depth}\nmax_concurrent_threads_per_session = {concurrency}\n");
+        var original = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        (await InitProjectAsync("codex")).AssertSuccess();
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        (await JoinProjectAsync("codex")).AssertSuccess();
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
     }
 
     [Fact]

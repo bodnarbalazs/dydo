@@ -83,6 +83,41 @@ public class ValidateCommandTests : IDisposable
         Assert.Contains("Errors", stderr);
     }
 
+    [Fact]
+    public void Validate_MalformedSwitchboardNamesTheEntryAndField()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            "{\"version\":1,\"structure\":{\"root\":\"dydo\"},\"skills\":{\"Local\":{\"enabled\":true}}}");
+
+        var (_, stderr) = CaptureOutput(() =>
+            DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
+
+        Assert.Contains("dydo.json", stderr);
+        Assert.Contains("Local", stderr);
+    }
+
+    [Fact]
+    public void Validate_AcceptsValidTestingRunner()
+    {
+        SetupValidProjectNoWarnings();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            "{\"testing\":{\"runner\":[\"runner\",\"\"]}}");
+
+        var exitCode = DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke();
+
+        Assert.Equal(0, exitCode);
+    }
+
+    [Fact]
+    public void Validate_RejectsInvalidTestingRunner()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "{\"testing\":{\"runner\":[]}}");
+
+        var exitCode = DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke();
+
+        Assert.Equal(1, exitCode);
+    }
+
     private static (string stdout, string stderr) CaptureOutput(Func<int> action)
     {
         var (_, stdout, stderr) = ConsoleCapture.All(action);
@@ -93,7 +128,7 @@ public class ValidateCommandTests : IDisposable
     {
         // Minimal valid dydo.json with no roles → no warnings
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
-            """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":false,"codex":false},"models":null,"scanExclude":["_system/.local/","_system/audit/","agents/"],"nudges":[],"frameworkHashes":{}}""");
+            """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":false,"codex":false},"scanExclude":["_system/.local/","_system/audit/","agents/"],"nudges":[],"frameworkHashes":{}}""");
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system"));
     }
 }

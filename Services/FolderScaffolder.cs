@@ -5,22 +5,23 @@ using DynaDocs.Models;
 
 public class FolderScaffolder : IFolderScaffolder
 {
-    private readonly record struct FolderSpec(string Path, string Description, string Area);
+    private readonly record struct FolderSpec(string Path);
 
     private static readonly FolderSpec[] Folders =
     [
-        new("understand", "Core concepts, domain knowledge, and architecture", "understand"),
-        new("guides", "Task-oriented development guides", "guides"),
-        new("reference", "API specs, configuration, and tool documentation", "reference"),
-        new("project", "Decisions, pitfalls, changelog, and meta documentation", "project"),
-        new("project/decisions", "Decision records", "project"),
-        new("project/changelog", "Change history", "project"),
-        new("project/pitfalls", "Known issues and gotchas", "project"),
-        new("project/releases", "Release records and durable release evidence", "project"),
-        new("project/future-features", "Ideas not in scope for current version", "project"),
-        new("_system", "System configuration (committed)", "_system"),
-        new("_system/.local", "Machine-local runtime state (not committed)", "_system"),
-        new("_assets", "Documentation assets (images, diagrams)", "_assets")
+        new("understand"),
+        new("guides"),
+        new("reference"),
+        new("project"),
+        new("project/decisions"),
+        new("project/changelog"),
+        new("project/pitfalls"),
+        new("project/releases"),
+        new("project/future-features"),
+        new("_system"),
+        new("_system/templates"),
+        new("_system/.local"),
+        new("_assets")
     ];
 
     private static readonly (string RelativePath, Func<string> Generate)[] DocFiles =
@@ -58,6 +59,7 @@ public class FolderScaffolder : IFolderScaffolder
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
         ScaffoldTemplateAdditions(basePath);
+        ScaffoldSkillTemplates(basePath);
         ScaffoldTypesJson(basePath);
         CopyBuiltInAssets(basePath);
 
@@ -66,29 +68,12 @@ public class FolderScaffolder : IFolderScaffolder
             TemplateGenerator.GenerateIndexMd());
 
         ScaffoldDocFiles(basePath);
-        GenerateHubFiles(basePath);
     }
 
     private void ScaffoldDocFiles(string basePath)
     {
         foreach (var (relativePath, generate) in DocFiles)
             WriteIfNotExists(Path.Combine(basePath, relativePath), generate());
-    }
-
-    private void GenerateHubFiles(string basePath)
-    {
-        var parser = new MarkdownParser();
-        var scanner = new DocScanner(parser);
-        var docs = scanner.ScanDirectory(basePath);
-
-        var hubs = HubGenerator.GenerateAllHubs(basePath, docs);
-
-        foreach (var (relativePath, content) in hubs)
-        {
-            var fullPath = Path.Combine(basePath, relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-            File.WriteAllText(fullPath, content);
-        }
     }
 
     private void CopyBuiltInAssets(string basePath)
@@ -129,6 +114,16 @@ public class FolderScaffolder : IFolderScaffolder
             TemplateGenerator.ReadBuiltInTemplate("extra-verify.example.md"));
     }
 
+    private static void ScaffoldSkillTemplates(string basePath)
+    {
+        var templateRoot = Path.Combine(basePath, "_system", "templates");
+        Directory.CreateDirectory(templateRoot);
+        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
+            WriteIfNotExists(
+                Path.Combine(templateRoot, templateName),
+                TemplateGenerator.ReadBuiltInTemplate(templateName));
+    }
+
     public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
     {
         foreach (var relativePath in TemplateCommand.FrameworkDocFiles)
@@ -136,6 +131,30 @@ public class FolderScaffolder : IFolderScaffolder
             var fullPath = Path.Combine(basePath, relativePath);
             if (File.Exists(fullPath))
                 config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
+        }
+
+
+        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
+        {
+            var relativePath = $"_system/templates/{templateName}";
+            var fullPath = Path.Combine(basePath, "_system", "templates", templateName);
+            config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
+        }
+
+        foreach (var skill in SkillTemplateService.DiscoverSkills())
+        {
+            var resources = TemplateGenerator.GetSkillResourceTemplateNames(skill.Name)
+                .Select(name => name[$"resource-{skill.Name}-resource-".Length..^".template.md".Length])
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToList();
+            config.Skills[skill.Name] = new SkillSwitchConfig
+            {
+                Enabled = true,
+                Origin = "shipped",
+                EmitAgent = skill.EmitAgent,
+                CodexMetadata = skill.ExplicitInvocation || skill.ArgumentHint != null,
+                Resources = resources
+            };
         }
     }
 

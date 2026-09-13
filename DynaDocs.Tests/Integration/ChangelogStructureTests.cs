@@ -38,10 +38,6 @@ public class ChangelogStructureTests : IntegrationTestBase
             - src/auth/token.cs
             """);
 
-        // Link the file from the changelog hub to avoid orphan warning
-        var hubContent = ReadFile("dydo/project/changelog/_index.md");
-        WriteFile("dydo/project/changelog/_index.md", hubContent + "\n- [Auth Feature](./auth-feature.md) - Added authentication support\n");
-
         // Act - Run check
         var checkResult = await CheckAsync();
 
@@ -108,10 +104,6 @@ public class ChangelogStructureTests : IntegrationTestBase
             - src/auth/login.cs
             """);
 
-        // Link from parent hub to the subfolder
-        var parentHubContent = ReadFile("dydo/project/changelog/_index.md");
-        WriteFile("dydo/project/changelog/_index.md", parentHubContent + "\n- [Feature Auth](./feature-auth/_index.md) - Auth-related changes\n");
-
         // Act - Run check
         var checkResult = await CheckAsync();
 
@@ -147,10 +139,6 @@ public class ChangelogStructureTests : IntegrationTestBase
             - src/file.cs
             """;
         WriteFile("dydo/project/changelog/some-feature.md", changelogContent);
-
-        // Link from hub to avoid orphan issues
-        var hubContent = ReadFile("dydo/project/changelog/_index.md");
-        WriteFile("dydo/project/changelog/_index.md", hubContent + "\n- [Some Feature](./some-feature.md) - Added a feature\n");
 
         // Act - Run fix
         var fixResult = await FixAsync();
@@ -268,12 +256,6 @@ public class ChangelogStructureTests : IntegrationTestBase
 
             - package.json
             """);
-
-        // Link everything from parent hub
-        var parentHubContent = ReadFile("dydo/project/changelog/_index.md");
-        WriteFile("dydo/project/changelog/_index.md", parentHubContent +
-            "\n- [Quick Fix](./quick-fix.md) - Bug fix\n" +
-            "- [2025](./2025/_index.md) - 2025 changes\n");
 
         // Act - Run check
         var checkResult = await CheckAsync();

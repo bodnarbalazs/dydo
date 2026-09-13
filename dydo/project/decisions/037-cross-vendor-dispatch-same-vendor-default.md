@@ -80,6 +80,22 @@ anticipated — recorded here rather than waiting for it to become config):
   anything a human is actively waiting on routes to the fast path (dispatched sessions) instead.
 - Balance is an explicit goal: "with enough balance we can max out both of the subscriptions."
 
+## Amendment — capability is chosen at dispatch (DYD-134, 2026-09-09)
+
+§1's invariant and §2's same-vendor default stand, and so does §5's rejection of a routing engine
+and of capability profiles. What this record delegated to DR 028 does not: DR 028 is superseded,
+`dydo.json` carries no `models` block, and `dydo sync` emits every role unbound. Read as history the
+opening summary's "model choice, tier resolution ... flows from the existing config surfaces";
+§3's closing sentence on the reviewer tier; the Consequences bullet making a second vendor's tier
+mapping the only config prerequisite; the tier-pricing measurement in adoption step 4; and the
+Addendum's standing Fable-for-judgment, Codex-for-implementation work split.
+
+In their place, the agent that dispatches chooses the model — and the effort where the host exposes
+one — for each task, weighing its difficulty, uncertainty, consequence of error, required
+independence, context size and likely retries, starting adequate and escalating on evidence.
+Reviews and gates keep full strength whatever that costs, which is §3's asymmetry as doctrine rather
+than configuration. Vendor still binds only at the dispatch boundary; capability binds there too.
+
 ## Revisit When
 
 - Manual vendor overrides become routine for a predictable class of work → consider a config-expressed dispatch default for that class (the deferred routing idea).

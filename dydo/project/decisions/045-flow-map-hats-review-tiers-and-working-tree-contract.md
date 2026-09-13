@@ -113,6 +113,15 @@ severity, escalating to block only if discipline erodes (DR 042's rule). Indepen
 the requirement; same-vendor review with the reviewer bound to the strong tier is acceptable, and the
 block records the model so cross-vendor review remains observable later.
 
+For small prompt and documentation changes, the normal delivery is one author and one fresh,
+independent whole-change reviewer. A separate specification review or hardener needs one short,
+concrete risk reason. Persistence, migrations, permissions and uncertain native interfaces are examples
+that need stronger stages; required G/M, integration and release gates remain. The contract stays
+compact and points to evidence: prove repository or snapshot, intended selection and nonzero discovery
+before expensive tests; preserve candidate, command, environment or session, exit and result location
+for every gate; reuse exact-candidate evidence only when its environment and gate allow it; and never
+mistake skipped native proof for runtime proof.
+
 ### 4. Questions are Issues; decisions are DRs
 
 A **question Issue** (Linear label `question`, body `## Question`) is an open question that blocks

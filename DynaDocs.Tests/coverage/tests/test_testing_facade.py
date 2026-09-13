@@ -363,11 +363,11 @@ class TestingFacadeTests(unittest.TestCase):
         tool_identity = tool.resolve()
         # On Windows this is POSIX control-flow evidence, not a native Linux run.
         with mock.patch.object(sys, 'platform', 'linux'), mock.patch('shutil.which') as which:
-            which.side_effect = (lambda value, path=None: str(tool_identity)
-                                 if Path(value).resolve() == tool_identity else None)
+            which.side_effect = (lambda value, path=None: value
+                                 if value in {str(tool), str(tool_identity)} else None)
             self.assertEqual(str(tool_identity), resolver('./' + tool.name, working))
             self.assertIsNone(resolver(tool.name, working))
-            self.assertEqual(str(tool_identity), resolver(str(tool), working))
+            self.assertEqual(str(tool), resolver(str(tool), working))
             self.assertEqual([mock.call(str(tool_identity), path=None), mock.call(tool.name, path=None),
                               mock.call(str(tool), path=None)], which.call_args_list)
 

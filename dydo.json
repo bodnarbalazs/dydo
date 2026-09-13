@@ -373,5 +373,11 @@
     "_system/templates/skill-chief-of-staff.template.md": "642f355852cb5f1e96289df7b9d82c8cf94fc1d270d90c076e9cfd5ecca816f4",
     "_system/templates/skill-bro.template.md": "b764eab6030eed417a80d4833ec4caf1d9fb477ce0108df3837f9e36c2f504ce",
     "_system/templates/skill-admiral.template.md": "a17fbc9eeac8958c0cbbc3b7a3db1d76f935c5630f137443639aefefcbba77aa"
+  },
+  "testing": {
+    "runner": [
+      "./dydo/_system/.local/static-gates/python/Scripts/python.exe",
+      "DynaDocs.Tests/coverage/gap_check.py"
+    ]
   }
 }

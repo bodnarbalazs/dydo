@@ -38,7 +38,7 @@ class InventoryTests(unittest.TestCase):
 
     def test_noncanonical_and_uncased_identities_never_reach_the_filesystem(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             (root / "a.py").write_text("pass\n", encoding="utf-8")
             for relative in ["", "../a.py", "sub\\a.py", "C:/a.py", "/a.py"]:
                 with self.subTest(relative=relative), self.assertRaises(ValueError):

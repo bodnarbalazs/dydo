@@ -222,7 +222,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             commands = _subject_commands(root)
             self.assertEqual("dotnet", commands[0][0])
             self.assertEqual(["test", "DynaDocs.sln"], commands[0][1:3])
@@ -234,7 +234,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_subject_runs_both_actions_in_order_with_inherited_recorder_environment(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             recorder = str(root / "recorder")
             for exits, expected in (((7, 0), 7), ((0, 9), 9)):
                 with self.subTest(exits=exits), \
@@ -300,7 +300,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_identity_producer_is_built_outside_instrumented_debug_directories(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             command, producer = _identity_producer(root)
             self.assertEqual("Release", command[command.index("-c") + 1])
             self.assertEqual(root / "DynaDocs.Tests/coverage/metrics/bin/Release/net10.0/GateMetrics.dll",
@@ -319,7 +319,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_prepare_and_runner_commands_are_exact_and_unfiltered(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             output = root / "evidence/csharp"
             prepare, runner = altcover_commands(root, output)
             rendered = " ".join(prepare)
@@ -658,7 +658,7 @@ class CSharpCampaignTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.folder = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
-        cls.root = _minimal_campaign_root(Path(cls.folder.name))
+        cls.root = _minimal_campaign_root(Path(cls.folder.name).resolve())
         restored = subprocess.run(["dotnet", "tool", "restore"], cwd=cls.root, text=True,
                                   capture_output=True)
         if restored.returncode:

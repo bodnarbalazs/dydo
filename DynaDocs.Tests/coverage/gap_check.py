@@ -562,7 +562,7 @@ def write_result(root, run, operation, selected, rows, candidate):
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
-    root = next((parent for parent in Path(__file__).resolve().parents if (parent / ".git").exists()), path.parent)
+    root = next((parent for parent in Path(__file__).resolve().parents if (parent / ".git").exists()), path.parent.resolve())
     rows = []
     try:
         parsed = request(args)

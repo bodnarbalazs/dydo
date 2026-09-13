@@ -73,13 +73,17 @@ def verdict_stack(name='first', collector=None, report=None, coverage_exit=0, de
 class TestingFacadeTests(unittest.TestCase):
     runner = RUNNER
 
-    def fixture(self, data=None, execution_seconds=None, cleanup_seconds=None):
+    def fixture(self, data=None, execution_seconds=None, cleanup_seconds=None, noncanonical_root=False):
         temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
         # Both legs run through the same launcher: the derived copy is byte-identical, so its
         # deadline policy is the project's and every case must hold for it too.
+        module_file = directory / 'gap_check.py'
+        if noncanonical_root:
+            (directory / 'alias').mkdir()
+            module_file = directory / 'alias/../gap_check.py'
         launcher = [
             'import importlib.util, sys',
             # The derived runner lives outside any ignored tree: caching its bytecode there would
@@ -87,7 +91,7 @@ class TestingFacadeTests(unittest.TestCase):
             'sys.dont_write_bytecode = True',
             f'spec=importlib.util.spec_from_file_location("gap_check", {str(self.runner)!r})',
             'module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)',
-            f'module.__file__={str(directory / "gap_check.py")!r}',
+            f'module.__file__={str(module_file)!r}',
         ]
         if execution_seconds is not None:
             launcher.append(f'module.EXECUTION_SECONDS_MAXIMUM={execution_seconds!r}')
@@ -381,6 +385,55 @@ class TestingFacadeTests(unittest.TestCase):
         p, _, payload = self.invoke(['all'], data)
         self.assert_exit(p, 0)
         self.assertEqual('passed', payload['results'][0]['state'])
+
+    def test_artifact_destination_identity_accepts_equivalent_root_spelling(self):
+        root = self.fixture(noncanonical_root=True)
+
+        process, _, payload = self.invoke(['all'], directory=root)
+
+        self.assert_exit(process, 0)
+        self.assertTrue((root / 'dotnet-test.txt').is_file())
+        self.assert_rows(payload, [('dotnet', 'test', 'passed')])
+        results = list((root / 'results').glob('run-*/result.json'))
+        self.assertEqual(1, len(results))
+        self.assertEqual((root / 'results').resolve(), results[0].resolve().parent.parent)
+
+    def test_artifact_destination_identity_rejects_foreign_resolved_identity(self):
+        data = manifest()
+        data['artifactRoot'] = 'foreign-results'
+        root = self.fixture(data)
+        foreign_temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-foreign-')
+        self.addCleanup(foreign_temporary.cleanup)
+        foreign = Path(foreign_temporary.name)
+        link = root / data['artifactRoot']
+        if os.name == 'nt':
+            created = subprocess.run(
+                [os.environ['COMSPEC'], '/d', '/c', 'mklink', '/J', str(link), str(foreign)],
+                capture_output=True, text=True, encoding='utf-8')
+            self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+        else:
+            link.symlink_to(foreign, target_is_directory=True)
+
+        process, _, payload = self.invoke(['all'], directory=root)
+
+        self.assert_exit(process, 2)
+        self.assertIn('artifactRoot', process.stderr)
+        self.assertIsNone(payload)
+        self.assertFalse((root / 'dotnet-test.txt').exists())
+        self.assertEqual([], list(foreign.iterdir()))
+
+    def test_artifact_destination_identity_rejects_angle_placeholder(self):
+        data = manifest()
+        data['artifactRoot'] = '<artifact-root>'
+        root = self.fixture(data)
+
+        process, _, payload = self.invoke(['all'], directory=root)
+
+        self.assert_exit(process, 2)
+        self.assertIn('artifactRoot', process.stderr)
+        self.assertIsNone(payload)
+        self.assertFalse((root / 'dotnet-test.txt').exists())
+        self.assertFalse((root / 'results').exists())
 
     def test_result_write_failure_is_a_controlled_exit(self):
         data = manifest()

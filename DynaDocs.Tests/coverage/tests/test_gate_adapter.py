@@ -258,7 +258,7 @@ class GateAdapterTests(unittest.TestCase):
 
     def test_inventory_evaluation_uses_isolated_appdata_before_collection(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             output = root / "results"
             inventory = root / "inventory.json"
             inventory.write_text('{"schema":1}', encoding="utf-8")
@@ -329,7 +329,7 @@ class PublishedProvenanceTests(unittest.TestCase):
     def test_logged_commands_carry_argv_environment_exit_elapsed_and_hashed_streams(self):
         from gate_run import CommandLog
         with tempfile.TemporaryDirectory() as folder:
-            run = Path(folder)
+            run = Path(folder).resolve()
             log = CommandLog(run, run / "raw/commands")
             log.run("probe", [sys.executable, "-c", "import os,sys; sys.stdout.write(os.environ['DYDO_PROBE'])"],
                     environment={"DYDO_PROBE": "supplied"})

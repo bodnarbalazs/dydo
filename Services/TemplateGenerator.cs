@@ -120,32 +120,6 @@ public static class TemplateGenerator
     public static string GenerateAboutDynadocsMd() => ReadBuiltInTemplate("about-dynadocs.template.md");
 
     /// <summary>
-    /// Get all asset file names that should be copied to _assets/. Currently empty: the
-    /// pre-DR-041 architecture diagram was retired (issue 0301) — it depicted the removed
-    /// claim/inbox/agent-workspace runtime. The scaffolded _assets/ folder remains for
-    /// project-owned assets, and the copy/hash/update plumbing stays for future assets.
-    /// </summary>
-    public static IReadOnlyList<string> GetAssetNames()
-    {
-        return Array.Empty<string>();
-    }
-
-    /// <summary>
-    /// Read a binary asset from embedded resources.
-    /// </summary>
-    public static byte[]? ReadEmbeddedAsset(string assetName)
-    {
-        var resourceName = $"DynaDocs.Templates.Assets.{assetName}";
-        using var stream = _assembly.GetManifestResourceStream(resourceName);
-        if (stream == null)
-            return null;
-
-        using var memoryStream = new MemoryStream();
-        stream.CopyTo(memoryStream);
-        return memoryStream.ToArray();
-    }
-
-    /// <summary>
     /// Generate the _decisions.md meta file describing the decisions folder.
     /// </summary>
     public static string GenerateDecisionsMetaMd()

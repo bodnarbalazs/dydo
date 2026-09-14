@@ -176,10 +176,5 @@ Linear.
 
 ## Related
 
-- [Linear Issue Lifecycle](../understand/task-lifecycle.md) — How Issues move through planning,
-  execution, review, and escalation.
+- [Working-Tree Contract](../guides/working-tree-contract.md) — Branches, hops, review and merge ownership.
 - [dydo Glossary](./dydo-glossary.md) — Locked definitions for the Linear-native work model.
-- [DR 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) — The
-  governing flow map, question model, and human gates.
-- [DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) —
-  Supersymmetry, the twelve statuses and their order, the Type set, priority, merges as Issues.

@@ -477,7 +477,7 @@ class PublishedProvenanceTests(unittest.TestCase):
 
     def test_static_collectors_carry_their_own_raw_artifact_hashes(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = python_repository(folder)
+            root = python_repository(Path(folder).resolve())
             run = Path(folder) / "run"
 
             answer = gate_adapter.collect_static(root, run / "raw", "python")

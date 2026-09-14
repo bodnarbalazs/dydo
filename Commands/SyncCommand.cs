@@ -33,7 +33,7 @@ public static partial class SyncCommand
 
     // Workflow harnesses dydo no longer ships (DR 045: the run-sprint loop became the
     // Issue Captain's completion criterion; the inquisition became an Issue with its own
-    // captain). These retired files lived only under Claude's workflow directory.
+    // captain). Claude is the only host with a workflow surface.
     private static readonly string[] RetiredWorkflows = ["run-sprint.js", "inquisition.js"];
 
     // Skill resources retired by rename (DR 045: merge-sprint became merge; the broad plan
@@ -56,6 +56,12 @@ public static partial class SyncCommand
     private const string ClaudeSkillRoot = ".claude/skills";
     private const string CodexSkillRoot = ".agents/skills";
 
+    // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
+    // Codex target reads a different vendor key from the same tiers map; the agent → tier
+    // section never changes per vendor.
+    private const string ClaudeModelVendor = "anthropic";
+    private const string OpenAiModelVendor = "openai";
+
     public static Command Create()
     {
         var command = new Command("sync", "Compile skill templates into native agents and skills");
@@ -63,115 +69,23 @@ public static partial class SyncCommand
         return command;
     }
 
-    internal static int Execute(string? projectRoot = null, Action? beforeConfigCommit = null)
+    internal static int Execute(string? projectRoot = null)
     {
-        try
-        {
-            projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
-            var configService = new ConfigService();
-            var configPath = configService.FindConfigFile(projectRoot);
-            var config = configService.LoadConfigStrict(projectRoot);
-            if (configPath == null || config == null)
-                throw new InvalidDataException("No dydo.json found. Run 'dydo init' first.");
+        projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
+        var templates = SkillTemplateService.DiscoverSkills();
+        CleanRetiredArtifacts(projectRoot);
+        var config = new ConfigService().LoadConfig(projectRoot);
+        var models = config?.Models;
+        var (emitClaude, emitCodex) = ResolveIntegrationTargets(config?.Integrations);
+        var (agents, skills) =
+            SyncDiscoveredSkills(templates, projectRoot, models, emitClaude, emitCodex);
 
-            var prior = config.Skills.ToDictionary(
-                entry => entry.Key,
-                entry => (
-                    entry.Value.EmitAgent,
-                    entry.Value.CodexMetadata,
-                    Resources: entry.Value.Resources?.ToList() ?? []),
-                StringComparer.Ordinal);
-            var templates = SkillTemplateService.DiscoverLocalCatalog(projectRoot, config);
-            var current = templates.ToDictionary(skill => skill.Name, StringComparer.Ordinal);
+        if (emitCodex)
+            WriteCodexHooks(projectRoot);
 
-            CleanRetiredArtifacts(projectRoot);
-            foreach (var (name, entry) in config.Skills)
-            {
-                prior.TryGetValue(name, out var oldShape);
-                current.TryGetValue(name, out var skill);
-                CleanManagedOutputs(projectRoot, name, oldShape, entry, skill);
-            }
-
-            var unavailable = config.Skills
-                .Where(entry => entry.Value.Enabled == true && !current.ContainsKey(entry.Key))
-                .Select(entry => entry.Key)
-                .OrderBy(name => name, StringComparer.Ordinal)
-                .ToList();
-            if (unavailable.Count > 0)
-            {
-                ConsoleOutput.WriteError($"Enabled skill source unavailable: {string.Join(", ", unavailable)}.");
-                return ExitCodes.ToolError;
-            }
-
-            var enabled = templates.Where(skill => config.Skills[skill.Name].Enabled == true).ToList();
-            var (emitClaude, emitCodex) = ResolveIntegrationTargets(config.Integrations);
-            var (agents, skills) =
-                SyncDiscoveredSkills(enabled, projectRoot, emitClaude, emitCodex);
-
-            if (emitCodex)
-                WriteCodexHooks(projectRoot);
-
-            PrintSyncSummary(agents, skills, emitClaude, emitCodex);
-            beforeConfigCommit?.Invoke();
-            configService.SaveConfig(config, configPath);
-            return ExitCodes.Success;
-        }
-        catch (Exception ex) when (ex is InvalidDataException or IOException)
-        {
-            ConsoleOutput.WriteError($"Sync failed: {ex.Message}");
-            return ExitCodes.ToolError;
-        }
-    }
-
-    private static void CleanManagedOutputs(
-        string projectRoot,
-        string name,
-        (bool? EmitAgent, bool? CodexMetadata, List<string> Resources) prior,
-        SkillSwitchConfig currentSwitch,
-        SkillTemplate? currentSkill)
-    {
-        var removeEverything = currentSwitch.Enabled != true || currentSkill == null;
-        if (removeEverything)
-        {
-            DeleteManagedFile(Path.Combine(projectRoot, ".claude", "skills", name, "SKILL.md"), projectRoot);
-            DeleteManagedFile(Path.Combine(projectRoot, ".agents", "skills", name, "SKILL.md"), projectRoot);
-        }
-
-        if ((prior.EmitAgent == true || currentSwitch.EmitAgent == true)
-            && (removeEverything || currentSkill?.EmitAgent != true))
-        {
-            DeleteManagedFile(Path.Combine(projectRoot, ".claude", "agents", $"{name}.md"), projectRoot);
-            DeleteManagedFile(Path.Combine(projectRoot, ".codex", "agents", $"{name}.toml"), projectRoot);
-        }
-
-        if ((prior.CodexMetadata == true || currentSwitch.CodexMetadata == true)
-            && (removeEverything || currentSwitch.CodexMetadata != true))
-            DeleteManagedFile(Path.Combine(projectRoot, ".agents", "skills", name, "agents", "openai.yaml"), projectRoot);
-
-        var currentResources = removeEverything
-            ? new HashSet<string>(StringComparer.Ordinal)
-            : (currentSwitch.Resources ?? []).ToHashSet(StringComparer.Ordinal);
-        foreach (var resource in (prior.Resources ?? []).Where(resource => !currentResources.Contains(resource)))
-        {
-            DeleteManagedFile(Path.Combine(projectRoot, ".claude", "skills", name, "resources", $"{resource}.md"), projectRoot);
-            DeleteManagedFile(Path.Combine(projectRoot, ".agents", "skills", name, "resources", $"{resource}.md"), projectRoot);
-        }
-    }
-
-    private static void DeleteManagedFile(string file, string projectRoot)
-    {
-        if (!File.Exists(file))
-            return;
-        File.Delete(file);
-        var parent = Path.GetDirectoryName(file);
-        while (parent != null
-               && !parent.Equals(projectRoot, StringComparison.OrdinalIgnoreCase)
-               && Directory.Exists(parent)
-               && !Directory.EnumerateFileSystemEntries(parent).Any())
-        {
-            Directory.Delete(parent);
-            parent = Path.GetDirectoryName(parent);
-        }
+        var workflows = emitClaude ? SyncWorkflows(projectRoot) : 0;
+        PrintSyncSummary(agents, skills, workflows, emitClaude, emitCodex);
+        return ExitCodes.Success;
     }
 
     /// <summary>
@@ -193,14 +107,15 @@ public static partial class SyncCommand
         SyncDiscoveredSkills(
             IReadOnlyCollection<SkillTemplate> templates,
             string projectRoot,
+            ModelsConfig? models,
             bool emitClaude,
             bool emitCodex)
     {
         var agents = templates.Where(skill => skill.EmitAgent).ToList();
         foreach (var skill in agents)
         {
-            if (emitClaude) SyncAgent(skill, projectRoot);
-            if (emitCodex) SyncCodexAgent(skill, projectRoot);
+            if (emitClaude) SyncAgent(skill, projectRoot, models);
+            if (emitCodex) SyncCodexAgent(skill, projectRoot, models);
         }
 
         var skills = templates.Where(skill => !skill.EmitAgent).ToList();
@@ -216,6 +131,7 @@ public static partial class SyncCommand
     private static void PrintSyncSummary(
         IReadOnlyCollection<SkillTemplate> agents,
         IReadOnlyCollection<SkillTemplate> skills,
+        int workflows,
         bool emitClaude,
         bool emitCodex)
     {
@@ -223,6 +139,7 @@ public static partial class SyncCommand
         {
             Console.WriteLine($"Synced {agents.Count} agent(s) to .claude/ (agents + skills): {string.Join(", ", agents.Select(s => s.Name))}");
             Console.WriteLine($"Synced {skills.Count} skill(s) to .claude/ (skills only): {string.Join(", ", skills.Select(s => s.Name))}");
+            Console.WriteLine($"Synced {workflows} workflow(s) to .claude/workflows.");
         }
         if (emitCodex)
             Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
@@ -261,7 +178,6 @@ public static partial class SyncCommand
 
         foreach (var workflow in RetiredWorkflows)
             removed += Sweep(Path.Combine(projectRoot, ".claude", "workflows", workflow));
-        DeleteIfEmpty(Path.Combine(projectRoot, ".claude", "workflows"));
 
         foreach (var resource in RetiredSkillResources)
             removed += Sweep(
@@ -292,18 +208,35 @@ public static partial class SyncCommand
         return true;
     }
 
-    /// <summary>Removes a retired artifact directory only when it is empty.</summary>
+    /// <summary>Removes a retired skill's own folder once the sweep left it empty.</summary>
     private static void DeleteIfEmpty(string folder)
     {
         if (Directory.Exists(folder) && !Directory.EnumerateFileSystemEntries(folder).Any())
             Directory.Delete(folder);
     }
 
-    internal static void SyncAgent(SkillTemplate skill, string projectRoot)
+    /// <summary>
+    /// Workflow harnesses (Templates/workflow-&lt;name&gt;.js) → .claude/workflows/&lt;name&gt;.js.
+    /// Claude-only; a codex emit path is added when codex grows an equivalent runner.
+    /// </summary>
+    internal static int SyncWorkflows(string projectRoot)
+    {
+        var count = 0;
+        foreach (var (fileName, content) in TemplateGenerator.GetWorkflowScripts())
+        {
+            var workflowDir = Path.Combine(projectRoot, ".claude", "workflows");
+            Directory.CreateDirectory(workflowDir);
+            WriteLf(Path.Combine(workflowDir, fileName), content);
+            count++;
+        }
+        return count;
+    }
+
+    internal static void SyncAgent(SkillTemplate skill, string projectRoot, ModelsConfig? models = null)
     {
         var agentDir = Path.Combine(projectRoot, ".claude", "agents");
         Directory.CreateDirectory(agentDir);
-        WriteLf(Path.Combine(agentDir, $"{skill.Name}.md"), BuildAgent(skill, ExtractMustReads(skill, projectRoot)));
+        WriteLf(Path.Combine(agentDir, $"{skill.Name}.md"), BuildAgent(skill, ExtractMustReads(skill, projectRoot), models));
 
         WriteSkill(skill, projectRoot);
     }
@@ -315,14 +248,14 @@ public static partial class SyncCommand
     internal static void SyncSkill(SkillTemplate skill, string projectRoot) =>
         WriteSkill(skill, projectRoot);
 
-    internal static void SyncCodexAgent(SkillTemplate skill, string projectRoot)
+    internal static void SyncCodexAgent(SkillTemplate skill, string projectRoot, ModelsConfig? models = null)
     {
         SyncCodexSkill(skill, projectRoot);
 
         var agentDir = Path.Combine(projectRoot, ".codex", "agents");
         Directory.CreateDirectory(agentDir);
         WriteLf(Path.Combine(agentDir, $"{skill.Name}.toml"),
-            BuildCodexAgent(skill, ExtractMustReads(skill, projectRoot)));
+            BuildCodexAgent(skill, ExtractMustReads(skill, projectRoot), models));
     }
 
     internal static void SyncCodexSkill(SkillTemplate skill, string projectRoot)
@@ -333,7 +266,7 @@ public static partial class SyncCommand
             Path.Combine(skillDir, "SKILL.md"),
             BuildSkill(skill, CompileSkillBody(skill, projectRoot, CodexSkillRoot), emitClaudePolicy: false));
         WriteCodexSkillMetadata(skill, skillDir);
-        WriteSkillResources(skill, skillDir, projectRoot);
+        WriteSkillResources(skill, skillDir);
     }
 
     internal static void WriteCodexHooks(string projectRoot)
@@ -346,7 +279,7 @@ public static partial class SyncCommand
         WriteLf(
             Path.Combine(skillDir, "SKILL.md"),
             BuildSkill(skill, CompileSkillBody(skill, projectRoot, ClaudeSkillRoot), emitClaudePolicy: true));
-        WriteSkillResources(skill, skillDir, projectRoot);
+        WriteSkillResources(skill, skillDir);
     }
 
     /// <summary>
@@ -382,14 +315,14 @@ public static partial class SyncCommand
     }
 
     /// <summary>
-    /// Skill resource templates (resource-<skill>-resource-<name>.template.md) compile into the
+    /// Skill resource templates (<skill>-resource-<name>.template.md) compile into the
     /// skill folder's resources/ (DR-039 review-target subskills; DR-042). Resource bodies are
     /// copied verbatim: they are authored one folder deeper than SKILL.md and already carry the
     /// climbs that resolve from resources/, so the skill-body link rewrite must not reach them.
     /// </summary>
-    private static void WriteSkillResources(SkillTemplate skill, string skillDir, string projectRoot)
+    private static void WriteSkillResources(SkillTemplate skill, string skillDir)
     {
-        foreach (var (fileName, content) in SkillTemplateService.ReadResources(skill, projectRoot))
+        foreach (var (fileName, content) in TemplateGenerator.GetSkillResources(skill.Name))
         {
             var resourceDir = Path.Combine(skillDir, "resources");
             Directory.CreateDirectory(resourceDir);
@@ -415,7 +348,7 @@ public static partial class SyncCommand
     /// the methodology actually reaches the spawned agent; the Agent tool is granted only when the
     /// frontmatter declares <c>delegates: true</c>, so workers still cannot fan out (DR 045 §10).
     /// </summary>
-    private static string BuildAgent(SkillTemplate skill, List<string> mustReads)
+    private static string BuildAgent(SkillTemplate skill, List<string> mustReads, ModelsConfig? models = null)
     {
         var readOnly = skill.ReadOnly;
         var tools = readOnly
@@ -432,13 +365,19 @@ public static partial class SyncCommand
             "\n\nRead these for project context before working:\n"
             + string.Join('\n', mustReads.Select(p => $"- {p}")) + "\n";
 
+        // Decision 028: agent → tier → concrete model, bound here by the compiler so
+        // workflows stay tier-blind. An unresolved agent emits `model: inherit` — the
+        // explicit no-silent-downgrade spelling (an OMITTED model would fall back to
+        // Claude Code's default subagent model, not the session model).
+        var model = ResolveModel(models, skill.Name);
+
         return $"""
             ---
             name: {skill.Name}
             description: {skill.Description}
             tools: {tools}
             skills: [{skill.Name}]
-            model: inherit
+            model: {model ?? "inherit"}
             ---
 
             You are {Article(skill.Name)} **{skill.Name}**. {skill.Description} {stance} Your methodology lives in
@@ -447,7 +386,26 @@ public static partial class SyncCommand
             """;
     }
 
-    private static string BuildCodexAgent(SkillTemplate skill, List<string> mustReads)
+    /// <summary>
+    /// Resolves agent → tier → concrete model for the compile vendor (Decision 028).
+    /// Null model means "no binding" — unmapped agent, absent models section, or a tier
+    /// missing from the vendor map — and the caller emits <c>model: inherit</c> so the
+    /// agent runs on the session model instead of silently downgrading.
+    /// </summary>
+    internal static string? ResolveModel(ModelsConfig? models, string agentName)
+        => ResolveModel(models, agentName, ClaudeModelVendor);
+
+    internal static string? ResolveModel(ModelsConfig? models, string agentName, string vendor)
+    {
+        if (models == null || !models.Agents.TryGetValue(agentName, out var tier))
+            return null;
+        if (!models.Tiers.TryGetValue(vendor, out var vendorTiers)
+            || !vendorTiers.TryGetValue(tier, out var model))
+            return null;
+        return model;
+    }
+
+    private static string BuildCodexAgent(SkillTemplate skill, List<string> mustReads, ModelsConfig? models)
     {
         // No Claude-style tool list: codex's agent `tools` is a ToolsToml struct of codex-defined
         // toggles (view_image, web_search) — NOT file/shell tool names. Claude's tool names
@@ -462,26 +420,25 @@ public static partial class SyncCommand
         var contextBlock = mustReads.Count == 0 ? "" :
             "\n\nRead these for project context before working:\n"
             + string.Join('\n', mustReads.Select(p => $"- {p}"));
+        var model = ResolveModel(models, skill.Name, OpenAiModelVendor);
         // Codex has no `skills:` preload, so naming the skill to load is the only thing that
         // carries the methodology into a spawned agent (DR 045 §10). A writing agent needs the
         // workspace-write sandbox to act on that methodology at all.
         var sandbox = readOnly ? "read-only" : "workspace-write";
-        // Codex V1 reads web reach from the top-level scalar. Omission leaves the host's inherited
-        // setting in force. The final table expresses whether a role may delegate in V1; V2 may
-        // override enabled and ignores max_depth, so the generated shape makes no V2 guarantee.
-        var webSearch = skill.Web ? "\nweb_search = \"live\"" : "";
-        var agents = skill.Delegates
-            ? "\n\n[agents]\nenabled = true\nmax_depth = 3"
-            : "\n\n[agents]\nenabled = false";
+        // `web: true` sets the one toggle codex owns for it. A TOML table header ends the
+        // top-level key section, so [tools] goes last: any key emitted after it would parse as a
+        // member of the struct instead of a field of the agent.
+        var webTools = skill.Web ? "\n\n[tools]\nweb_search = true" : "";
 
         return $""""
             name = "{EscapeQuoted(skill.Name)}"
             description = "{EscapeQuoted(skill.Description)}"
-            sandbox_mode = "{sandbox}"{webSearch}
+            model = "{EscapeQuoted(model ?? "gpt-5.6-terra")}"
+            sandbox_mode = "{sandbox}"
 
             developer_instructions = """
             You are {Article(skill.Name)} **{skill.Name}**. {skill.Description} {stance} Load the `${skill.Name}` skill before working.{contextBlock}
-            """{agents}
+            """{webTools}
             """";
     }
 
@@ -529,7 +486,7 @@ public static partial class SyncCommand
     /// </summary>
     internal static string ExtractMethodology(SkillTemplate skill, string projectRoot)
     {
-        var raw = SkillTemplateService.ReadSource(skill, projectRoot);
+        var raw = TemplateGenerator.ReadBuiltInTemplate(skill.TemplateFile);
         // Resolve includes against the project root so project-local template-additions
         // overrides are honored regardless of the CWD dydo was invoked from.
         var resolved = TemplateGenerator.ResolveIncludes(raw, projectRoot);
@@ -610,12 +567,12 @@ public static partial class SyncCommand
     /// <summary>
     /// The skill's static must-reads, taken from the [links] in the skill template's
     /// "## Must-Reads" section (normalized to dydo-relative paths) so each skill points at
-    /// its own context. The agent resolves conditional must-reads for its task at runtime.
+    /// its own context. Conditional must-reads are task-runtime and left to the workflow.
     /// </summary>
     internal static List<string> ExtractMustReads(SkillTemplate skill, string projectRoot)
     {
         var template = TemplateGenerator.ResolveIncludes(
-            SkillTemplateService.ReadSource(skill, projectRoot), projectRoot);
+            TemplateGenerator.ReadBuiltInTemplate(skill.TemplateFile), projectRoot);
 
         var section = MustReadsSectionRegex().Match(template);
         if (!section.Success)

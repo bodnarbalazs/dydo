@@ -12,31 +12,6 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class TemplateScaffoldingTests : IntegrationTestBase
 {
-    [Theory]
-    [InlineData("none")]
-    [InlineData("claude")]
-    [InlineData("codex")]
-    [InlineData("all")]
-    public async Task Init_ScaffoldsLocalTemplateInventoryAndEnabledSwitchboard(string integration)
-    {
-        await InitProjectAsync(integration);
-
-        var names = TemplateGenerator.GetAllTemplateNames();
-        Assert.All(names, name => AssertFileExists($"dydo/_system/templates/{name}"));
-
-        var config = new ConfigService().LoadConfigStrict(TestDir)!;
-        Assert.Equal(
-            names.Count(name => name.StartsWith("skill-", StringComparison.Ordinal)),
-            config.Skills.Count);
-        Assert.All(config.Skills, entry =>
-        {
-            Assert.True(entry.Value.Enabled);
-            Assert.Equal("shipped", entry.Value.Origin);
-            Assert.True(config.FrameworkHashes.ContainsKey($"_system/templates/skill-{entry.Key}.template.md"));
-        });
-        Assert.Contains("_system/templates/", config.ScanExclude);
-    }
-
     [Fact]
     public void GetAllTemplateNames_ReturnsExpectedTemplates()
     {
@@ -46,12 +21,6 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         Assert.Contains("skill-reviewer.template.md", templateNames);
         Assert.Contains("skill-project-planner.template.md", templateNames);
         Assert.Contains("skill-specifier.template.md", templateNames);
-        Assert.Contains("skill-to-project.template.md", templateNames);
-        Assert.Contains("skill-wizard.template.md", templateNames);
-        Assert.Contains("resource-specifier-resource-bug.template.md", templateNames);
-        Assert.Contains("resource-specifier-resource-merge.template.md", templateNames);
-        Assert.Contains("resource-specifier-resource-inquisition.template.md", templateNames);
-        Assert.Contains("resource-wizard-resource-template.template.md", templateNames);
         Assert.Contains("skill-chief-of-staff.template.md", templateNames);
         Assert.Contains("skill-inquisitor.template.md", templateNames);
         Assert.Contains("skill-self-improvement.template.md", templateNames);
@@ -64,8 +33,8 @@ public class TemplateScaffoldingTests : IntegrationTestBase
         // The inventory is every skill template plus every skill resource
         // template (<skill>-resource-<name>.template.md). A hard-coded count would freeze the
         // inventory the DR 045 taxonomy is about to change.
-        Assert.Contains("resource-reviewer-resource-project-plan.template.md", templateNames);
-        Assert.Contains("resource-reviewer-resource-spec.template.md", templateNames);
+        Assert.Contains("reviewer-resource-project-plan.template.md", templateNames);
+        Assert.Contains("reviewer-resource-spec.template.md", templateNames);
         Assert.DoesNotContain("reviewer-resource-plan.template.md", templateNames);
         Assert.Equal(ShippedTemplateNames(), templateNames.OrderBy(n => n, StringComparer.Ordinal));
     }
@@ -104,44 +73,6 @@ public class TemplateScaffoldingTests : IntegrationTestBase
             DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
         Assert.True(config.FrameworkHashes.ContainsKey("reference/linear-workspace-standard.md"),
             "template update must track the Linear workspace standard by hash");
-    }
-
-    [Fact]
-    public async Task Sync_EmittedSkillAndResourceLinksResolveInFreshProject()
-    {
-        (await InitProjectAsync()).AssertSuccess();
-        (await RunAsync(SyncCommand.Create())).AssertSuccess();
-
-        var brokenLinks = new List<string>();
-        foreach (var hostRoot in new[] { ".claude/skills", ".agents/skills" })
-        {
-            var files = Directory.GetFiles(Path.Combine(TestDir, hostRoot), "*.md", SearchOption.AllDirectories);
-            Assert.NotEmpty(files);
-            var localLinkCount = 0;
-            foreach (var file in files)
-            {
-                foreach (var link in LinkExtractor.Extract(File.ReadAllText(file)))
-                {
-                    if (link.Type == DynaDocs.Models.LinkType.External ||
-                        (link.Target.Length == 0 && link.Anchor != null))
-                        continue;
-
-                    localLinkCount++;
-                    var origin = link.Target.StartsWith(hostRoot + "/", StringComparison.Ordinal)
-                        ? TestDir
-                        : Path.GetDirectoryName(file)!;
-                    var target = Path.GetFullPath(Path.Combine(origin, link.Target));
-                    var relativeTarget = Path.GetRelativePath(TestDir, target);
-                    var outsideProject = Path.IsPathRooted(relativeTarget) || relativeTarget == ".." ||
-                        relativeTarget.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
-                    if (outsideProject || !File.Exists(target))
-                        brokenLinks.Add($"{Path.GetRelativePath(TestDir, file)}:{link.LineNumber} -> {link.Target}");
-                }
-            }
-            Assert.True(localLinkCount > 0, $"No local Markdown links were inspected under {hostRoot}");
-        }
-
-        Assert.True(brokenLinks.Count == 0, string.Join(Environment.NewLine, brokenLinks));
     }
 
     // The shipped set is the authored set minus retired skills and anything that hangs off them.

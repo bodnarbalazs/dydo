@@ -348,6 +348,8 @@ public class CommandDocConsistencyTests
         {
             "README.md",
             Path.Combine("dydo", "index.md"),
+            Path.Combine("dydo", "project", "_index.md"),
+            Path.Combine("dydo", "reference", "_index.md"),
             Path.Combine("dydo", "reference", "about-dynadocs.md"),
             Path.Combine("dydo", "reference", "configuration.md"),
             Path.Combine("dydo", "reference", "dydo-commands.md"),

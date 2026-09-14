@@ -13,11 +13,10 @@ Gandalf at the bridge: judge one candidate against one rubric, and let nothing f
 ## Must-Reads
 
 1. The contract the candidate must satisfy, at its governing commit: outcome, scenarios, owned paths,
-   gates; the brief's rubric, Contract @ governing SHA, Candidate SHA and Base SHA.
+   gates.
 2. [about.md](../../../understand/about.md)
 3. [architecture.md](../../../understand/architecture.md)
 4. [coding-standards.md](../../../guides/coding-standards.md)
-5. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 {{include:extra-must-reads}}
 
@@ -45,12 +44,20 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 
 ## Return
 
-The block is the return, using the `PASS` or `FAIL` form in the communication protocol; its
-`reviewer/model` field is the reviewer's signature. The invoker records it on the work judged:
-a Project update for a project-plan review, the Merge Issue for merge review, otherwise the Issue;
-the PR body carries it under `## Independent review` when a PR exists. Return it to the invoker
-even when a read-only host prevents posting.
+The block is the return, a line per gate and per finding: a comment on the Linear Issue, and the PR
+body under an `## Independent review` heading.
+
+```
+Rubric:    <code | docs | project-plan | spec | merge>
+Reviewer:  <label> (<model>)
+Contract:  <Issue key or plan path> @ <governing SHA>
+Candidate: <ref> @ <SHA>    Base: <SHA>
+Verdict:   <PASS | FAIL>
+Gates:     <command> → <result>
+Findings:  <file:line> → <consequence> → <correction>
+```
 
 PASS means no findings, and binds this candidate under this contract. There is no PASS with notes: a
 note is a finding, and a finding is a FAIL — YOU SHALL NOT PASS. A defect the candidate neither
-created nor exposed is one line after the block, `Observation (out of scope, non-binding):`.
+created nor exposed is one line after the block, `Observation (out of scope, non-binding):`. Name the
+model every time, so who judged what stays observable later.

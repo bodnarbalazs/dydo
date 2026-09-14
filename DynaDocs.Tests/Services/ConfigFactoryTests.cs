@@ -51,12 +51,13 @@ public class ConfigFactoryTests
     }
 
     [Fact]
-    public void CreateDefault_HasNoModelPolicy()
+    public void CreateDefaultModels_UsesDistinctOpenAiTiers()
     {
-        var json = JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig);
+        var openAi = ConfigFactory.CreateDefaultModels().Tiers["openai"];
 
-        Assert.DoesNotContain("\"models\"", json);
-        Assert.DoesNotContain("Models", typeof(DydoConfig).GetProperties().Select(property => property.Name));
+        Assert.Equal("gpt-5.6-sol", openAi["strong"]);
+        Assert.Equal("gpt-5.6-terra", openAi["standard"]);
+        Assert.Equal("gpt-5.6-luna", openAi["light"]);
     }
 
     [Fact]
@@ -151,6 +152,17 @@ public class ConfigFactoryTests
         ConfigFactory.EnsureDefaultNudges(config);
 
         Assert.Equal("worker", config.Nudges.Single(n => n.Pattern == "custom-pattern").Audience);
+    }
+
+    [Fact]
+    public void CreateDefaultModels_BindsTheDr045Agents()
+    {
+        var agents = ConfigFactory.CreateDefaultModels().Agents;
+
+        Assert.Equal("strong", agents["project-planner"]);
+        Assert.Equal("strong", agents["specifier"]);
+        Assert.Equal("strong", agents["issue-captain"]);
+        Assert.Equal("standard", agents["research"]);
     }
 
     [Fact]

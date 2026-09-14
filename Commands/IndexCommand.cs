@@ -50,13 +50,13 @@ public static class IndexCommand
             var indexPath = Path.Combine(basePath, "index.md");
             File.WriteAllText(indexPath, content);
 
-            var sections = new[] { "understand", "guides", "reference", "project" };
-            Console.WriteLine("Scanned documentation sections:");
-            foreach (var folder in sections)
+            var hubFolders = new[] { "understand", "guides", "reference", "project" };
+            Console.WriteLine("Scanned top-level hubs:");
+            foreach (var folder in hubFolders)
             {
                 var docsInHub = docs.Count(d => d.RelativePath.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase));
                 var status = docsInHub > 0 ? $"({docsInHub} docs)" : "(not found)";
-                Console.WriteLine($"  - {folder} {status}");
+                Console.WriteLine($"  - {folder}/_index.md {status}");
             }
 
             Console.WriteLine();

@@ -95,6 +95,8 @@ internal static class FixFileHandler
 
             if (!doc.HasFrontmatter)
                 manualFixNeeded.Add($"{doc.RelativePath} - Add frontmatter");
+            else if (string.IsNullOrEmpty(doc.SummaryParagraph))
+                manualFixNeeded.Add($"{doc.RelativePath} - Add summary paragraph");
         }
 
         return manualFixNeeded;

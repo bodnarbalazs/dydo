@@ -1,382 +1,740 @@
 #!/usr/bin/env python3
-"""Run this project's declared tests and assurance gates without a shell."""
-import hashlib
-import json
-import os
-import signal
-import shutil
-import subprocess
-import sys
-import time
-import uuid
-from pathlib import Path, PureWindowsPath
+"""Tier compliance checker.
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+Runs tests, collects coverage data, and checks every source module against
+its tier's requirements. Automatically skips tests when no source or test
+files have changed since the last coverage run.
 
+Coverage: Cobertura XML via Coverlet (includes cyclomatic complexity).
 
-def interrupt(_signum, _frame):
-    raise KeyboardInterrupt
-
-
-if sys.platform == "win32":
-    signal.signal(signal.SIGBREAK, interrupt)
-
-CAPS = ("test", "static", "coverage", "mutation")
-EXITS = {"passed": 0, "failed": 1, "unavailable": 2, "invalid": 2, "interrupted": 130}
-HELP = """Usage: gap_check.py [--force-run] [operation] [options] [-- native arguments]
-
-Project testing facade. It runs manifest argv vectors directly; it never invokes a shell.
-  test --stack NAME [-- ARGS]                run one stack's selected tests
-  all [--stack NAME[,NAME]]                  run selected tests (all by default)
-  gate static|coverage [--stack NAME[,NAME]]
-  gate mutation --since BASE [--stack NAME[,NAME]]
-  capabilities                               report configuration without execution
-  --force-run                                tests, static, coverage for every stack
-
-test requires one stack. all and gate default to every declared stack in manifest order.
-Native arguments after -- are forwarded only by test. Every started operation writes a result
-artifact: <artifactRoot>/run-<unique-id>/result.json, using the adjacent manifest's artifactRoot.
-Examples: test --stack dotnet -- --filter FullyQualifiedName~ParserTests
-          all --stack frontend,python
-          gate mutation --since BASE --stack dotnet
- Exit 0 is pass, 1 measured failure, 2 invalid or unavailable work, and 130 interruption
-after adapter cleanup. Results record candidate identity, argv, cwd, isolation, evidence, and artifacts.
+Usage:
+    python DynaDocs.Tests/coverage/gap_check.py                    # auto-detect: skip or run
+    python DynaDocs.Tests/coverage/gap_check.py --force-run         # always run tests
+    python DynaDocs.Tests/coverage/gap_check.py --detail            # show uncovered lines
+    python DynaDocs.Tests/coverage/gap_check.py --methods           # show per-method CRAP
+    python DynaDocs.Tests/coverage/gap_check.py --inspect Guard     # inspect matching modules
 """
 
+import argparse
+import json
+import os
+import re
+import sys
+import time
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
-class ContractError(Exception):
-    pass
+from run_tests import run_tests as worktree_run_tests
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+COVERAGE_DIR = ROOT / "DynaDocs.Tests" / "coverage"
+TIER_REGISTRY_PATH = COVERAGE_DIR / "tier_registry.json"
+
+XML_PATTERN = "DynaDocs.Tests/**/coverage.cobertura.xml"
+
+COVERAGE_ARGS = [
+    "--collect:XPlat Code Coverage",
+    "--settings:DynaDocs.Tests/coverage/coverage.runsettings",
+]
+
+EXCLUDED_CLASSES = {"Program"}
+DATA_MODEL_MAX_LINES = 3
+GENERATED_PATTERNS = ["/obj/", ".g.cs", ".generated.cs"]
+
+# Source directories to check for staleness (relative to ROOT)
+SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization", "Templates"]
+SOURCE_FILES = ["Program.cs"]
+SOURCE_GLOBS = ["*.cs"]
+SOURCE_DIR_GLOBS = {"Templates": ["*"]}
+
+TIER_THRESHOLDS = {
+    1: {"line_coverage": 0.80, "crap": 30, "branch_coverage": 0.60},
+    2: {"line_coverage": 1.00, "crap": 15, "branch_coverage": 0.80},
+    3: {"line_coverage": 1.00, "crap": 5,  "branch_coverage": 1.00},
+}
+
+TIER_ANNOTATION_RE = re.compile(r"//\s*@test-tier:\s*(\d+)")
+CONDITION_COVERAGE_RE = re.compile(r"\((\d+)/(\d+)\)")
 
 
-def contained(root, value):
-    if not isinstance(value, str) or not value or any(c in value for c in "<>") or Path(value).is_absolute() or PureWindowsPath(value).is_absolute():
-        return None
+# ---------------------------------------------------------------------------
+# Data models
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MethodCoverage:
+    name: str
+    signature: str
+    complexity: float
+    line_rate: float
+    branch_rate: float
+
+    @property
+    def crap(self) -> float:
+        if self.complexity > 0:
+            return (self.complexity ** 2) * ((1 - self.line_rate) ** 3) + self.complexity
+        return 0.0
+
+
+@dataclass
+class LineLevelData:
+    """Per-line hit counts for merging overlapping coverage."""
+    lines_hits: Dict[int, int] = field(default_factory=dict)
+    branch_conditions: Dict[int, Tuple[int, int]] = field(default_factory=dict)
+    class_name: str = ""
+    complexity: float = 0.0
+    methods: List[MethodCoverage] = field(default_factory=list)
+
+    def merge(self, line_no: int, hits: int):
+        self.lines_hits[line_no] = max(self.lines_hits.get(line_no, 0), hits)
+
+    def merge_branch(self, line_no: int, covered: int, total: int):
+        existing = self.branch_conditions.get(line_no)
+        if existing is None:
+            self.branch_conditions[line_no] = (covered, total)
+        else:
+            self.branch_conditions[line_no] = (max(existing[0], covered), total)
+
+    def merge_complexity(self, cc: float):
+        self.complexity = max(self.complexity, cc)
+
+    @property
+    def lines_valid(self) -> int:
+        return len(self.lines_hits)
+
+    @property
+    def lines_covered(self) -> int:
+        return sum(1 for h in self.lines_hits.values() if h > 0)
+
+    @property
+    def line_rate(self) -> float:
+        if self.lines_valid == 0:
+            return 0.0
+        return self.lines_covered / self.lines_valid
+
+    @property
+    def branch_rate(self) -> float:
+        if not self.branch_conditions:
+            return 1.0
+        total_covered = sum(c for c, _ in self.branch_conditions.values())
+        total_possible = sum(t for _, t in self.branch_conditions.values())
+        if total_possible == 0:
+            return 1.0
+        return total_covered / total_possible
+
+
+@dataclass
+class ModuleCoverage:
+    """Coverage data for a single source module (file)."""
+    filename: str
+    class_name: str
+    line_rate: float
+    branch_rate: float
+    lines_valid: int
+    lines_covered: int
+    complexity: float
+    tier: int = 1
+    line_hits: Dict[int, int] = field(default_factory=dict)
+    branch_conditions: Dict[int, Tuple[int, int]] = field(default_factory=dict)
+    methods: List[MethodCoverage] = field(default_factory=list)
+
+    @property
+    def crap(self) -> float:
+        """CRAP = CC^2 * (1 - coverage)^3 + CC"""
+        if self.complexity > 0:
+            return (self.complexity ** 2) * ((1 - self.line_rate) ** 3) + self.complexity
+        return 0.0
+
+    @property
+    def has_tests(self) -> bool:
+        return self.lines_covered > 0
+
+    @property
+    def tier_thresholds(self) -> dict:
+        return TIER_THRESHOLDS[self.tier]
+
+    @property
+    def failures(self) -> list[str]:
+        reasons = []
+        t = self.tier_thresholds
+        if not self.has_tests:
+            reasons.append("no test coverage")
+        if self.line_rate < t["line_coverage"]:
+            reasons.append(f"line: {self.line_rate*100:.1f}% (need >= {t['line_coverage']*100:.0f}%)")
+        if self.complexity > 0 and self.crap > t["crap"]:
+            reasons.append(f"CRAP: {self.crap:.1f} (need <= {t['crap']})")
+        if self.branch_rate < t["branch_coverage"]:
+            reasons.append(f"branch: {self.branch_rate*100:.1f}% (need >= {t['branch_coverage']*100:.0f}%)")
+        return reasons
+
+    @property
+    def passes(self) -> bool:
+        return len(self.failures) == 0
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def is_generated(filename: str) -> bool:
+    return any(pat in filename for pat in GENERATED_PATTERNS)
+
+
+def normalize_to_forward_slash(raw: str) -> str:
+    return raw.replace("\\", "/")
+
+
+def collapse_ranges(numbers: List[int]) -> str:
+    if not numbers:
+        return ""
+    sorted_nums = sorted(numbers)
+    ranges: List[str] = []
+    start = prev = sorted_nums[0]
+    for n in sorted_nums[1:]:
+        if n == prev + 1:
+            prev = n
+        else:
+            ranges.append(f"{start}-{prev}" if start != prev else str(start))
+            start = prev = n
+    ranges.append(f"{start}-{prev}" if start != prev else str(start))
+    return ", ".join(ranges)
+
+
+def format_line_detail(module: ModuleCoverage) -> List[str]:
+    if not module.line_hits:
+        return []
+    lines: List[str] = []
+    uncovered = [lno for lno, hits in module.line_hits.items() if hits == 0]
+    if uncovered:
+        lines.append(f"        uncovered lines:  {collapse_ranges(uncovered)}")
+    partial = sorted(
+        lno for lno, (covered, total) in module.branch_conditions.items()
+        if covered < total
+    )
+    if partial:
+        parts = [f"{lno} ({module.branch_conditions[lno][0]}/{module.branch_conditions[lno][1]})" for lno in partial]
+        lines.append(f"        partial branches: {', '.join(parts)}")
+    return lines
+
+
+def format_method_detail(module: ModuleCoverage, crap_threshold: float) -> List[str]:
+    """Format per-method CRAP breakdown for methods exceeding the threshold."""
+    offending = [m for m in module.methods if m.crap > crap_threshold]
+    if not offending:
+        return []
+    offending.sort(key=lambda m: m.crap, reverse=True)
+    lines = [f"        methods exceeding CRAP threshold ({crap_threshold:.0f}):"]
+    for m in offending:
+        sig = m.signature.strip("()")
+        display_name = f"{m.name}({sig})"
+        lines.append(
+            f"          {display_name:<45s} CC: {m.complexity:>2.0f}  "
+            f"Cov: {m.line_rate*100:.1f}%  CRAP: {m.crap:.1f}"
+        )
+    return lines
+
+
+def resolve_filename(source_dir: str, raw_filename: str) -> str:
+    """Resolve a filename from coverlet XML to a path relative to repo root."""
+    abs_path = os.path.normpath(os.path.join(source_dir, raw_filename))
     try:
-        path = (root / value).resolve()
-        path.relative_to(root)
-        return path
+        rel = os.path.relpath(abs_path, ROOT)
     except ValueError:
+        rel = normalize_to_forward_slash(raw_filename)
+    rel = normalize_to_forward_slash(rel)
+    # Worktree temp dirs produce paths that escape ROOT (e.g.
+    # ../../../AppData/Local/Temp/dydo-test-xxx/Utils/File.cs).
+    # Fall back to the raw filename which is already project-relative.
+    if rel.startswith(".."):
+        rel = normalize_to_forward_slash(raw_filename)
+    return rel
+
+
+# ---------------------------------------------------------------------------
+# XML parsing
+# ---------------------------------------------------------------------------
+
+def _parse_branch_conditions(line_el) -> Optional[Tuple[int, int]]:
+    if line_el.get("branch", "").lower() != "true":
         return None
+    cond_cov = line_el.get("condition-coverage", "")
+    m = CONDITION_COVERAGE_RE.search(cond_cov)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    return None
 
 
-def read_manifest(path):
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        raise ContractError(f"invalid JSON manifest: {error}") from error
-    if not isinstance(value, dict) or type(value.get("schema")) is not int or value["schema"] != 1:
-        raise ContractError("schema must be the integer 1")
-    if set(value) != {"schema", "artifactRoot", "stacks"}:
-        raise ContractError("manifest requires schema, artifactRoot and stacks")
-    stacks = value["stacks"]
-    if not isinstance(stacks, list) or not stacks:
-        raise ContractError("stacks field must be a nonempty array")
-    names = [item.get("name") if isinstance(item, dict) else None for item in stacks]
-    if any(not isinstance(name, str) or not name for name in names):
-        raise ContractError("every stack needs a nonempty name")
-    if len(set(names)) != len(names):
-        raise ContractError("duplicate stack names")
-    return value
+def parse_cobertura_xml(xml_path: str) -> List[Tuple[str, str, Dict[int, int], Dict[int, Tuple[int, int]], float, List[MethodCoverage]]]:
+    """Parse a Cobertura XML file.
 
+    Returns list of (resolved_relative_filename, class_name, {line_no: hits},
+                      {line_no: (conditions_covered, conditions_total)}, complexity,
+                      [MethodCoverage]).
+    """
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
 
-def result(stack, capability, state, **values):
-    item = {"stack": stack.get("name", "unknown"), "capability": capability, "state": state,
-            "argv": [], "cwd": stack.get("cwd", ""), "isolation": stack.get("isolation"),
-            "childExit": None, "resultExit": EXITS[state], "artifacts": []}
-    item.update(values)
-    return item
+    source_dirs = []
+    for src_el in root.findall(".//source"):
+        if src_el.text:
+            source_dirs.append(src_el.text.strip())
+    source_dir = source_dirs[0] if source_dirs else ""
 
+    results = []
+    for pkg in root.findall(".//package"):
+        for cls in pkg.findall(".//class"):
+            raw_fname = cls.get("filename", "")
+            cname = cls.get("name", "")
+            if not raw_fname:
+                continue
 
-def stack_error(stack, root):
-    if not isinstance(stack, dict) or set(stack) != {"name", "kind", "cwd", "isolation", "capabilities"}:
-        return "stack must have exactly name, kind, cwd, isolation and capabilities"
-    if not isinstance(stack["kind"], str) or not stack["kind"] or not contained(root, stack["cwd"]) or not contained(root, stack["cwd"]).is_dir():
-        return "stack kind and repository-contained cwd are required"
-    isolation = stack["isolation"]
-    if not isinstance(isolation, dict) or set(isolation) != {"requirement", "evidence"}:
-        return "malformed isolation"
-    if isolation["requirement"] not in ("in-place", "git-worktree-copy-working-changes", "per-run-artifacts"):
-        return "unknown isolation requirement"
-    if not isinstance(stack["capabilities"], dict) or set(stack["capabilities"]) != set(CAPS):
-        return "capabilities must contain exactly test, static, coverage and mutation"
+            resolved = resolve_filename(source_dir, raw_fname)
 
-
-def evidence_error(stack, root):
-    evidence = stack["isolation"]["evidence"]
-    requirement = stack["isolation"]["requirement"]
-    if not isinstance(evidence, dict) or not isinstance(evidence.get("state"), str):
-        return "invalid", "malformed configured evidence"
-    if evidence["state"] == "unavailable" and set(evidence) == {"state", "reason"}:
-        reason = evidence.get("reason")
-        return ("unavailable", reason) if isinstance(reason, str) and reason else ("invalid", "unavailable evidence requires reason")
-    if evidence["state"] != "verified":
-        return "invalid", "evidence state must be verified or unavailable"
-    if requirement == "in-place":
-        return ("passed", None) if evidence.get("kind") == "direct" and set(evidence) == {"state", "kind"} else ("invalid", "verified in-place evidence requires kind direct")
-    path = contained(root, evidence.get("path"))
-    return ("passed", None) if evidence.get("kind") == "adapter" and set(evidence) == {"state", "kind", "path"} and path and path.is_file() else ("invalid", "verified isolation requires a repository-contained adapter")
-
-
-def valid_unavailable(config):
-    return (isinstance(config, dict) and config.get("state") == "unavailable"
-            and isinstance(config.get("reason"), str) and bool(config["reason"])
-            and set(config) <= {"state", "reason", "exampleArgv"}
-            and ("exampleArgv" not in config or isinstance(config["exampleArgv"], list)
-                 and all(isinstance(item, str) and item for item in config["exampleArgv"])))
-
-
-def resolve_executable(value, working_directory):
-    executable = Path(value)
-    if not executable.is_absolute() and ("/" in value or os.sep in value):
-        executable = (working_directory / executable).resolve()
-    search_path = None
-    if sys.platform == "win32" and executable.parent == Path("."):
-        search_path = os.pathsep.join((str(working_directory), os.environ.get("PATH", "")))
-    return shutil.which(str(executable), path=search_path)
-
-
-def command_error(capability, config, root, working_directory, since, inspection=False):
-    if not isinstance(config, dict) or config.get("state") not in ("configured", "unavailable"):
-        return None, None, "invalid capability state"
-    if config["state"] == "unavailable":
-        if valid_unavailable(config):
-            return None, None, config["reason"]
-        return None, None, "unavailable capability requires reason and forbids command and artifacts"
-    if set(config) != {"state", "command", "artifacts"}:
-        return None, None, "configured capability requires command and artifacts and forbids reason"
-    command = config["command"]
-    if not isinstance(command, dict) or set(command) != {"kind", "argv"} or command["kind"] not in ("argv", "current-python"):
-        return None, None, "command kind must be argv or current-python"
-    argv = command["argv"]
-    if not isinstance(argv, list) or not argv or not all(isinstance(x, str) and x for x in argv):
-        return None, None, "command argv must be a nonempty array of strings"
-    if any("\x00" in item for item in argv):
-        return None, None, "command argv cannot contain NUL"
-    if any("<" in x or ">" in x for x in argv):
-        return None, None, "command vector contains an angle placeholder"
-    artifacts = config["artifacts"]
-    if not isinstance(artifacts, list):
-        return None, None, "artifacts must be an array"
-    for item in artifacts:
-        if not isinstance(item, dict) or set(item) != {"path", "required"} or not isinstance(item["required"], bool) or not contained(root, item["path"]):
-            return None, None, "artifact requires contained path and required boolean"
-    if capability != "test" and not any(item["required"] for item in artifacts):
-        return None, None, "configured gates require a required artifact"
-    if capability == "mutation":
-        if argv.count("{base}") != 1 or any("{base}" in x and x != "{base}" for x in argv):
-            return None, None, "mutation requires exactly one argv element equal to {base} and no substring occurrence"
-        if not since and not inspection:
-            return None, None, "mutation requires --since BASE"
-        if since is not None:
-            argv = [since if x == "{base}" else x for x in argv]
-    elif any("{base}" in x for x in argv):
-        return None, None, "{base} is only valid for mutation"
-    actual = [sys.executable, *argv] if command["kind"] == "current-python" else list(argv)
-    if command["kind"] == "argv" and not resolve_executable(actual[0], working_directory):
-        return None, None, f"missing executable: {actual[0]}"
-    return actual, artifacts, None
-
-
-def prepare_row(stack, capability, root, since=None, inspection=False):
-    error = stack_error(stack, root)
-    if error:
-        return None, None, "invalid", error
-    config = stack["capabilities"][capability]
-    working_directory = contained(root, stack["cwd"])
-    argv, artifacts, error = command_error(capability, config, root, working_directory, since, inspection)
-    if error and not valid_unavailable(config):
-        return None, None, "invalid", error
-    state, reason = evidence_error(stack, root)
-    if state != "passed":
-        return None, None, state, reason
-    if error:
-        return None, None, "unavailable", error
-    return argv, artifacts, "configured", None
-
-
-def artifact_snapshot(root, value):
-    path = contained(root, value)
-    if path is None:
-        raise ContractError(f"artifact escapes repository: {value}")
-    if not path.exists():
-        return None
-    entries = [path, *sorted(path.rglob("*"))] if path.is_dir() else [path]
-    snapshot = []
-    for entry in entries:
-        if not entry.resolve().is_relative_to(root):
-            raise ContractError(f"artifact entry escapes repository: {entry}")
-        info = entry.stat()
-        digest = None
-        if entry.is_file():
-            hasher = hashlib.sha256()
-            with entry.open("rb") as stream:
-                for chunk in iter(lambda: stream.read(65536), b""):
-                    hasher.update(chunk)
-            digest = hasher.digest()
-        elif not entry.is_dir():
-            raise ContractError(f"artifact is not a file or directory: {entry}")
-        snapshot.append((str(entry.relative_to(path)), info.st_mode, info.st_ino, info.st_size, info.st_mtime_ns, digest))
-    return snapshot
-
-
-def run_row(stack, capability, root, since, forwarded):
-    argv, artifacts, state, reason = prepare_row(stack, capability, root, since)
-    if state != "configured":
-        return result(stack, capability, state, reason=reason)
-    if capability == "test":
-        argv += forwarded
-    child = None
-    try:
-        working_directory = contained(root, stack["cwd"])
-        before = {item["path"]: artifact_snapshot(root, item["path"]) for item in artifacts
-                  if item["required"] and capability != "test"}
-        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-                                 start_new_session=sys.platform != "win32")
-        while child.poll() is None:
-            try:
-                child.wait(timeout=0.2)
-            except subprocess.TimeoutExpired:
-                pass
-        if child.returncode == 0:
-            for path, previous in before.items():
-                current = artifact_snapshot(root, path)
-                if current is None or current == previous:
-                    return result(stack, capability, "invalid", argv=argv, childExit=0, artifacts=artifacts, reason=f"required artifact was not produced or refreshed: {path}")
-        return result(stack, capability, "passed" if child.returncode == 0 else "failed", argv=argv, childExit=child.returncode, artifacts=artifacts)
-    except KeyboardInterrupt:
-        if child is None:
-            return result(stack, capability, "interrupted", argv=argv, artifacts=artifacts, reason="interrupted before adapter launch")
-        try:
-            if sys.platform == "win32":
-                child.send_signal(signal.CTRL_BREAK_EVENT)
+            # Per-method CC and coverage data
+            methods_el = cls.find("methods")
+            method_entries: List[MethodCoverage] = []
+            if methods_el is not None:
+                method_ccs = []
+                for m_el in methods_el.findall("method"):
+                    cc = float(m_el.get("complexity", 0))
+                    method_ccs.append(cc)
+                    if cc > 0:
+                        method_entries.append(MethodCoverage(
+                            name=m_el.get("name", ""),
+                            signature=m_el.get("signature", ""),
+                            complexity=cc,
+                            line_rate=float(m_el.get("line-rate", 0)),
+                            branch_rate=float(m_el.get("branch-rate", 0)),
+                        ))
+                complexity = max(method_ccs) if method_ccs else 0.0
             else:
-                os.killpg(child.pid, signal.SIGINT)
-            child.wait(timeout=30)
-        except (OSError, subprocess.TimeoutExpired):
-            child.kill()
-            child.wait()
-        return result(stack, capability, "interrupted", argv=argv, childExit=child.returncode, artifacts=artifacts, reason="adapter interrupted after cleanup window")
-    except (OSError, ContractError) as error:
-        return result(stack, capability, "invalid", argv=argv, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
+                complexity = float(cls.get("complexity", 0))
+
+            line_hits: Dict[int, int] = {}
+            branch_conds: Dict[int, Tuple[int, int]] = {}
+            lines_el = cls.find("lines")
+            if lines_el is not None:
+                for line_el in lines_el.findall("line"):
+                    try:
+                        lno = int(line_el.get("number", "0"))
+                        hits = int(line_el.get("hits", "0"))
+                        line_hits[lno] = max(line_hits.get(lno, 0), hits)
+                    except (ValueError, TypeError):
+                        continue
+                    cond = _parse_branch_conditions(line_el)
+                    if cond is not None:
+                        branch_conds[lno] = cond
+
+            results.append((resolved, cname, line_hits, branch_conds, complexity, method_entries))
+
+    return results
 
 
-def request(args):
-    if args == ["--force-run"]:
-        return "force-run", CAPS[:3], None, None, []
-    if not args: return None
-    if args in (["--help"], ["-h"]): return "help"
-    operation = args.pop(0)
-    if operation == "capabilities" and not args: return "capabilities", (), None, None, []
-    if operation not in {"test", "all", "gate"}: raise ContractError("invalid operation syntax")
-    capability = "test" if operation != "gate" else None
-    if operation == "gate":
-        if not args or args[0] not in CAPS[1:]: raise ContractError("gate requires static, coverage or mutation")
-        capability = args.pop(0)
-    forwarded = []
-    if "--" in args:
-        index = args.index("--"); forwarded, args = args[index + 1:], args[:index]
-        if operation != "test": raise ContractError("native arguments are only valid for test")
-    stacks = since = None
-    while args:
-        flag = args.pop(0)
-        if flag == "--stack" and args and stacks is None: stacks = args.pop(0).split(",")
-        elif flag == "--since" and args and since is None: since = args.pop(0)
-        else: raise ContractError("invalid operation syntax")
-    if operation == "test" and (stacks is None or len(stacks) != 1 or not stacks[0]):
-        raise ContractError("test requires exactly one --stack NAME")
-    if capability == "mutation" and not since: raise ContractError("mutation requires --since BASE")
-    if since is not None and capability != "mutation": raise ContractError("--since is only valid for mutation")
-    return ("gate " + capability if operation == "gate" else operation), (capability,), since, stacks, forwarded
+# ---------------------------------------------------------------------------
+# Test running
+# ---------------------------------------------------------------------------
+
+def clean_stale_coverage():
+    for xml in sorted(ROOT.glob(XML_PATTERN)):
+        xml.unlink()
+        print(f"  Cleaned {xml.relative_to(ROOT)}")
 
 
-def candidate_identity(root):
-    git = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True)
-    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=root, text=True, capture_output=True)
-    return {"commit": git.stdout.strip() if git.returncode == 0 else "unknown", "dirty": bool(dirty.stdout)}
+def run_tests() -> bool:
+    clean_stale_coverage()
+    print("\n--- Running tests (worktree-isolated) ---")
+    rc = worktree_run_tests(extra_args=COVERAGE_ARGS, coverage=True)
+    if rc != 0:
+        print(f"  Tests failed (exit code {rc})")
+        return False
+    return True
 
 
-def print_capabilities(stacks, root):
-    exit_code = 0
-    for stack in stacks:
-        print(f"{stack['name']}:")
-        for capability in CAPS:
-            _, _, state, diagnostic = prepare_row(stack, capability, root, inspection=True)
-            if state == "invalid":
-                exit_code = 2
-            reason = f": {diagnostic}" if diagnostic else ""
-            print(f"  {capability}: {state}{reason}")
-    return exit_code
+# ---------------------------------------------------------------------------
+# Coverage collection
+# ---------------------------------------------------------------------------
+
+def collect_coverage() -> List[ModuleCoverage]:
+    """Parse coverage XMLs, merge line-level data, apply exclusions."""
+    xml_files = sorted(ROOT.glob(XML_PATTERN))
+
+    if not xml_files:
+        print("[WARN] No coverage XML files found.")
+        return []
+
+    print(f"  Found {len(xml_files)} coverage XML files")
+
+    merged: Dict[str, LineLevelData] = {}
+
+    for xml_path in xml_files:
+        entries = parse_cobertura_xml(str(xml_path))
+        for fname, cname, line_hits, branch_conds, complexity, methods in entries:
+            if is_generated(fname):
+                continue
+
+            if fname not in merged:
+                merged[fname] = LineLevelData(class_name=cname)
+            for lno, hits in line_hits.items():
+                merged[fname].merge(lno, hits)
+            for lno, (covered, total) in branch_conds.items():
+                merged[fname].merge_branch(lno, covered, total)
+            merged[fname].merge_complexity(complexity)
+            merged[fname].methods.extend(methods)
+            if len(cname) > len(merged[fname].class_name):
+                merged[fname].class_name = cname
+
+    results: List[ModuleCoverage] = []
+    for fname, data in merged.items():
+        if data.lines_valid == 0:
+            continue
+
+        short_name = data.class_name.split(".")[-1] if data.class_name else ""
+        if short_name in EXCLUDED_CLASSES:
+            continue
+
+        if data.lines_valid <= DATA_MODEL_MAX_LINES and data.lines_covered == 0:
+            continue
+
+        # Deduplicate methods by (name, signature), keeping highest complexity
+        seen_methods: Dict[Tuple[str, str], MethodCoverage] = {}
+        for m in data.methods:
+            key = (m.name, m.signature)
+            if key not in seen_methods or m.complexity > seen_methods[key].complexity:
+                seen_methods[key] = m
+
+        results.append(ModuleCoverage(
+            filename=fname,
+            class_name=data.class_name,
+            line_rate=data.line_rate,
+            branch_rate=data.branch_rate,
+            lines_valid=data.lines_valid,
+            lines_covered=data.lines_covered,
+            complexity=data.complexity,
+            line_hits=dict(data.lines_hits),
+            branch_conditions=dict(data.branch_conditions),
+            methods=list(seen_methods.values()),
+        ))
+
+    return results
 
 
-def artifact_destination(root, value):
-    destination = contained(root, value)
-    if not destination:
-        raise ContractError("artifactRoot must be repository-relative and contained")
-    for entry in (destination, *destination.parents):
-        if entry.exists() and not entry.is_dir():
-            raise ContractError("artifactRoot requires a usable directory destination")
-        if entry == root:
-            break
-    return destination
+# ---------------------------------------------------------------------------
+# Tier annotation scanning
+# ---------------------------------------------------------------------------
+
+def find_test_file(module: ModuleCoverage) -> Optional[Path]:
+    """Find the corresponding test file for a source module."""
+    base_name = Path(module.filename).stem
+    test_name = f"{base_name}Tests.cs"
+    test_dir = ROOT / "DynaDocs.Tests"
+    if test_dir.exists():
+        matches = list(test_dir.rglob(test_name))
+        if matches:
+            return matches[0]
+    return None
 
 
-def prepare_result(destination):
-    run = destination / f"run-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
-    run.mkdir(parents=True)
-    with (run / "result.tmp").open("x", encoding="utf-8"):
-        pass
-    return run
-
-
-def write_result(root, run, operation, selected, rows, candidate):
-    if not run.resolve().is_relative_to(root):
-        raise ContractError("result artifact escapes repository")
-    exit_code = max((EXITS[row["state"]] for row in rows), default=0)
-    payload = {"schema": 1, "candidate": candidate,
-               "operation": operation, "selectedStacks": [x["name"] for x in selected], "results": rows, "aggregateExit": exit_code}
-    path = run / "result.json"
-    pending = run / "result.tmp"
-    pending.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    pending.replace(path)
-    print(f"Aggregate: {exit_code}")
-    print(f"Result: {path}"); return exit_code
-
-
-def main(argv=None):
-    args = list(sys.argv[1:] if argv is None else argv)
-    path = Path(__file__).with_suffix(".json")
-    root = next((parent for parent in Path(__file__).resolve().parents if (parent / ".git").exists()), path.parent)
-    rows = []
+def read_tier_from_test_file(test_file: Path) -> Optional[int]:
     try:
-        parsed = request(args)
-        if parsed is None: print(HELP); return 2
-        if parsed == "help": print(HELP); return 0
-        name, capabilities, since, names, forwarded = parsed
-        data = read_manifest(path)
-        destination = artifact_destination(root, data["artifactRoot"])
-        all_stacks = data["stacks"]
-        if names is not None and (not names or any(not x or x not in [item["name"] for item in all_stacks] for x in names)):
-            raise ContractError("unknown selected stack")
-        selected = [item for item in all_stacks if names is None or item["name"] in names]
-        if name == "capabilities":
-            return print_capabilities(selected, root)
-        candidate = candidate_identity(root)
-        run = prepare_result(destination)
-        for stack in selected:
-            for capability in capabilities:
-                current = run_row(stack, capability, root, since, forwarded); rows.append(current)
-                print(f"{current['stack']} {capability}: {current['state'].upper()}" + (f" (child exit {current['childExit']})" if current["childExit"] is not None else "") + (f": {current['reason']}" if current.get("reason") else ""), flush=True)
-                if current["state"] == "interrupted":
+        with open(test_file, "r", encoding="utf-8") as f:
+            for i, line in enumerate(f):
+                if i >= 10:
                     break
-            if rows[-1]["state"] == "interrupted":
-                break
-        return write_result(root, run, {"name": name, **({"since": since} if since else {})}, selected, rows, candidate)
-    except (ContractError, OSError) as error:
-        print(f"Invalid request or artifact destination: {error}", file=sys.stderr)
-        return 130 if any(row["state"] == "interrupted" for row in rows) else 2
+                m = TIER_ANNOTATION_RE.search(line)
+                if m:
+                    tier = int(m.group(1))
+                    if tier in (2, 3):
+                        return tier
+    except (OSError, UnicodeDecodeError):
+        pass
+    return None
+
+
+def assign_tiers(modules: List[ModuleCoverage]) -> None:
+    for module in modules:
+        test_file = find_test_file(module)
+        if test_file is not None:
+            tier = read_tier_from_test_file(test_file)
+            if tier is not None:
+                module.tier = tier
+
+
+# ---------------------------------------------------------------------------
+# Tier registry
+# ---------------------------------------------------------------------------
+
+def load_registry() -> dict:
+    if TIER_REGISTRY_PATH.exists():
+        with open(TIER_REGISTRY_PATH, "r") as f:
+            return json.load(f)
+    return {}
+
+
+def save_registry(registry: dict) -> None:
+    with open(TIER_REGISTRY_PATH, "w") as f:
+        json.dump(registry, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
+def check_tier_registry(modules: List[ModuleCoverage]) -> List[str]:
+    """Sync tier annotations with the registry. Returns list of error messages."""
+    registry = load_registry()
+    errors = []
+    seen_keys = set()
+
+    for module in modules:
+        if module.tier > 1:
+            key = module.filename
+            seen_keys.add(key)
+            test_file = find_test_file(module)
+            test_path = str(test_file.relative_to(ROOT)) if test_file else ""
+            registry[key] = {"tier": module.tier, "test_file": normalize_to_forward_slash(test_path)}
+
+    for key, entry in registry.items():
+        if key not in seen_keys:
+            errors.append(
+                f"TIER REGISTRY: '{key}' is registered as T{entry['tier']} "
+                f"but no @test-tier annotation found in test file. "
+                f"If demotion is intentional, remove the entry from tier_registry.json manually."
+            )
+
+    save_registry(registry)
+    return errors
+
+
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
+
+def print_report(modules: List[ModuleCoverage], *, detail: bool = False, methods: bool = False) -> bool:
+    """Print coverage report. Returns True if any module fails."""
+    total = len(modules)
+    passing = sum(1 for m in modules if m.passes)
+    failing = total - passing
+    pct = passing / total * 100 if total else 0
+
+    print("=== COVERAGE GAP CHECK ===\n")
+    print(f"  Total modules:  {total}")
+    print(f"  Passing:        {passing}  ({pct:.1f}%)")
+    print(f"  Failing:        {failing}")
+
+    failing_modules = [m for m in modules if not m.passes]
+    if failing_modules:
+        print()
+        for m in sorted(failing_modules, key=lambda m: m.lines_valid, reverse=True):
+            reasons = "  |  ".join(m.failures)
+            print(f"  FAIL  {m.filename}  [T{m.tier}]")
+            print(f"        {reasons}")
+            if methods:
+                for line in format_method_detail(m, m.tier_thresholds["crap"]):
+                    print(line)
+            if detail:
+                for line in format_line_detail(m):
+                    print(line)
+
+        print(f"\n  [RESULT] {failing} modules fail tier requirements. See details above.")
+        return True
+    else:
+        print(f"\n  [RESULT] All modules pass tier requirements.")
+        return False
+
+
+def print_inspect_report(modules: List[ModuleCoverage], pattern: str, *, methods: bool = False) -> None:
+    pattern_lower = pattern.lower()
+    matched = [
+        m for m in modules
+        if pattern_lower in m.filename.lower() or pattern_lower in m.class_name.lower()
+    ]
+
+    if not matched:
+        print(f"\n  No modules matching '{pattern}'.")
+        words = pattern_lower.replace("/", " ").replace("\\", " ").replace(".", " ").split()
+        suggestions = set()
+        for word in words:
+            if len(word) < 3:
+                continue
+            for m in modules:
+                if word in m.filename.lower() or word in m.class_name.lower():
+                    suggestions.add(m.filename)
+        if suggestions:
+            print("  Did you mean one of these?")
+            for s in sorted(suggestions)[:10]:
+                print(f"    - {s}")
+        else:
+            print("  Available modules (showing first 10):")
+            for m in sorted(modules, key=lambda x: x.filename)[:10]:
+                print(f"    - {m.filename}")
+        return
+
+    print(f"\n=== INSPECT: '{pattern}' ({len(matched)} match{'es' if len(matched) != 1 else ''}) ===\n")
+
+    for m in sorted(matched, key=lambda x: x.filename):
+        status = "PASS" if m.passes else "FAIL"
+        print(f"  [{status}]  {m.filename}  [T{m.tier}]")
+        print(f"        lines: {m.lines_covered}/{m.lines_valid} ({m.line_rate*100:.1f}%)  "
+              f"branches: {m.branch_rate*100:.1f}%  "
+              f"CRAP: {m.crap:.1f}  CC: {m.complexity:.0f}")
+        if m.failures:
+            print(f"        failures: {' | '.join(m.failures)}")
+            if methods:
+                for line in format_method_detail(m, m.tier_thresholds["crap"]):
+                    print(line)
+        detail_lines = format_line_detail(m)
+        if detail_lines:
+            for line in detail_lines:
+                print(line)
+        print()
+
+
+# ---------------------------------------------------------------------------
+# Staleness check
+# ---------------------------------------------------------------------------
+
+def _find_changed_files_since(threshold_mtime: float) -> List[str]:
+    """Return relative paths of source/test files modified after threshold_mtime."""
+    changed = []
+    for src_dir in SOURCE_DIRS:
+        d = ROOT / src_dir
+        if not d.exists():
+            continue
+        for glob in SOURCE_DIR_GLOBS.get(src_dir, SOURCE_GLOBS):
+            for src in d.rglob(glob):
+                if not src.is_file():
+                    continue
+                if is_generated(str(src)):
+                    continue
+                if src.stat().st_mtime > threshold_mtime:
+                    changed.append(str(src.relative_to(ROOT)))
+
+    for src_file in SOURCE_FILES:
+        src = ROOT / src_file
+        if src.exists() and src.stat().st_mtime > threshold_mtime:
+            changed.append(str(src.relative_to(ROOT)))
+
+    test_dir = ROOT / "DynaDocs.Tests"
+    if test_dir.exists():
+        for src in test_dir.rglob("*.cs"):
+            if is_generated(str(src)):
+                continue
+            if src.stat().st_mtime > threshold_mtime:
+                changed.append(str(src.relative_to(ROOT)))
+
+    return changed
+
+
+def check_coverage_staleness() -> Tuple[bool, str]:
+    """Check if source/test files changed since last coverage run.
+
+    Returns (is_fresh, message).
+    - (True, "...reason...") when coverage is up-to-date
+    - (False, "...reason...") when coverage is stale or missing
+    """
+    xml_files = sorted(ROOT.glob(XML_PATTERN))
+    if not xml_files:
+        return False, "No coverage XML found"
+
+    oldest_xml = min(f.stat().st_mtime for f in xml_files)
+    changed = _find_changed_files_since(oldest_xml)
+
+    if changed:
+        age_mins = (time.time() - oldest_xml) / 60
+        examples = changed[:5]
+        msg = (
+            f"{len(changed)} file(s) changed since last coverage run "
+            f"({age_mins:.0f} min ago). Examples: {', '.join(examples)}"
+        )
+        return False, msg
+
+    age_mins = (time.time() - oldest_xml) / 60
+    return True, f"Coverage data is {age_mins:.0f}min old, no source/test changes detected"
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    parser = argparse.ArgumentParser(description="Tier compliance checker")
+    parser.add_argument(
+        "--force-run", action="store_true",
+        help="Run tests even if no source/test changes detected since last run",
+    )
+    parser.add_argument(
+        "--detail", action="store_true",
+        help="Show uncovered line numbers and partial branches for failing modules",
+    )
+    parser.add_argument(
+        "--methods", action="store_true",
+        help="Show per-method CRAP breakdown for failing modules",
+    )
+    parser.add_argument(
+        "--inspect", metavar="PATTERN",
+        help="Show full line-level detail for modules matching PATTERN",
+    )
+    args = parser.parse_args()
+
+    # 1. Decide whether to run tests
+    # tests_ok stays True on the staleness-skip path (no test process ran, so
+    # there is no failure to propagate). The two run_tests() branches below
+    # overwrite it with the actual exit-code-derived value.
+    tests_ok = True
+    if args.force_run:
+        tests_ok = run_tests()
+        if not tests_ok:
+            print("\nTests failed. Analyzing available coverage data anyway.")
+    else:
+        is_fresh, reason = check_coverage_staleness()
+        if is_fresh:
+            print(f"\nSkipping tests: {reason}. Use --force-run to override.")
+        else:
+            print(f"\n{reason}")
+            tests_ok = run_tests()
+            if not tests_ok:
+                print("\nTests failed. Analyzing available coverage data anyway.")
+
+    # 2. Collect coverage data
+    print("\nCollecting coverage data...")
+    modules = collect_coverage()
+
+    if not modules:
+        print("\nNo coverage data found. Use --force-run to re-execute tests.")
+        sys.exit(1)
+
+    # 3. Assign tiers from annotations
+    assign_tiers(modules)
+
+    # 4. Check tier registry
+    registry_errors = check_tier_registry(modules)
+
+    # 5. Print report
+    print()
+    has_failures = print_report(modules, detail=args.detail, methods=args.methods)
+
+    # 6. Print inspect report (if requested)
+    if args.inspect:
+        print_inspect_report(modules, args.inspect, methods=args.methods)
+
+    # 7. Print registry errors
+    if registry_errors:
+        print()
+        for err in registry_errors:
+            print(f"  ERROR: {err}")
+
+    # 8. Exit
+    if not tests_ok:
+        tier_check = "fail" if has_failures else "pass"
+        print(f"\n  [RESULT] Tests failed (see exit-code line above). "
+              f"Tier check: {tier_check}. Gate FAILS.")
+    if has_failures or registry_errors or not tests_ok:
+        sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

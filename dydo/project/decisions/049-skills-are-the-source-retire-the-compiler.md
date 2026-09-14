@@ -112,7 +112,7 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
   troubleshooting): the host's skill list shows the role; a spawned agent told only *"load the
   `<role>` skill"* loads the body **and a resource-only detail**; the skill's links resolve from the
   installed location on each host; explicit-only invocation behaves where required.
-- **Observed limit:** [DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14] requested
+- **Observed limit:** [DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) requested
   `sandbox_mode = "read-only"` for a Codex `multi_agent` spawn, yet the spawned role completed a normal
   edit. The field's presence therefore cannot support an enforcement claim. Keep the roles as skills
   and rely on their non-authoring methods, fresh commission, isolated candidates and independent

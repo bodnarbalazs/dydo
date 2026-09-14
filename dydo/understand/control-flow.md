@@ -634,7 +634,7 @@ flowchart LR
 On Claude Code a one-off steer needs no release: the human opens the captain's transcript from the
 subagent panel and sends it a message there. Anything longer is a release and a top-level captain.
 The steer is a Claude Code convenience; the floor on both hosts is the release.
-[DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14] established returned-sub-agent resume,
+[DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume,
 while passive wake and human-origin steering remain unestablished on Codex.
 
 ### 6.11 A Bug

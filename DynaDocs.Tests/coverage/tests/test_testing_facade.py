@@ -323,11 +323,17 @@ class TestingFacadeTests(unittest.TestCase):
         root = self.fixture()
         working = root / 'working'
         working.mkdir()
-        relative_python = os.path.relpath(sys.executable, working)
+        tools = root / 'tools'
+        tools.mkdir()
+        shell = Path(os.environ['COMSPEC']) if os.name == 'nt' else Path('/bin/sh')
+        executable = tools / ('facade-shell.exe' if os.name == 'nt' else 'facade-shell')
+        shutil.copy2(shell, executable)
+        relative_executable = os.path.relpath(executable, working)
         data = manifest()
         data['stacks'][0]['cwd'] = 'working'
         data['stacks'][0]['capabilities']['test'] = configured(
-            [relative_python, '-c', "print('RELATIVE_EXECUTABLE_RAN')"], kind='argv')
+            [relative_executable, '/c' if os.name == 'nt' else '-c', 'echo RELATIVE_EXECUTABLE_RAN'],
+            kind='argv')
         (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
 
         inspected, _, payload = self.invoke(['capabilities'], directory=root)
@@ -340,7 +346,7 @@ class TestingFacadeTests(unittest.TestCase):
         self.assert_exit(executed, 0)
         self.assertIn('RELATIVE_EXECUTABLE_RAN', executed.stdout)
         self.assert_rows(payload, [('dotnet', 'test', 'passed')])
-        self.assertEqual(relative_python, payload['results'][0]['argv'][0])
+        self.assertEqual(relative_executable, payload['results'][0]['argv'][0])
 
     def test_dot_relative_executable_and_bare_path_lookup_are_distinct(self):
         root = self.fixture()

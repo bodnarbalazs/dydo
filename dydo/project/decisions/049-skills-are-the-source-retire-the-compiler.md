@@ -66,8 +66,9 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
 
 - **Pros:** one artifact per role; a new host is a new folder, not a new compiler target; the test
   surface shrinks to behaviour actually retained; distribution is delegated to the hosts.
-- **Cons:** gives up generated agent config and its hard guarantees; a few duplicated fields per
-  host; installing/relocating skills becomes an explicit step that must be verified, not assumed.
+- **Cons:** gives up generated agent config and any compiler-level claim of hard guarantees; a few
+  duplicated fields per host; installing/relocating skills becomes an explicit step that must be
+  verified, not assumed. A native restriction is a request until observed host behaviour proves it.
 
 ## Decision
 
@@ -85,10 +86,12 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
    documents. Deliberate divergence from the framework is accepted; there is **no promise of
    automatic reconciliation**.
 5. **Agent configuration is ordinary, minimal, hand-maintained.** Roles are skills. Keep at most a
-   small native agent definition per host actually used, and only where a hard guarantee is
-   load-bearing — the candidate is a **read-only reviewer**. Do not generate it. Add a tiny
-   generation script only if hand-maintenance becomes a demonstrated burden. Do not solve every
-   host's configuration model in advance.
+   small native agent definition per host actually used, and only where an observed native capability
+   is load-bearing. A configuration field may request a restrictive sandbox; only a live host check
+   may establish that the host enforces it. The reviewer, inquisitor and scout remain non-authoring
+   roles by commission and method regardless of that enforcement. Do not generate agent definitions.
+   Add a tiny generation script only if hand-maintenance becomes a demonstrated burden. Do not solve
+   every host's configuration model in advance.
 6. **What survives:** the documentation structure and `dydo check`/link checking; the guard and its
    dangerous-pattern detection; the nudge system (regex plus a helpful message); the testing-runner
    (`gap_check`) proxy; and scaffolding (`dydo init`) while it stays cheap and reliable — a sample
@@ -101,16 +104,19 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
 
 - **Gained:** a smaller surface, host-native artifacts, a cheap new host, fewer tests, and attention
   returned to real projects.
-- **Accepted:** generated agent config and its hard guarantees are gone; a few config fields are
-  duplicated per host; installing/relocating skills is a manual step; **installation must be
+- **Accepted:** generated agent config and its claimed hard guarantees are gone; a few config fields
+  are duplicated per host; installing/relocating skills is a manual step; **installation must be
   acceptance-checked** (see below); the 3.0 release's remaining generator/template work must be
   re-scoped.
 - **Installation acceptance check** (so "tell an agent to install it" does not become recurring
   troubleshooting): the host's skill list shows the role; a spawned agent told only *"load the
   `<role>` skill"* loads the body **and a resource-only detail**; the skill's links resolve from the
   installed location on each host; explicit-only invocation behaves where required.
-- **Open, left to the pilot:** whether the read-only reviewer needs a native agent. Start pure-skill;
-  add the native file only when a real run shows a reviewer writing what it should not.
+- **Observed limit:** [DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14] requested
+  `sandbox_mode = "read-only"` for a Codex `multi_agent` spawn, yet the spawned role completed a normal
+  edit. The field's presence therefore cannot support an enforcement claim. Keep the roles as skills
+  and rely on their non-authoring methods, fresh commission, isolated candidates and independent
+  review as the portable floor.
 - **Migration is incremental, not a rewrite.** Pause compiler expansion, including opencode. Carry
   **one role and its resources** to both hosts, run it on real work, and verify the acceptance
   check. Then migrate role by role, deleting the machinery each vacates. Keep every working utility

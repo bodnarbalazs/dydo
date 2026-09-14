@@ -12,11 +12,7 @@ public class ChiefOfStaffSyncTests : IDisposable
     {
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-chief-of-staff-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
-        var config = ConfigFactory.CreateDefault();
-        var dydoRoot = Path.Combine(_testDir, config.Structure.Root);
-        new FolderScaffolder().Scaffold(dydoRoot);
-        FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
-        new ConfigService().SaveConfig(config, Path.Combine(_testDir, "dydo.json"));
+        new FolderScaffolder().Scaffold(Path.Combine(_testDir, "dydo"));
     }
 
     public void Dispose()

@@ -292,6 +292,16 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
+    public void GenerateAboutDynadocsMd_ContainsReviewAndAuditContract()
+    {
+        var content = TemplateGenerator.GenerateAboutDynadocsMd();
+
+        Assert.Contains("independently reviews each implementation Issue", content);
+        Assert.Contains("integrated audit against its linked plan", content);
+        Assert.Contains("assimilation brief", content);
+    }
+
+    [Fact]
     public void GenerateAboutDynadocsMd_DoesNotRestoreRetiredWorkModel()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
@@ -407,21 +417,21 @@ public class TemplateGeneratorTests
     {
         // _understand.md should link to guides, reference, project (but not understand)
         var understandContent = TemplateGenerator.GenerateUnderstandMetaMd();
-        Assert.Contains("../guides/_guides.md", understandContent);
-        Assert.Contains("../reference/_reference.md", understandContent);
-        Assert.Contains("../project/_project.md", understandContent);
+        Assert.Contains("../guides/_index.md", understandContent);
+        Assert.Contains("../reference/_index.md", understandContent);
+        Assert.Contains("../project/_index.md", understandContent);
 
         // _guides.md should link to understand, reference, project (but not guides)
         var guidesContent = TemplateGenerator.GenerateGuidesMetaMd();
-        Assert.Contains("../understand/_understand.md", guidesContent);
-        Assert.Contains("../reference/_reference.md", guidesContent);
-        Assert.Contains("../project/_project.md", guidesContent);
+        Assert.Contains("../understand/_index.md", guidesContent);
+        Assert.Contains("../reference/_index.md", guidesContent);
+        Assert.Contains("../project/_index.md", guidesContent);
 
         // _reference.md should link to understand, guides, project (but not reference)
         var referenceContent = TemplateGenerator.GenerateReferenceMetaMd();
-        Assert.Contains("../understand/_understand.md", referenceContent);
-        Assert.Contains("../guides/_guides.md", referenceContent);
-        Assert.Contains("../project/_project.md", referenceContent);
+        Assert.Contains("../understand/_index.md", referenceContent);
+        Assert.Contains("../guides/_index.md", referenceContent);
+        Assert.Contains("../project/_index.md", referenceContent);
 
         // _project.md links to the durable knowledge references used from this folder.
         var projectContent = TemplateGenerator.GenerateProjectMetaMd();
@@ -431,6 +441,46 @@ public class TemplateGeneratorTests
 
     #endregion
 
+    #region Hub Tests
+
+    [Fact]
+    public void GenerateHubIndex_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateHubIndex("guides", "How-to guides for development", "guides");
+
+        Assert.Contains("# Guides", content);
+        Assert.Contains("How-to guides for development", content);
+        Assert.Contains("area: guides", content);
+        Assert.Contains("type: hub", content);
+    }
+
+    [Fact]
+    public void GenerateHubIndex_CapitalizesFirstLetter()
+    {
+        var content = TemplateGenerator.GenerateHubIndex("reference", "API reference", "reference");
+
+        Assert.Contains("# Reference", content);
+    }
+
+    [Fact]
+    public void GenerateProjectSubfolderHub_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateProjectSubfolderHub("tasks", "Task tracking");
+
+        Assert.Contains("# Tasks", content);
+        Assert.Contains("Task tracking", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: hub", content);
+    }
+
+    [Fact]
+    public void GenerateProjectSubfolderHub_CapitalizesFirstLetter()
+    {
+        var content = TemplateGenerator.GenerateProjectSubfolderHub("changelog", "Change history");
+
+        Assert.Contains("# Changelog", content);
+    }
+
     [Fact]
     public void GenerateFutureFeaturesMetaMd_ReturnsValidContent()
     {
@@ -438,10 +488,12 @@ public class TemplateGeneratorTests
         Assert.NotEmpty(content);
     }
 
-    // The installed executable's embedded snapshot is the only implicit shipped source. A consumer
-    // directory that merely resembles dydo's source tree cannot alter its template inventory.
+    // Dev-mode parity: run from a source tree and the Templates/ folder on disk is the shipped set,
+    // not the embedded snapshot the running assembly happens to carry. A template added there is
+    // discovered and an embedded one deleted there is gone — otherwise editing a template would
+    // require a rebuild before sync could see it.
     [Fact]
-    public void GetBuiltInSkillTemplateNames_InASourceLookingDirectory_UsesOnlyEmbeddedInventory()
+    public void GetBuiltInSkillTemplateNames_InASourceTree_FollowsTheTemplatesFolderOnDisk()
     {
         var originalDir = Directory.GetCurrentDirectory();
         var root = Path.Combine(Path.GetTempPath(), "dydo-devmode-" + Guid.NewGuid().ToString("N")[..8]);
@@ -457,9 +509,9 @@ public class TemplateGeneratorTests
 
             var names = TemplateGenerator.GetBuiltInSkillTemplateNames();
 
-            Assert.DoesNotContain("skill-source-only.template.md", names);
+            Assert.Contains("skill-source-only.template.md", names);
             Assert.Contains("skill-reviewer.template.md", names);
-            Assert.Contains("skill-implementer.template.md", names);
+            Assert.DoesNotContain("skill-implementer.template.md", names);
         }
         finally
         {
@@ -479,4 +531,5 @@ public class TemplateGeneratorTests
         throw new DirectoryNotFoundException("Could not find the DynaDocs repository root.");
     }
 
+    #endregion
 }

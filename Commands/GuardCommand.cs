@@ -749,21 +749,9 @@ public static partial class GuardCommand
         try
         {
             var basePath = Environment.CurrentDirectory;
-            var configService = new ConfigService();
-            var configPath = configService.FindConfigFile(basePath);
-            if (configPath == null)
-                return;
+            var timestampPath = Path.Combine(basePath, "dydo", "_system", ".local", "last-validation");
 
-            var projectRoot = Path.GetDirectoryName(configPath)!;
-            var config = configService.LoadConfig(basePath);
-            var dydoRoot = config == null
-                ? null
-                : Path.Combine(projectRoot, config.Structure.Root);
-            var timestampPath = dydoRoot == null
-                ? null
-                : Path.Combine(dydoRoot, "_system", ".local", "last-validation");
-
-            if (timestampPath != null && File.Exists(timestampPath))
+            if (File.Exists(timestampPath))
             {
                 var lastRun = File.GetLastWriteTimeUtc(timestampPath);
                 if ((DateTime.UtcNow - lastRun).TotalHours < 24)
@@ -771,7 +759,7 @@ public static partial class GuardCommand
             }
 
             var validator = new ValidationService();
-            var issues = validator.ValidateSystem(projectRoot);
+            var issues = validator.ValidateSystem(basePath);
 
             if (issues.Count > 0)
             {
@@ -782,12 +770,9 @@ public static partial class GuardCommand
                 Console.Error.WriteLine();
             }
 
-            if (dydoRoot != null)
-            {
-                // Ensure .local/ dir exists (absent in worktrees)
-                PathUtils.EnsureLocalDirExists(dydoRoot);
-                File.WriteAllText(timestampPath!, DateTime.UtcNow.ToString("O"));
-            }
+            // Ensure .local/ dir exists (absent in worktrees)
+            PathUtils.EnsureLocalDirExists(Path.Combine(basePath, "dydo"));
+            File.WriteAllText(timestampPath, DateTime.UtcNow.ToString("O"));
         }
         catch
         {

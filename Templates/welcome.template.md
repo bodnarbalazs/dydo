@@ -24,28 +24,28 @@ If you're new here:
 
 ## Documentation Sections
 
-### [Understand](./understand/_understand.md)
+### [Understand](./understand/_index.md)
 
 Why things exist and how they fit together.
 
 - Domain concepts
 - System architecture
 
-### [Guides](./guides/_guides.md)
+### [Guides](./guides/_index.md)
 
 How to build things correctly.
 
 - Development patterns
 - Workflow guides
 
-### [Reference](./reference/_reference.md)
+### [Reference](./reference/_index.md)
 
 Technical details for quick lookup.
 
 - API specifications
 - Configuration options
 
-### [Project](./project/_project.md)
+### [Project](./project/_index.md)
 
 How we work on this project.
 

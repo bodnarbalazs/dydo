@@ -54,7 +54,7 @@ frontmatter itself does not enforce reads.
 | `decision` | Decision record | Context → Decision → Consequences |
 | `pitfall` | Known gotcha | Problem → Symptom → Solution |
 | `changelog` | Change log entry | What changed → Why → Impact |
-| `folder-meta` | Describe a folder's purpose | Title → Folder description |
+| `folder-meta` | Describe a folder's purpose | Title → Summary paragraph |
 
 ---
 
@@ -62,7 +62,7 @@ frontmatter itself does not enforce reads.
 
 - **Files:** `kebab-case.md` (lowercase, hyphens)
 - **Folders:** `kebab-case/` (lowercase, hyphens)
-- **Navigation pages:** authored `_folder.md` files where a folder needs navigation
+- **Hub files:** `_index.md` in each folder
 - **Meta files:** `_foldername.md` in direct children of main folders (e.g., `guides/api/_api.md`)
 
 Examples:
@@ -74,21 +74,19 @@ Examples:
 
 ## Structure
 
-### Title and Optional Summary
+### Title and Summary
 
-Every document needs an H1 title. The content after it may begin with a section, a list, or an
-optional summary:
+Every doc must start with:
 
 ```markdown
 # Title
 
-An optional summary of what this document covers.
+A 1-3 sentence summary of what this document covers.
 ```
 
-When useful, a summary helps agents quickly determine if this doc is relevant. Neither `dydo check`
-nor `dydo fix` requires one.
+The summary helps agents quickly determine if this doc is relevant.
 
-**Note:** Folder meta files (`_foldername.md`) are optional authored navigation pages.
+**Note:** For folder meta files (`_foldername.md`), the first sentence of the summary is automatically extracted and displayed in hub file links.
 
 ### Related Section
 
@@ -127,10 +125,11 @@ dydo fix                # Auto-fix what's possible
 |------|----------------|
 | Frontmatter | Required fields present, values valid |
 | Naming | Files and folders are kebab-case |
-| Title | H1 title exists |
+| Summary | Title exists, summary paragraph follows |
 | Links | Relative paths, no broken links |
-| Navigation pages | Optional authored `_folder.md` pages |
-| Folder Meta Files | Optional authored `_foldername.md` pages |
+| Hub Files | Each folder has `_index.md` |
+| Folder Meta Files | Direct children of main folders have `_foldername.md` |
+| Orphans | Every doc is linked from somewhere |
 
 ---
 

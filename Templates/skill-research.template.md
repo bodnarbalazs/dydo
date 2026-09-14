@@ -18,13 +18,12 @@ Follow every claim back to the source that owns it, and search wide enough to kn
 1. The question as the invoker stated it, and the destination it named for the findings.
 2. [about.md](../../../understand/about.md)
 3. [architecture.md](../../../understand/architecture.md)
-4. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 {{include:extra-must-reads}}
 
 ## Boundary
 
-A co-thinker, admiral, or Issue Captain sends you after one fact a choice waits on,
+A co-thinker, Project Planner, admiral, or Issue Captain sends you after one fact a choice waits on,
 before anyone creates a human-facing Question Issue; if the facts settle it, no Question Issue
 exists. Facts are your job; the choice they inform stays with the invoker and the human. The
 question you were given is the whole of your scope: an adjacent question you uncover is a line in
@@ -57,7 +56,7 @@ everything else you read.
 
 ## Return
 
-Given a Wayfinding Issue, post the report as a named evidence comment using the `DECIDED` form in the
-communication protocol; the map holder closes the Issue and updates the map. Otherwise write it as
-`dydo/agents/workspace/research-<slug>.md`, the shared scratch folder git ignores. Either way,
-report the answer, destination, and what stayed unsettled.
+Given a Wayfinding Issue, post the report as a comment on it; the map holder closes the Issue and
+updates the map. Otherwise write it as `dydo/agents/workspace/research-<slug>.md`, the shared
+scratch folder git ignores. Either way, report back the one-line answer, the destination, and what
+stayed unsettled, so the invoker can act without opening the report.

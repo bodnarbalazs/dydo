@@ -46,7 +46,7 @@ public class IndexGeneratorTests
     }
 
     [Fact]
-    public void Generate_ShowsSectionLinkWhenAuthoredSectionExists()
+    public void Generate_ShowsHubLinkWhenHubExists()
     {
         // Arrange
         var generator = new IndexGenerator();
@@ -54,9 +54,9 @@ public class IndexGeneratorTests
         {
             new DocFile
             {
-                FilePath = "/test/understand/_understand.md",
-                RelativePath = "understand/_understand.md",
-                FileName = "_understand.md",
+                FilePath = "/test/understand/_index.md",
+                RelativePath = "understand/_index.md",
+                FileName = "_index.md",
                 Content = "# Understanding"
             }
         };
@@ -66,11 +66,11 @@ public class IndexGeneratorTests
         var result = generator.Generate(docs, basePath);
 
         // Assert
-        Assert.Contains("[Understanding the Platform](./understand/_understand.md)", result);
+        Assert.Contains("[Understanding the Platform](./understand/_index.md)", result);
     }
 
     [Fact]
-    public void Generate_ShowsFolderNotFoundWhenSectionPageMissing()
+    public void Generate_ShowsFolderNotFoundWhenHubMissing()
     {
         // Arrange
         var generator = new IndexGenerator();
@@ -82,24 +82,5 @@ public class IndexGeneratorTests
 
         // Assert
         Assert.Contains("*understand/ folder not found*", result);
-    }
-
-    [Fact]
-    public void Generate_ShowsPopulatedSectionWithoutMissingNavigationLink()
-    {
-        var result = new IndexGenerator().Generate(
-        [
-            new DocFile
-            {
-                FilePath = "/test/understand/about.md",
-                RelativePath = "understand/about.md",
-                FileName = "about.md",
-                Content = "# About"
-            }
-        ], "/test");
-
-        Assert.Contains("Core concepts, domain knowledge, architecture", result);
-        Assert.DoesNotContain("understand/ folder not found", result);
-        Assert.DoesNotContain("./understand/_understand.md", result);
     }
 }

@@ -50,10 +50,11 @@ dydo fix
 | Error | Recovery |
 |---|---|
 | Missing frontmatter | Add the required `area` and `type` fields. |
-| Missing title | Add an H1 title. An opening summary is optional. |
+| Missing summary | Add a plain summary paragraph immediately after the H1. |
 | Bad filename | Rename to kebab-case, or let `dydo fix` handle a safe rename. |
 | Broken link | Correct or remove the relative target. |
-| Unreachable document | Add a useful authored navigation or durable-parent link. |
+| Missing hub or folder metadata | Run `dydo fix`, then review its diff. |
+| Orphan document | Link it from the appropriate hub or durable parent. |
 
 The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical
 evidence is needed; do not recreate repository work records to address a current problem.

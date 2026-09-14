@@ -121,8 +121,7 @@ public class CodexSyncArtifactsE2ETests : IntegrationTestBase
             var name = Path.GetFileNameWithoutExtension(toml);
             Assert.DoesNotContain(content.Split('\n'), line => line.TrimStart().StartsWith("tools"));
             Assert.Contains($"name = \"{name}\"", content);
-            Assert.DoesNotContain(content.Split('\n'), line => line.StartsWith("model = ", StringComparison.Ordinal));
-            Assert.DoesNotContain("model_reasoning_effort", content);
+            Assert.Contains("model = \"", content);
             Assert.Contains("developer_instructions = \"\"\"", content);
         }
     }

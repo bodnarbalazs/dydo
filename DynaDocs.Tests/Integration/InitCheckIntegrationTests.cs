@@ -43,11 +43,11 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         AssertDirectoryExists("dydo/agents");
         AssertDirectoryExists("dydo/_assets");
 
-        // Folder hubs are optional author-owned pages; init does not create them.
-        AssertFileNotExists("dydo/understand/_index.md");
-        AssertFileNotExists("dydo/guides/_index.md");
-        AssertFileNotExists("dydo/reference/_index.md");
-        AssertFileNotExists("dydo/project/_index.md");
+        // Assert - Hub index files exist
+        AssertFileExists("dydo/understand/_index.md");
+        AssertFileExists("dydo/guides/_index.md");
+        AssertFileExists("dydo/reference/_index.md");
+        AssertFileExists("dydo/project/_index.md");
 
         // Assert - Foundation docs exist
         AssertFileExists("dydo/understand/about.md");
@@ -144,7 +144,7 @@ public class InitCheckIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Check_AllowsDirectChildWithoutMetaFile()
+    public async Task Check_ReportsMissingMetaFile()
     {
         // Arrange
         var initResult = await InitProjectAsync("none");
@@ -157,13 +157,13 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         // Act
         var checkResult = await CheckAsync(DydoDir);
 
-        // Assert - folder-meta pages are optional authored navigation.
+        // Assert - Should report missing meta file
         var output = checkResult.Stdout + checkResult.Stderr;
-        Assert.DoesNotContain("_testing.md", output);
+        Assert.Contains("_testing.md", output);
     }
 
     [Fact]
-    public async Task Check_AcceptsFolderWithOptionalMetaFile()
+    public async Task Check_AcceptsFolderWithMetaFile()
     {
         // Arrange
         var initResult = await InitProjectAsync("none");

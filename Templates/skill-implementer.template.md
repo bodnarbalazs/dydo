@@ -14,14 +14,12 @@ good.
 
 ## Must-Reads
 
-1. The owning Linear Issue: outcome, owned paths, exact gates, its `## Spec` and `## Plan`, the
-   specify SHA, and the review block when a FAIL sent you.
+1. The owning Linear Issue: outcome, owned paths, exact gates, and its `## Spec` and `## Plan`.
 2. The governing Project plan at its linked commit, when the Issue names one.
 3. [coding-standards.md](../../../guides/coding-standards.md), this is your Bible.
 4. [about.md](../../../understand/about.md)
 5. [architecture.md](../../../understand/architecture.md)
 6. [working-tree-contract.md](../../../guides/working-tree-contract.md)
-7. [Communication and evidence](../../../reference/linear-workspace-standard.md#communication-and-evidence) — read only this section for the communication protocol; do not preload the whole standard.
 
 {{include:extra-must-reads}}
 
@@ -33,15 +31,6 @@ Captain's call: report it and wait. You write code and tests in the owned paths;
 status and integration; a fresh reviewer owns the verdict. Proof-only Issues keep source read-only.
 
 ## Method
-
-For a Merge, follow its spec instead of the red/green slice: read both pinned parents, perform the
-merge with its prescribed resolutions, preserve the merge commit and run the combined gates. A
-conflict the spec did not settle is a hand-raise. Return both parents and the merge SHA for review.
-
-For a proof-only assignment, replace the red/green slice with the one test that decides the
-hypothesis, keeping source read-only.
-Commit the test and its observation: red when confirmed, otherwise `not reproduced` or `inconclusive`
-with the reason. This mode proves the problem; it does not make the test green by fixing product code.
 
 1. **Take the plan.** Restate outcome, scenarios, owned paths, gates and steps in your own words, and
    check you are on the branch the Issue names. Done when no step ahead rests on a crossroads the
@@ -70,7 +59,8 @@ a mock belongs.
 
 ## Return
 
-To the Issue Captain, use the `IMPLEMENTED` form in the communication protocol. Name the changed
-files, behavior proof, gaps, and any adjacent finding; retain full command output once as linked
-evidence. For a hypothesis: `confirmed`, `not reproduced` or `inconclusive`, with the observation
-that decided it.
+To the Issue Captain: the Issue key; the SHA the work ends on; the changed files; each scenario and
+contract line with the test or gate that proves it, or named as a gap; each test added or changed,
+with its claim and seam; every gate's command and real output; and any adjacent finding, for the
+Captain to route. For a hypothesis: `confirmed`, `not reproduced` or `inconclusive`, with the
+observation that decided it.

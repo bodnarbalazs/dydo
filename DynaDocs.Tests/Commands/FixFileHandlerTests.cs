@@ -2,7 +2,6 @@ namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
 using DynaDocs.Models;
-using DynaDocs.Services;
 
 public class FixFileHandlerTests : IDisposable
 {
@@ -168,7 +167,7 @@ public class FixFileHandlerTests : IDisposable
     }
 
     [Fact]
-    public void FindManualFixes_MissingSummary_DoesNotRequestRepair()
+    public void FindManualFixes_MissingSummary_ReportsFixNeeded()
     {
         var doc = CreateDocFile("docs/no-summary.md", "---\narea: test\n---\n");
         doc.HasFrontmatter = true;
@@ -176,29 +175,8 @@ public class FixFileHandlerTests : IDisposable
 
         var fixes = FixFileHandler.FindManualFixes([doc]);
 
-        Assert.Empty(fixes);
-    }
-
-    [Theory]
-    [InlineData("## Details\n\nUseful content.")]
-    [InlineData("A useful navigation description.")]
-    public void Fix_OptionalOpeningProse_PreservesDocumentBytes(string body)
-    {
-        var created = CreateDocFile("docs/valid.md",
-            "---\narea: general\ntype: reference\n---\n\n# Document\n\n" + body);
-        var doc = new MarkdownParser().Parse(created.FilePath, _testDir);
-        var originalBytes = File.ReadAllBytes(doc.FilePath);
-
-        var (renamed, conflicts) = FixFileHandler.FixNaming([doc]);
-        var (converted, linkFixes) = FixFileHandler.FixWikilinks([doc], [doc]);
-        var manualFixes = FixFileHandler.FindManualFixes([doc]);
-
-        Assert.Equal(0, renamed);
-        Assert.Empty(conflicts);
-        Assert.Equal(0, converted);
-        Assert.Empty(linkFixes);
-        Assert.Empty(manualFixes);
-        Assert.Equal(originalBytes, File.ReadAllBytes(doc.FilePath));
+        Assert.Single(fixes);
+        Assert.Contains("Add summary", fixes[0]);
     }
 
     [Fact]

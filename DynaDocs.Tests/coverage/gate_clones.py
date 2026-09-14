@@ -1,6 +1,7 @@
 """Pinned clone detection with explicit per-source native eligibility evidence."""
 import hashlib
 import json
+import os
 from collections import Counter
 from pathlib import Path
 
@@ -58,14 +59,25 @@ def _audit(runner, source):
 
 
 def _findings(runner, duplicates, paths):
+    root_text = str(runner.root)
+    if os.name == 'nt':
+        root_text = root_text.removeprefix('\\\\?\\')
+    root = Path(root_text).resolve(strict=True)
+    identities = {}
+    for path in paths:
+        source = (root / path).resolve(strict=True)
+        source.relative_to(root)
+        identities[source] = path
     findings = []
     for clone in duplicates:
         pair = []
         for key in ('firstFile', 'secondFile'):
             fragment = clone[key]
-            filename = fragment['name'].removeprefix('\\\\?\\')
-            relative = Path(filename).resolve().relative_to(runner.root).as_posix()
-            if relative not in paths or fragment['start'] < 1 or fragment['end'] < fragment['start']:
+            filename = fragment['name']
+            if os.name == 'nt':
+                filename = filename.removeprefix('\\\\?\\')
+            relative = identities.get(Path(filename).resolve(strict=True))
+            if relative is None or fragment['start'] < 1 or fragment['end'] < fragment['start']:
                 raise ValueError('Native clone has an unknown source identity/span')
             pair.append({'path': relative, 'start': fragment['start'], 'end': fragment['end']})
         if clone['lines'] < 15 or clone['tokens'] < 100:

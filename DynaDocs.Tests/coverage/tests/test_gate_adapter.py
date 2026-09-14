@@ -385,6 +385,31 @@ class PublishedProvenanceTests(unittest.TestCase):
             self.assertEqual((Path(folder) / "other.json").as_posix(),
                              gate_adapter._report_relative(Path(folder) / "other.json", run))
 
+    def test_projection_uses_resolved_report_and_artifact_identities(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "long-run"
+            alias = Path(folder) / "run-alias"
+            artifact = write_file(target, "raw/a.json", "{}")
+            if os.name == "nt":
+                created = subprocess.run(
+                    [os.environ["COMSPEC"], "/d", "/c", "mklink", "/J", str(alias), str(target)],
+                    capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+            else:
+                alias.symlink_to(target, target_is_directory=True)
+
+            artifact_spelling = "\\\\?\\" + str(artifact) if os.name == "nt" else artifact
+            self.assertEqual("raw/a.json", gate_adapter._report_relative(artifact_spelling, alias))
+            foreign = write_file(Path(folder), "foreign.json", "{}")
+            self.assertEqual(foreign.resolve().as_posix(),
+                             gate_adapter._report_relative(foreign, alias))
+            self.assertEqual(foreign.resolve().as_posix(), gate_adapter._report_relative(
+                target / "raw/../../foreign.json", alias))
+            for value, run in ((target / "missing.json", alias),
+                               (artifact, Path(folder) / "missing-run")):
+                with self.subTest(value=value, run=run), self.assertRaises(OSError):
+                    gate_adapter._report_relative(value, run)
+
     def test_a_collector_owns_the_raw_files_it_writes_beside_its_command_log(self):
         from gate_run import CommandLog
         with tempfile.TemporaryDirectory() as folder:

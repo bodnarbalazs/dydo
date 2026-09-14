@@ -117,7 +117,12 @@ def _report_root(raw):
 
 
 def _report_relative(value, run):
-    path = Path(value)
+    path_text, run_text = str(value), str(run)
+    if os.name == "nt":
+        path_text = path_text.removeprefix("\\\\?\\")
+        run_text = run_text.removeprefix("\\\\?\\")
+    path = Path(path_text).resolve(strict=True)
+    run = Path(run_text).resolve(strict=True)
     if not path.is_relative_to(run):
         return path.as_posix()
     return path.relative_to(run).as_posix()

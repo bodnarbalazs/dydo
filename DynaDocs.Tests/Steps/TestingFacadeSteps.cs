@@ -19,6 +19,11 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
     [Given(@"^a\ recognized\ operation\ whose\ selected\ work\ is\ ""an\ interrupted\ adapter\ completed\ its\ cleanup""$")]
     [Given(@"^a\ recognized\ operation\ whose\ selected\ work\ is\ ""invalid,\ missing,\ malformed,\ unsupported\ or\ unavailable""$")]
     [Given(@"^a\ valid\ project\ testing\ manifest$")]
+    [Given(@"^the\ maintained\ and\ portable\ project\ runners\ are\ each\ exercised\ from\ a\ copy\ outside\ Git$")]
+    [Given(@"^each\ copied\ runner\ is\ reached\ through\ a\ deterministic\ non\-canonical\ spelling\ of\ its\ actual\ directory$")]
+    [Given(@"^each\ adjacent\ manifest\ declares\ a\ relative\ artifact\ root\ contained\ by\ that\ directory$")]
+    [Given(@"^each\ adjacent\ manifest\ declares\ a\ repository\-relative\ artifact\ root\ whose\ resolved\ directory\ identity\ is\ outside\ that\ copied\ runner's\ root$")]
+    [Given(@"^each\ adjacent\ manifest\ declares\ ""<artifact\-root>""\ as\ its\ artifactRoot$")]
     [Given(@"^configured,\ unavailable\ and\ invalid\ test\ rows\ in\ the\ manifest$")]
     [Given(@"^configured\ and\ unavailable\ capabilities\ in\ the\ manifest$")]
     [Given(@"^configured\ tests\ for\ the\ ""dotnet"",\ ""frontend""\ and\ ""python""\ stacks$")]
@@ -76,6 +81,15 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
     [Then(@"^every\ stack\ has\ exactly\ name,\ kind,\ cwd,\ isolation\ and\ capabilities$")]
     [Then(@"^every\ valid\ configured\ selected\ command\ runs$")]
     [Then(@"^every\ valid\ configured\ test\ command\ runs\ once$")]
+    [Then(@"^each\ configured\ test\ command\ runs\ once$")]
+    [Then(@"^each\ runner\ writes\ one\ JSON\ result\ beneath\ its\ canonical\ artifact\ root$")]
+    [Then(@"^each\ result\ reports\ the\ configured\ row\ as\ passed$")]
+    [Then(@"^each\ command\ succeeds$")]
+    [Then(@"^no\ configured\ test\ command\ runs\ for\ either\ runner$")]
+    [Then(@"^neither\ runner\ writes\ a\ JSON\ result$")]
+    [Then(@"^each\ diagnostic\ identifies\ artifactRoot\ as\ not\ repository\-contained$")]
+    [Then(@"^each\ diagnostic\ identifies\ the\ artifactRoot\ placeholder$")]
+    [Then(@"^each\ command\ exits\ 2$")]
     [Then(@"^git\ worktree\ list\ no\ longer\ contains\ the\ temporary\ path$")]
     [Then(@"^help\ explains\ stack\ selection,\ defaults,\ native\ test\ arguments,\ result\ artifacts,\ exit\ 0\ for\ pass,\ 1\ for\ measured\ failure,\ 2\ for\ invalid\ or\ unavailable\ work,\ and\ 130\ for\ interruption\ after\ adapter\ cleanup$")]
     [Then(@"^help\ is\ printed$")]
@@ -179,6 +193,7 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
     [When(@"^I\ run\ ""test\ \-\-stack\ frontend""$")]
     [When(@"^I\ run\ ""test\ \-\-stack\ node\ \-\-\ \-\-\ 'árvíztűrő\ tükörfúrógép'""$")]
     [When(@"^I\ run\ the\ requested\ operation$")]
+    [When(@"^I\ run\ ""all""\ through\ each\ copied\ runner$")]
     [When(@"^the\ facade\ observes\ the\ adapter's\ registered\ temporary\ worktree\ path\ and\ receives\ an\ interrupt$")]
     [When(@"^the\ operation\ completes$")]
     [When(@"^the\ operation\ completes\ with\ pass,\ failure,\ unavailability\ or\ interruption$")]
@@ -245,6 +260,9 @@ public sealed class TestingFacadeSteps(ScenarioContext context)
         "A stack without a declared suite verdict keeps its own test execution" => "test_undeclared_or_unavailable_coverage_keeps_the_plain_test_row",
         "Independent work is exhausted before aggregation" => "test_aggregation",
         "A started operation leaves one machine-readable result" => "test_result_artifact",
+        "Equivalent root spellings preserve a contained artifact destination" => "test_artifact_destination_identity_accepts_equivalent_root_spelling",
+        "A relative artifact destination whose resolved identity is foreign fails closed" => "test_artifact_destination_identity_rejects_foreign_resolved_identity",
+        "An angle-placeholder artifact destination fails closed" => "test_artifact_destination_identity_rejects_angle_placeholder",
         "Schema 1 has one small concrete manifest and result shape" => "test_schema",
         "The portable three-stack example is visibly unfinished" => "test_portable",
         "Partial adoption runs valid peers without hiding remaining work" => "test_partial_all",

@@ -191,6 +191,34 @@ Feature: One project-local interface runs tests and assurance honestly
     And each result records stack, capability, state, argv, working directory, isolation requirement, adapter evidence, child exit, artifacts and reason as applicable
     And the human-readable summary prints that result path
 
+  Scenario: Equivalent root spellings preserve a contained artifact destination
+    Given the maintained and portable project runners are each exercised from a copy outside Git
+    And each copied runner is reached through a deterministic non-canonical spelling of its actual directory
+    And each adjacent manifest declares a relative artifact root contained by that directory
+    When I run "all" through each copied runner
+    Then each configured test command runs once
+    And each runner writes one JSON result beneath its canonical artifact root
+    And each result reports the configured row as passed
+    And each command succeeds
+
+  Scenario: A relative artifact destination whose resolved identity is foreign fails closed
+    Given the maintained and portable project runners are each exercised from a copy outside Git
+    And each adjacent manifest declares a repository-relative artifact root whose resolved directory identity is outside that copied runner's root
+    When I run "all" through each copied runner
+    Then no configured test command runs for either runner
+    And neither runner writes a JSON result
+    And each diagnostic identifies artifactRoot as not repository-contained
+    And each command exits 2
+
+  Scenario: An angle-placeholder artifact destination fails closed
+    Given the maintained and portable project runners are each exercised from a copy outside Git
+    And each adjacent manifest declares "<artifact-root>" as its artifactRoot
+    When I run "all" through each copied runner
+    Then no configured test command runs for either runner
+    And neither runner writes a JSON result
+    And each diagnostic identifies the artifactRoot placeholder
+    And each command exits 2
+
   Scenario: Schema 1 has one small concrete manifest and result shape
     Given this schema 1 manifest shape:
       """

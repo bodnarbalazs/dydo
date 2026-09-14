@@ -1,10 +1,14 @@
 """A native source omission needs its own current line/token eligibility proof."""
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import gate_clones
 from gate_clones import collect_clones, eligibility
 from gate_collect import Collectors
 from gate_run import CommandLog
@@ -53,6 +57,59 @@ class NativeCloneCollectionTests(unittest.TestCase):
 
     def measured(self, names):
         return self.runner([{'path': name, 'language': 'python'} for name in names])
+
+    def test_projection_uses_resolved_repository_and_source_identities(self):
+        target = self.root / 'long-repository'
+        alias = self.root / 'repository-alias'
+        target.mkdir()
+        first = target / 'first.py'
+        second = target / 'second.py'
+        first.write_text(DUPLICATED, encoding='utf-8')
+        second.write_text(DUPLICATED, encoding='utf-8')
+        if os.name == 'nt':
+            created = subprocess.run(
+                [os.environ['COMSPEC'], '/d', '/c', 'mklink', '/J', str(alias), str(target)],
+                capture_output=True, text=True, encoding='utf-8')
+            self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+        else:
+            alias.symlink_to(target, target_is_directory=True)
+        runner = SimpleNamespace(root=alias)
+
+        def duplicate(left, right):
+            return {'firstFile': {'name': str(left), 'start': 1, 'end': 15},
+                    'secondFile': {'name': str(right), 'start': 2, 'end': 16},
+                    'lines': 15, 'tokens': 100}
+
+        first_spelling = '\\\\?\\' + str(first).swapcase() if os.name == 'nt' else first
+        finding = gate_clones._findings(
+            runner, [duplicate(first_spelling, second)], ['first.py', 'second.py'])[0]
+
+        self.assertEqual(['first.py', 'second.py'],
+                         [fragment['path'] for fragment in finding['fragments']])
+        self.assertEqual([(1, 15), (2, 16)],
+                         [(fragment['start'], fragment['end'])
+                          for fragment in finding['fragments']])
+        self.assertEqual((15, 100), (finding['lines'], finding['tokens']))
+        foreign = self.root / 'foreign.py'
+        foreign.write_text(DUPLICATED, encoding='utf-8')
+        for root, source in ((alias, foreign), (alias, target / 'missing.py'),
+                             (self.root / 'missing-root', first)):
+            with self.subTest(root=root, source=source), self.assertRaises((OSError, ValueError)):
+                gate_clones._findings(
+                    SimpleNamespace(root=root), [duplicate(source, second)],
+                    ['first.py', 'second.py'])
+
+        escape = target / 'escape'
+        if os.name == 'nt':
+            created = subprocess.run(
+                [os.environ['COMSPEC'], '/d', '/c', 'mklink', '/J', str(escape), str(self.root)],
+                capture_output=True, text=True, encoding='utf-8')
+            self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+        else:
+            escape.symlink_to(self.root, target_is_directory=True)
+        with self.assertRaises(ValueError):
+            gate_clones._findings(
+                runner, [duplicate(first, second)], ['escape/foreign.py', 'second.py'])
 
     def test_batch_duplicate_and_per_source_eligibility_are_measured_together(self):
         answer = collect_clones(self.measured(['first.py', 'second.py', 'small.py']))

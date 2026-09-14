@@ -128,6 +128,13 @@ def _report_relative(value, run):
     return path.relative_to(run).as_posix()
 
 
+def _report_location(value, run):
+    """Project an output location whose existing parent supplies its identity."""
+    path = Path(value)
+    parent = _report_relative(path.parent, run)
+    return (Path(parent) / path.name).as_posix()
+
+
 def _raw_artifacts(paths, run):
     return [{"path": _report_relative(path, run), "sha256": _sha256(path)}
             for path in sorted(paths) if Path(path).is_file()]
@@ -382,7 +389,7 @@ def collect_python_coverage(root, raw, inventory):
     started = time.monotonic()
     child = native_collect(root, raw, sources, argv)
     commands = [_inherited_row("python-coverage", argv, root, child, started)]
-    facts = {"child_exit": child, "raw": _report_relative(raw, run)}
+    facts = {"child_exit": child, "raw": _report_location(raw, run)}
     if child != 0:
         return _coverage_report("python-coverage", facts,
                                 [{"gate": "functional", "child_exit": child}], [],
@@ -420,7 +427,7 @@ def collect_node_coverage(root, raw, initial_fingerprint=None):
     child = run_coverage_command(argv, root)
     commands = [_inherited_row("javascript-coverage", argv, root, child, started)]
     integrity = repository_inputs(root, initial_fingerprint)
-    facts = {"child_exit": child, "raw": _report_relative(raw, run),
+    facts = {"child_exit": child, "raw": _report_location(raw, run),
              "repositoryInputs": integrity["facts"]}
     if child not in (0, 1):
         return _coverage_report(
@@ -456,7 +463,7 @@ def collect_dotnet_coverage(root, raw):
                 *_campaign_commands(evidence, run)]
     artifacts = _raw_artifacts([evidence / "joined.json", evidence / "commands.json",
                                 evidence / "coverage.opencover.xml", raw / "identities.json"], run)
-    facts = {"child_exit": child, "raw": _report_relative(raw, run)}
+    facts = {"child_exit": child, "raw": _report_location(raw, run)}
     if child not in (0, 1):
         return _coverage_report(
             "csharp-coverage", facts, [],

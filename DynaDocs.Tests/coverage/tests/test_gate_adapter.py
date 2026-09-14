@@ -380,10 +380,51 @@ class PublishedProvenanceTests(unittest.TestCase):
     def test_a_path_outside_the_report_directory_stays_absolute(self):
         with tempfile.TemporaryDirectory() as folder:
             run = Path(folder) / "run"
+            contained = write_file(run, "raw/a.json", "{}")
+            foreign = write_file(Path(folder), "other.json", "{}")
 
-            self.assertEqual("raw/a.json", gate_adapter._report_relative(run / "raw/a.json", run))
-            self.assertEqual((Path(folder) / "other.json").as_posix(),
-                             gate_adapter._report_relative(Path(folder) / "other.json", run))
+            self.assertEqual("raw/a.json", gate_adapter._report_relative(contained, run))
+            self.assertEqual(foreign.resolve().as_posix(),
+                             gate_adapter._report_relative(foreign, run))
+
+    def test_projection_uses_resolved_report_and_artifact_identities(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "long-run"
+            alias = Path(folder) / "run-alias"
+            artifact = write_file(target, "raw/a.json", "{}")
+            if os.name == "nt":
+                created = subprocess.run(
+                    [os.environ["COMSPEC"], "/d", "/c", "mklink", "/J", str(alias), str(target)],
+                    capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+            else:
+                alias.symlink_to(target, target_is_directory=True)
+
+            artifact_spelling = "\\\\?\\" + str(artifact).swapcase() if os.name == "nt" else artifact
+            self.assertEqual("raw/a.json", gate_adapter._report_relative(artifact_spelling, alias))
+            foreign = write_file(Path(folder), "foreign.json", "{}")
+            self.assertEqual(foreign.resolve().as_posix(),
+                             gate_adapter._report_relative(foreign, alias))
+            self.assertEqual(foreign.resolve().as_posix(), gate_adapter._report_relative(
+                target / "raw/../../foreign.json", alias))
+            escape = target / "escape"
+            if os.name == "nt":
+                created = subprocess.run(
+                    [os.environ["COMSPEC"], "/d", "/c", "mklink", "/J", str(escape), str(Path(folder))],
+                    capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(0, created.returncode, created.stdout + created.stderr)
+            else:
+                escape.symlink_to(Path(folder), target_is_directory=True)
+            self.assertEqual(foreign.resolve().as_posix(),
+                             gate_adapter._report_relative(escape / "foreign.json", alias))
+            for value, run in ((target / "missing.json", alias),
+                               (artifact, Path(folder) / "missing-run")):
+                with self.subTest(value=value, run=run), self.assertRaises(OSError):
+                    gate_adapter._report_relative(value, run)
+
+            missing_raw = target / "raw/missing-output"
+            self.assertEqual("raw/missing-output",
+                             gate_adapter._report_location(missing_raw, alias))
 
     def test_a_collector_owns_the_raw_files_it_writes_beside_its_command_log(self):
         from gate_run import CommandLog
@@ -667,6 +708,7 @@ class CoverageCampaignTests(unittest.TestCase):
     def test_a_failed_csharp_suite_is_a_functional_finding_before_any_join(self):
         with tempfile.TemporaryDirectory() as folder:
             root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            raw.parent.mkdir()
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
                 answer = gate_adapter.collect_dotnet_coverage(root, raw)

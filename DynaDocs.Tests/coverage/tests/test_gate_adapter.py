@@ -348,6 +348,35 @@ class PublishedProvenanceTests(unittest.TestCase):
             self.assertGreater(row["elapsedSeconds"], 0)
             self.assertEqual(str(run), row["cwd"])
 
+    def test_logged_commands_project_unlaunched_stream_destinations(self):
+        from gate_run import CommandLog
+        with tempfile.TemporaryDirectory() as folder:
+            run = Path(folder)
+            log = CommandLog(run, run / "raw/commands")
+            with self.assertRaises(OSError):
+                log.run("missing", [str(run / "missing-executable")])
+
+            rows = gate_adapter._logged_commands(log.rows, run)
+
+            self.assertEqual(1, len(rows))
+            self.assertEqual((None, "raw/commands/0000-missing.stdout", None,
+                              "raw/commands/0000-missing.stderr", None),
+                             (rows[0]["exit"], rows[0]["stdout"], rows[0]["stdoutSha256"],
+                              rows[0]["stderr"], rows[0]["stderrSha256"]))
+            self.assertIn("FileNotFoundError", log.rows[0]["error"])
+
+    def test_logged_commands_require_retained_streams_for_completed_commands(self):
+        from gate_run import CommandLog
+        with tempfile.TemporaryDirectory() as folder:
+            run = Path(folder)
+            log = CommandLog(run, run / "raw/commands")
+            log.run("probe", [sys.executable, "-c", "raise SystemExit(7)"])
+            self.assertEqual(7, log.rows[0]["exit_code"])
+            Path(log.rows[0]["stdout"]).unlink()
+
+            with self.assertRaises(OSError):
+                gate_adapter._logged_commands(log.rows, run)
+
     def test_campaign_command_rows_are_rebased_on_the_report_directory(self):
         with tempfile.TemporaryDirectory() as folder:
             run = Path(folder)

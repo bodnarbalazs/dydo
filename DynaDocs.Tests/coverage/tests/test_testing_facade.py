@@ -360,13 +360,15 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertEqual(argv, payload['results'][0]['argv'])
 
         resolver = runpy.run_path(str(self.runner))['resolve_executable']
+        tool_identity = tool.resolve()
         # On Windows this is POSIX control-flow evidence, not a native Linux run.
         with mock.patch.object(sys, 'platform', 'linux'), mock.patch('shutil.which') as which:
-            which.side_effect = lambda value, path=None: str(tool) if value == str(tool) else None
-            self.assertEqual(str(tool), resolver('./' + tool.name, working))
+            which.side_effect = (lambda value, path=None: value
+                                 if value in {str(tool), str(tool_identity)} else None)
+            self.assertEqual(str(tool_identity), resolver('./' + tool.name, working))
             self.assertIsNone(resolver(tool.name, working))
             self.assertEqual(str(tool), resolver(str(tool), working))
-            self.assertEqual([mock.call(str(tool), path=None), mock.call(tool.name, path=None),
+            self.assertEqual([mock.call(str(tool_identity), path=None), mock.call(tool.name, path=None),
                               mock.call(str(tool), path=None)], which.call_args_list)
 
     def test_unusable_result_destination_starts_no_child(self):

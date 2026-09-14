@@ -324,7 +324,7 @@ class C {
 
     def test_in_root_obj_compile_item_is_classified_generated(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             generated = root / "obj/Gen.cs"
             generated.parent.mkdir()
             generated.write_text("public sealed class Generated { public int Value() => 1; }")
@@ -385,7 +385,7 @@ class C {
 
     def test_portable_pdb_keeps_async_kickoff_and_adjacent_lambda_spans(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             project = root / "Subject.csproj"
             project.write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>')
             (root / "Source.cs").write_text('using System; using System.Threading.Tasks; public class C { int x = Environment.TickCount; public async Task<int> A() { await Task.Yield(); return x; } public int L() { Func<int> a = () => 1, b = () => 2; return a()+b(); } }')

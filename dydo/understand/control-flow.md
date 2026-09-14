@@ -48,9 +48,14 @@ a skill a session can load, so an admiral can direct one per Issue.
 | implementer | worker | agent | issue-captain | the Issue branch after the specify hop; a Merge Sub-issue; a proof-only lane | makes it work: scenario red, tests red, green, gates; `implement` hop. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis | the captain: SHA, files, trace of each contract line to its proof, gates (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
 | hardener | worker | agent | issue-captain, unless the captain's spec declares the hop empty | the Issue branch after the implement hop | makes it good: one-level static gates (HCRAP and cognitive complexity), mutation on code and example values, smells, depth; `harden` hop | the captain: SHA, what was cut or closed, gates incl. mutation (R) |
 | docs-writer | worker | agent | issue-captain, including the separate record Feature's captain for an inquisition | the delivery Issue branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
-| reviewer | worker, read-only | agent | admiral, issue-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
-| scout | worker, read-only, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
-| inquisitor | worker, read-only | agent | an inquisition's issue-captain | reads the inquisition branch | one part or one lens swept, refuting its own catch; hypotheses of what could go wrong | the inquisition captain: findings with proof, hypotheses (R) |
+| reviewer | worker, non-authoring | agent | admiral, issue-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
+| scout | worker, non-authoring, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
+| inquisitor | worker, non-authoring | agent | an inquisition's issue-captain | reads the inquisition branch | one part or one lens swept, refuting its own catch; hypotheses of what could go wrong | the inquisition captain: findings with proof, hypotheses (R) |
+
+For these three roles, non-authoring names the commission and method. It does not assert filesystem
+enforcement by the host: a native sandbox setting is a request until a live host check proves the
+restriction. Fresh commission, an isolated pinned candidate and independent review are the portable
+floor.
 
 ## 2. Skills that are not actors
 
@@ -628,8 +633,9 @@ flowchart LR
 
 On Claude Code a one-off steer needs no release: the human opens the captain's transcript from the
 subagent panel and sends it a message there. Anything longer is a release and a top-level captain.
-The steer is a Claude Code convenience; the floor on both hosts is the release, and DYD-88 says what
-Codex allows.
+The steer is a Claude Code convenience; the floor on both hosts is the release.
+[DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume,
+while passive wake and human-origin steering remain unestablished on Codex.
 
 ### 6.11 A Bug
 

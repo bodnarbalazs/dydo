@@ -142,13 +142,17 @@ def _raw_artifacts(paths, run):
 
 def _logged_commands(rows, run):
     """Ordered native command evidence with report-relative stream paths."""
-    return [{"name": row["name"], "argv": row["command"], "cwd": row["cwd"],
-             "environment": row.get("environment", {}), "exit": row.get("exit_code"),
-             "elapsedSeconds": row.get("duration_seconds"),
-             "stdout": _report_relative(row["stdout"], run),
-             "stdoutSha256": row.get("stdout_sha256"),
-             "stderr": _report_relative(row["stderr"], run),
-             "stderrSha256": row.get("stderr_sha256")} for row in rows]
+    commands = []
+    for row in rows:
+        project_stream = _report_location if row["exit_code"] is None else _report_relative
+        commands.append({"name": row["name"], "argv": row["command"], "cwd": row["cwd"],
+                         "environment": row.get("environment", {}), "exit": row["exit_code"],
+                         "elapsedSeconds": row.get("duration_seconds"),
+                         "stdout": project_stream(row["stdout"], run),
+                         "stdoutSha256": row.get("stdout_sha256"),
+                         "stderr": project_stream(row["stderr"], run),
+                         "stderrSha256": row.get("stderr_sha256")})
+    return commands
 
 
 def _supplied_environment():

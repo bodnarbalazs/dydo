@@ -181,7 +181,7 @@ class PythonCoverageTests(unittest.TestCase):
         tools = Path(__file__).resolve().parents[1]
         python = tools.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
         with tempfile.TemporaryDirectory() as folder:
-            work = Path(folder)
+            work = Path(folder).resolve()
             (work / "subject.py").write_text("def only():\n    return 1\n", encoding="utf-8")
             (work / "cold_start.py").write_text(_COLD_BOOTSTRAP, encoding="utf-8")
             (work / "unpinned.json").write_text('{"schema": 2}', encoding="utf-8")

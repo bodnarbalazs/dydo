@@ -55,7 +55,6 @@ public class FolderScaffolder : IFolderScaffolder
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
         ScaffoldTypesJson(basePath);
-        CopyBuiltInAssets(basePath);
 
         WriteIfNotExists(
             Path.Combine(basePath, "index.md"),
@@ -68,23 +67,6 @@ public class FolderScaffolder : IFolderScaffolder
     {
         foreach (var (relativePath, generate) in DocFiles)
             WriteIfNotExists(Path.Combine(basePath, relativePath), generate());
-    }
-
-    private void CopyBuiltInAssets(string basePath)
-    {
-        var destPath = Path.Combine(basePath, "_assets");
-        Directory.CreateDirectory(destPath);
-
-        foreach (var assetName in TemplateGenerator.GetAssetNames())
-        {
-            var destFile = Path.Combine(destPath, assetName);
-            if (!File.Exists(destFile))
-            {
-                var content = TemplateGenerator.ReadEmbeddedAsset(assetName);
-                if (content != null)
-                    File.WriteAllBytes(destFile, content);
-            }
-        }
     }
 
     private void ScaffoldTypesJson(string basePath)

@@ -18,6 +18,9 @@ from gate_run import checked_result, result
 
 CLEANUP_SECONDS = 30
 ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
+SUBJECT_NAME_CAP = 10
+_DOTNET_FAILURE = re.compile(r"(?m)^\s*Failed\s+(?P<name>\S.*?)\s+\[[^\]\r\n]*\]\s*$")
+_UNITTEST_FAILURE = re.compile(r"(?m)^(?:FAIL|ERROR):\s+(?P<name>\S+)(?:\s+\((?P<case>[^)\r\n]+)\))?")
 STATIC_GATE_INTERPRETER = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
 SUPPLIED_ENVIRONMENT = ("APPDATA", "NUGET_PACKAGES", ROW_DEADLINE_ENV)
 # A defective report is a broken measurement, never a policy outcome: ParseError is a
@@ -181,6 +184,30 @@ def _campaign_commands(evidence, run):
                          "stderr": _report_relative(stderr, run),
                          "stderrSha256": _sha256(stderr)})
     return commands
+
+
+def _failing_subjects(evidence):
+    """Names for the dotnet campaign's failed subjects, honest about what it could not read."""
+    sources = (("altcover-runner.stdout", _DOTNET_FAILURE),
+               ("altcover-runner.stderr", _UNITTEST_FAILURE))
+    names, unavailable = [], []
+    for filename, pattern in sources:
+        try:
+            text = (Path(evidence) / filename).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            unavailable.append(filename)
+            continue
+        names.extend(match.groupdict().get("case") or match.group("name")
+                    for match in pattern.finditer(text))
+    names = list(dict.fromkeys(names))
+    total = len(names)
+    if total:
+        summary = (f"{total} failing tests" if total <= SUBJECT_NAME_CAP
+                  else f"{total} failing tests (first {SUBJECT_NAME_CAP} named)")
+        return names[:SUBJECT_NAME_CAP], summary
+    if unavailable:
+        return [], f"campaign subject streams unavailable: {', '.join(unavailable)}"
+    return [], "no failing test named in altcover-runner.stdout or altcover-runner.stderr"
 
 
 def _coverage_report(name, facts, findings, errors, commands, artifacts):
@@ -474,8 +501,10 @@ def collect_dotnet_coverage(root, raw):
             [{"gate": "csharp-coverage", "message": "native campaign incomplete"}],
             commands, artifacts)
     if child:
+        names, summary = _failing_subjects(evidence)
         return _coverage_report("csharp-coverage", facts,
-                                [{"gate": "functional", "child_exit": child}], [],
+                                [{"gate": "functional", "child_exit": child,
+                                  "failingTests": names, "failingTestsSummary": summary}], [],
                                 commands, artifacts)
     joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
     return _coverage_report("csharp-coverage", {**facts, **joined}, joined["findings"], [],

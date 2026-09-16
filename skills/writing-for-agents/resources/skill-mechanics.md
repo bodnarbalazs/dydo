@@ -21,8 +21,11 @@ format; there is no template and no compile step. The canonical artifact is
 | `argument-hint` | `"<what to type>"` | Claude-only: the prompt the host shows after the name. Codex's twin is `interface.default_prompt` under the skill's `agents/openai.yaml`. |
 
 The historical template keys — `emit`, `read-only`, `delegates`, `invocation`, `web` — described a
-compiled agent and are retired with the compiler. A role is now a skill; host sandbox and permission
-settings, not a generated agent file, keep a read-only reviewer from writing.
+compiled agent and are retired with the compiler. A role is now a skill; keeping a read-only reviewer
+from writing is a request made through host sandbox and permission settings, not a generated agent
+file, and the request's presence does not prove it was enforced — that takes a native check on the
+host. Codex's `multi_agent` permitted an ordinary edit under `sandbox_mode = "read-only"`; see "DYD-88
+— Codex sub-agent lifecycle observations — 2026-09-14".
 
 ## Invocation
 

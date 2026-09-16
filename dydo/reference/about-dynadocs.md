@@ -27,9 +27,8 @@ priority, assignee, dependencies, current updates, and review state. dydo does n
 Markdown. Linear links to durable repository artifacts; knowledge discovered during execution flows
 back into the appropriate Decision, guide, plan, audit, or assimilation brief.
 
-FutureFeatures are distinct unscheduled strategic possibilities in Linear. They stay in `FutureFeature`
-until the human promotes or cancels them; durable knowledge they uncover flows into dydo. The
-[Linear Workspace Standard](./linear-workspace-standard.md) defines the promotion paths.
+FutureFeatures are distinct unscheduled strategic possibilities in Linear. They stay in `Backlog`
+until the human promotes or cancels them; durable knowledge they uncover flows into dydo.
 
 ## Stop Doing Agent Work Yourself
 
@@ -40,8 +39,8 @@ review, coordinate, and audit from independently reviewable contracts.
   keep Linear current.
 - Execution roles implement one Linear Issue, prove its gates, and return commit and test evidence.
 - A fresh agent independently reviews each implementation Issue before human harmonization.
-- The [Working-Tree Contract](../guides/working-tree-contract.md) governs Project integration,
-  optional Inquisition record delivery, and landing.
+- A coordinated Project closes only after an integrated audit against its linked plan and a durable
+  assimilation brief proportionate to the change.
 
 Branches, worktrees, sessions, subagents, commits, PRs, and reviewer attempts are execution evidence
 linked to an Issue. They are not additional work types.
@@ -55,13 +54,12 @@ validation, auto-fixing, indexes, and graph tooling. This is the context that co
 
 ### 2. One source for native roles and skills
 
-`dydo sync` compiles enabled local role templates and resources from `dydo/_system/templates/` into
-Claude Code and Codex artifacts. Distinctly named custom sources share the same format; shipped copies
-are refreshed by `dydo template update`. The host runtime owns agent identity and orchestration.
+`dydo sync` compiles role templates and resources into Claude Code and Codex artifacts. Edit the source
+once; both runtimes receive the same method. The host runtime owns agent identity and orchestration.
 
 ### 3. Enforced project rules
 
-`dydo guard` checks every tool call, including native subagents. Off-limits paths and dangerous
+`dydo guard` checks every tool call, including subagents and workflows. Off-limits paths and dangerous
 commands hard-block; project nudges add configurable notices, warnings, and blocks.
 
 ### 4. An opinionated scaffold
@@ -77,11 +75,8 @@ management, including FutureFeatures.
    work links to one reviewed repository Project plan.
 3. **Execute Issues** — native agents work in isolated branches/worktrees and attach governing commits,
    tests, reviews, and delivery evidence to the Issue.
-4. **Inquisition, when confirmed** — this optional, human-confirmed audit files Bugs and delivers its
-   record to the feature before landing, following the Working-Tree Contract above.
-5. **Land and inspect** — the landing Merge obtains acceptance review, the human lands the feature,
-   then a Walkthrough inspects it. An empty Walkthrough closes the Project; findings reopen the lap
-   in the same Project.
+4. **Audit Projects** — verify the combined result against the linked plan, then publish durable audit and
+   assimilation evidence.
 
 No dydo command reads, writes, caches, polls, provisions, or mirrors Linear. Agents use Linear's official
 MCP, UI, API, and integrations outside the dydo runtime.
@@ -112,7 +107,7 @@ runtime or machine into an existing project.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`
-- **Roles** — enabled shipped or custom sources under `dydo/_system/templates/`
+- **Roles** — shipped source templates
 - **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks
 
 Do not hand-edit compiled skills or agents. Change their source templates and run `dydo sync`.
@@ -121,10 +116,10 @@ Do not hand-edit compiled skills or agents. Change their source templates and ru
 
 ```
 project/
-|-- dydo.json                    # Integrations, skills, nudges
+|-- dydo.json                    # Model tiers, integrations, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/                     # Compiled Claude agents, skills, and skill resources
+|-- .claude/                     # Compiled Claude agents, skills, and workflows
 |-- .codex/agents/               # Compiled Codex agents
 |-- .agents/skills/              # Compiled Codex skills
 `-- dydo/
@@ -133,7 +128,6 @@ project/
     |-- guides/                  # How-to guidance
     |-- reference/               # Exact commands and specifications
     |-- project/                 # Durable knowledge and delivery proof
-    |-- _system/templates/      # Flat local skill and resource sources
     |-- _system/template-additions/
     `-- _assets/
 ```

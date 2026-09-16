@@ -80,13 +80,13 @@ public class ValidationServiceTests : IDisposable
     #region ValidateSystem — Null deserialization
 
     [Fact]
-    public void ValidateSystem_DydoJsonScalar_ReportsRootShapeError()
+    public void ValidateSystem_DydoJsonDeserializesToNull_ReportsError()
     {
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "null");
 
         var issues = _service.ValidateSystem(_testDir);
 
-        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("root must be an object"));
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("deserialize"));
     }
 
     #endregion

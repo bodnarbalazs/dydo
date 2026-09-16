@@ -20,7 +20,7 @@ public class IndexGenerator : IIndexGenerator
         sb.AppendLine();
         sb.AppendLine("## How to Navigate");
         sb.AppendLine();
-        sb.AppendLine("1. Start with [About This Project](./understand/about.md) if you're new");
+        sb.AppendLine("1. Start with [Platform Overview](./understand/platform.md) if you're new");
         sb.AppendLine("2. Browse by purpose below");
         sb.AppendLine("3. Use the [Glossary](./glossary.md) for term definitions");
         sb.AppendLine();
@@ -37,18 +37,13 @@ public class IndexGenerator : IIndexGenerator
 
         foreach (var (folder, heading, linkText, description) in topLevelHubs)
         {
-            var sectionPath = $"./{folder}/_{folder}.md";
-            var sectionExists = docs.Any(d => d.RelativePath.Equals($"{folder}/_{folder}.md", StringComparison.OrdinalIgnoreCase));
-            var folderExists = docs.Any(d => d.RelativePath.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase));
+            var hubPath = $"./{folder}/_index.md";
+            var hubExists = docs.Any(d => d.RelativePath.Equals($"{folder}/_index.md", StringComparison.OrdinalIgnoreCase));
 
             sb.AppendLine($"### {heading}");
-            if (sectionExists)
+            if (hubExists)
             {
-                sb.AppendLine($"[{linkText}]({sectionPath}) - {description}");
-            }
-            else if (folderExists)
-            {
-                sb.AppendLine(description);
+                sb.AppendLine($"[{linkText}]({hubPath}) - {description}");
             }
             else
             {

@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "19e917b42dc980e8",
+        "id": "7f8364230cb89bbb",
         "type": "tabs",
         "children": [
           {
-            "id": "2763f49cd1b1e97c",
+            "id": "ffff39c68fb85ae1",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "New readme scratch.md",
+                "file": "project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "New readme scratch"
+              "title": "041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer"
             }
           }
         ]
@@ -41,9 +41,7 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false,
-                "showSearch": false,
-                "searchQuery": ""
+                "autoReveal": false
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -185,44 +183,44 @@
       "bases:Create new base": false
     }
   },
-  "active": "2763f49cd1b1e97c",
+  "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
-    "agents/workspace/research-dyd91-claude-auth-skill-isolation.md",
-    "agents/workspace/research-dyd91-codex-appserver-egress-exec.md",
-    "agents/workspace/official-codex-dyd91/scripts/codex_package/smoke_tests/uv.lock",
-    "agents/workspace/official-codex-dyd91/scripts/codex_package/smoke_tests/test_codex_package.py",
-    "agents/workspace/official-codex-dyd91/scripts/codex_package/smoke_tests/pyproject.toml",
-    "agents/workspace/official-codex-dyd91/scripts/codex_package/smoke_tests/fixtures.py",
-    "agents/workspace/official-codex-dyd91/scripts/codex_package/smoke_tests/conftest.py",
-    "agents/workspace/official-codex-dyd91/scripts/mcp_conformance/test_review_regressions.py",
-    "agents/workspace/official-codex-dyd91/scripts/mcp_conformance/test_server.py",
-    "agents/workspace/official-codex-dyd91/scripts/mcp_conformance/test_official_conformance.py",
-    "agents/workspace/official-codex-dyd91/scripts/mcp_conformance/test_codex_compliance.py",
-    "agents/workspace/official-codex-dyd91/scripts/mcp_conformance/server.py",
-    "agents/workspace/official-codex-dyd91/scripts/mcp_conformance/README.md",
-    "agents/workspace/official-codex-dyd91/scripts/codex_package/README.md",
-    "agents/workspace/official-codex-dyd91/docs/execpolicy.md",
-    "agents/workspace/official-codex-dyd91/docs/slash_commands.md",
-    "agents/workspace/official-codex-dyd91/docs/skills.md",
-    "agents/workspace/official-codex-dyd91/docs/sandbox.md",
-    "agents/workspace/official-codex-dyd91/docs/open-source-fund.md",
-    "agents/workspace/official-codex-dyd91/docs/license.md",
-    "agents/workspace/official-codex-dyd91/docs/install.md",
-    "agents/workspace/official-codex-dyd91/docs/getting-started.md",
-    "agents/workspace/official-codex-dyd91/docs/exec.md",
-    "agents/workspace/official-codex-dyd91/docs/example-config.md",
-    "agents/workspace/official-codex-dyd91/docs/contributing.md",
-    "agents/workspace/official-codex-dyd91/docs/config.md",
-    "agents/workspace/official-codex-dyd91/docs/CLA.md",
-    "agents/workspace/official-codex-dyd91/docs/authentication.md",
-    "agents/workspace/official-codex-dyd91/docs/agents_md.md",
-    "agents/workspace/official-codex-dyd91/codex-cli/scripts/README.md",
-    "agents/workspace/official-codex-dyd91/codex-rs/thread-manager-sample/README.md",
-    "agents/workspace/official-codex-dyd91/codex-rs/thread-store/README.md",
-    "agents/workspace/official-codex-dyd91/codex-rs/tools/README.md",
-    "agents/workspace/official-codex-dyd91/codex-rs/tui/src/bottom_pane/AGENTS.md",
-    "agents/workspace/official-codex-dyd91/codex-rs/tui/assets/prompt_for_init_command.md",
-    "agents/workspace/official-codex-dyd91/codex-rs/tui/styles.md",
+    "project/backlog/residue-hunt-handback.md",
+    "agents/workspace",
+    "agents",
+    "project/backlog/residue-hunt-handoff.md",
+    "reference/_index.md.tmp.41024.ff252f19ef92",
+    "reference/dydo-glossary.md",
+    "project/slices/_index.md.tmp.41024.cdeb61c60bd9",
+    "project/slices/_slices.md.tmp.41024.7ba787cfdb8b",
+    "project/slices/_slices.md",
+    "project/slices/_sprint-tasks.md",
+    "project/slices/_index.md",
+    "project/slices/runtime-slim-worker-tier.md",
+    "project/slices/notion-pm-spine-provisioning.md",
+    "project/slices/m0-6-live-smoke.md",
+    "project/slices/m0-5-docs-reconciliation.md",
+    "project/slices/m0-4-notion-model-update-command.md",
+    "project/slices/m0-3-changelog-conformance.md",
+    "project/slices/m0-2-decision-title-backfill.md",
+    "project/slices/m0-1-template-model-completion.md",
+    "project/slices/c1-8-live-smoke.md",
+    "project/slices/c1-7-codex-e2e-coverage.md",
+    "project/slices/c1-6-model-provenance.md",
+    "project/slices/c1-5-role-validation.md",
+    "project/slices/c1-4-dispatch-preflight.md",
+    "project/slices/c1-3-codex-posture.md",
+    "project/slices/c1-2-durable-wait.md",
+    "project/slices/c1-1-read-verb.md",
+    "project/slices",
+    "project/decisions/042-plan-first-implementation.md",
+    "project/decisions/042-plan-first-implementation.md.tmp.41024.8fe9b8a5cf60",
+    "project/tasks/notion-sync-daemon.md",
+    "project/tasks/notion-sync-daemon.md.tmp.78972.0beaa81f718c",
+    "reference/about-dynadocs.md.tmp.78972.1064776cace4",
+    "reference/about-dynadocs.md.tmp.78972.e66ab45006dd",
+    "project/backlog/simplification-campaign-handback.md",
+    "project/backlog/simplification-handoff-sol.md",
     "_assets/dydo_diagram_complex_workflow.svg",
     "_assets/dydo_diagram_simple_workflow.svg"
   ]

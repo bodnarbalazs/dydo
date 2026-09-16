@@ -52,14 +52,14 @@ public class FolderScaffolderTests : IDisposable
     }
 
     [Fact]
-    public void Scaffold_DoesNotCreateFolderHubFiles()
+    public void Scaffold_CreatesHubIndexFiles()
     {
         _scaffolder.Scaffold(_testDir);
 
-        Assert.False(File.Exists(Path.Combine(_testDir, "understand", "_index.md")));
-        Assert.False(File.Exists(Path.Combine(_testDir, "guides", "_index.md")));
-        Assert.False(File.Exists(Path.Combine(_testDir, "reference", "_index.md")));
-        Assert.False(File.Exists(Path.Combine(_testDir, "project", "_index.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, "understand", "_index.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, "guides", "_index.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, "reference", "_index.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, "project", "_index.md")));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class FolderScaffolderTests : IDisposable
 
         foreach (var section in new[]
         {
-            "Linear work graph", "Fog and Question Issues", "Durable knowledge",
+            "Linear work graph", "Fog and question Issues", "Durable knowledge",
             "Roles and skills", "Execution and proof", "Retired PM terms"
         })
             Assert.Contains($"## {section}", content);
@@ -121,13 +121,11 @@ public class FolderScaffolderTests : IDisposable
             "Initiative", "Project", "Milestone", "Issue", "Sub-issue", "Cycle", "Label",
             "Fog", "Question Issue", "Frontier",
             "Decision", "Project plan", "Issue-resolution plan", "FutureFeature", "Assimilation brief",
-            "Role", "Skill", "Agent", "Hat", "Worker", "Method", "Human command", "Rubric",
-            "Merge", "Release", "Supersymmetry",
+            "Role", "Skill", "Agent", "Hat", "Worker", "Method", "Human command", "Workflow", "Rubric",
             "Reviewed intent", "Gate", "Issue review", "Merge review", "Inquisition", "Review block",
             "Evidence", "Working-tree contract", "Worktree", "HITL", "AFK"
         })
             Assert.Contains(term, defined);
-        Assert.DoesNotContain("Workflow", defined);
     }
 
     // A term the glossary defines: bolded inside its own definition bullet. Matching the whole

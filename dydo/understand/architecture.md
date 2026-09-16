@@ -91,7 +91,7 @@ rules check titles, links, filenames, and project-specific invariants.
 ## Related
 
 - [Work Model](./work-model.md) — Linear/Git operating contract
-- [Templates and Customization](./templates-and-customization.md) — Authoring and compilation
+- [Templates and Customization](./templates-and-customization.md) — Authoring and customization
 - [Guard System](./guard-system.md) — Enforcement layers and the hook contract
 - [Configuration](../reference/configuration.md) — Runtime configuration
 - [Coding Standards](../guides/coding-standards.md) — Repository conventions

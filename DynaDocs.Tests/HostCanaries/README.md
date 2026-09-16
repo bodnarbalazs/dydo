@@ -37,10 +37,10 @@ node DynaDocs.Tests/HostCanaries/run-host-canaries.mjs `
   --only codex
 ```
 
-then again with `--only opencode` in place of `--only codex`. `--only` is matched by exact string
-equality against a single host name (`"codex"` or `"opencode"`); a combined value such as
-`--only codex,opencode` matches neither leg and silently runs nothing, so never pass one. A failed or
-partial run keeps its external manifest and captured output, but never counts as acceptance evidence.
+then again with `--only opencode` in place of `--only codex`. `--only` takes exactly one of `claude`,
+`codex`, `opencode`; any other value, including a comma list, is rejected before any leg starts. A
+failed or partial run keeps its external manifest and captured output, but never counts as acceptance
+evidence.
 The disposable run is removed after post-run fingerprint and nested-Git checks; caller-owned scratch
 and retained evidence roots are preserved.
 

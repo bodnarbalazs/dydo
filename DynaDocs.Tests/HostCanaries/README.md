@@ -40,3 +40,10 @@ OpenCode inventory/live records, and both loopback providers' complete request l
 manifest records the exact candidate SHA, versions, pinned hashes, commands, durations, assertions,
 and hashes for every evidence artifact. Proxy evidence proves zero proxy-observed external attempts
 and exact loopback traffic; it is not OS-level network confinement and makes no stronger claim.
+
+On 2026-09-16 the pinned Ripgrep hash was changed from `673c96c3...` to `7c9b1279...`. Codex had
+rotated its vendored bin directory, so the previously pinned binary no longer existed; the surviving
+binary at `C:\Users\User\AppData\Local\OpenAI\Codex\bin\4fe45441001f7a41\rg.exe` reports the same
+`ripgrep 15.2.0 (rev e89fff89ac)` build and was re-pinned to its hash. The check stays a hard
+equality assert that fails closed; re-pinning it is a human/admiral decision made outside the
+runner, not something the runner does for itself.

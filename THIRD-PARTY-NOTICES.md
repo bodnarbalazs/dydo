@@ -2,33 +2,33 @@
 
 ## Matt Pocock's Skills
 
-Several dydo skill templates contain adaptations of material from
+Several dydo skills contain adaptations of material from
 [mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
 `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
 header in the canonical `skills/<name>/` folders.
 
 | Upstream skill | Adapted in |
 |---|---|
-| `code-review` | `Templates/resource-reviewer-resource-code.template.md` |
-| `codebase-design` | `Templates/skill-codebase-design.template.md`, `Templates/resource-codebase-design-resource-deepening.template.md`, `Templates/resource-codebase-design-resource-design-it-twice.template.md` |
-| `diagnosing-bugs` | `Templates/skill-diagnosing-bugs.template.md` |
-| `domain-modeling` | `Templates/skill-domain-modeling.template.md` |
-| `grill-me` | `Templates/skill-grill-me.template.md` |
-| `grilling` | `Templates/skill-grilling.template.md` |
-| `handoff` | `Templates/skill-handoff.template.md` |
-| `improve-codebase-architecture` | `Templates/skill-improve-codebase-architecture.template.md`, `Templates/resource-improve-codebase-architecture-resource-html-report.template.md` |
-| `prototype` | `Templates/skill-prototype.template.md`, `Templates/resource-prototype-resource-logic.template.md`, `Templates/resource-prototype-resource-ui.template.md` |
-| `research` | `Templates/skill-research.template.md` |
-| `retro` | `Templates/skill-self-improvement.template.md` |
-| `tdd` | `Templates/skill-implementer.template.md`, `Templates/resource-implementer-resource-tests.template.md`, `Templates/resource-implementer-resource-mocking.template.md`, `Templates/resource-reviewer-resource-code.template.md` |
-| `teach` | `Templates/skill-teach.template.md`, `Templates/resource-teach-resource-mission-format.template.md`, `Templates/resource-teach-resource-glossary-format.template.md`, `Templates/resource-teach-resource-learning-record-format.template.md`, `Templates/resource-teach-resource-resources-format.template.md` |
-| `to-spec` | `Templates/skill-to-project.template.md` |
-| `to-tickets` | `Templates/skill-project-planner.template.md` |
-| `wizard` and its `template.sh` | `Templates/skill-wizard.template.md`, `Templates/resource-wizard-resource-template.template.md` |
-| `wait-what` | `Templates/skill-bro.template.md` |
-| `wayfinder` | `Templates/skill-wayfinder.template.md` |
-| `writing-for-agents` | `Templates/skill-writing-for-agents.template.md` |
-| `writing-for-agents/SKILL-MECHANICS` | `Templates/resource-writing-for-agents-resource-skill-mechanics.template.md` |
+| `code-review` | `skills/reviewer/resources/code.md` |
+| `codebase-design` | `skills/codebase-design/SKILL.md`, `skills/codebase-design/resources/deepening.md`, `skills/codebase-design/resources/design-it-twice.md` |
+| `diagnosing-bugs` | `skills/diagnosing-bugs/SKILL.md` |
+| `domain-modeling` | `skills/domain-modeling/SKILL.md` |
+| `grill-me` | `skills/grill-me/SKILL.md` |
+| `grilling` | `skills/grilling/SKILL.md` |
+| `handoff` | `skills/handoff/SKILL.md` |
+| `improve-codebase-architecture` | `skills/improve-codebase-architecture/SKILL.md`, `skills/improve-codebase-architecture/resources/html-report.md` |
+| `prototype` | `skills/prototype/SKILL.md`, `skills/prototype/resources/logic.md`, `skills/prototype/resources/ui.md` |
+| `research` | `skills/research/SKILL.md` |
+| `retro` | `skills/self-improvement/SKILL.md` |
+| `tdd` | `skills/implementer/SKILL.md`, `skills/implementer/resources/tests.md`, `skills/implementer/resources/mocking.md`, `skills/reviewer/resources/code.md` |
+| `teach` | `skills/teach/SKILL.md`, `skills/teach/resources/mission-format.md`, `skills/teach/resources/glossary-format.md`, `skills/teach/resources/learning-record-format.md`, `skills/teach/resources/resources-format.md` |
+| `to-spec` | `skills/to-project/SKILL.md` |
+| `to-tickets` | `skills/project-planner/SKILL.md` |
+| `wizard` and its `template.sh` | `skills/wizard/SKILL.md`, `skills/wizard/resources/template.md` |
+| `wait-what` | `skills/bro/SKILL.md` |
+| `wayfinder` | `skills/wayfinder/SKILL.md` |
+| `writing-for-agents` | `skills/writing-for-agents/SKILL.md` |
+| `writing-for-agents/SKILL-MECHANICS` | `skills/writing-for-agents/resources/skill-mechanics.md` |
 
 MIT License
 
@@ -54,14 +54,14 @@ SOFTWARE.
 
 ## HumanLayer's Skills
 
-One dydo skill template contains an adaptation of material from
+One dydo skill contains an adaptation of material from
 [humanlayer/skills](https://github.com/humanlayer/skills), pinned at commit
 `6ab9013a10c28f5046f7f999549cd5328a0b30d7`. The adapted file repeats the attribution in its own
-header, as does the skill folder authored from it.
+header.
 
 | Upstream skill | Adapted in |
 |---|---|
-| `show-me` | `Templates/skill-show-me.template.md` |
+| `show-me` | `skills/show-me/SKILL.md` |
 
 MIT License
 
@@ -87,14 +87,14 @@ SOFTWARE.
 
 ## Cursor's pstack
 
-One dydo skill template contains an adaptation of material from
+One dydo skill contains an adaptation of material from
 [cursor/plugins](https://github.com/cursor/plugins), `pstack`, pinned at commit
 `7314f723a487ec406b6369fe5865ba034cfed166`. The adapted file repeats the attribution in its own
-header, as does the skill folder authored from it.
+header.
 
 | Upstream skill | Adapted in |
 |---|---|
-| `unslop` | `Templates/skill-writing-for-humans.template.md` |
+| `unslop` | `skills/writing-for-humans/SKILL.md` |
 
 MIT License
 

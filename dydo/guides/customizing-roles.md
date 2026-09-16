@@ -40,12 +40,16 @@ edit `skills/<name>/` once.
 
 ## The context a role carries
 
-**`## Must-Reads`** — markdown links under that heading. Write each target as a repository-root
-literal path — "From the repository root, read `dydo/understand/architecture.md`" — the way every
-shipped role names its own (see `skills/reviewer/SKILL.md`). A `../` climb out of the installed skill
-folder does not reach the repository root: hosts normalize it lexically before following the
-projection, so it lands inside `.claude/` or `.agents/`, where no `dydo/` exists. A project adds its
-own context by editing the skill body directly.
+**`## Must-Reads`** — project documents named under that heading. Write each target as a
+repository-root literal path in a code span, read from the repository root — "From the repository
+root, read `dydo/understand/architecture.md`" — the way every shipped role names its own (see
+`skills/reviewer/SKILL.md`); `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs:150-156` enforces that no
+Must-Read is written as a markdown link. A `../` climb does not work here because the identical file
+is read at two different depths: canonically at `skills/<name>/`, and through the host projection at
+`.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
+normalization against the projected path versus POSIX `..` applied to the physical parent once the
+symlink is followed — so no single relative climb is correct from every install location. A project
+adds its own context by editing the skill body directly.
 
 **Resources** — a role's own reference behind a file boundary, read only by the branches that need
 it. Link it as `resources/<name>.md`, relative to the skill folder. Reference several skills share

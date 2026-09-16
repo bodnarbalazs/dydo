@@ -17,8 +17,15 @@ title-generation request fails the run. `OPENCODE_DISABLE_AUTOUPDATE=1`, `OPENCO
 Codex runs with an empty isolated `CODEX_HOME` and a fail-closed loopback Responses provider; it does
 not copy authentication or inherit API-key variables. Plugin startup is disabled, and exactly one
 fully matched read-only command approval is accepted for the derived resource read. The isolated-HOME
-Claude leg is retired (DYD-200): Claude Code discovery is proven by direct observation instead, so the
-runnable legs of this recorder are `--only codex` and `--only opencode`.
+Claude leg is retired (DYD-200): Claude Code discovery is proven by direct observation instead,
+recorded on the Issue (Linear comment "Claude Code host discovery", 2026-09-16, DYD-200 Canceled).
+This recorder no longer runs that Claude leg on purpose — but a bare invocation of the command below
+with no `--only` flag still executes it, and that leg calls the configured live model provider. That
+is why the gate is documented and run as the two narrowed invocations below, each with an explicit
+`--only`, and never as the bare command.
+
+The gate is run as two separate invocations of the same command, once with `--only codex` and once
+with `--only opencode`:
 
 ```powershell
 node DynaDocs.Tests/HostCanaries/run-host-canaries.mjs `
@@ -26,17 +33,19 @@ node DynaDocs.Tests/HostCanaries/run-host-canaries.mjs `
   --scratch-root "$env:LOCALAPPDATA\DynaDocs\host-canaries" `
   --evidence "$env:LOCALAPPDATA\DynaDocs\host-canary-evidence\DYD-91\<candidate-sha>-<run-id>\staging\host-canaries" `
   --opencode-archive "C:\path\to\opencode-windows-x64.zip" `
-  --ripgrep "C:\path\to\rg.exe"
+  --ripgrep "C:\path\to\rg.exe" `
+  --only codex
 ```
 
-For local harness development, `--only codex` or `--only opencode` narrows the run to a single leg.
-That option is not a substitute for the complete gate. A failed or partial run keeps its
-external manifest and captured output, but never counts as acceptance evidence. The disposable run
-is removed after post-run fingerprint and nested-Git checks; caller-owned scratch and retained
-evidence roots are preserved.
+then again with `--only opencode` in place of `--only codex`. `--only` is matched by exact string
+equality against a single host name (`"codex"` or `"opencode"`); a combined value such as
+`--only codex,opencode` matches neither leg and silently runs nothing, so never pass one. A failed or
+partial run keeps its external manifest and captured output, but never counts as acceptance evidence.
+The disposable run is removed after post-run fingerprint and nested-Git checks; caller-owned scratch
+and retained evidence roots are preserved.
 
-The successful packet contains `manifest.json`, Codex inventory/live records, OpenCode
-inventory/live records, and both loopback providers' complete request logs. The
+The successful packet for these two runs together contains `manifest.json`, Codex inventory/live
+records, OpenCode inventory/live records, and both loopback providers' complete request logs. The
 manifest records the exact candidate SHA, versions, pinned hashes, commands, durations, assertions,
 and hashes for every evidence artifact. Proxy evidence proves zero proxy-observed external attempts
 and exact loopback traffic; it is not OS-level network confinement and makes no stronger claim.

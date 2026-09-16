@@ -152,6 +152,28 @@ public sealed class CanonicalSkillAssertionTests
         }
     }
 
+    [Fact]
+    public void ThirdPartyNotices_AdaptedInPathsExistOnDisk()
+    {
+        var root = RepositoryRoot();
+        foreach (var relative in new[] { "THIRD-PARTY-NOTICES.md", "npm/THIRD-PARTY-NOTICES.md" })
+        {
+            var body = File.ReadAllText(Path.Combine(root, relative));
+            var referencedPaths = Regex.Matches(body, "`([^`]+)`")
+                .Select(match => match.Groups[1].Value)
+                .Where(path => path.Contains('/') && !path.Contains('<') && !path.Contains('>')
+                    && Regex.IsMatch(path, @"\.[A-Za-z0-9]+$"))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            Assert.NotEmpty(referencedPaths);
+            foreach (var referencedPath in referencedPaths)
+            {
+                var target = Path.Combine(root, referencedPath.Replace('/', Path.DirectorySeparatorChar));
+                Assert.True(File.Exists(target), $"{relative}: missing referenced path {referencedPath}");
+            }
+        }
+    }
+
     private static string RepositoryRoot()
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)

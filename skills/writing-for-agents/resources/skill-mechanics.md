@@ -44,12 +44,16 @@ Two choices, trading the two loads:
 
 ## Where reference lives
 
-- **`## Must-Reads`** — markdown links to project documents under that heading. Author each target
-  as a repository-root literal path, read from the repository root — "From the repository root, read
-  `dydo/understand/architecture.md`" (see `skills/reviewer/SKILL.md`) — never a `../` climb: a host
-  normalizes that lexically before following the projection, landing inside its own discovery root,
-  not the repository root. Project additions are edits to the skill body itself; include tags are
-  retired.
+- **`## Must-Reads`** — project documents named under that heading. Author each target as a
+  repository-root literal path in a code span, read from the repository root — "From the repository
+  root, read `dydo/understand/architecture.md`" (see `skills/reviewer/SKILL.md`);
+  `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs:150-156` enforces that no Must-Read is written as a
+  markdown link. A `../` climb does not work here because the identical file is read at two
+  different depths: canonically at `skills/<name>/`, and through the host projection at
+  `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
+  normalization against the projected path versus POSIX `..` applied to the physical parent once the
+  symlink is followed — so no single relative climb is correct from every install location. Project
+  additions are edits to the skill body itself; include tags are retired.
 - **Resources** — `resources/<name>.md` beside the skill, reached by that same folder-relative path.
   This is disclosure with a file boundary: one skill's own reference, reached only by the branches
   that need it. Reference several skills share lives instead in a model-invoked method skill, or in

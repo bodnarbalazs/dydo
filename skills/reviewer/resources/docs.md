@@ -50,8 +50,7 @@ Every item below is a FAIL when it holds.
   licence, and the attribution comment stays.
 - **A return shape its consumer cannot parse**: the review block, or a worker's return to the
   Captain.
-- **A link that will not exist after regeneration.** Resource bodies are copied verbatim and climb
-  from `resources/`; resolve every path from the emitted folder on both hosts.
-- **Compiled output drifted from its template** when regeneration is in the candidate's scope.
-  Read the source, then confirm the generated skill matches it; a source-only Issue records the
-  integration owner and leaves generated parity to that gate.
+- **Drift from the canonical source.** `skills/` is the single canonical tree; every host reads it
+  through its own projection, never a generated copy. Judge drift against
+  `dydo/project/decisions/049-skills-are-the-source-retire-the-compiler.md`, read from the
+  repository root, and the Issue's own contract.

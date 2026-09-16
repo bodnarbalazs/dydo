@@ -21,10 +21,13 @@ compatibility roots; no `.opencode/skills` copy is created. No host transforms t
 
 ## Links
 
-- A project document link names a repository-root literal path, read from the repository root:
-  "From the repository root, read `dydo/understand/architecture.md`". A `..` climb out of the
-  installed skill folder is normalized lexically before the host follows the projection, so it lands
-  inside the host's own directory, not the repository root — `dydo/` does not exist there.
+- A project document link names a repository-root literal path in a code span, read from the
+  repository root: "From the repository root, read `dydo/understand/architecture.md`" — never a
+  `../` climb, because the identical file is read at two different depths: canonically at
+  `skills/<name>/`, and through the host projection at `.claude/skills/<name>/` or
+  `.agents/skills/<name>/`. The two resolvers disagree — lexical `..` normalization against the
+  projected path versus POSIX `..` applied to the physical parent once the symlink is followed — so
+  no single relative climb is correct from every install location.
 - A role's own resource is linked `resources/<name>.md`, resolved from the skill folder.
 
 ## Customizing a role

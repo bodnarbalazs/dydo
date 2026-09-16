@@ -369,6 +369,36 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/HostCanaries/path-containment.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/path-containment.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/run-host-canaries-args.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/run-host-canaries-args.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/run-host-canaries.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/run-host-canaries-args.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/openai-sse-provider-args.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/openai-sse-provider-args.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/openai-sse-provider.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/openai-sse-provider-args.test.mjs"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/positions.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_positions.py"
@@ -516,6 +546,12 @@
       "module": "Program.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "setup-skills.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/setup-skills.test.cjs"
       ]
     },
     {

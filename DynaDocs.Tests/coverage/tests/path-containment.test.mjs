@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isInside } from "./path-containment.mjs";
+import { isInside } from "../../HostCanaries/path-containment.mjs";
 
 test("disjoint paths where the child string merely starts with a separator after the parent length are not inside", () => {
   assert.equal(

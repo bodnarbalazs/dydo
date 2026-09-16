@@ -6,6 +6,7 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { isInside, samePath } from "./path-containment.mjs";
+import { parseArgs } from "./run-host-canaries-args.mjs";
 
 const EXPECTED_FACT = "# Mission: {Topic}";
 const CODEX_IMPLICIT_PROMPT = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
@@ -968,21 +969,6 @@ async function waitFor(predicate, label) {
     await new Promise(resolveWait => setTimeout(resolveWait, 25));
   }
   throw new Error(`timed out waiting for ${label}`);
-}
-
-function parseArgs(argv) {
-  const result = {};
-  for (let index = 0; index < argv.length; index += 2) {
-    const key = argv[index];
-    const value = argv[index + 1];
-    if (!value || !["--candidate", "--scratch-root", "--evidence", "--opencode-archive", "--ripgrep", "--only"].includes(key)) throw new Error(`unknown or incomplete argument: ${key}`);
-    result[key.slice(2).replaceAll("-", "_")] = value;
-  }
-  assert(result.candidate && result.scratch_root && result.evidence, "usage: run-host-canaries.mjs --candidate <path> --scratch-root <absolute-clean-path> --evidence <absolute-retained-path> --opencode-archive <absolute-zip> --ripgrep <absolute-exe>");
-  assert(isAbsolute(result.scratch_root), "--scratch-root must be absolute");
-  assert(isAbsolute(result.evidence), "--evidence must be absolute");
-  if (result.only) assert(["claude", "codex", "opencode"].includes(result.only), "--only must be claude, codex, or opencode");
-  return { candidate: result.candidate, scratchRoot: result.scratch_root, evidence: result.evidence, opencodeArchive: result.opencode_archive, ripgrep: result.ripgrep, only: result.only };
 }
 
 async function writeArtifact(name, content) {

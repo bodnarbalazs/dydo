@@ -386,20 +386,27 @@ checksum fails the join. The measured per-assembly document facts are retained i
 ## Toolchain provenance
 
 `dydo/_system/.local/` is git-ignored, so each machine provisions its own measurement environment
-and no gate ever installs anything. Four declarations define what that environment must contain,
-and every summary republishes each with its hash in `tools.pins`:
+and no gate ever installs anything. Four tool declarations and one CI runtime declaration define
+what that environment must contain. Tool summaries republish the four tool declarations with their
+hashes in `tools.pins`; the Python inventory separately republishes the runtime declaration and hash:
 
 | Declaration | Supplies | Restored into |
 |---|---|---|
 | `.config/dotnet-tools.json` | AltCover 9.0.102 | the tool manifest, by `dotnet tool restore --tool-manifest .config/dotnet-tools.json` |
-| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | the local CPython 3.12.14 at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
+| `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.12.10 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
+| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython in the compatible 3.12 series at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
 | `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
 | `DynaDocs.Tests/coverage/metrics/packages.lock.json` | the Roslyn, SonarAnalyzer and Cecil closure of `GateMetrics.csproj` | that project's `obj/project.assets.json`, by `dotnet restore` |
 
 The `versions` collector fails the `dotnet` static row closed if an installed version differs from
 its lock, if a declared JavaScript dependency and the lock disagree, if a locked package is missing
-without being optional, if the resolved NuGet closure differs from `obj/project.assets.json`, or if
-the runtime pins CPython 3.12.14, Node v22.13.0 and .NET SDK 10.0.300 are not the ones in use.
+without being optional, if the resolved NuGet closure differs from `obj/project.assets.json`, if the
+Python declaration is not exactly 3.12.10, or if the running implementation is not CPython 3.12.
+The declaration selects an obtainable, reproducible CI patch; the monitoring interface is compatible
+with every CPython 3.12 patch. Python evidence records the declared pin and its hash, the exact
+observed implementation and patch, and the requirements-lock hash. The Windows job preflight and
+each accepted run likewise record the exact observed version plus the executable and base-executable
+digests. Node v22.13.0 and .NET SDK 10.0.300 remain exact runtime requirements.
 
 ---
 

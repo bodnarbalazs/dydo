@@ -67,9 +67,11 @@ Three universal layers, applied to every caller: path tiers (off-limits paths th
 read, and protected paths that every tool may read and none may write), dangerous-command detection for
 destructive shell patterns, and configurable nudges that notice, warn, or block.
 
-The host platform owns identity and permissions. dydo maintains no agent roster, scheduler, queue, or
-worktree manager: the [Working-Tree Contract](../guides/working-tree-contract.md) is a procedure agents
-follow, not machinery the CLI runs. See [Guard System](./guard-system.md) for the wire contract.
+The host platform owns identity and permissions. A sandbox value in native configuration requests a
+restriction; only observed host behaviour establishes that the runtime enforces it. dydo maintains no
+agent roster, scheduler, queue, or worktree manager: the
+[Working-Tree Contract](../guides/working-tree-contract.md) is a procedure agents follow, not machinery
+the CLI runs. See [Guard System](./guard-system.md) for the wire contract.
 
 ## Documentation graph
 

@@ -23,7 +23,7 @@ SUPPLIED_ENVIRONMENT = ("APPDATA", "NUGET_PACKAGES", ROW_DEADLINE_ENV)
 # A defective report is a broken measurement, never a policy outcome: ParseError is a
 # SyntaxError, and an unexpected join shape raises Type/Attribute/IndexError before any finding.
 REPORT_DEFECTS = (ValueError, KeyError, OSError, TypeError, AttributeError, IndexError,
-                  SyntaxError)
+                  SyntaxError, subprocess.SubprocessError)
 
 
 class MeasurementTimeout(ValueError):
@@ -117,10 +117,22 @@ def _report_root(raw):
 
 
 def _report_relative(value, run):
-    path = Path(value)
+    path_text, run_text = str(value), str(run)
+    if os.name == "nt":
+        path_text = path_text.removeprefix("\\\\?\\")
+        run_text = run_text.removeprefix("\\\\?\\")
+    path = Path(path_text).resolve(strict=True)
+    run = Path(run_text).resolve(strict=True)
     if not path.is_relative_to(run):
         return path.as_posix()
     return path.relative_to(run).as_posix()
+
+
+def _report_location(value, run):
+    """Project an output location whose existing parent supplies its identity."""
+    path = Path(value)
+    parent = _report_relative(path.parent, run)
+    return (Path(parent) / path.name).as_posix()
 
 
 def _raw_artifacts(paths, run):
@@ -130,13 +142,17 @@ def _raw_artifacts(paths, run):
 
 def _logged_commands(rows, run):
     """Ordered native command evidence with report-relative stream paths."""
-    return [{"name": row["name"], "argv": row["command"], "cwd": row["cwd"],
-             "environment": row.get("environment", {}), "exit": row.get("exit_code"),
-             "elapsedSeconds": row.get("duration_seconds"),
-             "stdout": _report_relative(row["stdout"], run),
-             "stdoutSha256": row.get("stdout_sha256"),
-             "stderr": _report_relative(row["stderr"], run),
-             "stderrSha256": row.get("stderr_sha256")} for row in rows]
+    commands = []
+    for row in rows:
+        project_stream = _report_location if row["exit_code"] is None else _report_relative
+        commands.append({"name": row["name"], "argv": row["command"], "cwd": row["cwd"],
+                         "environment": row.get("environment", {}), "exit": row["exit_code"],
+                         "elapsedSeconds": row.get("duration_seconds"),
+                         "stdout": project_stream(row["stdout"], run),
+                         "stdoutSha256": row.get("stdout_sha256"),
+                         "stderr": project_stream(row["stderr"], run),
+                         "stderrSha256": row.get("stderr_sha256")})
+    return commands
 
 
 def _supplied_environment():
@@ -157,9 +173,14 @@ def _campaign_commands(evidence, run):
     manifest = Path(evidence) / "commands.json"
     if not manifest.is_file():
         return []
-    return [{**row, "stdout": _report_relative(Path(evidence) / row["stdout"], run),
-             "stderr": _report_relative(Path(evidence) / row["stderr"], run)}
-            for row in json.loads(manifest.read_text(encoding="utf-8"))]
+    commands = []
+    for row in json.loads(manifest.read_text(encoding="utf-8")):
+        stdout, stderr = Path(evidence) / row["stdout"], Path(evidence) / row["stderr"]
+        commands.append({**row, "stdout": _report_relative(stdout, run),
+                         "stdoutSha256": _sha256(stdout),
+                         "stderr": _report_relative(stderr, run),
+                         "stderrSha256": _sha256(stderr)})
+    return commands
 
 
 def _coverage_report(name, facts, findings, errors, commands, artifacts):
@@ -233,9 +254,16 @@ def _inventory_artifact(root, run, candidate):
     association_result = collector.associations()
     payload = collector.inventory or {"schema": 1, "files": [], "sources": [],
                                       "excluded": [], "projects": [], "errors": []}
-    payload["candidate"] = candidate
+    inventory_fingerprint = payload.get("candidate", {}).get("sourceFingerprint")
+    outer_fingerprint = candidate["sourceFingerprint"]
+    fingerprint_errors = [] if inventory_fingerprint == outer_fingerprint else [{
+        "message": "Outer and inventory source fingerprints differ",
+        "outerSourceFingerprint": outer_fingerprint,
+        "inventorySourceFingerprint": inventory_fingerprint}]
+    payload["candidate"] = {**candidate, "sourceFingerprint": inventory_fingerprint}
     payload["errors"] = [*payload.get("errors", []), *project_result["errors"],
-                         *inventory_result["errors"], *association_result["errors"]]
+                         *inventory_result["errors"], *association_result["errors"],
+                         *fingerprint_errors]
     inventory = run / "inventory.json"
     inventory.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return inventory, payload["errors"], _logged_commands(collector.log.rows, run)
@@ -326,14 +354,16 @@ def _recorded(collector, name, method, artifacts):
     return collect
 
 
-def collect_static(root, output, stack):
+def collect_static(root, output, stack, initial_fingerprint=None):
     from gate_collect import Collectors
     from gate_run import collect_all
     collector = Collectors(root, output)
     collector.discovery = _ordinary_discovery(root, collector.paths)
     artifacts = {}
+    methods = _stack_methods(collector, stack)
+    methods["repository-inputs"] = lambda: collector.repository_inputs(initial_fingerprint)
     recorded = {name: _recorded(collector, name, method, artifacts)
-                for name, method in _stack_methods(collector, stack).items()}
+                for name, method in methods.items()}
     report = _aggregate(collect_all(recorded, list(recorded)))
     for name, row in report["facts"]["collectors"].items():
         row["artifacts"] = artifacts.get(name, [])
@@ -363,7 +393,7 @@ def collect_python_coverage(root, raw, inventory):
     started = time.monotonic()
     child = native_collect(root, raw, sources, argv)
     commands = [_inherited_row("python-coverage", argv, root, child, started)]
-    facts = {"child_exit": child, "raw": _report_relative(raw, run)}
+    facts = {"child_exit": child, "raw": _report_location(raw, run)}
     if child != 0:
         return _coverage_report("python-coverage", facts,
                                 [{"gate": "functional", "child_exit": child}], [],
@@ -374,11 +404,14 @@ def collect_python_coverage(root, raw, inventory):
                             _python_artifacts(raw, run))
 
 
-def collect_node_coverage(root, raw):
+def collect_node_coverage(root, raw, initial_fingerprint=None):
     from gate_policy import evaluate_policy
-    from inventory import git_file_state, language_of
+    from gate_collect import repository_inputs
+    from inventory import build_file_rows, git_file_state, language_of, source_fingerprint
     run = _report_root(raw)
     paths, deleted = git_file_state(root)
+    initial_fingerprint = initial_fingerprint or source_fingerprint(
+        build_file_rows(root, paths, deleted))
     if deleted:
         raise ValueError("Deleted maintained inputs prevent JavaScript coverage")
     tests = {row["file"] for row in _ordinary_discovery(root, paths)}
@@ -397,12 +430,19 @@ def collect_node_coverage(root, raw):
     started = time.monotonic()
     child = run_coverage_command(argv, root)
     commands = [_inherited_row("javascript-coverage", argv, root, child, started)]
-    facts = {"child_exit": child, "raw": _report_relative(raw, run)}
+    integrity = repository_inputs(root, initial_fingerprint)
+    facts = {"child_exit": child, "raw": _report_location(raw, run),
+             "repositoryInputs": integrity["facts"]}
     if child not in (0, 1):
         return _coverage_report(
             "javascript-coverage", facts, [],
-            [{"gate": "javascript-coverage", "message": "native c8 campaign failed"}],
+            [{"gate": "javascript-coverage", "message": "native c8 campaign failed"},
+             *integrity["errors"]],
             commands, _raw_artifacts([request_path, raw / "joined.json"], run))
+    if integrity["errors"]:
+        findings = [{"gate": "functional", "child_exit": child}] if child else []
+        return _coverage_report("javascript-coverage", facts, findings, integrity["errors"],
+                                commands, _raw_artifacts([request_path, raw / "joined.json"], run))
     joined = {"modules": []}
     findings = []
     if child == 0:
@@ -427,7 +467,7 @@ def collect_dotnet_coverage(root, raw):
                 *_campaign_commands(evidence, run)]
     artifacts = _raw_artifacts([evidence / "joined.json", evidence / "commands.json",
                                 evidence / "coverage.opencover.xml", raw / "identities.json"], run)
-    facts = {"child_exit": child, "raw": _report_relative(raw, run)}
+    facts = {"child_exit": child, "raw": _report_location(raw, run)}
     if child not in (0, 1):
         return _coverage_report(
             "csharp-coverage", facts, [],
@@ -447,7 +487,8 @@ def collect_coverage(root, output, stack, inventory):
     if stack == "python":
         return collect_python_coverage(root, raw, inventory)
     if stack == "node":
-        return collect_node_coverage(root, raw)
+        payload = json.loads(Path(inventory).read_text(encoding="utf-8"))
+        return collect_node_coverage(root, raw, payload["candidate"]["sourceFingerprint"])
     if stack == "dotnet":
         return collect_dotnet_coverage(root, raw)
     raise ValueError(f"Unknown stack: {stack}")
@@ -468,11 +509,19 @@ def main():
     local = root / "dydo/_system/.local/appdata"
     os.environ["APPDATA"] = str(local)
     os.environ.setdefault("NUGET_PACKAGES", str(Path.home() / ".nuget/packages"))
-    candidate, _ = _candidate(root)
-    inventory, inventory_errors, inventory_commands = _inventory_artifact(root, run, candidate)
-    tools = gate_tools(root)
+    candidate = {"commit": None, "dirty": None, "sourceFingerprint": None}
+    inventory = run / "inventory.json"
+    inventory_errors, inventory_commands, tools = [], [], {}
     try:
-        report = collect_static(root, run / "raw", args.stack) \
+        candidate, _ = _candidate(root)
+        inventory, inventory_errors, inventory_commands = _inventory_artifact(
+            root, run, candidate)
+        tools = gate_tools(root)
+        inventory_candidate = json.loads(
+            inventory.read_text(encoding="utf-8")).get("candidate", {})
+        initial_fingerprint = inventory_candidate.get(
+            "sourceFingerprint", candidate.get("sourceFingerprint"))
+        report = collect_static(root, run / "raw", args.stack, initial_fingerprint) \
             if args.gate == "static" else collect_coverage(root, run, args.stack, inventory)
         if inventory_errors:
             report = {"status": "error", "facts": report.get("facts", {}),
@@ -481,6 +530,11 @@ def main():
     except REPORT_DEFECTS as error:
         report = {"status": "error", "facts": {}, "findings": [],
                   "errors": [{"type": type(error).__name__, "message": str(error)}]}
+        if not inventory.is_file():
+            inventory.write_text(json.dumps({"schema": 1, "candidate": candidate,
+                                             "files": [], "sources": [], "excluded": [],
+                                             "projects": [], "errors": report["errors"]},
+                                            indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report["facts"] = {**report["facts"], "tools": tools,
                        "commands": [*inventory_commands, *report["facts"].get("commands", [])]}
     try:

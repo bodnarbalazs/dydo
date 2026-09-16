@@ -34,7 +34,7 @@ corrective for agent-speak, at any stage.
 
 - **Hats** are what a session is doing now, one at a time — the agent hats on the map plus
   chief-of-staff; the human holds a row but wears no agent hat.
-- **Workers** are spawned for one bounded job and report back to whoever spawned them. Research delegates to read-only scouts; other workers do their own bounded work.
+- **Workers** are spawned for one bounded job and report back to whoever spawned them. Research delegates to non-authoring scouts; other workers do their own bounded work.
 - **Methods** are reference and procedure a session applies inside its own thread, never a separate
   session.
 - **Human commands** are invoked by the human typing their name, and by nothing else. For the
@@ -95,6 +95,12 @@ Issue for a merge, otherwise on its Issue, and in the PR body when one exists; i
 [dydo Glossary](../reference/dydo-glossary.md). Independence here is independence of *context*: the
 reviewer arrives fresh and reads the candidate itself rather than the story told about it. There is
 no PASS with notes; a note is a finding, and a finding is a FAIL.
+
+Reviewer, inquisitor and scout are non-authoring roles: their commissions and methods produce
+verdicts, findings or source passages, never candidate edits. This is a methodological boundary, not
+a claim that every host enforces a read-only filesystem. The portable floor is a fresh commission,
+an isolated pinned candidate and an independent review; a native sandbox request strengthens that
+floor only when a live check establishes its enforcement.
 
 ## References and evidence
 

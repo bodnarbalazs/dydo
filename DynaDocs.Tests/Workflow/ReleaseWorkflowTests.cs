@@ -4,6 +4,9 @@ public sealed class ReleaseWorkflowTests
 {
     private const string AllowedTagGuard = "github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0')";
     private const string NpmPublishRun = "npm publish --access public --provenance --tag ${{ github.ref == 'refs/tags/v3.0.0-beta.3' && 'beta' || 'latest' }}";
+    private const string PythonVersionFile = "DynaDocs.Tests/coverage/.python-version";
+    private const string AssurancePython = "dydo/_system/.local/static-gates/python";
+    private const string AssurancePythonExecutable = AssurancePython + "/Scripts/python.exe";
 
     [Fact]
     public void ReleaseWorkflow_ValidatesTheBuildBeforeEveryPublicationAction()
@@ -16,18 +19,14 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal(5, CountOccurrences(jobs["build"], "rid:"));
 
         var validation = jobs["validation"];
-        Assert.Contains("runs-on: ubuntu-latest", validation);
+        Assert.Contains("runs-on: windows-latest", validation);
         Assert.Contains("fetch-depth: 0", validation);
         Assert.Contains("actions/setup-python", validation);
-        Assert.Contains("actions/setup-dotnet", validation);
-        Assert.Contains("actions/setup-node", validation);
-        Assert.Contains("python DynaDocs.Tests/coverage/run_tests.py", validation);
+        AssertValidationPythonContract(workflow, PythonRuntimePin());
+        AssertValidationAssuranceToolchains(workflow);
         Assert.Contains("dotnet build DynaDocs.sln -c Release --warnaserror", validation);
         Assert.Contains("dotnet run --project DynaDocs.csproj -c Release --no-build -- check", validation);
-        Assert.Contains("python DynaDocs.Tests/coverage/gap_check.py --force-run", validation);
-        Assert.Contains("python DynaDocs.Tests/coverage/gap_check.py gate mutation --since 2e31b1d0915529926a79224424c18620ee8003e1", validation);
-        Assert.Contains("python -m pip install -r DynaDocs.Tests/coverage/requirements.lock", validation);
-        Assert.Contains("run: npm ci\n        working-directory: DynaDocs.Tests/coverage", validation);
+        Assert.DoesNotContain("gate mutation", ActiveText(workflow), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("continue-on-error:", validation);
 
         AssertFailClosedPublicationGraph(workflow);
@@ -40,6 +39,56 @@ public sealed class ReleaseWorkflowTests
         Assert.DoesNotContain("id-token:", jobs["release"]);
         Assert.Contains("permissions:\n      contents: read\n      id-token: write", jobs["nuget"]);
         Assert.Contains("permissions:\n      contents: read\n      id-token: write", jobs["npm"]);
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_RejectsInlineFloatingOrMalformedPythonPins()
+    {
+        var workflow = Workflow();
+        var versionFileField = $"python-version-file: '{PythonVersionFile}'";
+
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(
+            workflow.Replace(versionFileField, "python-version: '3.12.10'", StringComparison.Ordinal), PythonRuntimePin()));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(
+            workflow.Replace(versionFileField, "python-version: '3.12'", StringComparison.Ordinal), PythonRuntimePin()));
+        foreach (var pin in new[] { "", "3.12", "3.12.x", ">=3.12", "3.12.10\n3.12.11\n", " 3.12.10\n" })
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(workflow, pin));
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_RejectsHostedOrIncompleteAssuranceToolchains()
+    {
+        var workflow = Workflow();
+        var localPip = $"{AssurancePythonExecutable} -m pip install -r DynaDocs.Tests/coverage/requirements.lock";
+        var localAdapter = $"{AssurancePythonExecutable} DynaDocs.Tests/coverage/run_tests.py";
+        var localCoverage = $"{AssurancePythonExecutable} DynaDocs.Tests/coverage/gap_check.py --force-run";
+
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("- name: Create Python assurance environment", "- name: Removed Python assurance environment", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace($"python -m venv {AssurancePython}", $"# python -m venv {AssurancePython}", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("- name: Restore AltCover", "- name: Removed AltCover restore", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("dotnet tool restore --tool-manifest .config/dotnet-tools.json", "# dotnet tool restore --tool-manifest .config/dotnet-tools.json", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace(localPip, "python -m pip install -r DynaDocs.Tests/coverage/requirements.lock", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace(localAdapter, "python DynaDocs.Tests/coverage/run_tests.py", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace(localCoverage, "python DynaDocs.Tests/coverage/gap_check.py --force-run", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("dotnet-version: '10.0.300'", "dotnet-version: '10.0.x'", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("node-version: '22.13.0'", "node-version: '22'", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet", "REMOVED_DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("dotnet tool restore --tool-manifest .config/dotnet-tools.json", "dotnet tool restore --tool-manifest .config/wrong-tools.json", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace("dotnet tool restore --tool-manifest .config/dotnet-tools.json", "dotnet tool restore", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            SwapSteps(workflow, "Install Node assurance toolchain", "Run isolated test adapter")));
     }
 
     [Fact]
@@ -77,6 +126,44 @@ public sealed class ReleaseWorkflowTests
     }
 
     private static void AssertRejected(string workflow) => Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertFailClosedPublicationGraph(workflow));
+
+    private static void AssertValidationPythonContract(string workflow, string pin)
+    {
+        var setup = JobStep(ActiveJobs(workflow)["validation"], "Setup Python");
+        Assert.Equal("actions/setup-python@v5", StepField(setup, "uses"));
+        Assert.Equal($"'{PythonVersionFile}'", StepField(setup, "python-version-file"));
+        Assert.Null(StepField(setup, "python-version"));
+        Assert.Equal("3.12.10\n", pin.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.True(Version.TryParse(pin.TrimEnd('\r', '\n'), out var version));
+        Assert.Equal(3, version.Major);
+        Assert.Equal(12, version.Minor);
+        Assert.True(version.Build >= 0);
+    }
+
+    private static void AssertValidationAssuranceToolchains(string workflow)
+    {
+        var validation = ActiveJobs(workflow)["validation"];
+        var setupDotnet = JobStep(validation, "Setup .NET");
+        var setupNode = JobStep(validation, "Setup Node.js");
+        Assert.Equal("actions/setup-dotnet@v4", StepField(setupDotnet, "uses"));
+        Assert.Equal("${{ runner.temp }}/dydo-assurance-dotnet", StepField(setupDotnet, "DOTNET_INSTALL_DIR"));
+        Assert.Equal("'10.0.300'", StepField(setupDotnet, "dotnet-version"));
+        Assert.Equal("actions/setup-node@v4", StepField(setupNode, "uses"));
+        Assert.Equal("'22.13.0'", StepField(setupNode, "node-version"));
+        Assert.Equal($"python -m venv {AssurancePython}", StepField(JobStep(validation, "Create Python assurance environment"), "run"));
+        Assert.Equal($"{AssurancePythonExecutable} -m pip install -r DynaDocs.Tests/coverage/requirements.lock", StepField(JobStep(validation, "Install Python assurance toolchain"), "run"));
+        Assert.Equal("dotnet tool restore --tool-manifest .config/dotnet-tools.json", StepField(JobStep(validation, "Restore AltCover"), "run"));
+        Assert.Equal("dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode", StepField(JobStep(validation, "Restore coverage metrics"), "run"));
+        Assert.Equal("npm ci", StepField(JobStep(validation, "Install Node assurance toolchain"), "run"));
+        Assert.Equal("DynaDocs.Tests/coverage", StepField(JobStep(validation, "Install Node assurance toolchain"), "working-directory"));
+        Assert.Equal($"{AssurancePythonExecutable} DynaDocs.Tests/coverage/run_tests.py", StepField(JobStep(validation, "Run isolated test adapter"), "run"));
+        Assert.Equal($"{AssurancePythonExecutable} DynaDocs.Tests/coverage/gap_check.py --force-run", StepField(JobStep(validation, "Run coverage gate"), "run"));
+        Assert.Equal("if ((dotnet --version) -ne '10.0.300') { throw 'Expected .NET SDK 10.0.300.' }", StepField(JobStep(validation, "Verify .NET SDK"), "run"));
+
+        var adapter = validation.IndexOf("- name: Run isolated test adapter", StringComparison.Ordinal);
+        foreach (var name in new[] { "Create Python assurance environment", "Install Python assurance toolchain", "Restore AltCover", "Restore coverage metrics", "Install Node assurance toolchain" })
+            Assert.True(validation.IndexOf($"- name: {name}", StringComparison.Ordinal) < adapter, $"{name} must precede the isolated test adapter.");
+    }
 
     private static void AssertFailClosedPublicationGraph(string workflow)
     {
@@ -156,6 +243,13 @@ public sealed class ReleaseWorkflowTests
         .Replace(second, first, StringComparison.Ordinal)
         .Replace("__temporary_swap__", second, StringComparison.Ordinal);
 
+    private static string SwapSteps(string workflow, string first, string second)
+    {
+        var active = ActiveText(workflow);
+        var validation = ActiveJobs(active)["validation"];
+        return Swap(active, JobStep(validation, first), JobStep(validation, second));
+    }
+
     private static string? JobField(string body, string field)
     {
         foreach (var line in body.Split('\n'))
@@ -230,6 +324,8 @@ public sealed class ReleaseWorkflowTests
     }
 
     private static string Workflow() => File.ReadAllText(RepositoryFile(".github", "workflows", "release.yml"));
+
+    private static string PythonRuntimePin() => File.ReadAllText(RepositoryFile("DynaDocs.Tests", "coverage", ".python-version"));
 
     private static int CountOccurrences(string text, string value)
     {

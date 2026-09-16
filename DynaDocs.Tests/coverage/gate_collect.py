@@ -1,11 +1,12 @@
 """Execute independent collectors and retain exact gaps beside measured findings."""
 import json
 import re
+import subprocess
 from pathlib import Path
 
 from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
 from gate_run import CommandLog, result
-from inventory import git_file_state
+from inventory import build_file_rows, git_file_state, source_fingerprint
 
 
 _DYNAMIC_VULTURE_USES = {
@@ -20,6 +21,21 @@ _DYNAMIC_VULTURE_USES = {
 
 def read_json(path):
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
+
+
+def repository_inputs(root, initial_fingerprint):
+    facts = {'initialSourceFingerprint': initial_fingerprint,
+             'currentSourceFingerprint': None}
+    try:
+        paths, deleted = git_file_state(root)
+        facts['currentSourceFingerprint'] = source_fingerprint(
+            build_file_rows(root, paths, deleted))
+        errors = [] if facts['currentSourceFingerprint'] == initial_fingerprint else [
+            {'message': 'Repository inputs changed during collection', **facts}]
+    except (ValueError, OSError, subprocess.SubprocessError) as error:
+        errors = [{'message': 'Repository inputs could not be rechecked',
+                   'type': type(error).__name__, 'detail': str(error), **facts}]
+    return result(facts, errors=errors)
 
 
 def metric_findings(path, methods):
@@ -112,10 +128,15 @@ class Collectors:
         self.coverage = self.root / 'DynaDocs.Tests/coverage'
         self.python = self.root / 'dydo/_system/.local/static-gates/python/Scripts/python.exe'
         self.paths, self.deleted = git_file_state(self.root)
+        self.source_fingerprint = source_fingerprint(
+            build_file_rows(self.root, self.paths, self.deleted))
         self.inventory = None
         self.project_rows = []
         self.static = {}
         self.discovery = []
+
+    def repository_inputs(self, initial_fingerprint=None):
+        return repository_inputs(self.root, initial_fingerprint or self.source_fingerprint)
 
     def command_json(self, name, command, **kwargs):
         row = self.log.run(name, command, **kwargs)

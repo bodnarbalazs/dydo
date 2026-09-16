@@ -15,7 +15,7 @@ from pathlib import Path
 from copy import deepcopy
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _source_facts_artifacts, _same_instrumented_map,
+from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
                              _subject_commands, _template_original_map, _validate_instrumented,
                              _validate_restored, _write_commands, altcover_commands, main,
@@ -199,40 +199,12 @@ def _materialize_crlf_sources(root, source_commit, sources, destination):
         path.write_bytes(blob.stdout.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
 
 
-def _write_replay_provenance(root, cache):
-    producer = _identity_producer(root)[1]
-    derived = {name: _source_facts(root, producer, name, cache) for name in ASSEMBLY_PROJECTS}
-    (cache / "source-facts-artifacts.json").write_text(
-        json.dumps(_source_facts_artifacts(root, cache, ASSEMBLY_PROJECTS), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8")
-    provenance = cache / "provenance.json"
-    provenance.write_text(json.dumps({
-        "schema": 1, "kind": "newly derived diagnostic replay", "sourceCommit": "ec97c1b4",
-        "retainedInputs": ["identity-pre.json", "identity-pre-artifacts.json",
-                           "template-original-map.json", "coverage.opencover.xml"],
-        "sourceRepresentation": "pinned checkout LF normalized to CRLF for retained checksum validation",
-    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return derived, provenance
-
-
-def _replay_facts(root, raw):
-    cache = raw / "newly-derived-ec97c1b4"
-    cache.mkdir(exist_ok=True)
-    provenance = cache / "provenance.json"
-    if not provenance.is_file():
-        return _write_replay_provenance(root, cache)
-    derived = {name: json.loads((cache / f"source-facts-{name}.json").read_text(encoding="utf-8"))
-               for name in ASSEMBLY_PROJECTS}
-    return derived, provenance
-
-
-def _retarget_assemblies(xml, root, pre):
-    for equivalence in pre:
-        name, path = equivalence["facts"]["assembly_name"], equivalence["facts"]["path"]
-        old = next(module for module in ET.fromstring(xml).findall("./Modules/Module")
-                   if module.findtext("ModuleName") == name).findtext("ModulePath")
-        xml = xml.replace(old, str(root / path), 1)
-    return xml
+def _replay_coverage(root, name):
+    fixture = Path(__file__).resolve().parent / "fixtures/replay" / name
+    report = ET.parse(fixture).getroot()
+    module_path = report.find("./Modules/Module/ModulePath")
+    module_path.text = str(root / module_path.text)
+    return ET.tostring(report, encoding="unicode")
 
 
 class CSharpCoverageTests(unittest.TestCase):
@@ -250,7 +222,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             commands = _subject_commands(root)
             self.assertEqual("dotnet", commands[0][0])
             self.assertEqual(["test", "DynaDocs.sln"], commands[0][1:3])
@@ -262,7 +234,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_subject_runs_both_actions_in_order_with_inherited_recorder_environment(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             recorder = str(root / "recorder")
             for exits, expected in (((7, 0), 7), ((0, 9), 9)):
                 with self.subTest(exits=exits), \
@@ -328,7 +300,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_identity_producer_is_built_outside_instrumented_debug_directories(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             command, producer = _identity_producer(root)
             self.assertEqual("Release", command[command.index("-c") + 1])
             self.assertEqual(root / "DynaDocs.Tests/coverage/metrics/bin/Release/net10.0/GateMetrics.dll",
@@ -347,7 +319,7 @@ class CSharpCoverageTests(unittest.TestCase):
 
     def test_prepare_and_runner_commands_are_exact_and_unfiltered(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             output = root / "evidence/csharp"
             prepare, runner = altcover_commands(root, output)
             rendered = " ".join(prepare)
@@ -628,56 +600,56 @@ class CSharpCoverageTests(unittest.TestCase):
             self.assertTrue((evidence / "build-0.stdout").is_file())
             self.assertFalse((evidence / "identity-pre.json").exists())
 
-    def test_hop3_05_replay_applies_physical_eligibility_to_retained_collector_output(self):
-        """Replay only: retained source facts are absent, so this deliberately stops before join."""
-        root = Path(__file__).resolve().parents[3]
-        raw = root / "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-05/raw"
-        self.assertFalse((raw / "source-facts.json").exists())
-        pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
-        assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == "dydo")
-        derived = root / "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw/newly-derived-ec97c1b4"
-        provenance = json.loads((derived / "provenance.json").read_text(encoding="utf-8"))
-        self.assertEqual("ec97c1b4", provenance["sourceCommit"])
-        source = json.loads((derived / "source-facts-dydo.json").read_text(encoding="utf-8"))
-        xml = (raw / "coverage.opencover.xml").read_text(encoding="utf-8-sig")
-        original_path = next(module for module in ET.fromstring(xml).findall("./Modules/Module")
-                             if module.findtext("ModuleName") == "dydo").findtext("ModulePath")
-        xml = xml.replace(original_path, str(root / assembly["path"]), 1)
-        coverage = coverage_methods(xml, root, assembly, [assembly["path"]],
-                                    excluded_physical_tokens(source, assembly))
-        self.assertTrue(coverage)
+    def test_tracked_replay_fixtures_are_small_and_carry_per_file_origin(self):
+        fixtures = Path(__file__).resolve().parent / "fixtures/replay"
+        fixture_names = {path.name for path in fixtures.iterdir() if path.name != "origin.json"}
+        origins = json.loads((fixtures / "origin.json").read_text(encoding="utf-8"))["fixtures"]
 
-    def test_hop3_06_newly_derived_crlf_replay_completes_retained_join(self):
-        """Replay only: SourceBehavior and CRLF source bytes are newly derived from pinned ec97c1b4."""
+        self.assertEqual(fixture_names, set(origins))
+        for name, origin in origins.items():
+            with self.subTest(name=name):
+                self.assertLess((fixtures / name).stat().st_size, 32 * 1024)
+                self.assertTrue(origin["sources"])
+                self.assertTrue(origin["trimmingRule"])
+                self.assertTrue(all(not Path(row["path"]).is_absolute() for row in origin["sources"]))
+
+    def test_tracked_replay_applies_physical_eligibility_to_collector_output(self):
         root = Path(__file__).resolve().parents[3]
-        source_commit = "ec97c1b44015d83992303ea3dc9a9c045a82587e"
-        raw = root / "DynaDocs.Tests/coverage/results/native-g-20260909-hop3-06/raw"
-        pre = json.loads((raw / "identity-pre.json").read_text(encoding="utf-8"))
-        artifacts = json.loads((raw / "identity-pre-artifacts.json").read_text(encoding="utf-8"))
-        sources = [row for row in artifacts if row["path"].endswith(".cs")]
+        fixtures = Path(__file__).resolve().parent / "fixtures/replay"
+        replay = json.loads((fixtures / "csharp.json").read_text(encoding="utf-8"))["eligibility"]
+        assembly = replay["equivalence"]["facts"]
+        excluded = excluded_physical_tokens({"behavior": replay["sourceBehavior"]}, assembly)
+        coverage = coverage_methods(
+            _replay_coverage(root, "csharp-eligibility.xml"), root, assembly,
+            _altcover_aliases(replay["equivalence"]["aliases"]), excluded)
+
+        self.assertEqual({replay["structuralToken"]}, excluded)
+        covered = next(row for row in assembly["methods"] if row["token"] == replay["coveredToken"])
+        self.assertEqual({covered["identity"]}, set(coverage))
+        self.assertEqual({"8": 4}, coverage[covered["identity"]]["files"]["Rules/TitleRule.cs"]["Lines"])
+
+    def test_tracked_crlf_replay_completes_source_fact_join(self):
+        root = Path(__file__).resolve().parents[3]
+        fixtures = Path(__file__).resolve().parent / "fixtures/replay"
+        replay = json.loads((fixtures / "csharp.json").read_text(encoding="utf-8"))
+        join = replay["join"]
+        sources = join["sourceArtifacts"]
         expected = {row["path"]: (row["bytes"], row["sha256"]) for row in sources}
         with tempfile.TemporaryDirectory() as folder:
             diagnostic_root = Path(folder)
-            _materialize_crlf_sources(root, source_commit, sources, diagnostic_root)
+            _materialize_crlf_sources(root, replay["sourceCommit"], sources, diagnostic_root)
             actual = {row["path"]: (row["bytes"], row["sha256"]) for row in
                       snapshot_artifacts(diagnostic_root, [diagnostic_root / row["path"] for row in sources])}
             self.assertEqual(expected, actual)
-            derived, provenance = _replay_facts(root, raw)
-            cache = provenance.parent
-            self.assertEqual("ec97c1b4", json.loads(provenance.read_text(encoding="utf-8"))["sourceCommit"])
-            self.assertEqual(_source_facts_artifacts(root, cache, ASSEMBLY_PROJECTS),
-                             json.loads((cache / "source-facts-artifacts.json").read_text(encoding="utf-8")))
-            xml = _retarget_assemblies(
-                (raw / "coverage.opencover.xml").read_text(encoding="utf-8-sig"), root, pre)
-            template = {path: {int(token): identity for token, identity in methods.items()}
-                        for path, methods in json.loads((raw / "template-original-map.json").read_text(encoding="utf-8")).items()}
-            self.assertEqual(template, _template_original_map(xml, root, pre))
-            coverage = {row["facts"]["assembly_name"]: coverage_methods(
-                xml, root, row["facts"], _altcover_aliases(row["aliases"]),
-                excluded_physical_tokens(derived[row["facts"]["assembly_name"]], row["facts"])) for row in pre}
-            for name in ("dydo", "GateMetrics"):
-                assembly = next(row["facts"] for row in pre if row["facts"]["assembly_name"] == name)
-                self.assertTrue(join_methods(diagnostic_root, derived[name], assembly, coverage[name])["modules"])
+            equivalence = join["equivalence"]
+            assembly = equivalence["facts"]
+            coverage = coverage_methods(
+                _replay_coverage(root, "csharp-join.xml"), root, assembly,
+                _altcover_aliases(equivalence["aliases"]))
+            result = join_methods(diagnostic_root, join["sourceFacts"], assembly, coverage)
+            self.assertEqual(["Rules/TitleRule.cs"], [row["path"] for row in result["modules"]])
+            self.assertTrue(result["modules"][0]["executable"])
+            self.assertEqual(1, len(result["modules"][0]["methods"]))
 
 
 class CSharpCampaignTests(unittest.TestCase):
@@ -686,7 +658,7 @@ class CSharpCampaignTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.folder = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
-        cls.root = _minimal_campaign_root(Path(cls.folder.name))
+        cls.root = _minimal_campaign_root(Path(cls.folder.name).resolve())
         restored = subprocess.run(["dotnet", "tool", "restore"], cwd=cls.root, text=True,
                                   capture_output=True)
         if restored.returncode:

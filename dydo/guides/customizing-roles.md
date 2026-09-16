@@ -71,9 +71,10 @@ order and the limits worth knowing before a claim rests on one.
 
 - The template pipeline: `dydo sync`, `dydo template update`, the `dydo.json.skills` switchboard,
   `frameworkHashes`, include tags and their re-anchoring, and compiler-owned output cleanup.
-- Generated agent definitions (`.claude/agents/*.md`, `.codex/agents/*.toml`). A role is a skill;
-  DR 049 starts the read-only reviewer pure-skill and adds a native read-only agent only when a real
-  run shows a reviewer writing where it should not.
+- Generated agent definitions (`.claude/agents/*.md`, `.codex/agents/*.toml`). A role is a skill.
+  Reviewer, inquisitor and scout are non-authoring by commission and method. Native agent
+  configuration may request a restrictive sandbox, but its presence is not proof that the host
+  enforces the restriction.
 
 Workflow as a delivery concept is retired by DR 047. The Inquisition Issue protocol supplies the
 current audit procedure.

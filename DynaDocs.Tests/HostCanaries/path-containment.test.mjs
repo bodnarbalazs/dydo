@@ -27,3 +27,11 @@ test("a sibling whose name merely shares the parent's name as a prefix is not in
 test("containment is case-insensitive on Windows, matching samePath", () => {
   assert.equal(isInside("C:/A/B", "C:/a/b/c"), true);
 });
+
+test("a drive-root parent contains its children", () => {
+  assert.equal(isInside("C:/", "C:/foo"), true);
+});
+
+test("a UNC share-root parent contains its children", () => {
+  assert.equal(isInside("//server/share", "//server/share/dir"), true);
+});

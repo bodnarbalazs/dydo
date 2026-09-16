@@ -118,12 +118,13 @@ public sealed class CanonicalSkillAssertionTests
         start.ArgumentList.Add("--");
         foreach (var relativePath in relativePaths) start.ArgumentList.Add(relativePath);
 
-        using var process = Process.Start(start);
-        if (process is null) return [];
+        using var process = Process.Start(start)!;
         var stdout = process.StandardOutput.ReadToEnd();
-        process.StandardError.ReadToEnd();
+        var stderr = process.StandardError.ReadToEnd();
         process.WaitForExit();
-        if (process.ExitCode != 0) return [];
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException(
+                $"git ls-files exited {process.ExitCode} in {repositoryRoot}: {stderr}");
         return stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 

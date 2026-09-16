@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { access, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { isInside, samePath } from "./path-containment.mjs";
 
 const EXPECTED_FACT = "# Mission: {Topic}";
 const CODEX_IMPLICIT_PROMPT = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
@@ -999,10 +1000,8 @@ function pass(assertion) { manifest.assertions.push({ assertion, result: "PASS" 
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function redact(value) { return value.replaceAll(candidate, "<candidate>").replaceAll(evidence, "<evidence>").replaceAll(scratchRoot, "<scratch-root>"); }
 function count(value, needle) { return value.split(needle).length - 1; }
-function samePath(left, right) { return resolve(left).toLowerCase() === resolve(right).toLowerCase(); }
 function ordinal(left, right) { return left < right ? -1 : left > right ? 1 : 0; }
 function objectSha256(value) { return createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
-function isInside(parent, child) { const relative = resolve(child).slice(resolve(parent).length); return samePath(parent, child) || (relative.startsWith(sep) && !relative.includes(`..${sep}`)); }
 function parseJsonLines(value) { return value.split(/\r?\n/).filter(Boolean).flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } }); }
 function parseNdjson(value, label) { const lines = value.split(/\r?\n/).filter(Boolean); const parsed = lines.map(line => JSON.parse(line)); assert(parsed.length > 0, `${label} was empty`); return parsed; }
 function findString(value, predicate) { if (typeof value === "string") return predicate(value) ? value : undefined; if (Array.isArray(value)) { for (const item of value) { const found = findString(item, predicate); if (found) return found; } } else if (value && typeof value === "object") { for (const item of Object.values(value)) { const found = findString(item, predicate); if (found) return found; } } }

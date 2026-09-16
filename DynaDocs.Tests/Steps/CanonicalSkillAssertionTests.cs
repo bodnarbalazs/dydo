@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Steps;
 
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 public sealed class CanonicalSkillAssertionTests
@@ -77,11 +78,53 @@ public sealed class CanonicalSkillAssertionTests
     [Fact]
     public void CanonicalSkillTree_HasNoAuthoredHostCopies()
     {
+        var repositoryRoot = RepositoryRoot();
+        var canonicalSkills = Path.Combine(repositoryRoot, "skills");
+        var trackedFiles = TrackedFilesBelow(repositoryRoot, ".claude/skills", ".agents/skills");
+
         foreach (var relative in new[] { ".claude/skills", ".agents/skills" })
         {
-            var root = Path.Combine(RepositoryRoot(), relative);
-            if (Directory.Exists(root)) Assert.Empty(Directory.EnumerateFileSystemEntries(root));
+            var root = Path.Combine(repositoryRoot, relative);
+            if (!Directory.Exists(root)) continue;
+
+            foreach (var entry in Directory.EnumerateFileSystemEntries(root))
+            {
+                var target = new DirectoryInfo(entry).ResolveLinkTarget(returnFinalTarget: true)?.FullName;
+                Assert.True(target is not null,
+                    $"{Path.GetRelativePath(repositoryRoot, entry)} is a real file or directory, not a link into skills/. " +
+                    "DR 049 forbids a second authored copy of a canonical skill outside the skills/ tree.");
+
+                var resolved = Path.GetFullPath(target!);
+                var insidePrefix = canonicalSkills + Path.DirectorySeparatorChar;
+                Assert.True(resolved.StartsWith(insidePrefix, StringComparison.OrdinalIgnoreCase),
+                    $"{Path.GetRelativePath(repositoryRoot, entry)} resolves to {resolved}, which is outside {canonicalSkills}.");
+            }
         }
+
+        Assert.Empty(trackedFiles);
+    }
+
+    private static string[] TrackedFilesBelow(string repositoryRoot, params string[] relativePaths)
+    {
+        var start = new ProcessStartInfo("git")
+        {
+            WorkingDirectory = repositoryRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        start.ArgumentList.Add("ls-files");
+        start.ArgumentList.Add("--");
+        foreach (var relativePath in relativePaths) start.ArgumentList.Add(relativePath);
+
+        using var process = Process.Start(start);
+        if (process is null) return [];
+        var stdout = process.StandardOutput.ReadToEnd();
+        process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        if (process.ExitCode != 0) return [];
+        return stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     [Fact]

@@ -40,10 +40,12 @@ edit `skills/<name>/` once.
 
 ## The context a role carries
 
-**`## Must-Reads`** — markdown links under that heading. Write each target as the document's path
-under `dydo/`, behind a `../../` climb (`../../dydo/understand/architecture.md`). Whole-directory
-projections keep that canonical lexical base. A project adds
-its own context by editing the skill body directly.
+**`## Must-Reads`** — markdown links under that heading. Write each target as a repository-root
+literal path — "From the repository root, read `dydo/understand/architecture.md`" — the way every
+shipped role names its own (see `skills/reviewer/SKILL.md`). A `../` climb out of the installed skill
+folder does not reach the repository root: hosts normalize it lexically before following the
+projection, so it lands inside `.claude/` or `.agents/`, where no `dydo/` exists. A project adds its
+own context by editing the skill body directly.
 
 **Resources** — a role's own reference behind a file boundary, read only by the branches that need
 it. Link it as `resources/<name>.md`, relative to the skill folder. Reference several skills share

@@ -21,8 +21,10 @@ compatibility roots; no `.opencode/skills` copy is created. No host transforms t
 
 ## Links
 
-- A project document link climbs from the canonical folder: `../../dydo/understand/architecture.md`.
-  The whole-directory host projection preserves that lexical link base.
+- A project document link names a repository-root literal path, read from the repository root:
+  "From the repository root, read `dydo/understand/architecture.md`". A `..` climb out of the
+  installed skill folder is normalized lexically before the host follows the projection, so it lands
+  inside the host's own directory, not the repository root — `dydo/` does not exist there.
 - A role's own resource is linked `resources/<name>.md`, resolved from the skill folder.
 
 ## Customizing a role
@@ -31,10 +33,11 @@ Edit `skills/<name>/` directly. A project's canonical folder is its own: deliber
 framework is accepted, and there is no automatic reconciliation. The frontmatter keys and what each
 host reads are in [Customizing Roles](../guides/customizing-roles.md).
 
-Setup preflights every intended target before it writes. A missing target is created; an existing
-projection that already resolves to the canonical folder is accepted. Any ordinary file, directory,
-or link to another target is reported and left untouched, along with all host configuration and
-unrelated skills. Resolve the collision deliberately and rerun the same command.
+Setup preflights the whole plan before it writes anything: a missing target is planned for creation,
+an existing projection that already resolves to the canonical folder is accepted, and any ordinary
+file, directory, or link to another target stops the run at the first such collision it finds, naming
+it and leaving it and all host configuration and unrelated skills untouched. Resolve the named
+collision deliberately and rerun the same command.
 
 ## Framework documents
 

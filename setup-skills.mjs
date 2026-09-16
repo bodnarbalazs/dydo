@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { lstat, mkdir, readdir, readFile, realpath, symlink } from "node:fs/promises";
+import { lstat, mkdir, readdir, realpath, symlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,7 +38,6 @@ async function canonicalSkills() {
   for (const entry of entries) {
     const body = path.join(canonicalRoot, entry.name, "SKILL.md");
     if (!(await existing(body))?.isFile()) throw new Error(`Canonical skill is missing SKILL.md: ${entry.name}`);
-    await readFile(body);
   }
   return entries.map((entry) => ({ name: entry.name, source: path.join(canonicalRoot, entry.name) }));
 }

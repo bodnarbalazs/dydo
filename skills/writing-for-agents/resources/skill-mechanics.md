@@ -45,9 +45,11 @@ Two choices, trading the two loads:
 ## Where reference lives
 
 - **`## Must-Reads`** — markdown links to project documents under that heading. Author each target
-  as the document's path under `dydo/`, behind a `../../../` climb that resolves from the skill
-  canonical folder (`../../dydo/understand/architecture.md`). Project additions are edits to
-  the skill body itself; include tags are retired.
+  as a repository-root literal path, read from the repository root — "From the repository root, read
+  `dydo/understand/architecture.md`" (see `skills/reviewer/SKILL.md`) — never a `../` climb: a host
+  normalizes that lexically before following the projection, landing inside its own discovery root,
+  not the repository root. Project additions are edits to the skill body itself; include tags are
+  retired.
 - **Resources** — `resources/<name>.md` beside the skill, reached by that same folder-relative path.
   This is disclosure with a file boundary: one skill's own reference, reached only by the branches
   that need it. Reference several skills share lives instead in a model-invoked method skill, or in

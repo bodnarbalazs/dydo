@@ -16,9 +16,9 @@ title-generation request fails the run. `OPENCODE_DISABLE_AUTOUPDATE=1`, `OPENCO
 
 Codex runs with an empty isolated `CODEX_HOME` and a fail-closed loopback Responses provider; it does
 not copy authentication or inherit API-key variables. Plugin startup is disabled, and exactly one
-fully matched read-only command approval is accepted for the derived resource read. Claude's live
-proof calls its configured model provider. Run the complete gate only when the repository owner has
-approved that disclosure and the approval will be retained in the whole-gate staging packet.
+fully matched read-only command approval is accepted for the derived resource read. The isolated-HOME
+Claude leg is retired (DYD-200): Claude Code discovery is proven by direct observation instead, so the
+runnable legs of this recorder are `--only codex` and `--only opencode`.
 
 ```powershell
 node DynaDocs.Tests/HostCanaries/run-host-canaries.mjs `
@@ -29,14 +29,14 @@ node DynaDocs.Tests/HostCanaries/run-host-canaries.mjs `
   --ripgrep "C:\path\to\rg.exe"
 ```
 
-For local harness development, `--only claude`, `--only codex`, or `--only opencode` narrows the run.
-That option is not a substitute for the complete final gate. A failed or partial run keeps its
+For local harness development, `--only codex` or `--only opencode` narrows the run to a single leg.
+That option is not a substitute for the complete gate. A failed or partial run keeps its
 external manifest and captured output, but never counts as acceptance evidence. The disposable run
 is removed after post-run fingerprint and nested-Git checks; caller-owned scratch and retained
 evidence roots are preserved.
 
-The successful packet contains `manifest.json`, the two Claude streams, Codex inventory/live records,
-OpenCode inventory/live records, and both loopback providers' complete request logs. The
+The successful packet contains `manifest.json`, Codex inventory/live records, OpenCode
+inventory/live records, and both loopback providers' complete request logs. The
 manifest records the exact candidate SHA, versions, pinned hashes, commands, durations, assertions,
 and hashes for every evidence artifact. Proxy evidence proves zero proxy-observed external attempts
 and exact loopback traffic; it is not OS-level network confinement and makes no stronger claim.

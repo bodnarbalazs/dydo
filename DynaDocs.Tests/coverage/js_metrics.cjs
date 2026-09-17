@@ -41,7 +41,7 @@ function collectFunctions(rows, suppressions, moduleEdits, tokens) {
             end_line: declaration.loc.end.line, end_column: declaration.loc.end.column,
             body: { start: node.body.loc.start, end: node.body.loc.end },
             parameters: node.params.length, constructor: parent.kind === 'constructor',
-            cognitive: 0, cc: null, start: declaration.range[0], end: declaration.range[1]
+            cognitive: 0, cc: null, start: literalStart(context.sourceCode, node), end: node.range[1]
           });
         }
       };
@@ -49,6 +49,21 @@ function collectFunctions(rows, suppressions, moduleEdits, tokens) {
   };
 }
 
+
+// The runtime join matches a row against V8's own function literal, which starts at the concise
+// method's key but at the function itself for an arrow or function expression used as a property
+// value. A class element's parser consumes one leading `static` token before the literal begins,
+// even when `static` is the method's own name. So the runtime anchor and the diagnostic anchor
+// above are different concerns and only agree by coincidence.
+function literalStart(sourceCode, node) {
+  const parent = node.parent;
+  const concise = parent.type === 'MethodDefinition'
+    || (parent.type === 'Property' && (parent.method || parent.kind !== 'init'));
+  if (!concise) return node.range[0];
+  const head = sourceCode.getFirstToken(parent);
+  return parent.type === 'MethodDefinition' && head.value === 'static'
+    ? sourceCode.getTokenAfter(head).range[0] : head.range[0];
+}
 
 function moduleEdit(node, source) {
   if (node.type === 'ImportDeclaration' || node.type === 'ExportAllDeclaration') return { start: node.range[0], end: node.range[1], text: '' };
@@ -64,7 +79,11 @@ function methodAt(rows, message) {
       (row.end_line === message.line && row.end_column >= message.column - 1);
     return startsBefore && endsAfter;
   }).sort((left, right) => (left.end - left.start) - (right.end - right.start));
-  if (!inside.length || (inside.length > 1 && inside[0].start === inside[1].start && inside[0].end === inside[1].end)) {
+  // Two rows sharing one diagnostic anchor cannot be told apart from a message's location, however
+  // far apart the runtime ranges they also carry are.
+  const ambiguous = inside.length > 1 && ['line', 'column', 'end_line', 'end_column']
+    .every(key => inside[0][key] === inside[1][key]);
+  if (!inside.length || ambiguous) {
     throw new Error(`Missing or ambiguous JavaScript metric location ${message.line}:${message.column}`);
   }
   return inside[0];

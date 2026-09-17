@@ -123,3 +123,39 @@ test('native V8 callable counts sum across inventories with an absent row contri
   assert.equal(join(root, output, ['target.cjs']).modules[0].methods[0].execution_count, 3);
   fs.rmSync(root, { recursive: true });
 });
+
+test('real c8 campaign joins every object, class and standalone callable shape', () => {
+  const tools = path.resolve(__dirname, '..');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd216-js-shapes-'));
+  fs.writeFileSync(path.join(root, 'shapes.cjs'),
+    'const items = [1, 2];\n'
+    + 'const probe = {\n'
+    + '  mark: () => items.length,\n'
+    + '  shorthand() { return items.map(item => item); },\n'
+    + '  plain: function () { return items; },\n'
+    + '  get size() { return items.length; },\n'
+    + '};\n'
+    + 'class Gauge {\n'
+    + '  static level() { return 1; }\n'
+    + '  read() { return 2; }\n'
+    + '}\n'
+    + 'function top() { return probe.shorthand(); }\n'
+    + 'module.exports = { probe, Gauge, top };\n');
+  fs.writeFileSync(path.join(root, 'shapes.test.cjs'),
+    "const {test}=require('node:test');const {probe,Gauge,top}=require('./shapes.cjs');"
+    + "test('shapes',()=>{probe.mark();void probe.size;Gauge.level();top();});\n");
+  const output = path.join(root, 'evidence');
+  const env = { ...process.env }; delete env.NODE_V8_COVERAGE; delete env.NODE_TEST_CONTEXT;
+  const result = spawnSync(process.execPath, [path.join(tools, 'javascript_coverage.cjs'),
+    '--root', root, '--output', output, '--targets-json', '["shapes.cjs"]',
+    '--command-json', '["{node}","--test","shapes.test.cjs"]'],
+    { cwd: root, encoding: 'utf8', env });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const joined = JSON.parse(fs.readFileSync(path.join(output, 'joined.json')));
+  const covered = Object.fromEntries(joined.modules[0].methods.map(row => [row.id, row.covered]));
+  assert.deepEqual(covered, {
+    'mark:3:2': 1, 'shorthand:4:2': 1, '<anonymous>:4:33': 1, 'plain:5:2': 0,
+    'size:6:2': 1, 'level:9:2': 1, 'read:10:2': 0, 'top:12:0': 1,
+  });
+  fs.rmSync(root, { recursive: true });
+});

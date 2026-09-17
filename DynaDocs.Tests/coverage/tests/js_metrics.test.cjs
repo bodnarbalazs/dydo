@@ -73,3 +73,18 @@ test('a class field holding a function is refused for an unjoinable location, no
     assert.throws(() => analyze(source), /^Error: Missing or ambiguous JavaScript metric location 1:11$/);
   }
 });
+
+test('member rows carry the diagnostic head and the runtime literal as separate anchors', () => {
+  // V8 measures the function literal, ESLint reports at the member head, and the two only coincide
+  // for a concise method that is not static; javascript_coverage.cjs joins on start/end.
+  const source = 'const o = { mark: () => 1, shorthand() { return 2; }, get size() { return 3; } };\n'
+    + 'class K { static level() { return 4; } read() { return 5; } }';
+  const rows = analyze(source).methods;
+  assert.deepEqual(rows.map(row => [row.id, source.slice(row.start, row.end)]), [
+    ['mark:1:12', '() => 1'],
+    ['shorthand:1:27', 'shorthand() { return 2; }'],
+    ['size:1:54', 'get size() { return 3; }'],
+    ['level:2:10', 'level() { return 4; }'],
+    ['read:2:39', 'read() { return 5; }'],
+  ]);
+});

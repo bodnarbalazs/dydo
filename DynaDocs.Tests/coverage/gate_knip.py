@@ -19,8 +19,6 @@ def source_owner(root, path):
     if absolute.relative_to(root).as_posix() != path:
         raise ValueError('Noncanonical native source path')
     owners = [folder for folder in PACKAGE_ROOTS if absolute.is_relative_to(root / folder)]
-    if not owners:
-        raise ValueError('Source has no containing package')
     owner = max(owners, key=len)
     return owner, absolute.relative_to(root / owner).as_posix()
 

@@ -16,16 +16,19 @@ and the adopted policy.
 ## Provisioning
 
 `dydo/_system/.local/` is git-ignored and no gate installs anything, so every machine creates its own
-measurement environment before any operation below can run. These are the steps
-`.github/workflows/release.yml` runs before it invokes the facade, in the same order:
+measurement environment before any operation below can run. `.github/workflows/release.yml` runs
+these same steps before it invokes the facade. They are grouped here by toolchain rather than given
+in the workflow's order, because the three toolchains are independent of each other: the only step
+that must precede another is creating the virtual environment its Python packages then install into.
 
 ```powershell
-# 1. as CPython 3.12.10, the patch DynaDocs.Tests/coverage/.python-version declares
+# the Python assurance toolchain; create the environment with CPython 3.12.10 itself,
+# the patch DynaDocs.Tests/coverage/.python-version declares
 python -m venv dydo/_system/.local/static-gates/python
 & dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
-# 2. the Node assurance toolchain, from DynaDocs.Tests/coverage
+# the Node assurance toolchain, from DynaDocs.Tests/coverage
 npm ci
-# 3. AltCover and the metrics closure
+# AltCover and the metrics closure
 dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 ```

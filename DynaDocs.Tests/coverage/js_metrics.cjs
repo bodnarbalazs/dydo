@@ -27,9 +27,12 @@ function collectFunctions(rows, suppressions, moduleEdits, tokens) {
         },
         ':function'(node) {
           const parent = node.parent;
-          // Mirrors ESLint's astUtils.getFunctionHeadLoc: a member's diagnostics are reported at its
-          // key, so rows must sit there too or the messages join to the enclosing function instead.
-          const isMember = ['MethodDefinition', 'Property', 'PropertyDefinition'].includes(parent.type);
+          // Object properties and class methods have their diagnostics reported on the key, where
+          // ESLint's astUtils.getFunctionHeadLoc puts them; rows must sit there too or the messages
+          // join to the enclosing function. PropertyDefinition is excluded on purpose: ESLint scores
+          // a class-field initializer twice against this one row, so that case has no honest anchor
+          // and is left to fail as an unjoinable location rather than a bogus duplicate.
+          const isMember = ['MethodDefinition', 'Property'].includes(parent.type);
           const declaration = isMember ? parent : node;
           const name = node.id?.name || parent.key?.name || parent.key?.value || parent.id?.name || '<anonymous>';
           rows.push({

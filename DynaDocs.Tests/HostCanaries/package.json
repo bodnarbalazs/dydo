@@ -1,0 +1,7 @@
+{
+  "name": "dydo-host-canaries",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Host-skill canary recorder: node entry scripts that record real Claude Code and Codex skill behaviour.",
+  "type": "module"
+}

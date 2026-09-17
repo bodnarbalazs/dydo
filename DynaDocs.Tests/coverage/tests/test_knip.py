@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from gate_knip import collect_knip, workspace_model, normalize_report
+from gate_knip import ISSUES, PACKAGE_ROOTS, collect_knip, workspace_model, normalize_report
 from gate_collect import Collectors
 from gate_run import CommandLog
 from inventory import git_file_state, language_of
@@ -19,9 +19,9 @@ class KnipAccountingTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for folder in ('DynaDocs.Tests/coverage', 'npm'):
+        for folder in PACKAGE_ROOTS:
             package = self.root / folder / 'package.json'
-            package.parent.mkdir(parents=True)
+            package.parent.mkdir(parents=True, exist_ok=True)
             package.write_text('{}', encoding='utf-8')
         self.paths = ['DynaDocs.Tests/coverage/tests/example.test.cjs', 'npm/lib/example.js']
 
@@ -33,16 +33,50 @@ class KnipAccountingTests(unittest.TestCase):
         self.assertEqual(self.paths, [row['path'] for row in model['sources']])
 
     def test_missing_package_outside_root_duplicate_and_unsupported_extension_fail_closed(self):
-        for extra in ['outside.js', 'npm/bin/dydo', '../escape.cjs', self.paths[0]]:
+        for extra in ['npm/bin/dydo', '../escape.cjs', self.paths[0]]:
             with self.subTest(extra=extra):
                 self.assertTrue(workspace_model(self.root, self.paths + [extra])['errors'])
-        (self.root / 'npm/package.json').unlink()
-        self.assertTrue(workspace_model(self.root, self.paths)['errors'])
+        for folder in ('npm', '.'):
+            with self.subTest(folder=folder):
+                (self.root / folder / 'package.json').unlink()
+                self.assertEqual([{'path': folder, 'message': 'Missing actual package manifest'}],
+                                 workspace_model(self.root, self.paths)['errors'])
+                (self.root / folder / 'package.json').write_text('{}', encoding='utf-8')
+
+    def test_nested_declared_roots_give_every_source_its_deepest_owner_alone(self):
+        paths = ['DynaDocs.Tests/HostCanaries/path-containment.mjs',
+                 'DynaDocs.Tests/coverage/tests/example.test.cjs', 'setup.mjs']
+        model = workspace_model(self.root, paths)
+        self.assertEqual([], model['errors'])
+        self.assertEqual(paths, [row['path'] for row in model['sources']])
+        workspaces = model['config']['workspaces']
+        self.assertEqual(['setup.mjs'], workspaces['../..']['project'])
+        self.assertEqual(['path-containment.mjs'], workspaces['../HostCanaries']['project'])
+        self.assertEqual(['tests/example.test.cjs'], workspaces['.']['project'])
+
+    def test_host_canary_sources_join_their_own_declared_package(self):
+        path = 'DynaDocs.Tests/HostCanaries/path-containment.mjs'
+        model = workspace_model(self.root, self.paths + [path])
+        self.assertEqual([], model['errors'])
+        self.assertEqual(['DynaDocs.Tests/HostCanaries'],
+                         [row['workspace'] for row in model['sources'] if row['path'] == path])
+        self.assertEqual(['path-containment.mjs'], model['config']['workspaces']['../HostCanaries']['project'])
+        (self.root / 'DynaDocs.Tests/HostCanaries/package.json').unlink()
+        self.assertEqual([{'path': 'DynaDocs.Tests/HostCanaries', 'message': 'Missing actual package manifest'}],
+                         workspace_model(self.root, self.paths + [path])['errors'])
+
+    def test_spawned_and_command_line_host_entries_stay_reachable_roots(self):
+        paths = self.paths + ['DynaDocs.Tests/HostCanaries/' + name
+                              for name in ('run-host-canaries.mjs', 'openai-sse-provider.mjs', 'path-containment.mjs')]
+        workspace = workspace_model(self.root, paths)['config']['workspaces']['../HostCanaries']
+        self.assertEqual(['openai-sse-provider.mjs', 'path-containment.mjs', 'run-host-canaries.mjs'],
+                         workspace['project'])
+        self.assertEqual(['openai-sse-provider.mjs', 'run-host-canaries.mjs'], workspace['entry'])
 
     def native(self):
         return [{'issues': [{'file': '../../npm/lib/example.js', 'exports': [{'name': 'dead', 'line': 3}],
                             'files': [], 'nsExports': [], 'duplicates': [], 'unresolved': []}]},
-                {'kind': 'measurement', 'includedWorkspaceDirs': [str(self.root / path) for path in ('DynaDocs.Tests/coverage', 'npm')],
+                {'kind': 'measurement', 'includedWorkspaceDirs': [str(self.root / path) for path in PACKAGE_ROOTS],
                  'counters': {'total': 2, 'processed': 2, 'files': 0, 'exports': 1, 'nsExports': 0, 'duplicates': 0, 'unresolved': 0}}]
 
     def test_native_issue_retains_exact_source_and_symbol(self):
@@ -64,8 +98,21 @@ class KnipAccountingTests(unittest.TestCase):
             with self.subTest(mutation=mutation):
                 self.assertTrue(normalize_report(self.root, workspace_model(self.root, self.paths), native)['errors'])
 
-    def test_native_single_graph_preserves_cross_package_test_only_consumer(self):
+    def native_report(self, model):
         tooling = Path(__file__).resolve().parents[1]
+        config = self.root / 'knip.json'
+        config.write_text(json.dumps(model['config']), encoding='utf-8')
+        native = subprocess.run(['node', str(tooling / 'node_modules/knip/bin/knip.js'), '--config', str(config),
+                                 '--reporter', str(tooling / 'knip_reporter.mjs'), '--no-gitignore',
+                                 '--include-entry-exports', '--include', ','.join(ISSUES)],
+                                cwd=self.root / 'DynaDocs.Tests/coverage',
+                                capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assertEqual(1, native.returncode, native.stderr)
+        report = normalize_report(self.root, model, [json.loads(line) for line in native.stdout.splitlines()])
+        self.assertEqual([], report['errors'])
+        return report
+
+    def test_native_single_graph_preserves_cross_package_test_only_consumer(self):
         paths = []
         for folder in ('DynaDocs.Tests/coverage', 'npm'):
             package = self.root / folder
@@ -74,22 +121,22 @@ class KnipAccountingTests(unittest.TestCase):
             (package / 'cross.test.cjs').write_text(f"const {{ used }} = require('{peer}'); used();", encoding='utf-8')
             paths.extend([folder + '/lib.cjs', folder + '/cross.test.cjs'])
         model = workspace_model(self.root, paths)
-        config = self.root / 'knip.json'
-        config.write_text(json.dumps(model['config']), encoding='utf-8')
-        command = ['node', str(tooling / 'node_modules/knip/bin/knip.js'), '--config', str(config),
-                   '--reporter', str(tooling / 'knip_reporter.mjs'), '--no-gitignore', '--include-entry-exports',
-                   '--include', 'files,exports,nsExports,duplicates,unresolved']
         def measure():
-            native = subprocess.run(command, cwd=self.root / 'DynaDocs.Tests/coverage',
-                                    capture_output=True, text=True, encoding='utf-8', timeout=60)
-            self.assertEqual(1, native.returncode, native.stderr)
-            report = normalize_report(self.root, model, [json.loads(line) for line in native.stdout.splitlines()])
-            self.assertEqual([], report['errors'])
-            return {(row['path'], row['diagnostic']['name']) for row in report['findings']}
+            return {(row['path'], row['diagnostic']['name']) for row in self.native_report(model)['findings']}
         expected = {('npm/lib.cjs', 'dead'), ('DynaDocs.Tests/coverage/lib.cjs', 'dead')}
         self.assertEqual(expected, measure())
         (self.root / 'DynaDocs.Tests/coverage/cross.test.cjs').write_text("require('../../npm/lib.cjs');", encoding='utf-8')
         self.assertEqual(expected | {('npm/lib.cjs', 'used')}, measure())
+
+    def test_an_unimported_repository_root_module_is_reported_not_silently_owned(self):
+        (self.root / 'DynaDocs.Tests/coverage/entry.test.cjs').write_text("require('node:assert');", encoding='utf-8')
+        (self.root / 'stray.mjs').write_text('export const orphan = () => 1;\n', encoding='utf-8')
+        model = workspace_model(self.root, ['DynaDocs.Tests/coverage/entry.test.cjs', 'stray.mjs'])
+        self.assertEqual([], model['errors'])
+        self.assertEqual(['stray.mjs'], model['config']['workspaces']['../..']['project'])
+        self.assertEqual([], model['config']['workspaces']['../..']['entry'])
+        self.assertEqual([('stray.mjs', 'knip-files')],
+                         [(row['path'], row['gate']) for row in self.native_report(model)['findings']])
 
     def test_an_absent_native_knip_installation_is_never_a_green_gate(self):
         runner = Collectors.__new__(Collectors)

@@ -198,10 +198,27 @@ test('rejects a root that does not exist or is not a directory', () => {
   });
 });
 
-test('the default root is the directory holding the script itself', () => {
-  // Executing the default would project into this repository, so the default is pinned by
-  // source instead: every caller (CanonicalSkillSteps, run-host-canaries) invokes the
-  // script with no arguments and depends on this exact expression.
-  const source = fs.readFileSync(script, 'utf8');
-  assert.match(source, /if \(argv\.length === 0\) return path\.dirname\(fileURLToPath\(import\.meta\.url\)\);/);
+test('with no arguments the root is the script\'s own directory, never the working directory', () => {
+  inRoot((root) => {
+    // Running the canonical file with no arguments would project into this checkout, so the default
+    // is exercised on a copy. The working directory below carries its own canonical skills tree: a
+    // root taken from cwd would succeed there and project 'decoy' instead of 'alpha'.
+    fs.copyFileSync(script, path.join(root, 'setup-skills.mjs'));
+    writeSkill(root, 'alpha');
+    const elsewhere = path.join(root, 'workdir');
+    writeSkill(elsewhere, 'decoy');
+
+    const result = spawnSync(process.execPath, [path.join(root, 'setup-skills.mjs')], {
+      cwd: elsewhere, encoding: 'utf8', timeout: 10000,
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /1 skills, 2 projections created/);
+    for (const hostRoot of ['.claude', '.agents']) {
+      const target = path.join(root, hostRoot, 'skills', 'alpha');
+      assert.ok(fs.existsSync(target) && fs.lstatSync(target).isSymbolicLink(), `${target} was not created beside the script`);
+      assert.equal(fs.realpathSync(target), fs.realpathSync(path.join(root, 'skills', 'alpha')));
+      assert.ok(!fs.existsSync(path.join(elsewhere, hostRoot)), `setup rooted ${hostRoot} at the working directory`);
+    }
+  });
 });

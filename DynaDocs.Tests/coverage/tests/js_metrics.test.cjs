@@ -50,3 +50,18 @@ test('explicit ESM parsing preserves exported function metrics', () => {
   assert.equal(rows[0].cc, 2);
   assert.equal(rows[0].cognitive, 1);
 });
+
+test('object arrow properties record at their key like ESLint diagnostics do', () => {
+  const source = 'function make(items) { return { mark: () => items.length, pick: (x) => (x ? 1 : 2), stop: () => items.pop() }; }';
+  const rows = analyze(source).methods;
+  assert.deepEqual(rows.map(row => row.id),
+    ['make:1:0', ...['mark', 'pick', 'stop'].map(key => `${key}:1:${source.indexOf(`${key}:`)}`)]);
+  assert.deepEqual(rows.map(row => row.cc), [1, 1, 2, 1]);
+  assert.deepEqual(rows.map(row => row.cognitive), [0, 0, 1, 0]);
+});
+
+test('a function used as a computed key is refused, never silently mis-joined', () => {
+  // ESLint reports both the key function and the property value at the same head location, so no
+  // metric can be attributed to either; refusing beats guessing which function a message belongs to.
+  assert.throws(() => analyze('function outer() { return { [function key() { return 1; }]: (x) => (x ? 1 : 2) }; }'), /ambiguous/);
+});

@@ -27,8 +27,10 @@ function collectFunctions(rows, suppressions, moduleEdits, tokens) {
         },
         ':function'(node) {
           const parent = node.parent;
-          const isMethod = parent.type === 'MethodDefinition' || (parent.type === 'Property' && parent.method);
-          const declaration = isMethod ? parent : node;
+          // Mirrors ESLint's astUtils.getFunctionHeadLoc: a member's diagnostics are reported at its
+          // key, so rows must sit there too or the messages join to the enclosing function instead.
+          const isMember = ['MethodDefinition', 'Property', 'PropertyDefinition'].includes(parent.type);
+          const declaration = isMember ? parent : node;
           const name = node.id?.name || parent.key?.name || parent.key?.value || parent.id?.name || '<anonymous>';
           rows.push({
             id: `${name}:${declaration.loc.start.line}:${declaration.loc.start.column}`,

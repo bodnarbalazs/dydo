@@ -4,7 +4,13 @@ import { lstat, mkdir, readdir, realpath, symlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = path.dirname(fileURLToPath(import.meta.url));
+function parseRoot(argv) {
+  if (argv.length === 0) return path.dirname(fileURLToPath(import.meta.url));
+  if (argv.length !== 2 || argv[0] !== "--root" || !argv[1]) throw new Error("usage: setup-skills.mjs [--root <existing-directory>]");
+  return path.resolve(argv[1]);
+}
+
+const root = parseRoot(process.argv.slice(2));
 const canonicalRoot = path.join(root, "skills");
 const hostRoots = [path.join(root, ".claude", "skills"), path.join(root, ".agents", "skills")];
 
@@ -62,6 +68,8 @@ async function planProjections(skills) {
   }
   return planned;
 }
+
+if (!(await existing(root))?.isDirectory()) throw new Error(`Root is not a directory: ${root}`);
 
 const skills = await canonicalSkills();
 const planned = await planProjections(skills);

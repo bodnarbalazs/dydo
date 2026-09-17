@@ -227,7 +227,9 @@ async function verifyMaterializedTree(sha, root) {
     assert(entry.type === "blob" && ["100644", "100755", "120000"].includes(entry.mode), `unsupported source tree entry: ${JSON.stringify(entry)}`);
     const path = join(root, ...entry.path.split("/"));
     const info = await lstat(path);
-    const actualType = info.isSymbolicLink() ? "link" : info.isFile() ? "regular-file" : "other";
+    let actualType = "other";
+    if (info.isSymbolicLink()) actualType = "link";
+    else if (info.isFile()) actualType = "regular-file";
     const expectedType = entry.mode === "120000" ? "link" : "regular-file";
     assert(actualType === expectedType, `materialized entry type mismatch for ${entry.path}: ${actualType}`);
     const oid = await gitBlobOid(path, info);
@@ -986,7 +988,7 @@ function pass(assertion) { manifest.assertions.push({ assertion, result: "PASS" 
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function redact(value) { return value.replaceAll(candidate, "<candidate>").replaceAll(evidence, "<evidence>").replaceAll(scratchRoot, "<scratch-root>"); }
 function count(value, needle) { return value.split(needle).length - 1; }
-function ordinal(left, right) { return left < right ? -1 : left > right ? 1 : 0; }
+function ordinal(left, right) { if (left < right) return -1; if (left > right) return 1; return 0; }
 function objectSha256(value) { return createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
 function parseJsonLines(value) { return value.split(/\r?\n/).filter(Boolean).flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } }); }
 function parseNdjson(value, label) { const lines = value.split(/\r?\n/).filter(Boolean); const parsed = lines.map(line => JSON.parse(line)); assert(parsed.length > 0, `${label} was empty`); return parsed; }

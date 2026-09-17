@@ -9,7 +9,7 @@ Own your project's knowledge, use Linear for live work, and let native coding ag
 
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
 durable project knowledge explicit and versioned, authors shared role methods as native skills for
-Claude Code and Codex, and enforces project rules through hooks.
+Claude Code, Codex, and OpenCode, and enforces project rules through hooks.
 Linear owns the live Initiative/Project/Issue graph; the coding platform owns sessions, worktrees,
 delegation, and scheduling.
 
@@ -56,9 +56,9 @@ validation, auto-fixing, indexes, and graph tooling. This is the context that co
 
 ### 2. One role, native on each host
 
-A role is a plain `SKILL.md` folder in the cross-vendor format, committed to each host's discovery
-path: `.claude/skills/<role>/` and `.agents/skills/<role>/`. There is no compile step and no
-generated agent definition. The host runtime owns agent identity and orchestration.
+A role is one plain `skills/<role>/` folder in the cross-vendor format. `node setup-skills.mjs`
+exposes it through Claude Code and Codex discovery roots; OpenCode reads those compatibility roots.
+There is no compile step or generated agent definition. The host runtime owns agent identity and orchestration.
 
 ### 3. Enforced project rules
 
@@ -112,7 +112,7 @@ runtime or machine into an existing project.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`
-- **Roles** — plain `SKILL.md` folders under `.claude/skills/` and `.agents/skills/`, edited directly
+- **Roles** — plain `skills/<role>/` folders, edited directly and exposed by `setup-skills.mjs`
 
 Edit the skill folder in place. A project's copy is its own; there is no automatic reconciliation.
 
@@ -123,8 +123,10 @@ project/
 |-- dydo.json                    # Integrations, scan exclusions, nudges, testing
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/skills/              # Claude skill folders (SKILL.md + resources)
-|-- .agents/skills/              # Codex skill folders (SKILL.md + resources + openai.yaml)
+|-- setup-skills.mjs             # Create safe host discovery projections
+|-- skills/                      # One canonical folder per role
+|-- .claude/skills/              # Ignored per-skill Claude projections
+|-- .agents/skills/              # Ignored per-skill Codex projections; OpenCode reads both roots
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture

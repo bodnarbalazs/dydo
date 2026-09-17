@@ -28,22 +28,28 @@ explicit role costs no context and has to be remembered instead, which is why th
 
 ## What each host reads
 
-| Artifact | Claude Code | Codex |
+| Artifact | Canonical path | Host behavior |
 |---|---|---|
-| the skill | `.claude/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` |
-| the role's own resource | `.claude/skills/<name>/resources/<n>.md` | `.agents/skills/<name>/resources/<n>.md` |
-| explicit invocation | `disable-model-invocation: true` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` |
-| an argument hint | `argument-hint:` in `SKILL.md` | `.agents/skills/<name>/agents/openai.yaml` with `interface.default_prompt` |
+| the skill | `skills/<name>/SKILL.md` | Claude Code, Codex, and OpenCode read the same body through their discovery roots. |
+| the role's own resource | `skills/<name>/resources/<n>.md` | Relative links resolve from the whole-folder projection. |
+| explicit invocation | `disable-model-invocation: true` in `SKILL.md`; `skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` | Claude Code and Codex respectively. Stable OpenCode has no claimed explicit-only control. |
+| an argument hint | `argument-hint:` in `SKILL.md`; `skills/<name>/agents/openai.yaml` with `interface.default_prompt` | Claude Code and Codex respectively. |
 
-Nothing generates these files. A change edits each host's copy by hand. The two differ only in that
-host-specific metadata; the body is the same prose on both.
+Nothing generates the canonical files. `node setup-skills.mjs` creates only host discovery links;
+edit `skills/<name>/` once.
 
 ## The context a role carries
 
-**`## Must-Reads`** — markdown links under that heading. Write each target as the document's path
-under `dydo/`, behind a `../../../` climb (`../../../dydo/understand/architecture.md`); both hosts
-place a skill three levels below the repository root, so one climb resolves on either. A project adds
-its own context by editing the skill body directly.
+**`## Must-Reads`** — project documents named under that heading. Write each target as a
+repository-root literal path in a code span, read from the repository root — "From the repository
+root, read `dydo/understand/architecture.md`" — the way every shipped role names its own (see
+`skills/reviewer/SKILL.md`); `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs:150-156` enforces that no
+Must-Read is written as a markdown link. A `../` climb does not work here because the identical file
+is read at two different depths: canonically at `skills/<name>/`, and through the host projection at
+`.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
+normalization against the projected path versus POSIX `..` applied to the physical parent once the
+symlink is followed — so no single relative climb is correct from every install location. A project
+adds its own context by editing the skill body directly.
 
 **Resources** — a role's own reference behind a file boundary, read only by the branches that need
 it. Link it as `resources/<name>.md`, relative to the skill folder. Reference several skills share

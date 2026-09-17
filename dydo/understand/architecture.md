@@ -39,17 +39,15 @@ container. JSON serialization is source-generated for Native AOT compatibility.
 A role is a plain `SKILL.md` folder authored directly in the cross-vendor
 [agentskills.io](https://agentskills.io) format — there is no compile step
 ([Decision 049](../project/decisions/049-skills-are-the-source-retire-the-compiler.md)). The
-canonical folder is `.claude/skills/<role>/SKILL.md`; its committed Codex copy is
-`.agents/skills/<role>/SKILL.md`, joining `agents/openai.yaml` where explicit invocation or an
-argument hint is declared. Both hosts read the body where it lives.
-
-Committed per-host copies were chosen over symlinks because a checkout with symlinks disabled
-materialises a link as a text file, stranding the host. DR 047 retires Workflow as an operating-model
-concept; no workflow scripts exist. What each frontmatter key means is in
+canonical folder is `skills/<role>/`. It keeps Claude's frontmatter, resources, and Codex's
+`agents/openai.yaml` together. The dependency-free `setup-skills.mjs` creates one directory symlink
+or Windows junction per role in `.claude/skills/` and `.agents/skills/`; OpenCode reads those two
+compatibility roots without a third projection. DR 047 retires Workflow as an operating-model
+concept; no workflow scripts exist. What each metadata key means is in
 [Customizing Roles](../guides/customizing-roles.md), the shapes and link rules in
 [Templates and Customization](./templates-and-customization.md).
 
-The skill folders under `.claude/skills/` and `.agents/skills/` are the source: edit them directly.
+The folders under `skills/` are the only editable skill source. Host projections are ignored local setup.
 
 ## Knowledge and work boundary
 
@@ -86,14 +84,14 @@ rules check titles, links, filenames, and project-specific invariants.
 - **Dedicated live-work owner** — Linear manages volatile project state; dydo does not duplicate it.
 - **Git-native durable knowledge** — decisions and proof stay reviewable at exact commits.
 - **Host-native execution** — Claude Code and Codex own delegation, isolation, and lifecycle.
-- **Committed native skills per host** — one role, authored as a plain `SKILL.md` folder in each host's discovery path.
+- **One canonical native skill tree** — host discovery paths point at the same authored role folders.
 - **Universal guard rules** — enforcement is independent of any dydo-managed identity.
 - **No DI framework** — direct construction keeps the Native AOT CLI small.
 
 ## Related
 
 - [Work Model](./work-model.md) — Linear/Git operating contract
-- [Templates and Customization](./templates-and-customization.md) — Authoring and compilation
+- [Templates and Customization](./templates-and-customization.md) — Authoring and customization
 - [Guard System](./guard-system.md) — Enforcement layers and the hook contract
 - [Configuration](../reference/configuration.md) — Runtime configuration
 - [Coding Standards](../guides/coding-standards.md) — Repository conventions

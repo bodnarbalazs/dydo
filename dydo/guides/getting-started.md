@@ -47,9 +47,10 @@ which wires the local runtime without touching the documentation tree.
 
 ## 3. Author the skills
 
-A role is a plain `SKILL.md` folder under `.claude/skills/<role>/` and `.agents/skills/<role>/`,
-committed and edited directly; there is no compile step. Done when both discovery paths carry the
-role folders the project uses — for a project dogfooding dydo, every shipped role.
+A role is one plain `skills/<role>/` folder, committed and edited directly; there is no compile step.
+Run `node setup-skills.mjs` from the project root. Done when the Claude and Codex discovery roots
+contain whole-directory projections for every role. OpenCode consumes those compatibility roots and
+needs no third projection.
 
 ## 4. Connect Linear
 

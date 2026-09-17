@@ -112,10 +112,11 @@ last one proves the plan's acceptance criteria.
 
 **Symptom:** a sub-agent works in a way its skill forbids, or its edits never reach the disk.
 
-**Mechanism:** hosts differ in what a spawned agent inherits and how native restrictions are applied.
-A sandbox setting requests a boundary; its presence does not prove the host enforced it. Hook trust is
-pinned by hash, so changing the hook configuration leaves sessions unguarded until the human re-trusts
-it.
+**Mechanism:** host-native spawn routes differ. The role is authored once at `skills/<name>` and setup
+exposes it through each discovery root; a Claude agent definition may preload that skill, and a Codex
+child is told to load it by name — what else it inherits is not documented. A sandbox setting requests
+a boundary; its presence does not prove the host enforced it. Hook trust is pinned by hash, so changing
+the hook configuration leaves sessions unguarded until the human re-trusts it.
 
 **Rule:** before relying on a new spawn path, ask the agent to name what it loaded and record the
 answer. Prove any load-bearing restriction with a live host check. A spawn that cannot see its skill

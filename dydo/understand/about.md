@@ -16,7 +16,8 @@ agent coordination.
 ## What dydo does
 
 - **Documentation as memory** — agents onboard from structured, reviewable project knowledge.
-- **Native skill authoring** — roles are plain `SKILL.md` folders under `.claude/skills/` and `.agents/skills/`, edited directly; there is no compile step.
+- **Native skill authoring** — roles are plain `skills/<role>/` folders, edited directly and exposed
+  through each host's discovery roots by `setup-skills.mjs`; there is no compile step.
 - **Guard enforcement** — `dydo guard` applies universal off-limits rules and project nudges.
 - **Documentation tooling** — `dydo check`, `dydo fix`, indexes, and graph commands keep knowledge usable.
 - **Reviewed delivery knowledge** — Decisions, Project plans, audits, and assimilation evidence remain in Git.

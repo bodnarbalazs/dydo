@@ -33,9 +33,10 @@ mirror Linear objects.
 Transition-only commands must be labeled as historical migration compatibility in active docs and must
 not be presented as the current work model.
 
-## Generated and installed copies
+## Authored and projected files
 
-A role is a plain `SKILL.md` folder under `.claude/skills/` and `.agents/skills/`; edit it directly.
+A role is a plain `skills/<name>/` folder; edit only that canonical source. `setup-skills.mjs` creates
+host discovery links and is not a dydo CLI command.
 Framework document templates under `Templates/` feed `dydo init` scaffolding; keep
 `Templates/dydo-commands.template.md` and `dydo/reference/dydo-commands.md` aligned by hand.
 

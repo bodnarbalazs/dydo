@@ -12,11 +12,12 @@ only for as long as a human keeps a session open.
 
 ## Today
 
-`admiral` is a hat, compiled as an explicit-only skill: a human invokes it, and it carries one
-approved Project plan to a feature branch he can land. Inside that one session it opens the feature
-branch, keeps N Issues in flight by spawning an `issue-captain` per pickable Issue, merges serially,
-runs a merge review after every merge, amends the plan as fog clears, routes what the plan cannot
-answer, and offers the inquisition. When the session ends, the Project stops advancing.
+`admiral` is a hat authored with the other roles at `skills/<name>` — specifically `skills/admiral` —
+and exposed to each host by setup. A human invokes it, and it carries one approved Project plan to a
+feature branch he can land. Inside that one session it opens the feature branch, keeps N Issues in
+flight by spawning an `issue-captain` per pickable Issue, merges serially, runs a merge review after
+every merge, amends the plan as fog clears, routes what the plan cannot answer, and offers the
+inquisition. When the session ends, the Project stops advancing.
 
 ## What the feature adds
 

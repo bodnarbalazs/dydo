@@ -37,3 +37,12 @@ test('maintained test command includes coverage and npm lifecycle suites', () =>
   ]);
   fs.rmSync(root, { recursive: true });
 });
+
+test('the discovered suite includes the HostCanaries containment test', () => {
+  const root = path.resolve(__dirname, '..', '..', '..');
+  const discovered = maintainedTests(root).map(file => path.relative(root, file).replaceAll('\\', '/'));
+  assert.ok(
+    discovered.includes('DynaDocs.Tests/coverage/tests/path-containment.test.mjs'),
+    'moving or renaming the HostCanaries containment test out of the discovered roots must not go unnoticed',
+  );
+});

@@ -1,4 +1,5 @@
 """Incomplete role joins retain source obligations and expose their exact gap."""
+import json
 import sys
 import tempfile
 import unittest
@@ -10,6 +11,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
 
 _EVIDENCE = 'dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence'
+_CANARIES = 'DynaDocs.Tests/HostCanaries'
+_SUITES = 'DynaDocs.Tests/coverage/tests'
+_DRIVERS = {f'{_CANARIES}/run-host-canaries.mjs': (f'{_CANARIES}/path-containment.mjs',
+                                                   f'{_CANARIES}/run-host-canaries-args.mjs'),
+            f'{_CANARIES}/openai-sse-provider.mjs': (f'{_CANARIES}/openai-sse-provider-args.mjs',)}
+_EXEMPT_REASON = 'external-host-driver-as-embedded-source'
 
 
 def _git(root, *arguments):
@@ -173,3 +180,108 @@ class GateInventoryTests(unittest.TestCase):
             self.assertEqual([], report['sources'])
             self.assertEqual(sorted(row for row in tracked if row.endswith('.cs')),
                              sorted(row['path'] for row in report['excluded']))
+
+    def canary_packet(self, root, omit_file=(), omit_association=()):
+        """Write the two host drivers beside the extractions and associations that vouch for them."""
+        paths = []
+        for name in sorted({*_DRIVERS, *(row for group in _DRIVERS.values() for row in group)}):
+            if name in omit_file:
+                continue
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('export const parse = (argv) => argv;\n', encoding='utf-8')
+            paths.append(name)
+        modules = [{'module': name, 'tests': [f'{_SUITES}/{Path(name).stem}.test.mjs']}
+                   for name in paths if name not in omit_association]
+        return paths, {'schema': 1, 'modules': modules}
+
+    def test_a_host_driver_is_exempt_from_coverage_yet_stays_a_measured_static_source(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            paths, manifest = self.canary_packet(root)
+
+            report = assemble_inventory(root, paths, [], [], associations=manifest)
+
+            rows = {row['path']: row for row in report['sources']}
+            self.assertEqual(sorted(paths), sorted(rows))
+            self.assertEqual([], report['errors'])
+            self.assertEqual([], report['excluded'])
+            for driver, extractions in _DRIVERS.items():
+                exemption = rows[driver]['coverageExemption']
+                self.assertEqual(_EXEMPT_REASON, exemption['reason'])
+                self.assertEqual({name: [f'{_SUITES}/{Path(name).stem}.test.mjs']
+                                  for name in extractions}, exemption['origin']['extractions'])
+                self.assertEqual(rows[driver]['testFiles'], exemption['origin']['tests'])
+                self.assertEqual('target', rows[driver]['role'])
+                self.assertEqual('javascript', rows[driver]['language'])
+            for name in (f'{_CANARIES}/path-containment.mjs', f'{_CANARIES}/run-host-canaries-args.mjs',
+                         f'{_CANARIES}/openai-sse-provider-args.mjs'):
+                self.assertNotIn('coverageExemption', rows[name])
+
+    def test_a_driver_whose_extracted_logic_is_gone_or_untested_is_measured_again(self):
+        extraction = f'{_CANARIES}/path-containment.mjs'
+        driver = f'{_CANARIES}/run-host-canaries.mjs'
+        for case, keywords in (('absent', {'omit_file': (extraction,)}),
+                               ('untested', {'omit_association': (extraction,)})):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                paths, manifest = self.canary_packet(root, **keywords)
+
+                report = assemble_inventory(root, paths, [], [], associations=manifest)
+
+                rows = {row['path']: row for row in report['sources']}
+                self.assertNotIn('coverageExemption', rows[driver])
+                self.assertEqual([{'path': driver, 'type': 'host-driver-logic-untested',
+                                   'untested': [extraction]}], report['errors'])
+                self.assertIn('coverageExemption', rows[f'{_CANARIES}/openai-sse-provider.mjs'])
+
+    def test_a_driver_the_association_manifest_drops_is_measured_again(self):
+        driver = f'{_CANARIES}/openai-sse-provider.mjs'
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            paths, manifest = self.canary_packet(root, omit_association=(driver,))
+
+            report = assemble_inventory(root, paths, [], [], associations=manifest)
+
+            rows = {row['path']: row for row in report['sources']}
+            self.assertNotIn('coverageExemption', rows[driver])
+            self.assertEqual([{'path': driver, 'type': 'host-driver-unassociated',
+                               'manifest': 'DynaDocs.Tests/coverage/test-associations.json'}],
+                             report['errors'])
+
+    def test_the_exemption_names_two_paths_and_neither_prefix_nor_suffix_widens_it(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            paths, manifest = self.canary_packet(root)
+            lookalikes = [f'{_CANARIES}/nested/run-host-canaries.mjs',
+                          f'{_CANARIES}/run-host-canaries.mjs.bak.mjs',
+                          f'{_CANARIES}/openai-sse-provider-extra.mjs']
+            for name in lookalikes:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('export const parse = (argv) => argv;\n', encoding='utf-8')
+            manifest['modules'].extend({'module': name, 'tests': [f'{_SUITES}/lookalike.test.mjs']}
+                                       for name in lookalikes)
+
+            report = assemble_inventory(root, [*paths, *lookalikes], [], [], associations=manifest)
+
+            rows = {row['path']: row for row in report['sources']}
+            self.assertEqual([], report['errors'])
+            self.assertEqual(sorted(_DRIVERS),
+                             sorted(path for path, row in rows.items() if 'coverageExemption' in row))
+
+    def test_the_two_named_host_drivers_hold_their_exemption_in_this_repository(self):
+        repository = Path(__file__).resolve().parents[3]
+        manifest = json.loads((repository / 'DynaDocs.Tests/coverage/test-associations.json')
+                              .read_text(encoding='utf-8'))
+        paths = sorted({*_DRIVERS, *(row for group in _DRIVERS.values() for row in group)})
+
+        report = assemble_inventory(repository, paths, [], [], associations=manifest)
+
+        rows = {row['path']: row for row in report['sources']}
+        self.assertEqual([], report['errors'])
+        self.assertEqual(sorted(_DRIVERS),
+                         sorted(path for path, row in rows.items() if 'coverageExemption' in row))
+        self.assertEqual({_EXEMPT_REASON},
+                         {row['coverageExemption']['reason'] for row in rows.values()
+                          if 'coverageExemption' in row})

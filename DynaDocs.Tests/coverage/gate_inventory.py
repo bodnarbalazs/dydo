@@ -36,6 +36,13 @@ def _role(relative, language, projects, test_files):
     return ('test' if relative in test_files else 'target'), [], None
 
 
+_ASSOCIATIONS = 'DynaDocs.Tests/coverage/test-associations.json'
+_HOST_DRIVERS = {
+    'DynaDocs.Tests/HostCanaries/run-host-canaries.mjs': (
+        'DynaDocs.Tests/HostCanaries/path-containment.mjs',
+        'DynaDocs.Tests/HostCanaries/run-host-canaries-args.mjs'),
+    'DynaDocs.Tests/HostCanaries/openai-sse-provider.mjs': (
+        'DynaDocs.Tests/HostCanaries/openai-sse-provider-args.mjs',)}
 _DERIVED = 'dydo/reference/gap-check.example.py'
 _DERIVED_SOURCE = 'DynaDocs.Tests/coverage/gap_check.py'
 _DERIVED_PRODUCER = 'DynaDocs.Tests/coverage/sync_testing_example.py'
@@ -104,6 +111,25 @@ def _structural_exclusion(root, relative, paths, test_files):
     return None, None
 
 
+def _coverage_exemption(root, relative, paths, association_map):
+    """Exempt a named driver of an external host from the coverage thresholds alone, and only
+    while its extracted logic is tested and the driver itself keeps an associated test file."""
+    extractions = _HOST_DRIVERS.get(relative)
+    if extractions is None:
+        return None, None
+    path_set = set(paths)
+    untested = [module for module in extractions if module not in path_set
+                or not (root / module).is_file() or not association_map.get(module)]
+    if untested:
+        return None, {'path': relative, 'type': 'host-driver-logic-untested', 'untested': untested}
+    if not association_map.get(relative):
+        return None, {'path': relative, 'type': 'host-driver-unassociated',
+                      'manifest': _ASSOCIATIONS}
+    return {'reason': 'external-host-driver-as-embedded-source',
+            'origin': {'extractions': {module: association_map[module] for module in extractions},
+                       'tests': association_map[relative]}}, None
+
+
 def _discovered_test_files(paths, discovery):
     test_files = {row['file'] for row in discovery}
     if not test_files <= set(paths):
@@ -129,7 +155,10 @@ def _source_row(root, relative, path, existing, projects, test_files, associatio
     source = {'path': relative, 'sha256': digest, 'language': language, 'role': role,
               'projects': [owner['path'] for owner in owners], 'executable': executable,
               'testFiles': association_map.get(relative, [])}
-    return source, None, [error for error in (exclusion_error, role_error) if error]
+    exemption, exemption_error = _coverage_exemption(root, relative, existing, association_map)
+    if exemption:
+        source['coverageExemption'] = exemption
+    return source, None, [error for error in (exclusion_error, role_error, exemption_error) if error]
 
 
 def _source_rows(root, existing, projects, test_files, association_map):

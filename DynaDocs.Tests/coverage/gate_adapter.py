@@ -401,7 +401,8 @@ def collect_static(root, output, stack, initial_fingerprint=None):
 def _target_paths(inventory, language):
     payload = json.loads(Path(inventory).read_text(encoding="utf-8"))
     return [row["path"] for row in payload["sources"]
-            if row["language"] == language and row["role"] != "test"]
+            if row["language"] == language and row["role"] != "test"
+            and not row.get("coverageExemption")]
 
 
 def _python_artifacts(raw, run):
@@ -431,19 +432,17 @@ def collect_python_coverage(root, raw, inventory):
                             _python_artifacts(raw, run))
 
 
-def collect_node_coverage(root, raw, initial_fingerprint=None):
+def collect_node_coverage(root, raw, inventory, initial_fingerprint=None):
     from gate_policy import evaluate_policy
     from gate_collect import repository_inputs
-    from inventory import build_file_rows, git_file_state, language_of, source_fingerprint
+    from inventory import build_file_rows, git_file_state, source_fingerprint
     run = _report_root(raw)
     paths, deleted = git_file_state(root)
     initial_fingerprint = initial_fingerprint or source_fingerprint(
         build_file_rows(root, paths, deleted))
     if deleted:
         raise ValueError("Deleted maintained inputs prevent JavaScript coverage")
-    tests = {row["file"] for row in _ordinary_discovery(root, paths)}
-    sources = [relative for relative in paths
-               if language_of(root / relative) == "javascript" and relative not in tests]
+    sources = _target_paths(inventory, "javascript")
     extensionless = [relative for relative in sources if not Path(relative).suffix]
     measurable = [relative for relative in sources if Path(relative).suffix]
     request = {"root": str(root), "output": str(raw), "targets": measurable,
@@ -517,7 +516,8 @@ def collect_coverage(root, output, stack, inventory):
         return collect_python_coverage(root, raw, inventory)
     if stack == "node":
         payload = json.loads(Path(inventory).read_text(encoding="utf-8"))
-        return collect_node_coverage(root, raw, payload["candidate"]["sourceFingerprint"])
+        return collect_node_coverage(root, raw, inventory,
+                                     payload["candidate"]["sourceFingerprint"])
     if stack == "dotnet":
         return collect_dotnet_coverage(root, raw)
     raise ValueError(f"Unknown stack: {stack}")

@@ -742,7 +742,95 @@ class CoverageCampaignTests(unittest.TestCase):
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
                 answer = gate_adapter.collect_dotnet_coverage(root, raw)
 
-            self.assertEqual([{"gate": "functional", "child_exit": 1}], answer["findings"])
+            self.assertEqual([{"gate": "functional", "child_exit": 1, "failingTests": [],
+                               "failingTestsSummary": "campaign subject streams unavailable: "
+                                                      "altcover-runner.stdout, altcover-runner.stderr"}],
+                             answer["findings"])
+
+    def test_a_failed_csharp_suite_names_the_dotnet_tests_that_failed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            write_file(raw, "raw/altcover-runner.stdout",
+                      "some AltCover visit-flush chatter\r\n"
+                      "  Failed DynaDocs.Tests.A.B [12 ms]\r\n"
+                      "  Failed DynaDocs.Tests.C.D(x: 1) [< 1 ms]\r\n"
+                      "Failed!  - Failed:     2, Passed:  1705, Skipped:     0, Total:  1707, "
+                      "Duration: 2 m 9 s - DynaDocs.Tests.dll (net10.0)\r\n")
+            write_file(raw, "raw/altcover-runner.stderr", "")
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            self.assertEqual([{"gate": "functional", "child_exit": 1,
+                               "failingTests": ["DynaDocs.Tests.A.B", "DynaDocs.Tests.C.D(x: 1)"],
+                               "failingTestsSummary": "2 failing tests"}],
+                             answer["findings"])
+
+    def test_a_failed_python_subject_is_named_from_the_runner_stderr(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            write_file(raw, "raw/altcover-runner.stdout",
+                      "Passed!  - Failed:     0, Passed:  1707, Skipped:     0, Total:  1707, "
+                      "Duration: 2 m 9 s - DynaDocs.Tests.dll (net10.0)\r\n")
+            write_file(raw, "raw/altcover-runner.stderr",
+                      "......F.E.........\r\n"
+                      "======================================================================\r\n"
+                      "FAIL: test_x (tests.test_csharp_metrics.Case.test_x)\r\n"
+                      "----------------------------------------------------------------------\r\n"
+                      "AssertionError\r\n"
+                      "======================================================================\r\n"
+                      "ERROR: test_y (tests.test_csharp_metrics.Case.test_y)\r\n"
+                      "----------------------------------------------------------------------\r\n"
+                      "ValueError\r\n"
+                      "----------------------------------------------------------------------\r\n"
+                      "Ran 35 tests in 59.727s\r\n"
+                      "\r\n"
+                      "FAILED (failures=1, errors=1)\r\n")
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            finding = answer["findings"][0]
+            self.assertEqual(["tests.test_csharp_metrics.Case.test_x",
+                              "tests.test_csharp_metrics.Case.test_y"], finding["failingTests"])
+            self.assertEqual("2 failing tests", finding["failingTestsSummary"])
+
+    def test_more_failing_tests_than_the_cap_are_counted_and_truncated(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            blocks = "".join(f"  Failed DynaDocs.Tests.Case.Test{i} [1 ms]\r\n" for i in range(137))
+            write_file(raw, "raw/altcover-runner.stdout",
+                      blocks + "Failed!  - Failed:   137, Passed:  1570, Skipped:     0, Total:  1707, "
+                      "Duration: 2 m 9 s - DynaDocs.Tests.dll (net10.0)\r\n")
+            write_file(raw, "raw/altcover-runner.stderr", "")
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            finding = answer["findings"][0]
+            self.assertEqual([f"DynaDocs.Tests.Case.Test{i}" for i in range(10)],
+                             finding["failingTests"])
+            self.assertEqual("137 failing tests (first 10 named)", finding["failingTestsSummary"])
+
+    def test_an_unparseable_or_missing_stream_says_so_instead_of_implying_no_failures(self):
+        for case in ("both-present-naming-nothing", "stderr-absent"):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
+                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+                write_file(raw, "raw/altcover-runner.stdout", "some unrelated noise\r\n")
+                if case == "both-present-naming-nothing":
+                    write_file(raw, "raw/altcover-runner.stderr", "some unrelated noise\r\n")
+                    expected_summary = ("no failing test named in altcover-runner.stdout or "
+                                       "altcover-runner.stderr")
+                else:
+                    expected_summary = "campaign subject streams unavailable: altcover-runner.stderr"
+
+                with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
+                    answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+                self.assertEqual("fail", answer["status"])
+                finding = answer["findings"][0]
+                self.assertEqual([], finding["failingTests"])
+                self.assertEqual(expected_summary, finding["failingTestsSummary"])
 
     def test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target(self):
         with tempfile.TemporaryDirectory() as folder:

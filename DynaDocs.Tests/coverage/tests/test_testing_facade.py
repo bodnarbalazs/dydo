@@ -595,6 +595,36 @@ class TestingFacadeTests(unittest.TestCase):
         self.assert_derived(payload, ('failed', 5, 1), ('failed', 1), 1)
         self.assertTrue(payload['results'][0]['reason'].startswith('test verdict derived from the coverage row'))
 
+    def test_derived_suite_failure_names_the_failing_tests_in_the_row(self):
+        finding = {**functional(1), 'failingTests': ['A.B', 'C.D'],
+                   'failingTestsSummary': '2 failing tests'}
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 1, [finding]), 1)
+        self.assert_exit(p, 1)
+        self.assert_derived(payload, ('failed', 1, 1), ('failed', 1), 1)
+        reason = payload['results'][0]['reason']
+        self.assertTrue(reason.endswith('; 2 failing tests: A.B, C.D'), reason)
+        self.assertTrue(any(reason in line for line in p.stdout.splitlines()), p.stdout)
+
+    def test_a_failure_finding_without_named_tests_keeps_the_plain_row(self):
+        for finding in (functional(1),
+                        {**functional(1), 'failingTests': [],
+                         'failingTestsSummary':
+                             'no failing test named in altcover-runner.stdout or '
+                             'altcover-runner.stderr'}):
+            with self.subTest(finding=finding):
+                p, _, payload = self.derived_case(coverage_report('first-coverage', 1, [finding]), 1)
+                self.assert_exit(p, 1)
+                reason = payload['results'][0]['reason']
+                if 'failingTestsSummary' in finding:
+                    self.assertTrue(reason.endswith(
+                        '; no failing test named in altcover-runner.stdout or '
+                        'altcover-runner.stderr'), reason)
+                    self.assertFalse(reason.endswith(': '), reason)
+                else:
+                    self.assertTrue(reason.startswith('test verdict derived from the coverage row'),
+                                    reason)
+                    self.assertNotIn(';', reason)
+
     def test_derived_campaign_could_not_measure(self):
         p, _, payload = self.derived_case(coverage_report('first-coverage'), 2)
         self.assert_exit(p, 2)

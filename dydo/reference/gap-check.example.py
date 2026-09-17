@@ -384,13 +384,22 @@ def walk(value, keys):
     return value
 
 
-def failure_matches(report, declaration):
+def failure_finding(report, declaration):
     container = walk(report, declaration[:-1])
     if not isinstance(container, list):
-        return False
+        return None
     matcher = declaration[-1]
-    return any(isinstance(item, dict) and all(key in item and item[key] == value for key, value in matcher.items())
-               for item in container)
+    return next((item for item in container
+                if isinstance(item, dict) and all(key in item and item[key] == value
+                                                  for key, value in matcher.items())), None)
+
+
+def named_tests(finding):
+    summary = finding.get("failingTestsSummary")
+    names = finding.get("failingTests")
+    if not isinstance(summary, str) or not isinstance(names, list):
+        return ""
+    return f"; {summary}" + (f": {', '.join(names)}" if names else "")
 
 
 def suite_verdict(root, stack, coverage_row):
@@ -415,9 +424,11 @@ def suite_verdict(root, stack, coverage_row):
     if value == 0:
         return result(stack, "test", "passed", childExit=0,
                       reason=f"test verdict derived from the coverage row: suite exit 0 at {artifact}")
-    if failure_matches(report, declaration["failure"]):
+    finding = failure_finding(report, declaration["failure"])
+    if finding is not None:
         return result(stack, "test", "failed", childExit=value,
-                      reason=f"test verdict derived from the coverage row: suite exit {value} at {artifact}")
+                      reason=f"test verdict derived from the coverage row: suite exit {value} "
+                             f"at {artifact}{named_tests(finding)}")
     return result(stack, "test", "invalid",
                   reason=f"suite verdict not established: the coverage row did not attribute child exit {value} to the suite")
 

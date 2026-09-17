@@ -17,71 +17,69 @@ internal static partial class LinkExtractor
             var line = lines[i];
             var lineNumber = i + 1;
 
-            // Frontmatter is YAML metadata, not markdown; a link-shaped title: value is not a link
-            if (line.TrimEnd('\r') == "---" && (i == 0 || inFrontmatter))
-            {
-                inFrontmatter = i == 0;
-                continue;
-            }
-
-            if (inFrontmatter)
+            if (ShouldSkipLine(line, i, ref inFrontmatter, ref inCodeBlock))
                 continue;
 
-            if (line.TrimStart().StartsWith("```"))
-            {
-                inCodeBlock = !inCodeBlock;
-                continue;
-            }
-
-            if (inCodeBlock)
-                continue;
-
-            // The H1 IS the doc title; link-shaped text in it is quoted verbatim, not navigable
-            if (TitleLineRegex().IsMatch(line))
-                continue;
-
-            foreach (Match match in MarkdownLinkRegex().Matches(line))
-            {
-                if (IsInsideInlineCode(line, match.Index))
-                    continue;
-
-                var target = match.Groups[2].Value;
-                var (path, anchor) = SplitAnchor(target);
-
-                var linkType = target.StartsWith("http://") || target.StartsWith("https://")
-                    ? LinkType.External
-                    : LinkType.Markdown;
-
-                links.Add(new LinkInfo(
-                    RawText: match.Value,
-                    DisplayText: match.Groups[1].Value,
-                    Target: path,
-                    Anchor: anchor,
-                    Type: linkType,
-                    LineNumber: lineNumber
-                ));
-            }
-
-            foreach (Match match in WikilinkRegex().Matches(line))
-            {
-                if (IsInsideInlineCode(line, match.Index))
-                    continue;
-
-                var path = match.Groups[1].Value;
-                var (targetPath, anchor) = SplitAnchor(path);
-
-                links.Add(new LinkInfo(
-                    RawText: match.Value,
-                    DisplayText: match.Groups[2].Success ? match.Groups[2].Value : path,
-                    Target: targetPath,
-                    Anchor: anchor,
-                    Type: LinkType.Wikilink,
-                    LineNumber: lineNumber
-                ));
-            }
+            AddMarkdownLinks(links, line, lineNumber);
+            AddWikilinks(links, line, lineNumber);
         }
 
         return links;
+    }
+
+    private static bool ShouldSkipLine(string line, int index,
+        ref bool inFrontmatter, ref bool inCodeBlock)
+    {
+        // Frontmatter is YAML metadata, not markdown; a link-shaped title: value is not a link
+        if (line.TrimEnd('\r') == "---" && (index == 0 || inFrontmatter))
+        {
+            inFrontmatter = index == 0;
+            return true;
+        }
+
+        if (inFrontmatter)
+            return true;
+
+        if (line.TrimStart().StartsWith("```"))
+        {
+            inCodeBlock = !inCodeBlock;
+            return true;
+        }
+
+        // The H1 IS the doc title; link-shaped text in it is quoted verbatim, not navigable
+        return inCodeBlock || TitleLineRegex().IsMatch(line);
+    }
+
+    private static void AddMarkdownLinks(List<LinkInfo> links, string line, int lineNumber)
+    {
+        foreach (Match match in MarkdownLinkRegex().Matches(line))
+        {
+            if (IsInsideInlineCode(line, match.Index))
+                continue;
+
+            var target = match.Groups[2].Value;
+            var (path, anchor) = SplitAnchor(target);
+            var linkType = target.StartsWith("http://") || target.StartsWith("https://")
+                ? LinkType.External
+                : LinkType.Markdown;
+            links.Add(new LinkInfo(match.Value, match.Groups[1].Value, path, anchor,
+                linkType, lineNumber));
+        }
+    }
+
+    private static void AddWikilinks(List<LinkInfo> links, string line, int lineNumber)
+    {
+        foreach (Match match in WikilinkRegex().Matches(line))
+        {
+            if (IsInsideInlineCode(line, match.Index))
+                continue;
+
+            var path = match.Groups[1].Value;
+            var (targetPath, anchor) = SplitAnchor(path);
+            var displayText = match.Groups[2].Success ? match.Groups[2].Value : path;
+            links.Add(new LinkInfo(match.Value, displayText, targetPath, anchor,
+                LinkType.Wikilink, lineNumber));
+        }
     }
 
     private static (string path, string? anchor) SplitAnchor(string target)

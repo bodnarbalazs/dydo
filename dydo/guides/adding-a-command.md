@@ -26,26 +26,22 @@ smoke coverage.
 ## Product-boundary check
 
 Before adding a command, confirm the capability belongs inside dydo. Local documentation, validation,
-template compilation, guard, configuration, model, and utility operations fit the product boundary.
+native skill authoring, guard, configuration, and utility operations fit the product boundary.
 Linear work management does not: do not add commands that create, update, poll, cache, provision, or
 mirror Linear objects.
 
 Transition-only commands must be labeled as historical migration compatibility in active docs and must
 not be presented as the current work model.
 
-## Generated and installed copies
+## Authored and projected files
 
-Edit authoritative sources, then use product commands:
+A role is a plain `skills/<name>/` folder; edit only that canonical source. `setup-skills.mjs` creates
+host discovery links and is not a dydo CLI command.
+Framework document templates under `Templates/` feed `dydo init` scaffolding; keep
+`Templates/dydo-commands.template.md` and `dydo/reference/dydo-commands.md` aligned by hand.
 
-```bash
-dydo template update --diff
-dydo sync
-dydo check
-```
-
-Do not hand-edit compiled skills or agent artifacts. When a framework source and installed document are
-required to match byte-for-byte, update them through the product workflow and let the consistency tests
-prove parity.
+Do not hand-edit the protected `dydo/index.md`, `dydo/files-off-limits.md` or `dydo.json`; the human
+owns them and the guard blocks direct writes.
 
 ## Verification
 

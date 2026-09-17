@@ -59,9 +59,4 @@ function getDownloadUrl(version, platformInfo) {
   return `${baseUrl}/v${version}/${assetName}`;
 }
 
-function getChecksumsUrl(version) {
-  const baseUrl = 'https://github.com/bodnarbalazs/dydo/releases/download';
-  return `${baseUrl}/v${version}/checksums.txt`;
-}
-
-module.exports = { getPlatformInfo, getDownloadUrl, getChecksumsUrl, PLATFORM_MAPPING };
+module.exports = { getPlatformInfo, getDownloadUrl };

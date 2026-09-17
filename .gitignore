@@ -9,13 +9,14 @@ riderModule.iml
 nul
 DynaDocs.sln.DotSettings.user
 
-# Claude Code: ignore machine-local config, but SHARE dydo-generated native
-# agents/skills via the repo (Decision 024 — they are project artifacts).
+# Host-local files stay local. Canonical skills are authored in /skills; setup-skills.mjs
+# creates the ignored host discovery projections without hiding other host configuration.
 .claude/*
 !.claude/agents/
-!.claude/skills/
 !.claude/workflows/
 !.claude/settings.json
+/.claude/skills/
+/.agents/skills/
 
 # DynaDocs agent workspaces (local state)
 dydo/agents/
@@ -25,4 +26,5 @@ dydo/_system/.local/
 /DynaDocs.Tests/coverage/report
 /DynaDocs.Tests/coverage/results
 /DynaDocs.Tests/coverage/__pycache__/
+/DynaDocs.Tests/coverage/tests/__pycache__/
 /DynaDocs.Tests/TestResults

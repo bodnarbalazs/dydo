@@ -15,23 +15,11 @@ public class CompletionProviderTests
     [InlineData("help")]
     [InlineData("completions")]
     [InlineData("complete")]
-    [InlineData("template")]
     [InlineData("validate")]
     public void TopLevelCommands_ContainsCommand(string command)
     {
         var completions = CompletionProvider.GetCompletions(1, ["dydo"]).ToList();
         Assert.Contains(command, completions);
-    }
-
-
-
-    [Theory]
-    [InlineData("template", new[] { "update" })]
-    public void Subcommands_ContainsExpectedEntries(string command, string[] expectedSubcommands)
-    {
-        var completions = CompletionProvider.GetSubcommandCompletions(command, 2, ["dydo", command]).ToList();
-        foreach (var sub in expectedSubcommands)
-            Assert.Contains(sub, completions);
     }
 
     [Fact]

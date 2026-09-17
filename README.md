@@ -3,9 +3,9 @@
 Own your project's durable knowledge, use Linear for live work, and let native coding agents execute.
 
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
-project knowledge explicit and versioned in Git, compiles shared role methods for Claude Code and
-Codex, and enforces project rules through hooks. Linear owns the live Initiative/Project/Issue graph;
-the coding platform owns sessions, worktrees, delegation, and scheduling.
+project knowledge explicit and versioned in Git, authors shared role methods as native skills for
+Claude Code, Codex, and OpenCode, and enforces project rules through hooks. Linear owns the live
+Initiative/Project/Issue graph; the coding platform owns sessions, worktrees, delegation, and scheduling.
 
 This project is an opinionated personal harness, not a compatibility-first product. It evolves with the
 projects using it and deliberately removes machinery that native runtimes or dedicated work-management
@@ -34,10 +34,13 @@ A structured tree (`understand/`, `guides/`, `reference/`, and durable `project/
 validation, auto-fixing, indexes, and graph tooling. Agents onboard through progressive disclosure,
 reading only the durable context relevant to the current Issue.
 
-### One source for native roles and skills
+### One role, native on each host
 
-`dydo sync` compiles role templates and resources into Claude Code and Codex artifacts. Edit the source
-once; both runtimes receive the same method. The host runtime owns agent identity and orchestration.
+A role is one plain `skills/<role>/` folder in the cross-vendor `SKILL.md` format. Run
+`node setup-skills.mjs` once after checkout: it exposes each whole folder at Claude Code's
+`.claude/skills/<role>/` and Codex's `.agents/skills/<role>/` discovery paths. OpenCode reads those
+compatibility roots, so setup creates no third copy. There is no compile step. The host runtime owns
+agent identity and orchestration.
 
 ### Enforced project rules
 
@@ -85,7 +88,6 @@ Run from the project root:
 
 ```bash
 dydo init codex       # or: dydo init claude / dydo init all / dydo init none
-dydo sync             # compile shared roles and skills
 dydo check            # validate the documentation tree
 dydo fix              # repair supported documentation issues
 ```
@@ -96,29 +98,35 @@ runtime or machine into an existing project. The full checklist, Linear workspac
 configuration included, is [Getting Started](dydo/guides/getting-started.md); point an agent at it
 to set dydo up in a project.
 
+For this repository's roles, also run `node setup-skills.mjs`. It is safe to rerun, works on its own
+directory unless you pass `--root <checkout>`, and refuses any other argument. Setup accepts only
+missing projections or links already aimed at the canonical folder; it preflights the whole plan
+before creating anything and stops at the first collision it names, so nothing is created until the
+plan is validated, and it never replaces host configuration or unrelated skills. Resolve the named
+collision yourself, then rerun. OpenCode may report each name from both compatibility roots;
+both entries resolve to the same canonical directory.
+
 Keep current work in Linear. Put information in Git only when it should remain useful and reviewable
 after current workflow state changes.
 
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`.
-- **Roles** — shipped source templates.
-- **Template additions** — Markdown in `dydo/_system/template-additions/`, included through durable hooks.
-- **Models** — abstract role tiers and vendor bindings in `dydo.json`.
+- **Roles** — plain `skills/<role>/` folders, edited directly and exposed to hosts by `setup-skills.mjs`.
 
-Do not hand-edit compiled skills, agents, or workflows. Change their source templates and run
-`dydo sync`.
+A role is its own source; there is no compile step and no automatic reconciliation.
 
 ## Folder Structure
 
 ```text
 project/
-|-- dydo.json                    # Model tiers, integrations, nudges
+|-- dydo.json                    # Integrations, scan exclusions, nudges
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- .claude/                     # Compiled Claude agents, skills, and workflows
-|-- .codex/agents/               # Compiled Codex agents
-|-- .agents/skills/              # Compiled Codex skills
+|-- setup-skills.mjs             # Create safe host discovery projections
+|-- skills/                      # One canonical folder per role
+|-- .claude/skills/              # Ignored per-skill Claude projections
+|-- .agents/skills/              # Ignored per-skill Codex projections; OpenCode also reads both roots
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture
@@ -130,7 +138,7 @@ project/
     |   |-- future-features/     # Unscheduled repo-native ideas
     |   |-- changelog/           # Completed change and release history
     |   `-- pitfalls/            # Recurring gotchas and constraints
-    |-- _system/template-additions/
+    |-- _system/                 # types.json and local runtime state
     `-- _assets/
 ```
 
@@ -150,13 +158,12 @@ work graph in repository files.
 
 ## Command Reference
 
-### Setup and compilation
+### Setup
 
 | Command | Description |
 |---|---|
 | `dydo init <integration>` | Initialize for `claude`, `codex`, `all`, or `none` |
 | `dydo init <integration> --join` | Wire another runtime or machine into an existing project |
-| `dydo sync` | Compile shared roles, skills, resources, and workflows |
 
 ### Documentation and validation
 
@@ -169,12 +176,11 @@ work graph in repository files.
 | `dydo graph stats [--top N]` | Summarize graph connectivity |
 | `dydo validate` | Validate local configuration and nudges |
 
-### Guard, templates
+### Guard
 
 | Command | Description |
 |---|---|
 | `dydo guard` | Evaluate universal hook rules |
-| `dydo template update [--diff]` | Update or preview framework-owned docs |
 
 See the [complete CLI reference](dydo/reference/dydo-commands.md) for options, examples, transition-only
 commands, and exit codes.

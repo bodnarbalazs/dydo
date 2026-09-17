@@ -30,8 +30,10 @@ public class HelpCommandTests
         Assert.DoesNotContain(lines, line => line.StartsWith("  task "));
         Assert.DoesNotContain(lines, line => line.StartsWith("  review "));
         Assert.Contains("completions", output);
-        Assert.Contains("template", output);
+        Assert.DoesNotContain(lines, line => line.StartsWith("  sync "));
+        Assert.DoesNotContain(lines, line => line.StartsWith("  template "));
         Assert.Contains("validate", output);
+        Assert.Contains("gap-check", output);
         Assert.DoesNotContain(lines, line => line.StartsWith("  issue "));
         Assert.Contains("version", output);
         Assert.Contains("help", output);
@@ -74,9 +76,9 @@ public class HelpCommandTests
         Assert.Contains("Setup Commands:", output);
         Assert.Contains("Documentation Commands:", output);
         Assert.Contains("Workspace Commands:", output);
-        Assert.Contains("Role Commands:", output);
+        Assert.DoesNotContain("Role Commands:", output);
         Assert.Contains("Validation Commands:", output);
-        Assert.Contains("Template Commands:", output);
+        Assert.DoesNotContain("Template Commands:", output);
         Assert.DoesNotContain("Task Commands:", output);
         Assert.DoesNotContain("Issue Commands:", output);
         Assert.Contains("Utility:", output);

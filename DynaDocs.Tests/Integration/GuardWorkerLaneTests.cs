@@ -15,9 +15,6 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         $"{{\"session_id\":\"{TestSessionId}\",\"agent_id\":\"wkr-test-1\",\"agent_type\":\"reviewer\","
         + $"\"tool_name\":\"{toolName}\",\"tool_input\":{inputJson}}}";
 
-    private string ManagerJson(string toolName, string inputJson) =>
-        $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{inputJson}}}";
-
     #region Worker Lane — Universal Layers Only
 
     [Fact]

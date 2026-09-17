@@ -1,8 +1,9 @@
 ---
 area: project
 type: decision
-status: proposed
+status: accepted
 date: 2026-09-04
+accepted: 2026-09-05
 participants: [balazs, Claude (Fable)]
 ---
 
@@ -30,10 +31,13 @@ model tiers in use, and the setup guide.
 - Facts established on both hosts: a sub-agent can spawn sub-agents, to a default depth of three on
   Claude Code and to `agents.max_depth`, default one, on Codex (DYD-86 sets both); no sub-agent on
   either host can talk to the human; AGENTS.md reaches a Codex sub-agent (the human's run,
-  2026-09-04). Observed on Claude Code and open on Codex until DYD-88 settles them: a finished
-  background sub-agent wakes an idle session; the human can open a running sub-agent's transcript and
-  steer it; a returned sub-agent resumes with full context when messaged. Cross-session messaging and
-  scheduled polling exist on Claude Code only; the model is cross-platform and rests on neither.
+  2026-09-04). [DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established that a
+  returned Codex `multi_agent` sub-agent resumes with its context when messaged. A finished Codex
+  sub-agent passively waking an idle parent and human-origin steering of a running Codex sub-agent
+  remain unestablished. A Codex spawn requested with `sandbox_mode = "read-only"` completed a normal
+  edit, so the request is not evidence of host enforcement. Claude Code has observed passive wake,
+  transcript steering and returned-sub-agent resume. Cross-session messaging and scheduled polling
+  exist on Claude Code only; the model is cross-platform and rests on neither.
 - Linear, team Dydo, as it existed: no `Planning`, no `Waiting for Human`, seven labels, no templates,
   one human user. The standard described a target, so nothing below costs a migration.
 - The human's targets, from the map's first version and his answers: several Projects in flight at
@@ -191,8 +195,9 @@ The record holds everything else.
 - **Two steps.** The captain returns `done: PR ready` when the PR carries its PASS block and the
   Issue is `Ready to Merge`. When the Merge Sub-issue's blocker clears, the admiral resumes the same
   captain with one word, or commissions a fresh one from the record, and it returns `done: merged`.
-  Resuming with one word and steering through the transcript are Claude Code conveniences; the
-  floor on both hosts is a fresh commission from the record, and a takeover is always a release.
+  Returned-sub-agent resume is observed on both hosts. Steering through a running sub-agent's
+  transcript is a Claude Code convenience and remains unestablished on Codex. The floor on both hosts
+  is a fresh commission from the record, and a takeover is always a release.
 - **Release.** The captain pushes the branch, removes its worktree, sets the parent to `Todo`,
   unassigns, and wires the
   blocker when there is one. The resume point is the last hop's SHA, which it posts at every hop, so
@@ -277,7 +282,22 @@ otherwise. Hats run on the session's model, which the human sets strong.
 *Rejected:* a third tier in use, and effort emitted beside the model (kept as DYD-93), both until
 use proves a need.
 
+**Amended by DYD-134 (2026-09-09).** The tier mechanism this section keeps is retired along with
+DR 028: `dydo.json` has no `models` block, `dydo sync` writes no model into any compiled agent, and
+the two tiers bind nothing. The delegating admiral or Issue Captain chooses the model, and the
+effort where the host exposes one, per task at dispatch time, and states it as a requested value.
+Effort staying with the hosts survives in a sharper form: Claude Code exposes no per-call effort
+argument, so the session owns it, while on Codex the caller supplies effort beside the model.
+DYD-93's compiled per-tier effort is retired rather than deferred. Every other section stands.
+
 ## Consequences
+
+The human accepted this record on 2026-09-05 as the governing 3.0 model. The remaining prompt-file
+propagation is delegated to agents with fresh independent review and the coordinating agent's
+review; another human pass may follow. The dedicated model-dogfood acceptance Project is retired
+under section 2, preserving its historical evidence. The 3.0 consolidation produces a reviewed,
+tested, locally usable release candidate; the human retains the final landing, walkthrough and
+publication acceptance.
 
 - Supersymmetry enters the glossary; the map's section 3 says it in one sentence.
 - The standard is rewritten: twelve statuses with their category and order, ten Types in one `Type`
@@ -301,10 +321,13 @@ use proves a need.
   `types.json` follows the Type set. The prompt-file pass is DYD-90, its worklist the map's §8; the
   Workflow retirement is DYD-92.
 - DR 046 is accepted as written and amended here, not folded in.
-- DYD-86 sets the nesting depth on both hosts before 3.0 is done; DYD-88 verifies the wake, steering,
-  resume and read-only enforcement on Codex and reconciles the context line above, and if a return
-  does not wake a Codex parent, the admiral waits inside its turn for its captains; DYD-89 holds
-  CodeRabbit on top-level and landing merges for 3.1.
+- [DYD-86 — dydo init sets the sub-agent nesting depth on both hosts](https://linear.app/bodnar-balazs/issue/DYD-86/dydo-init-sets-the-sub-agent-nesting-depth-on-both-hosts)
+  sets the nesting depth on both hosts before 3.0 is done. [DYD-88 — Codex sub-agent lifecycle
+  observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume, left passive wake and
+  human-origin steering unestablished, and showed that a requested read-only sandbox did not prevent
+  a normal edit. Until passive wake is established, the Codex admiral waits inside its turn for its
+  captains. [DYD-89 — CodeRabbit on top-level Issue merges and the landing](https://linear.app/bodnar-balazs/issue/DYD-89/coderabbit-on-top-level-issue-merges-and-the-landing)
+  holds CodeRabbit on top-level and landing merges for 3.1.
 
 ## Supersedes and amends
 

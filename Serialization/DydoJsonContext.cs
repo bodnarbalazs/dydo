@@ -13,13 +13,12 @@ using DynaDocs.Models;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(DydoConfig))]
 [JsonSerializable(typeof(StructureConfig))]
-[JsonSerializable(typeof(ModelsConfig))]
-[JsonSerializable(typeof(Dictionary<string, Dictionary<string, string>>))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(Dictionary<string, bool>))]
 [JsonSerializable(typeof(NudgeConfig))]
 [JsonSerializable(typeof(List<NudgeConfig>))]
 [JsonSerializable(typeof(List<string>))]
+[JsonSerializable(typeof(TestingConfig))]
 internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 
 /// <summary>

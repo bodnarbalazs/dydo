@@ -16,7 +16,7 @@ public class LinkResolverTests
     public void ResolveLink_AcceptsExternalLink()
     {
         var doc = CreateDoc("test.md");
-        var link = CreateLink("https://example.com", LinkType.External);
+        var link = LinkTestFactory.Create("https://example.com", LinkType.External);
 
         var result = _resolver.ResolveLink(doc, link, [], BasePath);
 
@@ -28,7 +28,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc("guide.md");
         var target = CreateDoc("reference.md");
-        var link = CreateLink("./reference.md", LinkType.Markdown);
+        var link = LinkTestFactory.Create("./reference.md", LinkType.Markdown);
         var allDocs = new List<DocFile> { source, target };
 
         var result = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -40,7 +40,7 @@ public class LinkResolverTests
     public void ResolveLink_RejectsBrokenLink()
     {
         var source = CreateDoc("test.md");
-        var link = CreateLink("./nonexistent.md", LinkType.Markdown);
+        var link = LinkTestFactory.Create("./nonexistent.md", LinkType.Markdown);
 
         var result = _resolver.ResolveLink(source, link, [source], BasePath);
 
@@ -52,7 +52,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc("guide.md");
         var target = CreateDoc("reference.md", anchors: ["section-1", "section-2"]);
-        var link = CreateLinkWithAnchor("./reference.md", "section-1", LinkType.Markdown);
+        var link = LinkTestFactory.CreateWithAnchor("./reference.md", "section-1", LinkType.Markdown);
         var allDocs = new List<DocFile> { source, target };
 
         var result = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -65,7 +65,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc("guide.md");
         var target = CreateDoc("reference.md", anchors: ["section-1"]);
-        var link = CreateLinkWithAnchor("./reference.md", "nonexistent", LinkType.Markdown);
+        var link = LinkTestFactory.CreateWithAnchor("./reference.md", "nonexistent", LinkType.Markdown);
         var allDocs = new List<DocFile> { source, target };
 
         var result = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -78,7 +78,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc("guides/how-to.md");
         var target = CreateDoc("index.md");
-        var link = CreateLink("../index.md", LinkType.Markdown);
+        var link = LinkTestFactory.Create("../index.md", LinkType.Markdown);
         var allDocs = new List<DocFile> { source, target };
 
         var result = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -91,7 +91,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc("index.md");
         var target = CreateDoc("guides/backend/api.md");
-        var link = CreateLink("./guides/backend/api.md", LinkType.Markdown);
+        var link = LinkTestFactory.Create("./guides/backend/api.md", LinkType.Markdown);
         var allDocs = new List<DocFile> { source, target };
 
         var result = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -104,7 +104,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc("subA/source.md");
         var target = CreateDoc("subB/target.md");
-        var link = CreateLink("../subB/target.md", LinkType.Markdown);
+        var link = LinkTestFactory.Create("../subB/target.md", LinkType.Markdown);
         var allDocs = new List<DocFile> { source, target };
 
         var result = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -117,7 +117,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc("a/b/c/source.md");
         var target = CreateDoc("a/foo/bar.md");
-        var link = CreateLink("../../foo/bar.md", LinkType.Markdown);
+        var link = LinkTestFactory.Create("../../foo/bar.md", LinkType.Markdown);
         var allDocs = new List<DocFile> { source, target };
 
         var result = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -129,7 +129,7 @@ public class LinkResolverTests
     public void ResolveLink_AnchorOnlyLink_ValidatesAgainstSourceDocAnchors()
     {
         var source = CreateDoc("guide.md", anchors: ["section"]);
-        var link = CreateLinkWithAnchor("", "section", LinkType.Markdown);
+        var link = LinkTestFactory.CreateWithAnchor("", "section", LinkType.Markdown);
 
         var result = _resolver.ResolveLink(source, link, [source], BasePath);
 
@@ -140,7 +140,7 @@ public class LinkResolverTests
     public void ResolveLink_AnchorOnlyLink_RejectsUnknownAnchor()
     {
         var source = CreateDoc("guide.md", anchors: ["section"]);
-        var link = CreateLinkWithAnchor("", "missing", LinkType.Markdown);
+        var link = LinkTestFactory.CreateWithAnchor("", "missing", LinkType.Markdown);
 
         var result = _resolver.ResolveLink(source, link, [source], BasePath);
 
@@ -163,7 +163,7 @@ public class LinkResolverTests
     {
         var source = CreateDoc(sourceRel);
         var targetDoc = CreateDoc(expectedKey);
-        var link = CreateLink(target, LinkType.Markdown);
+        var link = LinkTestFactory.Create(target, LinkType.Markdown);
         var allDocs = new List<DocFile> { source, targetDoc };
 
         var ruleSide = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -183,7 +183,7 @@ public class LinkResolverTests
         var targetDoc = CreateDoc(
             targetPath.StartsWith("..") ? "sibling.md" : "a/sibling.md",
             anchors: ["anchor"]);
-        var link = CreateLinkWithAnchor(targetPath, anchor, LinkType.Markdown);
+        var link = LinkTestFactory.CreateWithAnchor(targetPath, anchor, LinkType.Markdown);
         var allDocs = new List<DocFile> { source, targetDoc };
 
         var ruleSide = _resolver.ResolveLink(source, link, allDocs, BasePath);
@@ -198,7 +198,7 @@ public class LinkResolverTests
     public void Resolve_DisagreesIntentionallyOnAnchorOnlyLinks()
     {
         var source = CreateDoc("guide.md", anchors: ["section"]);
-        var link = CreateLinkWithAnchor("", "section", LinkType.Markdown);
+        var link = LinkTestFactory.CreateWithAnchor("", "section", LinkType.Markdown);
 
         Assert.True(_resolver.ResolveLink(source, link, [source], BasePath));
         Assert.Null(_resolver.ResolveToRelativeKey(source, link, BasePath));
@@ -329,30 +329,6 @@ public class LinkResolverTests
             Content = "# Test",
             Anchors = anchors ?? []
         };
-    }
-
-    private static LinkInfo CreateLink(string target, LinkType type)
-    {
-        return new LinkInfo(
-            RawText: $"[link]({target})",
-            DisplayText: "link",
-            Target: target,
-            Anchor: null,
-            Type: type,
-            LineNumber: 1
-        );
-    }
-
-    private static LinkInfo CreateLinkWithAnchor(string target, string anchor, LinkType type)
-    {
-        return new LinkInfo(
-            RawText: $"[link]({target}#{anchor})",
-            DisplayText: "link",
-            Target: target,
-            Anchor: anchor,
-            Type: type,
-            LineNumber: 1
-        );
     }
 
     #endregion

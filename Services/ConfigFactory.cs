@@ -34,7 +34,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|sync|completions|complete|template|validate|version|help)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|version|help)\b.*)",
             Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
@@ -74,47 +74,10 @@ public static class ConfigFactory
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",
-            Message = "This PR carries no review block. Paste the independent reviewer's block under an 'Independent review' heading in the body — rubric, reviewer and model, candidate and base SHA, verdict, gates rerun, findings.",
+            Message = "This PR carries no review block. Add the independent review under an 'Independent review' heading and follow this project's shared Communication and evidence standard.",
             Severity = "warn"
         },
     ];
-
-    /// <summary>
-    /// Shipped model-tier defaults (Decision 028): judgment work runs strong,
-    /// defined production work runs standard. Returns a fresh instance so callers
-    /// can't cross-mutate a shared default.
-    /// </summary>
-    public static ModelsConfig CreateDefaultModels() => new()
-    {
-        Tiers = new Dictionary<string, Dictionary<string, string>>
-        {
-            ["anthropic"] = new()
-            {
-                ["strong"] = "claude-fable-5",
-                ["standard"] = "claude-opus-5",
-                ["light"] = "claude-haiku-4-5"
-            },
-            ["openai"] = new()
-            {
-                ["strong"] = "gpt-5.6-sol",
-                ["standard"] = "gpt-5.6-terra",
-                ["light"] = "gpt-5.6-luna"
-            }
-        },
-        Agents = new Dictionary<string, string>
-        {
-            ["implementer"] = "standard",
-            ["hardener"] = "strong",
-            ["docs-writer"] = "standard",
-            ["reviewer"] = "strong",
-            ["inquisitor"] = "strong",
-            ["project-planner"] = "strong",
-            ["specifier"] = "strong",
-            ["issue-captain"] = "strong",
-            ["research"] = "standard",
-            ["scout"] = "standard"
-        }
-    };
 
     public static DydoConfig CreateDefault()
     {
@@ -130,8 +93,7 @@ public static class ConfigFactory
                 Severity = n.Severity,
                 Audience = n.Audience
             }).ToList(),
-            ScanExclude = DydoInternalScanExclude.ToList(),
-            Models = CreateDefaultModels()
+            ScanExclude = DydoInternalScanExclude.ToList()
         };
     }
 

@@ -36,9 +36,9 @@ type: guide
 
 ### Role Context Reads
 
-Role skill templates can include a `## Must-Reads` section whose markdown links are compiled into
-the generated agent definition by `dydo sync`. This selects role context; documentation
-frontmatter itself does not enforce reads.
+Role skills can include a `## Must-Reads` section whose markdown links resolve from the skill
+folder, carrying its context. This selects role context; documentation frontmatter itself does not
+enforce reads.
 
 ---
 
@@ -54,7 +54,7 @@ frontmatter itself does not enforce reads.
 | `decision` | Decision record | Context → Decision → Consequences |
 | `pitfall` | Known gotcha | Problem → Symptom → Solution |
 | `changelog` | Change log entry | What changed → Why → Impact |
-| `folder-meta` | Describe a folder's purpose | Title → Summary paragraph |
+| `folder-meta` | Describe a folder's purpose | Title → Folder description |
 
 ---
 
@@ -62,7 +62,7 @@ frontmatter itself does not enforce reads.
 
 - **Files:** `kebab-case.md` (lowercase, hyphens)
 - **Folders:** `kebab-case/` (lowercase, hyphens)
-- **Hub files:** `_index.md` in each folder
+- **Navigation pages:** authored `_folder.md` files where a folder needs navigation
 - **Meta files:** `_foldername.md` in direct children of main folders (e.g., `guides/api/_api.md`)
 
 Examples:
@@ -74,19 +74,21 @@ Examples:
 
 ## Structure
 
-### Title and Summary
+### Title and Optional Summary
 
-Every doc must start with:
+Every document needs an H1 title. The content after it may begin with a section, a list, or an
+optional summary:
 
 ```markdown
 # Title
 
-A 1-3 sentence summary of what this document covers.
+An optional summary of what this document covers.
 ```
 
-The summary helps agents quickly determine if this doc is relevant.
+When useful, a summary helps agents quickly determine if this doc is relevant. Neither `dydo check`
+nor `dydo fix` requires one.
 
-**Note:** For folder meta files (`_foldername.md`), the first sentence of the summary is automatically extracted and displayed in hub file links.
+**Note:** Folder meta files (`_foldername.md`) are optional authored navigation pages.
 
 ### Related Section
 
@@ -125,11 +127,10 @@ dydo fix                # Auto-fix what's possible
 |------|----------------|
 | Frontmatter | Required fields present, values valid |
 | Naming | Files and folders are kebab-case |
-| Summary | Title exists, summary paragraph follows |
+| Title | H1 title exists |
 | Links | Relative paths, no broken links |
-| Hub Files | Each folder has `_index.md` |
-| Folder Meta Files | Direct children of main folders have `_foldername.md` |
-| Orphans | Every doc is linked from somewhere |
+| Navigation pages | Optional authored `_folder.md` pages |
+| Folder Meta Files | Optional authored `_foldername.md` pages |
 
 ---
 

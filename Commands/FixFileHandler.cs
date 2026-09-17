@@ -95,8 +95,6 @@ internal static class FixFileHandler
 
             if (!doc.HasFrontmatter)
                 manualFixNeeded.Add($"{doc.RelativePath} - Add frontmatter");
-            else if (string.IsNullOrEmpty(doc.SummaryParagraph))
-                manualFixNeeded.Add($"{doc.RelativePath} - Add summary paragraph");
         }
 
         return manualFixNeeded;
@@ -105,9 +103,6 @@ internal static class FixFileHandler
     private static bool IsExcludedPath(string relativePath)
     {
         var normalized = PathUtils.NormalizePath(relativePath);
-
-        if (normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
-            return true;
 
         if (normalized.StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
             return true;

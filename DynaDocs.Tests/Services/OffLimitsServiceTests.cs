@@ -28,21 +28,26 @@ public class OffLimitsServiceTests : IDisposable
             Directory.Delete(_testDir, true);
     }
 
+    private OffLimitsService LoadPatterns(string markdown)
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), markdown);
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+        return service;
+    }
+
     #region Loading Patterns
 
     [Fact]
     public void IsPathOffLimits_MatchesAbsolutePath_ViaRelativization()
     {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+        var service = LoadPatterns("""
             # Files Off-Limits
 
             ```
             config/*/secret.md
             ```
             """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
 
         var relative = "config/prod/secret.md";
         var absolute = Path.Combine(_testDir, "config", "prod", "secret.md");
@@ -64,7 +69,7 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void LoadPatterns_LoadsFromMarkdownCodeBlock()
     {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+        var service = LoadPatterns("""
             # Files Off-Limits
 
             ```
@@ -72,9 +77,6 @@ public class OffLimitsServiceTests : IDisposable
             secrets.json
             ```
             """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
 
         Assert.Contains(".env", service.Patterns);
         Assert.Contains("secrets.json", service.Patterns);
@@ -182,7 +184,7 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void LoadPatterns_SkipsDescriptiveListItems()
     {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+        var service = LoadPatterns("""
             # Files Off-Limits
 
             ## Syntax
@@ -198,9 +200,6 @@ public class OffLimitsServiceTests : IDisposable
             secrets.json
             ```
             """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
 
         Assert.Equal(2, service.Patterns.Count);
         Assert.Contains(".env", service.Patterns);
@@ -479,7 +478,7 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void LoadPatterns_LoadsWhitelistSection()
     {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+        var service = LoadPatterns("""
             ## Off-Limits
             ```
             .env.*
@@ -490,9 +489,6 @@ public class OffLimitsServiceTests : IDisposable
             .env.example
             ```
             """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
 
         Assert.Contains(".env.*", service.Patterns);
         Assert.Contains(".env.example", service.WhitelistPatterns);
@@ -501,7 +497,7 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void IsPathOffLimits_WhitelistOverridesOffLimits()
     {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+        var service = LoadPatterns("""
             ## Off-Limits
             ```
             .env.*
@@ -512,9 +508,6 @@ public class OffLimitsServiceTests : IDisposable
             .env.example
             ```
             """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
 
         // .env.local should be blocked (matches .env.*)
         Assert.NotNull(service.IsPathOffLimits(".env.local"));

@@ -50,26 +50,21 @@ dydo fix
 | Error | Recovery |
 |---|---|
 | Missing frontmatter | Add the required `area` and `type` fields. |
-| Missing summary | Add a plain summary paragraph immediately after the H1. |
+| Missing title | Add an H1 title. An opening summary is optional. |
 | Bad filename | Rename to kebab-case, or let `dydo fix` handle a safe rename. |
 | Broken link | Correct or remove the relative target. |
-| Missing hub or folder metadata | Run `dydo fix`, then review its diff. |
-| Orphan document | Link it from the appropriate hub or durable parent. |
+| Unreachable document | Add a useful authored navigation or durable-parent link. |
 
 The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical
 evidence is needed; do not recreate repository work records to address a current problem.
 
-## Compiled artifact drift
+## Skill setup collision
 
-Change the source under `Templates/`, then run:
-
-```bash
-dydo template update --diff
-dydo sync
-dydo check
-```
-
-Do not patch `.claude/`, `.codex/`, or `.agents/skills/` by hand.
+A role is authored once under `skills/<name>/`; never maintain a host copy. Run
+`node setup-skills.mjs` after checkout. If it names a collision, the existing file, directory, or
+wrong-target link is human-owned and remains untouched. Decide whether to keep or relocate it, then
+rerun setup. Existing correct links are accepted. There is no compile step, copy reconciliation, or
+generated agent definition. Run `dydo check` to validate the documentation tree.
 
 ## Linear boundary mistakes
 

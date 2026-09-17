@@ -1,0 +1,965 @@
+{
+  "schema": 1,
+  "issue": "DYD-96",
+  "productionOrigin": "37acc1f3706bf925e5230fb58c4a790dba769d62",
+  "amendmentImplementationBase": "633a78e10dc7fcd5992fcb437e87219486ca534d",
+  "status": "production delivered; G-final green under the 2026-09-11 human ruling (gate static + gate coverage, not --force-run). 101 specified paths plus 49 assigned-remediation paths recorded from the measured DR 048 findings; every remediation path traces to a named DYD-96 commit on codex/DYD-96-assurance-adoption.",
+  "paths": [
+    {
+      "path": ".config/dotnet-tools.json",
+      "action": "Replace coverlet.console6.0.4 with local-development altcover.global9.0.102; mutation tooling remains DYD-103",
+      "phase": "production"
+    },
+    {
+      "path": ".editorconfig",
+      "action": "Selected error severities and explicit unrelated Sonar rule deactivation only",
+      "phase": "production"
+    },
+    {
+      "path": "Directory.Build.props",
+      "action": "Private analyzer reference, effective strictness and AdditionalFiles; no version fields",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/glossary.md",
+      "action": "DR048 HCRAP term if current text needs correction; no unrelated terms",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/guides/testing-strategy.md",
+      "action": "Actual static/coverage setup including AltCover9.0.102 eager restore/commands, gates, unavailable distinctions and assertion-role policy",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/reference/coverage-tools.md",
+      "action": "Concrete adapter commands, AltCover OpenCover/token and Roslyn policy-CC schemas, provenance and tool restoration, portable-PDB document origin classes",
+      "phase": "production"
+    },
+    {
+      "path": "dydo/reference/gap-check.example.py",
+      "action": "Mechanically derived exact facade copy, no separate maintained edits",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/.gitignore",
+      "action": "Only assurance local dependency/raw output locations",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/associations.py",
+      "action": "Replace selected-case witnesses with simple exact source/test file relations",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/coverage.runsettings",
+      "action": "Delete obsolete Coverlet collector runsettings; AltCover preparation is owned by csharp_coverage.py",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/csharp_coverage.py",
+      "action": "Replace Coverlet with one isolated AltCover9.0.102 --eager prepare/runner full-suite campaign; preserve raw reports/spools and pre/instrumented/post identities; pass each assembly's owning project to the producer and compare document tables pre/instrumented; the pinned prepare command carries no --showGenerated (AltCover's -2 Visualizer marker is not a count)",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/csharp_join.py",
+      "action": "Replace Coverlet signature/line join with exact original-module plus MethodDef-token AltCover OpenCover join; retain PDB/source/kickoff ownership and reject synthetic summaries; resolve report File rows through the document table and account generated/package-only methods by origin",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gap_check.json",
+      "action": "Configure static/coverage adapters and full Node test adapter; preserve mutation unavailable and public shape",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gap_check.py",
+      "action": "Bounded non-test native2/130 protocol amendment and help; preserve all other reviewed behavior",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_adapter.py",
+      "action": "Private stack/gate adapter, isolated campaign and exact report publication",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_clones.py",
+      "action": "Native clone accounting and simultaneous15-line100-token threshold",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_collect.py",
+      "action": "Adopt native static collectors and wire complete current inventory, no pending placeholders",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_diagnostics.py",
+      "action": "Native diagnostics normalization and explicit suppression/gap failures",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_inventory.py",
+      "action": "Current source roles and input artifact contract; remove retired workflow exception",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_knip.py",
+      "action": "Native entrypoint and unused-export/source accounting",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_policy.py",
+      "action": "Extract retained DR048 policy only; no old facade",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_run.py",
+      "action": "Adopt command evidence and independent aggregation, current environment API and130 cleanup",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_versions.py",
+      "action": "Exact G dependency locks/runtime evidence; remove mutation and receipt coupling",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/inventory.py",
+      "action": "NUL-safe tracked/untracked/deletion identity and strict complete fingerprint",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/javascript_coverage.cjs",
+      "action": "Ordinary c8/V8 report and exact source/callable join",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_metrics.cjs",
+      "action": "Official SonarJS per-callable metrics, exact source identity and diagnostics",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/knip_reporter.mjs",
+      "action": "Pinned native Knip structured report",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/AssemblyFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; add the ordinally sorted PDB URL-to-identity documents table",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/AssemblyMetrics.cs",
+      "action": "Retain exact original DLL/PDB/MVID/MethodDef token/signature/document identity before and after AltCover instrumentation; classify every non-hidden PDB document by origin (maintained/generated/package) through the owning project's locked assets, fail on any other URL, and emit the URL-to-identity document table",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/BehaviorFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/BehaviorFragment.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/CompiledMethod.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ConstructorFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/FileFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/GateMetrics.csproj",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/MethodIdentity.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/NamespaceDependencies.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/packages.lock.json",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/Program.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; --assembly takes --root and --project, the old grammar is exit 2",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ProjectFacts.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/ProjectMetrics.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; expose SourceIdentity to the assembly producer so both levels classify identically",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SemanticMethod.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceBehavior.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceMember.cs",
+      "action": "Add the pinned Sonar-calibrated Roslyn syntax-node policy-CC value to each exact source-callable fact; no vendor/physical CC substitution",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceMetrics.cs",
+      "action": "Compute source-callable policy CC with the pinned Sonar-calibrated Roslyn syntax convention and exact nested-callable exclusion; reject raw CFG/vendor CC",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourcePoint.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector; add origin (maintained/generated/package) beside the classified document identity",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/SourceToken.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/metrics/StructuralMethod.cs",
+      "action": "Adopt exact native Roslyn/Sonar/PDB producer with one named type per file; no ShadowAssembly or semantic selector",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/node_tests.cjs",
+      "action": "Discover all maintained Node test files and preserve caller native args",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package-lock.json",
+      "action": "Exact G tool closure",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package.json",
+      "action": "Private G-only Node tools, no npm product metadata",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/positions.py",
+      "action": "Exact UTF-16 source spans",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_coverage.py",
+      "action": "Ordinary full-suite coverage.py plus flat callable counters and invocation-local startup",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_join.py",
+      "action": "Replace receipt imports with ordinary flat counters and native coverage data",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_metrics.py",
+      "action": "Existing exact AST/complexipy/radon callable and dependency facts",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_runtime.py",
+      "action": "Only exact ordinary-process CallableWitness; no logical session/receipt broker",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/report.py",
+      "action": "Render current normalized report; remove retired CRAP/tier and direct-dotnet-test path",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/requirements.lock",
+      "action": "Complete resolved G Python dependency lock",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/requirements.txt",
+      "action": "G-only exact direct Python dependencies",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/run_tests.py",
+      "action": "Preserve reviewed lifecycle; run the no-filter AltCover eager campaign in one NUL-safe snapshot and publish raw/identity evidence before verified cleanup",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/SonarLint.xml",
+      "action": "S3776 threshold20/propertyThreshold20",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/source_tokens.py",
+      "action": "Validated cross-stack native token streams for clones",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/sync_testing_example.py",
+      "action": "One exact canonical-to-derived copy plus read-only --check",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test-associations.json",
+      "action": "Exact current maintained target-to-test-file intention map",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/javascript_coverage.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/js_metrics.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/knip_reporter.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/node_tests.test.cjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_analyzer_configuration.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_associations.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_assurance_adoption.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_clones.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_coverage.py",
+      "action": "Replace Coverlet merge/format cases with real AltCover prepare/runner, eager child aggregation, raw failure preservation and identity-mutation cases; fixtures authored as test data strings plus the document-table identity comparison case and the absent --showGenerated assertion",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+      "action": "Replace signature/line Coverlet cases with exact module/token/sequence/descendant-branch AltCover joins, zero-hit and ambiguity failures; fixtures authored as test data strings plus document-table resolution and exclusion-by-origin accounting cases and the rejected vc=-2 marker row",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
+      "action": "Retain semantic/PDB/MethodDef ownership cases and add Sonar-calibrated syntax-node source-CC/nested-callable cases including if2 and ternary2 plus the SDK/obj/source-generator document classification and failing-control cases",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_diagnostics.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_gate_adapter.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_gate_inventory.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_gate_versions.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_inventory.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_knip.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_orchestration.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_policy.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_positions.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_coverage.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_join.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_metrics.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_python_runtime.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_report.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_runner.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_source_tokens.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_sync_testing_example.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_testing_facade.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_windows_job.py",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings; plus the explicit execution_seconds_maximum boundary case (14400 accepted under 14400, 14401 rejected, 14400 rejected under the default)",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/testing_facade.test.mjs",
+      "action": "Meaningful real-boundary/native fixture and focused regressions for named adopted seam; fixtures authored as test data strings",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tier_registry.json",
+      "action": "Delete obsolete tier policy source from this adopted branch",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/windows_job.py",
+      "action": "Retained narrow campaign containment with finite1800s bound, owned cleanup and no process adoption; validate bounds execution_seconds by the one constant EXECUTION_SECONDS_MAXIMUM=1800 unless an in-process caller passes execution_seconds_maximum through run; request schema and main() unchanged",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/DynaDocs.Tests.csproj",
+      "action": "Remove coverlet.collector6.0.4 only; preserve CompileRemove and all other package/version/Reqnroll behavior",
+      "phase": "production"
+    },
+    {
+      "path": "DynaDocs.Tests/Features/assurance-adoption.feature",
+      "action": "Specifier-only additive @DYD-96 gate-adapter completion scenarios; contract immutable during production",
+      "phase": "specification"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/AssuranceAdoptionSteps.cs",
+      "action": "Exact bindings to independently checked real subprocess observations for each new scenario",
+      "phase": "production"
+    },
+    {
+      "path": "Commands/GraphCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5a157cd7 DYD-96 fix: remove dead command inputs"
+    },
+    {
+      "path": "Commands/GuardCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Commands/InitCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Commands/SyncCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Commands/TemplateCommand.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5b3c9f84 DYD-96 fix: simplify template and link analysis"
+    },
+    {
+      "path": "DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "55ed8967 DYD-96 simplify remaining test callables"
+    },
+    {
+      "path": "DynaDocs.Tests/Commands/CompleteCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Commands/SyncCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Features/testing-facade.feature",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "c9ffeb16 DYD-96 docs: configure dotnet assurance rows"
+    },
+    {
+      "path": "DynaDocs.Tests/HookTestAssertions.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/GuardIntegrationTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "589216c6 DYD-96 close remaining static review findings"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/GuardWorkerLaneTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/InitCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/IntegrationTestBase.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/TemplateCommandTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Integration/TemplateScaffoldingTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "55ed8967 DYD-96 simplify remaining test callables"
+    },
+    {
+      "path": "DynaDocs.Tests/LinkTestFactory.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/NativeSyncAssertions.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Rules/RuleBaseTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "e0e910ed DYD-96 cover remaining dotnet decisions"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/CompletionProviderTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5a157cd7 DYD-96 fix: remove dead command inputs"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/ConfigServiceTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/DocScannerTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/LinkResolverTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/OffLimitsServiceTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/ShellCompletionInstallerTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Services/SkillTemplateServiceTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "e0e910ed DYD-96 cover remaining dotnet decisions"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/TemplateSwitchboardSteps.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "55ed8967 DYD-96 simplify remaining test callables"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/WorkflowRetirementAssertionTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "DynaDocs.Tests/Steps/WorkflowRetirementSteps.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "DynaDocs.Tests/TestDirectory.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs",
+      "action": "DR 048 measured-violation remediation in maintained C# test source: clone, cognitive or association finding corrected; shared assertion helpers extracted",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "24125928 DYD-96 isolate analyzer project evidence"
+    },
+    {
+      "path": "Services/BashCommandAnalyzer.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "d90371b8 DYD-96 fix: simplify Bash command analysis"
+    },
+    {
+      "path": "Services/CompletionProvider.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5a157cd7 DYD-96 fix: remove dead command inputs"
+    },
+    {
+      "path": "Services/ConfigFileLocator.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "deleted",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Services/ConfigSaveOperations.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Services/ConfigService.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "2ca3e6cd DYD-96 simplify remaining production callables"
+    },
+    {
+      "path": "Services/FolderScaffolder.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Services/FrameworkCatalog.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Services/LinkExtractor.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "5b3c9f84 DYD-96 fix: simplify template and link analysis"
+    },
+    {
+      "path": "Services/SkillTemplateService.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "4be9bc97 DYD-96 refactor local skill catalog discovery"
+    },
+    {
+      "path": "Services/TemplateGenerator.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Utils/ConfigFileLocator.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "Utils/PathUtils.Discovery.cs",
+      "action": "DR 048 measured-violation remediation: cognitive, parameter, namespace-cycle or dead-code finding corrected without behaviour change",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "83f66028 DYD-96 repair measured namespace direction"
+    },
+    {
+      "path": "npm/lib/paths.js",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "npm/lib/platform.js",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "8d0a7198 DYD-96 consolidate retained static clones"
+    },
+    {
+      "path": "npm/test/download.test.cjs",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "08b60660 DYD-96 cover npm installation lifecycle"
+    },
+    {
+      "path": "npm/test/install.test.cjs",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "added",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "08b60660 DYD-96 cover npm installation lifecycle"
+    },
+    {
+      "path": "npm/test/launcher.test.cjs",
+      "action": "DR 048 measured-violation remediation in maintained npm JavaScript: clone and unused-export findings corrected; npm behaviour tests added so the launcher paths carry coverage",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 6",
+      "firstCommit": "e8f20493 DYD-105 implement: make npm launcher measurable"
+    },
+    {
+      "path": ".gitattributes",
+      "action": "Pin the retained native-evidence packet to the bytes its SHA256SUMS attests, so the assurance fixture exclusion survives a fresh checkout under core.autocrlf",
+      "phase": "assigned-remediation",
+      "change": "modified",
+      "assignedBy": "issue-captain 2026-09-11 whole-Issue review finding 1",
+      "firstCommit": "4e3d806d DYD-96 fix: bind retained evidence bytes to the tree and clear EOF blank lines"
+    }
+  ],
+  "excludedOwnership": [
+    "Active DYD-111 compiler/config/templates/native outputs",
+    "DYD-118 DynaDocs.csproj/npm/package.json/version E2E tests",
+    "DYD-105 npm/bin/dydo rename and npm/test/launcher.test.cjs",
+    "DYD-103 run_mutation.py/semantic selection/mutation configs",
+    "DYD-91 portable example JSON/onboarding",
+    "All retained worktree source and evidence"
+  ],
+  "serialTransfers": [
+    "DynaDocs.Tests/DynaDocs.Tests.csproj after DYD-99 Done; no concurrent source owner may edit the same file",
+    "Shared testing docs before later DYD-117/91 edits",
+    "gate inventory interface to DYD-103 after reviewed implemented shape; no parent-Done dependency",
+    "Shipped policy template/native reflection only through a later exact owner transfer"
+  ],
+  "deviations": [
+    {
+      "path": "DynaDocs.Tests/Features/testing-facade.feature",
+      "deviation": "The Spec twice says this feature remains unchanged. Two lines changed in commit c9ffeb16 because the scenario embeds the gap_check.json capability manifest verbatim, and the owned gap_check.json gained the configured dotnet static and coverage rows. The edit is the mechanical consequence of an owned change, not new scenario intent.",
+      "disposition": "recorded as a bounded deviation by the issue-captain; no scenario was added, removed or reordered"
+    },
+    {
+      "path": "npm/test/launcher.test.cjs",
+      "deviation": "excludedOwnership names this file as DYD-105's. Commit d4114f64 extended it so the maintained npm launcher paths carry coverage; DYD-105's own change to the same file is already on the integration target 40c35967.",
+      "disposition": "recorded; the two changes are compatible and the integrated file is what the G measured"
+    },
+    {
+      "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/**",
+      "deviation": "gate_inventory verifies each retained fixture against SHA256SUMS by hashing the bytes on disk. The blobs are LF and the manifest records LF hashes, but core.autocrlf=true is the system gitconfig on this host, so a fresh clone or worktree materialised those files as CRLF and every static and coverage row would have exited 2 with three fixture-origin-diverged errors. An earlier captain record dismissed this on a faulty working-tree measurement; the second whole-Issue review disproved it with git -c core.autocrlf=true checkout-index.",
+      "disposition": "closed in 4e3d806d by .gitattributes rules that pin the packet to its attested rendering, proved by a red clone at e0646589 (0 excluded, 3 fixture-origin-diverged, exit 2) and a green clone at 4e3d806d (3 excluded, 0 errors, exit 0), and pinned by two new tests in test_gate_inventory.py. No production code changed and no DYD-103 pin was renewed."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/csharp_coverage.py",
+      "deviation": "The Spec pins the AltCover runner as --executable=dotnet -- test DynaDocs.sln. The delivered runner is --executable=<python> -- csharp_coverage.py --_subject, which runs that exact dotnet test command and then tests/test_csharp_metrics.py so the GateMetrics producer is exercised under instrumentation.",
+      "disposition": "recorded as a bounded deviation. The Spec separately requires GateMetrics coverage from real fixture calls, and the 2026-09-11 human ruling forbids a second full Python run, so the subject wrapper is how both are satisfied at once. Documented in dydo/reference/coverage-tools.md."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_adapter.py",
+      "deviation": "The Spec says missing tooling yields 2 with the exact restore command. Rows fail closed at 2 when a pinned tool is absent or drifts, but no code emits the restore command text.",
+      "disposition": "recorded as an unmet Spec sentence, not closed. It cannot produce a false green; it costs an operator the one-line hint. A following Issue should either emit the command or amend the sentence."
+    }
+  ],
+  "observations": [
+    {
+      "path": "dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/SHA256SUMS",
+      "note": "The manifest is internally inconsistent: 19 entries hash the committed LF object and three .opencover.xml entries hash a CRLF checkout rendering. The .gitattributes rules make it verify 22/22 without changing a recorded hash. Regenerating those three lines to the blob hashes would make the manifest attest git objects rather than platform renderings; that mutates retained evidence and was deliberately not done here."
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_adapter.py:414",
+      "note": "The extensionless-JavaScript guard's message still reads 'pending DYD-105', whose rename npm/bin/dydo to npm/bin/dydo.cjs is already at the integration base. The rule is still correct and should stay fail-closed; only the message names a closed Issue. Changing it is a paired code and test edit (test_gate_adapter.py asserts the literal)."
+    }
+  ]
+}

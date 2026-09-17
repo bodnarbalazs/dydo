@@ -1,0 +1,10 @@
+root = true
+
+[*.cs]
+# Sonar's unrelated rule IDs are disabled in Directory.Build.props. Compiler
+# diagnostics and the selected IDE diagnostics remain active.
+dotnet_diagnostic.S3776.severity = error
+dotnet_diagnostic.S3358.severity = error
+dotnet_diagnostic.IDE0051.severity = error
+dotnet_diagnostic.IDE0052.severity = error
+dotnet_diagnostic.IDE0060.severity = error

@@ -46,31 +46,18 @@ public static class GraphCommand
     {
         try
         {
-            var basePath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
-            if (basePath == null)
-            {
-                ConsoleOutput.WriteError("Could not find docs folder. Ensure a 'docs' folder with index.md exists.");
+            var context = CreateGraph();
+            if (context == null)
                 return ExitCodes.ToolError;
-            }
 
-            var parser = new MarkdownParser();
-            var scanner = new DocScanner(parser);
-            var docs = scanner.ScanDirectory(basePath)
-                .Where(d => !PathUtils.NormalizePath(d.RelativePath)
-                    .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            var graph = new DocGraph(new LinkResolver());
-            graph.Build(docs, basePath);
-
-            var targetPath = ResolveTargetFile(file, basePath, docs);
+            var targetPath = ResolveTargetFile(file, context.Value.Docs);
             if (targetPath == null)
             {
                 ConsoleOutput.WriteError($"File not found: {file}");
                 return ExitCodes.ToolError;
             }
 
-            if (!graph.HasDoc(targetPath))
+            if (!context.Value.Graph.HasDoc(targetPath))
             {
                 ConsoleOutput.WriteError($"File not in docs: {file}");
                 return ExitCodes.ToolError;
@@ -80,19 +67,19 @@ public static class GraphCommand
 
             if (incoming)
             {
-                GraphDisplayHandler.ShowIncoming(graph, targetPath, file);
+                GraphDisplayHandler.ShowIncoming(context.Value.Graph, targetPath, file);
                 hasOutput = true;
             }
 
             if (degree > 0 && !incoming)
             {
-                GraphDisplayHandler.ShowDegree(graph, targetPath, file, degree);
+                GraphDisplayHandler.ShowDegree(context.Value.Graph, targetPath, file, degree);
                 hasOutput = true;
             }
 
             if (incoming && degree > 0)
             {
-                GraphDisplayHandler.ShowCombined(graph, targetPath, degree);
+                GraphDisplayHandler.ShowCombined(context.Value.Graph, targetPath, degree);
             }
 
             if (!hasOutput)
@@ -109,7 +96,7 @@ public static class GraphCommand
         }
     }
 
-    private static string? ResolveTargetFile(string file, string basePath, List<Models.DocFile> docs)
+    private static string? ResolveTargetFile(string file, List<Models.DocFile> docs)
     {
         var normalizedInput = PathUtils.NormalizeForKey(file);
 
@@ -157,24 +144,11 @@ public static class GraphCommand
     {
         try
         {
-            var basePath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
-            if (basePath == null)
-            {
-                ConsoleOutput.WriteError("Could not find docs folder. Ensure a 'docs' folder with index.md exists.");
+            var context = CreateGraph();
+            if (context == null)
                 return ExitCodes.ToolError;
-            }
 
-            var parser = new MarkdownParser();
-            var scanner = new DocScanner(parser);
-            var docs = scanner.ScanDirectory(basePath)
-                .Where(d => !PathUtils.NormalizePath(d.RelativePath)
-                    .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            var graph = new DocGraph(new LinkResolver());
-            graph.Build(docs, basePath);
-
-            GraphDisplayHandler.ShowStats(graph, top);
+            GraphDisplayHandler.ShowStats(context.Value.Graph, top);
 
             return ExitCodes.Success;
         }
@@ -183,5 +157,23 @@ public static class GraphCommand
             ConsoleOutput.WriteError($"Error: {ex.Message}");
             return ExitCodes.ToolError;
         }
+    }
+
+    private static (DocGraph Graph, List<Models.DocFile> Docs)? CreateGraph()
+    {
+        var basePath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+        if (basePath == null)
+        {
+            ConsoleOutput.WriteError("Could not find docs folder. Ensure a 'docs' folder with index.md exists.");
+            return null;
+        }
+
+        var docs = new DocScanner(new MarkdownParser()).ScanDirectory(basePath)
+            .Where(d => !PathUtils.NormalizePath(d.RelativePath)
+                .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var graph = new DocGraph(new LinkResolver());
+        graph.Build(docs, basePath);
+        return (graph, docs);
     }
 }

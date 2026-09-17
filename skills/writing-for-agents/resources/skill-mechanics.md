@@ -1,0 +1,67 @@
+<!-- Adapted from mattpocock/skills writing-for-agents/SKILL-MECHANICS at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
+
+# Skill mechanics
+
+The skill-specific branch of writing-for-agents: what changes when the document is a dydo skill —
+frontmatter, invocation, and where its reference lives. Everything else about writing it is the
+universal reference in this skill's body.
+
+**The skill folder is the skill.** dydo authors every role directly in the cross-vendor `SKILL.md`
+format; there is no template and no compile step. The canonical artifact is
+`skills/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io) standard: `name` and
+`description` in the frontmatter and the methodology in the body.
+
+## Frontmatter
+
+| Key | Value | What the host does with it |
+|---|---|---|
+| `name` | the folder slug | Identity on both hosts; keep it equal to the folder name. |
+| `description` | one line | The only text a model weighs before reaching for the skill. |
+| `disable-model-invocation` | `true` | Claude-only: the skill is out of every model's reach; only the human, by name. Codex's twin is `allow_implicit_invocation: false` under the skill's `agents/openai.yaml`. |
+| `argument-hint` | `"<what to type>"` | Claude-only: the prompt the host shows after the name. Codex's twin is `interface.default_prompt` under the skill's `agents/openai.yaml`. |
+
+The historical template keys — `emit`, `read-only`, `delegates`, `invocation`, `web` — described a
+compiled agent and are retired with the compiler. A role is now a skill; keeping a read-only reviewer
+from writing is a request made through host sandbox and permission settings, not a generated agent
+file, and the request's presence does not prove it was enforced — that takes a native check on the
+host. Codex's `multi_agent` permitted an ordinary edit under `sandbox_mode = "read-only"`; see "DYD-88
+— Codex sub-agent lifecycle observations — 2026-09-14".
+
+## Invocation
+
+Two choices, trading the two loads:
+
+- **automatic** (the default) keeps a description the agent can fire on, and other skills can reach
+  it. You can still type its name: model-invocation always _includes_ human reach. That description
+  is a context pointer forced to stay loaded every turn — write it trigger-first, one trigger per
+  branch, with this skill's pointer rules applied in full.
+- **explicit** keeps the skill out of every model's reach: only the human typing its name invokes
+  it, and no other skill can. Zero context load, but it spends cognitive load — a human has to know
+  it exists, which is why the locked dydo glossary carries the taxonomy. Its description turns
+  human-facing: one punchy line, trigger lists stripped. On Claude this is
+  `disable-model-invocation: true` in `SKILL.md`; on Codex it is `allow_implicit_invocation: false`
+  in `skills/<name>/agents/openai.yaml`.
+
+## Where reference lives
+
+- **`## Must-Reads`** — project documents named under that heading. Author each target as a
+  repository-root literal path in a code span, read from the repository root — "From the repository
+  root, read `dydo/understand/architecture.md`" (see `skills/reviewer/SKILL.md`);
+  `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs:150-156` enforces that no Must-Read is written as a
+  markdown link. A `../` climb does not work here because the identical file is read at two
+  different depths: canonically at `skills/<name>/`, and through the host projection at
+  `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
+  normalization against the projected path versus POSIX `..` applied to the physical parent once the
+  symlink is followed — so no single relative climb is correct from every install location. Project
+  additions are edits to the skill body itself; include tags are retired.
+- **Resources** — `resources/<name>.md` beside the skill, reached by that same folder-relative path.
+  This is disclosure with a file boundary: one skill's own reference, reached only by the branches
+  that need it. Reference several skills share lives instead in a model-invoked method skill, or in
+  a `dydo/` document each of them lists under Must-Reads.
+
+## Distribution
+
+One `skills/<name>/` folder is committed and hand-maintained. `node setup-skills.mjs` creates
+per-skill POSIX symlinks or Windows junctions in the Claude and Codex discovery roots; OpenCode reads
+both roots. A skill change edits the canonical folder once. Setup never copies or reconciles prose.
+What no tool may rewrite is listed in `dydo/files-off-limits.md`, read from the repository root.

@@ -13,6 +13,49 @@ and the adopted policy.
 
 ---
 
+## Provisioning
+
+`dydo/_system/.local/` is git-ignored and no gate installs anything, so every machine creates its own
+measurement environment before any operation below can run. `.github/workflows/release.yml` runs
+these same steps before it invokes the facade. They are grouped here by toolchain rather than given
+in the workflow's order, because the three toolchains are independent of each other: the only step
+that must precede another is creating the virtual environment its Python packages then install into.
+
+```powershell
+# the Python assurance toolchain; create the environment with CPython 3.12.10 itself,
+# the patch DynaDocs.Tests/coverage/.python-version declares
+python -m venv dydo/_system/.local/static-gates/python
+& dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+# the Node assurance toolchain, from DynaDocs.Tests/coverage
+npm ci
+# AltCover and the metrics closure
+dotnet tool restore --tool-manifest .config/dotnet-tools.json
+dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
+```
+
+The interpreter that creates the virtual environment must be 3.12.10 itself, not merely some 3.12.
+`python_runtime._key` joins a code object to its parsed body on
+`(co_qualname, co_firstlineno, co_positions())`, and a different compiler emits different positions:
+on CPython 3.12.3 the isolated suite produces six errors in
+`DynaDocs.Tests/coverage/tests/test_python_runtime.py` — `Missing or ambiguous callable
+body/code-object join` and `Unexpected callable body line` — that a 3.12.10 environment does not
+produce, and rebuilding the environment on 3.12.10 clears all six. The `versions` collector does not
+catch this: `gate_versions.python_versions` requires the declaration to read exactly 3.12.10 and the
+running implementation to be CPython 3.12, and never compares the running patch to the declaration.
+
+Every CPython 3.12.x shares one `.pyc` magic number, so a `__pycache__` written by one patch is
+loaded by another without revalidation and carries the old positions into that same join. Delete
+every `__pycache__` under `DynaDocs.Tests/coverage` after changing interpreter; the symptom of
+skipping it is a surviving failure reporting `Unknown runtime callable: .../python_runtime.py:164`.
+
+The `tar` first on `PATH` must be the Windows one. `npm/test/download.test.cjs` builds its fixture
+archives by shelling out to `tar`, and `node_tests.cjs` runs that suite; Git for Windows' GNU tar
+(`C:\Program Files\Git\usr\bin\tar.exe`) reads the test's `C:\...` destination as a remote host, so
+three tests fail with `tar (child): Cannot connect to C: resolve failed` and the node coverage row
+reports a `functional` finding. Prepending `C:\Windows\System32`, whose `tar` is bsdtar, fixes it.
+
+---
+
 ## Operations
 
 Run the facade with the pinned local interpreter, not an arbitrary Python:
@@ -143,7 +186,7 @@ never a silent overwrite. The identical bytes remain at
 ```json
 "tools": {
   "interpreters": {
-    "caller": {"path": "<absolute>/python.exe", "sha256": "<hex>", "version": "3.12.14"},
+    "caller": {"path": "<absolute>/python.exe", "sha256": "<hex>", "version": "3.12.10"},
     "dependencyBearing": {"path": "dydo/_system/.local/static-gates/python/Scripts/python.exe",
                           "sha256": "<hex>"}
   },
@@ -250,6 +293,15 @@ exit 2.
 
 A maintained JavaScript file with no filename extension is recorded as a gap naming DYD-105, so the
 row fails closed rather than quietly measuring less than the inventory.
+
+The Python and JavaScript rows take their targets from the source inventory through
+`gate_adapter._target_paths`: the stack's non-test rows, minus any row carrying `coverageExemption`.
+`gate_inventory._coverage_exemption` writes that field, and the only rows that carry it are the two
+external-host drivers of DR 048's Amendment 2026-09-17,
+`DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and `openai-sse-provider.mjs`. The exemption is
+coverage-scoped: both files are still measured by every static collector above. It also fails
+closed — an unextracted or unassociated driver produces the gap `host-driver-logic-untested` or
+`host-driver-unassociated` instead of the exemption, and the file returns to the coverage targets.
 
 Each row above is the stack's single suite execution under `--force-run`: the declaring stack's test
 row is derived from it and launches nothing of its own. The C# campaign is Windows-only, so a Linux
@@ -394,7 +446,7 @@ hashes in `tools.pins`; the Python inventory separately republishes the runtime 
 |---|---|---|
 | `.config/dotnet-tools.json` | AltCover 9.0.102 | the tool manifest, by `dotnet tool restore --tool-manifest .config/dotnet-tools.json` |
 | `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.12.10 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
-| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython in the compatible 3.12 series at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
+| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.12.10 environment at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
 | `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
 | `DynaDocs.Tests/coverage/metrics/packages.lock.json` | the Roslyn, SonarAnalyzer and Cecil closure of `GateMetrics.csproj` | that project's `obj/project.assets.json`, by `dotnet restore` |
 
@@ -402,8 +454,9 @@ The `versions` collector fails the `dotnet` static row closed if an installed ve
 its lock, if a declared JavaScript dependency and the lock disagree, if a locked package is missing
 without being optional, if the resolved NuGet closure differs from `obj/project.assets.json`, if the
 Python declaration is not exactly 3.12.10, or if the running implementation is not CPython 3.12.
-The declaration selects an obtainable, reproducible CI patch; the monitoring interface is compatible
-with every CPython 3.12 patch. Python evidence records the declared pin and its hash, the exact
+That last check stops at the series, so it is weaker than the environment actually needs: the
+callable witness is not patch-independent, and the local interpreter must be the declared 3.12.10,
+as Provisioning above records. Python evidence records the declared pin and its hash, the exact
 observed implementation and patch, and the requirements-lock hash. The Windows job preflight and
 each accepted run likewise record the exact observed version plus the executable and base-executable
 digests. Node v22.13.0 and .NET SDK 10.0.300 remain exact runtime requirements.

@@ -113,6 +113,20 @@ class GateAdapterTests(unittest.TestCase):
 
             self.assertEqual(["active.py"], _target_paths(inventory, "python"))
 
+    def test_a_coverage_exempt_source_leaves_the_targets_and_every_other_source_stays(self):
+        with tempfile.TemporaryDirectory() as folder:
+            inventory = Path(folder) / "inventory.json"
+            inventory.write_text(json.dumps({"sources": [
+                {"path": "driver.mjs", "language": "javascript", "role": "target",
+                 "coverageExemption": {"reason": "external-host-driver-as-embedded-source",
+                                       "origin": {}}},
+                {"path": "unlisted.mjs", "language": "javascript", "role": "target"},
+                {"path": "measured.py", "language": "python", "role": "target"},
+            ], "excluded": []}))
+
+            self.assertEqual(["unlisted.mjs"], _target_paths(inventory, "javascript"))
+            self.assertEqual(["measured.py"], _target_paths(inventory, "python"))
+
     def fixture(self, root):
         run = root / "assurance/run-a"
         run.mkdir(parents=True)
@@ -663,6 +677,40 @@ class CoverageCampaignTests(unittest.TestCase):
         write_file(root, "DynaDocs.Tests/coverage/tests/sum.test.cjs", NODE_SUITE)
         return git_repository(root)
 
+    def node_inventory(self, root, exempt=()):
+        """Publish the inventory the node adapter must target, exemptions and all."""
+        from gate_inventory import assemble_inventory
+        from inventory import git_file_state
+        paths, deleted = git_file_state(root)
+        payload = assemble_inventory(root, paths, [], gate_adapter._ordinary_discovery(root, paths),
+                                     deleted)
+        for row in payload["sources"]:
+            if row["path"] in exempt:
+                row["coverageExemption"] = {
+                    "reason": "external-host-driver-as-embedded-source", "origin": {}}
+        inventory = root.parent / "inventory.json"
+        inventory.write_text(json.dumps(payload), encoding="utf-8")
+        return inventory
+
+    def test_node_coverage_measures_what_the_inventory_publishes_as_a_target(self):
+        for exempt, targets, status in ((("lib/driver.cjs",), ["lib/sum.cjs"], "pass"),
+                                        ((), ["lib/driver.cjs", "lib/sum.cjs"], "fail")):
+            with self.subTest(exempt=exempt), tempfile.TemporaryDirectory() as folder:
+                root = self.node_repository(folder, NODE_SOURCE)
+                write_file(root, "lib/driver.cjs", NODE_SOURCE_WITH_GAP)
+                inventory = self.node_inventory(root, exempt)
+                raw = Path(folder) / "output/raw"
+                raw.parent.mkdir()
+
+                answer = gate_adapter.collect_node_coverage(root, raw, inventory)
+
+                request = json.loads((raw.parent / (raw.name + "-request.json"))
+                                     .read_text(encoding="utf-8"))
+                self.assertEqual(targets, request["targets"])
+                self.assertEqual(targets, [row["path"] for row in
+                                           collector_row(answer, "javascript-coverage")["facts"]["modules"]])
+                self.assertEqual(status, answer["status"], json.dumps(answer["findings"]))
+
     def test_python_coverage_gate_publishes_measured_findings_beside_inventory_gaps(self):
         with tempfile.TemporaryDirectory() as folder:
             root = python_repository(folder)
@@ -838,7 +886,7 @@ class CoverageCampaignTests(unittest.TestCase):
             raw = Path(folder) / "output/raw"
             raw.parent.mkdir()
 
-            answer = gate_adapter.collect_node_coverage(root, raw)
+            answer = gate_adapter.collect_node_coverage(root, raw, self.node_inventory(root))
 
             self.assertEqual("pass", answer["status"], json.dumps(answer["findings"]))
             self.assertEqual([], answer["errors"])
@@ -864,7 +912,7 @@ class CoverageCampaignTests(unittest.TestCase):
             raw = Path(folder) / "output/raw"
             raw.parent.mkdir()
 
-            answer = gate_adapter.collect_node_coverage(root, raw)
+            answer = gate_adapter.collect_node_coverage(root, raw, self.node_inventory(root))
 
             self.assertEqual("error", answer["status"])
             self.assertEqual(["line-coverage"], [row["gate"] for row in answer["findings"]])
@@ -878,14 +926,15 @@ class CoverageCampaignTests(unittest.TestCase):
             raw = Path(folder) / "output/raw"
             raw.mkdir(parents=True)
 
-            answer = gate_adapter.collect_node_coverage(root, raw)
+            answer = gate_adapter.collect_node_coverage(root, raw, self.node_inventory(root))
 
             self.assertEqual("error", answer["status"])
             self.assertEqual(2, collector_row(answer, "javascript-coverage")["facts"]["child_exit"])
             committed_repository(root)
             (root / "lib/sum.cjs").unlink()
             with self.assertRaisesRegex(ValueError, "Deleted maintained inputs"):
-                gate_adapter.collect_node_coverage(root, Path(folder) / "output/second")
+                gate_adapter.collect_node_coverage(
+                    root, Path(folder) / "output/second", self.node_inventory(root))
 
     def test_node_coverage_retains_a_child_failure_but_invalidates_changed_inputs(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -898,7 +947,7 @@ class CoverageCampaignTests(unittest.TestCase):
                 return 1
 
             with mock.patch.object(gate_adapter, "run_coverage_command", side_effect=mutate):
-                answer = gate_adapter.collect_node_coverage(root, raw)
+                answer = gate_adapter.collect_node_coverage(root, raw, self.node_inventory(root))
 
             self.assertEqual("error", answer["status"])
             self.assertEqual([{"gate": "functional", "child_exit": 1}], answer["findings"])
@@ -916,7 +965,7 @@ class CoverageCampaignTests(unittest.TestCase):
                 return 0
 
             with mock.patch.object(gate_adapter, "run_coverage_command", side_effect=mutate):
-                answer = gate_adapter.collect_node_coverage(root, raw)
+                answer = gate_adapter.collect_node_coverage(root, raw, self.node_inventory(root))
 
             self.assertEqual("error", answer["status"])
             self.assertEqual([], answer["findings"])
@@ -942,7 +991,7 @@ class CoverageCampaignTests(unittest.TestCase):
             raw = Path(folder) / "output/raw"
             raw.parent.mkdir()
 
-            answer = gate_adapter.collect_node_coverage(root, raw)
+            answer = gate_adapter.collect_node_coverage(root, raw, self.node_inventory(root))
 
             self.assertEqual("error", answer["status"])
             self.assertEqual([], answer["findings"])
@@ -957,7 +1006,7 @@ class CoverageCampaignTests(unittest.TestCase):
             raw = Path(folder) / "output/raw"
             raw.parent.mkdir()
 
-            answer = gate_adapter.collect_node_coverage(root, raw)
+            answer = gate_adapter.collect_node_coverage(root, raw, self.node_inventory(root))
 
             self.assertEqual("fail", answer["status"])
             self.assertEqual([], answer["errors"])

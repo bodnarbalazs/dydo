@@ -1,0 +1,7 @@
+{
+  "name": "dynadocs",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Declares the repository root as a package so its own dependency-free setup-skills.mjs entry has a containing manifest.",
+  "type": "module"
+}

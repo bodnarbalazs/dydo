@@ -5,11 +5,13 @@ from pathlib import Path
 from gate_run import result
 
 
-PACKAGE_ROOTS = {'DynaDocs.Tests/coverage': '.', 'npm': '../../npm'}
+PACKAGE_ROOTS = {'.': '../..', 'DynaDocs.Tests/coverage': '.', 'DynaDocs.Tests/HostCanaries': '../HostCanaries',
+                 'npm': '../../npm'}
 EXTENSIONS = {'.js', '.mjs', '.cjs'}
 ISSUES = ('files', 'exports', 'nsExports', 'duplicates', 'unresolved')
 HOST_ENTRIES = {'js_metrics.cjs', 'js_runtime.cjs', 'js_loader.mjs', 'test_discovery.cjs',
-                'knip_reporter.mjs', 'install.js', 'bin/dydo', 'bin/dydo.cjs'}
+                'knip_reporter.mjs', 'install.js', 'bin/dydo', 'bin/dydo.cjs',
+                'run-host-canaries.mjs', 'openai-sse-provider.mjs', 'setup-skills.mjs'}
 
 
 def source_owner(root, path):
@@ -17,9 +19,8 @@ def source_owner(root, path):
     if absolute.relative_to(root).as_posix() != path:
         raise ValueError('Noncanonical native source path')
     owners = [folder for folder in PACKAGE_ROOTS if absolute.is_relative_to(root / folder)]
-    if len(owners) != 1:
-        raise ValueError('Source has no unique containing package')
-    return owners[0], absolute.relative_to(root / owners[0]).as_posix()
+    owner = max(owners, key=len)
+    return owner, absolute.relative_to(root / owner).as_posix()
 
 
 def workspace_model(root, paths):

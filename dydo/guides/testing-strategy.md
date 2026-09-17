@@ -75,12 +75,15 @@ all tests passing and a test file for every non-trivial module,
 line coverage of at least 80%, branch coverage of at least 60%, HCRAP at most 20 per method,
 cognitive complexity at most 20, at most seven parameters outside constructors, no supported nested
 ternary, no clone meeting both 15 lines and 100 tokens, and no namespace or module dependency cycles.
-Only code not maintained here (generated, vendored, or minified) is excluded. There are no tiers,
+Only code not maintained here (generated, vendored, or minified) is excluded, plus the two named
+external-host drivers that DR 048's Amendment 2026-09-17 exempts from the coverage thresholds alone
+and from nothing else. There are no tiers,
 classic CRAP thresholds, registry, annotations, or nesting-depth gate, and there are no
 suppressions: a suppressed C# analyzer diagnostic on maintained source, an `istanbul`, `c8` or
 `v8 ignore` comment, and an inline ESLint disable are a finding or ignored input, never an escape.
 What DR 048 permits instead is correcting a gate that is wrong, with the triage recorded; this
-repository's one recorded correction is below. Mutation is separate: DynaDocs requires
+repository has two recorded triages, that coverage exemption and the Vulture correction below.
+Mutation is separate: DynaDocs requires
 no surviving or uncovered changed-code mutants. A stack
 without a reviewed mechanism reports that gate as unavailable until adoption.
 
@@ -143,7 +146,11 @@ runner is a target even under a test directory — `GateMetrics` and the `DynaDo
 runners are measured, while the `DynaDocs.Tests` assembly is instrumented for identity only.
 `DynaDocs.Tests/coverage/test-associations.json` carries the file-level intent DR 048's test rule
 needs: every executable target module must name at least one associated test file, and one that
-names none is the finding `test-association`.
+names none is the finding `test-association`. The two external-host drivers named in DR 048's
+Amendment 2026-09-17, `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and
+`openai-sse-provider.mjs`, are the only targets dropped from the coverage denominator: they stay in
+every static gate and in the association manifest, and their inventory row carries
+`coverageExemption` only while their extracted modules and the drivers themselves stay associated.
 
 One gap is recorded rather than dropped or weakened: mutation on every stack, which is DYD-103. The
 JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a

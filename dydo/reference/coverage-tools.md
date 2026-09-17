@@ -294,6 +294,15 @@ exit 2.
 A maintained JavaScript file with no filename extension is recorded as a gap naming DYD-105, so the
 row fails closed rather than quietly measuring less than the inventory.
 
+The Python and JavaScript rows take their targets from the source inventory through
+`gate_adapter._target_paths`: the stack's non-test rows, minus any row carrying `coverageExemption`.
+`gate_inventory._coverage_exemption` writes that field, and the only rows that carry it are the two
+external-host drivers of DR 048's Amendment 2026-09-17,
+`DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and `openai-sse-provider.mjs`. The exemption is
+coverage-scoped: both files are still measured by every static collector above. It also fails
+closed — an unextracted or unassociated driver produces the gap `host-driver-logic-untested` or
+`host-driver-unassociated` instead of the exemption, and the file returns to the coverage targets.
+
 Each row above is the stack's single suite execution under `--force-run`: the declaring stack's test
 row is derived from it and launches nothing of its own. The C# campaign is Windows-only, so a Linux
 host derives no verdict for `dotnet` and keeps that stack's separate test execution. The Python and

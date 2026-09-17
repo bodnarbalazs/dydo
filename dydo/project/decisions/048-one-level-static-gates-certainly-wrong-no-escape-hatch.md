@@ -50,11 +50,13 @@ in Linear DYD-95, and project-specific detail stays there.
 A static gate is admitted only where a violation is certainly wrong, its threshold sits where no
 exception would be accepted, and no per-file suppression exists. Path exclusions apply to code not
 maintained here: vendored and minified libraries, generated files. Everything with a legitimate
-exception is review territory, not a gate.
+exception is review territory, not a gate. *Amended 2026-09-17: this category is widened, for the
+coverage thresholds alone, by the [Amendment](#amendment-2026-09-17) below.*
 
 ### 2. One level: universal policy, per-stack mechanism
 
-Every module of every stack is held to the same set. The tier registry, `@test-tier` annotations and
+Every module of every stack is held to the same set, with the one coverage-scoped exception the
+[Amendment](#amendment-2026-09-17) below records. The tier registry, `@test-tier` annotations and
 per-tier thresholds are removed. A stack that lacks a mechanism for a gate skips that gate and records
 the gap in the project's testing guide; the gate is neither dropped elsewhere nor weakened to fit the
 weakest stack.
@@ -118,6 +120,47 @@ rule: code judged good as is means the gate or its threshold is wrong and is cor
 rightly caught is fixed. The triage is recorded per stack on the transition Project. The old tiers
 passed code they never measured, so the failures the new gates surface are the true picture, not a
 regression.
+
+## Amendment 2026-09-17
+
+Route 1 of a §5 triage, decided with the human: test tooling that drives an external host is treated
+like embedded third-party source and is exempt from the coverage thresholds — line, branch and
+HCRAP — and from nothing else. Two files, named exactly, no wildcard:
+
+- `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs`
+- `DynaDocs.Tests/HostCanaries/openai-sse-provider.mjs`
+
+This widens §1's "code not maintained here" by a fourth category and is the one exception to §2.
+Both files remain full maintained sources: the `node` static row still measures them for ESLint
+diagnostics, cognitive complexity, parameter counts, clone detection and knip accounting — the
+Issue that recorded this amendment fixed two real `no-nested-ternary` findings in
+`run-host-canaries.mjs` because that row runs.
+
+The exemption is conditional, and both conditions are machine-checked per driver by
+`_coverage_exemption` in `DynaDocs.Tests/coverage/gate_inventory.py`, which sits beside
+`_structural_exclusion` under the same contract — return reproducible exclusion evidence, or a gap
+that denies exclusion:
+
+1. the driver's pure logic is extracted into tested modules, required per driver rather than as a
+   flat list: `run-host-canaries.mjs` requires `path-containment.mjs` and
+   `run-host-canaries-args.mjs`, `openai-sse-provider.mjs` requires `openai-sse-provider-args.mjs`,
+   all under `DynaDocs.Tests/HostCanaries/`;
+2. the driver itself stays associated in `DynaDocs.Tests/coverage/test-associations.json`.
+
+"Tested" is proved by a row in that manifest, which the association gate in turn proves names a
+discovered native test file — not by a coverage number on the extraction. When both conditions hold,
+the inventory `source` row carries `coverageExemption` with the reason
+`external-host-driver-as-embedded-source` and its origin, and `_target_paths` in
+`DynaDocs.Tests/coverage/gate_adapter.py` filters that row out of the coverage targets;
+`collect_node_coverage` now selects its targets through the inventory, as `collect_python_coverage`
+already did. A failed condition emits the typed gap `host-driver-logic-untested` or
+`host-driver-unassociated` and denies the exemption, so the file is measured again rather than
+silently exempt.
+
+This is a correction, not a waiver. Nothing in the measured source changes, the two paths are exact,
+and adding a third file is another §5 triage to record, not a routine edit. Reach for it to shelter
+a driver whose logic was never extracted, or widen it past the coverage thresholds, and it becomes
+the escape hatch §1 refuses.
 
 ## Consequences
 

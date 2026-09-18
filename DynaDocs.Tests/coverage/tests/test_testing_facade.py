@@ -1083,7 +1083,7 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertEqual(deadline, float(row['environment']['DYDO_ROW_DEADLINE']))
 
     def test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set(self):
-        for path in ['dydo/guides/testing-strategy.md', 'dydo/reference/coverage-tools.md', 'Templates/coding-standards.template.md']:
+        for path in ['dydo/guides/testing-strategy.md', 'dydo/reference/coverage-tools.md', 'Scaffold/dydo/guides/coding-standards.md']:
             text = (ROOT / path).read_text(encoding='utf-8')
             for expected in ['HCRAP', '80%', '60%', '20', 'seven', '15 lines', '100 tokens', 'dependency cycles']:
                 self.assertIn(expected, text, path)
@@ -1092,7 +1092,7 @@ class TestingFacadeTests(unittest.TestCase):
             normalized = ' '.join(text.split())
             self.assertTrue('no surviving or uncovered changed-code mutants' in normalized
                             or 'No changed-code mutant may survive or remain uncovered' in normalized, path)
-            if path == 'Templates/coding-standards.template.md':
+            if path == 'Scaffold/dydo/guides/coding-standards.md':
                 prohibition = ('There are no tiers, tier annotations, tier registries, classic CRAP '
                                'thresholds, per-file suppressions, or nesting-depth gate.')
                 self.assertNotRegex(normalized.replace(prohibition, ''), r'(?i)\btiers?\b', path)

@@ -17,7 +17,7 @@ A new command or required option changes a closed set of code, test, help, and r
 | `Commands/HelpCommand.cs` | Include the command path in agent-facing help when appropriate. |
 | `DynaDocs.Tests/Commands/CommandSmokeTests.cs` | Exercise the command factory. |
 | `dydo/reference/dydo-commands.md` | Document each option and show required flags in examples. |
-| `Templates/dydo-commands.template.md` | Keep the framework source aligned with the installed reference. |
+| `Scaffold/dydo/reference/dydo-commands.md` | Keep the scaffolded source aligned with the installed reference. |
 
 Update focused behavior tests as required by the command's risk. The consistency suite checks command
 discovery, help presence, option coverage, required example flags, template/reference parity, and factory
@@ -37,8 +37,8 @@ not be presented as the current work model.
 
 A role is a plain `skills/<name>/` folder; edit only that canonical source. `setup-skills.mjs` creates
 host discovery links and is not a dydo CLI command.
-Framework document templates under `Templates/` feed `dydo init` scaffolding; keep
-`Templates/dydo-commands.template.md` and `dydo/reference/dydo-commands.md` aligned by hand.
+The `Scaffold/` tree is copied verbatim by `dydo init`; keep
+`Scaffold/dydo/reference/dydo-commands.md` and `dydo/reference/dydo-commands.md` aligned by hand.
 
 Do not hand-edit the protected `dydo/index.md`, `dydo/files-off-limits.md` or `dydo.json`; the human
 owns them and the guard blocks direct writes.

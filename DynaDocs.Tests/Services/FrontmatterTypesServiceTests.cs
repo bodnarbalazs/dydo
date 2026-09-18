@@ -34,7 +34,7 @@ public class FrontmatterTypesServiceTests : IDisposable
     public void ActiveTypeVocabulariesRetireIssue()
     {
         Assert.DoesNotContain("issue", Frontmatter.ValidTypes);
-        Assert.DoesNotContain("\"issue\"", File.ReadAllText(RepoFile("Templates/types.json.template")));
+        Assert.DoesNotContain("\"issue\"", File.ReadAllText(RepoFile("Scaffold/dydo/_system/types.json")));
         Assert.DoesNotContain("\"issue\"", File.ReadAllText(RepoFile("dydo/_system/types.json")));
 
     }

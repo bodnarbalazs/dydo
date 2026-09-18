@@ -23,10 +23,10 @@ API, and integrations, outside dydo.
 
 ```text
 Commands/        System.CommandLine factories and handlers
-Services/        Documentation, configuration, template, and guard behavior
+Services/        Documentation, configuration, scaffold, and guard behavior
 Models/          Configuration and parsing data types
 Rules/           Documentation validation rules
-Templates/       Embedded framework document templates
+Scaffold/        The project tree `dydo init` copies out, embedded in the binary
 DynaDocs.Tests/  Unit, integration, E2E, and coverage gates
 npm/             Native-binary npm wrapper
 ```

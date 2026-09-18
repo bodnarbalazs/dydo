@@ -105,9 +105,9 @@ function Get-ManagedSnapshot([string]$Project) {
     } | Sort-Object path)
 }
 
-function Get-TemplateSnapshot {
-    $templates = Join-Path $root 'Templates'
-    return @(Get-ChildItem -File -Recurse $templates | ForEach-Object {
+function Get-ScaffoldSnapshot {
+    $scaffold = Join-Path $root 'Scaffold'
+    return @(Get-ChildItem -File -Recurse $scaffold | ForEach-Object {
         [ordered]@{ path = Get-RelativePath $root $_.FullName; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash }
     } | Sort-Object path)
 }
@@ -144,9 +144,9 @@ try {
     Assert-CleanRepository 'candidate'
     if ((Get-FileHash $resolvedRollbackPackage -Algorithm SHA256).Hash -ne $rollbackHash) { throw 'Previous package SHA-256 does not match the supplied retained package.' }
 
-    $sourceManifest = Join-Path $runRoot 'source-templates.json'
-    Write-Json (Get-TemplateSnapshot) $sourceManifest
-    $evidence.source_template_manifest_sha256 = (Get-FileHash $sourceManifest -Algorithm SHA256).Hash
+    $sourceManifest = Join-Path $runRoot 'source-scaffold.json'
+    Write-Json (Get-ScaffoldSnapshot) $sourceManifest
+    $evidence.source_scaffold_manifest_sha256 = (Get-FileHash $sourceManifest -Algorithm SHA256).Hash
 
     $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop
     $globalCommandPath = $globalCommand.Source

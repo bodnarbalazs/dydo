@@ -114,7 +114,7 @@ public static class InitCommand
 
         WriteIfNotExists(
             Path.Combine(projectRoot, "CLAUDE.md"),
-            () => TemplateGenerator.GenerateEntryPointMd(projectName),
+            () => ScaffoldTree.EntryPoint(projectName),
             "CLAUDE.md (entry point)");
 
         if (integrations.Contains("codex"))
@@ -134,7 +134,7 @@ public static class InitCommand
 
         WriteIfNotExists(
             Path.Combine(dydoRoot, "files-off-limits.md"),
-            TemplateGenerator.GenerateFilesOffLimitsMd,
+            () => ScaffoldTree.Read("Scaffold/dydo/files-off-limits.md"),
             "files-off-limits.md (security config)");
 
         UpdateGitignore(projectRoot, config.Structure.Root, includeClaudeSettings: integrations.Contains("claude"));
@@ -206,7 +206,7 @@ public static class InitCommand
             {
                 WriteIfNotExists(
                     Path.Combine(projectRoot, "CLAUDE.md"),
-                    () => TemplateGenerator.GenerateEntryPointMd(Path.GetFileName(projectRoot)),
+                    () => ScaffoldTree.EntryPoint(Path.GetFileName(projectRoot)),
                     "CLAUDE.md (entry point)");
                 ConfigureClaudeHooks(projectRoot);
                 UpdateGitignore(projectRoot, config?.Structure.Root ?? "dydo", includeClaudeSettings: true);
@@ -723,8 +723,8 @@ public static class InitCommand
         }
     }
 
-    // AGENTS.md gets the same entry-point content as CLAUDE.md (one authored template).
+    // AGENTS.md gets the same entry-point content as CLAUDE.md (one authored source file).
     private static string GenerateAgentsMd(string projectName) =>
-        TemplateGenerator.GenerateEntryPointMd(projectName);
+        ScaffoldTree.EntryPoint(projectName);
 
 }

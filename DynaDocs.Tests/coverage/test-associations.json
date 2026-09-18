@@ -802,15 +802,16 @@
       ]
     },
     {
-      "module": "Services/ShellCompletionInstaller.cs",
+      "module": "Services/ScaffoldTree.cs",
       "tests": [
-        "DynaDocs.Tests/Services/ShellCompletionInstallerTests.cs"
+        "DynaDocs.Tests/Services/ScaffoldTreeTests.cs",
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
       ]
     },
     {
-      "module": "Services/TemplateGenerator.cs",
+      "module": "Services/ShellCompletionInstaller.cs",
       "tests": [
-        "DynaDocs.Tests/Integration/InitCommandTests.cs"
+        "DynaDocs.Tests/Services/ShellCompletionInstallerTests.cs"
       ]
     },
     {

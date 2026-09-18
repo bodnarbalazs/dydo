@@ -57,7 +57,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="Templates\**\*" />
+        <!-- The scaffold ships as one resource per file, named by its repository-relative path so
+             `dydo init` can walk the tree. LogicalName is pinned because MSBuild's default manifest
+             naming mangles directory components that are not identifiers (future-features →
+             future_features) and joins them with dots. -->
+        <EmbeddedResource Include="Scaffold\**\*"
+                          LogicalName="$([System.String]::Copy('%(Identity)').Replace('\','/'))" />
     </ItemGroup>
 
     <ItemGroup>

@@ -5,10 +5,10 @@ using DynaDocs.Services;
 public class EntryPointParityTests
 {
     [Fact]
-    public void RepositoryEntryPoints_MatchTheSharedTemplate()
+    public void RepositoryEntryPoints_MatchTheSharedSource()
     {
         var repositoryRoot = FindRepositoryRoot();
-        var expected = TemplateGenerator.GenerateEntryPointMd("DynaDocs");
+        var expected = ScaffoldTree.EntryPoint("DynaDocs");
 
         Assert.Equal(Normalize(expected), Normalize(File.ReadAllText(Path.Combine(repositoryRoot, "AGENTS.md"))));
         Assert.Equal(Normalize(expected), Normalize(File.ReadAllText(Path.Combine(repositoryRoot, "CLAUDE.md"))));
@@ -18,9 +18,9 @@ public class EntryPointParityTests
     // contract: short enough to be read in full, and pointing at dydo/index.md for everything
     // else. Its wording belongs to whoever authors it; only the shape is pinned here.
     [Fact]
-    public void SharedTemplate_StaysWithinTheMinimalEntryContract()
+    public void SharedEntryPointSource_StaysWithinTheMinimalEntryContract()
     {
-        var content = TemplateGenerator.ReadBuiltInTemplate("entry-point.template.md");
+        var content = ScaffoldTree.Read("Scaffold/entry-point.md");
         var nonBlankLines = content.Replace("\r\n", "\n").Split('\n')
             .Count(line => !string.IsNullOrWhiteSpace(line));
 

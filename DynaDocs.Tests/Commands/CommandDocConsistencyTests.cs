@@ -182,14 +182,14 @@ public class CommandDocConsistencyTests
     }
 
     // ──────────────────────────────────────────────
-    // Test 3: Reference doc and template have same options per command
+    // Test 3: Reference doc and scaffold source have same options per command
     // ──────────────────────────────────────────────
 
     [Fact]
     public void ReferenceDocAndTemplate_HaveSameOptions()
     {
         var refDoc = File.ReadAllText(FindRepoFile(Path.Combine("dydo", "reference", "dydo-commands.md")));
-        var template = File.ReadAllText(FindRepoFile(Path.Combine("Templates", "dydo-commands.template.md")));
+        var template = File.ReadAllText(FindRepoFile(Path.Combine("Scaffold", "dydo", "reference", "dydo-commands.md")));
 
         var refSections = ExtractDocSections(refDoc);
         var tmplSections = ExtractDocSections(template);
@@ -312,7 +312,7 @@ public class CommandDocConsistencyTests
         var filesToCheck = new[]
         {
             Path.Combine("dydo", "reference", "about-dynadocs.md"),
-            Path.Combine("Templates", "about-dynadocs.template.md")
+            Path.Combine("Scaffold", "dydo", "reference", "about-dynadocs.md")
         };
 
         foreach (var file in filesToCheck)
@@ -391,24 +391,24 @@ public class CommandDocConsistencyTests
     }
 
     // ──────────────────────────────────────────────
-    // Test 7: Template/mode examples use required flags
+    // Test 7: Scaffold examples use required flags
     // ──────────────────────────────────────────────
 
     [Fact]
-    public void TemplateExamples_UseRequiredFlags()
+    public void ScaffoldExamples_UseRequiredFlags()
     {
         var commands = GetDocumentedCommands();
         var commandLookup = commands.ToDictionary(c => c.Path, c => c.Cmd);
         var commandPaths = commands.Select(c => c.Path).OrderByDescending(p => p.Length).ToList();
-        var templatesDir = FindRepoDir("Templates");
+        var scaffoldDir = FindRepoDir("Scaffold");
         var codeBlockPattern = new Regex(@"```[\w]*\r?\n(.*?)```", RegexOptions.Singleline);
-        var missing = Directory.GetFiles(templatesDir, "*.template.md")
+        var missing = Directory.GetFiles(scaffoldDir, "*.md", SearchOption.AllDirectories)
             .SelectMany(file => MissingRequiredFlags(file, commandLookup, commandPaths, codeBlockPattern))
             .Distinct()
             .ToList();
 
         Assert.True(missing.Count == 0,
-            $"Required flags missing from template/mode examples:\n  {string.Join("\n  ", missing)}");
+            $"Required flags missing from scaffold examples:\n  {string.Join("\n  ", missing)}");
     }
 
     private static IEnumerable<string> MissingRequiredFlags(string file,
@@ -447,7 +447,7 @@ public class CommandDocConsistencyTests
         {
             "README.md",
             Path.Combine("npm", "README.md"),
-            Path.Combine("Templates", "about-dynadocs.template.md"),
+            Path.Combine("Scaffold", "dydo", "reference", "about-dynadocs.md"),
             Path.Combine("dydo", "reference", "about-dynadocs.md"),
         };
 
@@ -506,7 +506,7 @@ public class CommandDocConsistencyTests
     }
 
     // ──────────────────────────────────────────────
-    // Test 10: The installed framework doc stays aligned with its source template
+    // Test 10: The installed framework doc stays aligned with its scaffold source
     // ──────────────────────────────────────────────
 
     [Fact]
@@ -516,7 +516,7 @@ public class CommandDocConsistencyTests
                 FindRepoFile(Path.Combine("dydo", "reference", "about-dynadocs.md")))
             .ReplaceLineEndings("\n").TrimEnd();
         var aboutTemplate = File.ReadAllText(
-                FindRepoFile(Path.Combine("Templates", "about-dynadocs.template.md")))
+                FindRepoFile(Path.Combine("Scaffold", "dydo", "reference", "about-dynadocs.md")))
             .ReplaceLineEndings("\n").TrimEnd();
 
         Assert.Equal(aboutTemplate, aboutDynadocs);

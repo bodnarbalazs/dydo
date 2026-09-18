@@ -10,55 +10,63 @@ using DynaDocs.Services;
 public class ScaffoldTreeTests
 {
     [Fact]
-    public void EveryScaffoldFileOnDisk_ShipsAsAnEmbeddedResource()
+    public void EmbeddedScaffoldResources_AreExactlyTheTreeOnDisk()
     {
-        var scaffoldDirectory = Path.Combine(RepositoryRoot(), "Scaffold");
-
-        var onDisk = Directory.GetFiles(scaffoldDirectory, "*", SearchOption.AllDirectories)
-            .Select(file => "Scaffold/" + Path.GetRelativePath(scaffoldDirectory, file).Replace('\\', '/'))
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToList();
-
+        var onDisk = OnDiskResourceNames();
         Assert.NotEmpty(onDisk);
 
         var embedded = ScaffoldTree.ResourceNames.ToHashSet(StringComparer.Ordinal);
-        var missing = onDisk.Where(name => !embedded.Contains(name)).ToList();
+        var notEmbedded = onDisk.Where(name => !embedded.Contains(name))
+            .OrderBy(name => name, StringComparer.Ordinal).ToList();
+        var notOnDisk = embedded.Where(name => !onDisk.Contains(name))
+            .OrderBy(name => name, StringComparer.Ordinal).ToList();
 
-        Assert.True(missing.Count == 0,
-            $"these Scaffold/ files are not embedded, so `dydo init` would not write them:\n  {string.Join("\n  ", missing)}");
+        Assert.True(notEmbedded.Count == 0 && notOnDisk.Count == 0,
+            $"these Scaffold/ files are not embedded, so `dydo init` would not write them:\n  {string.Join("\n  ", notEmbedded)}\n"
+            + $"these embedded resources have no file under Scaffold/:\n  {string.Join("\n  ", notOnDisk)}");
     }
 
     [Fact]
-    public void EmbeddedScaffoldResources_AreExactlyTheTreeOnDisk()
+    public void EveryScaffoldFileOnDisk_ReadsBackThroughItsResourceName()
     {
-        var scaffoldDirectory = Path.Combine(RepositoryRoot(), "Scaffold");
-
-        var onDisk = Directory.GetFiles(scaffoldDirectory, "*", SearchOption.AllDirectories)
-            .Select(file => "Scaffold/" + Path.GetRelativePath(scaffoldDirectory, file).Replace('\\', '/'))
-            .ToHashSet(StringComparer.Ordinal);
-
-        var embedded = ScaffoldTree.ResourceNames
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToList();
-
-        Assert.Equal(onDisk.OrderBy(name => name, StringComparer.Ordinal), embedded);
-    }
-
-    [Fact]
-    public void EveryEmbeddedScaffoldResource_ReadsBackItsFileOnDisk()
-    {
-        var scaffoldDirectory = Path.Combine(RepositoryRoot(), "Scaffold");
-
-        foreach (var name in ScaffoldTree.ResourceNames)
+        foreach (var file in ScaffoldFiles())
         {
-            var onDisk = Path.Combine(scaffoldDirectory,
-                name["Scaffold/".Length..].Replace('/', Path.DirectorySeparatorChar));
-
             Assert.Equal(
-                File.ReadAllText(onDisk).ReplaceLineEndings("\n"),
-                ScaffoldTree.Read(name).ReplaceLineEndings("\n"));
+                File.ReadAllText(file).ReplaceLineEndings("\n"),
+                ScaffoldTree.Read(ResourceName(file)).ReplaceLineEndings("\n"));
         }
     }
+
+    [Fact]
+    public void WriteDydoTree_WithoutEmbeddedScaffold_Throws()
+    {
+        var target = Path.Combine(Path.GetTempPath(), $"dydo-scaffold-{Guid.NewGuid():N}");
+
+        try
+        {
+            var error = Assert.Throws<FileNotFoundException>(
+                () => ScaffoldTree.WriteDydoTree(target, []));
+
+            Assert.Contains("Scaffold/dydo/", error.Message, StringComparison.Ordinal);
+            Assert.False(Directory.Exists(target));
+        }
+        finally
+        {
+            TestDirectory.Delete(target);
+        }
+    }
+
+    private static string ScaffoldDirectory => Path.Combine(RepositoryRoot(), "Scaffold");
+
+    private static IEnumerable<string> ScaffoldFiles() =>
+        Directory.GetFiles(ScaffoldDirectory, "*", SearchOption.AllDirectories);
+
+    // The one place the embedded-resource naming convention lives: repository-relative, forward slashes.
+    private static string ResourceName(string file) =>
+        "Scaffold/" + Path.GetRelativePath(ScaffoldDirectory, file).Replace('\\', '/');
+
+    private static HashSet<string> OnDiskResourceNames() =>
+        ScaffoldFiles().Select(ResourceName).ToHashSet(StringComparer.Ordinal);
 
     private static string RepositoryRoot()
     {

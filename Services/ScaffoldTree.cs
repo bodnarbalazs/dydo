@@ -23,9 +23,19 @@ public static class ScaffoldTree
     /// Writes the `dydo/` documentation tree under <paramref name="dydoRoot"/>, leaving any file
     /// the project already has exactly as it found it.
     /// </summary>
-    public static void WriteDydoTree(string dydoRoot)
+    public static void WriteDydoTree(string dydoRoot) => WriteDydoTree(dydoRoot, ResourceNames);
+
+    // Takes the resource names so the empty-set failure can be witnessed by a test.
+    internal static void WriteDydoTree(string dydoRoot, IEnumerable<string> resourceNames)
     {
-        foreach (var name in ResourceNames.Where(n => n.StartsWith(DydoRoot, StringComparison.Ordinal)))
+        var dydoFiles = resourceNames
+            .Where(name => name.StartsWith(DydoRoot, StringComparison.Ordinal))
+            .ToList();
+
+        if (dydoFiles.Count == 0)
+            throw new FileNotFoundException($"No scaffold files embedded under: {DydoRoot}");
+
+        foreach (var name in dydoFiles)
         {
             var path = Path.Combine(dydoRoot,
                 name[DydoRoot.Length..].Replace('/', Path.DirectorySeparatorChar));

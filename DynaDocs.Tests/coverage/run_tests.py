@@ -410,12 +410,6 @@ def _is_stale_test_worktree(path, temp_root, now, max_age_seconds):
     return (now - created).total_seconds() >= max_age_seconds
 
 
-def _prune_worktree(path):
-    """Remove one confirmed-stale registered worktree, announcing it on stderr first."""
-    print(f"Pruning stale test worktree: {path}", file=sys.stderr)
-    remove_worktree(path)
-
-
 def prune_stale_test_worktrees(max_age_seconds=None):
     """Remove dydo-test-* worktrees under the system temp directory that a previous runner marked
     and abandoned. Candidates come only from `git worktree list --porcelain` -- the runner
@@ -425,10 +419,13 @@ def prune_stale_test_worktrees(max_age_seconds=None):
     unrelated entries, and enumerating it cost seconds on every run.
 
     This deliberately no longer prunes a leftover directory that git no longer registers as a
-    worktree: `remove_worktree` already prunes git's admin data on the normal removal path, and
-    `run_tests` refuses to allocate a new worktree over an existing path, so an orphaned directory
-    blocks reuse loudly instead of lingering silently. The cost of a full TEMP scan to also catch
-    that rare case is not worth paying on every run. Silent on a no-op.
+    worktree. Each run allocates a fresh `dydo-test-<uuid>` name, so this process never revisits or
+    names an orphan it left behind; a crashed run, a re-cloned checkout, or a second clone whose
+    `git worktree list` this runner never sees can all leave one that now lingers in TEMP with no
+    automated path back to it. `remove_worktree` still names its own failed removals loudly on
+    stderr, but only for the worktree the current run is cleaning up -- not for one an earlier run
+    abandoned. Any such orphan is left for a human. The cost of a full TEMP scan to also catch that
+    rare case is not worth paying on every run. Silent on a no-op.
     """
     if max_age_seconds is None:
         max_age_seconds = _stale_worktree_max_age_seconds()
@@ -437,7 +434,8 @@ def prune_stale_test_worktrees(max_age_seconds=None):
     pruned = []
     for path in _registered_worktree_paths():
         if _is_stale_test_worktree(path, temp_root, now, max_age_seconds):
-            _prune_worktree(path)
+            print(f"Pruning stale test worktree: {path}", file=sys.stderr)
+            remove_worktree(path)
             pruned.append(path)
     return pruned
 

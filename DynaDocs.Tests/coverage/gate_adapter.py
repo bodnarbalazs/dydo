@@ -210,6 +210,28 @@ def _failing_subjects(evidence):
     return [], "no failing test named in altcover-runner.stdout or altcover-runner.stderr"
 
 
+def _campaign_diagnosis(raw):
+    """windows_job's diagnosis for an incomplete native campaign, honest about what it could not read."""
+    path = Path(raw) / "identities.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"identitiesPath": str(path), "diagnosisUnavailable": "identities.json is missing or unreadable"}
+    campaign = manifest.get("campaign") if isinstance(manifest, dict) else None
+    if not isinstance(campaign, dict):
+        return {"identitiesPath": str(path), "diagnosisUnavailable": "identities.json does not record a campaign"}
+    category, message = campaign.get("failure_category"), campaign.get("error_message")
+    if not isinstance(category, str) and not isinstance(message, str):
+        return {"identitiesPath": str(path),
+               "diagnosisUnavailable": "identities.json campaign names no failure_category or error_message"}
+    diagnosis = {"identitiesPath": str(path)}
+    if isinstance(category, str):
+        diagnosis["failureCategory"] = category
+    if isinstance(message, str):
+        diagnosis["errorMessage"] = message
+    return diagnosis
+
+
 def _coverage_report(name, facts, findings, errors, commands, artifacts):
     """One coverage collector, published in the row shape the static gate already uses."""
     row = {**result(facts, findings, errors), "artifacts": artifacts}
@@ -495,9 +517,11 @@ def collect_dotnet_coverage(root, raw):
                                 evidence / "coverage.opencover.xml", raw / "identities.json"], run)
     facts = {"child_exit": child, "raw": _report_location(raw, run)}
     if child not in (0, 1):
+        finding = {"gate": "csharp-coverage", "message": "native campaign incomplete"}
+        if child == 2:
+            finding.update(_campaign_diagnosis(raw))
         return _coverage_report(
-            "csharp-coverage", facts, [],
-            [{"gate": "csharp-coverage", "message": "native campaign incomplete"}],
+            "csharp-coverage", facts, [], [finding],
             commands, artifacts)
     if child:
         names, summary = _failing_subjects(evidence)

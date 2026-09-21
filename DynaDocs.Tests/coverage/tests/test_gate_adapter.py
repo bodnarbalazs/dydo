@@ -748,8 +748,12 @@ class CoverageCampaignTests(unittest.TestCase):
             answer = gate_adapter.collect_coverage(root, Path(folder), "dotnet", inventory)
 
             self.assertEqual("error", answer["status"])
-            self.assertEqual([{"gate": "csharp-coverage", "message": "native campaign incomplete"}],
-                             answer["errors"])
+            self.assertEqual(1, len(answer["errors"]))
+            error = answer["errors"][0]
+            self.assertEqual("csharp-coverage", error["gate"])
+            self.assertEqual("native campaign incomplete", error["message"])
+            self.assertEqual("identities.json is missing or unreadable", error["diagnosisUnavailable"])
+            self.assertTrue(error["identitiesPath"].endswith("identities.json"), error["identitiesPath"])
             row = collector_row(answer, "csharp-coverage")
             self.assertEqual(2, row["facts"]["child_exit"])
             self.assertEqual([], row["artifacts"])
@@ -879,6 +883,77 @@ class CoverageCampaignTests(unittest.TestCase):
                 finding = answer["findings"][0]
                 self.assertEqual([], finding["failingTests"])
                 self.assertEqual(expected_summary, finding["failingTestsSummary"])
+
+    def test_an_exit_2_campaign_names_a_timeout_from_identities_json(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            write_file(raw, "identities.json",
+                      json.dumps({"schema": 1,
+                                 "campaign": {"failure_category": "timeout", "error_message": None}}))
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            self.assertEqual("error", answer["status"])
+            error = answer["errors"][0]
+            self.assertEqual("timeout", error["failureCategory"])
+            self.assertNotIn("errorMessage", error)
+            self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
+
+    def test_an_exit_2_campaign_names_the_preflight_category_and_its_windows_cpython_message(self):
+        # windows_job.runtime_evidence() raises "Owner requires Windows CPython 3.12" from
+        # validate(), before run()'s try block ever creates `output`; run()'s except handler
+        # then finds output is None, so failure_category stays at its "preflight" initial
+        # value and error_message becomes str(error) -- the message never lands in the
+        # category itself.
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            write_file(raw, "identities.json",
+                      json.dumps({"schema": 1,
+                                 "campaign": {"failure_category": "preflight",
+                                             "error_message": "Owner requires Windows CPython 3.12"}}))
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            error = answer["errors"][0]
+            self.assertEqual("preflight", error["failureCategory"])
+            self.assertEqual("Owner requires Windows CPython 3.12", error["errorMessage"])
+            self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
+
+    def test_an_exit_2_campaign_fails_closed_when_identities_json_is_missing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            raw.mkdir(parents=True)
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            error = answer["errors"][0]
+            self.assertEqual("identities.json is missing or unreadable", error["diagnosisUnavailable"])
+            self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
+            self.assertNotIn("failureCategory", error)
+            self.assertNotIn("errorMessage", error)
+
+    def test_an_exit_2_campaign_fails_closed_when_identities_json_is_malformed(self):
+        for label, text in (
+            ("not json", "not json at all"),
+            ("no campaign object", json.dumps({"schema": 1, "campaign": "oops"})),
+            ("campaign names neither field",
+             json.dumps({"schema": 1, "campaign": {"complete": False}})),
+        ):
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as folder:
+                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+                write_file(raw, "identities.json", text)
+
+                with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
+                    answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+                error = answer["errors"][0]
+                self.assertIsInstance(error["diagnosisUnavailable"], str)
+                self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
+                self.assertNotIn("failureCategory", error)
+                self.assertNotIn("errorMessage", error)
 
     def test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -49,10 +49,12 @@ def manifest(*stacks):
     return {'schema': 1, 'artifactRoot': 'results', 'stacks': list(stacks or [stack('dotnet')])}
 
 
-def coverage_report(collector, child_exit=None, findings=None):
+def coverage_report(collector, child_exit=None, findings=None, errors=None):
     row = {'facts': {}, 'findings': list(findings or [])}
     if child_exit is not None:
         row['facts']['child_exit'] = child_exit
+    if errors is not None:
+        row['errors'] = errors
     return {'collectors': {collector: row}}
 
 
@@ -644,6 +646,52 @@ class TestingFacadeTests(unittest.TestCase):
         p, _, payload = self.derived_case(coverage_report('first-coverage', 5), 1)
         self.assert_exit(p, 2)
         self.assert_derived(payload, ('invalid', None, 2), ('failed', 1), 2)
+
+    def test_derived_exit_2_diagnosis_is_rendered_on_the_unattributed_row(self):
+        errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
+                  'failureCategory': 'timeout', 'identitiesPath': '/tmp/run/identities.json'}]
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=errors), 1)
+        self.assert_exit(p, 2)
+        self.assert_derived(payload, ('invalid', None, 2), ('failed', 1), 2)
+        reason = payload['results'][0]['reason']
+        self.assertTrue(reason.endswith('; timeout at /tmp/run/identities.json'), reason)
+
+    def test_derived_exit_2_diagnosis_joins_category_and_message_when_both_are_named(self):
+        errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
+                  'failureCategory': 'preflight',
+                  'errorMessage': 'Owner requires Windows CPython 3.12',
+                  'identitiesPath': '/tmp/run/identities.json'}]
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=errors), 1)
+        self.assert_exit(p, 2)
+        self.assert_derived(payload, ('invalid', None, 2), ('failed', 1), 2)
+        reason = payload['results'][0]['reason']
+        self.assertTrue(reason.endswith(
+            '; preflight: Owner requires Windows CPython 3.12 at /tmp/run/identities.json'), reason)
+
+    def test_derived_exit_2_diagnosis_unavailable_is_rendered_on_the_unattributed_row(self):
+        errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
+                  'diagnosisUnavailable': 'identities.json is missing or unreadable',
+                  'identitiesPath': '/tmp/run/identities.json'}]
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=errors), 1)
+        self.assert_exit(p, 2)
+        reason = payload['results'][0]['reason']
+        self.assertTrue(reason.endswith(
+            '; identities.json is missing or unreadable at /tmp/run/identities.json'), reason)
+
+    def test_derived_unattributed_child_exit_without_diagnosis_keeps_the_plain_row(self):
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=[]), 1)
+        self.assert_exit(p, 2)
+        reason = payload['results'][0]['reason']
+        self.assertTrue(reason.endswith('to the suite'), reason)
+        self.assertNotIn(';', reason)
+
+    def test_a_non_dotnet_stacks_unattributed_row_is_unaffected_by_the_diagnosis_renderer(self):
+        errors = [{'gate': 'functional', 'unrelated': 'value'}]
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=errors), 1)
+        self.assert_exit(p, 2)
+        reason = payload['results'][0]['reason']
+        self.assertTrue(reason.endswith('to the suite'), reason)
+        self.assertNotIn(';', reason)
 
     def test_derivation_only_when_both_rows_are_selected(self):
         for args, test_runs, coverage_runs in [

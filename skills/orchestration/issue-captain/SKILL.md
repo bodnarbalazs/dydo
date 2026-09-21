@@ -31,7 +31,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
   work cannot run. Every worker return comes back to you.
 - **Delivery scale:** The default crew is one author — `code-writer`, or `docs-writer` for a
   documentation change — then one fresh, independent whole-change reviewer. Add a spec review or a
-  separate hardening hop only with one short, concrete risk reason; persistence, migrations,
+  separate hardening pass only with one short, concrete risk reason; persistence, migrations,
   permissions and uncertain native interfaces are examples that need stronger stages. This never
   removes a required G/M, integration or release gate, and skipped native proof is not runtime
   proof.

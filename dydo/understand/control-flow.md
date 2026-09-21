@@ -304,7 +304,7 @@ stateDiagram-v2
   Specifying --> Implementing: the contract is accepted
   Implementing --> Hardening: captain parks it for another hand's tightening
   Hardening --> Implementing: that hand's commit posted
-  InReview --> Implementing: FAIL, whatever it found
+  InReview --> Implementing: FAIL, whatever it found; or a spec review's PASS
   InReview --> Ready: PR ready with its PASS
   Ready --> Done: its Merge Sub-issue PASS
   Ready --> Implementing: merge review FAIL, reverted

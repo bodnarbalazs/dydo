@@ -6,7 +6,7 @@ type: guide
 # Customizing Roles
 
 A role is a skill folder. Author the body directly in the cross-vendor `SKILL.md` format; there is
-no template and no compile step. The [templates page](../understand/templates-and-customization.md)
+no template and no compile step. The [scaffold page](../understand/scaffold-and-customization.md)
 covers the artifact shapes and the link rules; this page covers the frontmatter and what each host
 reads.
 
@@ -87,7 +87,7 @@ current audit procedure.
 
 ## Related
 
-- [Templates and Customization](../understand/templates-and-customization.md) — the artifact shapes end to end
+- [Scaffold and Customization](../understand/scaffold-and-customization.md) — the artifact shapes end to end
 - [Configuration Reference](../reference/configuration.md) — dispatch-time model and effort, nudges
 - [dydo Commands Reference](../reference/dydo-commands.md) — the CLI
 - [dydo Glossary](../reference/dydo-glossary.md) — hat, worker, method, and the retired terms

@@ -42,7 +42,7 @@ corrective for agent-speak, at any stage.
   `walkthrough` in that same session before facilitating it.
 
 The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder — see
-[Templates and Customization](./templates-and-customization.md).
+[Scaffold and Customization](./scaffold-and-customization.md).
 
 A captain's Issue is a Project one level down: the same Types, statuses and chain, with a different
 map holder. The [control-flow map](./control-flow.md) carries every contact, including captain

@@ -131,7 +131,7 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
 
 - [Decision 041](./041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md) — its compiler clause is amended by this record
 - [Architecture Overview](../../understand/architecture.md)
-- [Templates and Customization](../../understand/templates-and-customization.md)
+- [Scaffold and Customization](../../understand/scaffold-and-customization.md)
 - [Customizing Roles](../../guides/customizing-roles.md)
 - [Guard System](../../understand/guard-system.md) — retained, unchanged
 - [dydo Commands Reference](../../reference/dydo-commands.md)

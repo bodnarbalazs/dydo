@@ -13,7 +13,7 @@ public class ProcessWorkflowTests : IntegrationTestBase
         var result = await InitProjectAsync();
         result.AssertSuccess();
 
-        // Modes are compiled by dydo sync, never created at init.
+        // Modes are not compiled at all (DR 049 retired the compiler); init never creates them.
         var modesPath = Path.Combine(TestDir, "dydo", "agents", "sample", "modes");
         Assert.False(Directory.Exists(modesPath), "Modes folder should NOT exist after init");
     }

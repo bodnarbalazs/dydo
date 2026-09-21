@@ -354,7 +354,7 @@ public class CommandDocConsistencyTests
             Path.Combine("dydo", "understand", "about.md"),
             Path.Combine("dydo", "understand", "architecture.md"),
             Path.Combine("dydo", "understand", "documentation-model.md"),
-            Path.Combine("dydo", "understand", "templates-and-customization.md"),
+            Path.Combine("dydo", "understand", "scaffold-and-customization.md"),
             Path.Combine("dydo", "guides", "getting-started.md"),
             Path.Combine("dydo", "guides", "customizing-roles.md"),
             Path.Combine("dydo", "guides", "testing-strategy.md"),

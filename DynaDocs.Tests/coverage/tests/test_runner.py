@@ -609,38 +609,34 @@ class StaleWorktreePruningTests(unittest.TestCase):
                 self.assertEqual(0, junction.returncode, junction.stdout + junction.stderr)
             else:
                 alias.symlink_to(temp_root, target_is_directory=True)
-            try:
-                stale = temp_root / "dydo-test-stale0001"
-                self._mark(stale, age_seconds=99999)
-                aliased_stale = alias / "dydo-test-stale0001"
+            stale = temp_root / "dydo-test-stale0001"
+            self._mark(stale, age_seconds=99999)
+            aliased_stale = alias / "dydo-test-stale0001"
 
-                porcelain = (
-                    "worktree C:/Users/User/Desktop/Projects/DynaDocs\n"
-                    "HEAD 333873de69e4fbd07aadc9d0b032463c0f96938b\n"
-                    "branch refs/heads/master\n"
-                    "\n"
-                    f"worktree {aliased_stale.as_posix()}\n"
-                    "HEAD df0b68d6fee20320b6ce3238e5143735e8b7f645\n"
-                    "detached\n"
-                    "\n"
-                )
+            porcelain = (
+                "worktree C:/Users/User/Desktop/Projects/DynaDocs\n"
+                "HEAD 333873de69e4fbd07aadc9d0b032463c0f96938b\n"
+                "branch refs/heads/master\n"
+                "\n"
+                f"worktree {aliased_stale.as_posix()}\n"
+                "HEAD df0b68d6fee20320b6ce3238e5143735e8b7f645\n"
+                "detached\n"
+                "\n"
+            )
 
-                def fake_git(*args, capture=False):
-                    if args[:2] == ("worktree", "list"):
-                        return porcelain, 0
-                    return ("", 0) if capture else None
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return porcelain, 0
+                return ("", 0) if capture else None
 
-                with patch.object(run_tests, "tempfile") as fake_tempfile, \
-                     patch.object(run_tests, "_git", side_effect=fake_git):
-                    fake_tempfile.gettempdir.return_value = str(temp_root)
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
 
-                    pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
 
-                self.assertEqual([stale.resolve()], [p.resolve() for p in pruned])
-                self.assertFalse(stale.exists())
-            finally:
-                if os.path.lexists(alias):
-                    os.rmdir(alias)
+            self.assertEqual([stale.resolve()], [p.resolve() for p in pruned])
+            self.assertFalse(stale.exists())
 
     def test_prune_leaves_an_unregistered_stale_marked_leftover_directory_alone(self):
         """Narrowed contract: pruning enumerates only git's own registered worktrees, so a stale

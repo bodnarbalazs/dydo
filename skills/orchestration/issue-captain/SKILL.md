@@ -60,8 +60,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
    repeating it; the `code-writer` makes it exact and writes its `## Spec` and `## Plan` onto the
    record in its first phase. To have that contract judged before the code, park the Issue at
-   `Specifying` and brief a fresh `reviewer(spec)` on the Issue text; on FAIL a fresh `code-writer`
-   rewrites it there. **Done:** the compact acceptance contract bounds the work and its spec names
+   `Specifying` and brief a fresh `reviewer(spec)` on the Issue text; either verdict returns it to
+   `Implementing`. **Done:** the compact acceptance contract bounds the work and its spec names
    lanes, or none.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Where a spec names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
@@ -92,9 +92,9 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the compact acceptance-contract
-   SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests, gates
-   and a missed contract line go back to a fresh `code-writer` at `Implementing`; a wrong scenario or
-   route returns it to `Specifying` first.
+   SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: every finding goes
+   back to a fresh `code-writer` at `Implementing`, whatever it is, and a wrong scenario or route is
+   amended by that fix hop's Exact phase.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
    full strength whatever the work below them cost.
    Send the FAIL block with the brief and set the fixing hop's status. A change to acceptance,

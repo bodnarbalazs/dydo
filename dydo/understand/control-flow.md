@@ -141,8 +141,8 @@ flowchart TD
 
   AD[admiral]:::hat <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::hat
   IC <-->|"1 write · Implementing"| CW
-  IC <-.->|"1b contract review, parked off the write at the captain's discretion · Specifying then In Review"| RS
-  IC <-.->|"2 extra tightening by another hand · Hardening"| HD
+  IC <-.->|"1b contract review, parked off the write at the captain's discretion · Specifying, In Review, back to Implementing"| RS
+  IC <-.->|"2 extra tightening by another hand · Hardening, back to Implementing"| HD
   IC <-->|"3 review · In Review"| RC
   IC <-->|"4 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
   subgraph CREW [the crew]
@@ -298,12 +298,13 @@ stateDiagram-v2
   Implementing --> InProgress: the spec named lanes
   InProgress --> InReview: lanes merged, review of the whole
   Implementing --> InReview: implement hop posted
+  Todo --> Specifying: captain parks it for a contract review before any code
   Implementing --> Specifying: captain parks it for a contract review
   Specifying --> InReview: the contract review runs
   Specifying --> Implementing: the contract is accepted
   Implementing --> Hardening: captain parks it for another hand's tightening
-  Hardening --> InReview: that hand's commit posted
-  InReview --> Implementing: FAIL, a contract line or quality
+  Hardening --> Implementing: that hand's commit posted
+  InReview --> Implementing: FAIL, whatever it found
   InReview --> Ready: PR ready with its PASS
   Ready --> Done: its Merge Sub-issue PASS
   Ready --> Implementing: merge review FAIL, reverted
@@ -361,8 +362,8 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 15 | issue-captain → code-writer | R (spawn) | the record to write, its kind | the record with parent, blockers, comments; the plan section and DRs; working-tree contract; coding-standards; about; architecture; the kind's resource | `Implementing` |
 | 16 | code-writer → issue-captain | R, L, G | spec, plan and the lanes named, `## Spec` and `## Plan` on the record with the feature files committed; implement SHA, files, each scenario and contract line with its proof or gap, gates incl. mutation with output, any extra-pass risk, adjacent findings | — | — |
 | 17 | issue-captain → Sub-issues | L, G | lane Sub-issues with the parent's Type and Mode, disjoint paths and branches, or retained Bug stages with native ordering and serial path transfer; one Merge Sub-issue per actual integration; a Question Sub-issue for local fog | — | lanes `Todo`; parent `In Progress` |
-| 18 | issue-captain → reviewer(spec), optional, at the captain's discretion before the code | R (spawn) | the record carrying the Exact phase's `## Spec` and `## Plan` | that text on the Issue, the five fields, base SHA, branch, worktree, owned paths | `Specifying` → `In Review`, back to `Specifying` on FAIL |
-| 19 | issue-captain → code-writer (fix hop) | R (spawn) | the Issue, the candidate, the review block that sent it | the Issue with spec and plan, the block, the plan, standards | the status the FAIL names |
+| 18 | issue-captain → reviewer(spec), optional, at the captain's discretion before the code | R (spawn) | the record carrying the Exact phase's `## Spec` and `## Plan` | that text on the Issue, the five fields, base SHA, branch, worktree, owned paths | `Specifying` → `In Review` → `Implementing` |
+| 19 | issue-captain → code-writer (fix hop) | R (spawn) | the Issue, the candidate, the review block that sent it | the Issue with spec and plan, the block, the plan, standards | `Implementing`, whatever the FAIL found |
 | 20 | code-writer (fix hop) → issue-captain | R, G | Issue key, fix SHA, each finding with what closed it, gates rerun | — | — |
 | 21 | issue-captain → code-writer (separate tightening pass), optional, at the captain's discretion | R (spawn) | the Issue, the first writer's return and candidate SHA | the Issue with spec and plan and that return, the plan, standards | `Hardening` |
 | 22 | code-writer (tightening pass) → issue-captain | R, G | Issue key, its fix SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates incl. mutation, out-of-path observations | — | — |
@@ -461,18 +462,15 @@ flowchart LR
   classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
   RV{{reviewer verdict}}:::reviewer -->|PASS block| OK[captain records block, opens PR, returns done &lt;key&gt;: PR ready to admiral]
-  RV -->|"FAIL, fewer than five in a row"| RT{captain routes each finding}
-  RT -->|"a contract line unmet, or standards, smells, tests, gates · Implementing"| IM[fresh code-writer: fix hop]:::worker
-  RT -->|"a scenario missing or wrong · Specifying"| SP[fresh code-writer: spec amendment, then the fix]:::worker
-  RT -.->|"quality worth another hand · Hardening"| HD[separate tightening pass, the captain's call]:::worker
-  HD --> FR{{fresh reviewer, new Candidate SHA · In Review}}:::reviewer
-  IM --> FR
-  SP --> FR
+  RV -->|"FAIL, fewer than five in a row"| RT{captain takes the findings}
+  RT -->|"every finding, whatever it is · Implementing"| IM[fresh code-writer: fix hop; its Exact phase amends the contract when a scenario was wrong]:::worker
+  IM --> FR{{fresh reviewer, new Candidate SHA · In Review}}:::reviewer
   FR --> RV
   RV -->|fifth consecutive FAIL| ESC[escalate: comment on the Issue, Question Issue as blocker, admiral, then human]
 ```
 
-The contract: FAIL is binding; the record goes to the status of the hop that fixes it; every
+The contract: FAIL is binding; every FAIL returns the record to `Implementing`, whatever it found,
+and a wrong or missing scenario is amended by the next fix hop's Exact phase; every
 correction is its own commit and the re-review pins the new SHA; a note is a finding; the fifth consecutive FAIL
 in one review loop stops the loop rather than softening the verdict. A spec amendment that changes
 acceptance is an amendment of the contract and, under a Project, goes to the admiral as a plan

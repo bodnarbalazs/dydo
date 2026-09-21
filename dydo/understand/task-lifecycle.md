@@ -78,8 +78,9 @@ The captain directs specification, merge implementation and fresh merge review, 
 Done and returns `done <key>: merged`. A Merge Sub-issue never waits in Ready to Merge. The landing
 Merge does: the human clicks its reviewed PR as a merge commit.
 
-FAIL returns to the fixing hop: a fresh code-writer at Implementing for a contract line or for
-standards, tests and gates, at Specifying when the scenario or route was wrong; corrections carry new commits and fresh reviews. Merge FAIL
+Every FAIL returns to Implementing, whatever it found: a fresh code-writer takes the next fix hop,
+and its Exact phase amends the contract when the scenario or route was wrong. Corrections carry new
+commits and fresh reviews. Merge FAIL
 fixes integration defects inside Merge. A source defect is reverted there, Merge closes Canceled
 and source returns to Implementing; if a later merge depends on it, a following fix Issue replaces
 the revert. Plan review has its own two-round cap before the human chooses.

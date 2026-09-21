@@ -36,11 +36,11 @@ every chain spawn, and nothing else flips it.
 | `FutureFeature` | backlog | An unscheduled strategic possibility with no Type yet. Only the human promotes it. |
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the human's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
-| `Specifying` | started | Optional and captain-chosen: it sits off the default path, and a captain uses it only to park an Issue whose contract is being reviewed before any code. |
+| `Specifying` | started | Optional and captain-chosen, entered only from `Todo` or `Implementing`: it sits off the default path, and a captain uses it only to park an Issue whose contract is being reviewed before any code. It returns to `Implementing`. |
 | `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep, proofs and final retention verification. |
 | `Implementing` | started | The code-writer is spawned — contract, code and tightening in one hop — a fix hop after a FAIL included. |
-| `Hardening` | started | Optional and captain-chosen: it sits off the default path, and a captain uses it only to park an Issue whose landed code another hand is tightening. |
-| `In Review` | started | Any reviewer is spawned. A FAIL returns the record to the hop that fixes it. |
+| `Hardening` | started | Optional and captain-chosen, entered only from `Implementing`: it sits off the default path, and a captain uses it only to park an Issue whose landed code another hand is tightening. It returns to `Implementing`. |
+| `In Review` | started | Any reviewer is spawned. A FAIL returns the record to `Implementing`, whatever it found. |
 | `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-issue runs; the landing waits here for the human's click, one Project at a time. A merge review FAIL that reverts sends it back to `Implementing`. |
 | `Done` | completed | Merged, or the outcome the Type names reached, with its evidence. |
 | `Canceled` | canceled | The Issue will not be completed; the record says why. |

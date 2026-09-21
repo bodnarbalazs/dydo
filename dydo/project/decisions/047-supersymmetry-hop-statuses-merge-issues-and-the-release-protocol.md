@@ -361,8 +361,11 @@ The default Issue path is `Todo` → `Implementing` → `In Review` → `Ready t
 `In Progress` while lanes run; a Merge Sub-issue runs `Todo` → `Implementing` → `In Review` →
 `Done`, and an Inquisition `Backlog` → `Todo` → `Implementing` for its contract → `In Progress`.
 `Specifying` and `Hardening` stay defined in the workspace standard as optional, captain-chosen
-parks off that path: one for an Issue whose contract is under review before any code, the other for
-an Issue whose landed code another hand is tightening.
+parks off that path: one for an Issue whose contract is under review before any code, entered only
+from `Todo` or `Implementing`, the other for an Issue whose landed code another hand is tightening,
+entered only from `Implementing`; both return to `Implementing`. Every review FAIL returns the Issue
+to `Implementing` whatever it found, with a wrong or missing scenario amended by the next `fix`
+hop's Exact phase, so no FAIL routes to either park.
 
 ---
 

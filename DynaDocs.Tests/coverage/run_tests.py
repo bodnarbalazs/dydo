@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import json
+import math
 import os
 import shutil
 import signal
@@ -250,8 +251,12 @@ def materialize_skill_links(worktree):
 
 def _stale_worktree_max_age_seconds():
     """Read the stale-worktree age override, or fall back to the default when it is unset. An
-    override that is present but unparseable or non-positive is a boundary error, never a silent
-    fallback: it fails loudly, naming the offending value.
+    override that is present but unparseable, non-finite, or non-positive is a boundary error,
+    never a silent fallback: it fails loudly, naming the offending value. `nan` compares false
+    against every age, so it would silently prune every marked worktree, including a concurrent
+    runner's live one; `inf` compares true against every age, so it would silently disable pruning
+    altogether. Neither reads as a deliberate "positive number of seconds", so both are rejected
+    rather than given special meaning.
     """
     override = os.environ.get(STALE_WORKTREE_AGE_ENV)
     if not override:
@@ -261,6 +266,9 @@ def _stale_worktree_max_age_seconds():
     except ValueError:
         raise ValueError(
             f"{STALE_WORKTREE_AGE_ENV} must be a number, got {override!r}") from None
+    if not math.isfinite(value):
+        raise ValueError(
+            f"{STALE_WORKTREE_AGE_ENV} must be a finite number of seconds, got {override!r}")
     if value <= 0:
         raise ValueError(
             f"{STALE_WORKTREE_AGE_ENV} must be a positive number of seconds, got {override!r}")

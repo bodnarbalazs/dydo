@@ -427,6 +427,12 @@ class StaleWorktreeAgeOverrideTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, run_tests.STALE_WORKTREE_AGE_ENV):
                     run_tests._stale_worktree_max_age_seconds()
 
+    def test_non_finite_override_raises_naming_the_variable_and_value(self):
+        for value in ("nan", "inf"):
+            with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: value}):
+                with self.assertRaisesRegex(ValueError, run_tests.STALE_WORKTREE_AGE_ENV):
+                    run_tests._stale_worktree_max_age_seconds()
+
     def test_valid_positive_override_is_used(self):
         with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: "120"}):
             self.assertEqual(120.0, run_tests._stale_worktree_max_age_seconds())

@@ -121,7 +121,9 @@ caller's identity propagates into every adapter.
 Artifact paths are shown relative to `DynaDocs.Tests/coverage/`; the manifest declares them
 repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`. The `dotnet` stack declares isolation
 `git-worktree-copy-working-changes`, verified by the adapter `DynaDocs.Tests/coverage/run_tests.py`;
-`python` and `node` declare verified `in-place` isolation.
+`python` and `node` declare verified `in-place` isolation. The runner also materializes the
+gitignored `.claude/skills` and `.agents/skills` host discovery directories into the snapshot, so
+the canonical-tree guard's link-resolution check is not vacuous there.
 
 Every G row therefore has a real mechanism: three test adapters, three static adapters and three
 coverage adapters. Mutation is the only unavailable capability, and it belongs to DYD-103. Its

@@ -118,6 +118,98 @@ def copy_dirty_files(worktree):
         shutil.copy2(src, dst)
 
 
+def _is_link_entry(entry):
+    """True for a symlink or a Windows directory junction."""
+    return entry.is_symlink() or (hasattr(entry, "is_junction") and entry.is_junction())
+
+
+def _relative_if_inside(candidate, base):
+    """Return candidate's path relative to base if candidate is base or nested under it, else None."""
+    candidate_norm = os.path.normcase(str(candidate))
+    base_norm = os.path.normcase(str(base))
+    if candidate_norm == base_norm:
+        return Path(".")
+    if not candidate_norm.startswith(base_norm + os.sep):
+        return None
+    return Path(str(candidate)[len(str(base)) + 1:])
+
+
+def _create_skill_link(link_path, target_path):
+    """Create a link matching what setup-skills.mjs produces on this platform: a directory
+    junction on win32 (os.symlink needs elevated privilege there), a directory symlink elsewhere.
+    """
+    link_path.parent.mkdir(parents=True, exist_ok=True)
+    if link_path.exists() or _is_link_entry(link_path):
+        raise ValueError(f"Refusing to replace an existing path while materializing a skill link: {link_path}")
+    if sys.platform == "win32":
+        import _winapi
+        _winapi.CreateJunction(str(target_path), str(link_path))
+    else:
+        os.symlink(target_path, link_path, target_is_directory=True)
+
+
+def _mirror_host_skill_root(worktree, relative):
+    """Reproduce one host skill discovery directory inside the snapshot, preserving each entry's
+    kind. A link resolving inside the source root's skills/ is rebased onto the snapshot's own
+    skills/, so the guard's containment check is about the snapshot. Any other entry (a real
+    directory, a real file, or a link resolving outside skills/) is reproduced as-is, so a DR 049
+    violation on the host still fails the guard inside the snapshot.
+    """
+    canonical_skills = Path(os.path.realpath(ROOT / "skills"))
+    source = ROOT / relative
+    for entry in sorted(source.iterdir(), key=lambda item: item.name):
+        dest = worktree / relative / entry.name
+        if _is_link_entry(entry):
+            final_target = Path(os.path.realpath(entry))
+            offset = _relative_if_inside(final_target, canonical_skills)
+            rebased_target = (worktree / "skills" / offset) if offset is not None else final_target
+            _create_skill_link(dest, rebased_target)
+        elif entry.is_dir():
+            shutil.copytree(entry, dest)
+        elif entry.is_file():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(entry, dest)
+        else:
+            raise ValueError(f"Cannot materialize unsupported skill discovery entry: {entry}")
+
+
+def _project_canonical_skill_links(worktree, relative):
+    """Project one link per canonical skill directory from the snapshot's own skills/ tree, for use
+    when the source root has no host discovery directory to mirror (for example, this very
+    worktree, which has no .claude/skills installed).
+    """
+    canonical_skills = worktree / "skills"
+    if not canonical_skills.is_dir():
+        raise ValueError(f"Cannot project skill discovery directories: missing {canonical_skills}")
+    names = sorted(item.name for item in canonical_skills.iterdir() if item.is_dir())
+    if not names:
+        raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {canonical_skills}")
+    for name in names:
+        _create_skill_link(worktree / relative / name, canonical_skills / name)
+
+
+def materialize_skill_links(worktree):
+    """Materialize the gitignored host skill discovery directories (.claude/skills, .agents/skills)
+    inside the snapshot, so CanonicalSkillTree_HasNoAuthoredHostCopies is not vacuous there.
+
+    copy_dirty_files never copies these directories: they are gitignored, so `git status` never
+    reports them as dirty or untracked. Without this, the guard's `if (!Directory.Exists(root))
+    continue;` skips its whole link-resolution half under the isolated runner, and only its
+    `git ls-files`-based half still runs against the real snapshot worktree.
+
+    Materialization must fail loudly: any error here aborts the run rather than silently leaving
+    the vacuous state the guard cannot detect.
+    """
+    for relative in (".claude/skills", ".agents/skills"):
+        try:
+            if (ROOT / relative).is_dir():
+                _mirror_host_skill_root(worktree, relative)
+            else:
+                _project_canonical_skill_links(worktree, relative)
+        except Exception as exc:
+            raise ValueError(f"Failed to materialize skill discovery directory {relative}: {exc}") from exc
+
+
 def remove_worktree(worktree):
     """Remove the worktree and its directory."""
     _git("worktree", "remove", "--force", str(worktree))
@@ -232,6 +324,7 @@ def run_tests(extra_args=None, assurance_output=None):
         print(f"  Worktree: {worktree}")
 
         copy_dirty_files(worktree)
+        materialize_skill_links(worktree)
 
         if assurance_output:
             return _run_assurance_campaign(worktree, extra_args, assurance_output)

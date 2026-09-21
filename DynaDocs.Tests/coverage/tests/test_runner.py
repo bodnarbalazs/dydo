@@ -93,6 +93,96 @@ class RunnerEnvironmentTests(unittest.TestCase):
             run_tests.test_command(["--", "RunConfiguration.TreatNoTestsAsError=false"])
 
 
+def _make_link(link, target):
+    """Create a link matching what setup-skills.mjs produces on this platform, for test fixtures."""
+    link.parent.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "win32":
+        import _winapi
+        _winapi.CreateJunction(str(target), str(link))
+    else:
+        os.symlink(target, link, target_is_directory=True)
+
+
+class SkillLinkMaterializationTests(unittest.TestCase):
+    def test_real_directory_under_host_root_is_reproduced_as_real_directory(self):
+        # A host-authored copy (a DR 049 violation) must survive into the snapshot as a real
+        # directory, not vanish or become a link -- otherwise the guard can never see it and fails
+        # vacuously under the isolated runner.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            worktree = Path(folder) / "worktree"
+            write_file(root / ".claude/skills/rogue/SKILL.md", "authored copy")
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            rogue = worktree / ".claude/skills/rogue"
+            self.assertTrue(rogue.is_dir())
+            self.assertFalse(rogue.is_symlink())
+            self.assertEqual("authored copy", (rogue / "SKILL.md").read_text())
+
+    def test_link_entry_is_rebased_to_resolve_inside_snapshot_skills(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            worktree = Path(folder) / "worktree"
+            write_file(root / "skills/admiral/SKILL.md", "canonical")
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+            _make_link(root / ".claude/skills/admiral", root / "skills/admiral")
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            link = worktree / ".claude/skills/admiral"
+            resolved = Path(os.path.realpath(link))
+            self.assertEqual(Path(os.path.realpath(worktree / "skills/admiral")), resolved)
+
+    def test_foreign_link_target_outside_skills_is_reproduced_unchanged(self):
+        # A link that does not resolve inside skills/ is itself the DR 049 violation; it must still
+        # resolve outside <snapshot>/skills so the guard fails there exactly as it would on the host.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            worktree = Path(folder) / "worktree"
+            outside = Path(folder) / "outside-target"
+            outside.mkdir(parents=True)
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+            _make_link(root / ".claude/skills/rogue-link", outside)
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            link = worktree / ".claude/skills/rogue-link"
+            self.assertEqual(Path(os.path.realpath(outside)), Path(os.path.realpath(link)))
+
+    def test_absent_source_root_projects_one_link_per_canonical_snapshot_skill(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+            write_file(worktree / "skills/bro/SKILL.md", "canonical")
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            for relative in (".claude/skills", ".agents/skills"):
+                for name in ("admiral", "bro"):
+                    link = worktree / relative / name
+                    self.assertEqual(Path(os.path.realpath(worktree / "skills" / name)),
+                                     Path(os.path.realpath(link)))
+
+    def test_materialization_failure_raises_with_named_reason(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            worktree.mkdir()  # no skills/ tree to project from
+
+            with patch.object(run_tests, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, "materialize skill discovery directory"):
+                    run_tests.materialize_skill_links(worktree)
+
+
 class AssuranceCampaignTests(unittest.TestCase):
     def campaign_worktree(self, folder):
         worktree = Path(folder) / "worktree"

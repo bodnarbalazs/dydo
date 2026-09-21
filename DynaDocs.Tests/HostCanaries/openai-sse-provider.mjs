@@ -4,7 +4,6 @@ import path from "node:path";
 import { parseArgs } from "./openai-sse-provider-args.mjs";
 
 const args = parseArgs(process.argv.slice(2));
-const teachSkillDirectory = path.join(args.candidate, "skills", "productivity", "teach");
 const expectedFact = "# Mission: {Topic}";
 const teachDescription = "Teach the human a new skill or concept, within this workspace.";
 const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
@@ -115,11 +114,16 @@ function providerText(url, response, content) {
   return chatText(response, content);
 }
 
+function teachSkillDirectory() {
+  assert(args.candidate, "--candidate is required to resolve the canonical teach skill directory");
+  return path.join(args.candidate, "skills", "productivity", "teach");
+}
+
 async function handleCodex(request, response, payload) {
   if (!request.url?.endsWith("/responses")) return deny(response, `unexpected Codex provider endpoint ${request.url}`);
   const strings = collectStrings(payload);
   if (state === 0) {
-    const body = await readFile(path.join(teachSkillDirectory, "SKILL.md"), "utf8");
+    const body = await readFile(path.join(teachSkillDirectory(), "SKILL.md"), "utf8");
     const marker = `teach: ${teachDescription}`;
     const serialized = JSON.stringify(payload);
     assert(countAcross(strings, implicitPrompt) === 1, "Codex implicit request did not contain the exact control prompt once");
@@ -132,7 +136,7 @@ async function handleCodex(request, response, payload) {
     return responsesText(response, "DYDO_TEACH_HIDDEN");
   }
   if (state === 1) {
-    const body = await readFile(path.join(teachSkillDirectory, "SKILL.md"), "utf8");
+    const body = await readFile(path.join(teachSkillDirectory(), "SKILL.md"), "utf8");
     assert(countAcross(strings, body) === 1, "Codex explicit request did not contain the exact canonical teach body once");
     assert(countAcross(strings, codexPrompt) === 1, "Codex explicit request did not contain the exact prompt once");
     assert(countAcross(strings, expectedFact) === 0, "Codex explicit request pre-inlined the resource-only fact");
@@ -147,7 +151,7 @@ async function handleCodex(request, response, payload) {
     const realResource = await realpath(derivedResourcePath);
     const realSkill = await realpath(path.dirname(selectedSkill));
     assert(isInside(realSkill, realResource), "derived Codex resource escaped the selected skill");
-    assert(samePath(realResource, path.join(teachSkillDirectory, "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
+    assert(samePath(realResource, path.join(teachSkillDirectory(), "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
     const command = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
     const argumentsJson = { cmd: command, workdir: args.candidate, yield_time_ms: 10000, max_output_tokens: 2000, shell: "powershell", login: false };
     await record({ state, method: "POST", url: request.url, payload, offeredSchema: execTool, derivedResourcePath, response: { tool: "exec_command", arguments: argumentsJson } });

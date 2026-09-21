@@ -73,6 +73,21 @@ class RunnerEnvironmentTests(unittest.TestCase):
             self.assertFalse((target / "old.py").exists())
             self.assertEqual("new", (target / "new.py").read_text())
 
+    def test_rename_out_of_subdirectory_prunes_emptied_source_but_keeps_populated_sibling(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            target = Path(folder) / "worktree"
+            write_file(root / "skills/newcat/newname/SKILL.md", "new")
+            write_file(target / "skills/oldcat/oldname/SKILL.md", "old")
+            write_file(target / "skills/oldcat/sibling/SKILL.md", "sibling")
+            status = "R  skills/newcat/newname/SKILL.md\0skills/oldcat/oldname/SKILL.md\0"
+            with patch.object(run_tests, "ROOT", root), patch.object(run_tests, "_git", return_value=(status, 0)):
+                run_tests.copy_dirty_files(target)
+            self.assertFalse((target / "skills/oldcat/oldname").exists(), "emptied rename source directory was not pruned")
+            self.assertTrue((target / "skills/oldcat").is_dir(), "a sibling directory that still holds a file must survive")
+            self.assertEqual("sibling", (target / "skills/oldcat/sibling/SKILL.md").read_text())
+            self.assertEqual("new", (target / "skills/newcat/newname/SKILL.md").read_text())
+
     def test_real_git_enumerates_nested_untracked_files(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"

@@ -103,9 +103,10 @@ def _prune_empty_directories(worktree, directories):
     """Remove directories a rename/deletion emptied, so a bulk `git mv` leaves no stale
     directory names behind in the isolated worktree (git status reports file moves, not
     directory removals, so nothing else prunes them)."""
+    resolved_worktree = worktree.resolve()
     for directory in directories:
         current = directory
-        while current != worktree and current.is_dir() and not any(current.iterdir()):
+        while current != resolved_worktree and current.is_dir() and not any(current.iterdir()):
             parent = current.parent
             current.rmdir()
             current = parent

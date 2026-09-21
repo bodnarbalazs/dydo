@@ -47,8 +47,8 @@ Two choices, trading the two loads:
 - **`## Must-Reads`** — project documents named under that heading. Author each target as a
   repository-root literal path in a code span, read from the repository root — "From the repository
   root, read `dydo/understand/architecture.md`" (see `skills/orchestration/reviewer/SKILL.md`);
-  `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs:150-156` enforces that no Must-Read is written as a
-  markdown link. A `../` climb does not work here because the identical file is read at two
+  `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs` (`EveryLinkResolves`, its `AssertInside` call)
+  enforces that no Must-Read is written as a markdown link. A `../` climb does not work here because the identical file is read at two
   different depths: canonically at `skills/<category>/<name>/`, and through the host projection at
   `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
   normalization against the projected path versus POSIX `..` applied to the physical parent once the

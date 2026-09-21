@@ -198,8 +198,8 @@ public sealed class CanonicalSkillAssertionTests
         Assert.NotEmpty(actualSkills);
 
         var readme = File.ReadAllText(Path.Combine(categoryRoot, "README.md"));
-        var listed = Regex.Matches(readme, @"(?m)^- \*\*([a-z0-9-]+)\*\* \((user-invoked|model-invoked)\):")
-            .Select(match => (Name: match.Groups[1].Value, Mode: match.Groups[2].Value))
+        var listed = Regex.Matches(readme, @"(?m)^- \*\*([a-z0-9-]+)\*\* \((user-invoked|model-invoked)\): (.+)$")
+            .Select(match => (Name: match.Groups[1].Value, Mode: match.Groups[2].Value, Description: match.Groups[3].Value))
             .ToArray();
 
         Assert.Equal(actualSkills.Length, listed.Length);
@@ -214,7 +214,55 @@ public sealed class CanonicalSkillAssertionTests
             var expectDisabled = Regex.IsMatch(body, @"(?m)^disable-model-invocation:\s*true$");
             var expectedMode = expectDisabled ? "user-invoked" : "model-invoked";
             Assert.Equal(expectedMode, matches[0].Mode);
+
+            var frontmatterDescription = DecodeYamlScalar(Regex.Match(body, @"(?m)^description:\s*(.+)$").Groups[1].Value);
+            Assert.False(string.IsNullOrEmpty(frontmatterDescription), $"{name} has no frontmatter description to compare against");
+            Assert.Equal(frontmatterDescription, matches[0].Description);
         }
+    }
+
+    private static string DecodeYamlScalar(string raw)
+    {
+        var trimmed = raw.Trim();
+        return trimmed.Length >= 2 && trimmed[0] == '"' && trimmed[^1] == '"'
+            ? trimmed[1..^1]
+            : trimmed;
+    }
+
+    [Fact]
+    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo31()
+    {
+        var root = RepositoryRoot();
+        var skillsRoot = Path.Combine(root, "skills");
+        var categories = new[] { "orchestration", "engineering", "productivity" };
+        var actualCounts = categories.ToDictionary(
+            category => category,
+            category => Directory.EnumerateDirectories(Path.Combine(skillsRoot, category)).Count());
+        Assert.Equal(31, actualCounts.Values.Sum());
+
+        var readme = File.ReadAllText(Path.Combine(skillsRoot, "README.md"));
+        foreach (var category in categories)
+        {
+            var match = Regex.Match(readme, $@"`{category}/`\]\({category}/README\.md\) — (\d+) skills\.");
+            Assert.True(match.Success, $"skills/README.md does not cite a skill count for {category}/");
+            Assert.Equal(actualCounts[category], int.Parse(match.Groups[1].Value));
+        }
+
+        Assert.Contains(
+            $"{actualCounts["orchestration"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 31",
+            readme);
+    }
+
+    [Fact]
+    public void StaleFlatSkillPathPattern_MatchesOnlyAFlatCanonicalReferenceNotAHostProjection()
+    {
+        var pattern = CanonicalSkillSteps.StaleFlatSkillPathPattern(RepositoryRoot());
+
+        Assert.Matches(pattern, "see `skills/reviewer/SKILL.md` for the shape");
+        Assert.Matches(pattern, "edit `skills/teach/resources/mission-format.md` directly");
+        Assert.DoesNotMatch(pattern, "canonical folder is `skills/orchestration/reviewer/SKILL.md`");
+        Assert.DoesNotMatch(pattern, "projected at `.claude/skills/reviewer/` and `.agents/skills/reviewer/`");
+        Assert.DoesNotMatch(pattern, "nothing here names a skills/<category>/<name>/ literal");
     }
 
     private static string RepositoryRoot()

@@ -2,7 +2,7 @@
 
 11 skills for thinking, writing, and working with the human day to day.
 
-- **bro** (user-invoked): "Stop. That last message did not land: re-pitch it."
+- **bro** (user-invoked): Stop. That last message did not land: re-pitch it.
 - **co-thinker** (model-invoked): An idea not ripe yet. Use when a thought, a doubt or a preference is still open, when a question surfaces that is not yet an Issue, or when a trade-off needs testing before intent hardens into a plan or a Decision Record.
 - **grill-me** (user-invoked): A relentless interview to sharpen a plan or design, which also creates docs (Decision Records and glossary) as we go.
 - **grilling** (model-invoked): Grill the human relentlessly about a plan, decision, or idea. Use when the human wants to stress-test their thinking, or uses any 'grill' trigger phrases.

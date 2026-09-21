@@ -193,14 +193,30 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Then(@"^current documentation and template mirrors describe skills/<category>/<name> as the only editable source$")]
     public void CurrentGuidanceUsesCanonicalSource()
     {
+        var root = RepositoryRoot();
+        var stalePattern = StaleFlatSkillPathPattern(root);
         foreach (var relative in CanonicalSkillAssertionTests.CurrentGuidance)
         {
-            var content = File.ReadAllText(Path.Combine(RepositoryRoot(), relative));
+            var content = File.ReadAllText(Path.Combine(root, relative));
             Assert.Contains("skills/<category>/", content);
+            Assert.DoesNotMatch(@"(?<!\.claude/)(?<!\.agents/)skills/<name>", content);
+            Assert.DoesNotMatch(@"(?<!\.claude/)(?<!\.agents/)skills/<role>", content);
+            Assert.DoesNotMatch(stalePattern, content);
             Assert.DoesNotContain("edit both", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("edit each host", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("committed copy", content, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    /// <summary>Matches a flat <c>skills/&lt;name&gt;/</c> reference to any real skill name, unless it is
+    /// a host projection path (<c>.claude/skills/&lt;name&gt;/</c> or <c>.agents/skills/&lt;name&gt;/</c>,
+    /// which stay flat by design).</summary>
+    internal static Regex StaleFlatSkillPathPattern(string repositoryRoot)
+    {
+        var names = Directory.EnumerateDirectories(Path.Combine(repositoryRoot, "skills"))
+            .SelectMany(Directory.EnumerateDirectories)
+            .Select(directory => Regex.Escape(Path.GetFileName(directory)));
+        return new Regex($@"(?<!\.claude/)(?<!\.agents/)skills/(?:{string.Join("|", names)})/");
     }
 
     [Then("canonical agent guidance does not instruct agents to maintain or compare per-host skill copies")]

@@ -59,7 +59,6 @@ async function canonicalSkills() {
       skills.push({ name: entry.name, source });
     }
   }
-  if (skills.length === 0) throw new Error(`No canonical skills found in ${canonicalRoot}`);
   return skills.sort((left, right) => left.name.localeCompare(right.name));
 }
 

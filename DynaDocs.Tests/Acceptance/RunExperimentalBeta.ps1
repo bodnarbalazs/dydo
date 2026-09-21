@@ -41,7 +41,6 @@ $evidence = [ordered]@{
     rollback_attempted = $false
     final_beta_reinstall = $false
     isolated_only = [bool]$IsolatedOnly
-    generated_role_canary = 'PENDING - fresh task/session required'
     static_gates = 'UNAVAILABLE - DYD-96 remains open'
     mutation = 'UNAVAILABLE - DYD-103 remains open'
 }
@@ -95,7 +94,7 @@ function Get-RelativePath([string]$BasePath, [string]$Path) {
 }
 
 function Get-ManagedSnapshot([string]$Project) {
-    $roots = @('.claude\agents', '.claude\skills', '.agents\skills', '.codex\agents') |
+    $roots = @('.claude\skills', '.agents\skills') |
         ForEach-Object { Join-Path $Project $_ } |
         Where-Object { Test-Path $_ }
     return @($roots | ForEach-Object {

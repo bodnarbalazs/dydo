@@ -3,11 +3,11 @@ area: understand
 type: concept
 ---
 
-# Templates and Customization
+# Scaffold and Customization
 
 dydo authors every role as a plain skill folder in the cross-vendor `SKILL.md` format. There is no
 compile step: a skill is the source of truth, and the hosts read it where it lives. This page covers
-the artifact shapes, how a project customizes one, and the framework documents `dydo init` writes.
+the artifact shapes, how a project customizes one, and the framework documents `dydo init` scaffolds.
 
 ## Skills are folders
 

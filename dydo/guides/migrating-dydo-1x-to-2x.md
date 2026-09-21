@@ -57,8 +57,7 @@ allowlist** (`dydo sync` emits reviewer/inquisitor/sprint-auditor with no Edit/W
 definitions live as `.role.json` and are **compiled** into native Claude/Codex agents by `dydo sync`.
 
 **D. Tooling a 1.x user won't know:** `dydo sync`, `dydo roles reset`, `dydo model cap`/`uncap`,
-`dydo notion connect`/`sync`/`reset`, `dydo read`, `dydo hand raise`/`lower`, plus a couple of
-`gap_check.py` updates (Section 6).
+`dydo notion connect`/`sync`/`reset`, `dydo read`, `dydo hand raise`/`lower`.
 
 ---
 
@@ -350,108 +349,7 @@ have no Edit/Write in their compiled agent definitions; `dydo validate` passes.
 
 ---
 
-## 6. Update the project's copy of `gap_check.py`
-
-`DynaDocs.Tests/coverage/gap_check.py` (path may differ — **[VERIFY]** the target's coverage dir) is
-a **copy** in each project, so upstream fixes must be hand-applied. Apply these two, in either order.
-Both are small and localized.
-
-### 6.1 Staleness scan must cover `Sync/`, `Templates/`, and top-level `Program.cs` ([issue #0217](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0217-gap-check-staleness-auto-skip-is-blind-to-sync-templates-program-cs-reuses-stale.md))
-
-Before this fix, the staleness check (which decides whether to skip re-running tests) scanned only a
-hardcoded set of source dirs with a single `*.cs` glob — so edits to `Sync/`, `Program.cs`, or the
-embedded-resource files under `Templates/` re-scored **stale coverage as fresh** (false green).
-
-Edit the module-level constants block (near the top, after `GENERATED_PATTERNS`). Change:
-
-```python
-# Source directories to check for staleness (relative to ROOT)
-SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization"]
-SOURCE_GLOBS = ["*.cs"]
-```
-to:
-```python
-# Source directories to check for staleness (relative to ROOT)
-SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization", "Sync", "Templates"]
-SOURCE_FILES = ["Program.cs"]
-SOURCE_GLOBS = ["*.cs"]
-SOURCE_DIR_GLOBS = {"Templates": ["*"]}
-```
-
-Then in `_find_changed_files_since(threshold_mtime)`, change the per-dir loop so it uses the per-dir
-glob map and filters out directories, and add a loop over `SOURCE_FILES`. Replace:
-
-```python
-        for glob in SOURCE_GLOBS:
-            for src in d.rglob(glob):
-                if is_generated(str(src)):
-                    continue
-                if src.stat().st_mtime > threshold_mtime:
-                    changed.append(str(src.relative_to(ROOT)))
-```
-with:
-```python
-        for glob in SOURCE_DIR_GLOBS.get(src_dir, SOURCE_GLOBS):
-            for src in d.rglob(glob):
-                if not src.is_file():
-                    continue
-                if is_generated(str(src)):
-                    continue
-                if src.stat().st_mtime > threshold_mtime:
-                    changed.append(str(src.relative_to(ROOT)))
-
-    for src_file in SOURCE_FILES:
-        src = ROOT / src_file
-        if src.exists() and src.stat().st_mtime > threshold_mtime:
-            changed.append(str(src.relative_to(ROOT)))
-```
-(The new `for src_file in SOURCE_FILES:` block sits between the `SOURCE_DIRS` loop and the existing
-`test_dir = ROOT / "DynaDocs.Tests"` block.)
-
-Notes for adapting to the target: `Templates` uses `["*"]` because its files are embedded resources,
-not `.cs` (a `*.cs` glob matches nothing there); the `is_file()` guard is required because `rglob("*")`
-also yields directories. **[VERIFY]** the target's real source-dir names and adjust `SOURCE_DIRS` /
-`SOURCE_FILES` / `SOURCE_DIR_GLOBS` to match that project's tree (e.g. a different top-level entrypoint
-than `Program.cs`, or different non-`.cs` resource dirs).
-
-### 6.2 Propagate the test exit code through the gate ([issue #0169](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0169-gap-check-py-does-not-propagate-dotnet-test-exit-code-gate-signal-lies-about-tes.md))
-
-Before this fix the gate exited 0 when `dotnet test` failed as long as the tier check passed —
-silently green-lighting flakes and regressions. In `main()`:
-
-1. Initialize `tests_ok` up front (the staleness-skip path never assigns it, so without this the new
-   reference raises `UnboundLocalError`). Right after `args = parser.parse_args()` / before the
-   "Decide whether to run tests" block, add:
-   ```python
-   # tests_ok stays True on the staleness-skip path (no test process ran, so
-   # there is no failure to propagate). The two run_tests() branches below
-   # overwrite it with the actual exit-code-derived value.
-   tests_ok = True
-   ```
-2. Fold `tests_ok` into the exit decision. Replace the final:
-   ```python
-   if has_failures or registry_errors:
-       sys.exit(1)
-   sys.exit(0)
-   ```
-   with:
-   ```python
-   if not tests_ok:
-       tier_check = "fail" if has_failures else "pass"
-       print(f"\n  [RESULT] Tests failed (see exit-code line above). "
-             f"Tier check: {tier_check}. Gate FAILS.")
-   if has_failures or registry_errors or not tests_ok:
-       sys.exit(1)
-   sys.exit(0)
-   ```
-
-**Verify Section 6:** `python <coverage-dir>/gap_check.py --force-run` runs to completion and exits
-0 on a green tree; touching a file under `Sync/` or `Templates/` (or `Program.cs`) and re-running
-**without** `--force-run` now reports files changed and re-runs tests instead of skipping.
-
----
-
-## 7. Gotchas / order matters
+## 6. Gotchas / order matters
 
 - **Regenerate, don't hand-port, compiled artifacts.** Always run `dydo roles reset` → `dydo sync`
   with the **new** binary. Old `.claude/agents/*` / `.codex/*` from 1.x will silently misbehave.
@@ -475,7 +373,7 @@ silently green-lighting flakes and regressions. In `main()`:
 
 ---
 
-## 8. Verification checklist (run at the end)
+## 7. Verification checklist (run at the end)
 
 Run every item; all must pass before declaring the migration complete.
 
@@ -492,9 +390,6 @@ Run every item; all must pass before declaring the migration complete.
       record type.
 - [ ] Issues carry `title` / `id` / `type: issue` / `severity` / `found-by` (+ provenance triad on
       agent-created ones); tasks carry `assigned-vendor` / `assigned-model` on agent-created ones.
-- [ ] `gap_check.py` has both updates from Section 6; `python <coverage-dir>/gap_check.py
-      --force-run` exits 0 on a green tree, and a touch under `Sync/`/`Templates/`/`Program.cs`
-      re-triggers tests without `--force-run`.
 - [ ] Full test suite green (`dotnet test` or the project's runner).
 - [ ] `git status` / `git diff` reviewed — the branch contains only intended migration changes.
 - [ ] (If Notion in use) `dydo notion sync --dry-run` produces a sane plan with no schema-drift

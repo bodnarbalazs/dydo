@@ -105,6 +105,14 @@ function Get-ManagedSnapshot([string]$Project) {
     } | Sort-Object path)
 }
 
+function Get-DocsSnapshot([string]$Project) {
+    $docsRoot = Join-Path $Project 'dydo'
+    if (-not (Test-Path $docsRoot)) { return @() }
+    return @(Get-ChildItem -File -Recurse $docsRoot | ForEach-Object {
+        [ordered]@{ path = Get-RelativePath $Project $_.FullName; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash }
+    } | Sort-Object path)
+}
+
 function Get-ScaffoldSnapshot {
     $scaffold = Join-Path $root 'Scaffold'
     return @(Get-ChildItem -File -Recurse $scaffold | ForEach-Object {
@@ -168,22 +176,24 @@ try {
     Set-Location $scratch
     Invoke-Checked { & $isolated init all } 'isolated init'
     Invoke-Checked { & $isolated check } 'isolated check'
-    Invoke-Checked { & $isolated sync } 'isolated first sync'
-    $firstSnapshot = @(Get-ManagedSnapshot $scratch)
+    $firstSnapshot = @(Get-DocsSnapshot $scratch)
     $firstSnapshotJson = $firstSnapshot | ConvertTo-Json -Compress
-    Invoke-Checked { & $isolated 'template' 'update' } 'isolated template update'
-    Invoke-Checked { & $isolated sync } 'isolated second sync'
-    $secondSnapshot = @(Get-ManagedSnapshot $scratch)
+    Invoke-Checked { & $isolated fix } 'isolated first fix'
+    $secondSnapshot = @(Get-DocsSnapshot $scratch)
     $secondSnapshotJson = $secondSnapshot | ConvertTo-Json -Compress
-    if ($firstSnapshotJson -ne $secondSnapshotJson) { throw 'The isolated second sync changed compiler-owned artifacts.' }
+    if ($firstSnapshotJson -ne $secondSnapshotJson) { throw 'The isolated fix changed the freshly scaffolded docs tree.' }
+    Invoke-Checked { & $isolated fix } 'isolated second fix'
+    $thirdSnapshot = @(Get-DocsSnapshot $scratch)
+    $thirdSnapshotJson = $thirdSnapshot | ConvertTo-Json -Compress
+    if ($secondSnapshotJson -ne $thirdSnapshotJson) { throw 'The isolated second fix changed the docs tree (fix is not idempotent).' }
     $emittedManifest = Join-Path $runRoot 'emitted-artifacts.json'
-    Write-Json $secondSnapshot $emittedManifest
+    Write-Json $thirdSnapshot $emittedManifest
     $evidence.emitted_artifact_manifest_sha256 = (Get-FileHash $emittedManifest -Algorithm SHA256).Hash
     Set-Location $root
     $evidence.isolated_install = $true
     $evidence.isolated_command_path = $isolated
     $evidence.isolated_command_sha256 = Get-CommandHash $isolated 'isolated command'
-    $evidence.isolated_sync_idempotent = $true
+    $evidence.isolated_fix_idempotent = $true
 
     if (-not $IsolatedOnly) {
         $evidence.global_mutation_started = $true
@@ -195,18 +205,17 @@ try {
         $evidence.beta_command_path = $globalCommand.Source
         $evidence.beta_command_sha256 = Get-CommandHash $globalCommand.Source 'global beta command'
         Set-Location $root
-        Invoke-Checked { & $globalCommand.Source 'template' 'update' } 'dogfood template update'
-        Invoke-Checked { & $globalCommand.Source sync } 'dogfood first sync'
+        Invoke-Checked { node setup-skills.mjs } 'dogfood first setup-skills'
         $firstDogfoodSnapshot = @(Get-ManagedSnapshot $root)
         $firstDogfoodSnapshotJson = $firstDogfoodSnapshot | ConvertTo-Json -Compress
-        Invoke-Checked { & $globalCommand.Source sync } 'dogfood second sync'
+        Invoke-Checked { node setup-skills.mjs } 'dogfood second setup-skills'
         $secondDogfoodSnapshot = @(Get-ManagedSnapshot $root)
         $secondDogfoodSnapshotJson = $secondDogfoodSnapshot | ConvertTo-Json -Compress
-        if ($firstDogfoodSnapshotJson -ne $secondDogfoodSnapshotJson) { throw 'The dogfood second sync changed compiler-owned artifacts.' }
+        if ($firstDogfoodSnapshotJson -ne $secondDogfoodSnapshotJson) { throw 'The dogfood second setup-skills run changed the managed skill projections.' }
         Invoke-Checked { & $globalCommand.Source check } 'dogfood check'
-        Assert-CleanRepository 'dogfood template update and sync'
-        $evidence.dogfood_template_update_sync_check = $true
-        $evidence.dogfood_sync_idempotent = $true
+        Assert-CleanRepository 'dogfood setup-skills and check'
+        $evidence.dogfood_setup_skills_check = $true
+        $evidence.dogfood_setup_skills_idempotent = $true
         Restore-Rollback
         Invoke-Checked { dotnet tool update --global dydo --source $packageRoot --version $betaVersion } 'final global beta install'
         $globalCommand = Get-Command dydo -CommandType Application -ErrorAction Stop

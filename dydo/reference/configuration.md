@@ -162,5 +162,5 @@ or protected paths, not scan exclusions.
 
 - [Getting Started](../guides/getting-started.md)
 - [CLI Commands](./dydo-commands.md)
-- [Templates and Customization](../understand/templates-and-customization.md)
+- [Scaffold and Customization](../understand/scaffold-and-customization.md)
 - [Guard System](../understand/guard-system.md)

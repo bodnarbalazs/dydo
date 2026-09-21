@@ -602,10 +602,13 @@ class StaleWorktreePruningTests(unittest.TestCase):
              tempfile.TemporaryDirectory() as alias_host_str:
             temp_root = Path(temp_root_str)
             alias = Path(alias_host_str) / "alias"
-            junction = subprocess.run(["cmd", "/c", "mklink", "/J", str(alias), str(temp_root)],
-                                       capture_output=True, text=True)
-            if junction.returncode != 0:
-                self.skipTest(f"cannot create a directory junction here: {junction.stderr}")
+            if os.name == "nt":
+                junction = subprocess.run(
+                    [os.environ["COMSPEC"], "/d", "/c", "mklink", "/J", str(alias), str(temp_root)],
+                    capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(0, junction.returncode, junction.stdout + junction.stderr)
+            else:
+                alias.symlink_to(temp_root, target_is_directory=True)
             try:
                 stale = temp_root / "dydo-test-stale0001"
                 self._mark(stale, age_seconds=99999)
@@ -636,7 +639,7 @@ class StaleWorktreePruningTests(unittest.TestCase):
                 self.assertEqual([stale.resolve()], [p.resolve() for p in pruned])
                 self.assertFalse(stale.exists())
             finally:
-                if alias.exists():
+                if os.path.lexists(alias):
                     os.rmdir(alias)
 
     def test_prune_leaves_an_unregistered_stale_marked_leftover_directory_alone(self):
@@ -663,8 +666,10 @@ class StaleWorktreePruningTests(unittest.TestCase):
 
     def test_prune_never_enumerates_the_temp_root_even_with_thousands_of_entries(self):
         """The production scan of tempfile.gettempdir() is gone: prove it with a poisoned
-        os.scandir/os.listdir on the temp root itself, and back it with 10,000 real unrelated
-        entries on disk so a regression that scans would also be caught by a wrong prune result."""
+        os.scandir/os.listdir on the temp root itself. The 10,000 real unrelated entries on disk
+        give that poison a realistic TEMP to fire against -- they carry no `dydo-test-` prefix, so
+        they are not themselves a second, independent proof of anything: the poison is the whole
+        proof here."""
         with tempfile.TemporaryDirectory() as temp_root_str:
             temp_root = Path(temp_root_str).resolve()
             for index in range(10000):
@@ -706,25 +711,32 @@ class StaleWorktreePruningTests(unittest.TestCase):
             self.assertEqual([], run_tests._registered_worktree_paths())
 
     def test_is_stale_test_worktree_boundary_conditions(self):
+        """`now` is derived from the marker's own read-back value rather than a wall-clock read
+        taken before `_mark` writes it, so the boundary is exact and not a race against mkdir/write
+        latency: a wall-clock `now` combined with `_mark`'s whole-second truncation made the
+        "exactly at threshold" case land up to ~1s off, flaking under replay."""
         with tempfile.TemporaryDirectory() as temp_root_str, \
              tempfile.TemporaryDirectory() as outside_root_str:
             temp_root = Path(temp_root_str).resolve()
             outside_root = Path(outside_root_str).resolve()
-            now = datetime.now(timezone.utc)
 
-            exactly_at_threshold = temp_root / "dydo-test-exact0001"
-            self._mark(exactly_at_threshold, age_seconds=3600)
+            at_boundary = temp_root / "dydo-test-boundary01"
+            self._mark(at_boundary, age_seconds=3600)
+            created = run_tests._read_worktree_marker(at_boundary)
+
             wrong_name = temp_root / "other-name-0001"
             self._mark(wrong_name, age_seconds=99999)
             outside = outside_root / "dydo-test-outside001"
             self._mark(outside, age_seconds=99999)
 
-            self.assertTrue(
-                run_tests._is_stale_test_worktree(exactly_at_threshold, temp_root, now, 3600))
-            self.assertFalse(
-                run_tests._is_stale_test_worktree(wrong_name, temp_root, now, 3600))
-            self.assertFalse(
-                run_tests._is_stale_test_worktree(outside, temp_root, now, 3600))
+            self.assertTrue(run_tests._is_stale_test_worktree(
+                at_boundary, temp_root, created + timedelta(seconds=3600), 3600))
+            self.assertFalse(run_tests._is_stale_test_worktree(
+                at_boundary, temp_root, created + timedelta(seconds=3599), 3600))
+            self.assertFalse(run_tests._is_stale_test_worktree(
+                wrong_name, temp_root, created + timedelta(seconds=99999), 3600))
+            self.assertFalse(run_tests._is_stale_test_worktree(
+                outside, temp_root, created + timedelta(seconds=99999), 3600))
 
 
 if __name__ == "__main__":

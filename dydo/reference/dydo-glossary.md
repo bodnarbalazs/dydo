@@ -42,8 +42,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Project plan** — a reviewed repository contract for coordinated, cross-cutting, or
   architecture-sensitive work, at low resolution: destination, acceptance, architecture, and an Issue
   map. Its `linear-project` URL is provenance, not synchronization.
-- **Issue-resolution plan** — the high-resolution spec and plan the specifier writes into an
-  implementation Issue before its code: the scenarios and gates that make the contract exact, then
+- **Issue-resolution plan** — the high-resolution spec and plan the code-writer writes into an
+  implementation Issue in its first phase, before its code: the scenarios and gates that make the contract exact, then
   the files to touch, the pattern to copy, steps and edge cases that make the route mechanical. It is
   reviewed with the code it governs; the Issue Captain may require a separate pre-code `spec` review
   when route risk warrants the extra gate.
@@ -60,7 +60,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Hat** — what a session is doing now: co-thinker, issue-captain, admiral, or
   chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
 - **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
-  spawned it: specifier, implementer, hardener, docs-writer, reviewer, inquisitor, research, scout, project-planner.
+  spawned it: code-writer, docs-writer, reviewer, inquisitor, research, scout, project-planner.
 - **Method** — a reference or procedure used inside another skill, carrying no identity of its own:
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
   writing-for-agents, self-improvement, wizard.
@@ -76,18 +76,20 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Reviewed intent** — the rule that implementation begins only from an independently reviewable
   contract: an atomic Issue or a linked reviewed Project plan plus its Issues.
 - **Scenario** — one acceptance criterion at the product's boundary, written in Gherkin in the
-  Issue's feature files by the specifier. It is contract: implementation wires it and never edits it;
+  Issue's feature files by the code-writer. It is contract: later phases wire it and never edit it;
   a change to it is a spec amendment.
 - **Gate** — any explicit pass/fail checkpoint.
-- **Hop** — one worker's committed pass over an Issue branch: `specify`, `implement`, `harden`, or
-  `fix`. Its SHA is evidence on the Issue, and the reviewer reads the hops in order.
+- **Phase** — one of the code-writer's three ordered passes over its Issue inside a single hop:
+  exact, then green, then good. The writer's `IMPLEMENTED` return names which of them did work.
+- **Hop** — one worker's committed pass over an Issue branch: `implement`, `fix` or `merge`. Its
+  SHA is evidence on the Issue, and the reviewer reads the hops in order.
 - **Issue review** — an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. PASS means no findings; a note is a finding, and a finding is a FAIL.
 - **Merge review** — the `merge` rubric run after every merge: a mechanical spot check of the
   integrated state that also proves the plan's acceptance criteria at a feature's final merge.
 - **Inquisition** — a human-confirmed Type held by a captain: read-only sweeps, hypotheses proved
   by tests, deduplicated Bugs and an inquisition record. It files outcomes, never PASS or FAIL.
-- **Merge** — a Type for one merge operation, with its own specify/implement/review chain and
+- **Merge** — a Type for one merge operation, with its own implement/review chain and
   integrated gates. The human clicks the Project landing; every operation preserves hop SHAs.
 - **Release** — a captain leaves a resume SHA on the record, pushes its branch, removes the worktree,
   returns the parent to `Todo`, unassigns and wires any blocker. A dead session has no final push.
@@ -113,8 +115,8 @@ separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initia
 Issue where work is live, though a slice may still name an implementation technique. Tier-1
 manager, orchestrator, and the run-sprint workflow (internally
 run-issues) gave way to the hats — an admiral coordinates one Project, an Issue Captain owns one
-Issue. Issue planner, code-writer and test-writer gave way to the specifier, implementer and hardener
-chain. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
+Issue. Issue planner and test-writer gave way to `code-writer`, which since 2026-09-21 also absorbs the
+specifier, implementer and hardener chain that briefly replaced it (DR 047, amended by DYD-222). Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the map Issues above. Workflow retired with the old inquisition harness. Inquisition is now an Issue Type with the
 filing outcome above. None of these words creates a file, command, lifecycle, or Linear type.
 

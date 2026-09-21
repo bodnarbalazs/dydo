@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Integration;
 
+using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 
 /// <summary>
@@ -536,6 +537,53 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
         result.AssertStderrContains("plan mode");
+    }
+
+    [Fact]
+    public async Task Guard_PlanModeBlock_RoutesOnlyToSkillsThatExist()
+    {
+        // Copying the message's literals here would only prove the test file and the command file
+        // agree, which is what let the Specifier pointer rot unnoticed. Read the skill names out of
+        // the refusal the command actually printed and resolve each one against the canonical tree,
+        // so retiring or renaming a skill the message routes to goes red without touching this test.
+        await InitProjectAsync("none");
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"EnterPlanMode\",\"tool_input\":{}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        var routed = SkillsNamedIn(result.Stderr);
+        Assert.NotEmpty(routed);
+        foreach (var skill in routed)
+            Assert.True(
+                CanonicalSkillExists(skill),
+                $"the plan-mode refusal routes to '{skill}', which is not a skill under skills/<category>/");
+    }
+
+    /// <summary>Skill slugs the guard's refusal routes to, taken from its own "applying the … skill" clause.</summary>
+    private static string[] SkillsNamedIn(string stderr)
+    {
+        var clause = Regex.Match(stderr, @"applying the (.+?) skill\.");
+        return clause.Success
+            ? clause.Groups[1].Value
+                .Split(" or ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(name => name.Replace(' ', '-').ToLowerInvariant())
+                .ToArray()
+            : [];
+    }
+
+    private static bool CanonicalSkillExists(string slug)
+    {
+        var skillsRoot = Path.Combine(RepositoryRoot(), "skills");
+        return Directory.EnumerateDirectories(skillsRoot)
+            .Any(category => File.Exists(Path.Combine(category, slug, "SKILL.md")));
+    }
+
+    private static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj"))) return directory.FullName;
+        throw new DirectoryNotFoundException($"Could not locate repository root from {AppContext.BaseDirectory}");
     }
 
     #endregion

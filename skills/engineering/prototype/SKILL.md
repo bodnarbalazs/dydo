@@ -44,5 +44,5 @@ their HITL session resolves it with the human before the prototype proceeds.
    render the full relevant state so the human can see what changed.
 6. **Capture it when done.** Record the human's verdict and the winning commit on the Prototype
    Issue. The `prototype/<name>` branch is a **primary source**, linked and never submitted or
-   merged. A delivery Issue's specifier reads it as input, never as a base; retain it until that
+   merged. A delivery Issue's `code-writer` reads it as input, never as a base; retain it until that
    delivery Issue is `Done`, or until feature cleanup. The delivery crew implements the decision.

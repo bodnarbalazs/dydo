@@ -107,7 +107,7 @@ async function prepareCandidate() {
   const isolatedStatus = await run("git", ["-C", candidate, "status", "--porcelain=v1"]);
   assert(isolatedStatus.stdout.trim() === "", "setup changed the source candidate");
   expectedSkills = await loadExpectedSkills(checkout);
-  assert(expectedSkills.length === 31, `candidate exposed ${expectedSkills.length} canonical skills instead of 31`);
+  assert(expectedSkills.length === 29, `candidate exposed ${expectedSkills.length} canonical skills instead of 29`);
   candidateFingerprintBefore = await candidateFingerprint(checkout);
   manifest.candidateFingerprint = { before: candidateFingerprintBefore };
   manifest.environment.candidate = { physicalPath: checkout, sourceSha: sha, sourceTreeSha: sourceTree, evidenceCommitSha: evidenceCommit, evidenceTreeSha: evidenceTree };
@@ -359,7 +359,7 @@ async function assertClaudeInit(events, label) {
   const skills = Array.isArray(init.skills) ? init.skills : [];
   const names = skills.map(skill => typeof skill === "string" ? skill : skill?.name).filter(Boolean).sort(ordinal);
   const expectedNames = expectedSkills.map(skill => skill.name).sort(ordinal);
-  assert(JSON.stringify(names) === JSON.stringify(expectedNames), `Claude ${label} init skills were not exactly the 31 candidate skills`);
+  assert(JSON.stringify(names) === JSON.stringify(expectedNames), `Claude ${label} init skills were not exactly the 29 candidate skills`);
   const reportedPaths = [];
   walk(skills, value => { if (typeof value === "string" && isAbsolute(value)) reportedPaths.push(value); });
   for (const path of reportedPaths) {

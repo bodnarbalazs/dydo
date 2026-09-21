@@ -22,7 +22,7 @@ discovery → Question Issue*: an agent in fog first runs a bounded discovery �
 Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
 the question become an Issue that records what was searched and blocks every named plan or
 implementation Issue awaiting its answer. Project planners prepare Question packets for the admiral;
-Specifiers and workers raise a hand to their captain. Captains file local Question Sub-issues; the
+every other worker raises a hand to its captain. Captains file local Question Sub-issues; the
 admiral alone files Project-level Questions. The admiral routes AFK homework and sends only HITL judgment to the human.
 Facts are the agent's job; choices are the human's.
 
@@ -41,8 +41,8 @@ Decision Records carry decisions, and the two are linked rather than copied.
   scope, acceptance criteria, or governing architecture for fresh review and human approval.
 - **Issue** — high resolution, just in time: the scenarios and gates that make the contract exact,
   then the files to touch, the pattern to copy with its path, steps and edge cases — until building
-  contains no hidden decisions. A spawned `specifier` writes it into the parent Issue or direct lane
-  Sub-issue at the Issue Captain's direction. It is reviewed with the code it produced; the Captain
+  contains no hidden decisions. A spawned `code-writer` writes it into the parent Issue or direct lane
+  Sub-issue in its first phase, at the Issue Captain's direction. It is reviewed with the code it produced; the Captain
   may require `spec` before production when route risk warrants it.
 
 ## Claimed, isolated, executed
@@ -57,10 +57,11 @@ Linear owns the Issue's status, priority, assignee, blockers and updates through
 worktree, session, commits, PR and test runs are evidence for that Issue, never additional work
 records.
 
-Every delivery kind starts with a specify commit. The captain sets Specifying, Implementing,
-Hardening or In Review at the corresponding spawn; In Review always means a reviewer is running.
-A parent whose lanes run is In Progress. The spec names lanes and empty hops; a scenario changes
-only through a fresh specifier. Every hop's SHA is posted, preserved and passed to the next worker.
+Every delivery kind starts by making its contract exact. The captain sets Implementing at the
+code-writer's spawn and In Review at a reviewer's; Specifying and Hardening are optional parks it
+chooses, off the default path. A parent whose lanes run is In Progress. The spec names its lanes, or
+none, and the writer's IMPLEMENTED comment names in one line which phases did work; a scenario
+changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next worker.
 
 ## Reviewed before it merges
 
@@ -77,8 +78,9 @@ The captain directs specification, merge implementation and fresh merge review, 
 Done and returns `done <key>: merged`. A Merge Sub-issue never waits in Ready to Merge. The landing
 Merge does: the human clicks its reviewed PR as a merge commit.
 
-FAIL returns to the fixing hop: contract to implementer, standards/tests/gates to hardener, wrong
-scenario or route to fresh specifier; corrections carry new commits and fresh reviews. Merge FAIL
+Every FAIL returns to Implementing, whatever it found: a fresh code-writer takes the next fix hop,
+and its Exact phase amends the contract when the scenario or route was wrong. Corrections carry new
+commits and fresh reviews. Merge FAIL
 fixes integration defects inside Merge. A source defect is reverted there, Merge closes Canceled
 and source returns to Implementing; if a later merge depends on it, a following fix Issue replaces
 the revert. Plan review has its own two-round cap before the human chooses.

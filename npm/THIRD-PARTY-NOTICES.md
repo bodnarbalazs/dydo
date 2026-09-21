@@ -21,7 +21,7 @@ header in the canonical `skills/<category>/<name>/` folders (`orchestration/`, `
 | `prototype` | `skills/engineering/prototype/SKILL.md`, `skills/engineering/prototype/resources/logic.md`, `skills/engineering/prototype/resources/ui.md` |
 | `research` | `skills/engineering/research/SKILL.md` |
 | `retro` | `skills/productivity/self-improvement/SKILL.md` |
-| `tdd` | `skills/engineering/implementer/SKILL.md`, `skills/engineering/implementer/resources/tests.md`, `skills/engineering/implementer/resources/mocking.md`, `skills/orchestration/reviewer/resources/code.md` |
+| `tdd` | `skills/engineering/code-writer/SKILL.md`, `skills/engineering/code-writer/resources/tests.md`, `skills/engineering/code-writer/resources/mocking.md`, `skills/orchestration/reviewer/resources/code.md` |
 | `teach` | `skills/productivity/teach/SKILL.md`, `skills/productivity/teach/resources/mission-format.md`, `skills/productivity/teach/resources/glossary-format.md`, `skills/productivity/teach/resources/learning-record-format.md`, `skills/productivity/teach/resources/resources-format.md` |
 | `to-spec` | `skills/engineering/to-project/SKILL.md` |
 | `to-tickets` | `skills/orchestration/project-planner/SKILL.md` |

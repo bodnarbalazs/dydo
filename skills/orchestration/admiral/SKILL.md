@@ -28,10 +28,11 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
   its record. A saved brief is not Admiral-to-crew authority. On a bounded refusal, preserve the
   state and avoid blind retries; use established lifecycle handling, then escalate or release the
   concrete limitation when captain-owned work cannot run.
-- **Delivery scale:** Small prompt or documentation changes normally need one author and one fresh,
-  independent whole-change reviewer. Add specification review or a separate hardener only for one
-  recorded concrete risk; persistence, migrations, permissions and uncertain native interfaces are
-  examples that need stronger stages. Required G/M, integration and release gates still run.
+- **Delivery scale:** The default crew on any Issue is one author — `code-writer`, or `docs-writer`
+  for a documentation change — and one fresh, independent whole-change reviewer. A captain adds a
+  spec review or a separate hardening pass only for one recorded concrete risk; persistence,
+  migrations, permissions and uncertain native interfaces are examples that need stronger stages.
+  Required G/M, integration and release gates still run.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and
   Walkthrough yourself; commission captains for Prototype and Enablement. Pull shared or

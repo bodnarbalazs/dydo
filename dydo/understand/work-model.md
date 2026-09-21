@@ -19,7 +19,7 @@ A session is not a type. It wears the hat the work is in now, and changes hats a
 |---|---|---|---|
 | Think | co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
 | Chart and plan a Project | admiral, sending project-planner | committed plan, first Issues, prepared Questions | admiral-owned project-plan review, then human approval |
-| Plan an Issue | issue-captain, using specifier | a just-in-time spec and route with no hidden implementation decisions | optional spec review |
+| Make an Issue exact | issue-captain, through its code-writer's first phase | a just-in-time spec and route with no hidden implementation decisions | optional spec review |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
 | Coordinate | admiral | captains in flight, wired Merge Sub-issues, plan amendments | each captain directs its own merge review |
 | Inquisition | issue-captain | read-only sweeps, proof tests, Bugs and an inquisition record | human confirms Backlog → Todo; it files rather than gates |

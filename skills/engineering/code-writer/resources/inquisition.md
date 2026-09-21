@@ -6,7 +6,7 @@ sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
 1. Name parts and cross-cutting lenses, one bounded brief per read-only inquisitor. Include the
    governing acceptance and prior reviews. Done when every assigned surface has one owner.
 2. Fix the hypothesis shape: suspected failure, seam, input/state, expected observation and the test
-   that would refute it. A proof-only implementer writes only the test and returns `confirmed` with
+   that would refute it. A proof-only code-writer writes only the test and returns `confirmed` with
    its red-test SHA, `not reproduced`, or `inconclusive` with the deciding observation.
 3. Plan an `inquisition/<slug>` branch from the feature SHA, never merged, with child proof branches.
    The Captain deduplicates confirmed problems into Bugs under the Project, using the feature as

@@ -36,11 +36,11 @@ every chain spawn, and nothing else flips it.
 | `FutureFeature` | backlog | An unscheduled strategic possibility with no Type yet. Only the human promotes it. |
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the human's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
-| `Specifying` | started | The specifier is spawned. |
+| `Specifying` | started | Optional and captain-chosen, entered only from `Todo` or `Implementing`: it sits off the default path, and a captain uses it only to park an Issue whose contract is being reviewed before any code. It returns to `Implementing`. |
 | `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep, proofs and final retention verification. |
-| `Implementing` | started | The implementer is spawned, a fix hop after a FAIL included. |
-| `Hardening` | started | The hardener is spawned. |
-| `In Review` | started | Any reviewer is spawned, spec review included. A FAIL returns the record to the hop that fixes it. |
+| `Implementing` | started | The code-writer is spawned — contract, code and tightening in one hop — a fix hop after a FAIL included. |
+| `Hardening` | started | Optional and captain-chosen, entered only from `Implementing`: it sits off the default path, and a captain uses it only to park an Issue whose landed code another hand is tightening. It returns to `Implementing`. |
+| `In Review` | started | Any reviewer is spawned. A FAIL returns the record to `Implementing`, whatever it found. |
 | `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-issue runs; the landing waits here for the human's click, one Project at a time. A merge review FAIL that reverts sends it back to `Implementing`. |
 | `Done` | completed | Merged, or the outcome the Type names reached, with its evidence. |
 | `Canceled` | canceled | The Issue will not be completed; the record says why. |
@@ -76,9 +76,9 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Grilling` | map holder | any | A tree of intent or specification choices resolved with the human. | shared understanding recorded, with its Decision Records linked | `#D4A017` |
 | `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
-A captain-held Issue normally uses one author and one fresh independent whole-change reviewer for a
-small prompt or documentation change. A separate specifier or hardener needs one short concrete risk
-reason; persistence, migrations, permissions and uncertain native interfaces are examples needing
+A captain-held Issue normally uses one author — `code-writer`, or `docs-writer` for a documentation
+change — and one fresh independent whole-change reviewer. A spec review or a separate hardening pass
+needs one short concrete risk reason; persistence, migrations, permissions and uncertain native interfaces are examples needing
 stronger stages. Required G/M, integration and release gates remain. The captain records one compact
 acceptance contract and points to its evidence. A map-holder-held Issue is run
 directly by the admiral or captain whose map it clears; it receives no captain, branch, PR or review
@@ -123,9 +123,9 @@ files a `Question` only when judgment remains.
 | `Research` | `Todo` → `In Progress` → `Done` |
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
-| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
-| captain-held default, subject to the Type exceptions | Small prompt/docs: `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`; stronger routes: `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
-| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`; it merges, it is never merged |
+| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Implementing` for its contract → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
+| captain-held default, subject to the Type exceptions | `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
+| Merge Sub-issue | `Todo` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
 
 A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,
@@ -169,7 +169,7 @@ required connector capability.
 
 | Template | Body |
 |---|---|
-| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`; the specifier adds `## Spec` and `## Plan`. |
+| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`; the code-writer adds `## Spec` and `## Plan`. |
 | `Bug` | the five fields, then `## Observed`, `## Expected`, `## Reproduction` (a scenario at the boundary, else the red test); default Sub-issues: *reproduce or identify*, *fix*. |
 | `Merge` | `## Source` and `## Target` at their SHAs, `## Plan order` (the Merge Sub-issue this one is blocked by), `## Combined gates`, `## Conflicts expected`. |
 | `Enablement` | `## Condition` that must become true, `## Steps only the human can do`, `## Evidence` when done. |
@@ -205,8 +205,7 @@ Start each post with the applicable form:
 - `PASS — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
 - `FAIL — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
-- `HARDENED — hop/candidate <SHA>; probes: <probes> → <outcomes>; gaps: <none or named gaps>; next: <action>; evidence: <link>.`
-- `SPECIFIED` or `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
+- `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
 - `STATE — <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
 
 Brevity is soft: ordinary events aim for at most 800 characters, descriptions and state for at most
@@ -228,7 +227,7 @@ Examples:
 - `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
 - `PASS — rubric/type: docs; candidate <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
 - `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
-- `STATE — Implementing; owner: implementer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
+- `STATE — Implementing; owner: code-writer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
 
 ## Decision Records
 

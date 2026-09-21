@@ -51,7 +51,7 @@ Where the lever usually sits:
   automated check.
 - **Coding standards**: should the review rubric be given a new rule to enforce? Should an existing
   rule be removed or clarified? The reviewer carries the least context pressure, so standards are
-  imposed there, not on the implementer. _Use when_ the review failed to catch a mistake.
+  imposed there, not on the writer. _Use when_ the review failed to catch a mistake.
 - **Entry point size**: are there steering instructions that should move to a guide or an automated
   check instead? _Use when_ the always-loaded entry point is particularly large, in the repo or in the
   human's global scope.

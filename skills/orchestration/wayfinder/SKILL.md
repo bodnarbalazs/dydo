@@ -90,8 +90,9 @@ or **AFK**, driven by the agent alone. A HITL Issue only resolves through that l
 agent never stands in for the human's side of it (a grilling agent that answers its own questions has
 broken this).
 
-- **Task** (HITL or AFK): A `Feature` or `Bug` Issue built by an Issue Captain and
-  crew through specification, production, review, and its Merge Sub-issue.
+- **Task** (HITL or AFK): A `Feature` or `Bug` Issue built by an Issue Captain and crew — one
+  `code-writer`, then one fresh reviewer, more only at the captain's discretion — through its
+  contract, production, review, and its Merge Sub-issue.
 - **Research**: Reading documentation, third-party APIs, or local resources like knowledge
   bases to surface a fact a decision waits on. Resolved by a subagent that calls the Skill tool with
   "research". Use when authoritative evidence, inside or outside the repository, can settle the fact.
@@ -150,7 +151,7 @@ Fog can surface through several hands:
 |---|---|
 | Project Planner | return the prepared Question packet and its waiters to the admiral |
 | admiral | create and wire it as delivery clears Project fog |
-| Specifier or worker | return a prepared hand-raise to the Issue Captain |
+| Code Writer or other worker | return a prepared hand-raise to the Issue Captain |
 | Issue Captain | create a local Sub-issue, or escalate a Project-level packet to the admiral |
 
 An answer graduates to a Decision Record only when it is hard to reverse, surprising later, and the

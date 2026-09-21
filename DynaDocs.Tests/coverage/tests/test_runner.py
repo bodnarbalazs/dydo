@@ -591,7 +591,56 @@ class StaleWorktreePruningTests(unittest.TestCase):
             self.assertTrue(unmarked.exists())
             self.assertTrue(outside.exists())
 
-    def test_prune_removes_a_stale_marked_leftover_directory_git_no_longer_registers(self):
+    def test_prune_parses_real_porcelain_shape_and_needs_resolve_for_an_aliased_path(self):
+        """`git worktree list --porcelain` emits forward slashes plus HEAD/branch (or `detached`)
+        lines and blank-line separators -- verified directly against this repository's own
+        `git worktree list --porcelain` output, not guessed. Registers the stale worktree through a
+        directory junction so its raw porcelain path lexically escapes temp_root; only `.resolve()`
+        walks the junction back onto the real, canonical path, so deleting `.resolve()` from
+        `_registered_worktree_paths` makes this test fail (`is_relative_to` is False without it)."""
+        with tempfile.TemporaryDirectory() as temp_root_str, \
+             tempfile.TemporaryDirectory() as alias_host_str:
+            temp_root = Path(temp_root_str)
+            alias = Path(alias_host_str) / "alias"
+            if os.name == "nt":
+                junction = subprocess.run(
+                    [os.environ["COMSPEC"], "/d", "/c", "mklink", "/J", str(alias), str(temp_root)],
+                    capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(0, junction.returncode, junction.stdout + junction.stderr)
+            else:
+                alias.symlink_to(temp_root, target_is_directory=True)
+            stale = temp_root / "dydo-test-stale0001"
+            self._mark(stale, age_seconds=99999)
+            aliased_stale = alias / "dydo-test-stale0001"
+
+            porcelain = (
+                "worktree C:/Users/User/Desktop/Projects/DynaDocs\n"
+                "HEAD 333873de69e4fbd07aadc9d0b032463c0f96938b\n"
+                "branch refs/heads/master\n"
+                "\n"
+                f"worktree {aliased_stale.as_posix()}\n"
+                "HEAD df0b68d6fee20320b6ce3238e5143735e8b7f645\n"
+                "detached\n"
+                "\n"
+            )
+
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return porcelain, 0
+                return ("", 0) if capture else None
+
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
+
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+
+            self.assertEqual([stale.resolve()], [p.resolve() for p in pruned])
+            self.assertFalse(stale.exists())
+
+    def test_prune_leaves_an_unregistered_stale_marked_leftover_directory_alone(self):
+        """Narrowed contract: pruning enumerates only git's own registered worktrees, so a stale
+        marked directory git no longer tracks is left in place rather than swept by a TEMP scan."""
         with tempfile.TemporaryDirectory() as temp_root_str:
             temp_root = Path(temp_root_str)
             leftover = temp_root / "dydo-test-leftover01"
@@ -608,8 +657,82 @@ class StaleWorktreePruningTests(unittest.TestCase):
 
                 pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
 
-            self.assertEqual([leftover.resolve()], [p.resolve() for p in pruned])
-            self.assertFalse(leftover.exists())
+            self.assertEqual([], pruned)
+            self.assertTrue(leftover.exists())
+
+    def test_prune_never_enumerates_the_temp_root_even_with_thousands_of_entries(self):
+        """The production scan of tempfile.gettempdir() is gone: prove it with a poisoned
+        os.scandir/os.listdir on the temp root itself. The 10,000 real unrelated entries on disk
+        give that poison a realistic TEMP to fire against -- they carry no `dydo-test-` prefix, so
+        they are not themselves a second, independent proof of anything: the poison is the whole
+        proof here."""
+        with tempfile.TemporaryDirectory() as temp_root_str:
+            temp_root = Path(temp_root_str).resolve()
+            for index in range(10000):
+                (temp_root / f"unrelated-{index}").mkdir()
+
+            stale = temp_root / "dydo-test-stale0001"
+            self._mark(stale, age_seconds=99999)
+            porcelain = f"worktree {stale}\n\n"
+
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return porcelain, 0
+                return ("", 0) if capture else None
+
+            real_scandir, real_listdir = os.scandir, os.listdir
+
+            def poisoned_scandir(path="."):
+                if Path(path).resolve() == temp_root:
+                    raise AssertionError(f"must not enumerate the temp root: {path}")
+                return real_scandir(path)
+
+            def poisoned_listdir(path="."):
+                if Path(path).resolve() == temp_root:
+                    raise AssertionError(f"must not enumerate the temp root: {path}")
+                return real_listdir(path)
+
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git), \
+                 patch("os.scandir", side_effect=poisoned_scandir), \
+                 patch("os.listdir", side_effect=poisoned_listdir):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
+
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+
+            self.assertEqual([stale.resolve()], [p.resolve() for p in pruned])
+
+    def test_registered_worktree_paths_returns_empty_list_when_git_worktree_list_fails(self):
+        with patch.object(run_tests, "_git", return_value=("", 1)):
+            self.assertEqual([], run_tests._registered_worktree_paths())
+
+    def test_is_stale_test_worktree_boundary_conditions(self):
+        """`now` is derived from the marker's own read-back value rather than a wall-clock read
+        taken before `_mark` writes it, so the boundary is exact and not a race against mkdir/write
+        latency: a wall-clock `now` combined with `_mark`'s whole-second truncation made the
+        "exactly at threshold" case land up to ~1s off, flaking under replay."""
+        with tempfile.TemporaryDirectory() as temp_root_str, \
+             tempfile.TemporaryDirectory() as outside_root_str:
+            temp_root = Path(temp_root_str).resolve()
+            outside_root = Path(outside_root_str).resolve()
+
+            at_boundary = temp_root / "dydo-test-boundary01"
+            self._mark(at_boundary, age_seconds=3600)
+            created = run_tests._read_worktree_marker(at_boundary)
+
+            wrong_name = temp_root / "other-name-0001"
+            self._mark(wrong_name, age_seconds=99999)
+            outside = outside_root / "dydo-test-outside001"
+            self._mark(outside, age_seconds=99999)
+
+            self.assertTrue(run_tests._is_stale_test_worktree(
+                at_boundary, temp_root, created + timedelta(seconds=3600), 3600))
+            self.assertFalse(run_tests._is_stale_test_worktree(
+                at_boundary, temp_root, created + timedelta(seconds=3599), 3600))
+            self.assertFalse(run_tests._is_stale_test_worktree(
+                wrong_name, temp_root, created + timedelta(seconds=99999), 3600))
+            self.assertFalse(run_tests._is_stale_test_worktree(
+                outside, temp_root, created + timedelta(seconds=99999), 3600))
 
 
 if __name__ == "__main__":

@@ -386,50 +386,57 @@ def remove_worktree(worktree):
         print(f"Failed to remove test worktree, a human must clear it: {worktree}", file=sys.stderr)
 
 
+def _registered_worktree_paths():
+    """Return the resolved paths `git worktree list --porcelain` reports for this repository, or an
+    empty list when the command fails. This is the only source of pruning candidates: the runner
+    registered its own worktrees there, so nothing here ever scans a directory."""
+    stdout, rc = _git("worktree", "list", "--porcelain", capture=True)
+    if rc != 0:
+        return []
+    prefix = "worktree "
+    return [Path(line[len(prefix):]).resolve()
+            for line in stdout.splitlines() if line.startswith(prefix)]
+
+
+def _is_stale_test_worktree(path, temp_root, now, max_age_seconds):
+    """True when `path` is a marked dydo-test-* worktree under temp_root whose recorded creation
+    time is older than max_age_seconds -- never by name alone, never without a marker, never a
+    young one."""
+    if not (path.name.startswith("dydo-test-") and path.is_relative_to(temp_root)):
+        return False
+    created = _read_worktree_marker(path)
+    if created is None:
+        return False
+    return (now - created).total_seconds() >= max_age_seconds
+
+
 def prune_stale_test_worktrees(max_age_seconds=None):
-    """Remove dydo-test-* worktrees a previous runner marked and abandoned. A directory is pruned
-    only when all three hold: it lies under the system temp directory, its name matches
-    dydo-test-*, and it carries a valid marker whose recorded creation time is older than
-    max_age_seconds -- never by name alone, never without a marker, never a young one. Covers both
-    a worktree Git still registers and a leftover directory Git no longer tracks. Silent on a no-op.
+    """Remove dydo-test-* worktrees under the system temp directory that a previous runner marked
+    and abandoned. Candidates come only from `git worktree list --porcelain` -- the runner
+    registered them there -- filtered by the temp-root and dydo-test- name predicates, then gated
+    by a valid marker whose age exceeds max_age_seconds. NEVER a directory scan of the temp root:
+    no iterdir, glob, scandir or listdir over it. A real machine's TEMP can hold well over 100,000
+    unrelated entries, and enumerating it cost seconds on every run.
+
+    This deliberately no longer prunes a leftover directory that git no longer registers as a
+    worktree. Each run allocates a fresh `dydo-test-<uuid>` name, so this process never revisits or
+    names an orphan it left behind; a crashed run, a re-cloned checkout, or a second clone whose
+    `git worktree list` this runner never sees can all leave one that now lingers in TEMP with no
+    automated path back to it. `remove_worktree` still names its own failed removals loudly on
+    stderr, but only for the worktree the current run is cleaning up -- not for one an earlier run
+    abandoned. Any such orphan is left for a human. The cost of a full TEMP scan to also catch that
+    rare case is not worth paying on every run. Silent on a no-op.
     """
     if max_age_seconds is None:
         max_age_seconds = _stale_worktree_max_age_seconds()
     temp_root = Path(tempfile.gettempdir()).resolve()
     now = datetime.now(timezone.utc)
     pruned = []
-
-    stdout, rc = _git("worktree", "list", "--porcelain", capture=True)
-    registered = set()
-    if rc == 0:
-        prefix = "worktree "
-        for line in stdout.splitlines():
-            if not line.startswith(prefix):
-                continue
-            path = Path(line[len(prefix):]).resolve()
-            registered.add(path)
-            if not (path.name.startswith("dydo-test-") and path.is_relative_to(temp_root)):
-                continue
-            created = _read_worktree_marker(path)
-            if created is None or (now - created).total_seconds() < max_age_seconds:
-                continue
+    for path in _registered_worktree_paths():
+        if _is_stale_test_worktree(path, temp_root, now, max_age_seconds):
             print(f"Pruning stale test worktree: {path}", file=sys.stderr)
             remove_worktree(path)
             pruned.append(path)
-
-    if temp_root.is_dir():
-        for entry in temp_root.iterdir():
-            if not entry.is_dir() or not entry.name.startswith("dydo-test-"):
-                continue
-            if entry.resolve() in registered:
-                continue
-            created = _read_worktree_marker(entry)
-            if created is None or (now - created).total_seconds() < max_age_seconds:
-                continue
-            print(f"Pruning stale leftover test worktree directory: {entry}", file=sys.stderr)
-            shutil.rmtree(str(entry), ignore_errors=True)
-            pruned.append(entry)
-
     return pruned
 
 

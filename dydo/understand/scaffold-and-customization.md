@@ -39,9 +39,11 @@ framework is accepted, and there is no automatic reconciliation. The frontmatter
 host reads are in [Customizing Roles](../guides/customizing-roles.md).
 
 Setup preflights the whole plan before it writes anything: a missing target is planned for creation,
-an existing projection that already resolves to the canonical folder is accepted, and any ordinary
-file, directory, or link to another target stops the run at the first such collision it finds, naming
-it and leaving it and all host configuration and unrelated skills untouched. Resolve the named
+an existing projection that already resolves to the canonical folder is accepted, and a link left by
+an older layout of `skills/` — even one now dangling because a role moved categories — is migrated to
+its current canonical path rather than refused. Any ordinary file, directory, or link to a target
+outside the repository's `skills/` tree still stops the run at the first such collision it finds,
+naming it and leaving it and all host configuration and unrelated skills untouched. Resolve the named
 collision deliberately and rerun the same command.
 
 ## Framework documents

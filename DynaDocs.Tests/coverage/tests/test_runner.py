@@ -138,14 +138,18 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             resolved = Path(os.path.realpath(link))
             self.assertEqual(Path(os.path.realpath(worktree / "skills/admiral")), resolved)
 
-    def test_foreign_link_target_outside_skills_is_reproduced_unchanged(self):
-        # A link that does not resolve inside skills/ is itself the DR 049 violation; it must still
-        # resolve outside <snapshot>/skills so the guard fails there exactly as it would on the host.
+    def test_foreign_link_target_outside_skills_is_rebased_onto_a_snapshot_sentinel(self):
+        # A link that does not resolve inside skills/ is itself the DR 049 violation; the guard must
+        # still fail on it inside the snapshot, so it cannot be dropped or rebased into skills/. But
+        # the materialized link must never resolve to the real host path: `remove_worktree` runs
+        # `git worktree remove --force` over the snapshot, and git follows a directory junction and
+        # deletes what it points at, so a link aimed at real host data would let cleanup destroy it.
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             worktree = Path(folder) / "worktree"
             outside = Path(folder) / "outside-target"
             outside.mkdir(parents=True)
+            write_file(outside / "canary.txt", "do not delete me")
             write_file(worktree / "skills/admiral/SKILL.md", "canonical")
             _make_link(root / ".claude/skills/rogue-link", outside)
 
@@ -153,7 +157,15 @@ class SkillLinkMaterializationTests(unittest.TestCase):
                 run_tests.materialize_skill_links(worktree)
 
             link = worktree / ".claude/skills/rogue-link"
-            self.assertEqual(Path(os.path.realpath(outside)), Path(os.path.realpath(link)))
+            resolved = Path(os.path.realpath(link))
+            snapshot_skills = Path(os.path.realpath(worktree / "skills"))
+            self.assertTrue(resolved.is_relative_to(worktree.resolve()),
+                             f"{resolved} must resolve inside the snapshot {worktree}")
+            self.assertFalse(resolved.is_relative_to(snapshot_skills),
+                              f"{resolved} must resolve outside {snapshot_skills}, or the guard's "
+                              "containment check would pass vacuously")
+            self.assertNotEqual(Path(os.path.realpath(outside)), resolved)
+            self.assertTrue((outside / "canary.txt").exists(), "the real host target must survive untouched")
 
     def test_absent_source_root_projects_one_link_per_canonical_snapshot_skill(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -361,6 +373,51 @@ class WorktreeCleanupTests(unittest.TestCase):
         prune_index = calls.index(("worktree", "prune"))
         self.assertLess(unlock_index, force_index)
         self.assertLess(force_index, prune_index)
+
+    def test_remove_worktree_captures_the_unlock_call_so_a_clean_run_prints_no_fatal_line(self):
+        # An unlock on an already-unlocked worktree is expected to fail with "fatal: ... is not
+        # locked" on every clean run. Uncaptured, that prints straight to the console -- a false
+        # "fatal" in every gate record. Capturing it keeps the call's outcome silent and ignored.
+        calls = []
+
+        def fake_git(*args, capture=False):
+            calls.append((args, capture))
+            return ("", 0) if capture else None
+
+        with tempfile.TemporaryDirectory() as folder:
+            worktree = Path(folder) / "wt"
+            worktree.mkdir()
+            with patch.object(run_tests, "_git", side_effect=fake_git):
+                run_tests.remove_worktree(worktree)
+
+        unlock_call = next(call for call in calls if call[0] == ("worktree", "unlock", str(worktree)))
+        self.assertTrue(unlock_call[1], "the unlock call must pass capture=True")
+
+
+class StaleWorktreeAgeOverrideTests(unittest.TestCase):
+    """An override the caller set but got wrong is a boundary error, never a silent fallback."""
+
+    def test_unparseable_override_raises_naming_the_variable_and_value(self):
+        with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: "soon"}):
+            with self.assertRaisesRegex(ValueError, f"{run_tests.STALE_WORKTREE_AGE_ENV}.*'soon'"):
+                run_tests._stale_worktree_max_age_seconds()
+
+    def test_non_positive_override_raises_naming_the_variable_and_value(self):
+        for value in ("0", "-5"):
+            with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: value}):
+                with self.assertRaisesRegex(ValueError, run_tests.STALE_WORKTREE_AGE_ENV):
+                    run_tests._stale_worktree_max_age_seconds()
+
+    def test_valid_positive_override_is_used(self):
+        with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: "120"}):
+            self.assertEqual(120.0, run_tests._stale_worktree_max_age_seconds())
+
+    def test_absent_override_uses_the_default(self):
+        environ_without_override = {k: v for k, v in os.environ.items()
+                                     if k != run_tests.STALE_WORKTREE_AGE_ENV}
+        with patch.dict(os.environ, environ_without_override, clear=True):
+            self.assertEqual(run_tests.STALE_TEST_WORKTREE_SECONDS,
+                              run_tests._stale_worktree_max_age_seconds())
 
 
 class StaleWorktreePruningTests(unittest.TestCase):

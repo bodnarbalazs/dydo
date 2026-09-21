@@ -161,12 +161,29 @@ def _create_skill_link(link_path, target_path):
         os.symlink(target_path, link_path, target_is_directory=True)
 
 
+def _foreign_link_sentinel(worktree):
+    """A real directory inside the snapshot but outside `<snapshot>/skills`, used as the resolution
+    target for a link whose real target lies outside skills/ -- the exact DR 049 violation shape
+    the guard exists to catch. Never materialize a link that resolves to the real host path outside
+    the snapshot: `remove_worktree` runs `git worktree remove --force` over the snapshot, and git
+    follows a directory junction and deletes what it points at, so a junction aimed at real host
+    data would let cleanup destroy it. Aiming at this sentinel instead keeps the guard's containment
+    check failing (the sentinel is outside `<snapshot>/skills`) and its message still names the
+    entry, while everything the link touches dies with the snapshot itself.
+    """
+    sentinel = worktree / ".dydo-foreign-skill-sentinel"
+    sentinel.mkdir(parents=True, exist_ok=True)
+    return sentinel
+
+
 def _mirror_host_skill_root(worktree, relative):
     """Reproduce one host skill discovery directory inside the snapshot, preserving each entry's
     kind. A link resolving inside the source root's skills/ is rebased onto the snapshot's own
-    skills/, so the guard's containment check is about the snapshot. Any other entry (a real
-    directory, a real file, or a link resolving outside skills/) is reproduced as-is, so a DR 049
-    violation on the host still fails the guard inside the snapshot.
+    skills/, so the guard's containment check is about the snapshot. A link resolving outside
+    skills/ is rebased onto a sentinel directory inside the snapshot (see `_foreign_link_sentinel`),
+    so it still fails the guard's containment check without ever aiming at real host data. Any other
+    entry (a real directory or a real file) is reproduced as-is, so a DR 049 violation on the host
+    still fails the guard inside the snapshot.
     """
     canonical_skills = Path(os.path.realpath(ROOT / "skills"))
     source = ROOT / relative
@@ -175,7 +192,8 @@ def _mirror_host_skill_root(worktree, relative):
         if _is_link_entry(entry):
             final_target = Path(os.path.realpath(entry))
             offset = _relative_if_inside(final_target, canonical_skills)
-            rebased_target = (worktree / "skills" / offset) if offset is not None else final_target
+            rebased_target = (worktree / "skills" / offset) if offset is not None \
+                else _foreign_link_sentinel(worktree)
             _create_skill_link(dest, rebased_target)
         elif entry.is_dir():
             shutil.copytree(entry, dest)
@@ -224,13 +242,22 @@ def materialize_skill_links(worktree):
 
 
 def _stale_worktree_max_age_seconds():
+    """Read the stale-worktree age override, or fall back to the default when it is unset. An
+    override that is present but unparseable or non-positive is a boundary error, never a silent
+    fallback: it fails loudly, naming the offending value.
+    """
     override = os.environ.get(STALE_WORKTREE_AGE_ENV)
     if not override:
         return STALE_TEST_WORKTREE_SECONDS
     try:
-        return float(override)
+        value = float(override)
     except ValueError:
-        return STALE_TEST_WORKTREE_SECONDS
+        raise ValueError(
+            f"{STALE_WORKTREE_AGE_ENV} must be a number, got {override!r}") from None
+    if value <= 0:
+        raise ValueError(
+            f"{STALE_WORKTREE_AGE_ENV} must be a positive number of seconds, got {override!r}")
+    return value
 
 
 def write_worktree_marker(worktree, created_at=None):
@@ -269,7 +296,7 @@ def remove_worktree(worktree):
     with a prune so a removed directory does not linger registered. A removal that still does not
     succeed is reported loudly on stderr, naming the path, rather than failing the caller's result.
     """
-    _git("worktree", "unlock", str(worktree))
+    _git("worktree", "unlock", str(worktree), capture=True)
     _git("worktree", "remove", "--force", str(worktree))
     # On Windows, dotnet may hold file handles briefly after exit
     if worktree.exists():

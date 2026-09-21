@@ -5,8 +5,10 @@ type: guide
 
 # Customizing Roles
 
-A role is a skill folder. Author the body directly in the cross-vendor `SKILL.md` format; there is
-no template and no compile step. The [templates page](../understand/templates-and-customization.md)
+A role is a skill folder, authored under `skills/<category>/<name>/` in one of three categories —
+`orchestration/`, `engineering/`, `productivity/`. Author the body directly in the cross-vendor
+`SKILL.md` format; there is no template and no compile step. `node setup-skills.mjs` still exposes
+every role FLAT (no category level) to each host. The [templates page](../understand/templates-and-customization.md)
 covers the artifact shapes and the link rules; this page covers the frontmatter and what each host
 reads.
 
@@ -30,13 +32,13 @@ explicit role costs no context and has to be remembered instead, which is why th
 
 | Artifact | Canonical path | Host behavior |
 |---|---|---|
-| the skill | `skills/<name>/SKILL.md` | Claude Code, Codex, and OpenCode read the same body through their discovery roots. |
-| the role's own resource | `skills/<name>/resources/<n>.md` | Relative links resolve from the whole-folder projection. |
-| explicit invocation | `disable-model-invocation: true` in `SKILL.md`; `skills/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` | Claude Code and Codex respectively. Stable OpenCode has no claimed explicit-only control. |
-| an argument hint | `argument-hint:` in `SKILL.md`; `skills/<name>/agents/openai.yaml` with `interface.default_prompt` | Claude Code and Codex respectively. |
+| the skill | `skills/<category>/<name>/SKILL.md` | Claude Code, Codex, and OpenCode read the same body through their discovery roots. |
+| the role's own resource | `skills/<category>/<name>/resources/<n>.md` | Relative links resolve from the whole-folder projection. |
+| explicit invocation | `disable-model-invocation: true` in `SKILL.md`; `skills/<category>/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` | Claude Code and Codex respectively. Stable OpenCode has no claimed explicit-only control. |
+| an argument hint | `argument-hint:` in `SKILL.md`; `skills/<category>/<name>/agents/openai.yaml` with `interface.default_prompt` | Claude Code and Codex respectively. |
 
 Nothing generates the canonical files. `node setup-skills.mjs` creates only host discovery links;
-edit `skills/<name>/` once.
+edit `skills/<category>/<name>/` once.
 
 ## The context a role carries
 
@@ -45,7 +47,7 @@ repository-root literal path in a code span, read from the repository root — "
 root, read `dydo/understand/architecture.md`" — the way every shipped role names its own (see
 `skills/orchestration/reviewer/SKILL.md`); `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs:150-156` enforces that no
 Must-Read is written as a markdown link. A `../` climb does not work here because the identical file
-is read at two different depths: canonically at `skills/<name>/`, and through the host projection at
+is read at two different depths: canonically at `skills/<category>/<name>/`, and through the host projection at
 `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
 normalization against the projected path versus POSIX `..` applied to the physical parent once the
 symlink is followed — so no single relative climb is correct from every install location. A project

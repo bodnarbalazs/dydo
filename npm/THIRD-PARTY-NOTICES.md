@@ -5,7 +5,8 @@
 Several dydo skills contain adaptations of material from
 [mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
 `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
-header in the canonical `skills/<name>/` folders.
+header in the canonical `skills/<category>/<name>/` folders (`orchestration/`, `engineering/`,
+`productivity/`).
 
 | Upstream skill | Adapted in |
 |---|---|

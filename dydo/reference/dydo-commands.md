@@ -37,7 +37,7 @@ framework with no runtime integration.
 wires this machine's hook and entry point without re-scaffolding or overwriting the tree, and records
 the integration in `dydo.json`.
 
-dydo does not compile or install skills. A role is authored once under `skills/<name>/`; the separate
+dydo does not compile or install skills. A role is authored once under `skills/<category>/<name>/`; the separate
 repository-local `node setup-skills.mjs` creates its host discovery links.
 
 ---

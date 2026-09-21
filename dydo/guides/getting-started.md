@@ -47,7 +47,8 @@ which wires the local runtime without touching the documentation tree.
 
 ## 3. Author the skills
 
-A role is one plain `skills/<role>/` folder, committed and edited directly; there is no compile step.
+A role is one plain `skills/<category>/<role>/` folder — grouped into `orchestration/`,
+`engineering/`, and `productivity/` categories — committed and edited directly; there is no compile step.
 Run `node setup-skills.mjs` from the project root. Done when the Claude and Codex discovery roots
 contain whole-directory projections for every role. OpenCode consumes those compatibility roots and
 needs no third projection.

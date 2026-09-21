@@ -190,13 +190,13 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         }
     }
 
-    [Then(@"^current documentation and template mirrors describe skills/<name> as the only editable source$")]
+    [Then(@"^current documentation and template mirrors describe skills/<category>/<name> as the only editable source$")]
     public void CurrentGuidanceUsesCanonicalSource()
     {
         foreach (var relative in CanonicalSkillAssertionTests.CurrentGuidance)
         {
             var content = File.ReadAllText(Path.Combine(RepositoryRoot(), relative));
-            Assert.Contains("skills/<", content);
+            Assert.Contains("skills/<category>/", content);
             Assert.DoesNotContain("edit both", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("edit each host", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("committed copy", content, StringComparison.OrdinalIgnoreCase);

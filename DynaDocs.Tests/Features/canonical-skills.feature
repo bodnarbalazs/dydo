@@ -32,7 +32,7 @@ Feature: One canonical skill tree reaches every supported host
       | .agents/skills/<name>          |
 
   Scenario: Remove stale two-source guidance
-    Then current documentation and template mirrors describe skills/<name> as the only editable source
+    Then current documentation and template mirrors describe skills/<category>/<name> as the only editable source
     And canonical agent guidance does not instruct agents to maintain or compare per-host skill copies
 
   Scenario: Refuse a human-owned host directory before changing another host

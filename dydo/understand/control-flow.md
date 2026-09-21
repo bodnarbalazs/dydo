@@ -248,8 +248,8 @@ Step by step, with the Linear status each step leaves behind:
 9. **Account for the phases.** The writer's `IMPLEMENTED` comment names in one line which phases
    did work; every phase that did ends on its commit.
 10. **Review.** `In Review`; a fresh reviewer with one rubric pins Contract, Candidate and Base and
-    returns the block. PASS binds that candidate under that contract. FAIL sends the record to the
-    hop that fixes it.
+    returns the block. PASS binds that candidate under that contract. FAIL returns the record to
+    `Implementing`, whatever it found.
 11. **Offer.** The captain pushes the branch, opens the PR into the feature branch with the block in
     its body, sets `Ready to Merge`, and returns `done <key>: PR ready`.
 12. **Merge.** When the Merge Sub-issue's blocker clears, the previous Issue's merge, the admiral
@@ -370,7 +370,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 23 | delivery issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan; for a record Feature, its exact owned record/navigation paths and the Inquisition's pinned packet | the delivery Issue, packet, about, writing-docs and working-tree retention contract | record Feature or other docs Issue `Implementing` |
 | 24 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | — | — |
 | 25 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, Contract at the compact acceptance-contract SHA, Candidate SHA, Base SHA | the contract at its governing commit with outcome, scenarios, owned paths, gates; the rubric; the hops | `In Review` |
-| 26 | reviewer → issue-captain, record, PR | R, L, G | the review block: Rubric, Reviewer, Contract, Candidate, Base, Verdict, Gates, Findings; observations after it | — | the fixing hop's status on FAIL |
+| 26 | reviewer → issue-captain, record, PR | R, L, G | the review block: Rubric, Reviewer, Contract, Candidate, Base, Verdict, Gates, Findings; observations after it | — | `Implementing` on FAIL, whatever it found |
 | 27 | issue-captain → Merge Sub-issue (one per lane) | L, R (spawn), G | the lane branch at its PASS SHA; a code-writer maps conflicts and gates, merges it into the parent and tightens the resolution where it refactored, then a fresh `reviewer(merge)` over the parent | the Merge template's fields: source, target, combined gates | lane `Ready to Merge` at its PASS, `Done` when merged; after the last, parent `In Review` for the review of the whole |
 | 28 | issue-captain → admiral | G, L, R | the PR into the feature branch with the block; `done <key>: PR ready` | the record | parent `Ready to Merge` |
 | 29 | admiral → issue-captain | R (message) | `merge`, when the Merge Sub-issue's blocker clears, after re-wiring the order when a later PR was ready first; or a fresh commission from the record | the Merge Sub-issue, the PR, the feature SHA | — |

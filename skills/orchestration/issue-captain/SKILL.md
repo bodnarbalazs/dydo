@@ -97,7 +97,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    amended by that fix hop's Exact phase.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
    full strength whatever the work below them cost.
-   Send the FAIL block with the brief and set the fixing hop's status. A change to acceptance,
+   Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
    scope, destination or architecture goes to the admiral for plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the
    findings and wires a prepared Question through the scope rule below. Record each gate result with

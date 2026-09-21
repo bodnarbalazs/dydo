@@ -185,15 +185,34 @@ class SkillLinkMaterializationTests(unittest.TestCase):
                                      Path(os.path.realpath(link)))
 
     def test_materialization_failure_raises_with_named_reason(self):
+        # The snapshot *has* a skills/ tree, but it is empty: there is nothing to project, and this
+        # must stay loud rather than widen into the no-op that a wholly absent skills/ tree gets
+        # below, or the guard's blind spot would come back.
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
-            worktree.mkdir()  # no skills/ tree to project from
+            (worktree / "skills").mkdir(parents=True)  # skills/ exists but has no canonical skills
 
             with patch.object(run_tests, "ROOT", root):
                 with self.assertRaisesRegex(ValueError, "materialize skill discovery directory"):
                     run_tests.materialize_skill_links(worktree)
+
+    def test_absent_snapshot_skills_tree_and_absent_source_root_is_a_quiet_noop(self):
+        # No canonical skills to project and no host discovery directory to mirror: there is
+        # nothing the CanonicalSkillTree_HasNoAuthoredHostCopies guard could catch either way, so
+        # this must complete without raising and without creating anything.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            worktree.mkdir()  # no skills/ tree at all
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            for relative in (".claude/skills", ".agents/skills"):
+                self.assertFalse((worktree / relative).exists())
 
 
 class AssuranceCampaignTests(unittest.TestCase):

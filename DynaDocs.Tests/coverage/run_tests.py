@@ -208,10 +208,17 @@ def _project_canonical_skill_links(worktree, relative):
     """Project one link per canonical skill directory from the snapshot's own skills/ tree, for use
     when the source root has no host discovery directory to mirror (for example, this very
     worktree, which has no .claude/skills installed).
+
+    A snapshot with no `skills/` tree at all has no canonical skills to project and no host
+    discovery directory to mirror: there is nothing the CanonicalSkillTree_HasNoAuthoredHostCopies
+    guard could catch either way, so this is a quiet no-op rather than a failure. A snapshot that
+    *has* `skills/` but finds nothing usable inside it (empty, or a link this platform cannot
+    create) stays loud: that shape could otherwise widen into the vacuous state the guard cannot
+    detect.
     """
     canonical_skills = worktree / "skills"
     if not canonical_skills.is_dir():
-        raise ValueError(f"Cannot project skill discovery directories: missing {canonical_skills}")
+        return
     names = sorted(item.name for item in canonical_skills.iterdir() if item.is_dir())
     if not names:
         raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {canonical_skills}")

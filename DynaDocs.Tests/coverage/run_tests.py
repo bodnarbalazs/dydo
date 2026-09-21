@@ -20,9 +20,22 @@ import sys
 import tempfile
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+
+# Identifies a worktree this runner created, so cleanup and startup pruning never act on a
+# directory by name alone. Never scanned by source-inventory, static or coverage collectors: those
+# read ROOT, not a temporary worktree, and this file lives only inside the snapshot.
+MARKER_NAME = ".dydo-test-worktree.json"
+MARKER_SCHEMA = 1
+
+# A caller overrides this by setting the DYDO_TEST_WORKTREE_STALE_SECONDS environment variable
+# before invoking run_tests.py (isolated_environment strips DYDO_-prefixed variables only from the
+# dotnet-test child, never from this process's own view of its environment).
+STALE_TEST_WORKTREE_SECONDS = 4 * 60 * 60
+STALE_WORKTREE_AGE_ENV = "DYDO_TEST_WORKTREE_STALE_SECONDS"
 
 
 def isolated_environment():
@@ -210,8 +223,53 @@ def materialize_skill_links(worktree):
             raise ValueError(f"Failed to materialize skill discovery directory {relative}: {exc}") from exc
 
 
+def _stale_worktree_max_age_seconds():
+    override = os.environ.get(STALE_WORKTREE_AGE_ENV)
+    if not override:
+        return STALE_TEST_WORKTREE_SECONDS
+    try:
+        return float(override)
+    except ValueError:
+        return STALE_TEST_WORKTREE_SECONDS
+
+
+def write_worktree_marker(worktree, created_at=None):
+    """Record that this runner owns `worktree`, before any test or campaign runs in it. The marker
+    -- not the dydo-test- name alone -- is what later identifies a runner-created worktree.
+    """
+    stamp = created_at or datetime.now(timezone.utc)
+    marker = {
+        "schema": MARKER_SCHEMA,
+        "pid": os.getpid(),
+        "createdAtUtc": stamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    (worktree / MARKER_NAME).write_text(json.dumps(marker), encoding="utf-8")
+
+
+def _read_worktree_marker(path):
+    """Return the marker's recorded creation time, or None when the marker is absent or invalid."""
+    try:
+        data = json.loads((path / MARKER_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("schema") != MARKER_SCHEMA:
+        return None
+    created = data.get("createdAtUtc")
+    if not isinstance(created, str):
+        return None
+    try:
+        return datetime.strptime(created, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
 def remove_worktree(worktree):
-    """Remove the worktree and its directory."""
+    """Remove the worktree and its directory, on any exit path. Unlocks before forcing removal --
+    an unlock on an already-unlocked worktree fails harmlessly and is ignored -- and always finishes
+    with a prune so a removed directory does not linger registered. A removal that still does not
+    succeed is reported loudly on stderr, naming the path, rather than failing the caller's result.
+    """
+    _git("worktree", "unlock", str(worktree))
     _git("worktree", "remove", "--force", str(worktree))
     # On Windows, dotnet may hold file handles briefly after exit
     if worktree.exists():
@@ -225,6 +283,56 @@ def remove_worktree(worktree):
                     time.sleep(1)
     if is_registered_worktree(worktree):
         _git("worktree", "remove", "--force", str(worktree))
+    _git("worktree", "prune")
+    if worktree.exists() or is_registered_worktree(worktree):
+        print(f"Failed to remove test worktree, a human must clear it: {worktree}", file=sys.stderr)
+
+
+def prune_stale_test_worktrees(max_age_seconds=None):
+    """Remove dydo-test-* worktrees a previous runner marked and abandoned. A directory is pruned
+    only when all three hold: it lies under the system temp directory, its name matches
+    dydo-test-*, and it carries a valid marker whose recorded creation time is older than
+    max_age_seconds -- never by name alone, never without a marker, never a young one. Covers both
+    a worktree Git still registers and a leftover directory Git no longer tracks. Silent on a no-op.
+    """
+    if max_age_seconds is None:
+        max_age_seconds = _stale_worktree_max_age_seconds()
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    now = datetime.now(timezone.utc)
+    pruned = []
+
+    stdout, rc = _git("worktree", "list", "--porcelain", capture=True)
+    registered = set()
+    if rc == 0:
+        prefix = "worktree "
+        for line in stdout.splitlines():
+            if not line.startswith(prefix):
+                continue
+            path = Path(line[len(prefix):]).resolve()
+            registered.add(path)
+            if not (path.name.startswith("dydo-test-") and path.is_relative_to(temp_root)):
+                continue
+            created = _read_worktree_marker(path)
+            if created is None or (now - created).total_seconds() < max_age_seconds:
+                continue
+            print(f"Pruning stale test worktree: {path}", file=sys.stderr)
+            remove_worktree(path)
+            pruned.append(path)
+
+    if temp_root.is_dir():
+        for entry in temp_root.iterdir():
+            if not entry.is_dir() or not entry.name.startswith("dydo-test-"):
+                continue
+            if entry.resolve() in registered:
+                continue
+            created = _read_worktree_marker(entry)
+            if created is None or (now - created).total_seconds() < max_age_seconds:
+                continue
+            print(f"Pruning stale leftover test worktree directory: {entry}", file=sys.stderr)
+            shutil.rmtree(str(entry), ignore_errors=True)
+            pruned.append(entry)
+
+    return pruned
 
 
 @contextmanager
@@ -307,6 +415,11 @@ def run_tests(extra_args=None, assurance_output=None):
     """Create worktree, run tests, clean up. Returns the dotnet exit code."""
     worktree = None
     try:
+        try:
+            prune_stale_test_worktrees()
+        except Exception as exc:
+            print(f"Failed to prune stale test worktrees: {exc}", file=sys.stderr)
+
         print("  Creating test worktree...")
         candidate = Path(tempfile.gettempdir()) / f"dydo-test-{uuid.uuid4().hex[:8]}"
         if candidate.exists() or is_registered_worktree(candidate):
@@ -322,6 +435,7 @@ def run_tests(extra_args=None, assurance_output=None):
         if not create_worktree(worktree):
             return 1
         print(f"  Worktree: {worktree}")
+        write_worktree_marker(worktree)
 
         copy_dirty_files(worktree)
         materialize_skill_links(worktree)

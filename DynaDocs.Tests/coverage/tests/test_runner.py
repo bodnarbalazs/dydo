@@ -6,6 +6,7 @@ import sys
 import unittest
 import tempfile
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -268,6 +269,166 @@ class AssuranceCampaignTests(unittest.TestCase):
             self.assertFalse(manifest["campaign"]["complete"])
             self.assertIsNone(manifest["campaign"]["subject_status"])
             self.assertEqual("preflight", manifest["campaign"]["failure_category"])
+
+
+class WorktreeCleanupTests(unittest.TestCase):
+    """The runner registers a marker before running anything, and cleans up on every exit path."""
+
+    def _isolate_run_tests(self, folder):
+        """Patch run_tests() down to: real candidate allocation under `folder`, a fake git worktree
+        add/remove, and no real dotnet/skill/dirty-copy work -- so only cleanup ordering is tested.
+        """
+        return (
+            patch.object(run_tests, "prune_stale_test_worktrees"),
+            patch.object(run_tests.tempfile, "gettempdir", return_value=folder),
+            patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()),
+            patch.object(run_tests, "is_registered_worktree", return_value=False),
+            patch.object(run_tests, "create_worktree", return_value=True),
+            patch.object(run_tests, "copy_dirty_files"),
+            patch.object(run_tests, "materialize_skill_links"),
+        )
+
+    def test_cleanup_runs_when_the_test_subprocess_exits_nonzero(self):
+        with tempfile.TemporaryDirectory() as folder:
+            patches = self._isolate_run_tests(folder)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
+                 patch.object(run_tests, "remove_worktree") as remove, \
+                 patch.object(run_tests.subprocess, "run") as run:
+                run.return_value.returncode = 1
+
+                rc = run_tests.run_tests()
+
+            self.assertEqual(1, rc)
+            remove.assert_called_once()
+            self.assertEqual(Path(folder) / "dydo-test-cafefeed", remove.call_args.args[0])
+
+    def test_cleanup_runs_on_a_simulated_interrupt_from_the_test_subprocess(self):
+        with tempfile.TemporaryDirectory() as folder:
+            patches = self._isolate_run_tests(folder)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
+                 patch.object(run_tests, "remove_worktree") as remove, \
+                 patch.object(run_tests.subprocess, "run", side_effect=KeyboardInterrupt):
+                with self.assertRaises(KeyboardInterrupt):
+                    run_tests.run_tests()
+
+            remove.assert_called_once()
+
+    def test_marker_exists_before_the_test_command_is_invoked(self):
+        observed = {}
+
+        def observing_copy_dirty_files(worktree):
+            observed["marker_present_at_copy"] = (worktree / run_tests.MARKER_NAME).exists()
+            observed["worktree"] = worktree
+
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.object(run_tests, "prune_stale_test_worktrees"), \
+                 patch.object(run_tests.tempfile, "gettempdir", return_value=folder), \
+                 patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()), \
+                 patch.object(run_tests, "is_registered_worktree", return_value=False), \
+                 patch.object(run_tests, "create_worktree", return_value=True), \
+                 patch.object(run_tests, "copy_dirty_files", side_effect=observing_copy_dirty_files), \
+                 patch.object(run_tests, "materialize_skill_links"), \
+                 patch.object(run_tests, "remove_worktree"), \
+                 patch.object(run_tests.subprocess, "run") as run:
+                run.return_value.returncode = 0
+
+                run_tests.run_tests()
+
+            self.assertTrue(observed.get("marker_present_at_copy"))
+            marker = json.loads((observed["worktree"] / run_tests.MARKER_NAME).read_text(encoding="utf-8"))
+            self.assertEqual(1, marker["schema"])
+            self.assertEqual(os.getpid(), marker["pid"])
+            datetime.strptime(marker["createdAtUtc"], "%Y-%m-%dT%H:%M:%SZ")
+
+    def test_remove_worktree_unlocks_then_forces_removal_then_prunes_in_order(self):
+        calls = []
+
+        def fake_git(*args, capture=False):
+            calls.append(args)
+            return ("", 0) if capture else None
+
+        with tempfile.TemporaryDirectory() as folder:
+            worktree = Path(folder) / "wt"
+            worktree.mkdir()
+            with patch.object(run_tests, "_git", side_effect=fake_git):
+                run_tests.remove_worktree(worktree)
+
+        self.assertEqual(("worktree", "unlock", str(worktree)), calls[0])
+        self.assertEqual(("worktree", "remove", "--force", str(worktree)), calls[1])
+        self.assertIn(("worktree", "prune"), calls)
+        unlock_index = calls.index(("worktree", "unlock", str(worktree)))
+        force_index = calls.index(("worktree", "remove", "--force", str(worktree)))
+        prune_index = calls.index(("worktree", "prune"))
+        self.assertLess(unlock_index, force_index)
+        self.assertLess(force_index, prune_index)
+
+
+class StaleWorktreePruningTests(unittest.TestCase):
+    """Startup pruning removes only a marked, stale, dydo-test-* worktree under temp."""
+
+    def _mark(self, path, age_seconds):
+        path.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc) - timedelta(seconds=age_seconds)
+        run_tests.write_worktree_marker(path, created_at=stamp)
+
+    def test_prune_removes_only_the_stale_marked_registered_temp_worktree(self):
+        with tempfile.TemporaryDirectory() as temp_root_str, \
+             tempfile.TemporaryDirectory() as outside_root_str:
+            temp_root = Path(temp_root_str)
+            outside_root = Path(outside_root_str)
+
+            stale = temp_root / "dydo-test-stale0001"
+            young = temp_root / "dydo-test-young0001"
+            unmarked = temp_root / "dydo-test-unmarked01"
+            outside = outside_root / "dydo-test-outside001"
+
+            self._mark(stale, age_seconds=99999)
+            self._mark(young, age_seconds=10)
+            unmarked.mkdir()
+            self._mark(outside, age_seconds=99999)
+
+            porcelain = "".join(f"worktree {p}\n\n" for p in (stale, young, unmarked, outside))
+
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return porcelain, 0
+                return ("", 0) if capture else None
+
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
+
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+
+            pruned_names = {p.name for p in pruned}
+            self.assertIn("dydo-test-stale0001", pruned_names)
+            self.assertNotIn("dydo-test-young0001", pruned_names)
+            self.assertNotIn("dydo-test-unmarked01", pruned_names)
+            self.assertNotIn("dydo-test-outside001", pruned_names)
+            self.assertFalse(stale.exists())
+            self.assertTrue(young.exists())
+            self.assertTrue(unmarked.exists())
+            self.assertTrue(outside.exists())
+
+    def test_prune_removes_a_stale_marked_leftover_directory_git_no_longer_registers(self):
+        with tempfile.TemporaryDirectory() as temp_root_str:
+            temp_root = Path(temp_root_str)
+            leftover = temp_root / "dydo-test-leftover01"
+            self._mark(leftover, age_seconds=99999)
+
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return "", 0
+                return ("", 0) if capture else None
+
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
+
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+
+            self.assertEqual([leftover.resolve()], [p.resolve() for p in pruned])
+            self.assertFalse(leftover.exists())
 
 
 if __name__ == "__main__":

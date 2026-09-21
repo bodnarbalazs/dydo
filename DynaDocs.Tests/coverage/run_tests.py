@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import json
+import math
 import os
 import shutil
 import signal
@@ -20,9 +21,22 @@ import sys
 import tempfile
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+
+# Identifies a worktree this runner created, so cleanup and startup pruning never act on a
+# directory by name alone. Never scanned by source-inventory, static or coverage collectors: those
+# read ROOT, not a temporary worktree, and this file lives only inside the snapshot.
+MARKER_NAME = ".dydo-test-worktree.json"
+MARKER_SCHEMA = 1
+
+# A caller overrides this by setting the DYDO_TEST_WORKTREE_STALE_SECONDS environment variable
+# before invoking run_tests.py (isolated_environment strips DYDO_-prefixed variables only from the
+# dotnet-test child, never from this process's own view of its environment).
+STALE_TEST_WORKTREE_SECONDS = 4 * 60 * 60
+STALE_WORKTREE_AGE_ENV = "DYDO_TEST_WORKTREE_STALE_SECONDS"
 
 
 def isolated_environment():
@@ -136,8 +150,186 @@ def copy_dirty_files(worktree):
     _prune_empty_directories(worktree, emptied_directories)
 
 
+def _is_link_entry(entry):
+    """True for a symlink or a Windows directory junction."""
+    return entry.is_symlink() or (hasattr(entry, "is_junction") and entry.is_junction())
+
+
+def _relative_if_inside(candidate, base):
+    """Return candidate's path relative to base if candidate is base or nested under it, else None."""
+    candidate_norm = os.path.normcase(str(candidate))
+    base_norm = os.path.normcase(str(base))
+    if candidate_norm == base_norm:
+        return Path(".")
+    if not candidate_norm.startswith(base_norm + os.sep):
+        return None
+    return Path(str(candidate)[len(str(base)) + 1:])
+
+
+def _create_skill_link(link_path, target_path):
+    """Create a link matching what setup-skills.mjs produces on this platform: a directory
+    junction on win32 (os.symlink needs elevated privilege there), a directory symlink elsewhere.
+    """
+    link_path.parent.mkdir(parents=True, exist_ok=True)
+    if link_path.exists() or _is_link_entry(link_path):
+        raise ValueError(f"Refusing to replace an existing path while materializing a skill link: {link_path}")
+    if sys.platform == "win32":
+        import _winapi
+        _winapi.CreateJunction(str(target_path), str(link_path))
+    else:
+        os.symlink(target_path, link_path, target_is_directory=True)
+
+
+def _foreign_link_sentinel(worktree):
+    """A real directory inside the snapshot but outside `<snapshot>/skills`, used as the resolution
+    target for a link whose real target lies outside skills/ -- the exact DR 049 violation shape
+    the guard exists to catch. Never materialize a link that resolves to the real host path outside
+    the snapshot: `remove_worktree` runs `git worktree remove --force` over the snapshot, and git
+    follows a directory junction and deletes what it points at, so a junction aimed at real host
+    data would let cleanup destroy it. Aiming at this sentinel instead keeps the guard's containment
+    check failing (the sentinel is outside `<snapshot>/skills`) and its message still names the
+    entry, while everything the link touches dies with the snapshot itself.
+    """
+    sentinel = worktree / ".dydo-foreign-skill-sentinel"
+    sentinel.mkdir(parents=True, exist_ok=True)
+    return sentinel
+
+
+def _mirror_host_skill_root(worktree, relative):
+    """Reproduce one host skill discovery directory inside the snapshot, preserving each entry's
+    kind. A link resolving inside the source root's skills/ is rebased onto the snapshot's own
+    skills/, so the guard's containment check is about the snapshot. A link resolving outside
+    skills/ is rebased onto a sentinel directory inside the snapshot (see `_foreign_link_sentinel`),
+    so it still fails the guard's containment check without ever aiming at real host data. Any other
+    entry (a real directory or a real file) is reproduced as-is, so a DR 049 violation on the host
+    still fails the guard inside the snapshot.
+    """
+    canonical_skills = Path(os.path.realpath(ROOT / "skills"))
+    source = ROOT / relative
+    for entry in sorted(source.iterdir(), key=lambda item: item.name):
+        dest = worktree / relative / entry.name
+        if _is_link_entry(entry):
+            final_target = Path(os.path.realpath(entry))
+            offset = _relative_if_inside(final_target, canonical_skills)
+            rebased_target = (worktree / "skills" / offset) if offset is not None \
+                else _foreign_link_sentinel(worktree)
+            _create_skill_link(dest, rebased_target)
+        elif entry.is_dir():
+            shutil.copytree(entry, dest)
+        elif entry.is_file():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(entry, dest)
+        else:
+            raise ValueError(f"Cannot materialize unsupported skill discovery entry: {entry}")
+
+
+def _project_canonical_skill_links(worktree, relative):
+    """Project one link per canonical skill directory from the snapshot's own skills/ tree, for use
+    when the source root has no host discovery directory to mirror (for example, this very
+    worktree, which has no .claude/skills installed).
+
+    A snapshot with no `skills/` tree at all has no canonical skills to project and no host
+    discovery directory to mirror: there is nothing the CanonicalSkillTree_HasNoAuthoredHostCopies
+    guard could catch either way, so this is a quiet no-op rather than a failure. A snapshot that
+    *has* `skills/` but finds nothing usable inside it (empty, or a link this platform cannot
+    create) stays loud: that shape could otherwise widen into the vacuous state the guard cannot
+    detect.
+    """
+    canonical_skills = worktree / "skills"
+    if not canonical_skills.is_dir():
+        return
+    names = sorted(item.name for item in canonical_skills.iterdir() if item.is_dir())
+    if not names:
+        raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {canonical_skills}")
+    for name in names:
+        _create_skill_link(worktree / relative / name, canonical_skills / name)
+
+
+def materialize_skill_links(worktree):
+    """Materialize the gitignored host skill discovery directories (.claude/skills, .agents/skills)
+    inside the snapshot, so CanonicalSkillTree_HasNoAuthoredHostCopies is not vacuous there.
+
+    copy_dirty_files never copies these directories: they are gitignored, so `git status` never
+    reports them as dirty or untracked. Without this, the guard's `if (!Directory.Exists(root))
+    continue;` skips its whole link-resolution half under the isolated runner, and only its
+    `git ls-files`-based half still runs against the real snapshot worktree.
+
+    Materialization must fail loudly: any error here aborts the run rather than silently leaving
+    the vacuous state the guard cannot detect.
+    """
+    for relative in (".claude/skills", ".agents/skills"):
+        try:
+            if (ROOT / relative).is_dir():
+                _mirror_host_skill_root(worktree, relative)
+            else:
+                _project_canonical_skill_links(worktree, relative)
+        except Exception as exc:
+            raise ValueError(f"Failed to materialize skill discovery directory {relative}: {exc}") from exc
+
+
+def _stale_worktree_max_age_seconds():
+    """Read the stale-worktree age override, or fall back to the default when it is unset. An
+    override that is present but unparseable, non-finite, or non-positive is a boundary error,
+    never a silent fallback: it fails loudly, naming the offending value. `nan` compares false
+    against every age, so it would silently prune every marked worktree, including a concurrent
+    runner's live one; `inf` compares true against every age, so it would silently disable pruning
+    altogether. Neither reads as a deliberate "positive number of seconds", so both are rejected
+    rather than given special meaning.
+    """
+    override = os.environ.get(STALE_WORKTREE_AGE_ENV)
+    if not override:
+        return STALE_TEST_WORKTREE_SECONDS
+    try:
+        value = float(override)
+    except ValueError:
+        raise ValueError(
+            f"{STALE_WORKTREE_AGE_ENV} must be a number, got {override!r}") from None
+    if not math.isfinite(value):
+        raise ValueError(
+            f"{STALE_WORKTREE_AGE_ENV} must be a finite number of seconds, got {override!r}")
+    if value <= 0:
+        raise ValueError(
+            f"{STALE_WORKTREE_AGE_ENV} must be a positive number of seconds, got {override!r}")
+    return value
+
+
+def write_worktree_marker(worktree, created_at=None):
+    """Record that this runner owns `worktree`, before any test or campaign runs in it. The marker
+    -- not the dydo-test- name alone -- is what later identifies a runner-created worktree.
+    """
+    stamp = created_at or datetime.now(timezone.utc)
+    marker = {
+        "schema": MARKER_SCHEMA,
+        "pid": os.getpid(),
+        "createdAtUtc": stamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    (worktree / MARKER_NAME).write_text(json.dumps(marker), encoding="utf-8")
+
+
+def _read_worktree_marker(path):
+    """Return the marker's recorded creation time, or None when the marker is absent or invalid."""
+    try:
+        data = json.loads((path / MARKER_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("schema") != MARKER_SCHEMA:
+        return None
+    created = data.get("createdAtUtc")
+    if not isinstance(created, str):
+        return None
+    try:
+        return datetime.strptime(created, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
 def remove_worktree(worktree):
-    """Remove the worktree and its directory."""
+    """Remove the worktree and its directory, on any exit path. Unlocks before forcing removal --
+    an unlock on an already-unlocked worktree fails harmlessly and is ignored -- and always finishes
+    with a prune so a removed directory does not linger registered. A removal that still does not
+    succeed is reported loudly on stderr, naming the path, rather than failing the caller's result.
+    """
+    _git("worktree", "unlock", str(worktree), capture=True)
     _git("worktree", "remove", "--force", str(worktree))
     # On Windows, dotnet may hold file handles briefly after exit
     if worktree.exists():
@@ -151,6 +343,56 @@ def remove_worktree(worktree):
                     time.sleep(1)
     if is_registered_worktree(worktree):
         _git("worktree", "remove", "--force", str(worktree))
+    _git("worktree", "prune")
+    if worktree.exists() or is_registered_worktree(worktree):
+        print(f"Failed to remove test worktree, a human must clear it: {worktree}", file=sys.stderr)
+
+
+def prune_stale_test_worktrees(max_age_seconds=None):
+    """Remove dydo-test-* worktrees a previous runner marked and abandoned. A directory is pruned
+    only when all three hold: it lies under the system temp directory, its name matches
+    dydo-test-*, and it carries a valid marker whose recorded creation time is older than
+    max_age_seconds -- never by name alone, never without a marker, never a young one. Covers both
+    a worktree Git still registers and a leftover directory Git no longer tracks. Silent on a no-op.
+    """
+    if max_age_seconds is None:
+        max_age_seconds = _stale_worktree_max_age_seconds()
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    now = datetime.now(timezone.utc)
+    pruned = []
+
+    stdout, rc = _git("worktree", "list", "--porcelain", capture=True)
+    registered = set()
+    if rc == 0:
+        prefix = "worktree "
+        for line in stdout.splitlines():
+            if not line.startswith(prefix):
+                continue
+            path = Path(line[len(prefix):]).resolve()
+            registered.add(path)
+            if not (path.name.startswith("dydo-test-") and path.is_relative_to(temp_root)):
+                continue
+            created = _read_worktree_marker(path)
+            if created is None or (now - created).total_seconds() < max_age_seconds:
+                continue
+            print(f"Pruning stale test worktree: {path}", file=sys.stderr)
+            remove_worktree(path)
+            pruned.append(path)
+
+    if temp_root.is_dir():
+        for entry in temp_root.iterdir():
+            if not entry.is_dir() or not entry.name.startswith("dydo-test-"):
+                continue
+            if entry.resolve() in registered:
+                continue
+            created = _read_worktree_marker(entry)
+            if created is None or (now - created).total_seconds() < max_age_seconds:
+                continue
+            print(f"Pruning stale leftover test worktree directory: {entry}", file=sys.stderr)
+            shutil.rmtree(str(entry), ignore_errors=True)
+            pruned.append(entry)
+
+    return pruned
 
 
 @contextmanager
@@ -233,6 +475,11 @@ def run_tests(extra_args=None, assurance_output=None):
     """Create worktree, run tests, clean up. Returns the dotnet exit code."""
     worktree = None
     try:
+        try:
+            prune_stale_test_worktrees()
+        except Exception as exc:
+            print(f"Failed to prune stale test worktrees: {exc}", file=sys.stderr)
+
         print("  Creating test worktree...")
         candidate = Path(tempfile.gettempdir()) / f"dydo-test-{uuid.uuid4().hex[:8]}"
         if candidate.exists() or is_registered_worktree(candidate):
@@ -248,8 +495,10 @@ def run_tests(extra_args=None, assurance_output=None):
         if not create_worktree(worktree):
             return 1
         print(f"  Worktree: {worktree}")
+        write_worktree_marker(worktree)
 
         copy_dirty_files(worktree)
+        materialize_skill_links(worktree)
 
         if assurance_output:
             return _run_assurance_campaign(worktree, extra_args, assurance_output)

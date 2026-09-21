@@ -36,11 +36,11 @@ every chain spawn, and nothing else flips it.
 | `FutureFeature` | backlog | An unscheduled strategic possibility with no Type yet. Only the human promotes it. |
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the human's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
-| `Specifying` | started | A discretionary spec pass or spec review runs, bought with one short concrete risk reason. |
+| `Specifying` | started | Optional and captain-chosen: it sits off the default path, and a captain uses it only to park an Issue whose contract is being reviewed before any code. |
 | `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep, proofs and final retention verification. |
 | `Implementing` | started | The code-writer is spawned — contract, code and tightening in one hop — a fix hop after a FAIL included. |
-| `Hardening` | started | A discretionary separate hardening pass runs, by another hand, bought with one short concrete risk reason. |
-| `In Review` | started | Any reviewer is spawned, spec review included. A FAIL returns the record to the hop that fixes it. |
+| `Hardening` | started | Optional and captain-chosen: it sits off the default path, and a captain uses it only to park an Issue whose landed code another hand is tightening. |
+| `In Review` | started | Any reviewer is spawned. A FAIL returns the record to the hop that fixes it. |
 | `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-issue runs; the landing waits here for the human's click, one Project at a time. A merge review FAIL that reverts sends it back to `Implementing`. |
 | `Done` | completed | Merged, or the outcome the Type names reached, with its evidence. |
 | `Canceled` | canceled | The Issue will not be completed; the record says why. |
@@ -123,9 +123,9 @@ files a `Question` only when judgment remains.
 | `Research` | `Todo` → `In Progress` → `Done` |
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
-| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Specifying` → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
-| captain-held default, subject to the Type exceptions | Small prompt/docs: `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`; stronger routes: `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
-| Merge Sub-issue | `Todo` → `Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`; it merges, it is never merged |
+| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Implementing` for its contract → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
+| captain-held default, subject to the Type exceptions | `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
+| Merge Sub-issue | `Todo` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
 
 A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,

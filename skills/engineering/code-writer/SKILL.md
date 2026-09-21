@@ -97,18 +97,18 @@ hypothesis, commit it with its observation, and stop there.
 A **fresh reviewer** always follows you, on every Issue, and is never you. Beyond that the default
 crew is you alone. The Captain buys another hand only against a risk it can name in one line —
 persistence and migrations, permissions and security boundaries, an uncertain native interface, a
-governing architecture choice, a criterion the parent left ambiguous: a `reviewer(spec)` pass at
-`Specifying` before you build when that risk sits in the contract, or a separate `harden` hop at
-`Hardening` by another hand when it sits in the landed code. Name the risk in your return when you
-see one; the Captain decides. "It would be safer" is not a risk — ceremony on a small change costs
+governing architecture choice, a criterion the parent left ambiguous: a `reviewer(spec)` reading
+your Exact-phase text on the Issue before you build, or another hand tightening the landed code at
+`Hardening`. Name the risk in your return when you see one; the Captain decides. "It would be safer" is not a risk — ceremony on a small change costs
 more than it catches.
 
 ## Return
 
-To the Issue Captain, use the `IMPLEMENTED` form in the communication protocol: the contract you
-fixed, changed files, behaviour proof, probe outcomes, gaps, any extra-pass risk, and any adjacent
-finding to route; retain full command output once as linked evidence. For a hypothesis: `confirmed`,
-`not reproduced` or `inconclusive`, with the observation that decided it.
+To the Issue Captain, use the `IMPLEMENTED` form in the communication protocol, opening with one
+line naming which phases did work. Then the contract you fixed, changed files, behaviour proof,
+probe outcomes, gaps, any extra-pass risk, and any adjacent finding to route; retain full command
+output once as linked evidence. For a hypothesis: `confirmed`, `not reproduced` or `inconclusive`,
+with the observation that decided it.
 
 ## Raise a hand
 

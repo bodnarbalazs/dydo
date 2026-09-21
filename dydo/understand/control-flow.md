@@ -140,15 +140,15 @@ flowchart TD
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
   AD[admiral]:::hat <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::hat
-  IC <-.->|"0 spec review, on a named risk · Specifying then In Review"| RS
+  IC <-.->|"0 contract review, at the captain's discretion · Specifying then In Review"| RS
   IC <-->|"1 write · Implementing"| CW
-  IC <-.->|"2 extra hardening pass, on a named risk · Hardening"| HD
+  IC <-.->|"2 extra tightening by another hand · Hardening"| HD
   IC <-->|"3 review · In Review"| RC
   IC <-->|"4 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
   subgraph CREW [the crew]
-    RS{{0 reviewer: spec<br>returns review block}}:::reviewer
+    RS{{0 reviewer: spec<br>reads the Exact-phase text on the Issue<br>returns review block}}:::reviewer
     CW[1 code-writer<br>exact, then green, then good<br>returns spec, plan, implement SHA, proof trace, gates]:::worker
-    HD[2 code-writer, another hand<br>returns harden SHA, gates]:::worker
+    HD[2 code-writer, another hand<br>returns its fix SHA, gates]:::worker
     RC{{3 reviewer: code or docs<br>returns review block}}:::reviewer
     MG[4 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::worker
   end
@@ -237,16 +237,16 @@ Step by step, with the Linear status each step leaves behind:
    human to open its captain session. Assignment is the claim; branch, base SHA and worktree path go
    on the Issue before the first edit.
 7. **Write.** The captain spawns one `code-writer` and sets `Implementing`. It makes the contract
-   exact — `## Spec` and `## Plan` on the record, feature files committed, the lanes named — then
-   red before green, then the tightening pass, each phase ending on a commit whose SHA is posted.
-   Against one short concrete risk the captain may buy a `reviewer(spec)` at `Specifying` before
-   the writing starts, returning there on FAIL, or a separate `harden` hop at `Hardening` by another
-   hand afterwards.
+   exact — `## Spec` and `## Plan` on the record, the lanes named, any file it writes committed
+   inside the `implement` hop — then red before green, then the tightening pass, each phase ending
+   on a commit whose SHA is posted. A captain that wants the contract judged before the code asks a
+   fresh `reviewer(spec)` to read that Exact-phase text on the Issue, at its own discretion; a
+   captain that wants the landed code tightened by another hand parks the Issue at `Hardening`.
 8. **Shape.** Only when the spec names lanes: the captain opens lane Sub-issues in `Todo`, each with
    its own branch and worktree off the parent branch, plus one Merge Sub-issue per lane, wired in
    order; the parent sits `In Progress` while its lanes run. Section 3c.
-9. **Skip nothing the spec kept.** A phase the spec declares empty is skipped and said so on the
-   record; every other phase ends on its commit.
+9. **Account for the phases.** The writer's `IMPLEMENTED` comment names in one line which phases
+   did work; every phase that did ends on its commit.
 10. **Review.** `In Review`; a fresh reviewer with one rubric pins Contract, Candidate and Base and
     returns the block. PASS binds that candidate under that contract. FAIL sends the record to the
     hop that fixes it.
@@ -295,17 +295,15 @@ stateDiagram-v2
   Backlog --> Canceled: declined
   [*] --> Todo: planner or map holder creates it contracted
   Todo --> Implementing: captain spawns the code-writer
-  Todo --> Specifying: captain buys a spec review first
-  Specifying --> InReview: the spec review runs
-  InReview --> Specifying: spec FAIL, or a scenario wrong
-  Specifying --> Implementing: spec accepted or PASS
   Implementing --> InProgress: the spec named lanes
   InProgress --> InReview: lanes merged, review of the whole
   Implementing --> InReview: implement hop posted
-  Implementing --> Hardening: captain buys a separate hardening pass
-  Hardening --> InReview: harden hop posted
+  Implementing --> Specifying: captain parks it for a contract review
+  Specifying --> InReview: the contract review runs
+  Specifying --> Implementing: the contract is accepted
+  Implementing --> Hardening: captain parks it for another hand's tightening
+  Hardening --> InReview: that hand's commit posted
   InReview --> Implementing: FAIL, a contract line or quality
-  InReview --> Hardening: FAIL routed to a separate hardening pass
   InReview --> Ready: PR ready with its PASS
   Ready --> Done: its Merge Sub-issue PASS
   Ready --> Implementing: merge review FAIL, reverted
@@ -363,14 +361,14 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 15 | issue-captain → code-writer | R (spawn) | the record to write, its kind | the record with parent, blockers, comments; the plan section and DRs; working-tree contract; coding-standards; about; architecture; the kind's resource | `Implementing` |
 | 16 | code-writer → issue-captain | R, L, G | spec, plan and the lanes named, `## Spec` and `## Plan` on the record with the feature files committed; implement SHA, files, each scenario and contract line with its proof or gap, gates incl. mutation with output, any extra-pass risk, adjacent findings | — | — |
 | 17 | issue-captain → Sub-issues | L, G | lane Sub-issues with the parent's Type and Mode, disjoint paths and branches, or retained Bug stages with native ordering and serial path transfer; one Merge Sub-issue per actual integration; a Question Sub-issue for local fog | — | lanes `Todo`; parent `In Progress` |
-| 18 | issue-captain → reviewer(spec), optional, bought with one named risk before the writing starts | R (spawn) | the record, the spec commit | the spec and plan, the five fields, base SHA, branch, worktree, owned paths, the spec commit | `Specifying` → `In Review`, back to `Specifying` on FAIL |
+| 18 | issue-captain → reviewer(spec), optional, at the captain's discretion before the code | R (spawn) | the record carrying the Exact phase's `## Spec` and `## Plan` | that text on the Issue, the five fields, base SHA, branch, worktree, owned paths | `Specifying` → `In Review`, back to `Specifying` on FAIL |
 | 19 | issue-captain → code-writer (fix hop) | R (spawn) | the Issue, the candidate, the review block that sent it | the Issue with spec and plan, the block, the plan, standards | the status the FAIL names |
 | 20 | code-writer (fix hop) → issue-captain | R, G | Issue key, fix SHA, each finding with what closed it, gates rerun | — | — |
-| 21 | issue-captain → code-writer (separate hardening pass), optional, bought with one named risk | R (spawn) | the Issue, the first writer's return and candidate SHA | the Issue with spec and plan and that return, the plan, standards | `Hardening` |
-| 22 | code-writer (hardening pass) → issue-captain | R, G | Issue key, harden SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates incl. mutation, out-of-path observations | — | — |
+| 21 | issue-captain → code-writer (separate tightening pass), optional, at the captain's discretion | R (spawn) | the Issue, the first writer's return and candidate SHA | the Issue with spec and plan and that return, the plan, standards | `Hardening` |
+| 22 | code-writer (tightening pass) → issue-captain | R, G | Issue key, its fix SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates incl. mutation, out-of-path observations | — | — |
 | 23 | delivery issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan; for a record Feature, its exact owned record/navigation paths and the Inquisition's pinned packet | the delivery Issue, packet, about, writing-docs and working-tree retention contract | record Feature or other docs Issue `Implementing` |
 | 24 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | — | — |
-| 25 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, Contract at the specify commit, Candidate SHA, Base SHA | the contract at its governing commit with outcome, scenarios, owned paths, gates; the rubric; the hops | `In Review` |
+| 25 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, Contract at the compact acceptance-contract SHA, Candidate SHA, Base SHA | the contract at its governing commit with outcome, scenarios, owned paths, gates; the rubric; the hops | `In Review` |
 | 26 | reviewer → issue-captain, record, PR | R, L, G | the review block: Rubric, Reviewer, Contract, Candidate, Base, Verdict, Gates, Findings; observations after it | — | the fixing hop's status on FAIL |
 | 27 | issue-captain → Merge Sub-issue (one per lane) | L, R (spawn), G | the lane branch at its PASS SHA; a code-writer maps conflicts and gates, merges it into the parent and tightens the resolution where it refactored, then a fresh `reviewer(merge)` over the parent | the Merge template's fields: source, target, combined gates | lane `Ready to Merge` at its PASS, `Done` when merged; after the last, parent `In Review` for the review of the whole |
 | 28 | issue-captain → admiral | G, L, R | the PR into the feature branch with the block; `done <key>: PR ready` | the record | parent `Ready to Merge` |
@@ -466,7 +464,7 @@ flowchart LR
   RV -->|"FAIL, fewer than five in a row"| RT{captain routes each finding}
   RT -->|"a contract line unmet, or standards, smells, tests, gates · Implementing"| IM[fresh code-writer: fix hop]:::worker
   RT -->|"a scenario missing or wrong · Specifying"| SP[fresh code-writer: spec amendment, then the fix]:::worker
-  RT -.->|"quality worth another hand · Hardening"| HD[separate hardening pass, on a named risk]:::worker
+  RT -.->|"quality worth another hand · Hardening"| HD[separate tightening pass, the captain's call]:::worker
   HD --> FR{{fresh reviewer, new Candidate SHA · In Review}}:::reviewer
   IM --> FR
   SP --> FR

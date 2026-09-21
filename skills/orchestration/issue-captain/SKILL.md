@@ -58,11 +58,11 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    feature branch from its named approved main SHA before creating the Issue branch. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
-   repeating it; the `code-writer` makes it exact and commits its `## Spec` and `## Plan` in its
-   first phase, on the record. Add a `reviewer(spec)` PASS at `Specifying` only when one short
-   concrete risk reason warrants it, and after a spec FAIL return to `Specifying` with a fresh
-   `code-writer`. **Done:** the compact acceptance contract bounds the work, and where a spec review
-   ran, the accepted spec names lanes, or none, and empty phases.
+   repeating it; the `code-writer` makes it exact and writes its `## Spec` and `## Plan` onto the
+   record in its first phase. To have that contract judged before the code, park the Issue at
+   `Specifying` and brief a fresh `reviewer(spec)` on the Issue text; on FAIL a fresh `code-writer`
+   rewrites it there. **Done:** the compact acceptance contract bounds the work and its spec names
+   lanes, or none.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Where a spec names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
    outcome, paths, gates and isolated branch/worktree off the parent. Specify each lane and give
@@ -73,8 +73,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 4. **Direct the crew.** Send one `code-writer` per parent or lane, which carries the contract, the
    red/green work and the tightening in one hop. Route docs to `docs-writer`; the code-writer uses
    `diagnosing-bugs` when a defect lacks a red reproduction. Set `Implementing` on each spawn and
-   post each hop's commit SHA on the record; add a separate `harden` hop at `Hardening`, by another
-   hand, only with one short concrete risk reason. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
+   post each hop's commit SHA on the record. To have the landed code tightened by another hand,
+   park the Issue at `Hardening` and send a fresh `code-writer` for that pass alone. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
    runs the normal docs delivery chain as below.
    On a route with a reviewed spec, skip only a phase it declares empty. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
@@ -92,7 +92,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the compact acceptance-contract
-   SHA or, when present, the specify SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests, gates
+   SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: standards, tests, gates
    and a missed contract line go back to a fresh `code-writer` at `Implementing`; a wrong scenario or
    route returns it to `Specifying` first.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep

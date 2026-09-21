@@ -58,9 +58,10 @@ worktree, session, commits, PR and test runs are evidence for that Issue, never 
 records.
 
 Every delivery kind starts by making its contract exact. The captain sets Implementing at the
-code-writer's spawn and In Review at a reviewer's; Specifying and Hardening mark a discretionary
-extra pass. A parent whose lanes run is In Progress. The spec names lanes and empty phases; a
-scenario changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next worker.
+code-writer's spawn and In Review at a reviewer's; Specifying and Hardening are optional parks it
+chooses, off the default path. A parent whose lanes run is In Progress. The spec names its lanes, or
+none, and the writer's IMPLEMENTED comment names in one line which phases did work; a scenario
+changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next worker.
 
 ## Reviewed before it merges
 

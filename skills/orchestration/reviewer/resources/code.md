@@ -9,10 +9,10 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 1. **Pin the contract.** Outcome, scenarios, owned paths, base SHA, exact gates, governing standards and plan
    at its SHA. Done when you can state what the change had to do without reading it.
-2. **Read the hops.** `git log <base>..<candidate>` lists the specify, implement, harden and fix
-   commits. The implement hop is judged for doing what the contract says; the harden hop for
-   changing only what was warranted, and everything that was. Done when you can say per hop what it
-   changed and why.
+2. **Read the hops.** `git log <base>..<candidate>` lists the `implement`, `fix` and `merge`
+   commits. The implement hop is judged for doing what the contract says; a fix hop for closing the
+   finding that sent it back and nothing else. Done when you can say per hop what it changed and
+   why.
 3. **Read the diff, then the code it lands in.** `git diff <base>...<candidate>` gives the delta;
    read enough of each file to judge the whole. Done when every hunk is accounted for.
 4. **Work the four axes below, each entire**, every item verified against the source or a finding.
@@ -32,8 +32,8 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 - `dydo/guides/coding-standards.md`, read from the repository root, and any stack-specific standard
   bind, the anti-slop mandate included, with the `codebase-design` lens on every seam the diff
   touches; a documented standard beats your taste, and a rule the tooling enforces is closed
-- The harden hop changed only what was warranted, and everything that was: smaller, simpler,
-  standard or deeper, with a candidate already good left as it was; an abstraction or optimisation
+- The tightening left in the candidate changed only what was warranted, and everything that was:
+  smaller, simpler, standard or deeper, with a candidate already good left as it was; an abstraction or optimisation
   ahead of a need is a finding
 - The twelve smells in the standards, each a question against the diff, the hunk quoted, a finding
   only with its concrete consequence named; every smell answered, not the first one found

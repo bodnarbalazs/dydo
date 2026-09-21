@@ -174,13 +174,22 @@ test('refuses a host skill root that is not a directory', () => {
 test('an explicit --root confines every projection to that root', () => {
   inRoot((root) => {
     writeSkill(root, 'alpha');
+    // A sibling tmpdir stands in for "somewhere else": proving nothing leaked there is the same
+    // property as proving nothing leaked into the real checkout, but it holds regardless of
+    // whether this checkout happens to have .claude/skills or .agents/skills installed already
+    // (asserting against repoRoot itself made this test fail in any checkout where the documented
+    // `node setup-skills.mjs` had already been run).
+    const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd216-setup-skills-elsewhere-'));
+    try {
+      const result = runSetup('--root', root);
 
-    const result = runSetup('--root', root);
-
-    assert.equal(result.status, 0, result.stderr);
-    assert.ok(fs.existsSync(path.join(root, '.claude', 'skills', 'alpha')), 'the explicit root received no projection');
-    assert.ok(!fs.existsSync(path.join(os.tmpdir(), 'skills')), 'setup projected relative to the working directory');
-    assert.ok(!fs.existsSync(path.join(repoRoot, '.claude', 'skills')), 'setup projected into the repository');
+      assert.equal(result.status, 0, result.stderr);
+      assert.ok(fs.existsSync(path.join(root, '.claude', 'skills', 'alpha')), 'the explicit root received no projection');
+      assert.ok(!fs.existsSync(path.join(os.tmpdir(), 'skills')), 'setup projected relative to the working directory');
+      assert.deepEqual(fs.readdirSync(elsewhere), [], 'setup leaked something into a directory other than the explicit root');
+    } finally {
+      fs.rmSync(elsewhere, { recursive: true, force: true });
+    }
   });
 });
 

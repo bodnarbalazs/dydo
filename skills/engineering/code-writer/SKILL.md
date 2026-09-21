@@ -32,7 +32,7 @@ owns the verdict. Create no child Issue. A Project comes back untouched, named f
 ## Method
 
 Three phases, in order, on the branch the Issue names, at status `Implementing`. Each ends on a
-commit under the `implement` hop name, so the Captain can read the work one phase at a time.
+commit under this hop's name — `implement`, `fix` or `merge` — so the Captain reads phase by phase.
 
 ### Phase 1 — Exact
 
@@ -101,8 +101,8 @@ crew is you alone. The Captain buys another hand only against a risk it can name
 persistence and migrations, permissions and security boundaries, an uncertain native interface, a
 governing architecture choice, a criterion the parent left ambiguous: a `reviewer(spec)` reading
 your Exact-phase text on the Issue before you build, or another hand tightening the landed code at
-`Hardening`. Name the risk in your return when you see one; the Captain decides. "It would be safer" is not a risk — ceremony on a small change costs
-more than it catches.
+`Hardening`. Name the risk in your return when you see one; the Captain decides. "It would be
+safer" is not a risk — ceremony on a small change costs more than it catches.
 
 ## Return
 

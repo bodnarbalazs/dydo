@@ -73,7 +73,7 @@ it. This scale rule does not weaken required G/M, integration or release gates, 
 proof is never runtime proof.
 
 Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
-discovery. An iteration hop and its review prove with the tests relevant to the change and the cheap
+discovery. A worker hop and its review prove with the tests relevant to the change and the cheap
 static checks; the full suites and the whole gate set run at the Issue's final gates, its Merge
 Sub-issue's combined gates and the landing. Within one such gate run, each suite executes once.
 Record every gate result with candidate, command, environment or session, exit and result

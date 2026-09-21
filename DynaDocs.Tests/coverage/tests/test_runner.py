@@ -6,6 +6,7 @@ import sys
 import unittest
 import tempfile
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -93,6 +94,127 @@ class RunnerEnvironmentTests(unittest.TestCase):
             run_tests.test_command(["--", "RunConfiguration.TreatNoTestsAsError=false"])
 
 
+def _make_link(link, target):
+    """Create a link matching what setup-skills.mjs produces on this platform, for test fixtures."""
+    link.parent.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "win32":
+        import _winapi
+        _winapi.CreateJunction(str(target), str(link))
+    else:
+        os.symlink(target, link, target_is_directory=True)
+
+
+class SkillLinkMaterializationTests(unittest.TestCase):
+    def test_real_directory_under_host_root_is_reproduced_as_real_directory(self):
+        # A host-authored copy (a DR 049 violation) must survive into the snapshot as a real
+        # directory, not vanish or become a link -- otherwise the guard can never see it and fails
+        # vacuously under the isolated runner.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            worktree = Path(folder) / "worktree"
+            write_file(root / ".claude/skills/rogue/SKILL.md", "authored copy")
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            rogue = worktree / ".claude/skills/rogue"
+            self.assertTrue(rogue.is_dir())
+            self.assertFalse(rogue.is_symlink())
+            self.assertEqual("authored copy", (rogue / "SKILL.md").read_text())
+
+    def test_link_entry_is_rebased_to_resolve_inside_snapshot_skills(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            worktree = Path(folder) / "worktree"
+            write_file(root / "skills/admiral/SKILL.md", "canonical")
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+            _make_link(root / ".claude/skills/admiral", root / "skills/admiral")
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            link = worktree / ".claude/skills/admiral"
+            resolved = Path(os.path.realpath(link))
+            self.assertEqual(Path(os.path.realpath(worktree / "skills/admiral")), resolved)
+
+    def test_foreign_link_target_outside_skills_is_rebased_onto_a_snapshot_sentinel(self):
+        # A link that does not resolve inside skills/ is itself the DR 049 violation; the guard must
+        # still fail on it inside the snapshot, so it cannot be dropped or rebased into skills/. But
+        # the materialized link must never resolve to the real host path: `remove_worktree` runs
+        # `git worktree remove --force` over the snapshot, and git follows a directory junction and
+        # deletes what it points at, so a link aimed at real host data would let cleanup destroy it.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            worktree = Path(folder) / "worktree"
+            outside = Path(folder) / "outside-target"
+            outside.mkdir(parents=True)
+            write_file(outside / "canary.txt", "do not delete me")
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+            _make_link(root / ".claude/skills/rogue-link", outside)
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            link = worktree / ".claude/skills/rogue-link"
+            resolved = Path(os.path.realpath(link))
+            snapshot_skills = Path(os.path.realpath(worktree / "skills"))
+            self.assertTrue(resolved.is_relative_to(worktree.resolve()),
+                             f"{resolved} must resolve inside the snapshot {worktree}")
+            self.assertFalse(resolved.is_relative_to(snapshot_skills),
+                              f"{resolved} must resolve outside {snapshot_skills}, or the guard's "
+                              "containment check would pass vacuously")
+            self.assertNotEqual(Path(os.path.realpath(outside)), resolved)
+            self.assertTrue((outside / "canary.txt").exists(), "the real host target must survive untouched")
+
+    def test_absent_source_root_projects_one_link_per_canonical_snapshot_skill(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            write_file(worktree / "skills/admiral/SKILL.md", "canonical")
+            write_file(worktree / "skills/bro/SKILL.md", "canonical")
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            for relative in (".claude/skills", ".agents/skills"):
+                for name in ("admiral", "bro"):
+                    link = worktree / relative / name
+                    self.assertEqual(Path(os.path.realpath(worktree / "skills" / name)),
+                                     Path(os.path.realpath(link)))
+
+    def test_materialization_failure_raises_with_named_reason(self):
+        # The snapshot *has* a skills/ tree, but it is empty: there is nothing to project, and this
+        # must stay loud rather than widen into the no-op that a wholly absent skills/ tree gets
+        # below, or the guard's blind spot would come back.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            (worktree / "skills").mkdir(parents=True)  # skills/ exists but has no canonical skills
+
+            with patch.object(run_tests, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, "materialize skill discovery directory"):
+                    run_tests.materialize_skill_links(worktree)
+
+    def test_absent_snapshot_skills_tree_and_absent_source_root_is_a_quiet_noop(self):
+        # No canonical skills to project and no host discovery directory to mirror: there is
+        # nothing the CanonicalSkillTree_HasNoAuthoredHostCopies guard could catch either way, so
+        # this must complete without raising and without creating anything.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            worktree.mkdir()  # no skills/ tree at all
+
+            with patch.object(run_tests, "ROOT", root):
+                run_tests.materialize_skill_links(worktree)
+
+            for relative in (".claude/skills", ".agents/skills"):
+                self.assertFalse((worktree / relative).exists())
+
+
 class AssuranceCampaignTests(unittest.TestCase):
     def campaign_worktree(self, folder):
         worktree = Path(folder) / "worktree"
@@ -178,6 +300,217 @@ class AssuranceCampaignTests(unittest.TestCase):
             self.assertFalse(manifest["campaign"]["complete"])
             self.assertIsNone(manifest["campaign"]["subject_status"])
             self.assertEqual("preflight", manifest["campaign"]["failure_category"])
+
+
+class WorktreeCleanupTests(unittest.TestCase):
+    """The runner registers a marker before running anything, and cleans up on every exit path."""
+
+    def _isolate_run_tests(self, folder):
+        """Patch run_tests() down to: real candidate allocation under `folder`, a fake git worktree
+        add/remove, and no real dotnet/skill/dirty-copy work -- so only cleanup ordering is tested.
+        """
+        return (
+            patch.object(run_tests, "prune_stale_test_worktrees"),
+            patch.object(run_tests.tempfile, "gettempdir", return_value=folder),
+            patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()),
+            patch.object(run_tests, "is_registered_worktree", return_value=False),
+            patch.object(run_tests, "create_worktree", return_value=True),
+            patch.object(run_tests, "copy_dirty_files"),
+            patch.object(run_tests, "materialize_skill_links"),
+        )
+
+    def test_cleanup_runs_when_the_test_subprocess_exits_nonzero(self):
+        with tempfile.TemporaryDirectory() as folder:
+            patches = self._isolate_run_tests(folder)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
+                 patch.object(run_tests, "remove_worktree") as remove, \
+                 patch.object(run_tests.subprocess, "run") as run:
+                run.return_value.returncode = 1
+
+                rc = run_tests.run_tests()
+
+            self.assertEqual(1, rc)
+            remove.assert_called_once()
+            self.assertEqual(Path(folder) / "dydo-test-cafefeed", remove.call_args.args[0])
+
+    def test_cleanup_runs_on_a_simulated_interrupt_from_the_test_subprocess(self):
+        with tempfile.TemporaryDirectory() as folder:
+            patches = self._isolate_run_tests(folder)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
+                 patch.object(run_tests, "remove_worktree") as remove, \
+                 patch.object(run_tests.subprocess, "run", side_effect=KeyboardInterrupt):
+                with self.assertRaises(KeyboardInterrupt):
+                    run_tests.run_tests()
+
+            remove.assert_called_once()
+
+    def test_marker_exists_before_the_test_command_is_invoked(self):
+        observed = {}
+
+        def observing_copy_dirty_files(worktree):
+            observed["marker_present_at_copy"] = (worktree / run_tests.MARKER_NAME).exists()
+            observed["worktree"] = worktree
+
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.object(run_tests, "prune_stale_test_worktrees"), \
+                 patch.object(run_tests.tempfile, "gettempdir", return_value=folder), \
+                 patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()), \
+                 patch.object(run_tests, "is_registered_worktree", return_value=False), \
+                 patch.object(run_tests, "create_worktree", return_value=True), \
+                 patch.object(run_tests, "copy_dirty_files", side_effect=observing_copy_dirty_files), \
+                 patch.object(run_tests, "materialize_skill_links"), \
+                 patch.object(run_tests, "remove_worktree"), \
+                 patch.object(run_tests.subprocess, "run") as run:
+                run.return_value.returncode = 0
+
+                run_tests.run_tests()
+
+            self.assertTrue(observed.get("marker_present_at_copy"))
+            marker = json.loads((observed["worktree"] / run_tests.MARKER_NAME).read_text(encoding="utf-8"))
+            self.assertEqual(1, marker["schema"])
+            self.assertEqual(os.getpid(), marker["pid"])
+            datetime.strptime(marker["createdAtUtc"], "%Y-%m-%dT%H:%M:%SZ")
+
+    def test_remove_worktree_unlocks_then_forces_removal_then_prunes_in_order(self):
+        calls = []
+
+        def fake_git(*args, capture=False):
+            calls.append(args)
+            return ("", 0) if capture else None
+
+        with tempfile.TemporaryDirectory() as folder:
+            worktree = Path(folder) / "wt"
+            worktree.mkdir()
+            with patch.object(run_tests, "_git", side_effect=fake_git):
+                run_tests.remove_worktree(worktree)
+
+        self.assertEqual(("worktree", "unlock", str(worktree)), calls[0])
+        self.assertEqual(("worktree", "remove", "--force", str(worktree)), calls[1])
+        self.assertIn(("worktree", "prune"), calls)
+        unlock_index = calls.index(("worktree", "unlock", str(worktree)))
+        force_index = calls.index(("worktree", "remove", "--force", str(worktree)))
+        prune_index = calls.index(("worktree", "prune"))
+        self.assertLess(unlock_index, force_index)
+        self.assertLess(force_index, prune_index)
+
+    def test_remove_worktree_captures_the_unlock_call_so_a_clean_run_prints_no_fatal_line(self):
+        # An unlock on an already-unlocked worktree is expected to fail with "fatal: ... is not
+        # locked" on every clean run. Uncaptured, that prints straight to the console -- a false
+        # "fatal" in every gate record. Capturing it keeps the call's outcome silent and ignored.
+        calls = []
+
+        def fake_git(*args, capture=False):
+            calls.append((args, capture))
+            return ("", 0) if capture else None
+
+        with tempfile.TemporaryDirectory() as folder:
+            worktree = Path(folder) / "wt"
+            worktree.mkdir()
+            with patch.object(run_tests, "_git", side_effect=fake_git):
+                run_tests.remove_worktree(worktree)
+
+        unlock_call = next(call for call in calls if call[0] == ("worktree", "unlock", str(worktree)))
+        self.assertTrue(unlock_call[1], "the unlock call must pass capture=True")
+
+
+class StaleWorktreeAgeOverrideTests(unittest.TestCase):
+    """An override the caller set but got wrong is a boundary error, never a silent fallback."""
+
+    def test_unparseable_override_raises_naming_the_variable_and_value(self):
+        with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: "soon"}):
+            with self.assertRaisesRegex(ValueError, f"{run_tests.STALE_WORKTREE_AGE_ENV}.*'soon'"):
+                run_tests._stale_worktree_max_age_seconds()
+
+    def test_non_positive_override_raises_naming_the_variable_and_value(self):
+        for value in ("0", "-5"):
+            with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: value}):
+                with self.assertRaisesRegex(ValueError, run_tests.STALE_WORKTREE_AGE_ENV):
+                    run_tests._stale_worktree_max_age_seconds()
+
+    def test_non_finite_override_raises_naming_the_variable_and_value(self):
+        for value in ("nan", "inf"):
+            with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: value}):
+                with self.assertRaisesRegex(ValueError, run_tests.STALE_WORKTREE_AGE_ENV):
+                    run_tests._stale_worktree_max_age_seconds()
+
+    def test_valid_positive_override_is_used(self):
+        with patch.dict(os.environ, {run_tests.STALE_WORKTREE_AGE_ENV: "120"}):
+            self.assertEqual(120.0, run_tests._stale_worktree_max_age_seconds())
+
+    def test_absent_override_uses_the_default(self):
+        environ_without_override = {k: v for k, v in os.environ.items()
+                                     if k != run_tests.STALE_WORKTREE_AGE_ENV}
+        with patch.dict(os.environ, environ_without_override, clear=True):
+            self.assertEqual(run_tests.STALE_TEST_WORKTREE_SECONDS,
+                              run_tests._stale_worktree_max_age_seconds())
+
+
+class StaleWorktreePruningTests(unittest.TestCase):
+    """Startup pruning removes only a marked, stale, dydo-test-* worktree under temp."""
+
+    def _mark(self, path, age_seconds):
+        path.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc) - timedelta(seconds=age_seconds)
+        run_tests.write_worktree_marker(path, created_at=stamp)
+
+    def test_prune_removes_only_the_stale_marked_registered_temp_worktree(self):
+        with tempfile.TemporaryDirectory() as temp_root_str, \
+             tempfile.TemporaryDirectory() as outside_root_str:
+            temp_root = Path(temp_root_str)
+            outside_root = Path(outside_root_str)
+
+            stale = temp_root / "dydo-test-stale0001"
+            young = temp_root / "dydo-test-young0001"
+            unmarked = temp_root / "dydo-test-unmarked01"
+            outside = outside_root / "dydo-test-outside001"
+
+            self._mark(stale, age_seconds=99999)
+            self._mark(young, age_seconds=10)
+            unmarked.mkdir()
+            self._mark(outside, age_seconds=99999)
+
+            porcelain = "".join(f"worktree {p}\n\n" for p in (stale, young, unmarked, outside))
+
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return porcelain, 0
+                return ("", 0) if capture else None
+
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
+
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+
+            pruned_names = {p.name for p in pruned}
+            self.assertIn("dydo-test-stale0001", pruned_names)
+            self.assertNotIn("dydo-test-young0001", pruned_names)
+            self.assertNotIn("dydo-test-unmarked01", pruned_names)
+            self.assertNotIn("dydo-test-outside001", pruned_names)
+            self.assertFalse(stale.exists())
+            self.assertTrue(young.exists())
+            self.assertTrue(unmarked.exists())
+            self.assertTrue(outside.exists())
+
+    def test_prune_removes_a_stale_marked_leftover_directory_git_no_longer_registers(self):
+        with tempfile.TemporaryDirectory() as temp_root_str:
+            temp_root = Path(temp_root_str)
+            leftover = temp_root / "dydo-test-leftover01"
+            self._mark(leftover, age_seconds=99999)
+
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return "", 0
+                return ("", 0) if capture else None
+
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
+
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+
+            self.assertEqual([leftover.resolve()], [p.resolve() for p in pruned])
+            self.assertFalse(leftover.exists())
 
 
 if __name__ == "__main__":

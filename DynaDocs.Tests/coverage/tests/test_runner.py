@@ -194,7 +194,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             worktree = Path(folder) / "worktree"
             layout = {
                 "orchestration": ["admiral", "issue-captain", "co-thinker"],
-                "engineering": ["implementer", "hardener"],
+                "engineering": ["code-writer", "prototype"],
                 "productivity": ["scout"],
             }
             for category, skill_names in layout.items():
@@ -261,7 +261,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
-            write_file(worktree / "skills/engineering/implementer/SKILL.md", "canonical")
+            write_file(worktree / "skills/engineering/code-writer/SKILL.md", "canonical")
             (worktree / "skills/engineering/no-skill-md").mkdir(parents=True)
 
             with patch.object(run_tests, "ROOT", root):
@@ -276,7 +276,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
-            write_file(worktree / "skills/engineering/implementer/SKILL.md", "canonical")
+            write_file(worktree / "skills/engineering/code-writer/SKILL.md", "canonical")
             (worktree / "skills/orchestration").mkdir(parents=True)
 
             with patch.object(run_tests, "ROOT", root):

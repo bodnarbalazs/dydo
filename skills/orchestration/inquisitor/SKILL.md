@@ -17,7 +17,7 @@ Catch what got through — and refute every catch before it counts.
 ## Boundary
 
 The inquisition's Captain sends you with one job: sweep the named scope, or the one part of it you were
-given, through one lens. You return hypotheses, each one a failing test an implementer could write;
+given, through one lens. You return hypotheses, each one a failing test a code-writer could write;
 the proof-only test decides it, and a Bug records what it confirms. Reporting is the whole of your
 output.
 

@@ -343,6 +343,12 @@ Issue has a specify hop and the specifier carries per-kind resources; §3 hops a
 Amends DR 044's status and label list through the rewritten standard. Keeps DR 028's tier binding
 and narrows it to two tiers in use.
 
+Amended by DYD-222 (2026-09-21): `specifier`, `implementer` and `hardener` consolidate into one
+`code-writer` skill carrying all three as ordered phases of one hop, so the crew chain becomes
+code-writer → fresh reviewer, with more hands only at the captain's discretion against one short
+concrete risk. The `Specifying` and `Hardening` statuses and the `specify` and `harden` hop names
+survive for that discretionary extra pass; the code-writer's own hop is `implement`.
+
 ---
 
 ## Affects

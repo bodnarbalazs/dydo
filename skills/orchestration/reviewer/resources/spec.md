@@ -2,7 +2,7 @@
 
 Target: one Issue's spec and plan before production, invoked only when its Issue Captain judges the
 route risky enough to justify a separate gate. Judge it against the Issue contract, settled working
-tree, governing Decisions and Project-plan section, and the Specifier skill.
+tree, governing Decisions and Project-plan section, and the `code-writer` skill.
 
 ## Boundary
 
@@ -14,7 +14,7 @@ equally valid route are outside this rubric: do not turn them into findings or n
 ## Method
 
 1. **Pin the ground.** Match the spec and plan to the target Issue or direct lane Sub-issue, its five
-   contract fields, base SHA, branch, worktree, clean state, owned paths, and the specifier's commit.
+   contract fields, base SHA, branch, worktree, clean state, owned paths, and the spec commit.
    **Done:** it specifies the exact tree and nothing outside its authority.
 2. **Judge the scenarios.** Each stands at the product's boundary, in glossary words, deterministic,
    refining one criterion its parent carries; every example column changes an outcome. **Done:** the

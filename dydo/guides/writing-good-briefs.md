@@ -29,9 +29,9 @@ Every implementation Issue carries five fields. They are the contract; the rest 
 
 What the Issue deliberately does **not** carry is the route. Pre-writing it ages badly and buys
 nothing: the implementing agent reads the code you were guessing about, and the spec and plan are
-written just in time by `specifier` at the Issue Captain's direction — the two planning
-resolutions are in the [Linear Issue Lifecycle](../understand/task-lifecycle.md). The Specifier names
-route risk; the Captain may require `spec` before production when that extra gate is worth its
+written just in time by `code-writer` in its first phase, at the Issue Captain's direction — the two
+planning resolutions are in the [Linear Issue Lifecycle](../understand/task-lifecycle.md). The writer
+names route risk; the Captain may require `spec` before production when that extra gate is worth its
 cost.
 
 Owned paths do double duty. They are the brief's scope and the isolation that lets Issues run in

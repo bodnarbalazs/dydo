@@ -10,7 +10,7 @@ description: Ripe Project intent, no reliable route. Write the first pickable Is
 **Start the map; do not counterfeit the whole voyage.** Ripe intent arrives from Think as a
 destination or specification. Make the first few stable tracer-bullet Issues pickable and sketch
 later bearings only as far as evidence supports. The admiral refines that map as discovery clears
-fog; each Issue Captain sends a Specifier ahead of production.
+fog; each Issue Captain's `code-writer` makes its Issue exact before building it.
 
 ## Must-Reads
 
@@ -25,7 +25,7 @@ fog; each Issue Captain sends a Specifier ahead of production.
 ## Boundary
 
 Plan only a Project whose destination and product intent are settled enough for delivery to start.
-If the target is an implementation Issue or lane, return it untouched and name `specifier`.
+If the target is an implementation Issue or lane, return it untouched and name `code-writer`.
 Perfect plans are fiction: expose unknown routes instead of manufacturing certainty or implementation.
 
 The completion bound is a Project the human can approve and the admiral can start: destination,

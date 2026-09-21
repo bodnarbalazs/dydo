@@ -830,7 +830,7 @@ public class OffLimitsServiceTests : IDisposable
 
         // dydo/_system/** must STILL be off-limits and dydo.json still unwritable — a
         // whitelist entry can defeat neither hardcoded system list.
-        Assert.NotNull(service.IsPathOffLimits("dydo/_system/roles/implementer.role.json"));
+        Assert.NotNull(service.IsPathOffLimits("dydo/_system/roles/code-writer.role.json"));
         Assert.Null(service.IsPathOffLimits("dydo.json"));
         Assert.NotNull(service.IsPathProtected("dydo.json"));
     }

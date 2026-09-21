@@ -20,7 +20,7 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 ## Contract
 
 - The candidate matches the governing commit, the owned paths and the requested outcome
-- Every scenario stands as the specifier committed it, and every scenario passes
+- Every scenario stands as the writer's contract phase committed it, and every scenario passes
 - Every behaviour, edge case and risk the contract names is claimed by a scenario or a test; a bug
   fix carries the test that reproduces the bug
 - Nothing the implement hop had that the contract needed was dropped by a later hop

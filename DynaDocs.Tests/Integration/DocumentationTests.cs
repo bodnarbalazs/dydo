@@ -262,7 +262,7 @@ public class DocumentationTests : IntegrationTestBase
         // A modes folder with files but no _index.md (by design)
         var modesDir = Path.Combine(TestDir, "dydo/agents/sample/modes");
         Directory.CreateDirectory(modesDir);
-        File.WriteAllText(Path.Combine(modesDir, "implementer.md"), "# implementer");
+        File.WriteAllText(Path.Combine(modesDir, "code-writer.md"), "# code-writer");
 
         AssertDirectoryExists("dydo/agents/sample/modes");
         Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/sample/modes/_index.md")));

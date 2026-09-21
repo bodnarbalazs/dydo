@@ -11,11 +11,10 @@ public sealed class CanonicalSkillAssertionTests
         "skills/productivity/bro/SKILL.md",
         "skills/orchestration/chief-of-staff/SKILL.md",
         "skills/productivity/co-thinker/SKILL.md",
+        "skills/engineering/code-writer/SKILL.md",
         "skills/engineering/diagnosing-bugs/SKILL.md",
         "skills/orchestration/docs-writer/SKILL.md",
         "skills/engineering/domain-modeling/SKILL.md",
-        "skills/engineering/hardener/SKILL.md",
-        "skills/engineering/implementer/SKILL.md",
         "skills/engineering/improve-codebase-architecture/SKILL.md",
         "skills/orchestration/inquisitor/SKILL.md",
         "skills/orchestration/issue-captain/SKILL.md",
@@ -23,7 +22,6 @@ public sealed class CanonicalSkillAssertionTests
         "skills/engineering/research/SKILL.md",
         "skills/orchestration/reviewer/SKILL.md",
         "skills/engineering/scout/SKILL.md",
-        "skills/engineering/specifier/SKILL.md",
         "skills/orchestration/wayfinder/SKILL.md",
         "skills/orchestration/reviewer/resources/code.md",
         "skills/orchestration/reviewer/resources/docs.md",
@@ -60,9 +58,9 @@ public sealed class CanonicalSkillAssertionTests
         string[] expected =
         [
             "admiral", "bro", "chief-of-staff", "co-thinker", "codebase-design", "diagnosing-bugs",
-            "docs-writer", "domain-modeling", "grill-me", "grilling", "handoff", "hardener", "implementer",
+            "code-writer", "docs-writer", "domain-modeling", "grill-me", "grilling", "handoff",
             "improve-codebase-architecture", "inquisitor", "issue-captain", "project-planner", "prototype",
-            "research", "reviewer", "scout", "self-improvement", "show-me", "specifier", "teach", "to-project",
+            "research", "reviewer", "scout", "self-improvement", "show-me", "teach", "to-project",
             "walkthrough", "wayfinder", "wizard", "writing-for-agents", "writing-for-humans"
         ];
         string[] categories = ["orchestration", "engineering", "productivity"];
@@ -141,7 +139,7 @@ public sealed class CanonicalSkillAssertionTests
     public void ProjectKnowledgePaths_AreRepositoryRootLiteralsNotSkillRelativeLinks()
     {
         var root = RepositoryRoot();
-        Assert.Equal(22, ProjectPathGuidance.Length);
+        Assert.Equal(20, ProjectPathGuidance.Length);
         foreach (var relative in ProjectPathGuidance)
         {
             var body = File.ReadAllText(Path.Combine(root, relative));
@@ -230,7 +228,7 @@ public sealed class CanonicalSkillAssertionTests
     }
 
     [Fact]
-    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo31()
+    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo29()
     {
         var root = RepositoryRoot();
         var skillsRoot = Path.Combine(root, "skills");
@@ -238,7 +236,7 @@ public sealed class CanonicalSkillAssertionTests
         var actualCounts = categories.ToDictionary(
             category => category,
             category => Directory.EnumerateDirectories(Path.Combine(skillsRoot, category)).Count());
-        Assert.Equal(31, actualCounts.Values.Sum());
+        Assert.Equal(29, actualCounts.Values.Sum());
 
         var readme = File.ReadAllText(Path.Combine(skillsRoot, "README.md"));
         foreach (var category in categories)
@@ -249,7 +247,7 @@ public sealed class CanonicalSkillAssertionTests
         }
 
         Assert.Contains(
-            $"{actualCounts["orchestration"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 31",
+            $"{actualCounts["orchestration"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 29",
             readme);
     }
 

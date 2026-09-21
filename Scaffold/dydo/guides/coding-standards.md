@@ -173,9 +173,9 @@ When uncertain about security implications, stop and research or ask.
 **Red before green, outside in.** Three claims prove a change, and each has one owner:
 
 - A **scenario** claims behaviour at the product's boundary, in glossary words, with example tables
-  where values vary. It is contract: the specifier writes it in Gherkin, the acceptance runner runs
-  it, and implementation wires it without editing it.
-- A **test** claims one seam inside, in the code's words. It is the implementer's, and comes and goes
+  where values vary. It is contract: the code-writer writes it in Gherkin in its first phase, the
+  acceptance runner runs it, and later phases wire it without editing it.
+- A **test** claims one seam inside, in the code's words. It comes and goes
   with refactors. Every non-trivial module has a test file; generated code and logic-free data types
   are the only exceptions.
 - A **gate** is a command whose exit code proves what neither can state: the coverage bar, the
@@ -205,7 +205,7 @@ The project's testing guide names its facade, acceptance runner, adopted gates, 
 ## 7. Smells
 
 Twelve shapes that make code worse than it needs to be (Fowler, _Refactoring_, ch. 3). Each reads what
-it is → how to fix; the hardener works them, the reviewer judges by them.
+it is → how to fix; the code-writer's tightening phase works them, the reviewer judges by them.
 
 - **Mysterious Name** — hides what it does or holds. → rename; no honest name means a murky design.
 - **Duplicated Code** — one logic shape in two hunks or files. → extract it, call it from both.

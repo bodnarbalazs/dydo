@@ -8,7 +8,7 @@ type: guide
 A role is a skill folder, authored under `skills/<category>/<name>/` in one of three categories —
 `orchestration/`, `engineering/`, `productivity/`. Author the body directly in the cross-vendor
 `SKILL.md` format; there is no template and no compile step. `node setup-skills.mjs` still exposes
-every role FLAT (no category level) to each host. The [templates page](../understand/templates-and-customization.md)
+every role flat (no category level) to each host. The [templates page](../understand/templates-and-customization.md)
 covers the artifact shapes and the link rules; this page covers the frontmatter and what each host
 reads.
 

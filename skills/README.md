@@ -12,7 +12,7 @@ they do:
 
 8 + 12 + 11 = 31, the full canonical set.
 
-`setup-skills.mjs` walks `skills/<category>/<skill>/SKILL.md` but still projects every skill FLAT
+`setup-skills.mjs` walks `skills/<category>/<skill>/SKILL.md` but still projects every skill flat
 into `.claude/skills/<skill>` and `.agents/skills/<skill>` — the category folders are a source-tree
 convenience only; each host still sees 31 flat entries with no category level.
 

@@ -42,9 +42,9 @@ A role is a plain `SKILL.md` folder authored directly in the cross-vendor
 canonical folder is `skills/<category>/<role>/`, grouped into `orchestration/`, `engineering/`, and
 `productivity/` categories. It keeps Claude's frontmatter, resources, and Codex's
 `agents/openai.yaml` together. The dependency-free `setup-skills.mjs` creates one directory symlink
-or Windows junction per role in `.claude/skills/` and `.agents/skills/`, FLAT with no category level;
-OpenCode reads those two compatibility roots without a third projection. DR 047 retires Workflow as an operating-model
-concept; no workflow scripts exist. What each metadata key means is in
+or Windows junction per role in `.claude/skills/` and `.agents/skills/`, flat with no category
+level; OpenCode reads those two compatibility roots without a third projection. DR 047 retires
+Workflow as an operating-model concept; no workflow scripts exist. What each metadata key means is in
 [Customizing Roles](../guides/customizing-roles.md), the shapes and link rules in
 [Templates and Customization](./templates-and-customization.md).
 

@@ -58,7 +58,7 @@ validation, auto-fixing, indexes, and graph tooling. This is the context that co
 
 A role is one plain `skills/<category>/<role>/` folder in the cross-vendor format, grouped into
 `orchestration/`, `engineering/`, and `productivity/` categories. `node setup-skills.mjs`
-exposes it FLAT (no category level) through Claude Code and Codex discovery roots; OpenCode reads
+exposes it flat (no category level) through Claude Code and Codex discovery roots; OpenCode reads
 those compatibility roots. There is no compile step or generated agent definition. The host runtime
 owns agent identity and orchestration.
 

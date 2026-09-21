@@ -16,7 +16,7 @@ standard: `name` and `description` in the
 frontmatter, the methodology in the body, and optional `references/`, `scripts/`, `assets/`, or a
 role's own `resources/` beside it. The canonical tree groups skills into `orchestration/`,
 `engineering/`, and `productivity/` categories. Claude frontmatter and Codex `agents/openai.yaml`
-stay in that one folder. `node setup-skills.mjs` projects the whole folder FLAT (no category level)
+stay in that one folder. `node setup-skills.mjs` projects the whole folder flat (no category level)
 into `.claude/skills/<name>` and
 `.agents/skills/<name>` with a POSIX directory symlink or Windows junction. OpenCode reads both
 compatibility roots; no `.opencode/skills` copy is created. No host transforms the body.

@@ -38,7 +38,7 @@ reading only the durable context relevant to the current Issue.
 
 A role is one plain `skills/<category>/<role>/` folder in the cross-vendor `SKILL.md` format,
 grouped into `orchestration/`, `engineering/`, and `productivity/` categories. Run
-`node setup-skills.mjs` once after checkout: it exposes each whole folder FLAT at Claude Code's
+`node setup-skills.mjs` once after checkout: it exposes each whole folder flat at Claude Code's
 `.claude/skills/<role>/` and Codex's `.agents/skills/<role>/` discovery paths — no category level in
 the host roots. OpenCode reads those
 compatibility roots, so setup creates no third copy. There is no compile step. The host runtime owns

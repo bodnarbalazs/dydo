@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { lstat, mkdir, readdir, realpath, symlink } from "node:fs/promises";
+import { lstat, mkdir, readdir, readlink, realpath, rm, symlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,6 +30,22 @@ async function sameDirectory(left, right) {
     if (error.code === "ENOENT") return false;
     throw error;
   }
+}
+
+// Resolves a symlink/junction's raw, unvalidated target: absolute targets (what Windows junctions
+// store) are used as-is, relative ones resolve against the link's own directory. Unlike realpath,
+// this never touches the filesystem past the link itself, so it works for a dangling target too.
+async function rawLinkTarget(linkPath) {
+  const raw = await readlink(linkPath);
+  return path.isAbsolute(raw) ? raw : path.resolve(path.dirname(linkPath), raw);
+}
+
+// A link is "ours" when its raw target falls under this repository's canonical skills/ tree,
+// whether or not that target still exists. That is exactly what a pre-DYD-219 flat-layout link
+// looks like once its skill moved into a category: dangling, but still ours to fix.
+function underCanonicalRoot(candidate) {
+  const relative = path.relative(canonicalRoot, candidate);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
 async function canonicalSkills() {
@@ -64,6 +80,7 @@ async function canonicalSkills() {
 
 async function planProjections(skills) {
   const planned = [];
+  const stale = [];
   for (const hostRoot of hostRoots) {
     const hostEntry = await existing(hostRoot);
     if (hostEntry && !hostEntry.isDirectory()) throw new Error(`Host skill root is not a directory: ${hostRoot}`);
@@ -75,18 +92,30 @@ async function planProjections(skills) {
         planned.push({ ...skill, hostRoot, target });
         continue;
       }
-      if (!targetEntry.isSymbolicLink() || !(await sameDirectory(target, skill.source))) {
-        throw new Error(`Refusing to replace human-owned or conflicting path: ${target}`);
+      if (targetEntry.isSymbolicLink()) {
+        if (await sameDirectory(target, skill.source)) continue; // already correct: nothing to do
+        if (underCanonicalRoot(await rawLinkTarget(target))) {
+          // Ours, but stale or dangling (its skill's category likely changed): replace it.
+          stale.push(target);
+          planned.push({ ...skill, hostRoot, target });
+          continue;
+        }
       }
+      throw new Error(`Refusing to replace human-owned or conflicting path: ${target}`);
     }
   }
-  return planned;
+  return { planned, stale };
 }
 
 if (!(await existing(root))?.isDirectory()) throw new Error(`Root is not a directory: ${root}`);
 
 const skills = await canonicalSkills();
-const planned = await planProjections(skills);
+const { planned, stale } = await planProjections(skills);
+
+for (const target of stale) {
+  // A symlink/junction, so this unlinks the link itself and never touches whatever it points at.
+  await rm(target, { recursive: true, force: true });
+}
 
 for (const projection of planned) {
   await mkdir(projection.hostRoot, { recursive: true });

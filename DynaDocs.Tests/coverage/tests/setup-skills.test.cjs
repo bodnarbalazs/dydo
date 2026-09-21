@@ -99,6 +99,73 @@ test('refuses a link that already points somewhere other than its canonical skil
   });
 });
 
+test('migrates a dangling link left by the old flat layout to the current canonical category path', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha', { category: 'engineering' });
+    const hostSkillsClaude = path.join(root, '.claude', 'skills');
+    const hostSkillsAgents = path.join(root, '.agents', 'skills');
+    fs.mkdirSync(hostSkillsClaude, { recursive: true });
+    fs.mkdirSync(hostSkillsAgents, { recursive: true });
+    // What the old, pre-category setup would have created: a link straight at skills/alpha, which
+    // no longer exists now that the skill lives under skills/engineering/alpha (DYD-219), leaving
+    // both links dangling.
+    fs.symlinkSync(path.join(root, 'skills', 'alpha'), path.join(hostSkillsClaude, 'alpha'), 'junction');
+    fs.symlinkSync(path.join(root, 'skills', 'alpha'), path.join(hostSkillsAgents, 'alpha'), 'junction');
+
+    const result = runSetup('--root', root);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /1 skills, 2 projections created/);
+    for (const hostRoot of ['.claude', '.agents']) {
+      const target = path.join(root, hostRoot, 'skills', 'alpha');
+      assert.ok(fs.lstatSync(target).isSymbolicLink(), `${target} was not migrated to a link`);
+      assert.equal(
+        fs.realpathSync(target),
+        fs.realpathSync(path.join(root, 'skills', 'engineering', 'alpha')),
+        `${target} did not resolve to the current canonical category path`,
+      );
+    }
+  });
+});
+
+test('refuses a foreign link whose target lies entirely outside the canonical skills tree', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha');
+    const foreign = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd225-setup-skills-foreign-'));
+    try {
+      const hostSkills = path.join(root, '.claude', 'skills');
+      fs.mkdirSync(hostSkills, { recursive: true });
+      fs.symlinkSync(foreign, path.join(hostSkills, 'alpha'), 'junction');
+
+      const result = runSetup('--root', root);
+
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Refusing to replace human-owned or conflicting path/);
+      assert.ok(!fs.existsSync(path.join(root, '.agents', 'skills', 'alpha')), 'setup created a projection despite the refusal');
+    } finally {
+      fs.rmSync(foreign, { recursive: true, force: true });
+    }
+  });
+});
+
+test('a rerun after migrating a dangling flat-layout link creates nothing further and stays idempotent', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha', { category: 'engineering' });
+    const hostSkills = path.join(root, '.claude', 'skills');
+    fs.mkdirSync(hostSkills, { recursive: true });
+    fs.symlinkSync(path.join(root, 'skills', 'alpha'), path.join(hostSkills, 'alpha'), 'junction');
+
+    const first = runSetup('--root', root);
+    assert.equal(first.status, 0, first.stderr);
+    assert.match(first.stdout, /projections created/);
+
+    const second = runSetup('--root', root);
+
+    assert.equal(second.status, 0, second.stderr);
+    assert.match(second.stdout, /1 skills, 0 projections created/);
+  });
+});
+
 test('refuses with a non-zero exit when a canonical skill folder has no SKILL.md', () => {
   inRoot((root) => {
     writeSkill(root, 'alpha', { withBody: false });

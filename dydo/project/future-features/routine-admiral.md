@@ -12,7 +12,7 @@ only for as long as a human keeps a session open.
 
 ## Today
 
-`admiral` is a hat authored with the other roles at `skills/<name>` — specifically `skills/admiral` —
+`admiral` is a hat authored with the other roles at `skills/<category>/<name>` — specifically `skills/orchestration/admiral` —
 and exposed to each host by setup. A human invokes it, and it carries one approved Project plan to a
 feature branch he can land. Inside that one session it opens the feature branch, keeps N Issues in
 flight by spawning an `issue-captain` per pickable Issue, merges serially, runs a merge review after

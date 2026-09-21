@@ -11,11 +11,13 @@ the artifact shapes, how a project customizes one, and the framework documents `
 
 ## Skills are folders
 
-A skill is `skills/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io) standard:
-`name` and `description` in the
+A skill is `skills/<category>/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io)
+standard: `name` and `description` in the
 frontmatter, the methodology in the body, and optional `references/`, `scripts/`, `assets/`, or a
-role's own `resources/` beside it. Claude frontmatter and Codex `agents/openai.yaml` stay in that one
-folder. `node setup-skills.mjs` projects the whole folder into `.claude/skills/<name>` and
+role's own `resources/` beside it. The canonical tree groups skills into `orchestration/`,
+`engineering/`, and `productivity/` categories. Claude frontmatter and Codex `agents/openai.yaml`
+stay in that one folder. `node setup-skills.mjs` projects the whole folder flat (no category level)
+into `.claude/skills/<name>` and
 `.agents/skills/<name>` with a POSIX directory symlink or Windows junction. OpenCode reads both
 compatibility roots; no `.opencode/skills` copy is created. No host transforms the body.
 
@@ -24,7 +26,7 @@ compatibility roots; no `.opencode/skills` copy is created. No host transforms t
 - A project document link names a repository-root literal path in a code span, read from the
   repository root: "From the repository root, read `dydo/understand/architecture.md`" — never a
   `../` climb, because the identical file is read at two different depths: canonically at
-  `skills/<name>/`, and through the host projection at `.claude/skills/<name>/` or
+  `skills/<category>/<name>/`, and through the host projection at `.claude/skills/<name>/` or
   `.agents/skills/<name>/`. The two resolvers disagree — lexical `..` normalization against the
   projected path versus POSIX `..` applied to the physical parent once the symlink is followed — so
   no single relative climb is correct from every install location.
@@ -32,7 +34,7 @@ compatibility roots; no `.opencode/skills` copy is created. No host transforms t
 
 ## Customizing a role
 
-Edit `skills/<name>/` directly. A project's canonical folder is its own: deliberate divergence from the
+Edit `skills/<category>/<name>/` directly. A project's canonical folder is its own: deliberate divergence from the
 framework is accepted, and there is no automatic reconciliation. The frontmatter keys and what each
 host reads are in [Customizing Roles](../guides/customizing-roles.md).
 

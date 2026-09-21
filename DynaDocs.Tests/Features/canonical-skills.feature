@@ -27,12 +27,12 @@ Feature: One canonical skill tree reaches every supported host
   Scenario: Resolve skill links from canonical and projected locations
     Then every skill link resolves when followed from each location
       | location                       |
-      | skills/<name>                  |
+      | skills/<category>/<name>       |
       | .claude/skills/<name>          |
       | .agents/skills/<name>          |
 
   Scenario: Remove stale two-source guidance
-    Then current documentation and template mirrors describe skills/<name> as the only editable source
+    Then current documentation and template mirrors describe skills/<category>/<name> as the only editable source
     And canonical agent guidance does not instruct agents to maintain or compare per-host skill copies
 
   Scenario: Refuse a human-owned host directory before changing another host

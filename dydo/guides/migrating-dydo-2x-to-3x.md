@@ -54,7 +54,8 @@ a half-written config.
    directly.
 8. Delete the `skills` and `frameworkHashes` keys from `dydo.json` and `_system/templates/` from its
    `scanExclude`. A role is now a plain `SKILL.md` folder, not a switchboard entry.
-9. Replace the compiled skill and agent trees with the shipped canonical `skills/<role>/` folders,
+9. Replace the compiled skill and agent trees with the shipped canonical `skills/<category>/<role>/`
+   folders (`orchestration/`, `engineering/`, `productivity/`),
    delete generated agent definitions, and run `node setup-skills.mjs` to expose each folder through
    Claude and Codex discovery roots. OpenCode reads those same compatibility roots. Then run
    `dydo check` and resolve what it reports.

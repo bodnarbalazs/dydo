@@ -114,11 +114,16 @@ function providerText(url, response, content) {
   return chatText(response, content);
 }
 
+function teachSkillDirectory() {
+  assert(args.candidate, "--candidate is required to resolve the canonical teach skill directory");
+  return path.join(args.candidate, "skills", "productivity", "teach");
+}
+
 async function handleCodex(request, response, payload) {
   if (!request.url?.endsWith("/responses")) return deny(response, `unexpected Codex provider endpoint ${request.url}`);
   const strings = collectStrings(payload);
   if (state === 0) {
-    const body = await readFile(path.join(args.candidate, "skills", "teach", "SKILL.md"), "utf8");
+    const body = await readFile(path.join(teachSkillDirectory(), "SKILL.md"), "utf8");
     const marker = `teach: ${teachDescription}`;
     const serialized = JSON.stringify(payload);
     assert(countAcross(strings, implicitPrompt) === 1, "Codex implicit request did not contain the exact control prompt once");
@@ -131,7 +136,7 @@ async function handleCodex(request, response, payload) {
     return responsesText(response, "DYDO_TEACH_HIDDEN");
   }
   if (state === 1) {
-    const body = await readFile(path.join(args.candidate, "skills", "teach", "SKILL.md"), "utf8");
+    const body = await readFile(path.join(teachSkillDirectory(), "SKILL.md"), "utf8");
     assert(countAcross(strings, body) === 1, "Codex explicit request did not contain the exact canonical teach body once");
     assert(countAcross(strings, codexPrompt) === 1, "Codex explicit request did not contain the exact prompt once");
     assert(countAcross(strings, expectedFact) === 0, "Codex explicit request pre-inlined the resource-only fact");
@@ -146,7 +151,7 @@ async function handleCodex(request, response, payload) {
     const realResource = await realpath(derivedResourcePath);
     const realSkill = await realpath(path.dirname(selectedSkill));
     assert(isInside(realSkill, realResource), "derived Codex resource escaped the selected skill");
-    assert(samePath(realResource, path.join(args.candidate, "skills", "teach", "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
+    assert(samePath(realResource, path.join(teachSkillDirectory(), "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
     const command = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
     const argumentsJson = { cmd: command, workdir: args.candidate, yield_time_ms: 10000, max_output_tokens: 2000, shell: "powershell", login: false };
     await record({ state, method: "POST", url: request.url, payload, offeredSchema: execTool, derivedResourcePath, response: { tool: "exec_command", arguments: argumentsJson } });
@@ -290,7 +295,7 @@ function extractSkillBase(serialized) {
   const candidates = [
     /base directory for this skill:\s*([^\n\r"`]+?teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
     /base directory(?: is|:)[ \t]*([^\n\r"`]+?teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
-    /((?:[A-Za-z]:)?[^\n\r"`]*[\\/]skills[\\/]teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i
+    /((?:[A-Za-z]:)?[^\n\r"`]*[\\/]skills[\\/]productivity[\\/]teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i
   ];
   for (const candidate of candidates) {
     const match = normalized.match(candidate);
@@ -327,7 +332,7 @@ function countAcross(strings, needle) {
 
 function extractInstalledSkillPath(strings) {
   for (const value of strings) {
-    const match = value.match(/([A-Za-z]:[\\/][^\n\r"`<>]*[\\/]skills[\\/]teach[\\/]SKILL\.md)/i);
+    const match = value.match(/([A-Za-z]:[\\/][^\n\r"`<>]*[\\/]skills[\\/]productivity[\\/]teach[\\/]SKILL\.md)/i);
     if (match) return match[1];
   }
   throw new Error("Codex first request did not expose the selected installed skill path");

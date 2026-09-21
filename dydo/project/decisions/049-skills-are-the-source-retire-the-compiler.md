@@ -125,6 +125,10 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
   mandatory records must each pay for their recurring cost. Retiring the compiler will not help
   enough if a small change still demands excessive ceremony. That audit is its own next step.
 
+**Amendment (2026-09-21, DYD-219):** the canonical tree is now `skills/<category>/<skill>/`, grouped
+into `orchestration/`, `engineering/`, and `productivity/`; host projections stay flat with no
+category level.
+
 ---
 
 ## Affects

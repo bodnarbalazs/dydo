@@ -36,9 +36,11 @@ reading only the durable context relevant to the current Issue.
 
 ### One role, native on each host
 
-A role is one plain `skills/<role>/` folder in the cross-vendor `SKILL.md` format. Run
-`node setup-skills.mjs` once after checkout: it exposes each whole folder at Claude Code's
-`.claude/skills/<role>/` and Codex's `.agents/skills/<role>/` discovery paths. OpenCode reads those
+A role is one plain `skills/<category>/<role>/` folder in the cross-vendor `SKILL.md` format,
+grouped into `orchestration/`, `engineering/`, and `productivity/` categories. Run
+`node setup-skills.mjs` once after checkout: it exposes each whole folder flat at Claude Code's
+`.claude/skills/<role>/` and Codex's `.agents/skills/<role>/` discovery paths — no category level in
+the host roots. OpenCode reads those
 compatibility roots, so setup creates no third copy. There is no compile step. The host runtime owns
 agent identity and orchestration.
 
@@ -112,7 +114,7 @@ after current workflow state changes.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`.
-- **Roles** — plain `skills/<role>/` folders, edited directly and exposed to hosts by `setup-skills.mjs`.
+- **Roles** — plain `skills/<category>/<role>/` folders, edited directly and exposed to hosts flat by `setup-skills.mjs`.
 
 A role is its own source; there is no compile step and no automatic reconciliation.
 
@@ -124,7 +126,7 @@ project/
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- setup-skills.mjs             # Create safe host discovery projections
-|-- skills/                      # One canonical folder per role
+|-- skills/                      # orchestration/, engineering/, productivity/ categories, one folder per role
 |-- .claude/skills/              # Ignored per-skill Claude projections
 |-- .agents/skills/              # Ignored per-skill Codex projections; OpenCode also reads both roots
 `-- dydo/

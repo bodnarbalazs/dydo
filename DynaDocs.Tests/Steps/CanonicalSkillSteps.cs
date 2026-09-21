@@ -20,8 +20,9 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Given("a project containing the canonical {string} skill and the skill setup script")]
     public void ProjectWithCanonicalSkill(string name)
     {
-        CopyDirectory(Path.Combine(RepositoryRoot(), "skills", name), Local("skills", name));
-        Assert.True(Directory.Exists(Local("skills", name)));
+        var category = CanonicalCategory(name);
+        CopyDirectory(Path.Combine(RepositoryRoot(), "skills", category, name), Local("skills", category, name));
+        Assert.True(Directory.Exists(Local("skills", category, name)));
         File.Copy(Path.Combine(RepositoryRoot(), "setup-skills.mjs"), Local("setup-skills.mjs"));
         File.WriteAllText(Local(".gitignore"), "/.claude/skills/\n/.agents/skills/\n");
     }
@@ -58,7 +59,7 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Then("the Claude and Codex {string} entries resolve to the canonical skill directory")]
     public void HostEntriesResolve(string name)
     {
-        var canonical = RealPath(Local("skills", name));
+        var canonical = RealPath(Local("skills", CanonicalCategory(name), name));
         Assert.Equal(canonical, RealPath(Local(".claude", "skills", name)));
         Assert.Equal(canonical, RealPath(Local(".agents", "skills", name)));
         Assert.True(new DirectoryInfo(Local(".claude", "skills", name)).LinkTarget is not null);
@@ -98,7 +99,7 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Then("the canonical {string} skill keeps its Claude invocation frontmatter")]
     public void ClaudeMetadata(string name)
     {
-        var body = File.ReadAllText(Local("skills", name, "SKILL.md"));
+        var body = File.ReadAllText(Local("skills", CanonicalCategory(name), name, "SKILL.md"));
         Assert.StartsWith("---\n", body.ReplaceLineEndings("\n"));
         Assert.Contains("argument-hint: \"What would you like to learn about?\"", body);
         Assert.Contains("disable-model-invocation: true", body);
@@ -107,7 +108,7 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Then("the canonical {string} skill keeps its Codex invocation metadata")]
     public void CodexMetadata(string name)
     {
-        var metadata = File.ReadAllText(Local("skills", name, "agents", "openai.yaml"));
+        var metadata = File.ReadAllText(Local("skills", CanonicalCategory(name), name, "agents", "openai.yaml"));
         Assert.Contains("allow_implicit_invocation: false", metadata);
         Assert.Contains("default_prompt: \"What would you like to learn about?\"", metadata);
     }
@@ -115,7 +116,7 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Then("every resource linked by the canonical {string} body resolves inside its skill directory")]
     public void ResourceLinksResolve(string name)
     {
-        var skill = Local("skills", name);
+        var skill = Local("skills", CanonicalCategory(name), name);
         var links = MarkdownLinks(File.ReadAllText(Path.Combine(skill, "SKILL.md")))
             .Where(link => link.StartsWith("resources/", StringComparison.Ordinal)).ToArray();
         Assert.NotEmpty(links);
@@ -138,8 +139,10 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         {
             Assert.Equal(3, locations.Rows.Count);
             var canonicalRoot = Local("skills");
-            foreach (var canonicalSkill in Directory.EnumerateDirectories(canonicalRoot))
+            foreach (var categoryRoot in Directory.EnumerateDirectories(canonicalRoot))
+            foreach (var canonicalSkill in Directory.EnumerateDirectories(categoryRoot))
             {
+                var category = Path.GetFileName(categoryRoot);
                 var name = Path.GetFileName(canonicalSkill);
                 var markdownFiles = Directory.EnumerateFiles(canonicalSkill, "*.md", SearchOption.AllDirectories).ToArray();
                 Assert.NotEmpty(markdownFiles);
@@ -157,7 +160,9 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
 
                     foreach (var row in locations.Rows)
                     {
-                        var location = row["location"].Replace("<name>", name, StringComparison.Ordinal);
+                        var location = row["location"]
+                            .Replace("<category>", category, StringComparison.Ordinal)
+                            .Replace("<name>", name, StringComparison.Ordinal);
                         var viewRoot = Local(location.Replace('/', Path.DirectorySeparatorChar));
                         var viewFile = Path.Combine(viewRoot, relativeFile);
                         Assert.Equal(canonicalBytes, Fingerprint.File(viewFile));
@@ -185,17 +190,36 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         }
     }
 
-    [Then(@"^current documentation and template mirrors describe skills/<name> as the only editable source$")]
+    [Then(@"^current documentation and template mirrors describe skills/<category>/<name> as the only editable source$")]
     public void CurrentGuidanceUsesCanonicalSource()
     {
+        var root = RepositoryRoot();
+        var stalePattern = StaleFlatSkillPathPattern(root);
         foreach (var relative in CanonicalSkillAssertionTests.CurrentGuidance)
         {
-            var content = File.ReadAllText(Path.Combine(RepositoryRoot(), relative));
-            Assert.Contains("skills/<", content);
+            var content = File.ReadAllText(Path.Combine(root, relative));
+            Assert.Contains("skills/<category>/", content);
+            Assert.DoesNotMatch(@"(?<!\.claude/)(?<!\.agents/)skills/<name>", content);
+            Assert.DoesNotMatch(@"(?<!\.claude/)(?<!\.agents/)skills/<role>", content);
+            Assert.DoesNotMatch(stalePattern, content);
             Assert.DoesNotContain("edit both", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("edit each host", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("committed copy", content, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    /// <summary>Matches a flat <c>skills/&lt;name&gt;</c> reference to any real skill name -- bare or
+    /// trailing a separator -- unless it is a host projection path (<c>.claude/skills/&lt;name&gt;/</c>
+    /// or <c>.agents/skills/&lt;name&gt;/</c>, which stay flat by design). The trailing boundary is a
+    /// negative lookahead rather than a required <c>/</c>, so a bare mention like <c>skills/admiral</c>
+    /// still matches; a category prefix like <c>skills/orchestration/reviewer/</c> never matches
+    /// because <c>orchestration</c> is not itself a skill name in the alternation.</summary>
+    internal static Regex StaleFlatSkillPathPattern(string repositoryRoot)
+    {
+        var names = Directory.EnumerateDirectories(Path.Combine(repositoryRoot, "skills"))
+            .SelectMany(Directory.EnumerateDirectories)
+            .Select(directory => Regex.Escape(Path.GetFileName(directory)));
+        return new Regex($@"(?<!\.claude/)(?<!\.agents/)skills/(?:{string.Join("|", names)})(?![A-Za-z0-9-])");
     }
 
     [Then("canonical agent guidance does not instruct agents to maintain or compare per-host skill copies")]
@@ -203,8 +227,8 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     {
         foreach (var relative in new[]
         {
-            "skills/docs-writer/SKILL.md",
-            "skills/writing-for-agents/resources/skill-mechanics.md"
+            "skills/orchestration/docs-writer/SKILL.md",
+            "skills/productivity/writing-for-agents/resources/skill-mechanics.md"
         })
         {
             var content = File.ReadAllText(Path.Combine(RepositoryRoot(), relative));
@@ -291,11 +315,23 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     private void CopyRemainingSkills()
     {
         var root = Path.Combine(RepositoryRoot(), "skills");
-        foreach (var source in Directory.EnumerateDirectories(root))
+        foreach (var categorySource in Directory.EnumerateDirectories(root))
         {
-            var target = Local("skills", Path.GetFileName(source));
-            if (!Directory.Exists(target)) CopyDirectory(source, target);
+            var category = Path.GetFileName(categorySource);
+            foreach (var source in Directory.EnumerateDirectories(categorySource))
+            {
+                var target = Local("skills", category, Path.GetFileName(source));
+                if (!Directory.Exists(target)) CopyDirectory(source, target);
+            }
         }
+    }
+
+    private static string CanonicalCategory(string name)
+    {
+        var skillsRoot = Path.Combine(RepositoryRoot(), "skills");
+        foreach (var category in Directory.EnumerateDirectories(skillsRoot))
+            if (Directory.Exists(Path.Combine(category, name))) return Path.GetFileName(category)!;
+        throw new DirectoryNotFoundException($"Canonical skill not found in any category: {name}");
     }
 
     private void RecordProjection(string relative) => _projectionTargets[relative] = new DirectoryInfo(Local(relative)).LinkTarget;
@@ -322,15 +358,18 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         foreach (var relative in CanonicalSkillAssertionTests.ProjectPathGuidance)
         {
             var parts = relative.Split('/');
-            var name = parts[1];
-            var relativeFile = Path.Combine(parts.Skip(2).ToArray());
+            var category = parts[1];
+            var name = parts[2];
+            var relativeFile = Path.Combine(parts.Skip(3).ToArray());
             var canonicalFile = Local(relative.Replace('/', Path.DirectorySeparatorChar));
             var canonicalBody = File.ReadAllText(canonicalFile);
             var projectPaths = ProjectPathLiterals(canonicalBody).ToArray();
             Assert.NotEmpty(projectPaths);
             foreach (var row in locations.Rows)
             {
-                var location = row["location"].Replace("<name>", name, StringComparison.Ordinal);
+                var location = row["location"]
+                    .Replace("<category>", category, StringComparison.Ordinal)
+                    .Replace("<name>", name, StringComparison.Ordinal);
                 var viewFile = Path.Combine(Local(location.Replace('/', Path.DirectorySeparatorChar)), relativeFile);
                 Assert.Equal(Fingerprint.File(canonicalFile), Fingerprint.File(viewFile));
                 var viewBody = File.ReadAllText(viewFile);

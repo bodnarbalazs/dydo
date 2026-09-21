@@ -30,8 +30,8 @@ with `--only opencode`:
 ```powershell
 node DynaDocs.Tests/HostCanaries/run-host-canaries.mjs `
   --candidate . `
-  --scratch-root "$env:LOCALAPPDATA\DynaDocs\host-canaries" `
-  --evidence "$env:LOCALAPPDATA\DynaDocs\host-canary-evidence\DYD-91\<candidate-sha>-<run-id>\staging\host-canaries" `
+  --scratch-root "$env:SystemDrive\dydo-canary-scratch" `
+  --evidence "$env:SystemDrive\dydo-canary-evidence\DYD-91\<candidate-sha>-<run-id>\staging\host-canaries" `
   --opencode-archive "C:\path\to\opencode-windows-x64.zip" `
   --ripgrep "C:\path\to\rg.exe" `
   --only codex
@@ -56,3 +56,21 @@ binary at `C:\Users\User\AppData\Local\OpenAI\Codex\bin\4fe45441001f7a41\rg.exe`
 `ripgrep 15.2.0 (rev e89fff89ac)` build and was re-pinned to its hash. The check stays a hard
 equality assert that fails closed; re-pinning it is a human/admiral decision made outside the
 runner, not something the runner does for itself.
+
+On 2026-09-21 the pinned Ripgrep hash was changed from `7c9b1279...` to `14231169...`. Codex had
+rotated its vendored bin directory again, so `7c9b1279...` no longer existed on this machine; the
+surviving binary at `C:\Users\User\.codex\packages\standalone\releases\0.155.1-x86_64-pc-windows-msvc\codex-path\rg.exe`
+reports the same `ripgrep 15.2.0 (rev e89fff89ac)`, PCRE2 10.45 build -- identical version and
+revision to the outgoing pin's recorded build, and byte-identical across Codex standalone releases
+0.145.0, 0.154.0, 0.155.0 and 0.155.1 -- and was re-pinned to its hash,
+`14231169855ec5205cf5a1b6f1db358ff4aed4247c86b69ce8aae647c77f6680`. A different candidate seen at
+the same time, `%LOCALAPPDATA%\OpenAI\Codex\bin\73fd6465d9c76545\rg.exe` (hash `96331974...`),
+reports `ripgrep 15.2.0` with no revision string and PCRE2 10.48 -- a different build -- and was not
+eligible.
+
+The check stays a hard equality assert that fails closed. A binary of the *same* version and
+revision, taken from Codex's own vendored bin directory, may be re-pinned by a captain holding this
+record -- the record above is what "holding the record" means: the outgoing and incoming hash, the
+exact source path, and the reported version/revision proving the build did not change underneath
+the pin. A binary reporting a *different* version or revision is not a re-pin; it is an admiral
+decision, made outside the runner exactly as the 2026-09-16 note above already required.

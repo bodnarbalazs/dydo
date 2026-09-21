@@ -4,7 +4,7 @@
 .claude/workflows/*.js text eol=lf
 .claude/agents/*.md text eol=lf
 skills/**/*.md text eol=lf
-skills/*/agents/openai.yaml text eol=lf
+skills/**/agents/openai.yaml text eol=lf
 setup-skills.mjs text eol=lf
 DynaDocs.Tests/HostCanaries/*.mjs text eol=lf
 .codex/agents/*.toml text=auto eol=lf

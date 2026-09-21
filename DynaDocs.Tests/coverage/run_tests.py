@@ -99,23 +99,40 @@ def _dirty_entries(stdout):
         yield status, relative, old
 
 
+def _prune_empty_directories(worktree, directories):
+    """Remove directories a rename/deletion emptied, so a bulk `git mv` leaves no stale
+    directory names behind in the isolated worktree (git status reports file moves, not
+    directory removals, so nothing else prunes them)."""
+    for directory in directories:
+        current = directory
+        while current != worktree and current.is_dir() and not any(current.iterdir()):
+            parent = current.parent
+            current.rmdir()
+            current = parent
+
+
 def copy_dirty_files(worktree):
     """Copy an exact NUL-delimited dirty snapshot, including untracked files."""
     stdout, rc = _git("status", "--porcelain=v1", "-z", "--untracked-files=all", capture=True)
     if rc != 0:
         raise ValueError("Cannot read candidate Git status")
+    emptied_directories = set()
     for status, relative, old in _dirty_entries(stdout):
         dst = _inside(worktree, relative)
         if old and "R" in status:
-            _inside(worktree, old).unlink(missing_ok=True)
+            old_path = _inside(worktree, old)
+            old_path.unlink(missing_ok=True)
+            emptied_directories.add(old_path.parent)
         if "D" in status:
             dst.unlink(missing_ok=True)
+            emptied_directories.add(dst.parent)
             continue
         src = _inside(ROOT, relative)
         if not src.is_file():
             raise ValueError(f"Missing candidate source: {relative}")
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
+    _prune_empty_directories(worktree, emptied_directories)
 
 
 def remove_worktree(worktree):

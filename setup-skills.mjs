@@ -36,16 +36,31 @@ async function canonicalSkills() {
   const rootEntry = await existing(canonicalRoot);
   if (!rootEntry?.isDirectory()) throw new Error(`Missing canonical skill directory: ${canonicalRoot}`);
 
-  const entries = (await readdir(canonicalRoot, { withFileTypes: true }))
+  const categories = (await readdir(canonicalRoot, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
     .sort((left, right) => left.name.localeCompare(right.name));
-  if (entries.length === 0) throw new Error(`No canonical skills found in ${canonicalRoot}`);
+  if (categories.length === 0) throw new Error(`No canonical skills found in ${canonicalRoot}`);
 
-  for (const entry of entries) {
-    const body = path.join(canonicalRoot, entry.name, "SKILL.md");
-    if (!(await existing(body))?.isFile()) throw new Error(`Canonical skill is missing SKILL.md: ${entry.name}`);
+  const skills = [];
+  const seen = new Map();
+  for (const category of categories) {
+    const categoryRoot = path.join(canonicalRoot, category.name);
+    const entries = (await readdir(categoryRoot, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .sort((left, right) => left.name.localeCompare(right.name));
+    if (entries.length === 0) throw new Error(`No canonical skills found in ${categoryRoot}`);
+
+    for (const entry of entries) {
+      const source = path.join(categoryRoot, entry.name);
+      const body = path.join(source, "SKILL.md");
+      if (!(await existing(body))?.isFile()) throw new Error(`Canonical skill is missing SKILL.md: ${category.name}/${entry.name}`);
+      if (seen.has(entry.name)) throw new Error(`Duplicate skill name across categories: ${entry.name} (${seen.get(entry.name)} and ${category.name})`);
+      seen.set(entry.name, category.name);
+      skills.push({ name: entry.name, source });
+    }
   }
-  return entries.map((entry) => ({ name: entry.name, source: path.join(canonicalRoot, entry.name) }));
+  if (skills.length === 0) throw new Error(`No canonical skills found in ${canonicalRoot}`);
+  return skills.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 async function planProjections(skills) {

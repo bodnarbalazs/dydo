@@ -270,18 +270,29 @@ async function gitBlobOid(path, info) {
 
 async function loadExpectedSkills(root) {
   const skills = [];
-  for (const entry of (await readdir(join(root, "skills"), { withFileTypes: true })).filter(value => value.isDirectory()).sort((left, right) => ordinal(left.name, right.name))) {
-    const path = join(root, "skills", entry.name, "SKILL.md");
-    const body = await readFile(path, "utf8");
-    const frontmatter = body.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1];
-    assert(frontmatter, `canonical skill frontmatter was missing: ${entry.name}`);
-    const name = decodeYamlScalar(frontmatter.match(/^name:\s*(.+)$/m)?.[1]?.trim());
-    const description = decodeYamlScalar(frontmatter.match(/^description:\s*(.+)$/m)?.[1]?.trim());
-    assert(name === entry.name && description, `canonical skill metadata was invalid: ${entry.name}`);
-    skills.push({ name, description, path, bodySha256: await sha256(path) });
+  const categories = (await readdir(join(root, "skills"), { withFileTypes: true })).filter(value => value.isDirectory()).sort((left, right) => ordinal(left.name, right.name));
+  for (const category of categories) {
+    const entries = (await readdir(join(root, "skills", category.name), { withFileTypes: true })).filter(value => value.isDirectory()).sort((left, right) => ordinal(left.name, right.name));
+    for (const entry of entries) {
+      const path = join(root, "skills", category.name, entry.name, "SKILL.md");
+      const body = await readFile(path, "utf8");
+      const frontmatter = body.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1];
+      assert(frontmatter, `canonical skill frontmatter was missing: ${entry.name}`);
+      const name = decodeYamlScalar(frontmatter.match(/^name:\s*(.+)$/m)?.[1]?.trim());
+      const description = decodeYamlScalar(frontmatter.match(/^description:\s*(.+)$/m)?.[1]?.trim());
+      assert(name === entry.name && description, `canonical skill metadata was invalid: ${entry.name}`);
+      skills.push({ name, description, path, category: category.name, bodySha256: await sha256(path) });
+    }
   }
+  skills.sort((left, right) => ordinal(left.name, right.name));
   await writeArtifact("candidate-skill-inventory.json", JSON.stringify(skills, null, 2));
   return skills;
+}
+
+function skillPath(name) {
+  const skill = expectedSkills.find(candidate => candidate.name === name);
+  assert(skill, `canonical skill was not in the candidate inventory: ${name}`);
+  return skill.path;
 }
 
 async function candidateFingerprint(root) {
@@ -364,7 +375,7 @@ async function runCodexCanary() {
   const resolvedCodex = await resolveCodexExecutable();
   const version = (await run(resolvedCodex, ["--version"])).stdout.trim();
   manifest.environment.codex = version;
-  const yaml = await readFile(join(checkout, "skills", "teach", "agents", "openai.yaml"), "utf8");
+  const yaml = await readFile(join(dirname(skillPath("teach")), "agents", "openai.yaml"), "utf8");
   assert(yaml.includes("allow_implicit_invocation: false"), "canonical teach lost its Codex explicit-only control");
   await recordCodexProjection();
 
@@ -394,7 +405,7 @@ async function runCodexCanary() {
     const repoRecords = inventoryGroup.skills.filter(record => record.scope === "repo" && record.enabled !== false);
     assertSkillRecords(repoRecords, expectedSkills, "Codex repository inventory");
     for (const record of repoRecords) {
-      assert(samePath(await realpath(record.path), await realpath(join(checkout, "skills", record.name, "SKILL.md"))), `Codex repo skill path was not canonical: ${record.name}`);
+      assert(samePath(await realpath(record.path), await realpath(skillPath(record.name))), `Codex repo skill path was not canonical: ${record.name}`);
     }
     const systemRecords = inventoryGroup.skills.filter(record => record.scope === "system" && record.enabled !== false);
     const allowedSystemNames = ["imagegen", "openai-docs", "plugin-creator", "review-agent", "skill-creator", "skill-installer"].sort(ordinal);
@@ -405,7 +416,7 @@ async function runCodexCanary() {
     const record = records[0];
     const selectedPath = record.path;
     await writeArtifact("codex-explicit.json", JSON.stringify({ selectedSkill: record }, null, 2));
-    assert(typeof selectedPath === "string" && samePath(await realpath(selectedPath), await realpath(join(checkout, "skills", "teach", "SKILL.md"))), `Codex inventory did not supply teach's canonical SKILL.md path: ${selectedPath}`);
+    assert(typeof selectedPath === "string" && samePath(await realpath(selectedPath), await realpath(skillPath("teach"))), `Codex inventory did not supply teach's canonical SKILL.md path: ${selectedPath}`);
 
     const implicitThread = await rpc.request({ method: "thread/start", id: 3, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "on-request", sandbox: "read-only", ephemeral: true } });
     const implicitThreadId = implicitThread.result?.thread?.id;
@@ -433,7 +444,7 @@ async function runCodexCanary() {
     const resourceLink = teachBody.match(/\[mission-format\]\(([^)]+)\)/)?.[1];
     assert(resourceLink, "selected teach body did not expose the mission-format link");
     const derivedResourcePath = resolve(dirname(selectedPath), resourceLink);
-    assert(samePath(await realpath(derivedResourcePath), await realpath(join(checkout, "skills", "teach", "resources", "mission-format.md"))), "Codex approval resource did not derive from the selected canonical skill");
+    assert(samePath(await realpath(derivedResourcePath), await realpath(join(dirname(skillPath("teach")), "resources", "mission-format.md"))), "Codex approval resource did not derive from the selected canonical skill");
     const readArgv = ["Get-Content", "-Raw", "-LiteralPath", derivedResourcePath];
     const readCommand = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
     const powershell = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -502,8 +513,8 @@ async function recordCodexProjection() {
   const projectedDirectory = join(checkout, ".agents", "skills", "teach");
   const projectedBody = join(projectedDirectory, "SKILL.md");
   const projectedResource = join(projectedDirectory, "resources", "mission-format.md");
-  const canonicalBody = join(checkout, "skills", "teach", "SKILL.md");
-  const canonicalResource = join(checkout, "skills", "teach", "resources", "mission-format.md");
+  const canonicalBody = skillPath("teach");
+  const canonicalResource = join(dirname(skillPath("teach")), "resources", "mission-format.md");
   const entry = await lstat(projectedDirectory);
   assert(entry.isSymbolicLink(), "Codex teach projection was not a directory link/junction");
   assert((await stat(projectedDirectory)).isDirectory(), "Codex teach projection did not target a directory");
@@ -599,7 +610,7 @@ async function runOpenCodeCanary() {
     assertSkillRecords(projectSkills, expectedSkills, "OpenCode native inventory", "location");
     for (const skill of projectSkills) {
       const actual = await realpath(skill.location);
-      const canonical = await realpath(join(checkout, "skills", skill.name, "SKILL.md"));
+      const canonical = await realpath(skillPath(skill.name));
       assert(samePath(actual, canonical), `OpenCode inventory location for ${skill.name} did not real-resolve canonical`);
     }
 
@@ -612,7 +623,7 @@ async function runOpenCodeCanary() {
     assert(skillIndex >= 0 && readIndex > skillIndex && textIndex > readIndex, "OpenCode live events did not record the ordered completed skill/read/final sequence");
     assert(events[skillIndex].part.state.output.includes("[mission-format](resources/mission-format.md)"), "OpenCode's native skill result lost the resource link");
     const readPath = await realpath(events[readIndex].part.state.input.filePath);
-    assert(samePath(readPath, await realpath(join(checkout, "skills", "teach", "resources", "mission-format.md"))), "OpenCode read did not resolve to the canonical resource");
+    assert(samePath(readPath, await realpath(join(dirname(skillPath("teach")), "resources", "mission-format.md"))), "OpenCode read did not resolve to the canonical resource");
     assert(events[readIndex].part.state.output.includes(EXPECTED_FACT), "OpenCode native read result omitted the resource fact");
     assert(events.filter(event => event.type === "text").map(event => event.part?.text).join("") === EXPECTED_FACT, "OpenCode live final response was not exact");
     const requests = parseNdjson(await readFile(requestsPath, "utf8"), "OpenCode provider requests");
@@ -826,7 +837,7 @@ async function assertOpenCodeFirstRequest(nativeInventory, payload) {
   const projectSkills = reported.filter(skill => skill.location !== "<built-in>");
   assertSkillRecords(projectSkills, expectedSkills, "OpenCode first provider request skill inventory", "location");
   for (const skill of projectSkills) {
-    assert(samePath(await realpath(skill.location), await realpath(join(checkout, "skills", skill.name, "SKILL.md"))), `OpenCode first provider location for ${skill.name} did not real-resolve canonical`);
+    assert(samePath(await realpath(skill.location), await realpath(skillPath(skill.name))), `OpenCode first provider location for ${skill.name} did not real-resolve canonical`);
   }
   assert(nativeInventory.length === reported.length, "OpenCode first provider request changed the native inventory cardinality");
   assertNoOuterState(payload, "OpenCode first provider request");

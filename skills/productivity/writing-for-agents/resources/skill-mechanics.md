@@ -8,7 +8,7 @@ universal reference in this skill's body.
 
 **The skill folder is the skill.** dydo authors every role directly in the cross-vendor `SKILL.md`
 format; there is no template and no compile step. The canonical artifact is
-`skills/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io) standard: `name` and
+`skills/<category>/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io) standard: `name` and
 `description` in the frontmatter and the methodology in the body.
 
 ## Frontmatter
@@ -40,16 +40,16 @@ Two choices, trading the two loads:
   it exists, which is why the locked dydo glossary carries the taxonomy. Its description turns
   human-facing: one punchy line, trigger lists stripped. On Claude this is
   `disable-model-invocation: true` in `SKILL.md`; on Codex it is `allow_implicit_invocation: false`
-  in `skills/<name>/agents/openai.yaml`.
+  in `skills/<category>/<name>/agents/openai.yaml`.
 
 ## Where reference lives
 
 - **`## Must-Reads`** — project documents named under that heading. Author each target as a
   repository-root literal path in a code span, read from the repository root — "From the repository
-  root, read `dydo/understand/architecture.md`" (see `skills/reviewer/SKILL.md`);
+  root, read `dydo/understand/architecture.md`" (see `skills/orchestration/reviewer/SKILL.md`);
   `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs:150-156` enforces that no Must-Read is written as a
   markdown link. A `../` climb does not work here because the identical file is read at two
-  different depths: canonically at `skills/<name>/`, and through the host projection at
+  different depths: canonically at `skills/<category>/<name>/`, and through the host projection at
   `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
   normalization against the projected path versus POSIX `..` applied to the physical parent once the
   symlink is followed — so no single relative climb is correct from every install location. Project
@@ -61,7 +61,7 @@ Two choices, trading the two loads:
 
 ## Distribution
 
-One `skills/<name>/` folder is committed and hand-maintained. `node setup-skills.mjs` creates
+One `skills/<category>/<name>/` folder is committed and hand-maintained. `node setup-skills.mjs` creates
 per-skill POSIX symlinks or Windows junctions in the Claude and Codex discovery roots; OpenCode reads
 both roots. A skill change edits the canonical folder once. Setup never copies or reconciles prose.
 What no tool may rewrite is listed in `dydo/files-off-limits.md`, read from the repository root.

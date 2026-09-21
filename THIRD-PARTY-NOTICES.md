@@ -9,26 +9,26 @@ header in the canonical `skills/<name>/` folders.
 
 | Upstream skill | Adapted in |
 |---|---|
-| `code-review` | `skills/reviewer/resources/code.md` |
-| `codebase-design` | `skills/codebase-design/SKILL.md`, `skills/codebase-design/resources/deepening.md`, `skills/codebase-design/resources/design-it-twice.md` |
-| `diagnosing-bugs` | `skills/diagnosing-bugs/SKILL.md` |
-| `domain-modeling` | `skills/domain-modeling/SKILL.md` |
-| `grill-me` | `skills/grill-me/SKILL.md` |
-| `grilling` | `skills/grilling/SKILL.md` |
-| `handoff` | `skills/handoff/SKILL.md` |
-| `improve-codebase-architecture` | `skills/improve-codebase-architecture/SKILL.md`, `skills/improve-codebase-architecture/resources/html-report.md` |
-| `prototype` | `skills/prototype/SKILL.md`, `skills/prototype/resources/logic.md`, `skills/prototype/resources/ui.md` |
-| `research` | `skills/research/SKILL.md` |
-| `retro` | `skills/self-improvement/SKILL.md` |
-| `tdd` | `skills/implementer/SKILL.md`, `skills/implementer/resources/tests.md`, `skills/implementer/resources/mocking.md`, `skills/reviewer/resources/code.md` |
-| `teach` | `skills/teach/SKILL.md`, `skills/teach/resources/mission-format.md`, `skills/teach/resources/glossary-format.md`, `skills/teach/resources/learning-record-format.md`, `skills/teach/resources/resources-format.md` |
-| `to-spec` | `skills/to-project/SKILL.md` |
-| `to-tickets` | `skills/project-planner/SKILL.md` |
-| `wizard` and its `template.sh` | `skills/wizard/SKILL.md`, `skills/wizard/resources/template.md` |
-| `wait-what` | `skills/bro/SKILL.md` |
-| `wayfinder` | `skills/wayfinder/SKILL.md` |
-| `writing-for-agents` | `skills/writing-for-agents/SKILL.md` |
-| `writing-for-agents/SKILL-MECHANICS` | `skills/writing-for-agents/resources/skill-mechanics.md` |
+| `code-review` | `skills/orchestration/reviewer/resources/code.md` |
+| `codebase-design` | `skills/engineering/codebase-design/SKILL.md`, `skills/engineering/codebase-design/resources/deepening.md`, `skills/engineering/codebase-design/resources/design-it-twice.md` |
+| `diagnosing-bugs` | `skills/engineering/diagnosing-bugs/SKILL.md` |
+| `domain-modeling` | `skills/engineering/domain-modeling/SKILL.md` |
+| `grill-me` | `skills/productivity/grill-me/SKILL.md` |
+| `grilling` | `skills/productivity/grilling/SKILL.md` |
+| `handoff` | `skills/productivity/handoff/SKILL.md` |
+| `improve-codebase-architecture` | `skills/engineering/improve-codebase-architecture/SKILL.md`, `skills/engineering/improve-codebase-architecture/resources/html-report.md` |
+| `prototype` | `skills/engineering/prototype/SKILL.md`, `skills/engineering/prototype/resources/logic.md`, `skills/engineering/prototype/resources/ui.md` |
+| `research` | `skills/engineering/research/SKILL.md` |
+| `retro` | `skills/productivity/self-improvement/SKILL.md` |
+| `tdd` | `skills/engineering/implementer/SKILL.md`, `skills/engineering/implementer/resources/tests.md`, `skills/engineering/implementer/resources/mocking.md`, `skills/orchestration/reviewer/resources/code.md` |
+| `teach` | `skills/productivity/teach/SKILL.md`, `skills/productivity/teach/resources/mission-format.md`, `skills/productivity/teach/resources/glossary-format.md`, `skills/productivity/teach/resources/learning-record-format.md`, `skills/productivity/teach/resources/resources-format.md` |
+| `to-spec` | `skills/engineering/to-project/SKILL.md` |
+| `to-tickets` | `skills/orchestration/project-planner/SKILL.md` |
+| `wizard` and its `template.sh` | `skills/engineering/wizard/SKILL.md`, `skills/engineering/wizard/resources/template.md` |
+| `wait-what` | `skills/productivity/bro/SKILL.md` |
+| `wayfinder` | `skills/orchestration/wayfinder/SKILL.md` |
+| `writing-for-agents` | `skills/productivity/writing-for-agents/SKILL.md` |
+| `writing-for-agents/SKILL-MECHANICS` | `skills/productivity/writing-for-agents/resources/skill-mechanics.md` |
 
 MIT License
 
@@ -61,7 +61,7 @@ header.
 
 | Upstream skill | Adapted in |
 |---|---|
-| `show-me` | `skills/show-me/SKILL.md` |
+| `show-me` | `skills/productivity/show-me/SKILL.md` |
 
 MIT License
 
@@ -94,7 +94,7 @@ header.
 
 | Upstream skill | Adapted in |
 |---|---|
-| `unslop` | `skills/writing-for-humans/SKILL.md` |
+| `unslop` | `skills/productivity/writing-for-humans/SKILL.md` |
 
 MIT License
 

@@ -8,8 +8,8 @@ const { spawnSync } = require('node:child_process');
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 const script = path.join(repoRoot, 'setup-skills.mjs');
 
-function writeSkill(root, name, { withBody = true } = {}) {
-  const skillDir = path.join(root, 'skills', name);
+function writeSkill(root, name, { category = 'cat', withBody = true } = {}) {
+  const skillDir = path.join(root, 'skills', category, name);
   fs.mkdirSync(skillDir, { recursive: true });
   if (withBody) fs.writeFileSync(path.join(skillDir, 'SKILL.md'), `---\nname: ${name}\ndescription: fixture\n---\nbody\n`);
 }
@@ -27,15 +27,16 @@ function inRoot(callback) {
   }
 }
 
-test('link creation for both host roots from a canonical skills tree', () => {
+test('link creation for both host roots from a canonical skills tree, walking one level deeper for categories', () => {
   inRoot((root) => {
-    writeSkill(root, 'alpha');
-    writeSkill(root, 'beta');
+    writeSkill(root, 'alpha', { category: 'engineering' });
+    writeSkill(root, 'beta', { category: 'productivity' });
 
     const result = runSetup('--root', root);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /2 skills, 4 projections created/);
+    const categories = { alpha: 'engineering', beta: 'productivity' };
     for (const hostRoot of ['.claude', '.agents']) {
       for (const name of ['alpha', 'beta']) {
         const target = path.join(root, hostRoot, 'skills', name);
@@ -43,8 +44,8 @@ test('link creation for both host roots from a canonical skills tree', () => {
         assert.ok(stats.isSymbolicLink(), `${target} was not created as a link`);
         assert.equal(
           fs.realpathSync(target),
-          fs.realpathSync(path.join(root, 'skills', name)),
-          `${target} did not resolve to its canonical skill`,
+          fs.realpathSync(path.join(root, 'skills', categories[name], name)),
+          `${target} did not resolve to its canonical skill, projected FLAT with no category level`,
         );
       }
     }
@@ -105,7 +106,7 @@ test('refuses with a non-zero exit when a canonical skill folder has no SKILL.md
     const result = runSetup('--root', root);
 
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Canonical skill is missing SKILL\.md: alpha/);
+    assert.match(result.stderr, /Canonical skill is missing SKILL\.md: cat\/alpha/);
     assert.ok(!fs.existsSync(path.join(root, '.claude')), 'setup created host output despite the missing SKILL.md');
     assert.ok(!fs.existsSync(path.join(root, '.agents')), 'setup created host output despite the missing SKILL.md');
   });
@@ -128,6 +129,32 @@ test('refuses a canonical skills directory that holds no skills', () => {
 
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /No canonical skills found in/);
+  });
+});
+
+test('refuses a category directory that holds no skills, even when another category is populated', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha', { category: 'engineering' });
+    fs.mkdirSync(path.join(root, 'skills', 'empty-category'), { recursive: true });
+
+    const result = runSetup('--root', root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /No canonical skills found in .*empty-category/);
+    assert.ok(!fs.existsSync(path.join(root, '.claude')), 'setup created host output despite the empty category');
+  });
+});
+
+test('refuses two categories that both claim the same skill name', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha', { category: 'engineering' });
+    writeSkill(root, 'alpha', { category: 'productivity' });
+
+    const result = runSetup('--root', root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Duplicate skill name across categories: alpha/);
+    assert.ok(!fs.existsSync(path.join(root, '.claude')), 'setup created host output despite the duplicate name');
   });
 });
 
@@ -217,7 +244,7 @@ test('with no arguments the root is the script\'s own directory, never the worki
     for (const hostRoot of ['.claude', '.agents']) {
       const target = path.join(root, hostRoot, 'skills', 'alpha');
       assert.ok(fs.existsSync(target) && fs.lstatSync(target).isSymbolicLink(), `${target} was not created beside the script`);
-      assert.equal(fs.realpathSync(target), fs.realpathSync(path.join(root, 'skills', 'alpha')));
+      assert.equal(fs.realpathSync(target), fs.realpathSync(path.join(root, 'skills', 'cat', 'alpha')));
       assert.ok(!fs.existsSync(path.join(elsewhere, hostRoot)), `setup rooted ${hostRoot} at the working directory`);
     }
   });

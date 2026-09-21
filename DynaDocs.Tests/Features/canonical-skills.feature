@@ -27,7 +27,7 @@ Feature: One canonical skill tree reaches every supported host
   Scenario: Resolve skill links from canonical and projected locations
     Then every skill link resolves when followed from each location
       | location                       |
-      | skills/<name>                  |
+      | skills/<category>/<name>       |
       | .claude/skills/<name>          |
       | .agents/skills/<name>          |
 

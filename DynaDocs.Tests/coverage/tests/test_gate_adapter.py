@@ -900,20 +900,25 @@ class CoverageCampaignTests(unittest.TestCase):
             self.assertNotIn("errorMessage", error)
             self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
 
-    def test_an_exit_2_campaign_names_a_category_and_message_from_identities_json(self):
+    def test_an_exit_2_campaign_names_the_preflight_category_and_its_windows_cpython_message(self):
+        # windows_job.runtime_evidence() raises "Owner requires Windows CPython 3.12" from
+        # validate(), before run()'s try block ever creates `output`; run()'s except handler
+        # then finds output is None, so failure_category stays at its "preflight" initial
+        # value and error_message becomes str(error) -- the message never lands in the
+        # category itself.
         with tempfile.TemporaryDirectory() as folder:
             root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
             write_file(raw, "identities.json",
                       json.dumps({"schema": 1,
-                                 "campaign": {"failure_category": "Owner requires Windows CPython 3.12",
-                                             "error_message": "python3.12 not found on PATH"}}))
+                                 "campaign": {"failure_category": "preflight",
+                                             "error_message": "Owner requires Windows CPython 3.12"}}))
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
                 answer = gate_adapter.collect_dotnet_coverage(root, raw)
 
             error = answer["errors"][0]
-            self.assertEqual("Owner requires Windows CPython 3.12", error["failureCategory"])
-            self.assertEqual("python3.12 not found on PATH", error["errorMessage"])
+            self.assertEqual("preflight", error["failureCategory"])
+            self.assertEqual("Owner requires Windows CPython 3.12", error["errorMessage"])
             self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
 
     def test_an_exit_2_campaign_fails_closed_when_identities_json_is_missing(self):

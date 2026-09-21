@@ -656,6 +656,18 @@ class TestingFacadeTests(unittest.TestCase):
         reason = payload['results'][0]['reason']
         self.assertTrue(reason.endswith('; timeout at /tmp/run/identities.json'), reason)
 
+    def test_derived_exit_2_diagnosis_joins_category_and_message_when_both_are_named(self):
+        errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
+                  'failureCategory': 'preflight',
+                  'errorMessage': 'Owner requires Windows CPython 3.12',
+                  'identitiesPath': '/tmp/run/identities.json'}]
+        p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=errors), 1)
+        self.assert_exit(p, 2)
+        self.assert_derived(payload, ('invalid', None, 2), ('failed', 1), 2)
+        reason = payload['results'][0]['reason']
+        self.assertTrue(reason.endswith(
+            '; preflight: Owner requires Windows CPython 3.12 at /tmp/run/identities.json'), reason)
+
     def test_derived_exit_2_diagnosis_unavailable_is_rendered_on_the_unattributed_row(self):
         errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
                   'diagnosisUnavailable': 'identities.json is missing or unreadable',

@@ -223,26 +223,59 @@ def _mirror_host_skill_root(worktree, relative):
             raise ValueError(f"Cannot materialize unsupported skill discovery entry: {entry}")
 
 
+def _canonical_skill_names(canonical_skills):
+    """Walk `<snapshot>/skills` one level below its category folders, matching setup-skills.mjs's
+    own walk rule exactly: categories are the direct child directories of `skills/`, skills are the
+    direct child directories of each category, and a directory only counts as a skill when it holds
+    a `SKILL.md`. A category with nothing usable inside it, or a skill name reused across two
+    categories, is a boundary error the same way setup-skills.mjs treats it, never a silent drop.
+    """
+    categories = sorted(item.name for item in canonical_skills.iterdir() if item.is_dir())
+    names = []
+    seen = {}
+    for category in categories:
+        category_root = canonical_skills / category
+        entries = sorted(item.name for item in category_root.iterdir() if item.is_dir())
+        skills = [entry for entry in entries if (category_root / entry / "SKILL.md").is_file()]
+        if not skills:
+            raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {category_root}")
+        for skill in skills:
+            if skill in seen:
+                raise ValueError(
+                    f"Cannot project skill discovery directories: duplicate skill name across categories: "
+                    f"{skill} ({seen[skill]} and {category})")
+            seen[skill] = category
+            names.append((skill, category_root / skill))
+    return names
+
+
 def _project_canonical_skill_links(worktree, relative):
-    """Project one link per canonical skill directory from the snapshot's own skills/ tree, for use
-    when the source root has no host discovery directory to mirror (for example, this very
-    worktree, which has no .claude/skills installed).
+    """Project one flat link per canonical skill -- not per category -- from the snapshot's own
+    skills/ tree, for use when the source root has no host discovery directory to mirror (for
+    example, this very worktree, which has no .claude/skills installed).
+
+    `<snapshot>/skills` is a category tree (`skills/<category>/<skill>/`): projecting a link per
+    direct child of `skills/` would link the category directories themselves, not the skills inside
+    them, which the CanonicalSkillTree_HasNoAuthoredHostCopies guard cannot tell apart from a real
+    per-skill projection -- it only checks each entry is a link resolving inside `skills/`. Walking
+    one level deeper, the same way setup-skills.mjs does, keeps the projection an actual host
+    discovery shape.
 
     A snapshot with no `skills/` tree at all has no canonical skills to project and no host
     discovery directory to mirror: there is nothing the CanonicalSkillTree_HasNoAuthoredHostCopies
     guard could catch either way, so this is a quiet no-op rather than a failure. A snapshot that
-    *has* `skills/` but finds nothing usable inside it (empty, or a link this platform cannot
-    create) stays loud: that shape could otherwise widen into the vacuous state the guard cannot
-    detect.
+    *has* `skills/` but finds nothing usable inside it (empty, a category with nothing usable inside
+    it, or a duplicate skill name) stays loud: that shape could otherwise widen into the vacuous
+    state the guard cannot detect.
     """
     canonical_skills = worktree / "skills"
     if not canonical_skills.is_dir():
         return
-    names = sorted(item.name for item in canonical_skills.iterdir() if item.is_dir())
-    if not names:
+    skills = _canonical_skill_names(canonical_skills)
+    if not skills:
         raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {canonical_skills}")
-    for name in names:
-        _create_skill_link(worktree / relative / name, canonical_skills / name)
+    for name, source in skills:
+        _create_skill_link(worktree / relative / name, source)
 
 
 def materialize_skill_links(worktree):

@@ -113,8 +113,9 @@ const skills = await canonicalSkills();
 const { planned, stale } = await planProjections(skills);
 
 for (const target of stale) {
-  // A symlink/junction, so this unlinks the link itself and never touches whatever it points at.
-  await rm(target, { recursive: true, force: true });
+  // Always a symlink/junction (the only case that reaches `stale`), so `force` alone unlinks it;
+  // no `recursive`, since that implies deleting a real directory's contents, which we never do here.
+  await rm(target, { force: true });
 }
 
 for (const projection of planned) {

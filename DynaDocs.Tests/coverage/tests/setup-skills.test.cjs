@@ -163,6 +163,13 @@ test('a rerun after migrating a dangling flat-layout link creates nothing furthe
 
     assert.equal(second.status, 0, second.stderr);
     assert.match(second.stdout, /1 skills, 0 projections created/);
+    const target = path.join(root, '.claude', 'skills', 'alpha');
+    assert.ok(fs.lstatSync(target).isSymbolicLink(), `${target} was not left as a link after the second run`);
+    assert.equal(
+      fs.realpathSync(target),
+      fs.realpathSync(path.join(root, 'skills', 'engineering', 'alpha')),
+      `${target} did not still resolve to the correct canonical category path after the second run`,
+    );
   });
 });
 

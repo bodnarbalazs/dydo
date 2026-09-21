@@ -101,12 +101,14 @@ configuration included, is [Getting Started](dydo/guides/getting-started.md); po
 to set dydo up in a project.
 
 For this repository's roles, also run `node setup-skills.mjs`. It is safe to rerun, works on its own
-directory unless you pass `--root <checkout>`, and refuses any other argument. Setup accepts only
-missing projections or links already aimed at the canonical folder; it preflights the whole plan
-before creating anything and stops at the first collision it names, so nothing is created until the
-plan is validated, and it never replaces host configuration or unrelated skills. Resolve the named
-collision yourself, then rerun. OpenCode may report each name from both compatibility roots;
-both entries resolve to the same canonical directory.
+directory unless you pass `--root <checkout>`, and refuses any other argument. Setup accepts
+missing projections, links already aimed at the canonical folder, and a link left by an older
+layout of `skills/` (even a now-dangling one) — that last case it migrates to the current canonical
+path rather than refusing; it preflights the whole plan before creating anything and stops at the
+first collision it names, so nothing is created until the plan is validated, and it never replaces
+host configuration or unrelated skills. Resolve the named collision yourself, then rerun. OpenCode
+may report each name from both compatibility roots; both entries resolve to the same canonical
+directory.
 
 Keep current work in Linear. Put information in Git only when it should remain useful and reviewable
 after current workflow state changes.

@@ -591,7 +591,9 @@ class StaleWorktreePruningTests(unittest.TestCase):
             self.assertTrue(unmarked.exists())
             self.assertTrue(outside.exists())
 
-    def test_prune_removes_a_stale_marked_leftover_directory_git_no_longer_registers(self):
+    def test_prune_leaves_an_unregistered_stale_marked_leftover_directory_alone(self):
+        """Narrowed contract: pruning enumerates only git's own registered worktrees, so a stale
+        marked directory git no longer tracks is left in place rather than swept by a TEMP scan."""
         with tempfile.TemporaryDirectory() as temp_root_str:
             temp_root = Path(temp_root_str)
             leftover = temp_root / "dydo-test-leftover01"
@@ -608,8 +610,73 @@ class StaleWorktreePruningTests(unittest.TestCase):
 
                 pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
 
-            self.assertEqual([leftover.resolve()], [p.resolve() for p in pruned])
-            self.assertFalse(leftover.exists())
+            self.assertEqual([], pruned)
+            self.assertTrue(leftover.exists())
+
+    def test_prune_never_enumerates_the_temp_root_even_with_thousands_of_entries(self):
+        """The production scan of tempfile.gettempdir() is gone: prove it with a poisoned
+        os.scandir/os.listdir on the temp root itself, and back it with 10,000 real unrelated
+        entries on disk so a regression that scans would also be caught by a wrong prune result."""
+        with tempfile.TemporaryDirectory() as temp_root_str:
+            temp_root = Path(temp_root_str).resolve()
+            for index in range(10000):
+                (temp_root / f"unrelated-{index}").mkdir()
+
+            stale = temp_root / "dydo-test-stale0001"
+            self._mark(stale, age_seconds=99999)
+            porcelain = f"worktree {stale}\n\n"
+
+            def fake_git(*args, capture=False):
+                if args[:2] == ("worktree", "list"):
+                    return porcelain, 0
+                return ("", 0) if capture else None
+
+            real_scandir, real_listdir = os.scandir, os.listdir
+
+            def poisoned_scandir(path="."):
+                if Path(path).resolve() == temp_root:
+                    raise AssertionError(f"must not enumerate the temp root: {path}")
+                return real_scandir(path)
+
+            def poisoned_listdir(path="."):
+                if Path(path).resolve() == temp_root:
+                    raise AssertionError(f"must not enumerate the temp root: {path}")
+                return real_listdir(path)
+
+            with patch.object(run_tests, "tempfile") as fake_tempfile, \
+                 patch.object(run_tests, "_git", side_effect=fake_git), \
+                 patch("os.scandir", side_effect=poisoned_scandir), \
+                 patch("os.listdir", side_effect=poisoned_listdir):
+                fake_tempfile.gettempdir.return_value = str(temp_root)
+
+                pruned = run_tests.prune_stale_test_worktrees(max_age_seconds=3600)
+
+            self.assertEqual([stale.resolve()], [p.resolve() for p in pruned])
+
+    def test_registered_worktree_paths_returns_empty_list_when_git_worktree_list_fails(self):
+        with patch.object(run_tests, "_git", return_value=("", 1)):
+            self.assertEqual([], run_tests._registered_worktree_paths())
+
+    def test_is_stale_test_worktree_boundary_conditions(self):
+        with tempfile.TemporaryDirectory() as temp_root_str, \
+             tempfile.TemporaryDirectory() as outside_root_str:
+            temp_root = Path(temp_root_str).resolve()
+            outside_root = Path(outside_root_str).resolve()
+            now = datetime.now(timezone.utc)
+
+            exactly_at_threshold = temp_root / "dydo-test-exact0001"
+            self._mark(exactly_at_threshold, age_seconds=3600)
+            wrong_name = temp_root / "other-name-0001"
+            self._mark(wrong_name, age_seconds=99999)
+            outside = outside_root / "dydo-test-outside001"
+            self._mark(outside, age_seconds=99999)
+
+            self.assertTrue(
+                run_tests._is_stale_test_worktree(exactly_at_threshold, temp_root, now, 3600))
+            self.assertFalse(
+                run_tests._is_stale_test_worktree(wrong_name, temp_root, now, 3600))
+            self.assertFalse(
+                run_tests._is_stale_test_worktree(outside, temp_root, now, 3600))
 
 
 if __name__ == "__main__":

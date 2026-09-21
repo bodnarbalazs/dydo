@@ -17,6 +17,7 @@ the tree or call tree when the shape is what changes.
 **Files** — every touched path and its one edit.
 **Steps** — ordered; each ends on a checkable state.
 **Edge cases** — inputs, states and failures, with the behaviour for each.
+**Lanes** — `none | <name>: <disjoint owned paths>`: work that can run at the same time.
 **Extra pass** — `none | spec review | separate hardening pass`: the one-line risk that buys it.
 ```
 

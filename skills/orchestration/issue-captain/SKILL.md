@@ -76,7 +76,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    post each hop's commit SHA on the record. To have the landed code tightened by another hand,
    park the Issue at `Hardening` and send a fresh `code-writer` for that pass alone. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
    runs the normal docs delivery chain as below.
-   On a route with a reviewed spec, skip only a phase it declares empty. Run disjoint lanes concurrently and keep every attempt on
+   The writer's `IMPLEMENTED` comment names in one line which phases did work. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each worker's capability as you brief it: the
    smallest adequate supported model, and the effort where the host exposes one, weighed from that

@@ -50,7 +50,9 @@ commit under the `implement` hop name, so the Captain can read the work one phas
    Done when every criterion is a scenario or a gate and every example column changes an outcome.
 4. **Resolve the choices.** Settle approach, files, seams, ordered steps, and edge and failure
    behaviour — just in time for the work in front of you, never a speculative design for work the
-   Issue does not name. Done when no step ahead rests on a crossroads still open.
+   Issue does not name. Name as a lane each piece of disjoint work that can run at the same time,
+   keeping ordinary sequential work and the joined scenarios on the parent; most Issues have none.
+   Done when no step ahead rests on a crossroads still open.
 5. **Record and commit.** Put `## Spec` and `## Plan` ([skeleton](resources/spec-and-plan.md)) on
    the record, or in a comment when another hand owns the description, and commit the feature files.
    Done when the record carries both sections and the commit exists.
@@ -105,10 +107,10 @@ more than it catches.
 ## Return
 
 To the Issue Captain, use the `IMPLEMENTED` form in the communication protocol, opening with one
-line naming which phases did work. Then the contract you fixed, changed files, behaviour proof,
-probe outcomes, gaps, any extra-pass risk, and any adjacent finding to route; retain full command
-output once as linked evidence. For a hypothesis: `confirmed`, `not reproduced` or `inconclusive`,
-with the observation that decided it.
+line naming which phases did work. Then the contract you fixed, the lanes you named or `none`,
+changed files, behaviour proof, probe outcomes, gaps, any extra-pass risk, and any adjacent finding
+to route; retain full command output once as linked evidence. For a hypothesis: `confirmed`,
+`not reproduced` or `inconclusive`, with the observation that decided it.
 
 ## Raise a hand
 

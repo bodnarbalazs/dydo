@@ -140,14 +140,14 @@ flowchart TD
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
   AD[admiral]:::hat <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::hat
-  IC <-.->|"0 contract review, at the captain's discretion · Specifying then In Review"| RS
   IC <-->|"1 write · Implementing"| CW
+  IC <-.->|"1b contract review, parked off the write at the captain's discretion · Specifying then In Review"| RS
   IC <-.->|"2 extra tightening by another hand · Hardening"| HD
   IC <-->|"3 review · In Review"| RC
   IC <-->|"4 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
   subgraph CREW [the crew]
-    RS{{0 reviewer: spec<br>reads the Exact-phase text on the Issue<br>returns review block}}:::reviewer
     CW[1 code-writer<br>exact, then green, then good<br>returns spec, plan, implement SHA, proof trace, gates]:::worker
+    RS{{1b reviewer: spec<br>reads the Exact-phase text on the Issue<br>returns review block}}:::reviewer
     HD[2 code-writer, another hand<br>returns its fix SHA, gates]:::worker
     RC{{3 reviewer: code or docs<br>returns review block}}:::reviewer
     MG[4 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::worker
@@ -673,20 +673,20 @@ A snapshot at 10:40:
 
 | Project | Status | Session | In flight | Waits on the human |
 |---|---|---|---|---|
-| A: Reqnroll in DynaDocs | `In Progress` | admiral A | DYD-90 `Hardening`; DYD-91 `Todo`, blocked by DYD-90, whose outcome it builds on | nothing |
-| B: Notion export | `In Progress` | admiral B | DYD-95 `In Review`; DYD-96 `Specifying`; DYD-97 Prototype, HITL, `Todo`, `High`: its verdict frees DYD-98 | a captain session on the prototype |
+| A: Reqnroll in DynaDocs | `In Progress` | admiral A | DYD-90 `Implementing`; DYD-91 `Todo`, blocked by DYD-90, whose outcome it builds on | nothing |
+| B: Notion export | `In Progress` | admiral B | DYD-95 `In Review`; DYD-96 `Implementing`; DYD-97 Prototype, HITL, `Todo`, `High`: its verdict frees DYD-98 | a captain session on the prototype |
 | C: Attention taxonomy | `Planning` | admiral C | the plan draft, blocked by DYD-99 Question in `Todo`, `High`: the whole plan waits | an answer |
 
 ```mermaid
 flowchart LR
   classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   subgraph A [Project A, admiral A]
-    A1[DYD-90 Hardening]
+    A1[DYD-90 Implementing]
     A2[DYD-91 Todo, blocked by DYD-90]
   end
   subgraph B [Project B, admiral B]
     B1[DYD-95 In Review]
-    B2[DYD-96 Specifying]
+    B2[DYD-96 Implementing]
     B3[DYD-97 Prototype, HITL, Todo]
   end
   subgraph C [Project C, admiral C]

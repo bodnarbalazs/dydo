@@ -89,7 +89,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   integrated state that also proves the plan's acceptance criteria at a feature's final merge.
 - **Inquisition** — a human-confirmed Type held by a captain: read-only sweeps, hypotheses proved
   by tests, deduplicated Bugs and an inquisition record. It files outcomes, never PASS or FAIL.
-- **Merge** — a Type for one merge operation, with its own specify/implement/review chain and
+- **Merge** — a Type for one merge operation, with its own implement/review chain and
   integrated gates. The human clicks the Project landing; every operation preserves hop SHAs.
 - **Release** — a captain leaves a resume SHA on the record, pushes its branch, removes the worktree,
   returns the parent to `Todo`, unassigns and wires any blocker. A dead session has no final push.

@@ -260,7 +260,12 @@ public sealed class CanonicalSkillAssertionTests
 
         Assert.Matches(pattern, "see `skills/reviewer/SKILL.md` for the shape");
         Assert.Matches(pattern, "edit `skills/teach/resources/mission-format.md` directly");
+        Assert.Matches(pattern, "authored at `skills/admiral`");
+        Assert.Matches(pattern, "edit `skills/reviewer` directly");
         Assert.DoesNotMatch(pattern, "canonical folder is `skills/orchestration/reviewer/SKILL.md`");
+        Assert.DoesNotMatch(pattern, "see `skills/orchestration/` for the category");
+        Assert.DoesNotMatch(pattern, "see `skills/engineering/` for the category");
+        Assert.DoesNotMatch(pattern, "see `skills/productivity/` for the category");
         Assert.DoesNotMatch(pattern, "projected at `.claude/skills/reviewer/` and `.agents/skills/reviewer/`");
         Assert.DoesNotMatch(pattern, "nothing here names a skills/<category>/<name>/ literal");
     }

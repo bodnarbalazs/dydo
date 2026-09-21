@@ -208,15 +208,18 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         }
     }
 
-    /// <summary>Matches a flat <c>skills/&lt;name&gt;/</c> reference to any real skill name, unless it is
-    /// a host projection path (<c>.claude/skills/&lt;name&gt;/</c> or <c>.agents/skills/&lt;name&gt;/</c>,
-    /// which stay flat by design).</summary>
+    /// <summary>Matches a flat <c>skills/&lt;name&gt;</c> reference to any real skill name -- bare or
+    /// trailing a separator -- unless it is a host projection path (<c>.claude/skills/&lt;name&gt;/</c>
+    /// or <c>.agents/skills/&lt;name&gt;/</c>, which stay flat by design). The trailing boundary is a
+    /// negative lookahead rather than a required <c>/</c>, so a bare mention like <c>skills/admiral</c>
+    /// still matches; a category prefix like <c>skills/orchestration/reviewer/</c> never matches
+    /// because <c>orchestration</c> is not itself a skill name in the alternation.</summary>
     internal static Regex StaleFlatSkillPathPattern(string repositoryRoot)
     {
         var names = Directory.EnumerateDirectories(Path.Combine(repositoryRoot, "skills"))
             .SelectMany(Directory.EnumerateDirectories)
             .Select(directory => Regex.Escape(Path.GetFileName(directory)));
-        return new Regex($@"(?<!\.claude/)(?<!\.agents/)skills/(?:{string.Join("|", names)})/");
+        return new Regex($@"(?<!\.claude/)(?<!\.agents/)skills/(?:{string.Join("|", names)})(?![A-Za-z0-9-])");
     }
 
     [Then("canonical agent guidance does not instruct agents to maintain or compare per-host skill copies")]

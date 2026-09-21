@@ -22,7 +22,7 @@ discovery → Question Issue*: an agent in fog first runs a bounded discovery �
 Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
 the question become an Issue that records what was searched and blocks every named plan or
 implementation Issue awaiting its answer. Project planners prepare Question packets for the admiral;
-Specifiers and workers raise a hand to their captain. Captains file local Question Sub-issues; the
+every other worker raises a hand to its captain. Captains file local Question Sub-issues; the
 admiral alone files Project-level Questions. The admiral routes AFK homework and sends only HITL judgment to the human.
 Facts are the agent's job; choices are the human's.
 

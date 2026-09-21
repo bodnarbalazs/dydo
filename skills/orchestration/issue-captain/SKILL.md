@@ -106,8 +106,9 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    a distinct mandatory integration or release boundary. Judge a hop on its focused run instead of
    scheduling a suite the gate will run.
 6. **Offer.** Direct each passed lane's Merge Sub-issue with one `code-writer`: it maps conflicts
-   and combined gates, performs the merge, and tightens in place when the resolution refactored. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain
-   a fresh whole-Issue PASS once all lanes are in. The full suites and the Issue's whole gate set
+   and combined gates, performs the merge, and tightens in place when the resolution refactored.
+   Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-Issue
+   PASS once all lanes are in. The full suites and the Issue's whole gate set
    run here, again at each Merge Sub-issue's combined gates and at the landing; within one such run
    each suite executes once. **Done:** push the branch, open the PR with its PASS block on the
    record and in the body, set `Ready to Merge`, and return `done <key>: PR ready`.

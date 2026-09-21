@@ -538,6 +538,21 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertStderrContains("plan mode");
     }
 
+    [Fact]
+    public async Task Guard_PlanModeBlock_NamesTheSkillsThatPlanInstead()
+    {
+        // The refusal is only useful if it routes the agent somewhere real. Pin both skill names so
+        // renaming or retiring either one goes red here instead of leaving a dangling pointer.
+        await InitProjectAsync("none");
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"EnterPlanMode\",\"tool_input\":{}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Project Planner");
+        result.AssertStderrContains("Code Writer");
+    }
+
     #endregion
 
     #region Agent Tool — Nudge

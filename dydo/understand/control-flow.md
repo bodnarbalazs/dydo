@@ -327,12 +327,13 @@ stateDiagram-v2
 Who sets what: the captain sets every status of its Issue and Sub-issues; the admiral sets Project
 statuses and its own map-holder-held Issues'. A `Question` runs `Todo` → `Done` and `Todo` on it is
 the human's turn; `Research`, `Grilling` and `Walkthrough` run `Todo` → `In Progress` → `Done`. A
-captain-held Issue normally runs `Todo` → `Specifying` → `Implementing` → `Hardening` → `In Review` →
-`Ready to Merge` → `Done`, with `In Progress` while its lanes run; a Merge Sub-issue runs `Todo` →
-`Specifying` → `Implementing` → `Hardening` only if resolution refactored → `In Review` → `Done`
-and never waits to be merged. An Inquisition
-Issue runs `Backlog` → `Todo` (the human's confirmation) → `Specifying` → `In Progress` for the
-sweep and proofs, releases to `Todo` while the separate record Feature delivers, then resumes
+captain-held Issue normally runs `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`,
+with `In Progress` while its lanes run; `Specifying` and `Hardening` appear only where the captain
+buys a discretionary extra pass. A Merge Sub-issue runs `Todo` → `Implementing` → `In Review` →
+`Done` and never waits to be merged: one code-writer maps the conflicts, merges, and tightens the
+resolution in place where it refactored. An Inquisition
+Issue runs `Backlog` → `Todo` (the human's confirmation) → `Implementing` for its contract →
+`In Progress` for the sweep and proofs, releases to `Todo` while the separate record Feature delivers, then resumes
 `In Progress` for retention verification before `Done`. The record Feature runs the normal docs
 delivery chain. A Merge Sub-issue
 whose review fails on the landed work is reverted and closes `Canceled` with the reason.

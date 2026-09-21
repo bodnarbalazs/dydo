@@ -57,8 +57,8 @@ public sealed class CanonicalSkillAssertionTests
     {
         string[] expected =
         [
-            "admiral", "bro", "chief-of-staff", "co-thinker", "codebase-design", "diagnosing-bugs",
-            "code-writer", "docs-writer", "domain-modeling", "grill-me", "grilling", "handoff",
+            "admiral", "bro", "chief-of-staff", "co-thinker", "code-writer", "codebase-design",
+            "diagnosing-bugs", "docs-writer", "domain-modeling", "grill-me", "grilling", "handoff",
             "improve-codebase-architecture", "inquisitor", "issue-captain", "project-planner", "prototype",
             "research", "reviewer", "scout", "self-improvement", "show-me", "teach", "to-project",
             "walkthrough", "wayfinder", "wizard", "writing-for-agents", "writing-for-humans"

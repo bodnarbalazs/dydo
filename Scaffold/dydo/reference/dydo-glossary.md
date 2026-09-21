@@ -79,6 +79,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   Issue's feature files by the code-writer. It is contract: later phases wire it and never edit it;
   a change to it is a spec amendment.
 - **Gate** — any explicit pass/fail checkpoint.
+- **Phase** — one of the code-writer's three ordered passes over its Issue within a single hop:
+  exact, then green, then good. A phase the spec declares empty is skipped and said so on the record.
 - **Hop** — one worker's committed pass over an Issue branch: `implement` for the code-writer,
   `specify` or `harden` for a discretionary separate pass, and `fix` for a correction after a FAIL. Its SHA is evidence on the Issue, and the reviewer reads the hops in order.
 - **Issue review** — an independent reviewer's verdict on one candidate against one named rubric,

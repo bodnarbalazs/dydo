@@ -44,7 +44,7 @@ provide the Issue worktree; otherwise place it beside the repository at
 |---|---|---|
 | Open the Project | `admiral`, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
 | Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Implementing` when it spawns the code-writer, and `Specifying` only for a discretionary spec pass or spec review. |
-| Resolve the work | `issue-captain` | A small prompt/docs change uses its compact acceptance contract; a stronger route's parent spec makes the work mechanical and names lanes and empty hops. Parallel workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
+| Resolve the work | `issue-captain` | A small prompt/docs change uses its compact acceptance contract; a stronger route's parent spec makes the work mechanical and names lanes and empty phases. Parallel workers receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | workers | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement` for the code-writer, `specify` or `harden` for a discretionary separate pass, and `fix` for a correction after a FAIL; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
@@ -67,8 +67,8 @@ on that work item instead of working around a failure:
 
 The default crew is one author — `code-writer`, or `docs-writer` for a documentation change — and
 one fresh independent whole-change reviewer. Add a spec review or a separate hardening pass only
-when one short, concrete risk reason calls for it; persistence, migrations, permissions and uncertain native interfaces are examples that
-need stronger stages. Keep one compact acceptance contract and point to evidence rather than copying
+when one short, concrete risk reason calls for it; persistence, migrations, permissions and
+uncertain native interfaces are examples that need stronger stages. Keep one compact acceptance contract and point to evidence rather than copying
 it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
 proof is never runtime proof.
 

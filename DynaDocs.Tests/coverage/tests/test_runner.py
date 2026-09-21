@@ -219,9 +219,9 @@ class SkillLinkMaterializationTests(unittest.TestCase):
                             Path(os.path.realpath(worktree / "skills" / category / name)),
                             Path(os.path.realpath(link)))
 
-    def test_absent_source_root_projects_all_31_real_repo_skills_flat(self):
-        # The real repo's category tree (orchestration 8, engineering 12, productivity 11) must
-        # project 31 flat links, proving the small synthetic fixture above generalizes.
+    def test_absent_source_root_projects_all_29_real_repo_skills_flat(self):
+        # The real repo's category tree (orchestration 8, engineering 10, productivity 11) must
+        # project 29 flat links, proving the small synthetic fixture above generalizes.
         real_root = run_tests.ROOT
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
@@ -234,7 +234,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
 
             for relative in (".claude/skills", ".agents/skills"):
                 projected = list((worktree / relative).iterdir())
-                self.assertEqual(31, len(projected))
+                self.assertEqual(29, len(projected))
                 for category in ("orchestration", "engineering", "productivity"):
                     self.assertFalse((worktree / relative / category).exists())
 

@@ -14,12 +14,12 @@ guides and release evidence in the repository. FutureFeatures live in Linear.
 ## Migrate a project
 
 The order matters: every `dydo.json` edit below must land before the first dydo 3 command rewrites
-the file, because that rewrite drops the old keys unread. `dydo sync`, `dydo template update`,
-`dydo fix` and `dydo init <host> --join` each rewrite an existing config as the last thing they do,
-and only once everything before it has succeeded: a command that exits nonzero — a template-update
-warning, a fix validation error, any other failure — leaves the original bytes exactly as they were,
-retired keys included. Every write is atomic, going to a temporary sibling that is flushed to disk
-and then renamed over the file, so no failure leaves a half-written config.
+the file, because that rewrite drops the old keys unread. `dydo fix` and `dydo init <host> --join`
+each rewrite an existing config as the last thing they do, and only once everything before it has
+succeeded: a command that exits nonzero — a fix validation error, a failed join, any other failure —
+leaves the original bytes exactly as they were, retired keys included. Every write is atomic, going
+to a temporary sibling that is flushed to disk and then renamed over the file, so no failure leaves
+a half-written config.
 
 1. Upgrade dydo to 3.0.
 2. Delete the whole `models` object from `dydo.json`, `models.roles` and `models.agents` alike.
@@ -34,9 +34,9 @@ and then renamed over the file, so no failure leaves a half-written config.
    survives the rewrite and is still validated, but no longer scopes anything. Removing the `notion`
    object deletes no remote content and no local rollback store; delete those separately, and only
    after confirming that no rollback is needed.
-4. Delete stale nudges by hand. `dydo template update` only adds a missing default, matched by exact
-   pattern; it removes nothing, and the guard drops a retired block at runtime only while its message
-   is still byte-identical to the shipped text. Delete every block whose pattern names a command
+4. Delete stale nudges by hand. The retired 2.x `dydo template update` only ever added a missing
+   default, matched by exact pattern; it removed nothing, and the guard drops a retired block at
+   runtime only while its message is still byte-identical to the shipped text. Delete every block whose pattern names a command
    dydo 3 does not have (`dydo dispatch`, `dydo worktree`, `dydo model`), the 2.x blocks that
    guarded `git worktree` and `rm` on a worktree path, any tool-scoped block whose pattern is a
    `{source}` or `{tests}` path-set placeholder (nothing expands it now that `paths` is gone), and

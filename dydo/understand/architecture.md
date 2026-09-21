@@ -46,7 +46,7 @@ or Windows junction per role in `.claude/skills/` and `.agents/skills/`, flat wi
 level; OpenCode reads those two compatibility roots without a third projection. DR 047 retires
 Workflow as an operating-model concept; no workflow scripts exist. What each metadata key means is in
 [Customizing Roles](../guides/customizing-roles.md), the shapes and link rules in
-[Templates and Customization](./templates-and-customization.md).
+[Scaffold and Customization](./scaffold-and-customization.md).
 
 The folders under `skills/` are the only editable skill source. Host projections are ignored local setup.
 
@@ -92,7 +92,7 @@ rules check titles, links, filenames, and project-specific invariants.
 ## Related
 
 - [Work Model](./work-model.md) — Linear/Git operating contract
-- [Templates and Customization](./templates-and-customization.md) — Authoring and customization
+- [Scaffold and Customization](./scaffold-and-customization.md) — Authoring and customization
 - [Guard System](./guard-system.md) — Enforcement layers and the hook contract
 - [Configuration](../reference/configuration.md) — Runtime configuration
 - [Coding Standards](../guides/coding-standards.md) — Repository conventions

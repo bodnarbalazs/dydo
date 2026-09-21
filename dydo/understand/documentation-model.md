@@ -73,4 +73,4 @@ may change.
 ## Related
 
 - [Writing Documentation](../reference/writing-docs.md)
-- [Templates and Customization](./templates-and-customization.md)
+- [Scaffold and Customization](./scaffold-and-customization.md)

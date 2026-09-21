@@ -41,7 +41,7 @@ public sealed class CanonicalSkillAssertionTests
         "Scaffold/dydo/reference/dydo-commands.md",
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
-        "dydo/understand/templates-and-customization.md",
+        "dydo/understand/scaffold-and-customization.md",
         "dydo/guides/adding-a-command.md",
         "dydo/guides/customizing-roles.md",
         "dydo/guides/getting-started.md",

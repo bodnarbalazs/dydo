@@ -76,4 +76,4 @@ changelog, pitfalls, and FutureFeature ideas in Git.
 
 - [Guard System](../understand/guard-system.md)
 - [CLI Commands](../reference/dydo-commands.md)
-- [Templates and Customization](../understand/templates-and-customization.md)
+- [Scaffold and Customization](../understand/scaffold-and-customization.md)

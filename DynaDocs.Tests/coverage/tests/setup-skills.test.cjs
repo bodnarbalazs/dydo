@@ -179,7 +179,7 @@ test('an explicit --root confines every projection to that root', () => {
     // whether this checkout happens to have .claude/skills or .agents/skills installed already
     // (asserting against repoRoot itself made this test fail in any checkout where the documented
     // `node setup-skills.mjs` had already been run).
-    const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd216-setup-skills-elsewhere-'));
+    const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd219-setup-skills-elsewhere-'));
     try {
       const result = runSetup('--root', root);
 

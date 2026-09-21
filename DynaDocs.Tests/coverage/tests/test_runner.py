@@ -252,6 +252,51 @@ class SkillLinkMaterializationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "materialize skill discovery directory"):
                     run_tests.materialize_skill_links(worktree)
 
+    def test_category_child_without_skill_md_raises_the_way_setup_skills_mjs_does(self):
+        # setup-skills.mjs:56 throws "Canonical skill is missing SKILL.md: <category>/<name>" and
+        # projects nothing at all. The python walk must fail closed the same way instead of
+        # silently dropping the entry, or a category directory with no SKILL.md would still yield a
+        # green, plausible-looking per-skill projection here while node refuses to run at all.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            write_file(worktree / "skills/engineering/implementer/SKILL.md", "canonical")
+            (worktree / "skills/engineering/no-skill-md").mkdir(parents=True)
+
+            with patch.object(run_tests, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, r"engineering/no-skill-md"):
+                    run_tests.materialize_skill_links(worktree)
+
+    def test_category_with_no_skills_raises_naming_the_category_root(self):
+        # A category directory that holds no skills must stay loud: no test previously reached
+        # _canonical_skill_names's own "no canonical skills found in <category_root>" raise (the
+        # existing coverage only reached the outer, whole-tree-empty case).
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            write_file(worktree / "skills/engineering/implementer/SKILL.md", "canonical")
+            (worktree / "skills/orchestration").mkdir(parents=True)
+
+            with patch.object(run_tests, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, r"no canonical skills found in.*orchestration"):
+                    run_tests.materialize_skill_links(worktree)
+
+    def test_duplicate_skill_name_across_categories_raises_naming_both_categories(self):
+        # The same skill name claimed by two categories must stay loud: no test previously reached
+        # _canonical_skill_names's own "duplicate skill name across categories" raise.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / "source"
+            root.mkdir()
+            worktree = Path(folder) / "worktree"
+            write_file(worktree / "skills/engineering/scout/SKILL.md", "canonical")
+            write_file(worktree / "skills/orchestration/scout/SKILL.md", "canonical")
+
+            with patch.object(run_tests, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, r"duplicate skill name across categories: scout \(engineering and orchestration\)"):
+                    run_tests.materialize_skill_links(worktree)
+
     def test_absent_snapshot_skills_tree_and_absent_source_root_is_a_quiet_noop(self):
         # No canonical skills to project and no host discovery directory to mirror: there is
         # nothing the CanonicalSkillTree_HasNoAuthoredHostCopies guard could catch either way, so

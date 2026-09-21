@@ -236,9 +236,14 @@ def _canonical_skill_names(canonical_skills):
     for category in categories:
         category_root = canonical_skills / category
         entries = sorted(item.name for item in category_root.iterdir() if item.is_dir())
-        skills = [entry for entry in entries if (category_root / entry / "SKILL.md").is_file()]
-        if not skills:
+        if not entries:
             raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {category_root}")
+        for entry in entries:
+            if not (category_root / entry / "SKILL.md").is_file():
+                raise ValueError(
+                    f"Cannot project skill discovery directories: canonical skill is missing SKILL.md: "
+                    f"{category}/{entry}")
+        skills = entries
         for skill in skills:
             if skill in seen:
                 raise ValueError(

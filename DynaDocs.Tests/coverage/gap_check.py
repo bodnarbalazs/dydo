@@ -402,6 +402,20 @@ def named_tests(finding):
     return f"; {summary}" + (f": {', '.join(names)}" if names else "")
 
 
+def diagnosis_text(finding):
+    if not isinstance(finding, dict):
+        return ""
+    unavailable = finding.get("diagnosisUnavailable")
+    path = finding.get("identitiesPath")
+    if isinstance(unavailable, str):
+        return f"; {unavailable}" + (f" at {path}" if isinstance(path, str) else "")
+    parts = [value for value in (finding.get("failureCategory"), finding.get("errorMessage"))
+            if isinstance(value, str)]
+    if not parts:
+        return ""
+    return f"; {': '.join(parts)}" + (f" at {path}" if isinstance(path, str) else "")
+
+
 def suite_verdict(root, stack, coverage_row):
     state = coverage_row["state"]
     if state == "interrupted":
@@ -429,8 +443,11 @@ def suite_verdict(root, stack, coverage_row):
         return result(stack, "test", "failed", childExit=value,
                       reason=f"test verdict derived from the coverage row: suite exit {value} "
                              f"at {artifact}{named_tests(finding)}")
+    errors = walk(report, [*declaration["failure"][:-2], "errors"])
+    diagnosis = errors[0] if isinstance(errors, list) and errors else None
     return result(stack, "test", "invalid",
-                  reason=f"suite verdict not established: the coverage row did not attribute child exit {value} to the suite")
+                  reason=f"suite verdict not established: the coverage row did not attribute child exit {value} "
+                         f"to the suite{diagnosis_text(diagnosis)}")
 
 
 def split_forwarded(args, operation):

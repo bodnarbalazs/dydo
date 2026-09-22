@@ -282,6 +282,53 @@ public sealed class CanonicalSkillAssertionTests
         }
     }
 
+    [Fact]
+    public void EveryCanonicalSkill_PairsItsClaudeInvocationFrontmatterWithCodexOpenAiYaml()
+    {
+        var mismatches = new List<string>();
+        foreach (var (name, _, directory) in CanonicalSkillSteps.CanonicalSkills(Path.Combine(RepositoryRoot(), "skills")))
+        {
+            var body = File.ReadAllText(Path.Combine(directory, "SKILL.md")).ReplaceLineEndings("\n");
+            var frontmatter = Regex.Match(body, @"\A---\n(.*?)\n---\n", RegexOptions.Singleline).Groups[1].Value;
+            var explicitOnly = Regex.IsMatch(frontmatter, @"(?m)^disable-model-invocation:\s*true\s*$");
+            var hint = Regex.Match(frontmatter, @"(?m)^argument-hint:\s*(.+?)\s*$");
+
+            var yamlPath = Path.Combine(directory, "agents", "openai.yaml");
+            if (!File.Exists(yamlPath))
+            {
+                if (explicitOnly || hint.Success)
+                    mismatches.Add($"{name}: SKILL.md sets Claude invocation metadata but agents/openai.yaml is missing");
+                continue;
+            }
+
+            var codex = NestedYamlValues(File.ReadAllText(yamlPath));
+            if (explicitOnly != (codex.GetValueOrDefault("policy.allow_implicit_invocation") == "false"))
+                mismatches.Add($"{name}: disable-model-invocation: true and policy.allow_implicit_invocation: false must appear together");
+
+            var prompt = codex.GetValueOrDefault("interface.default_prompt");
+            if (hint.Success != (prompt is not null)
+                || hint.Success && DecodeYamlScalar(hint.Groups[1].Value) != DecodeYamlScalar(prompt!))
+                mismatches.Add($"{name}: argument-hint and interface.default_prompt must appear together with the same text");
+        }
+
+        Assert.True(mismatches.Count == 0, string.Join("\n", mismatches));
+    }
+
+    private static Dictionary<string, string> NestedYamlValues(string yaml)
+    {
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        string? parent = null;
+        foreach (var line in yaml.ReplaceLineEndings("\n").Split('\n'))
+        {
+            var top = Regex.Match(line, @"^([A-Za-z_][\w-]*):\s*$");
+            if (top.Success) { parent = top.Groups[1].Value; continue; }
+            var child = Regex.Match(line, @"^[ \t]+([A-Za-z_][\w-]*):\s*(.+?)\s*$");
+            if (child.Success && parent is not null) values[$"{parent}.{child.Groups[1].Value}"] = child.Groups[2].Value;
+            else if (line.Length > 0 && !char.IsWhiteSpace(line[0])) parent = null;
+        }
+        return values;
+    }
+
     private static Dictionary<string, string> HeadingOfEachListedSkill(string readme)
     {
         var headings = new Dictionary<string, string>(StringComparer.Ordinal);

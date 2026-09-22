@@ -1199,10 +1199,16 @@ class TestingFacadeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='dydo-runner-stdin-') as temporary:
             namespace = runpy.run_path(adapter, run_name='run_tests_probe')
             globals_ = namespace['run_tests'].__globals__
+            # create_worktree is mocked, so the snapshot is an empty directory, not a checkout: skill
+            # link materialization is stubbed like copy_dirty_files, because mirroring real host links
+            # into a snapshot with no skills/ tree must stay loud (test_runner.py pins that seam).
+            events = []
+            materialize = mock.Mock(side_effect=lambda worktree: events.append('materialize'))
             with (mock.patch.dict(globals_, {
                       'is_registered_worktree': mock.Mock(return_value=False),
                       'create_worktree': mock.Mock(return_value=True),
                       'copy_dirty_files': mock.Mock(),
+                      'materialize_skill_links': materialize,
                       'remove_worktree': mock.Mock(),
                   }),
                   mock.patch.object(namespace['tempfile'], 'gettempdir', return_value=temporary),
@@ -1210,11 +1216,16 @@ class TestingFacadeTests(unittest.TestCase):
                                     return_value=type('Uuid', (), {'hex': 'stdin001'})()),
                   mock.patch.object(namespace['subprocess'], 'run') as run):
                 run.return_value.returncode = 0
+                run.side_effect = lambda cmd, **kwargs: events.append(cmd[0]) or run.return_value
 
                 self.assertEqual(0, namespace['run_tests']())
 
                 dotnet = next(call for call in run.call_args_list if call.args[0][0] == 'dotnet')
                 self.assertIs(subprocess.DEVNULL, dotnet.kwargs['stdin'])
+                # The DR 049 guard is not vacuous in the snapshot only if the run still
+                # materializes its skill links before dotnet starts.
+                materialize.assert_called_once_with(Path(temporary) / 'dydo-test-stdin001')
+                self.assertLess(events.index('materialize'), events.index('dotnet'))
 
     def test_interrupt_at_atomic_directory_acquisition_preserves_ownership(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'

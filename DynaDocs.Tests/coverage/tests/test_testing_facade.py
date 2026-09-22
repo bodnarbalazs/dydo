@@ -18,6 +18,9 @@ ROOT = Path(__file__).resolve().parents[3]
 RUNNER = ROOT / 'DynaDocs.Tests/coverage/gap_check.py'
 PORTABLE = ROOT / 'dydo/reference/gap-check.example.py'
 CAPABILITIES = ('test', 'static', 'coverage', 'mutation')
+# A harness that drives run_tests.main() puts the adapter's directory first on sys.path, as running
+# run_tests.py as a script does, so the adapter's sibling imports resolve.
+SCRIPT_PATH = f"import sys; sys.path.insert(0, {str(ROOT / 'DynaDocs.Tests/coverage')!r})\n"
 
 
 def has_worktree_identity(listing, path):
@@ -25,6 +28,19 @@ def has_worktree_identity(listing, path):
     identity = path.resolve()
     return any(Path(line[len(prefix):]).resolve() == identity
                for line in listing.splitlines() if line.startswith(prefix))
+
+
+def next_line(lines, matches, seconds):
+    """The first queued line that matches, or None once `seconds` pass without one."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        try:
+            line = lines.get(timeout=1)
+        except queue.Empty:
+            continue
+        if matches(line):
+            return line
+    return None
 
 
 def unavailable(reason='not adopted'):
@@ -1151,7 +1167,7 @@ class TestingFacadeTests(unittest.TestCase):
             candidate = Path(temporary) / 'dydo-test-c0111de0'
             harness = (
                 "import importlib.util\nfrom pathlib import Path\nfrom types import SimpleNamespace\n"
-                f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
+                + SCRIPT_PATH + f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
                 "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
                 f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
                 "module.uuid.uuid4=lambda: SimpleNamespace(hex='c0111de0')\n"
@@ -1208,7 +1224,7 @@ class TestingFacadeTests(unittest.TestCase):
                     candidate = Path(temporary) / 'dydo-test-ac0011ed'
                     harness = (
                         "import importlib.util,signal\nfrom pathlib import Path\nfrom types import SimpleNamespace\n"
-                        f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
+                        + SCRIPT_PATH + f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
                         "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
                         f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
                         "module.uuid.uuid4=lambda: SimpleNamespace(hex='ac0011ed')\n"
@@ -1470,7 +1486,7 @@ print('INTER_ITERATION_CASES=' + str(count))
             candidate = Path(temporary) / 'dydo-test-fa11ed00'
             harness = (
                 "import importlib.util\nfrom pathlib import Path\nfrom types import SimpleNamespace\n"
-                f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
+                + SCRIPT_PATH + f"spec=importlib.util.spec_from_file_location('adapter', {str(adapter)!r})\n"
                 "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
                 f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
                 "module.uuid.uuid4=lambda: SimpleNamespace(hex='fa11ed00')\n"
@@ -1520,22 +1536,24 @@ print('INTER_ITERATION_CASES=' + str(count))
                 for line in facade.stdout:
                     output.append(line); lines.put(line)
             reader = threading.Thread(target=collect, daemon=True); reader.start()
-            worktree, deadline = None, time.monotonic() + 60
             try:
-                while time.monotonic() < deadline and worktree is None:
-                    try: line = lines.get(timeout=1).strip()
-                    except queue.Empty: continue
-                    if line.startswith('Worktree: '): worktree = Path(line[10:])
-                self.assertIsNotNone(worktree, ''.join(output))
+                announced = next_line(lines, lambda line: line.strip().startswith('Worktree: '), 60)
+                self.assertIsNotNone(announced, ''.join(output))
+                worktree = Path(announced.strip()[10:])
                 listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT, text=True, capture_output=True, check=True).stdout
                 self.assertTrue(has_worktree_identity(listing, worktree))
                 self.assertTrue(has_worktree_identity(listing, ROOT))
+                # Interrupt with the build in flight, the window where build processes started
+                # without a console outlive dotnet and hold the worktree or files in their TEMP.
+                self.assertIsNotNone(next_line(lines, lambda line: ' -> ' in line, 180), ''.join(output))
                 started = time.monotonic()
                 facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
                 facade.wait(timeout=35); reader.join(timeout=5)
                 self.assertEqual(130, facade.returncode, ''.join(output))
                 self.assertLess(time.monotonic() - started, 35)
                 self.assertFalse(worktree.exists(), ''.join(output))
+                self.assertFalse((target / 'VBCSCompiler').exists(),
+                                 'the isolated run started a compiler server that outlives it in its TEMP')
                 after = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT, text=True, capture_output=True, check=True).stdout
                 self.assertFalse(has_worktree_identity(after, worktree))
                 self.assertTrue(has_worktree_identity(after, ROOT))
@@ -1553,13 +1571,88 @@ print('INTER_ITERATION_CASES=' + str(count))
                 reader.join(timeout=5)
                 facade.stdout.close()
 
+    def test_an_interrupt_during_worktree_cleanup_does_not_abort_it(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        with tempfile.TemporaryDirectory(prefix='dydo-cleanup-signal-') as temporary:
+            harness = (
+                "import importlib.util,signal,sys\n"
+                + SCRIPT_PATH + f"spec=importlib.util.spec_from_file_location('run_tests_probe', {str(adapter)!r})\n"
+                "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
+                f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
+                "module.test_command=lambda extra: [sys.executable, '-c', 'pass']\n"
+                "original=module._git\n"
+                "def interrupted_git(*args, capture=False):\n"
+                "    if args[:2] == ('worktree', 'remove'):\n"
+                "        module._git=original\n"
+                "        print('INTERRUPTED_CLEANUP', flush=True)\n"
+                "        signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+                "    return original(*args, capture=capture)\n"
+                "module._git=interrupted_git\n"
+                "sys.argv=[sys.argv[0]]\n"
+                "module.main()\n"
+            )
+            process = subprocess.run([sys.executable, '-u', '-c', harness], cwd=ROOT,
+                                     capture_output=True, text=True, encoding='utf-8',
+                                     errors='replace', timeout=60)
+            output = process.stdout + process.stderr
+            worktree = next((Path(line.strip()[10:]) for line in process.stdout.splitlines()
+                             if line.strip().startswith('Worktree: ')), None)
+            try:
+                self.assertIsNotNone(worktree, output)
+                self.assertIn('INTERRUPTED_CLEANUP', output)
+                self.assertEqual(130, process.returncode, output)
+                self.assertFalse(worktree.exists(), output)
+                listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
+                                         text=True, capture_output=True, check=True).stdout
+                self.assertFalse(has_worktree_identity(listing, worktree))
+            finally:
+                if worktree is not None:
+                    subprocess.run(['git', 'worktree', 'remove', '--force', str(worktree)], cwd=ROOT,
+                                   capture_output=True, text=True)
+                    subprocess.run(['git', 'worktree', 'prune'], cwd=ROOT, capture_output=True, text=True)
+
+    @unittest.skipUnless(os.name == 'nt', 'Only Windows refuses to delete a directory a live process runs in')
+    def test_a_process_the_dotnet_run_leaves_detached_cannot_keep_its_worktree(self):
+        adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
+        with tempfile.TemporaryDirectory(prefix='dydo-detached-build-') as temporary:
+            # Like an MSBuild task host: started without a console, so no interrupt reaches it, and
+            # left running in the worktree after the dotnet run returns.
+            detached = ("import subprocess,sys\n"
+                        "subprocess.Popen([sys.executable,'-c','import time; time.sleep(20)'],"
+                        " creationflags=subprocess.CREATE_NO_WINDOW|subprocess.CREATE_NEW_PROCESS_GROUP,"
+                        " stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
+                        "print('DETACHED_STARTED', flush=True)\n")
+            harness = (
+                "import importlib.util,sys\n"
+                + SCRIPT_PATH + f"spec=importlib.util.spec_from_file_location('run_tests_probe', {str(adapter)!r})\n"
+                "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
+                f"module.tempfile.gettempdir=lambda: {temporary!r}\n"
+                f"module.test_command=lambda extra: [sys.executable, '-c', {detached!r}]\n"
+                "sys.argv=[sys.argv[0]]\n"
+                "module.main()\n"
+            )
+            process = subprocess.run([sys.executable, '-u', '-c', harness], cwd=ROOT,
+                                     capture_output=True, text=True, encoding='utf-8',
+                                     errors='replace', timeout=60)
+            output = process.stdout + process.stderr
+            worktree = next((Path(line.strip()[10:]) for line in process.stdout.splitlines()
+                             if line.strip().startswith('Worktree: ')), None)
+            self.assertIsNotNone(worktree, output)
+            self.assertIn('DETACHED_STARTED', output)
+            self.assertEqual(0, process.returncode, output)
+            self.assertNotIn('Failed to remove test worktree', output)
+            self.assertFalse(worktree.exists(), output)
+            listing = subprocess.run(['git', 'worktree', 'list', '--porcelain'], cwd=ROOT,
+                                     text=True, capture_output=True, check=True).stdout
+            self.assertFalse(has_worktree_identity(listing, worktree))
+
     def test_interrupt_during_real_worktree_registration_cleans_the_attributed_path(self):
         adapter = ROOT / 'DynaDocs.Tests/coverage/run_tests.py'
         for registration_only in [False, True]:
             with self.subTest(registration_only=registration_only):
                 harness = (
                     "import importlib.util,json,shutil,sys\nfrom pathlib import Path\n"
-                    f"spec=importlib.util.spec_from_file_location('run_tests_probe', {str(adapter)!r})\n"
+                    + SCRIPT_PATH + f"spec=importlib.util.spec_from_file_location('run_tests_probe', {str(adapter)!r})\n"
                     "module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n"
                     "original=module._git\n"
                     "def delayed_git(*args, capture=False):\n"

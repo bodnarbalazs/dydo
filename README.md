@@ -106,7 +106,8 @@ For this repository's skills, also run `node setup-skills.mjs`. It is safe to re
 directory unless you pass `--root <checkout>`, and refuses any other argument. Setup accepts
 missing projections, links already aimed at the canonical folder, and a link left by an older
 layout of `skills/` (even a now-dangling one) — that last case it migrates to the current canonical
-path rather than refusing; it preflights the whole plan before creating anything and stops at the
+path rather than refusing; it removes, and counts, each link of its own whose skill was deleted;
+it preflights the whole plan before creating anything and stops at the
 first collision it names, so nothing is created until the plan is validated, and it never replaces
 host configuration or unrelated skills. Resolve the named collision yourself, then rerun. OpenCode
 may report each name from both compatibility roots; both entries resolve to the same canonical

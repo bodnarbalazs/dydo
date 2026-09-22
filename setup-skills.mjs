@@ -108,13 +108,31 @@ async function planProjections(skills) {
   return { planned, stale };
 }
 
+// A link of ours named for no current skill is dead once it no longer reaches any current skill's
+// folder: its skill was deleted. Foreign links and real directories are never ours, so they stay.
+async function deadLinks(skills) {
+  const dead = [];
+  for (const hostRoot of hostRoots) {
+    if (!(await existing(hostRoot))) continue;
+    for (const entry of await readdir(hostRoot, { withFileTypes: true })) {
+      const target = path.join(hostRoot, entry.name);
+      if (!entry.isSymbolicLink() || skills.some((skill) => skill.name === entry.name)) continue;
+      if (!underCanonicalRoot(await rawLinkTarget(target))) continue;
+      const reaches = await Promise.all(skills.map((skill) => sameDirectory(target, skill.source)));
+      if (!reaches.includes(true)) dead.push(target);
+    }
+  }
+  return dead;
+}
+
 if (!(await existing(root))?.isDirectory()) throw new Error(`Root is not a directory: ${root}`);
 
 const skills = await canonicalSkills();
-const { planned, stale } = await planProjections(skills);
+const { planned, stale } = await planProjections(skills); // validates every host root and collision first
+const dead = await deadLinks(skills);
 
-for (const target of stale) {
-  // Always a symlink/junction (the only case that reaches `stale`), so `force` alone unlinks it;
+for (const target of [...stale, ...dead]) {
+  // Always a symlink/junction (the only case that reaches `stale` or `dead`), so `force` alone unlinks it;
   // no `recursive`, since that implies deleting a real directory's contents, which we never do here.
   await rm(target, { force: true });
 }
@@ -127,4 +145,4 @@ for (const projection of planned) {
   await symlink(linkTarget, projection.target, process.platform === "win32" ? "junction" : "dir");
 }
 
-console.log(`Canonical skills ready: ${skills.length} skills, ${planned.length} projections created.`);
+console.log(`Canonical skills ready: ${skills.length} skills, ${planned.length} projections created, ${dead.length} links to deleted skills removed.`);

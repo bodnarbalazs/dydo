@@ -7,25 +7,25 @@ public sealed class CanonicalSkillAssertionTests
 {
     internal static readonly string[] ProjectPathGuidance =
     [
-        "skills/orchestration/admiral/SKILL.md",
+        "skills/roles/officers/admiral/SKILL.md",
         "skills/productivity/bro/SKILL.md",
-        "skills/orchestration/chief-of-staff/SKILL.md",
+        "skills/roles/officers/chief-of-staff/SKILL.md",
         "skills/productivity/co-thinker/SKILL.md",
-        "skills/engineering/code-writer/SKILL.md",
+        "skills/roles/crew/code-writer/SKILL.md",
         "skills/engineering/diagnosing-bugs/SKILL.md",
-        "skills/orchestration/docs-writer/SKILL.md",
+        "skills/roles/crew/docs-writer/SKILL.md",
         "skills/engineering/domain-modeling/SKILL.md",
         "skills/engineering/improve-codebase-architecture/SKILL.md",
-        "skills/orchestration/inquisitor/SKILL.md",
-        "skills/orchestration/issue-captain/SKILL.md",
-        "skills/orchestration/project-planner/SKILL.md",
-        "skills/engineering/research/SKILL.md",
-        "skills/orchestration/reviewer/SKILL.md",
-        "skills/engineering/scout/SKILL.md",
-        "skills/orchestration/wayfinder/SKILL.md",
-        "skills/orchestration/reviewer/resources/code.md",
-        "skills/orchestration/reviewer/resources/docs.md",
-        "skills/orchestration/reviewer/resources/project-plan.md",
+        "skills/roles/crew/inquisitor/SKILL.md",
+        "skills/roles/officers/issue-captain/SKILL.md",
+        "skills/roles/crew/project-planner/SKILL.md",
+        "skills/roles/crew/research/SKILL.md",
+        "skills/roles/crew/reviewer/SKILL.md",
+        "skills/roles/crew/scout/SKILL.md",
+        "skills/productivity/wayfinder/SKILL.md",
+        "skills/roles/crew/reviewer/resources/code.md",
+        "skills/roles/crew/reviewer/resources/docs.md",
+        "skills/roles/crew/reviewer/resources/project-plan.md",
         "skills/productivity/writing-for-agents/resources/skill-mechanics.md"
     ];
 
@@ -53,34 +53,90 @@ public sealed class CanonicalSkillAssertionTests
     ];
 
     [Fact]
-    public void CanonicalSkillTree_HasEveryRoleExactlyOnce()
+    public void CanonicalSkillTree_SortsEverySkillExactlyOnceByKind()
     {
-        string[] expected =
-        [
-            "admiral", "bro", "chief-of-staff", "co-thinker", "code-writer", "codebase-design",
-            "diagnosing-bugs", "docs-writer", "domain-modeling", "grill-me", "grilling", "handoff",
-            "improve-codebase-architecture", "inquisitor", "issue-captain", "project-planner", "prototype",
-            "research", "reviewer", "scout", "self-improvement", "show-me", "teach", "to-project",
-            "walkthrough", "wayfinder", "wizard", "writing-for-agents", "writing-for-humans"
-        ];
-        string[] categories = ["orchestration", "engineering", "productivity"];
-        var root = Path.Combine(RepositoryRoot(), "skills");
-        var actualCategories = Directory.EnumerateDirectories(root).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToArray();
-        Assert.Equal(categories.Order(StringComparer.Ordinal), actualCategories);
-
-        var actual = categories
-            .SelectMany(category => Directory.EnumerateDirectories(Path.Combine(root, category)).Select(Path.GetFileName))
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-        Assert.Equal(expected.Order(StringComparer.Ordinal), actual);
-        foreach (var category in categories)
-        foreach (var skillDirectory in Directory.EnumerateDirectories(Path.Combine(root, category)))
+        var expected = new Dictionary<string, string>
         {
-            var name = Path.GetFileName(skillDirectory);
-            var body = File.ReadAllText(Path.Combine(skillDirectory, "SKILL.md"));
-            Assert.Matches(new Regex($@"(?m)^name: {Regex.Escape(name)}$"), body);
+            ["admiral"] = "roles/officers", ["issue-captain"] = "roles/officers", ["chief-of-staff"] = "roles/officers",
+            ["project-planner"] = "roles/crew", ["code-writer"] = "roles/crew", ["docs-writer"] = "roles/crew",
+            ["reviewer"] = "roles/crew", ["inquisitor"] = "roles/crew", ["research"] = "roles/crew", ["scout"] = "roles/crew",
+            ["codebase-design"] = "engineering", ["domain-modeling"] = "engineering", ["diagnosing-bugs"] = "engineering",
+            ["prototype"] = "engineering", ["wizard"] = "engineering", ["improve-codebase-architecture"] = "engineering",
+            ["co-thinker"] = "productivity", ["grilling"] = "productivity", ["grill-me"] = "productivity",
+            ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
+            ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
+            ["writing-for-humans"] = "productivity", ["self-improvement"] = "productivity", ["wayfinder"] = "productivity",
+            ["to-project"] = "productivity"
+        };
+        Assert.Equal(29, expected.Count);
+        var root = Path.Combine(RepositoryRoot(), "skills");
+        Assert.Equal(["engineering", "productivity", "roles"], ChildDirectoryNames(root));
+        Assert.Equal(["crew", "officers"], ChildDirectoryNames(Path.Combine(root, "roles")));
+
+        var skills = CanonicalSkillSteps.CanonicalSkills(root);
+        Assert.Equal(
+            expected.OrderBy(pair => pair.Key, StringComparer.Ordinal),
+            skills.Select(skill => KeyValuePair.Create(skill.Name, skill.Category)).OrderBy(pair => pair.Key, StringComparer.Ordinal));
+        foreach (var skill in skills)
+        {
+            var body = File.ReadAllText(Path.Combine(skill.Directory, "SKILL.md"));
+            Assert.Matches(new Regex($@"(?m)^name: {Regex.Escape(skill.Name)}$"), body);
         }
     }
+
+    [Fact]
+    public void CanonicalSkills_WalkCategoriesToAnyDepthButNeverIntoASkill()
+    {
+        using var tree = new SkillTree();
+        tree.Skill("roles/crew/reviewer");
+        tree.Skill("engineering/prototype");
+        Directory.CreateDirectory(Path.Combine(tree.Root, "roles", "crew", "reviewer", "resources", "nested"));
+
+        var skills = CanonicalSkillSteps.CanonicalSkills(tree.Root);
+
+        Assert.Equal(
+            [("prototype", "engineering"), ("reviewer", "roles/crew")],
+            skills.Select(skill => (skill.Name, skill.Category)).OrderBy(pair => pair.Name, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void CanonicalSkills_RefuseAnEmptyNestedCategory()
+    {
+        using var tree = new SkillTree();
+        tree.Skill("roles/crew/reviewer");
+        Directory.CreateDirectory(Path.Combine(tree.Root, "roles", "officers"));
+
+        var error = Assert.Throws<InvalidOperationException>(() => CanonicalSkillSteps.CanonicalSkills(tree.Root));
+        Assert.Contains("officers", error.Message);
+    }
+
+    [Fact]
+    public void CanonicalSkills_RefuseOneNameReachedThroughTwoCategories()
+    {
+        using var tree = new SkillTree();
+        tree.Skill("engineering/scout");
+        tree.Skill("roles/crew/scout");
+
+        var error = Assert.Throws<InvalidOperationException>(() => CanonicalSkillSteps.CanonicalSkills(tree.Root));
+        Assert.Contains("Duplicate skill name across categories: scout", error.Message);
+    }
+
+    private sealed class SkillTree : IDisposable
+    {
+        public string Root { get; } = Directory.CreateTempSubdirectory("dyd229-skills-").FullName;
+
+        public void Skill(string relative)
+        {
+            var directory = Path.Combine(Root, relative.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "SKILL.md"), $"---\nname: {Path.GetFileName(directory)}\n---\n");
+        }
+
+        public void Dispose() => Directory.Delete(Root, recursive: true);
+    }
+
+    private static string[] ChildDirectoryNames(string directory) =>
+        Directory.EnumerateDirectories(directory).Select(child => Path.GetFileName(child)!).Order(StringComparer.Ordinal).ToArray();
 
     [Fact]
     public void CanonicalSkillTree_HasNoAuthoredHostCopies()
@@ -182,16 +238,16 @@ public sealed class CanonicalSkillAssertionTests
     }
 
     [Theory]
-    [InlineData("orchestration")]
+    [InlineData("roles")]
     [InlineData("engineering")]
     [InlineData("productivity")]
     public void CategoryReadme_ListsEveryLocalSkillOnceWithItsInvocationMode(string category)
     {
         var root = RepositoryRoot();
         var categoryRoot = Path.Combine(root, "skills", category);
-        var actualSkills = Directory.EnumerateDirectories(categoryRoot)
-            .Select(Path.GetFileName)
-            .Order(StringComparer.Ordinal)
+        var actualSkills = CanonicalSkillSteps.CanonicalSkills(Path.Combine(root, "skills"))
+            .Where(skill => skill.Category == category || skill.Category.StartsWith($"{category}/", StringComparison.Ordinal))
+            .OrderBy(skill => skill.Name, StringComparer.Ordinal)
             .ToArray();
         Assert.NotEmpty(actualSkills);
 
@@ -201,14 +257,21 @@ public sealed class CanonicalSkillAssertionTests
             .ToArray();
 
         Assert.Equal(actualSkills.Length, listed.Length);
-        Assert.Equal(actualSkills.Order(StringComparer.Ordinal), listed.Select(entry => entry.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(actualSkills.Select(skill => skill.Name), listed.Select(entry => entry.Name).Order(StringComparer.Ordinal));
+        var headings = HeadingOfEachListedSkill(readme);
 
-        foreach (var name in actualSkills)
+        foreach (var (name, skillCategory, directory) in actualSkills)
         {
             var matches = listed.Where(entry => entry.Name == name).ToArray();
             Assert.True(matches.Length == 1, $"{category}/README.md must list {name} exactly once");
+            if (skillCategory != category)
+            {
+                var subcategory = skillCategory[(category.Length + 1)..];
+                Assert.True(headings.GetValueOrDefault(name) == char.ToUpperInvariant(subcategory[0]) + subcategory[1..],
+                    $"{category}/README.md must list {name} under the heading of its {subcategory}/ folder");
+            }
 
-            var body = File.ReadAllText(Path.Combine(categoryRoot, name!, "SKILL.md"));
+            var body = File.ReadAllText(Path.Combine(directory, "SKILL.md"));
             var expectDisabled = Regex.IsMatch(body, @"(?m)^disable-model-invocation:\s*true$");
             var expectedMode = expectDisabled ? "user-invoked" : "model-invoked";
             Assert.Equal(expectedMode, matches[0].Mode);
@@ -217,6 +280,19 @@ public sealed class CanonicalSkillAssertionTests
             Assert.False(string.IsNullOrEmpty(frontmatterDescription), $"{name} has no frontmatter description to compare against");
             Assert.Equal(frontmatterDescription, matches[0].Description);
         }
+    }
+
+    private static Dictionary<string, string> HeadingOfEachListedSkill(string readme)
+    {
+        var headings = new Dictionary<string, string>(StringComparer.Ordinal);
+        string? heading = null;
+        foreach (var line in readme.ReplaceLineEndings("\n").Split('\n'))
+        {
+            if (line.StartsWith("## ", StringComparison.Ordinal)) heading = line[3..].Trim();
+            var entry = Regex.Match(line, @"^- \*\*([a-z0-9-]+)\*\*");
+            if (entry.Success && heading is not null) headings[entry.Groups[1].Value] = heading;
+        }
+        return headings;
     }
 
     private static string DecodeYamlScalar(string raw)
@@ -232,10 +308,11 @@ public sealed class CanonicalSkillAssertionTests
     {
         var root = RepositoryRoot();
         var skillsRoot = Path.Combine(root, "skills");
-        var categories = new[] { "orchestration", "engineering", "productivity" };
-        var actualCounts = categories.ToDictionary(
-            category => category,
-            category => Directory.EnumerateDirectories(Path.Combine(skillsRoot, category)).Count());
+        var categories = new[] { "roles", "engineering", "productivity" };
+        var actualCounts = CanonicalSkillSteps.CanonicalSkills(skillsRoot)
+            .GroupBy(skill => skill.Category.Split('/')[0])
+            .ToDictionary(group => group.Key, group => group.Count());
+        Assert.Equal(categories.Order(StringComparer.Ordinal), actualCounts.Keys.Order(StringComparer.Ordinal));
         Assert.Equal(29, actualCounts.Values.Sum());
 
         var readme = File.ReadAllText(Path.Combine(skillsRoot, "README.md"));
@@ -247,26 +324,29 @@ public sealed class CanonicalSkillAssertionTests
         }
 
         Assert.Contains(
-            $"{actualCounts["orchestration"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 29",
+            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 29",
             readme);
     }
 
-    [Fact]
-    public void StaleFlatSkillPathPattern_MatchesOnlyAFlatCanonicalReferenceNotAHostProjection()
-    {
-        var pattern = CanonicalSkillSteps.StaleFlatSkillPathPattern(RepositoryRoot());
+    [Theory]
+    [InlineData("see `skills/reviewer/SKILL.md` for the shape", "skills/reviewer")]
+    [InlineData("edit `skills/teach/resources/mission-format.md` directly", "skills/teach")]
+    [InlineData("authored at `skills/admiral`", "skills/admiral")]
+    [InlineData("canonical folder is `skills/orchestration/reviewer/SKILL.md`", "skills/orchestration/reviewer")]
+    [InlineData("see `skills/engineering/code-writer/` for the method", "skills/engineering/code-writer")]
+    [InlineData("see `skills/roles/scout/`", "skills/roles/scout")]
+    public void StaleSkillPaths_ReportAFlatOrFormerCategoryReference(string content, string stale) =>
+        Assert.Equal([stale], CanonicalSkillSteps.StaleSkillPaths(RepositoryRoot(), content));
 
-        Assert.Matches(pattern, "see `skills/reviewer/SKILL.md` for the shape");
-        Assert.Matches(pattern, "edit `skills/teach/resources/mission-format.md` directly");
-        Assert.Matches(pattern, "authored at `skills/admiral`");
-        Assert.Matches(pattern, "edit `skills/reviewer` directly");
-        Assert.DoesNotMatch(pattern, "canonical folder is `skills/orchestration/reviewer/SKILL.md`");
-        Assert.DoesNotMatch(pattern, "see `skills/orchestration/` for the category");
-        Assert.DoesNotMatch(pattern, "see `skills/engineering/` for the category");
-        Assert.DoesNotMatch(pattern, "see `skills/productivity/` for the category");
-        Assert.DoesNotMatch(pattern, "projected at `.claude/skills/reviewer/` and `.agents/skills/reviewer/`");
-        Assert.DoesNotMatch(pattern, "nothing here names a skills/<category>/<name>/ literal");
-    }
+    [Theory]
+    [InlineData("canonical folder is `skills/roles/crew/reviewer/SKILL.md`")]
+    [InlineData("edit `skills/productivity/teach/resources/mission-format.md` directly")]
+    [InlineData("authored at `skills/roles/officers/admiral`")]
+    [InlineData("see `skills/roles/officers/` and `skills/engineering/` for the categories")]
+    [InlineData("projected at `.claude/skills/reviewer/` and `.agents/skills/reviewer/`")]
+    [InlineData("nothing here names a skills/<category>/<name>/ literal")]
+    public void StaleSkillPaths_IgnoreACanonicalCategoryOrHostProjectionReference(string content) =>
+        Assert.Empty(CanonicalSkillSteps.StaleSkillPaths(RepositoryRoot(), content));
 
     private static string RepositoryRoot()
     {

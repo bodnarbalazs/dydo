@@ -53,17 +53,20 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 
 ## Roles and skills
 
-- **Role** — an authored native skill folder: a hat, a worker, a method, or a human command.
-- **Skill** — the runtime package of a role's methodology and resources.
-- **Agent** — a native-platform instance of a spawned role: a worker, a Project Planner, or an Issue
-  Captain that an admiral keeps in flight.
-- **Hat** — what a session is doing now: co-thinker, issue-captain, admiral, or
-  chief-of-staff. One at a time, changed as the work moves; a hat is not a session type.
-- **Worker** — a role spawned as an agent for one bounded job, returning its result to whoever
-  spawned it: code-writer, docs-writer, reviewer, inquisitor, research, scout, project-planner.
-- **Method** — a reference or procedure used inside another skill, carrying no identity of its own:
+- **Skill** — an authored native skill folder: methodology and resources any session loads when the
+  work needs it. A skill that carries an identity is a role; every other skill sorts by subject into
+  `engineering` (the craft) or `productivity` (thinking, writing and moving work along with the human).
+- **Role** — a skill that carries an identity: an officer or crew.
+- **Officer** — a role that holds something and never switches: the admiral holds a Project, the
+  issue-captain holds an Issue, the chief-of-staff holds the board. A session or agent has at most one
+  officer role; a captain never becomes an admiral or the reverse.
+- **Crew** — a role spawned for one bounded job that holds nothing and returns its result to whoever
+  sent it: project-planner, code-writer, docs-writer, reviewer, inquisitor, research, scout.
+- **Agent** — a native-platform instance of a spawned role: a crew member, or an Issue Captain that
+  an admiral keeps in flight.
+- **Method** — a plain skill used inside other work, carrying no identity of its own: co-thinker,
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
-  writing-for-agents, self-improvement, wizard.
+  writing-for-agents, writing-for-humans, self-improvement, wizard.
 - **Human command** — a skill only the human invokes by name, never reached for by a model:
   to-project, grill-me, bro, handoff, walkthrough, teach, improve-codebase-architecture.
 - **Rubric** — the one named standard a reviewer judges a candidate against: code, docs,
@@ -81,7 +84,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Gate** — any explicit pass/fail checkpoint.
 - **Phase** — one of the code-writer's three ordered passes over its Issue inside a single hop:
   exact, then green, then good. The writer's `IMPLEMENTED` return names which of them did work.
-- **Hop** — one worker's committed pass over an Issue branch: `implement`, `fix` or `merge`. Its
+- **Hop** — one crew member's committed pass over an Issue branch: `implement`, `fix` or `merge`. Its
   SHA is evidence on the Issue, and the reviewer reads the hops in order.
 - **Issue review** — an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. PASS means no findings; a note is a finding, and a finding is a FAIL.
@@ -114,8 +117,9 @@ These words survive only in older documents. Campaign, Sprint, Slice, Ticket, ba
 separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initiative, Project, and
 Issue where work is live, though a slice may still name an implementation technique. Tier-1
 manager, orchestrator, and the run-sprint workflow (internally
-run-issues) gave way to the hats — an admiral coordinates one Project, an Issue Captain owns one
-Issue. Issue planner and test-writer gave way to `code-writer`, which since 2026-09-21 also absorbs the
+run-issues) gave way to the officers — an admiral coordinates one Project, an Issue Captain owns one
+Issue. Hat and worker are retired too (DR 050): a session keeps the role it was given and loads skills
+as the work needs them, and a spawned role is crew. Issue planner and test-writer gave way to `code-writer`, which since 2026-09-21 also absorbs the
 specifier, implementer and hardener chain that briefly replaced it (DR 047, amended by DYD-222). Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the map Issues above. Workflow retired with the old inquisition harness. Inquisition is now an Issue Type with the
 filing outcome above. None of these words creates a file, command, lifecycle, or Linear type.

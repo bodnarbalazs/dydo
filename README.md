@@ -34,12 +34,14 @@ A structured tree (`understand/`, `guides/`, `reference/`, and durable `project/
 validation, auto-fixing, indexes, and graph tooling. Agents onboard through progressive disclosure,
 reading only the durable context relevant to the current Issue.
 
-### One role, native on each host
+### One skill, native on each host
 
-A role is one plain `skills/<category>/<role>/` folder in the cross-vendor `SKILL.md` format,
-grouped into `orchestration/`, `engineering/`, and `productivity/` categories. Run
-`node setup-skills.mjs` once after checkout: it exposes each whole folder flat at Claude Code's
-`.claude/skills/<role>/` and Codex's `.agents/skills/<role>/` discovery paths — no category level in
+A skill is one plain `skills/<category>/<name>/` folder in the cross-vendor `SKILL.md` format,
+sorted by kind: the roles under `roles/officers/` and `roles/crew/`, every other skill under
+`engineering/` or `productivity/`. Run
+`node setup-skills.mjs` once after checkout: it walks the tree by rule (a folder holding `SKILL.md`
+is a skill, any other folder a category) and exposes each whole folder flat at Claude Code's
+`.claude/skills/<name>/` and Codex's `.agents/skills/<name>/` discovery paths — no category level in
 the host roots. OpenCode reads those
 compatibility roots, so setup creates no third copy. There is no compile step. The host runtime owns
 agent identity and orchestration.
@@ -100,7 +102,7 @@ runtime or machine into an existing project. The full checklist, Linear workspac
 configuration included, is [Getting Started](dydo/guides/getting-started.md); point an agent at it
 to set dydo up in a project.
 
-For this repository's roles, also run `node setup-skills.mjs`. It is safe to rerun, works on its own
+For this repository's skills, also run `node setup-skills.mjs`. It is safe to rerun, works on its own
 directory unless you pass `--root <checkout>`, and refuses any other argument. Setup accepts
 missing projections, links already aimed at the canonical folder, and a link left by an older
 layout of `skills/` (even a now-dangling one) — that last case it migrates to the current canonical
@@ -116,9 +118,9 @@ after current workflow state changes.
 ## Customize
 
 - **Nudges** — project regex rules and messages in `dydo.json`.
-- **Roles** — plain `skills/<category>/<role>/` folders, edited directly and exposed to hosts flat by `setup-skills.mjs`.
+- **Skills** — plain `skills/<category>/<name>/` folders, edited directly and exposed to hosts flat by `setup-skills.mjs`.
 
-A role is its own source; there is no compile step and no automatic reconciliation.
+A skill is its own source; there is no compile step and no automatic reconciliation.
 
 ## Folder Structure
 
@@ -128,7 +130,7 @@ project/
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
 |-- setup-skills.mjs             # Create safe host discovery projections
-|-- skills/                      # orchestration/, engineering/, productivity/ categories, one folder per role
+|-- skills/                      # roles/officers/, roles/crew/, engineering/, productivity/; one folder per skill
 |-- .claude/skills/              # Ignored per-skill Claude projections
 |-- .agents/skills/              # Ignored per-skill Codex projections; OpenCode also reads both roots
 `-- dydo/

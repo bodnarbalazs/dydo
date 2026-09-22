@@ -22,7 +22,7 @@ discovery → Question Issue*: an agent in fog first runs a bounded discovery �
 Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
 the question become an Issue that records what was searched and blocks every named plan or
 implementation Issue awaiting its answer. Project planners prepare Question packets for the admiral;
-every other worker raises a hand to its captain. Captains file local Question Sub-issues; the
+every other crew member raises a hand to its captain. Captains file local Question Sub-issues; the
 admiral alone files Project-level Questions. The admiral routes AFK homework and sends only HITL judgment to the human.
 Facts are the agent's job; choices are the human's.
 
@@ -61,7 +61,7 @@ Every delivery kind starts by making its contract exact. The captain sets Implem
 code-writer's spawn and In Review at a reviewer's; Specifying and Hardening are optional parks it
 chooses, off the default path. A parent whose lanes run is In Progress. The spec names its lanes, or
 none, and the writer's IMPLEMENTED comment names in one line which phases did work; a scenario
-changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next worker.
+changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next crew member.
 
 ## Reviewed before it merges
 
@@ -87,7 +87,7 @@ the revert. Plan review has its own two-round cap before the human chooses.
 
 ## Raising a hand
 
-The ladder runs worker → Issue Captain → admiral → human, and agents settle operational conflicts
+The ladder runs crew → Issue Captain → admiral → human, and agents settle operational conflicts
 themselves by precedence, highest first: the human's live instruction, a Decision Record, the reviewed
 Project plan at its governing commit, the Issue contract, coding standards, existing code. The human
 is reached only for a conflict with a Decision Record — is it truth, or is it obsolete? — for live

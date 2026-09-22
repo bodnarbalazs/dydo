@@ -20,11 +20,29 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     [Given("a project containing the canonical {string} skill and the skill setup script")]
     public void ProjectWithCanonicalSkill(string name)
     {
+        CopyCanonicalSkill(name);
+        File.Copy(Path.Combine(RepositoryRoot(), "setup-skills.mjs"), Local("setup-skills.mjs"));
+        File.WriteAllText(Local(".gitignore"), "/.claude/skills/\n/.agents/skills/\n");
+    }
+
+    [Given("the canonical {string} skill is also in the project")]
+    public void CopyCanonicalSkill(string name)
+    {
         var category = CanonicalCategory(name);
         CopyDirectory(Path.Combine(RepositoryRoot(), "skills", category, name), Local("skills", category, name));
         Assert.True(Directory.Exists(Local("skills", category, name)));
-        File.Copy(Path.Combine(RepositoryRoot(), "setup-skills.mjs"), Local("setup-skills.mjs"));
-        File.WriteAllText(Local(".gitignore"), "/.claude/skills/\n/.agents/skills/\n");
+    }
+
+    [Given("the Claude and Codex {string} entries link to the former category folder {string}")]
+    public void FormerCategoryLinks(string name, string former)
+    {
+        var formerTarget = Local(former.Replace('/', Path.DirectorySeparatorChar));
+        Assert.False(Directory.Exists(formerTarget), $"{former} must be gone for the link to be left dangling");
+        foreach (var host in new[] { ".claude", ".agents" })
+        {
+            Directory.CreateDirectory(Local(host, "skills"));
+            CreateDirectoryLink(Local(host, "skills", name), formerTarget);
+        }
     }
 
     [Given("unrelated Claude and Codex skills and host configuration files with recorded bytes")]
@@ -138,12 +156,8 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         try
         {
             Assert.Equal(3, locations.Rows.Count);
-            var canonicalRoot = Local("skills");
-            foreach (var categoryRoot in Directory.EnumerateDirectories(canonicalRoot))
-            foreach (var canonicalSkill in Directory.EnumerateDirectories(categoryRoot))
+            foreach (var (name, category, canonicalSkill) in CanonicalSkills(Local("skills")))
             {
-                var category = Path.GetFileName(categoryRoot);
-                var name = Path.GetFileName(canonicalSkill);
                 var markdownFiles = Directory.EnumerateFiles(canonicalSkill, "*.md", SearchOption.AllDirectories).ToArray();
                 Assert.NotEmpty(markdownFiles);
                 foreach (var canonicalFile in markdownFiles)
@@ -194,40 +208,76 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     public void CurrentGuidanceUsesCanonicalSource()
     {
         var root = RepositoryRoot();
-        var stalePattern = StaleFlatSkillPathPattern(root);
         foreach (var relative in CanonicalSkillAssertionTests.CurrentGuidance)
         {
             var content = File.ReadAllText(Path.Combine(root, relative));
             Assert.Contains("skills/<category>/", content);
             Assert.DoesNotMatch(@"(?<!\.claude/)(?<!\.agents/)skills/<name>", content);
             Assert.DoesNotMatch(@"(?<!\.claude/)(?<!\.agents/)skills/<role>", content);
-            Assert.DoesNotMatch(stalePattern, content);
+            Assert.Empty(StaleSkillPaths(root, content));
+            Assert.DoesNotContain("orchestration/", content);
             Assert.DoesNotContain("edit both", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("edit each host", content, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("committed copy", content, StringComparison.OrdinalIgnoreCase);
         }
     }
 
-    /// <summary>Matches a flat <c>skills/&lt;name&gt;</c> reference to any real skill name -- bare or
-    /// trailing a separator -- unless it is a host projection path (<c>.claude/skills/&lt;name&gt;/</c>
-    /// or <c>.agents/skills/&lt;name&gt;/</c>, which stay flat by design). The trailing boundary is a
-    /// negative lookahead rather than a required <c>/</c>, so a bare mention like <c>skills/admiral</c>
-    /// still matches; a category prefix like <c>skills/orchestration/reviewer/</c> never matches
-    /// because <c>orchestration</c> is not itself a skill name in the alternation.</summary>
-    internal static Regex StaleFlatSkillPathPattern(string repositoryRoot)
+    /// <summary>Every literal <c>skills/…/&lt;name&gt;</c> reference to a real skill name -- flat, or
+    /// under any category prefix -- that is not that skill's canonical path, such as a flat
+    /// <c>skills/reviewer</c> or a former-category <c>skills/orchestration/reviewer</c>. Host
+    /// projection paths (<c>.claude/skills/&lt;name&gt;/</c>, <c>.agents/skills/&lt;name&gt;/</c>) stay
+    /// flat by design and are never reported. The trailing boundary is a negative lookahead rather
+    /// than a required <c>/</c>, so a bare mention like <c>skills/admiral</c> is still caught.</summary>
+    internal static string[] StaleSkillPaths(string repositoryRoot, string content)
     {
-        var names = Directory.EnumerateDirectories(Path.Combine(repositoryRoot, "skills"))
-            .SelectMany(Directory.EnumerateDirectories)
-            .Select(directory => Regex.Escape(Path.GetFileName(directory)));
-        return new Regex($@"(?<!\.claude/)(?<!\.agents/)skills/(?:{string.Join("|", names)})(?![A-Za-z0-9-])");
+        var canonical = CanonicalSkills(Path.Combine(repositoryRoot, "skills"))
+            .ToDictionary(skill => skill.Name, skill => $"skills/{skill.Category}/{skill.Name}", StringComparer.Ordinal);
+        var names = string.Join("|", canonical.Keys.Select(Regex.Escape));
+        return Regex.Matches(content, $@"(?<!\.claude/)(?<!\.agents/)\bskills/(?:[a-z0-9-]+/)*?(?<name>{names})(?![A-Za-z0-9-])")
+            .Where(match => match.Value != canonical[match.Groups["name"].Value])
+            .Select(match => match.Value)
+            .ToArray();
     }
+
+    /// <summary>Every canonical skill under <paramref name="skillsRoot"/>, walked by setup-skills.mjs's
+    /// own rule: a folder holding <c>SKILL.md</c> is a skill (its subfolders are never walked), and any
+    /// other folder is a category to walk into, at any depth. <c>Category</c> is the category path
+    /// with <c>/</c> separators, such as <c>roles/crew</c>. An empty category or a skill name reached
+    /// through two categories is an error, as it is for setup.</summary>
+    internal static IReadOnlyList<CanonicalSkill> CanonicalSkills(string skillsRoot)
+    {
+        var skills = new List<CanonicalSkill>();
+        Walk(skillsRoot);
+        return skills;
+
+        void Walk(string categoryRoot)
+        {
+            var entries = Directory.EnumerateDirectories(categoryRoot).Order(StringComparer.Ordinal).ToArray();
+            if (entries.Length == 0) throw new InvalidOperationException($"No canonical skills found in {categoryRoot}");
+            var category = Path.GetRelativePath(skillsRoot, categoryRoot).Replace(Path.DirectorySeparatorChar, '/');
+            foreach (var entry in entries)
+            {
+                if (!File.Exists(Path.Combine(entry, "SKILL.md")))
+                {
+                    Walk(entry);
+                    continue;
+                }
+                var name = Path.GetFileName(entry);
+                if (skills.Any(skill => skill.Name == name))
+                    throw new InvalidOperationException($"Duplicate skill name across categories: {name}");
+                skills.Add(new CanonicalSkill(name, category, entry));
+            }
+        }
+    }
+
+    internal sealed record CanonicalSkill(string Name, string Category, string Directory);
 
     [Then("canonical agent guidance does not instruct agents to maintain or compare per-host skill copies")]
     public void AgentGuidanceUsesCanonicalSource()
     {
         foreach (var relative in new[]
         {
-            "skills/orchestration/docs-writer/SKILL.md",
+            "skills/roles/crew/docs-writer/SKILL.md",
             "skills/productivity/writing-for-agents/resources/skill-mechanics.md"
         })
         {
@@ -314,25 +364,16 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
 
     private void CopyRemainingSkills()
     {
-        var root = Path.Combine(RepositoryRoot(), "skills");
-        foreach (var categorySource in Directory.EnumerateDirectories(root))
+        foreach (var skill in CanonicalSkills(Path.Combine(RepositoryRoot(), "skills")))
         {
-            var category = Path.GetFileName(categorySource);
-            foreach (var source in Directory.EnumerateDirectories(categorySource))
-            {
-                var target = Local("skills", category, Path.GetFileName(source));
-                if (!Directory.Exists(target)) CopyDirectory(source, target);
-            }
+            var target = Local("skills", skill.Category, skill.Name);
+            if (!Directory.Exists(target)) CopyDirectory(skill.Directory, target);
         }
     }
 
-    private static string CanonicalCategory(string name)
-    {
-        var skillsRoot = Path.Combine(RepositoryRoot(), "skills");
-        foreach (var category in Directory.EnumerateDirectories(skillsRoot))
-            if (Directory.Exists(Path.Combine(category, name))) return Path.GetFileName(category)!;
-        throw new DirectoryNotFoundException($"Canonical skill not found in any category: {name}");
-    }
+    private static string CanonicalCategory(string name) =>
+        CanonicalSkills(Path.Combine(RepositoryRoot(), "skills")).SingleOrDefault(skill => skill.Name == name)?.Category
+        ?? throw new DirectoryNotFoundException($"Canonical skill not found in any category: {name}");
 
     private void RecordProjection(string relative) => _projectionTargets[relative] = new DirectoryInfo(Local(relative)).LinkTarget;
     private void RemoveLink(string relative)
@@ -341,7 +382,10 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         if (new DirectoryInfo(full).LinkTarget is not null) Directory.Delete(full);
     }
 
-    private void RemoveHostSkillLinks()
+    // Runs before CliScenario.Cleanup (default Order 10000): its recursive delete cannot remove a
+    // directory junction on Windows, so any projection a scenario leaves behind is unlinked first.
+    [AfterScenario(Order = 0)]
+    public void RemoveHostSkillLinks()
     {
         foreach (var host in new[] { ".claude", ".agents" })
         {
@@ -355,12 +399,11 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
     private void AssertProjectPathsUseRepositoryRoot(Table locations)
     {
         var projectRoot = Path.GetFullPath(scenario.DirectoryPath);
+        var skills = CanonicalSkills(Local("skills"));
         foreach (var relative in CanonicalSkillAssertionTests.ProjectPathGuidance)
         {
-            var parts = relative.Split('/');
-            var category = parts[1];
-            var name = parts[2];
-            var relativeFile = Path.Combine(parts.Skip(3).ToArray());
+            var (name, category, _) = skills.Single(skill => relative.StartsWith($"skills/{skill.Category}/{skill.Name}/", StringComparison.Ordinal));
+            var relativeFile = relative[$"skills/{category}/{name}/".Length..].Replace('/', Path.DirectorySeparatorChar);
             var canonicalFile = Local(relative.Replace('/', Path.DirectorySeparatorChar));
             var canonicalBody = File.ReadAllText(canonicalFile);
             var projectPaths = ProjectPathLiterals(canonicalBody).ToArray();

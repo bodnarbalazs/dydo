@@ -41,40 +41,41 @@ async function rawLinkTarget(linkPath) {
 }
 
 // A link is "ours" when its raw target falls under this repository's canonical skills/ tree,
-// whether or not that target still exists. That is exactly what a pre-DYD-219 flat-layout link
-// looks like once its skill moved into a category: dangling, but still ours to fix.
+// whether or not that target still exists. That is exactly what a link from an earlier layout
+// (flat, or an old category) looks like once its skill moved: dangling, but still ours to fix.
 function underCanonicalRoot(candidate) {
   const relative = path.relative(canonicalRoot, candidate);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+// The walk rule: a folder holding SKILL.md is a skill (its own subfolders are never walked); any
+// other folder under skills/ is a category to walk into, at any depth. A category with no
+// subfolder at all is an error, and so is one skill name reached through two categories.
+async function walkCategory(categoryRoot, skills, seen) {
+  const entries = (await readdir(categoryRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .sort((left, right) => left.name.localeCompare(right.name));
+  if (entries.length === 0) throw new Error(`No canonical skills found in ${categoryRoot}`);
+
+  const category = path.relative(canonicalRoot, categoryRoot).split(path.sep).join("/");
+  for (const entry of entries) {
+    const source = path.join(categoryRoot, entry.name);
+    if (!(await existing(path.join(source, "SKILL.md")))?.isFile()) {
+      await walkCategory(source, skills, seen);
+      continue;
+    }
+    if (seen.has(entry.name)) throw new Error(`Duplicate skill name across categories: ${entry.name} (${seen.get(entry.name)} and ${category})`);
+    seen.set(entry.name, category);
+    skills.push({ name: entry.name, source });
+  }
 }
 
 async function canonicalSkills() {
   const rootEntry = await existing(canonicalRoot);
   if (!rootEntry?.isDirectory()) throw new Error(`Missing canonical skill directory: ${canonicalRoot}`);
 
-  const categories = (await readdir(canonicalRoot, { withFileTypes: true }))
-    .filter((entry) => entry.isDirectory())
-    .sort((left, right) => left.name.localeCompare(right.name));
-  if (categories.length === 0) throw new Error(`No canonical skills found in ${canonicalRoot}`);
-
   const skills = [];
-  const seen = new Map();
-  for (const category of categories) {
-    const categoryRoot = path.join(canonicalRoot, category.name);
-    const entries = (await readdir(categoryRoot, { withFileTypes: true }))
-      .filter((entry) => entry.isDirectory())
-      .sort((left, right) => left.name.localeCompare(right.name));
-    if (entries.length === 0) throw new Error(`No canonical skills found in ${categoryRoot}`);
-
-    for (const entry of entries) {
-      const source = path.join(categoryRoot, entry.name);
-      const body = path.join(source, "SKILL.md");
-      if (!(await existing(body))?.isFile()) throw new Error(`Canonical skill is missing SKILL.md: ${category.name}/${entry.name}`);
-      if (seen.has(entry.name)) throw new Error(`Duplicate skill name across categories: ${entry.name} (${seen.get(entry.name)} and ${category.name})`);
-      seen.set(entry.name, category.name);
-      skills.push({ name: entry.name, source });
-    }
-  }
+  await walkCategory(canonicalRoot, skills, new Map());
   return skills.sort((left, right) => left.name.localeCompare(right.name));
 }
 

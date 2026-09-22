@@ -27,18 +27,23 @@ function inRoot(callback) {
   }
 }
 
-test('link creation for both host roots from a canonical skills tree, walking one level deeper for categories', () => {
+test('link creation for both host roots from a canonical skills tree, walking categories to any depth by the SKILL.md rule', () => {
   inRoot((root) => {
     writeSkill(root, 'alpha', { category: 'engineering' });
     writeSkill(root, 'beta', { category: 'productivity' });
+    writeSkill(root, 'gamma', { category: 'roles/crew' });
+    // A skill's own subfolders are never walked: resources/ inside a skill is not a category.
+    fs.mkdirSync(path.join(root, 'skills', 'engineering', 'alpha', 'resources'), { recursive: true });
 
     const result = runSetup('--root', root);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /2 skills, 4 projections created/);
-    const categories = { alpha: 'engineering', beta: 'productivity' };
+    assert.match(result.stdout, /3 skills, 6 projections created/);
+    const categories = { alpha: 'engineering', beta: 'productivity', gamma: 'roles/crew' };
     for (const hostRoot of ['.claude', '.agents']) {
-      for (const name of ['alpha', 'beta']) {
+      assert.deepEqual(fs.readdirSync(path.join(root, hostRoot, 'skills')).sort(), ['alpha', 'beta', 'gamma'],
+        `${hostRoot}/skills must hold one flat entry per skill and no category entry`);
+      for (const name of ['alpha', 'beta', 'gamma']) {
         const target = path.join(root, hostRoot, 'skills', name);
         const stats = fs.lstatSync(target);
         assert.ok(stats.isSymbolicLink(), `${target} was not created as a link`);
@@ -173,16 +178,75 @@ test('a rerun after migrating a dangling flat-layout link creates nothing furthe
   });
 });
 
-test('refuses with a non-zero exit when a canonical skill folder has no SKILL.md', () => {
+test('re-points a link left by the previous category layout to the skill\'s nested category, then stays idempotent', () => {
+  inRoot((root) => {
+    // alpha's old category is gone entirely; beta's old category still exists, holding gamma.
+    writeSkill(root, 'alpha', { category: 'roles/crew' });
+    writeSkill(root, 'beta', { category: 'roles/officers' });
+    writeSkill(root, 'gamma', { category: 'engineering' });
+    const former = { alpha: path.join(root, 'skills', 'orchestration', 'alpha'), beta: path.join(root, 'skills', 'engineering', 'beta') };
+    for (const hostRoot of ['.claude', '.agents']) {
+      fs.mkdirSync(path.join(root, hostRoot, 'skills'), { recursive: true });
+      for (const [name, target] of Object.entries(former)) fs.symlinkSync(target, path.join(root, hostRoot, 'skills', name), 'junction');
+    }
+
+    const first = runSetup('--root', root);
+
+    assert.equal(first.status, 0, first.stderr);
+    assert.match(first.stdout, /3 skills, 6 projections created/);
+    const categories = { alpha: 'roles/crew', beta: 'roles/officers', gamma: 'engineering' };
+    for (const hostRoot of ['.claude', '.agents']) {
+      for (const [name, category] of Object.entries(categories)) {
+        const target = path.join(root, hostRoot, 'skills', name);
+        assert.ok(fs.lstatSync(target).isSymbolicLink(), `${target} was not left as a link`);
+        assert.equal(fs.realpathSync(target), fs.realpathSync(path.join(root, 'skills', category, name)),
+          `${target} did not resolve to its nested canonical category`);
+      }
+    }
+
+    const second = runSetup('--root', root);
+
+    assert.equal(second.status, 0, second.stderr);
+    assert.match(second.stdout, /3 skills, 0 projections created/);
+  });
+});
+
+test('refuses a folder that holds neither SKILL.md nor a subfolder, as an empty category', () => {
   inRoot((root) => {
     writeSkill(root, 'alpha', { withBody: false });
 
     const result = runSetup('--root', root);
 
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Canonical skill is missing SKILL\.md: cat\/alpha/);
+    assert.match(result.stderr, /No canonical skills found in .*cat[\\/]alpha/);
     assert.ok(!fs.existsSync(path.join(root, '.claude')), 'setup created host output despite the missing SKILL.md');
     assert.ok(!fs.existsSync(path.join(root, '.agents')), 'setup created host output despite the missing SKILL.md');
+  });
+});
+
+test('refuses an empty nested category, even when its sibling category is populated', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha', { category: 'roles/crew' });
+    fs.mkdirSync(path.join(root, 'skills', 'roles', 'officers'), { recursive: true });
+
+    const result = runSetup('--root', root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /No canonical skills found in .*roles[\\/]officers/);
+    assert.ok(!fs.existsSync(path.join(root, '.claude')), 'setup created host output despite the empty category');
+  });
+});
+
+test('refuses the same skill name in a nested category and a flat one, naming both category paths', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha', { category: 'engineering' });
+    writeSkill(root, 'alpha', { category: 'roles/crew' });
+
+    const result = runSetup('--root', root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Duplicate skill name across categories: alpha \(engineering and roles\/crew\)/);
+    assert.ok(!fs.existsSync(path.join(root, '.claude')), 'setup created host output despite the duplicate name');
   });
 });
 

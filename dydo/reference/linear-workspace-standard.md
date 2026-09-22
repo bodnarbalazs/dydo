@@ -182,7 +182,7 @@ required connector capability.
 
 `## Exact gates` lists its two scales separately: the cheap checks and change-relevant tests that
 prove one hop, and the full suites and whole gate set that run at the Issue's final gates, its Merge
-Sub-issue's combined gates and the landing. A worker briefed for one hop takes the first list alone.
+Sub-issue's combined gates and the landing. A crew member briefed for one hop takes the first list alone.
 
 ## Communication and evidence
 

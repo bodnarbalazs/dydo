@@ -9,7 +9,7 @@ The self-containment bar for work handed to an agent. A brief is good when a fre
 and an independent reviewer can decide PASS or FAIL from the same text, without reconstructing the
 conversation that produced it.
 
-Two things get briefed: a **Linear Issue**, picked up and owned end to end, and a **worker prompt**, one
+Two things get briefed: a **Linear Issue**, picked up and owned end to end, and a **crew prompt**, one
 bounded job that returns to whoever spawned it. Everything else — a Project plan, a Decision Record, a
 guide — is context the brief links, never a substitute for it.
 
@@ -39,22 +39,22 @@ parallel, so two Issues in flight together own disjoint files or say plainly tha
 [working-tree contract](./working-tree-contract.md) turns those two fields — owned paths and base
 branch — into a branch, a worktree and a claim.
 
-## The worker's brief
+## The crew brief
 
-A spawned worker has no memory of the conversation that made it and returns unanswered choices to its invoker.
+A spawned crew member has no memory of the conversation that made it and returns unanswered choices to its invoker.
 Give it five things:
 
 1. **One deliverable**, named by path.
 2. **What to read first**, in order: the governing Decision Record, the section of the plan that binds
    this deliverable, the file as it stands, and the code or configuration its claims must match.
 3. **The boundary** — what it owns, what it must leave alone, and what it must not run; in a tree
-   several workers share, name the files that are not its own. State the positive target beside each
+   several crew members share, name the files that are not its own. State the positive target beside each
    prohibition.
 4. **The return shape** the receiver parses. For a writer: the hop SHA, changed paths, contract-to-proof trace,
    gates and output, and any prepared hand-raise. After FAIL, include its review block in Must-Reads.
 5. **The constraints that decide the verdict** — budget, vocabulary, and the gates this hop owes.
 
-The same bar applies as to an Issue. If the worker has to infer which of two files you meant, or invent
+The same bar applies as to an Issue. If the crew member has to infer which of two files you meant, or invent
 a product decision to finish, the brief is not ready.
 
 ## What comes back

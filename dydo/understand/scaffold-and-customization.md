@@ -14,9 +14,10 @@ the artifact shapes, how a project customizes one, and the framework documents `
 A skill is `skills/<category>/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io)
 standard: `name` and `description` in the
 frontmatter, the methodology in the body, and optional `references/`, `scripts/`, `assets/`, or a
-role's own `resources/` beside it. The canonical tree groups skills into `orchestration/`,
-`engineering/`, and `productivity/` categories. Claude frontmatter and Codex `agents/openai.yaml`
-stay in that one folder. `node setup-skills.mjs` projects the whole folder flat (no category level)
+skill's own `resources/` beside it. The canonical tree sorts skills by kind: `<category>` is
+`roles/officers`, `roles/crew`, `engineering` or `productivity`. Claude frontmatter and Codex
+`agents/openai.yaml` stay in that one folder. `node setup-skills.mjs` walks the tree by rule — a
+folder holding `SKILL.md` is a skill, any other folder a category — and projects the whole folder flat (no category level)
 into `.claude/skills/<name>` and
 `.agents/skills/<name>` with a POSIX directory symlink or Windows junction. OpenCode reads both
 compatibility roots; no `.opencode/skills` copy is created. No host transforms the body.
@@ -40,7 +41,7 @@ host reads are in [Customizing Roles](../guides/customizing-roles.md).
 
 Setup preflights the whole plan before it writes anything: a missing target is planned for creation,
 an existing projection that already resolves to the canonical folder is accepted, and a link left by
-an older layout of `skills/` — even one now dangling because a role moved categories — is migrated to
+an older layout of `skills/` — even one now dangling because a skill moved categories — is migrated to
 its current canonical path rather than refused. Any ordinary file, directory, or link to a target
 outside the repository's `skills/` tree still stops the run at the first such collision it finds,
 naming it and leaving it and all host configuration and unrelated skills untouched. Resolve the named

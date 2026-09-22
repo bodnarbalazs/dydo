@@ -47,10 +47,12 @@ which wires the local runtime without touching the documentation tree.
 
 ## 3. Author the skills
 
-A role is one plain `skills/<category>/<role>/` folder — grouped into `orchestration/`,
-`engineering/`, and `productivity/` categories — committed and edited directly; there is no compile step.
-Run `node setup-skills.mjs` from the project root. Done when the Claude and Codex discovery roots
-contain whole-directory projections for every role. OpenCode consumes those compatibility roots and
+A skill is one plain `skills/<category>/<name>/` folder — the roles under `roles/officers/` and
+`roles/crew/`, every other skill under `engineering/` or `productivity/` — committed and edited
+directly; there is no compile step.
+Run `node setup-skills.mjs` from the project root; it walks the tree by rule, so a folder holding
+`SKILL.md` is a skill and any other folder a category. Done when the Claude and Codex discovery roots
+contain whole-directory projections for every skill. OpenCode consumes those compatibility roots and
 needs no third projection.
 
 ## 4. Connect Linear
@@ -105,7 +107,7 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 
 ## 7. Host configuration
 
-The crew tree needs three layers below a session: admiral, issue-captain, worker, scout.
+The spawn tree needs three layers below a session: admiral, issue-captain, crew, scout.
 
 - Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
 - Codex: the project's `.codex/config.toml` contains `[agents]` with `max_depth = 3` and

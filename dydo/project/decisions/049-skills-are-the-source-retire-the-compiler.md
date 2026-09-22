@@ -128,6 +128,10 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
 **Amendment (2026-09-21, DYD-219):** the canonical tree is now `skills/<category>/<skill>/`, grouped
 into `orchestration/`, `engineering/`, and `productivity/`; host projections stay flat with no
 category level.
+Amended by [DR 050](./050-officers-crew-and-skills-hats-retired.md) (2026-09-22, DYD-229): the tree is
+sorted by kind into `roles/officers/`, `roles/crew/`, `engineering/` and `productivity/`, and setup
+walks it by rule rather than by depth: a folder holding `SKILL.md` is a skill, any other folder is a
+category.
 
 ---
 

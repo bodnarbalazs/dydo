@@ -151,7 +151,7 @@ Fog can surface through several hands:
 |---|---|
 | Project Planner | return the prepared Question packet and its waiters to the admiral |
 | admiral | create and wire it as delivery clears Project fog |
-| Code Writer or other worker | return a prepared hand-raise to the Issue Captain |
+| Code Writer or other crew | return a prepared hand-raise to the Issue Captain |
 | Issue Captain | create a local Sub-issue, or escalate a Project-level packet to the admiral |
 
 An answer graduates to a Decision Record only when it is hard to reverse, surprising later, and the

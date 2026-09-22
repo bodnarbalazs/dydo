@@ -120,7 +120,7 @@ test('migrates a dangling link left by the old flat layout to the current canoni
     const result = runSetup('--root', root);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /1 skills, 2 projections created/);
+    assert.match(result.stdout, /1 skills, 2 projections created, 0 links to deleted skills removed/);
     for (const hostRoot of ['.claude', '.agents']) {
       const target = path.join(root, hostRoot, 'skills', 'alpha');
       assert.ok(fs.lstatSync(target).isSymbolicLink(), `${target} was not migrated to a link`);
@@ -208,6 +208,78 @@ test('re-points a link left by the previous category layout to the skill\'s nest
 
     assert.equal(second.status, 0, second.stderr);
     assert.match(second.stdout, /3 skills, 0 projections created/);
+  });
+});
+
+test('removes our links whose target skill no longer exists, unlinking only, and a rerun removes nothing', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha', { category: 'engineering' });
+    const leftover = path.join(root, 'skills', 'engineering', 'alpha', 'resources');
+    fs.mkdirSync(leftover, { recursive: true });
+    fs.writeFileSync(path.join(leftover, 'keep.md'), 'keep');
+    for (const hostRoot of ['.claude', '.agents']) {
+      const hostSkills = path.join(root, hostRoot, 'skills');
+      fs.mkdirSync(hostSkills, { recursive: true });
+      // One link dangles at a deleted skill; the other still reaches a folder, but no skill lives there.
+      fs.symlinkSync(path.join(root, 'skills', 'roles', 'crew', 'specifier'), path.join(hostSkills, 'specifier'), 'junction');
+      fs.symlinkSync(leftover, path.join(hostSkills, 'hardener'), 'junction');
+    }
+
+    const first = runSetup('--root', root);
+
+    assert.equal(first.status, 0, first.stderr);
+    for (const hostRoot of ['.claude', '.agents']) {
+      assert.deepEqual(fs.readdirSync(path.join(root, hostRoot, 'skills')), ['alpha'], `${hostRoot}/skills kept a link to a deleted skill`);
+    }
+    assert.equal(fs.readFileSync(path.join(leftover, 'keep.md'), 'utf8'), 'keep', 'removing a link deleted the folder behind it');
+    assert.match(first.stdout, /1 skills, 2 projections created, 4 links to deleted skills removed/);
+
+    const second = runSetup('--root', root);
+
+    assert.equal(second.status, 0, second.stderr);
+    assert.match(second.stdout, /1 skills, 0 projections created, 0 links to deleted skills removed/);
+  });
+});
+
+test('leaves a foreign link, a real directory, and a link to a current skill under another name untouched', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha');
+    const foreign = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd226-setup-skills-foreign-'));
+    try {
+      const hostSkills = path.join(root, '.claude', 'skills');
+      fs.mkdirSync(path.join(hostSkills, 'human-skill'), { recursive: true });
+      fs.writeFileSync(path.join(hostSkills, 'human-skill', 'SKILL.md'), 'human');
+      fs.symlinkSync(foreign, path.join(hostSkills, 'foreign'), 'junction');
+      fs.symlinkSync(path.join(root, 'skills', 'cat', 'alpha'), path.join(hostSkills, 'alias'), 'junction');
+
+      const result = runSetup('--root', root);
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /0 links to deleted skills removed/);
+      assert.deepEqual(fs.readdirSync(hostSkills).sort(), ['alias', 'alpha', 'foreign', 'human-skill']);
+      assert.equal(fs.realpathSync(path.join(hostSkills, 'foreign')), fs.realpathSync(foreign));
+      assert.equal(fs.realpathSync(path.join(hostSkills, 'alias')), fs.realpathSync(path.join(root, 'skills', 'cat', 'alpha')));
+      assert.equal(fs.readFileSync(path.join(hostSkills, 'human-skill', 'SKILL.md'), 'utf8'), 'human');
+    } finally {
+      fs.rmSync(foreign, { recursive: true, force: true });
+    }
+  });
+});
+
+test('a collision in one host root refuses before any link to a deleted skill is removed from the other', () => {
+  inRoot((root) => {
+    writeSkill(root, 'alpha');
+    const dead = path.join(root, '.claude', 'skills', 'specifier');
+    fs.mkdirSync(path.dirname(dead), { recursive: true });
+    fs.symlinkSync(path.join(root, 'skills', 'cat', 'specifier'), dead, 'junction');
+    fs.mkdirSync(path.join(root, '.agents', 'skills', 'alpha'), { recursive: true });
+
+    const result = runSetup('--root', root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Refusing to replace human-owned or conflicting path/);
+    assert.ok(fs.lstatSync(dead).isSymbolicLink(), 'setup removed a link before the whole plan validated');
+    assert.ok(!fs.existsSync(path.join(root, '.claude', 'skills', 'alpha')), 'setup created a projection despite the refusal');
   });
 });
 

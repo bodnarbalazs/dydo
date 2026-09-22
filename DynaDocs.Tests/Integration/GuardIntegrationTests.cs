@@ -557,7 +557,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         foreach (var skill in routed)
             Assert.True(
                 CanonicalSkillExists(skill),
-                $"the plan-mode refusal routes to '{skill}', which is not a skill anywhere under skills/");
+                $"the plan-mode refusal routes to '{skill}', which is not a skill under skills/<category>/");
     }
 
     /// <summary>Skill slugs the guard's refusal routes to, taken from its own "applying the … skill" clause.</summary>

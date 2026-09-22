@@ -34,6 +34,10 @@ Required frontmatter:
 - **deprecated** - No longer recommended
 - **superseded** - Replaced by another decision (link to it)
 
+## Records
+
+- [050 — Officers, Crew and Skills: Hats Retired](./050-officers-crew-and-skills-hats-retired.md) — role vocabulary and the skill tree layout; amends 045 and 049
+
 ---
 
 ## Related

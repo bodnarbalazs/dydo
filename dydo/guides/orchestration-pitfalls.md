@@ -6,7 +6,7 @@ type: guide
 # Orchestration Pitfalls
 
 Failure modes seen when several agents deliver one Project in parallel. They are stated against the
-model that governs delivery here: one hat owns one Issue end to end, an admiral coordinates and
+model that governs delivery here: one captain owns one Issue end to end, an admiral coordinates and
 implements nothing, a fresh reviewer gates every candidate, and Git isolation keeps concurrent work
 apart — one writer per worktree, commits touching owned paths only.
 
@@ -24,7 +24,7 @@ updates Linear and commissions project-planner to write and commit the plan's da
 
 ## 2. A branch cut from the wrong base
 
-**Symptom:** a worker reports that required code or doctrine is missing, or a PR carries a diff nobody
+**Symptom:** a crew member reports that required code or doctrine is missing, or a PR carries a diff nobody
 asked for.
 
 **Mechanism:** a worktree starts from a revision, not from another checkout's uncommitted state. A
@@ -92,7 +92,7 @@ code — and only when it comes up empty file a Question Issue listing what you 
 blocker, then release with branch pushed, resume SHA posted, worktree removed, parent Todo and
 unassigned. The admiral resumes blocker-cleared work on the next captain return or human word. Settle operational conflicts by
 precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
-commit, the Issue contract, coding standards, existing code. The ladder is worker → Issue Captain → admiral → human, and the human is
+commit, the Issue contract, coding standards, existing code. The ladder is crew → Issue Captain → admiral → human, and the human is
 reached for a conflict with a Decision Record, live external state no agent can coordinate, or authority
 the contract cannot supply.
 
@@ -143,7 +143,7 @@ embedded catalog to go stale.
 ## Related
 
 - [Working-Tree Contract](./working-tree-contract.md) — the procedure most of these rules point at
-- [Writing Good Briefs](./writing-good-briefs.md) — the contract an Issue or a worker starts from
+- [Writing Good Briefs](./writing-good-briefs.md) — the contract an Issue or a crew member starts from
 - [Testing Strategy](./testing-strategy.md) — what the gates are worth
 - [DR 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
 - [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)

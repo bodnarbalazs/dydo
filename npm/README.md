@@ -12,8 +12,9 @@ identity, delegation, scheduling, and worktree isolation.
 
 - A structured knowledge tree for architecture, decisions, guides, plans, audits, changelog, and
   FutureFeature ideas.
-- One canonical `skills/<category>/<role>/` tree (`orchestration/`, `engineering/`, `productivity/`),
-  exposed flat through host-native discovery paths (no category level) by the repository's
+- One canonical `skills/<category>/<name>/` tree (`roles/officers/`, `roles/crew/`, `engineering/`,
+  `productivity/`), walked by rule rather than depth and exposed flat through host-native discovery
+  paths (no category level) by the repository's
   dependency-free `setup-skills.mjs`, with no compile step.
 - `dydo guard` to apply off-limits paths, dangerous-command checks, and configurable nudges.
 - `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` to maintain the documentation graph.
@@ -43,7 +44,7 @@ Fill in `dydo/understand/about.md` and `dydo/understand/architecture.md`, then a
 `dydo/guides/coding-standards.md` and `dydo.json`. Use `dydo init <integration> --join` when wiring
 another runtime or machine into an existing project.
 
-Edit the canonical `skills/<category>/<role>/` folder directly; there is no compile step or automatic reconciliation.
+Edit the canonical `skills/<category>/<name>/` folder directly; there is no compile step or automatic reconciliation.
 
 ## Commands
 

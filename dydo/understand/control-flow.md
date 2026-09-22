@@ -7,7 +7,8 @@ type: concept
 
 Every handoff in the dydo 3 operating model, drawn from [DR 045](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md),
 [DR 046](../project/decisions/046-executable-specifications-specifier-and-commit-addressed-hops.md),
-[DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md)
+[DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md),
+[DR 050](../project/decisions/050-officers-crew-and-skills-hats-retired.md)
 and the [Linear Workspace Standard](../reference/linear-workspace-standard.md): who acts, on which
 branch, what leaves them and through which channel, what the other side reads, and what happens when
 the happy path breaks. It is the shared truth both sides of every contact must agree with. Section 7
@@ -22,9 +23,10 @@ fields on both sides are in the edge table, section 5.
 | Colour | Kind | Meaning |
 |---|---|---|
 | gold | human | the one person; opens every session that talks to him, acts at the gates |
-| blue | hat | what a session is doing now; the map holder at its level |
-| green | worker | spawned for one bounded job, returns to its spawner, never talks to the human |
-| red | reviewer | a worker whose return is the review block: one rubric, one binding verdict |
+| blue | officer | holds a Project, an Issue or the board and never switches; the map holder at its level |
+| grey | session | a session without an officer role, loading a skill such as co-thinker |
+| green | crew | spawned for one bounded job, returns to its spawner, never talks to the human |
+| red | reviewer | a crew member whose return is the review block: one rubric, one binding verdict |
 
 Channels: **L** a Linear field, comment or status · **G** a commit, branch or PR · **R** an agent's
 return to its spawner, or a message to a returned one · **F** a file in the repository · **C** the
@@ -32,23 +34,24 @@ conversation with the human.
 
 ## 1. Roster
 
-The actors: every hat and every worker. A hat is top-level when a session wears it; a captain is also
-a skill a session can load, so an admiral can direct one per Issue.
+The actors: every officer and every crew role, plus the co-thinker skill a session without a role
+loads to think with the human. An officer is top-level when a session is opened with it; a captain is also
+spawned as an agent, so an admiral can direct one per Issue.
 
 | Role | Kind | Runs as | Invoked by | Works in | Does | Returns to |
 |---|---|---|---|---|---|---|
-| human | human | the terminal | — | `main`, where his own commits need no Issue, and any hat | thinks, files Projects, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time, walks through; tells the admiral after each of his board moves | — |
-| co-thinker | hat | top-level session | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic Issue with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic Issue (L) |
-| admiral | hat | top-level session, explicit-only | the human, on a Project at any stage | `feature/<slug>` | wakes on a captain's return or the human's word, reads the Project and acts: sends the planner, owns the plan review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
-| issue-captain | hat, also agent | top-level for an atomic or HITL Issue; spawned by an admiral for an AFK one | the admiral, or the human's session | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review or a separate hardening pass only on a named risk, divides when the spec says so, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
-| chief-of-staff | hat | top-level session, explicit-only | the human | none | the bird's-eye view over the admirals: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the human (C); delivery staged for the admiral (L) |
-| research | worker, delegates, web | agent | co-thinker, admiral, issue-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as Issue comment (L) or scratch file (F) |
-| project-planner | worker | agent | the admiral | the initial plan on `main`; amendments on the branch the admiral names | fixes the destination, writes the plan, the first pickable Issues as tracer bullets with their blocking edges, and prepared blocking Question packets for the admiral to file; commits amendments on commission | the admiral: the plan commit, first Issues, bearings, blockers (R) |
-| code-writer | worker | agent | issue-captain, on the parent first, then per lane | the Issue branch; a Merge Sub-issue; a proof-only lane | one Issue end to end in three phases on the `implement` hop: makes the contract exact (scenarios, gates, plan, the lanes when the Issue divides, per-kind resource for Bug, Merge, Inquisition), makes it work (scenario red, tests red, green), makes it good (one-level static gates with HCRAP and cognitive complexity, mutation on code and example values, smells, depth). On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis | the captain: spec, plan, SHA, files, trace of each contract line to its proof, gates incl. mutation, any extra-pass risk (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
-| docs-writer | worker | agent | issue-captain, including the separate record Feature's captain for an inquisition | the delivery Issue branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
-| reviewer | worker, non-authoring | agent | admiral, issue-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
-| scout | worker, non-authoring, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
-| inquisitor | worker, non-authoring | agent | an inquisition's issue-captain | reads the inquisition branch | one part or one lens swept, refuting its own catch; hypotheses of what could go wrong | the inquisition captain: findings with proof, hypotheses (R) |
+| human | human | the terminal | — | `main`, where his own commits need no Issue, and any session | thinks, files Projects, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time, walks through; tells the admiral after each of his board moves | — |
+| co-thinker | skill | any session without an officer role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic Issue with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic Issue (L) |
+| admiral | officer | top-level session, explicit-only | the human, on a Project at any stage | `feature/<slug>` | wakes on a captain's return or the human's word, reads the Project and acts: sends the planner, owns the plan review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
+| issue-captain | officer, also agent | top-level for an atomic or HITL Issue; spawned by an admiral for an AFK one | the admiral, or the human's session | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review or a separate hardening pass only on a named risk, divides when the spec says so, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
+| chief-of-staff | officer | top-level session, explicit-only | the human | none | the bird's-eye view over the admirals: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the human (C); delivery staged for the admiral (L) |
+| research | crew, delegates, web | agent | co-thinker, admiral, issue-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as Issue comment (L) or scratch file (F) |
+| project-planner | crew | agent | the admiral | the initial plan on `main`; amendments on the branch the admiral names | fixes the destination, writes the plan, the first pickable Issues as tracer bullets with their blocking edges, and prepared blocking Question packets for the admiral to file; commits amendments on commission | the admiral: the plan commit, first Issues, bearings, blockers (R) |
+| code-writer | crew | agent | issue-captain, on the parent first, then per lane | the Issue branch; a Merge Sub-issue; a proof-only lane | one Issue end to end in three phases on the `implement` hop: makes the contract exact (scenarios, gates, plan, the lanes when the Issue divides, per-kind resource for Bug, Merge, Inquisition), makes it work (scenario red, tests red, green), makes it good (one-level static gates with HCRAP and cognitive complexity, mutation on code and example values, smells, depth). On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis | the captain: spec, plan, SHA, files, trace of each contract line to its proof, gates incl. mutation, any extra-pass risk (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
+| docs-writer | crew | agent | issue-captain, including the separate record Feature's captain for an inquisition | the delivery Issue branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
+| reviewer | crew, non-authoring | agent | admiral, issue-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
+| scout | crew, non-authoring, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
+| inquisitor | crew, non-authoring | agent | an inquisition's issue-captain | reads the inquisition branch | one part or one lens swept, refuting its own catch; hypotheses of what could go wrong | the inquisition captain: findings with proof, hypotheses (R) |
 
 For these three roles, non-authoring names the commission and method. It does not assert filesystem
 enforcement by the host: a native sandbox setting is a request until a live host check proves the
@@ -72,21 +75,21 @@ Agent-invoked methods:
 | prototype | the code-writer on a Prototype Issue | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the Issue until the delivery Issue is `Done`, read by the delivery Issue's code-writer as input (DR 047 §5) |
 | wizard | the captain on an Enablement Issue | steps only the human can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
-| self-improvement | any hat; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
+| self-improvement | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
 
 Human commands:
 
 | Command | The human types it when | Produces |
 |---|---|---|
 | to-project | a co-think is ripe and belongs in Linear | a Project in `Backlog`: title, summary, the intent as description, links to the DR, the glossary entries and the source FutureFeature when one exists; no Issues |
-| grill-me | a plan or idea of theirs should be pressed | answers and reasoning, recorded by the hat in play |
+| grill-me | a plan or idea of theirs should be pressed | answers and reasoning, recorded by the session in play |
 | bro | an agent's pitch did not land | the same thing said plainly, with the two glossaries in hand |
 | handoff | the session is ending and another agent continues | a handoff document in the scratch directory |
 | walkthrough | a Walkthrough Issue is open | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
 | teach | the human wants to learn a topic in the workspace | a mission and its learning records |
 | improve-codebase-architecture | the codebase's architecture should be examined | a grilled candidate with its report |
 
-The explicit-only hats admiral and chief-of-staff are also typed by the human; they are actors and
+The explicit-only officers admiral and chief-of-staff are also typed by the human; they are actors and
 stand in the roster.
 
 ## 3. The happy path
@@ -94,8 +97,8 @@ stand in the roster.
 The model is supersymmetric: a captain's Issue is a Project one level down. The same Types, the same
 statuses and the same chain hold at both levels; only the map holder changes.
 
-Capability rides with the delegation, not with the role. On every edge below, the delegating hat
-picks the model — and the effort where the host exposes one — for the worker it is about to spawn,
+Capability rides with the delegation, not with the role. On every edge below, the delegating role
+picks the model — and the effort where the host exposes one — for the crew member it is about to spawn,
 weighing what that one task is worth. Nothing dydo compiles makes the choice for it;
 [Configuration](../reference/configuration.md) carries each host's resolution order and what its
 telemetry can and cannot prove afterwards.
@@ -105,52 +108,53 @@ telemetry can and cannot prove afterwards.
 ```mermaid
 flowchart TD
   classDef human fill:#f6d365,stroke:#8a6d00,color:#000
-  classDef hat fill:#cfe2ff,stroke:#2c5aa0,color:#000
-  classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
+  classDef session fill:#e9ecef,stroke:#6c757d,color:#000
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  H0([human: an idea]):::human --> CT[co-thinker]:::hat
+  H0([human: an idea]):::human --> CT[co-thinker]:::session
   CT -->|ripe| TP([human: to-project, Project in Backlog]):::human
-  TP --> AD[admiral, reads the Project and acts]:::hat
-  AD -->|Project Planning| PP[project-planner: plan on main, first Issues]:::worker
+  TP --> AD[admiral, reads the Project and acts]:::officer
+  AD -->|Project Planning| PP[project-planner: plan on main, first Issues]:::crew
   PP -->|plan commit| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
   RP -->|PASS| H1([human approves in the admiral's session, Project Planned]):::human
-  H1 --> OP[admiral commissions first captain to open feature; wires merge order]:::hat
-  OP <-->|"one captain per pickable AFK Issue, the loop in 3b: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[issue-captain]:::hat
+  H1 --> OP[admiral commissions first captain to open feature; wires merge order]:::officer
+  OP <-->|"one captain per pickable AFK Issue, the loop in 3b: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[issue-captain]:::officer
   OP -->|all landed: Inquisition Issue in Backlog, scope and cost| H2([human moves it to Todo and tells the admiral, or cancels]):::human
-  H2 -->|the admiral commissions| IQ[issue-captain of the inquisition, 6.6: Bugs filed]:::hat
+  H2 -->|the admiral commissions| IQ[issue-captain of the inquisition, 6.6: Bugs filed]:::officer
   IQ --> OP
-  OP -->|landing Merge Issue: main into the feature, gates, merge review| LM[issue-captain of the landing]:::hat
+  OP -->|landing Merge Issue: main into the feature, gates, merge review| LM[issue-captain of the landing]:::officer
   LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells the admiral]):::human
-  H3 -->|admiral commissions landing captain cleanup; asks human to invoke walkthrough| WT[Walkthrough Issue: the admiral with the human]:::hat
+  H3 -->|admiral commissions landing captain cleanup; asks human to invoke walkthrough| WT[Walkthrough Issue: the admiral with the human]:::officer
   WT -->|findings: Issues, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```
 
 ### 3b. One Issue
 
-The captain is the connector: every worker is briefed by it and returns to it, and it flips the
+The captain is the connector: every crew member is briefed by it and returns to it, and it flips the
 Issue's status at each chain spawn. The default crew is two: one `code-writer`, then one fresh
 reviewer. The dashed edges are the captain's discretion, bought with one short concrete risk reason.
 
 ```mermaid
 flowchart TD
-  classDef hat fill:#cfe2ff,stroke:#2c5aa0,color:#000
-  classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  AD[admiral]:::hat <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::hat
+  AD[admiral]:::officer <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::officer
   IC <-->|"1 write · Implementing"| CW
   IC <-.->|"1b contract review, parked off the write at the captain's discretion · Specifying, In Review, back to Implementing"| RS
   IC <-.->|"2 extra tightening by another hand · Hardening, back to Implementing"| HD
   IC <-->|"3 review · In Review"| RC
   IC <-->|"4 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
   subgraph CREW [the crew]
-    CW[1 code-writer<br>exact, then green, then good<br>returns spec, plan, implement SHA, proof trace, gates]:::worker
+    CW[1 code-writer<br>exact, then green, then good<br>returns spec, plan, implement SHA, proof trace, gates]:::crew
     RS{{1b reviewer: spec<br>reads the Exact-phase text on the Issue<br>returns review block}}:::reviewer
-    HD[2 code-writer, another hand<br>returns its fix SHA, gates]:::worker
+    HD[2 code-writer, another hand<br>returns its fix SHA, gates]:::crew
     RC{{3 reviewer: code or docs<br>returns review block}}:::reviewer
-    MG[4 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::worker
+    MG[4 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::crew
   end
 ```
 
@@ -395,7 +399,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 46 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | — | landing `Ready to Merge` |
 | 47 | admiral → human → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the human tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | — | landing `Done`, set by its captain |
 | 48 | admiral → Walkthrough Issue, human | L, C | the Issue; request for the human to invoke `walkthrough` in this session, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | — | `In Progress` → `Done`; findings as Issues; Project `Completed` when none |
-| 49 | worker → issue-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | — | — |
+| 49 | crew → issue-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | — | — |
 | 50 | issue-captain → research | R (spawn) | the question and where the findings land | the question and destination, about, architecture | — |
 | 51 | research → issue-captain | R, L or F | one-line answer, destination, unsettled points; the report as an Issue comment or scratch file | — | Research Issue `Done` by the map holder |
 | 52 | issue-captain → Linear (local fog) | L | a Question Sub-issue under the delivery parent, wired as blocker, with its priority by the standard's guide; the admiral informed | — | Question `Todo` |
@@ -409,13 +413,13 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 
 ## 6. Exceptions
 
-### 6.1 A worker raises a hand
+### 6.1 A crew member raises a hand
 
 Fog inside an Issue. The rule is fog → discovery → question Issue, and the Question is the last rung.
 
 ```mermaid
 sequenceDiagram
-  participant W as worker
+  participant W as crew
   participant C as issue-captain
   participant R as research
   participant A as admiral
@@ -449,7 +453,7 @@ sequenceDiagram
   end
 ```
 
-The contract: the worker never fills a gap with an assumption and never creates an Issue; the captain
+The contract: the crew member never fills a gap with an assumption and never creates an Issue; the captain
 owns discovery and the local map; the scope rule in the workspace standard decides local Sub-issue
 versus Project-level packet; the admiral alone creates Project-level Questions; the human answers on
 the Issue, never in a chat that evaporates; the chief-of-staff surfaces open Questions when the human
@@ -459,11 +463,11 @@ asks it to, it is never sent anything.
 
 ```mermaid
 flowchart LR
-  classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
   RV{{reviewer verdict}}:::reviewer -->|PASS block| OK[captain records block, opens PR, returns done &lt;key&gt;: PR ready to admiral]
   RV -->|"FAIL, fewer than five in a row"| RT{captain takes the findings}
-  RT -->|"every finding, whatever it is · Implementing"| IM[fresh code-writer: fix hop; its Exact phase amends the contract when a scenario was wrong]:::worker
+  RT -->|"every finding, whatever it is · Implementing"| IM[fresh code-writer: fix hop; its Exact phase amends the contract when a scenario was wrong]:::crew
   IM --> FR{{fresh reviewer, new Candidate SHA · In Review}}:::reviewer
   FR --> RV
   RV -->|fifth consecutive FAIL| ESC[escalate: comment on the Issue, Question Issue as blocker, admiral, then human]
@@ -480,13 +484,13 @@ amendment.
 
 ```mermaid
 flowchart TD
-  classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
-  classDef hat fill:#cfe2ff,stroke:#2c5aa0,color:#000
-  IM[the code-writer, in a later phase, meets a crossroads the plan left open, or a scenario it cannot satisfy]:::worker --> ST[stops at the choice, reports the mismatch]
-  ST --> IC[issue-captain]:::hat
-  IC -->|the route was wrong, the contract stands| SP[fresh code-writer: amend the plan]:::worker
-  IC -->|a scenario was wrong| SP2[fresh code-writer: spec amendment recorded on the Issue]:::worker
-  IC -->|acceptance, scope, destination or architecture would move| AD[admiral: plan amendment, re-review of project-plan]:::hat
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  IM[the code-writer, in a later phase, meets a crossroads the plan left open, or a scenario it cannot satisfy]:::crew --> ST[stops at the choice, reports the mismatch]
+  ST --> IC[issue-captain]:::officer
+  IC -->|the route was wrong, the contract stands| SP[fresh code-writer: amend the plan]:::crew
+  IC -->|a scenario was wrong| SP2[fresh code-writer: spec amendment recorded on the Issue]:::crew
+  IC -->|acceptance, scope, destination or architecture would move| AD[admiral: plan amendment, re-review of project-plan]:::officer
   SP --> RES[resume the writing from the amended contract]
   SP2 --> RES
   AD --> RES
@@ -512,12 +516,12 @@ The merge is an Issue, so the FAIL has an owner.
 
 ```mermaid
 flowchart LR
-  classDef hat fill:#cfe2ff,stroke:#2c5aa0,color:#000
-  classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
-  RM{{merge review FAIL}} --> RT{the Merge Sub-issue's captain routes it}:::hat
-  RT -->|an integration defect: a resolution, a lost hunk, a seam| FX[fix hop inside the Merge Sub-issue, fresh merge review]:::worker
-  RT -->|a defect in the landed work| RV[revert inside the Merge Sub-issue, which closes Canceled with the reason]:::worker
-  RV --> SRC[the source Issue returns from Ready to Merge to Implementing with the findings, then re-offers]:::hat
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
+  RM{{merge review FAIL}} --> RT{the Merge Sub-issue's captain routes it}:::officer
+  RT -->|an integration defect: a resolution, a lost hunk, a seam| FX[fix hop inside the Merge Sub-issue, fresh merge review]:::crew
+  RT -->|a defect in the landed work| RV[revert inside the Merge Sub-issue, which closes Canceled with the reason]:::crew
+  RV --> SRC[the source Issue returns from Ready to Merge to Implementing with the findings, then re-offers]:::officer
 ```
 
 Revert keeps the feature branch always green and the Issue's own loop intact. Once a later merge
@@ -534,28 +538,28 @@ tests. It does not gate; it files.
 ```mermaid
 flowchart TD
   classDef human fill:#f6d365,stroke:#8a6d00,color:#000
-  classDef hat fill:#cfe2ff,stroke:#2c5aa0,color:#000
-  classDef worker fill:#d4edda,stroke:#2e7d32,color:#000
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
 
-  AD[admiral: the feature is integrated]:::hat -->|Inquisition Issue in Backlog: scope, parts, lenses, cost| H([human]):::human
-  H -->|moves it to Todo and tells the admiral, which commissions, or cancels it| IC[issue-captain of the inquisition]:::hat
+  AD[admiral: the feature is integrated]:::officer -->|Inquisition Issue in Backlog: scope, parts, lenses, cost| H([human]):::human
+  H -->|moves it to Todo and tells the admiral, which commissions, or cancels it| IC[issue-captain of the inquisition]:::officer
   IC -->|inquisition branch off the feature SHA, never merged| BR[(inquisition/slug)]
-  IC -->|Implementing: the parts, the lenses, the shape of a hypothesis| SP[code-writer, phase 1]:::worker
-  IC --> P1[inquisitor: module A]:::worker
-  IC --> P2[inquisitor: module B]:::worker
-  IC --> P3[inquisitor: the whole, at the seams]:::worker
-  IC --> P4[inquisitor: one lens across everything]:::worker
+  IC -->|Implementing: the parts, the lenses, the shape of a hypothesis| SP[code-writer, phase 1]:::crew
+  IC --> P1[inquisitor: module A]:::crew
+  IC --> P2[inquisitor: module B]:::crew
+  IC --> P3[inquisitor: the whole, at the seams]:::crew
+  IC --> P4[inquisitor: one lens across everything]:::crew
   P1 & P2 & P3 & P4 -->|findings with proof, and hypotheses of what could go wrong| IC
-  IC -->|one hypothesis each, proof-only, on a child branch| IM[code-writers: write the test that would catch it]:::worker
+  IC -->|one hypothesis each, proof-only, on a child branch| IM[code-writers: write the test that would catch it]:::crew
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
   IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner| BUG[(Bug Issues in Todo, under the Project)]
-  IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::hat
-  REL -->|released &lt;key&gt;: record delivery wakes admiral| AD2[admiral]:::hat
-  AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and navigation paths]:::hat
-  RC --> DW[docs-writer on the record Feature branch]:::worker
+  IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::officer
+  REL -->|released &lt;key&gt;: record delivery wakes admiral| AD2[admiral]:::officer
+  AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and navigation paths]:::officer
+  RC --> DW[docs-writer on the record Feature branch]:::crew
   DW --> RV[docs review, then final Merge Sub-issue into retained feature]
   RV -->|delivery Done, exact record and merge evidence; normal board wake| AD2
-  AD2 -->|resume In Progress after delivery Done| VERIFY[Inquisition captain: verify Bugs, record content and merge reachability; preserve open Bug refs]:::hat
+  AD2 -->|resume In Progress after delivery Done| VERIFY[Inquisition captain: verify Bugs, record content and merge reachability; preserve open Bug refs]:::officer
   VERIFY -->|Done, audit branch deleted, done &lt;key&gt;| AD2
   BUG -->|the normal loop, a captain each, before the landing| FIX[fixes through PR, review, Merge Sub-issue]
 ```
@@ -581,7 +585,7 @@ the landing's merge review, and the Bugs the inquisition filed are landed before
 
 No Project, no admiral. The co-thinker reads the workspace standard and writes the Issue with its five fields, one Type
 and one Mode in `Todo`; the human opens a
-captain on it, or spawns one from any hat, and it claims from `main`, runs the same crew and the same
+captain on it, or spawns one from any session, and it claims from `main`, runs the same crew and the same
 reviewer, opens the PR into `main`, and merges it through its own final Merge Sub-issue with a fresh
 merge review over the integrated state. The human's only gate is the one the captain chooses to
 raise. The human's own commits on main are outside the model and need no Issue.
@@ -590,7 +594,7 @@ raise. The human's own commits on main are outside the model and need no Issue.
 
 ```mermaid
 flowchart LR
-  W[worker] -->|hand-raise on the Issue| C[issue-captain]
+  W[crew] -->|hand-raise on the Issue| C[issue-captain]
   C -->|released &lt;key&gt;: &lt;reason&gt;| A[admiral]
   C --> R[(Issue record: prepared packet and resume SHA)]
   A -->|a DR conflict, live external state, missing authority| H[human]
@@ -616,13 +620,13 @@ One mechanism serves three cases.
 
 ```mermaid
 flowchart LR
-  classDef hat fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   B[a blocker the captain cannot clear] --> REL
   T([the human wants to drive it]):::human -->|release, through the admiral| REL
   D[the session dies, no return] -.->|the admiral treats it as a release without the push| REL
-  REL[the captain releases: branch pushed, worktree removed, parent to Todo, unassigned, blocker wired]:::hat --> REC[(the record: every hop's SHA, the last one is the resume point)]
-  REC -->|blocker cleared, next wake| RC[a fresh captain resumes from the branch]:::hat
+  REL[the captain releases: branch pushed, worktree removed, parent to Todo, unassigned, blocker wired]:::officer --> REC[(the record: every hop's SHA, the last one is the resume point)]
+  REC -->|blocker cleared, next wake| RC[a fresh captain resumes from the branch]:::officer
   REC -->|a top-level captain session| H2([the human drives it]):::human
 ```
 
@@ -743,13 +747,13 @@ Completed rows below name the source, not a claim that generated runtime output 
 | dydo init | Deferred to DYD-86: native nesting depth and host setup proof. |
 | ~~working-tree contract~~ | Authored/local twin: captain's Merge at each level, branch exceptions, Specifying, release and merge-commit landing. |
 | getting-started | Deferred to DYD-91: framework setup checklist and template registration. |
-| ~~dydo.json~~ | Removed in source: no model or effort property remains; the delegating hat chooses both at dispatch (DYD-134). |
+| ~~dydo.json~~ | Removed in source: no model or effort property remains; the delegating role chooses both at dispatch (DYD-134). |
 | ~~work-model, task-lifecycle, dydo-glossary~~ | Authored/local prose: current flow, Types, release, Questions, inquisition and supersymmetry. |
 | generated skills, agents, framework hashes and host reflection | Retired by DR 049: roles are native `SKILL.md` folders, edited directly; no compiler, hashes, or generated agent files remain. |
 
 ## Related
 
-- [Work Model](./work-model.md) — the flow map, hats, reviews and inquisition this map expands
+- [Work Model](./work-model.md) — the flow map, officers and crew, reviews and inquisition this map expands
 - [Linear Issue Lifecycle](./task-lifecycle.md) — what an Issue carries and how it is claimed and merged
 - [Working-Tree Contract](../guides/working-tree-contract.md) — branches, worktrees, hops, cleanup
 - [Linear Workspace Standard](../reference/linear-workspace-standard.md) — statuses, Types, Mode, templates

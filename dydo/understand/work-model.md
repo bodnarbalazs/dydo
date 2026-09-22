@@ -6,18 +6,19 @@ type: concept
 # Work Model
 
 How work moves here: Linear owns the live work graph, Git and dydo own durable knowledge and proof,
-and every session places itself on one flow map before it acts. The stages, the hats that wear them,
+and every session places itself on one flow map before it acts. The stages, the roles that hold them,
 and the reviews that prove them follow
 [Decision 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md),
 which amends Decisions 045 and 046.
 
 ## The flow map
 
-A session is not a type. It wears the hat the work is in now, and changes hats as the work moves.
+A session keeps the role it was opened or spawned with and loads skills as the work needs them; an
+officer never becomes another officer ([Decision 050](../project/decisions/050-officers-crew-and-skills-hats-retired.md)).
 
-| Stage | Hat | Output | Gate |
+| Stage | Who | Output | Gate |
 |---|---|---|---|
-| Think | co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
+| Think | any session, loading co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
 | Chart and plan a Project | admiral, sending project-planner | committed plan, first Issues, prepared Questions | admiral-owned project-plan review, then human approval |
 | Make an Issue exact | issue-captain, through its code-writer's first phase | a just-in-time spec and route with no hidden implementation decisions | optional spec review |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
@@ -27,15 +28,16 @@ A session is not a type. It wears the hat the work is in now, and changes hats a
 | Walkthrough | admiral with the human | inspected landing, findings as Issues in the same Project | an empty walkthrough closes the Project |
 
 Some work has no stage of its own: chief-of-staff triages the human's attention and never delivers,
-and any hat may reach for self-improvement, writing-for-agents and diagnosing-bugs; bro is the human's
+and any session may reach for self-improvement, writing-for-agents and diagnosing-bugs; bro is the human's
 corrective for agent-speak, at any stage.
 
-## Hats, workers, and methods
+## Officers, crew, and skills
 
-- **Hats** are what a session is doing now, one at a time — the agent hats on the map plus
-  chief-of-staff; the human holds a row but wears no agent hat.
-- **Workers** are spawned for one bounded job and report back to whoever spawned them. Research delegates to non-authoring scouts; other workers do their own bounded work.
-- **Methods** are reference and procedure a session applies inside its own thread, never a separate
+- **Officers** hold something and never switch: the admiral holds a Project, the issue-captain an
+  Issue, the chief-of-staff the board. A session or agent has at most one officer role; the human
+  holds a row on the map but no role.
+- **Crew** are spawned for one bounded job, hold nothing, and return their result to whoever sent them. Research delegates to non-authoring scouts; other crew do their own bounded work.
+- **Methods** are plain skills — reference and procedure a session applies inside its own thread, never a separate
   session.
 - **Human commands** are invoked by the human typing their name, and by nothing else. For the
   post-landing tour, the admiral opens the Walkthrough Issue and asks the human to invoke
@@ -74,7 +76,7 @@ No implementation begins without a contract another agent can review independent
 - The two planning resolutions, the fields an Issue must carry, and the Question Issue that clears
   fog are in the [Linear Issue Lifecycle](./task-lifecycle.md).
 
-Branches, worktrees, sessions, workers, commits, PRs, and review passes are execution evidence linked
+Branches, worktrees, sessions, crew, commits, PRs, and review passes are execution evidence linked
 to an Issue. They are not extra levels in the work graph.
 
 ## Review and inquisition

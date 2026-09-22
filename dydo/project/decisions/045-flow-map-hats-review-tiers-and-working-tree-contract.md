@@ -262,6 +262,8 @@ Amended by [DR 046](./046-executable-specifications-specifier-and-commit-address
 
 Amended by [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) (2026-09-04): supersymmetry, eleven statuses, merges as Issues, the release protocol, the project-planner as the admiral's worker, the inquisition as an Issue and its workflow retired.
 
+Amended by [DR 050](./050-officers-crew-and-skills-hats-retired.md) (2026-09-22): hats are retired and workers become crew; a role is an officer, which holds something and never switches, or crew, spawned for one job and returning its result; every other skill, co-thinker among them, is a plain skill any session loads.
+
 ---
 
 ## Affects

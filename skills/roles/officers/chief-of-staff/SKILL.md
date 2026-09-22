@@ -46,7 +46,7 @@ sight, and hand back every judgement call with a recommendation.
    trade-off, and propose the smallest resolution that frees both. Done when the resolution is on the
    Issue, or the one call above your authority is a `Question` on the *Answer needed* list with your
    recommendation.
-5. **Sweep the board.** Hunt stale states: a working status with no worker running, a `Question` without
+5. **Sweep the board.** Hunt stale states: a working status with no crew running, a `Question` without
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
    active. Sweep orphans too: the worktrees and branches a Merge Issue should have retired, and an
    `inquisition/<slug>` past its Issue's `Done`, or a `prototype/<name>` past its delivery Issue's

@@ -12,7 +12,7 @@ only for as long as a human keeps a session open.
 
 ## Today
 
-`admiral` is a hat authored with the other roles at `skills/<category>/<name>` — specifically `skills/orchestration/admiral` —
+`admiral` is an officer role authored with the other skills at `skills/<category>/<name>` — specifically `skills/roles/officers/admiral` —
 and exposed to each host by setup. A human invokes it, and it carries one approved Project plan to a
 feature branch he can land. Inside that one session it opens the feature branch, keeps N Issues in
 flight by spawning an `issue-captain` per pickable Issue, merges serially, runs a merge review after
@@ -49,5 +49,6 @@ exactly one Linear Initiative, Project, or Issue.
 
 ## Related
 
-- [DR 045 — Flow Map, Hats, Review Tiers, and the Working-Tree Contract](../decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) — The admiral hat, the review tiers, and the human's gates
+- [DR 045 — Flow Map, Hats, Review Tiers, and the Working-Tree Contract](../decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) — The admiral's stage, the review tiers, and the human's gates
+- [DR 050 — Officers, Crew and Skills: Hats Retired](../decisions/050-officers-crew-and-skills-hats-retired.md) — The admiral as an officer role and its place in the skill tree
 - [Working-Tree Contract](../../guides/working-tree-contract.md) — Branch, worktree and cleanup rules a routine admiral still obeys

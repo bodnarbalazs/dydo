@@ -572,11 +572,13 @@ public class GuardIntegrationTests : IntegrationTestBase
             : [];
     }
 
+    // setup-skills.mjs's walk rule: a folder holding SKILL.md is a skill at any depth under skills/,
+    // so the slug's folder may sit under a nested category such as roles/crew/.
     private static bool CanonicalSkillExists(string slug)
     {
         var skillsRoot = Path.Combine(RepositoryRoot(), "skills");
-        return Directory.EnumerateDirectories(skillsRoot)
-            .Any(category => File.Exists(Path.Combine(category, slug, "SKILL.md")));
+        return Directory.EnumerateFiles(skillsRoot, "SKILL.md", SearchOption.AllDirectories)
+            .Any(body => Path.GetFileName(Path.GetDirectoryName(body)) == slug);
     }
 
     private static string RepositoryRoot()

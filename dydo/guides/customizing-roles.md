@@ -5,10 +5,12 @@ type: guide
 
 # Customizing Roles
 
-A role is a skill folder, authored under `skills/<category>/<name>/` in one of three categories —
-`orchestration/`, `engineering/`, `productivity/`. Author the body directly in the cross-vendor
-`SKILL.md` format; there is no template and no compile step. `node setup-skills.mjs` still exposes
-every role flat (no category level) to each host. The [scaffold page](../understand/scaffold-and-customization.md)
+A role is a skill that carries an identity, an officer or crew; every other skill is a plain skill.
+Both are skill folders, authored under `skills/<category>/<name>/`, where `<category>` is
+`roles/officers`, `roles/crew`, `engineering` or `productivity`. Author the body directly in the
+cross-vendor `SKILL.md` format; there is no template and no compile step. `node setup-skills.mjs`
+walks the tree by rule, not by depth — a folder holding `SKILL.md` is a skill, any other folder a
+category — and still exposes every skill flat (no category level) to each host. The [scaffold page](../understand/scaffold-and-customization.md)
 covers the artifact shapes and the link rules; this page covers the frontmatter and what each host
 reads.
 
@@ -45,7 +47,7 @@ edit `skills/<category>/<name>/` once.
 **`## Must-Reads`** — project documents named under that heading. Write each target as a
 repository-root literal path in a code span, read from the repository root — "From the repository
 root, read `dydo/understand/architecture.md`" — the way every shipped role names its own (see
-`skills/orchestration/reviewer/SKILL.md`); `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs`
+`skills/roles/crew/reviewer/SKILL.md`); `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs`
 (`EveryLinkResolves`, its `AssertInside` call) enforces that no Must-Read is written as a markdown link. A `../` climb does not work here because the identical file
 is read at two different depths: canonically at `skills/<category>/<name>/`, and through the host projection at
 `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
@@ -92,5 +94,5 @@ current audit procedure.
 - [Scaffold and Customization](../understand/scaffold-and-customization.md) — the artifact shapes end to end
 - [Configuration Reference](../reference/configuration.md) — dispatch-time model and effort, nudges
 - [dydo Commands Reference](../reference/dydo-commands.md) — the CLI
-- [dydo Glossary](../reference/dydo-glossary.md) — hat, worker, method, and the retired terms
+- [dydo Glossary](../reference/dydo-glossary.md) — officer, crew, method, and the retired terms
 - [Orientation](../index.md) — the shipped taxonomy and what each role is reached for

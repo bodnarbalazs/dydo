@@ -35,7 +35,7 @@ not be presented as the current work model.
 
 ## Authored and projected files
 
-A role is a plain `skills/<category>/<name>/` folder; edit only that canonical source. `setup-skills.mjs` creates
+A skill is a plain `skills/<category>/<name>/` folder; edit only that canonical source. `setup-skills.mjs` creates
 host discovery links and is not a dydo CLI command.
 The `Scaffold/` tree is copied verbatim by `dydo init`; keep
 `Scaffold/dydo/reference/dydo-commands.md` and `dydo/reference/dydo-commands.md` aligned by hand.

@@ -33,10 +33,10 @@ Every item below is a FAIL when it holds.
 
 - **Description that is not a trigger.** Model-invoked: leading word front-loaded, one trigger per
   branch, no identity the body already carries. Explicit-only: one punchy human-facing line. A
-  worker spawned by name may state its job, in trigger form.
+  crew role spawned by name may state its job, in trigger form.
 - **Anchor missing or doubled, or a tagline that changes nothing.** The no-op test grades against
   the model's default, and a failing line is deleted rather than softened.
-- **Shape broken.** Hats and workers: H1 → one-line job → Must-Reads → Boundary → Method with a
+- **Shape broken.** Officers and crew: H1 → one-line job → Must-Reads → Boundary → Method with a
   completion criterion on every step → Return or Handoff. Methods keep their upstream shape.
 - **Off the map.** Must-Reads that do not name what the sender hands over, a Return that does not
   name its receiver, or a sentence narrating what a neighbour does.
@@ -48,7 +48,7 @@ Every item below is a FAIL when it holds.
   goes behind a pointer; a meaning stated twice is stated once.
 - **Upstream text altered without a binding reason.** Linear, dydo and host bindings are the whole
   licence, and the attribution comment stays.
-- **A return shape its consumer cannot parse**: the review block, or a worker's return to the
+- **A return shape its consumer cannot parse**: the review block, or a crew member's return to the
   Captain.
 - **Drift from the canonical source.** `skills/` is the single canonical tree; every host reads it
   through its own projection, never a generated copy. Judge drift against

@@ -139,7 +139,7 @@ and blocks reject the action. Nudges enforce project process; they do not create
 
 ## Customization points
 
-- `skills/<category>/<role>/` — the only editable role folders. Run `node setup-skills.mjs` to create the ignored
+- `skills/<category>/<name>/` — the only editable skill folders. Run `node setup-skills.mjs` to create the ignored
   Claude and Codex discovery projections; OpenCode reads both compatibility roots.
 - `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
   read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.

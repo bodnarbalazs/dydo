@@ -9,7 +9,8 @@ universal reference in this skill's body.
 **The skill folder is the skill.** dydo authors every role directly in the cross-vendor `SKILL.md`
 format; there is no template and no compile step. The canonical artifact is
 `skills/<category>/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io) standard: `name` and
-`description` in the frontmatter and the methodology in the body.
+`description` in the frontmatter and the methodology in the body. `<category>` is the category path:
+`roles/officers`, `roles/crew`, `engineering` or `productivity`.
 
 ## Frontmatter
 
@@ -46,7 +47,7 @@ Two choices, trading the two loads:
 
 - **`## Must-Reads`** — project documents named under that heading. Author each target as a
   repository-root literal path in a code span, read from the repository root — "From the repository
-  root, read `dydo/understand/architecture.md`" (see `skills/orchestration/reviewer/SKILL.md`);
+  root, read `dydo/understand/architecture.md`" (see `skills/roles/crew/reviewer/SKILL.md`);
   `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs` (`EveryLinkResolves`, its `AssertInside` call)
   enforces that no Must-Read is written as a markdown link. A `../` climb does not work here because the identical file is read at two
   different depths: canonically at `skills/<category>/<name>/`, and through the host projection at

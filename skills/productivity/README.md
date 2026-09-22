@@ -1,6 +1,6 @@
 # Productivity
 
-11 skills for thinking, writing, and working with the human day to day.
+13 skills for thinking, writing, and moving work along with the human.
 
 - **bro** (user-invoked): Stop. That last message did not land: re-pitch it.
 - **co-thinker** (model-invoked): An idea not ripe yet. Use when a thought, a doubt or a preference is still open, when a question surfaces that is not yet an Issue, or when a trade-off needs testing before intent hardens into a plan or a Decision Record.
@@ -10,6 +10,8 @@
 - **self-improvement** (model-invoked): Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 - **show-me** (model-invoked): Help the human understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.
 - **teach** (user-invoked): Teach the human a new skill or concept, within this workspace.
+- **to-project** (user-invoked): Turn this co-think into a Linear Project, with its settled intent and links.
 - **walkthrough** (user-invoked): Show me what landed, where to look first, and how to try it.
+- **wayfinder** (model-invoked): Fog in a Project map or inside one Issue. Chart the visible route as Wayfinding Issues and resolve them one at a time until the destination is reached.
 - **writing-for-agents** (model-invoked): Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 - **writing-for-humans** (model-invoked): The reply only the human reads. Cut AI tells and add voice in the conversation; a document, record or comment another agent will read is writing-for-agents's.

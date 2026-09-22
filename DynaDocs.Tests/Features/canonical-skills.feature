@@ -1,6 +1,6 @@
 @DYD-91
 Feature: One canonical skill tree reaches every supported host
-  Each role is authored once under skills and exposed through host-native discovery roots.
+  Each skill is authored once under skills and exposed through host-native discovery roots.
   Setup preserves human-owned paths and does not recreate a compiler or a third OpenCode copy.
 
   Background:
@@ -18,6 +18,13 @@ Feature: One canonical skill tree reaches every supported host
     And the host projections are unchanged
     And every unrelated skill and host configuration file keeps its recorded bytes
     And the Git working tree is clean
+
+  Scenario: Re-point a host link left by the previous category layout
+    Given the canonical "reviewer" skill is also in the project
+    And the Claude and Codex "reviewer" entries link to the former category folder "skills/orchestration/reviewer"
+    When I set up the canonical skills
+    Then setup succeeds
+    And the Claude and Codex "reviewer" entries resolve to the canonical skill directory
 
   Scenario: Keep both hosts' metadata and resources beside one body
     Then the canonical "teach" skill keeps its Claude invocation frontmatter

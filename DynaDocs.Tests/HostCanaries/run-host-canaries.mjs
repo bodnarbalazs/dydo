@@ -268,21 +268,30 @@ async function gitBlobOid(path, info) {
   return hash.digest("hex");
 }
 
+// setup-skills.mjs's walk rule: a folder holding SKILL.md is a skill, any other folder a category.
+async function canonicalSkillFolders(categoryRoot, category = "") {
+  const entries = (await readdir(categoryRoot, { withFileTypes: true })).filter(value => value.isDirectory()).sort((left, right) => ordinal(left.name, right.name));
+  assert(entries.length > 0, `canonical skill category was empty: ${categoryRoot}`);
+  const folders = [];
+  for (const entry of entries) {
+    const folder = join(categoryRoot, entry.name);
+    if (await stat(join(folder, "SKILL.md")).then(value => value.isFile(), () => false)) folders.push({ entry, folder, category });
+    else folders.push(...await canonicalSkillFolders(folder, category ? `${category}/${entry.name}` : entry.name));
+  }
+  return folders;
+}
+
 async function loadExpectedSkills(root) {
   const skills = [];
-  const categories = (await readdir(join(root, "skills"), { withFileTypes: true })).filter(value => value.isDirectory()).sort((left, right) => ordinal(left.name, right.name));
-  for (const category of categories) {
-    const entries = (await readdir(join(root, "skills", category.name), { withFileTypes: true })).filter(value => value.isDirectory()).sort((left, right) => ordinal(left.name, right.name));
-    for (const entry of entries) {
-      const path = join(root, "skills", category.name, entry.name, "SKILL.md");
-      const body = await readFile(path, "utf8");
-      const frontmatter = body.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1];
-      assert(frontmatter, `canonical skill frontmatter was missing: ${entry.name}`);
-      const name = decodeYamlScalar(frontmatter.match(/^name:\s*(.+)$/m)?.[1]?.trim());
-      const description = decodeYamlScalar(frontmatter.match(/^description:\s*(.+)$/m)?.[1]?.trim());
-      assert(name === entry.name && description, `canonical skill metadata was invalid: ${entry.name}`);
-      skills.push({ name, description, path, category: category.name, bodySha256: await sha256(path) });
-    }
+  for (const { entry, folder, category } of await canonicalSkillFolders(join(root, "skills"))) {
+    const path = join(folder, "SKILL.md");
+    const body = await readFile(path, "utf8");
+    const frontmatter = body.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1];
+    assert(frontmatter, `canonical skill frontmatter was missing: ${entry.name}`);
+    const name = decodeYamlScalar(frontmatter.match(/^name:\s*(.+)$/m)?.[1]?.trim());
+    const description = decodeYamlScalar(frontmatter.match(/^description:\s*(.+)$/m)?.[1]?.trim());
+    assert(name === entry.name && description, `canonical skill metadata was invalid: ${entry.name}`);
+    skills.push({ name, description, path, category, bodySha256: await sha256(path) });
   }
   skills.sort((left, right) => ordinal(left.name, right.name));
   await writeArtifact("candidate-skill-inventory.json", JSON.stringify(skills, null, 2));

@@ -224,33 +224,33 @@ def _mirror_host_skill_root(worktree, relative):
 
 
 def _canonical_skill_names(canonical_skills):
-    """Walk `<snapshot>/skills` one level below its category folders, matching setup-skills.mjs's
-    own walk rule exactly: categories are the direct child directories of `skills/`, skills are the
-    direct child directories of each category, and a directory only counts as a skill when it holds
-    a `SKILL.md`. A category with nothing usable inside it, or a skill name reused across two
-    categories, is a boundary error the same way setup-skills.mjs treats it, never a silent drop.
+    """Walk `<snapshot>/skills` by setup-skills.mjs's own walk rule exactly: a directory holding a
+    `SKILL.md` is a skill (its own subdirectories are never walked), and any other directory is a
+    category to walk into, at any depth. A category with no subdirectory at all, or a skill name
+    reached through two categories, is a boundary error the same way setup-skills.mjs treats it,
+    never a silent drop.
     """
-    categories = sorted(item.name for item in canonical_skills.iterdir() if item.is_dir())
     names = []
     seen = {}
-    for category in categories:
-        category_root = canonical_skills / category
+
+    def walk(category_root):
         entries = sorted(item.name for item in category_root.iterdir() if item.is_dir())
         if not entries:
             raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {category_root}")
+        category = category_root.relative_to(canonical_skills).as_posix()
         for entry in entries:
-            if not (category_root / entry / "SKILL.md").is_file():
-                raise ValueError(
-                    f"Cannot project skill discovery directories: canonical skill is missing SKILL.md: "
-                    f"{category}/{entry}")
-        skills = entries
-        for skill in skills:
-            if skill in seen:
+            source = category_root / entry
+            if not (source / "SKILL.md").is_file():
+                walk(source)
+                continue
+            if entry in seen:
                 raise ValueError(
                     f"Cannot project skill discovery directories: duplicate skill name across categories: "
-                    f"{skill} ({seen[skill]} and {category})")
-            seen[skill] = category
-            names.append((skill, category_root / skill))
+                    f"{entry} ({seen[entry]} and {category})")
+            seen[entry] = category
+            names.append((entry, source))
+
+    walk(canonical_skills)
     return names
 
 
@@ -259,11 +259,12 @@ def _project_canonical_skill_links(worktree, relative):
     skills/ tree, for use when the source root has no host discovery directory to mirror (for
     example, this very worktree, which has no .claude/skills installed).
 
-    `<snapshot>/skills` is a category tree (`skills/<category>/<skill>/`): projecting a link per
-    direct child of `skills/` would link the category directories themselves, not the skills inside
-    them, which the CanonicalSkillTree_HasNoAuthoredHostCopies guard cannot tell apart from a real
-    per-skill projection -- it only checks each entry is a link resolving inside `skills/`. Walking
-    one level deeper, the same way setup-skills.mjs does, keeps the projection an actual host
+    `<snapshot>/skills` is a category tree (`skills/<category>/<skill>/`, where a category may
+    itself be nested, as in `roles/crew`): projecting a link per direct child of `skills/` would
+    link the category directories themselves, not the skills inside them, which the
+    CanonicalSkillTree_HasNoAuthoredHostCopies guard cannot tell apart from a real per-skill
+    projection -- it only checks each entry is a link resolving inside `skills/`. Walking by the
+    SKILL.md rule, the same way setup-skills.mjs does, keeps the projection an actual host
     discovery shape.
 
     A snapshot with no `skills/` tree at all has no canonical skills to project and no host
@@ -276,10 +277,7 @@ def _project_canonical_skill_links(worktree, relative):
     canonical_skills = worktree / "skills"
     if not canonical_skills.is_dir():
         return
-    skills = _canonical_skill_names(canonical_skills)
-    if not skills:
-        raise ValueError(f"Cannot project skill discovery directories: no canonical skills found in {canonical_skills}")
-    for name, source in skills:
+    for name, source in _canonical_skill_names(canonical_skills):
         _create_skill_link(worktree / relative / name, source)
 
 

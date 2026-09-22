@@ -23,7 +23,7 @@ A pointer does two jobs: state what the material is, and list the **branches** t
 
 ## The funnel
 
-Every line serves the reader who is actually there: name the reader before the line goes in, and move a fact whose reader is elsewhere into that reader's document — "edit the source, not the build product" lives with the skills that edit skills, not in an entry point every worker loads.
+Every line serves the reader who is actually there: name the reader before the line goes in, and move a fact whose reader is elsewhere into that reader's document — "edit the source, not the build product" lives with the skills that edit skills, not in an entry point every session loads.
 
 An orientation file is a funnel, not a summary. It sorts its reader toward one next document and stops: sort by the reader's situation (started by the human, working an Issue, spawned with a skill), never by a role catalog, which lands incomplete or inconsistent and drags every reader through every other reader's material. A hole in the sort is a defect in the hub — fix it rather than adding an "if nothing fits" escape line. What a hub names, it does not describe: each entry's own description is its routing.
 

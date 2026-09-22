@@ -49,7 +49,7 @@ what they alone have the authority to settle.
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
 | An unscheduled strategic possibility worth preserving | a Linear Issue in `FutureFeature` |
 | Project intent after the homework | the human invokes `to-project`, creating a Project in `Backlog` |
-| Ripe atomic Issue intent | file the Issue in `Todo` with one Type, one Mode, outcome, owned paths, blockers, exact gates and base branch; then `issue-captain` |
+| Ripe atomic Issue intent | file the Issue in `Todo` with one Type, one Mode, outcome, owned paths, blockers, exact gates and base branch; the admiral commissions its captain, or the human opens a captain session; this session does not become the captain |
 
 A FutureFeature stays one until the human promotes it. Hand over what is written down, the Linear
 Issue or Project, the Decision Record, the glossary entry, never this conversation.

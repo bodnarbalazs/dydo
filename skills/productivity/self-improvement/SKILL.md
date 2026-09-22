@@ -13,7 +13,7 @@ it rather than ship it. Product behaviour changes through its own Issue.
 
 ## Boundary
 
-The chief-of-staff reaches for this when the board shows the same friction across sessions; any hat
+The chief-of-staff reaches for this when the board shows the same friction across sessions; any session
 may reach for it mid-run, then return to its work. The output is a suggestion. The human decides: an
 accepted change becomes an Issue, or lands directly only when it is tiny and inside the scope the
 current Issue already grants.

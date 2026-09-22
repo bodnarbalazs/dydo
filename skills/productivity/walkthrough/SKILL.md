@@ -15,13 +15,13 @@ The argument names what to walk — a feature branch, a Project, an Issue, a dif
 when it is missing.
 
 Walk it yourself first: the diff and its hops, the Issues it closed with their review blocks, the
-DRs those Issues cite, the returns their workers posted. Then brief the human in four parts.
+DRs those Issues cite, the returns their crew posted. Then brief the human in four parts.
 
 - **What changed and why** — the outcome in one paragraph, each part traced to the Issue that carried
   it and the DR that decided it, with the shape drawn by `show-me` where a tree or a diff says it
   faster than prose.
 - **Where to look first** — a route for their own file-by-file pass: the files that drew findings,
-  then the ones a worker left an open doubt on, then the seams the change moved.
+  then the ones a crew member left an open doubt on, then the seams the change moved.
 - **How to try it** — the exact commands to build it and see the new behaviour, in order, each one run
   once by you so it is true when they type it.
 - **What reviewers flagged or deferred** — the findings the review blocks recorded and where each

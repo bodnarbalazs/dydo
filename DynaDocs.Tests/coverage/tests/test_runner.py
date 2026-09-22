@@ -129,7 +129,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             root = Path(folder) / "source"
             worktree = Path(folder) / "worktree"
             write_file(root / ".claude/skills/rogue/SKILL.md", "authored copy")
-            write_file(worktree / "skills/orchestration/admiral/SKILL.md", "canonical")
+            write_file(worktree / "skills/roles/officers/admiral/SKILL.md", "canonical")
 
             with patch.object(run_tests, "ROOT", root):
                 run_tests.materialize_skill_links(worktree)
@@ -143,16 +143,16 @@ class SkillLinkMaterializationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             worktree = Path(folder) / "worktree"
-            write_file(root / "skills/orchestration/admiral/SKILL.md", "canonical")
-            write_file(worktree / "skills/orchestration/admiral/SKILL.md", "canonical")
-            _make_link(root / ".claude/skills/admiral", root / "skills/orchestration/admiral")
+            write_file(root / "skills/roles/officers/admiral/SKILL.md", "canonical")
+            write_file(worktree / "skills/roles/officers/admiral/SKILL.md", "canonical")
+            _make_link(root / ".claude/skills/admiral", root / "skills/roles/officers/admiral")
 
             with patch.object(run_tests, "ROOT", root):
                 run_tests.materialize_skill_links(worktree)
 
             link = worktree / ".claude/skills/admiral"
             resolved = Path(os.path.realpath(link))
-            self.assertEqual(Path(os.path.realpath(worktree / "skills/orchestration/admiral")), resolved)
+            self.assertEqual(Path(os.path.realpath(worktree / "skills/roles/officers/admiral")), resolved)
 
     def test_foreign_link_target_outside_skills_is_rebased_onto_a_snapshot_sentinel(self):
         # A link that does not resolve inside skills/ is itself the DR 049 violation; the guard must
@@ -166,7 +166,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             outside = Path(folder) / "outside-target"
             outside.mkdir(parents=True)
             write_file(outside / "canary.txt", "do not delete me")
-            write_file(worktree / "skills/orchestration/admiral/SKILL.md", "canonical")
+            write_file(worktree / "skills/roles/officers/admiral/SKILL.md", "canonical")
             _make_link(root / ".claude/skills/rogue-link", outside)
 
             with patch.object(run_tests, "ROOT", root):
@@ -184,34 +184,39 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             self.assertTrue((outside / "canary.txt").exists(), "the real host target must survive untouched")
 
     def test_absent_source_root_projects_flat_links_not_one_link_per_category(self):
-        # skills/ is a category tree (skills/<category>/<skill>/): projecting one link per direct
-        # child of skills/ would link the category directories themselves, which the
+        # skills/ is a category tree walked by rule (a folder holding SKILL.md is a skill, any other
+        # folder is a category, at any depth): projecting one link per direct child of skills/, or
+        # stopping one level down, would link category directories themselves, which the
         # CanonicalSkillTree_HasNoAuthoredHostCopies guard cannot distinguish from a real per-skill
-        # projection. This must go red if the function reverts to enumerating direct children.
+        # projection. This must go red if the function reverts to a fixed-depth walk.
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
             layout = {
-                "orchestration": ["admiral", "issue-captain", "co-thinker"],
-                "engineering": ["code-writer", "prototype"],
-                "productivity": ["scout"],
+                "roles/officers": ["admiral", "issue-captain"],
+                "roles/crew": ["code-writer", "reviewer"],
+                "engineering": ["prototype"],
+                "productivity": ["co-thinker"],
             }
             for category, skill_names in layout.items():
                 for name in skill_names:
                     write_file(worktree / "skills" / category / name / "SKILL.md", "canonical")
+            # A skill's own subfolders are never walked: resources/ is not a category.
+            (worktree / "skills/roles/crew/reviewer/resources").mkdir()
 
             with patch.object(run_tests, "ROOT", root):
                 run_tests.materialize_skill_links(worktree)
 
             all_skills = sorted(name for names in layout.values() for name in names)
+            category_folders = {part for category in layout for part in category.split("/")}
             for relative in (".claude/skills", ".agents/skills"):
                 projected = sorted(p.name for p in (worktree / relative).iterdir())
                 self.assertEqual(all_skills, projected,
                                   "must project one flat link per skill, not one per category")
-                for category in layout:
+                for category in category_folders:
                     self.assertNotIn(category, projected,
-                                      "the category directory itself must never be projected")
+                                      "a category directory itself must never be projected")
                 for category, skill_names in layout.items():
                     for name in skill_names:
                         link = worktree / relative / name
@@ -220,8 +225,9 @@ class SkillLinkMaterializationTests(unittest.TestCase):
                             Path(os.path.realpath(link)))
 
     def test_absent_source_root_projects_all_29_real_repo_skills_flat(self):
-        # The real repo's category tree (orchestration 8, engineering 10, productivity 11) must
-        # project 29 flat links, proving the small synthetic fixture above generalizes.
+        # The real repo's category tree (roles/officers 3, roles/crew 7, engineering 6,
+        # productivity 13) must project 29 flat links, proving the small synthetic fixture above
+        # generalizes.
         real_root = run_tests.ROOT
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
@@ -235,8 +241,10 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             for relative in (".claude/skills", ".agents/skills"):
                 projected = list((worktree / relative).iterdir())
                 self.assertEqual(29, len(projected))
-                for category in ("orchestration", "engineering", "productivity"):
+                for category in ("roles", "officers", "crew", "engineering", "productivity"):
                     self.assertFalse((worktree / relative / category).exists())
+                self.assertEqual(Path(os.path.realpath(worktree / "skills/roles/crew/reviewer")),
+                                 Path(os.path.realpath(worktree / relative / "reviewer")))
 
     def test_materialization_failure_raises_with_named_reason(self):
         # The snapshot *has* a skills/ tree, but it is empty: there is nothing to project, and this
@@ -252,49 +260,48 @@ class SkillLinkMaterializationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "materialize skill discovery directory"):
                     run_tests.materialize_skill_links(worktree)
 
-    def test_category_child_without_skill_md_raises_the_way_setup_skills_mjs_does(self):
-        # setup-skills.mjs:56 throws "Canonical skill is missing SKILL.md: <category>/<name>" and
-        # projects nothing at all. The python walk must fail closed the same way instead of
-        # silently dropping the entry, or a category directory with no SKILL.md would still yield a
-        # green, plausible-looking per-skill projection here while node refuses to run at all.
+    def test_folder_without_skill_md_or_subfolder_raises_as_an_empty_category(self):
+        # setup-skills.mjs treats a folder without SKILL.md as a category and refuses one with no
+        # subfolder ("No canonical skills found in <folder>"), projecting nothing at all. The python
+        # walk must fail closed the same way instead of silently dropping the folder, or it would
+        # still yield a green, plausible-looking per-skill projection here while node refuses to run.
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
-            write_file(worktree / "skills/engineering/code-writer/SKILL.md", "canonical")
+            write_file(worktree / "skills/engineering/prototype/SKILL.md", "canonical")
             (worktree / "skills/engineering/no-skill-md").mkdir(parents=True)
 
             with patch.object(run_tests, "ROOT", root):
-                with self.assertRaisesRegex(ValueError, r"engineering/no-skill-md"):
+                with self.assertRaisesRegex(ValueError, r"no canonical skills found in.*no-skill-md"):
                     run_tests.materialize_skill_links(worktree)
 
-    def test_category_with_no_skills_raises_naming_the_category_root(self):
-        # A category directory that holds no skills must stay loud: no test previously reached
-        # _canonical_skill_names's own "no canonical skills found in <category_root>" raise (the
-        # existing coverage only reached the outer, whole-tree-empty case).
+    def test_nested_category_with_no_skills_raises_naming_the_category_root(self):
+        # An empty category must stay loud at any depth: roles/officers empty beside a populated
+        # roles/crew is the nested form of the whole-tree-empty case.
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
-            write_file(worktree / "skills/engineering/code-writer/SKILL.md", "canonical")
-            (worktree / "skills/orchestration").mkdir(parents=True)
+            write_file(worktree / "skills/roles/crew/code-writer/SKILL.md", "canonical")
+            (worktree / "skills/roles/officers").mkdir(parents=True)
 
             with patch.object(run_tests, "ROOT", root):
-                with self.assertRaisesRegex(ValueError, r"no canonical skills found in.*orchestration"):
+                with self.assertRaisesRegex(ValueError, r"no canonical skills found in.*officers"):
                     run_tests.materialize_skill_links(worktree)
 
-    def test_duplicate_skill_name_across_categories_raises_naming_both_categories(self):
-        # The same skill name claimed by two categories must stay loud: no test previously reached
-        # _canonical_skill_names's own "duplicate skill name across categories" raise.
+    def test_duplicate_skill_name_across_categories_raises_naming_both_category_paths(self):
+        # The same skill name reached through two categories, one of them nested, must stay loud
+        # and name both category paths the way setup-skills.mjs does.
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
             write_file(worktree / "skills/engineering/scout/SKILL.md", "canonical")
-            write_file(worktree / "skills/orchestration/scout/SKILL.md", "canonical")
+            write_file(worktree / "skills/roles/crew/scout/SKILL.md", "canonical")
 
             with patch.object(run_tests, "ROOT", root):
-                with self.assertRaisesRegex(ValueError, r"duplicate skill name across categories: scout \(engineering and orchestration\)"):
+                with self.assertRaisesRegex(ValueError, r"duplicate skill name across categories: scout \(engineering and roles/crew\)"):
                     run_tests.materialize_skill_links(worktree)
 
     def test_absent_snapshot_skills_tree_and_absent_source_root_is_a_quiet_noop(self):

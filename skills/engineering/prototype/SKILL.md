@@ -12,7 +12,7 @@ A prototype is **throwaway code that answers a question**. The question decides 
 ## Pick a branch
 
 Identify which question is being answered, using the Prototype Issue, the prompt and surrounding
-code. A worker returns a missing choice to the Captain, whose HITL session reaches the human:
+code. A crew member returns a missing choice to the Captain, whose HITL session reaches the human:
 
 - **"Does this logic / state model feel right?"** → [logic](resources/logic.md). Build a single
   shareable HTML file (free-play buttons plus tabbed guided walkthroughs) that pushes the state

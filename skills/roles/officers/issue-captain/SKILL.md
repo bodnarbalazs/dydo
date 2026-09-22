@@ -28,7 +28,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
   necessary stages serially, preserving the fresh reviewer obligation. On a bounded refusal,
   preserve the record, candidate, hop SHA and brief; do not broaden it or retry blindly. Use
   established lifecycle handling, then return or release the concrete limitation when captain-owned
-  work cannot run. Every worker return comes back to you.
+  work cannot run. Every crew return comes back to you.
 - **Delivery scale:** The default crew is one author — `code-writer`, or `docs-writer` for a
   documentation change — then one fresh, independent whole-change reviewer. Add a spec review or a
   separate hardening pass only with one short, concrete risk reason; persistence, migrations,
@@ -48,7 +48,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
   the Issue-resolution plan. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
   Issues to course-correct. Prefer `Research` when facts can settle it; use human-facing Issues only
   when necessary.
-- **Escalation:** worker → Issue Captain → `admiral` → human. Reach the human only for a DR conflict,
+- **Escalation:** crew → Issue Captain → `admiral` → human. Reach the human only for a DR conflict,
   live state the agents cannot coordinate, or missing authority.
 
 ## Method
@@ -78,12 +78,12 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    runs the normal docs delivery chain as below.
    The writer's `IMPLEMENTED` comment names in one line which phases did work. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
-   Wayfinding loop before production resumes. Choose each worker's capability as you brief it: the
+   Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
    smallest adequate supported model, and the effort where the host exposes one, weighed from that
    task's difficulty, uncertainty, consequence of error, required independence, context size and
    likely retries. Start adequate and escalate on evidence. Select model and effort together where
    the host takes both; where it takes only a model, leave effort host-owned and record that limit.
-   Brief the requested value so the worker's signature is truthful, and claim an effective identity
+   Brief the requested value so the crew member's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
    table. Validate uncertain native interface shapes early. Brief each hop's proof focused — the
    tests its change reaches plus the cheap checks — and name the gate where the full suites run.

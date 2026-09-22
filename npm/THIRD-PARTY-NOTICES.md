@@ -5,12 +5,12 @@
 Several dydo skills contain adaptations of material from
 [mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
 `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
-header in the canonical `skills/<category>/<name>/` folders (`orchestration/`, `engineering/`,
+header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, `roles/crew/`, `engineering/`,
 `productivity/`).
 
 | Upstream skill | Adapted in |
 |---|---|
-| `code-review` | `skills/orchestration/reviewer/resources/code.md` |
+| `code-review` | `skills/roles/crew/reviewer/resources/code.md` |
 | `codebase-design` | `skills/engineering/codebase-design/SKILL.md`, `skills/engineering/codebase-design/resources/deepening.md`, `skills/engineering/codebase-design/resources/design-it-twice.md` |
 | `diagnosing-bugs` | `skills/engineering/diagnosing-bugs/SKILL.md` |
 | `domain-modeling` | `skills/engineering/domain-modeling/SKILL.md` |
@@ -19,15 +19,15 @@ header in the canonical `skills/<category>/<name>/` folders (`orchestration/`, `
 | `handoff` | `skills/productivity/handoff/SKILL.md` |
 | `improve-codebase-architecture` | `skills/engineering/improve-codebase-architecture/SKILL.md`, `skills/engineering/improve-codebase-architecture/resources/html-report.md` |
 | `prototype` | `skills/engineering/prototype/SKILL.md`, `skills/engineering/prototype/resources/logic.md`, `skills/engineering/prototype/resources/ui.md` |
-| `research` | `skills/engineering/research/SKILL.md` |
+| `research` | `skills/roles/crew/research/SKILL.md` |
 | `retro` | `skills/productivity/self-improvement/SKILL.md` |
-| `tdd` | `skills/engineering/code-writer/SKILL.md`, `skills/engineering/code-writer/resources/tests.md`, `skills/engineering/code-writer/resources/mocking.md`, `skills/orchestration/reviewer/resources/code.md` |
+| `tdd` | `skills/roles/crew/code-writer/SKILL.md`, `skills/roles/crew/code-writer/resources/tests.md`, `skills/roles/crew/code-writer/resources/mocking.md`, `skills/roles/crew/reviewer/resources/code.md` |
 | `teach` | `skills/productivity/teach/SKILL.md`, `skills/productivity/teach/resources/mission-format.md`, `skills/productivity/teach/resources/glossary-format.md`, `skills/productivity/teach/resources/learning-record-format.md`, `skills/productivity/teach/resources/resources-format.md` |
-| `to-spec` | `skills/engineering/to-project/SKILL.md` |
-| `to-tickets` | `skills/orchestration/project-planner/SKILL.md` |
+| `to-spec` | `skills/productivity/to-project/SKILL.md` |
+| `to-tickets` | `skills/roles/crew/project-planner/SKILL.md` |
 | `wizard` and its `template.sh` | `skills/engineering/wizard/SKILL.md`, `skills/engineering/wizard/resources/template.md` |
 | `wait-what` | `skills/productivity/bro/SKILL.md` |
-| `wayfinder` | `skills/orchestration/wayfinder/SKILL.md` |
+| `wayfinder` | `skills/productivity/wayfinder/SKILL.md` |
 | `writing-for-agents` | `skills/productivity/writing-for-agents/SKILL.md` |
 | `writing-for-agents/SKILL-MECHANICS` | `skills/productivity/writing-for-agents/resources/skill-mechanics.md` |
 

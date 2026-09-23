@@ -20,7 +20,7 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 |---|---|---|---|
 | Think | any session, loading co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
 | Chart and plan a Project | admiral, sending project-planner | committed plan, first Issues, prepared Questions | admiral-owned project-plan review, then human approval |
-| Make an Issue exact | issue-captain, through its code-writer's first phase | a just-in-time spec and route with no hidden implementation decisions | optional spec review |
+| Make an Issue exact | issue-captain, through its compact acceptance contract | a just-in-time contract with no hidden implementation decisions; the route stays the writer's | optional spec review |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
 | Coordinate | admiral | captains in flight, wired Merge Sub-issues, plan amendments | each captain directs its own merge review |
 | Inquisition | issue-captain | read-only sweeps, proof tests, Bugs and an inquisition record | human confirms Backlog → Todo; it files rather than gates |
@@ -72,7 +72,8 @@ No implementation begins without a contract another agent can review independent
 - One atomic Issue can be its own reviewed contract. Coordinated, cross-cutting, or
   architecture-sensitive work gets one reviewed Project plan in the repository.
 - The plan carries one `linear-project` URL, and its Linear Project links back to the published plan.
-- Every implementation Issue records the exact governing commit before execution.
+- An implementation Issue under a Project plan records the plan's exact governing commit before
+  execution; a review pins the Issue's own contract as its description as of a Linear `updatedAt`.
 - The two planning resolutions, the fields an Issue must carry, and the Question Issue that clears
   fog are in the [Linear Issue Lifecycle](./task-lifecycle.md).
 

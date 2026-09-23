@@ -9,9 +9,10 @@ Every item below is a FAIL when it holds.
 
 ## Method
 
-1. **Resolve the contract.** Issue, governing commit, and the Project plan when one governs. Done
-   when audience, owned paths, acceptance criteria and gates are named; an unmet criterion or an
-   edit outside the owned paths is a finding.
+1. **Resolve the contract.** The Issue description as of the brief's Linear `updatedAt`, and the
+   Project plan at its governing commit when one governs. Done when audience, owned paths,
+   acceptance criteria and gates are named; an unmet criterion or an edit outside the owned paths
+   is a finding.
 2. **Sort every changed file** into one of the two lists below, then work that list entire.
 3. **Verify from source.** Open the paths, run the commands, read the code; rerun the Issue's gates
    yourself, `dydo check` among them. Drift lives in the sentence nobody rechecked. Done when every

@@ -62,7 +62,7 @@ Implementing at the code-writer's spawn and In Review at a reviewer's, the optio
 before any code included. A parent whose lanes run is In Progress. The writer
 posts nothing before code unless the work splits into disjoint lanes or the contract is inexact;
 its IMPLEMENTED return carries the hop SHA, the red proof, the gates run and any blocker. A
-scenario changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next crew member.
+scenario changes only through a fresh author's fix hop. Every hop's SHA is posted, preserved and passed to the next crew member.
 
 ## Reviewed before it merges
 
@@ -79,7 +79,8 @@ The captain directs the merge by one code-writer and a fresh merge review, then 
 Done and returns `done <key>: merged`. A Merge Sub-issue never waits in Ready to Merge. The landing
 Merge does: the human clicks its reviewed PR as a merge commit.
 
-Every FAIL returns to Implementing, whatever it found: a fresh code-writer takes the next fix hop
+Every FAIL returns to Implementing, whatever it found: a fresh author of the change's kind —
+`code-writer`, or `docs-writer` for a documentation change — takes the next fix hop
 with the FAIL block as its contract, amending a scenario only where the block names it. Corrections carry new
 commits and fresh reviews. Merge FAIL
 fixes integration defects inside Merge. A source defect is reverted there, Merge closes Canceled

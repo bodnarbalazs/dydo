@@ -216,6 +216,36 @@ public sealed class CanonicalSkillAssertionTests
     }
 
     [Fact]
+    public void CodeWriter_InlinesTheWorkingTreeChecksAndTheImplementedFormVerbatim()
+    {
+        var root = RepositoryRoot();
+        var skill = File.ReadAllText(Path.Combine(root, "skills", "roles", "crew", "code-writer", "SKILL.md"));
+        var contract = File.ReadAllText(Path.Combine(root, "dydo", "guides", "working-tree-contract.md"));
+        var standard = File.ReadAllText(Path.Combine(root, "dydo", "reference", "linear-workspace-standard.md"));
+
+        var checks = NumberedItemsUnder(contract, "## Before the first edit");
+        Assert.Equal(5, checks.Length);
+        Assert.Equal(checks, NumberedItemsUnder(skill, "## Before the first edit"));
+        Assert.Equal(ImplementedForm(standard), ImplementedForm(skill));
+    }
+
+    private static string[] NumberedItemsUnder(string body, string heading)
+    {
+        var section = Regex.Match(body.ReplaceLineEndings("\n"), $@"(?ms)^{Regex.Escape(heading)}\n(.*?)(?=^## |\z)");
+        Assert.True(section.Success, $"no {heading} section");
+        return Regex.Matches(section.Groups[1].Value, @"(?m)^\s*\d+\.\s+(.+?)\s*$")
+            .Select(match => match.Groups[1].Value)
+            .ToArray();
+    }
+
+    private static string ImplementedForm(string body)
+    {
+        var form = Regex.Match(body, "`(IMPLEMENTED — [^`]+)`");
+        Assert.True(form.Success, "no `IMPLEMENTED — ...` form line");
+        return form.Groups[1].Value;
+    }
+
+    [Fact]
     public void ThirdPartyNotices_AdaptedInPathsExistOnDisk()
     {
         var root = RepositoryRoot();

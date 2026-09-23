@@ -54,6 +54,8 @@ DESCENDANT_EXIT_SECONDS = 10
 PR_SET_CHILD_SUBREAPER = 36
 # The handle contain_descendants returns on Linux, where the descendants are found through /proc.
 SUBREAPER = "subreaper"
+# Where Linux lists its processes; tests replace it with a fake table.
+PROC_ROOT = Path("/proc")
 
 
 def isolated_environment():
@@ -553,7 +555,7 @@ def end_descendants(job):
 def _stat_fields(pid):
     """Return (parent pid, state) from /proc/<pid>/stat, or None when the process already exited."""
     try:
-        stat = Path("/proc", pid, "stat").read_text(encoding="utf-8", errors="replace")
+        stat = (PROC_ROOT / pid / "stat").read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
     # The command name sits in parentheses and may itself hold spaces or parentheses.
@@ -564,7 +566,7 @@ def _stat_fields(pid):
 def _process_table():
     """Map each running process id to its (parent pid, state)."""
     table = {}
-    for name in os.listdir("/proc"):
+    for name in os.listdir(PROC_ROOT):
         fields = _stat_fields(name) if name.isdigit() else None
         if fields:
             table[int(name)] = fields

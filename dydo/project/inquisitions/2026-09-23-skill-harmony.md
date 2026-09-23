@@ -109,9 +109,11 @@ The 12 Bugs (DYD-236 through DYD-247) are listed in the root-findings table abov
   clean worktree, and only the test path touched; the working-tree contract gains a proof-branch
   row. Next: folded into the batched skill-harmony fix pass.
 - **[DYD-250](https://linear.app/bodnar-balazs/issue/DYD-250)** (May the code-writer load research
-  itself): still open in `Todo`, unanswered as of this record — the human has not yet decided
-  between keeping DYD-230 decision 6 (code-writer loads research itself, no scouts) or reversing it
-  (hand-raise to the captain).
+  itself): **DECIDED** 2026-09-23 by the human (posted by admiral/model: claude-opus-5-5). Option B,
+  narrowed: drop the `research` trigger from the code-writer skill. A trivial fact the code-writer
+  looks up directly; a hard unknown mid-hop means the contract is wrong, so it returns to the captain
+  under the skill's existing hand-back rule. `research`, DR 050 and control-flow stay unchanged.
+  Next: folded into the batched skill-harmony fix pass.
 
 ## Record
 

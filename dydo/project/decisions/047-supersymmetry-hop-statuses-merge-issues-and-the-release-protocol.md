@@ -361,7 +361,9 @@ work, by the issue-captain's inquisition resource. (Amended by DYD-230, 2026-09-
 
 The default Issue path is `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with
 `In Progress` while lanes run; a Merge Sub-issue runs `Todo` → `Implementing` → `In Review` →
-`Done`, and an Inquisition `Backlog` → `Todo` → `Implementing` for its contract → `In Progress`.
+`Done`, and an Inquisition `Backlog` → `Todo`, the human's confirmation → `In Progress`, the
+captain writes the contract, then the sweep and proofs → released `Todo` → resumed `In Progress` →
+`Done`.
 `Specifying` and `Hardening` stay defined in the workspace standard as optional, captain-chosen
 parks off that path: one for a spec review the captain has bought, entered only from `Todo` or
 `Implementing`, the other for an Issue whose landed code another hand is tightening, entered only

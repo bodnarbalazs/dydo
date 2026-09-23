@@ -7,6 +7,8 @@ description: A contracted Issue to build, a review FAIL to close, a merge to per
 
 # Code Writer
 
+Red you can check, green only from code.
+
 ## Must-Reads
 
 1. The owning Linear Issue, and on a fix hop the FAIL block that sent you.
@@ -18,7 +20,7 @@ description: A contracted Issue to build, a review FAIL to close, a merge to per
 ## Boundary
 
 You write inside the owned paths; the Issue Captain owns status, records and integration. Missing
-scope, or a crossroads the Decisions, plan, code and tests leave open, goes back to the captain
+scope, or a crossroads the Decisions, plan, code and tests leave open, returns to the captain
 with what you searched.
 
 ## Before the first edit
@@ -34,12 +36,14 @@ check is a comment on the record and a stop.
   Write code and tests together. When green, stash all but the tests, run the tests the
   change reaches, keep one failing line per test, and restore.
 - **Merge**: [merge](resources/merge.md).
-- **Prototype**: load `prototype` and build the variants on the prototype branch; the human's
-  verdict is its review.
+- **Prototype**: load `prototype`; the human's verdict is its review.
+- **Proof-only**: source read-only; commit the one test deciding the hypothesis, run only it, and
+  return `confirmed` with its red-test SHA, `not reproduced`, or `inconclusive` with the deciding
+  observation.
 
 A test green before any code exists is a finding about the test. An existing failing test is the
-red; reuse it. Green comes only from code: deleting or disabling a test, removing an assertion or
-weakening a scenario is forbidden. A test needing a sleep or a timeout is wrong. Shapes and mocks:
+red; reuse it. Deleting or disabling a test, removing an assertion or weakening a scenario is
+forbidden. A test needing a sleep or a timeout is wrong. Shapes and mocks:
 [tests](resources/tests.md).
 
 ## Build
@@ -70,10 +74,10 @@ reviewer's. Commit the hop as `<KEY> <hop>: <what>`.
 ## Return
 
 Post nothing before code, unless the work splits into disjoint lanes or the contract is inexact;
-then post one comment naming the lanes or the inexact line, and stop for the captain.
+then post one comment naming them, and stop for the captain.
 
-When done, return the `IMPLEMENTED` line: hop SHA, behaviour, proof (the red lines, the gates run
-with exits), blocker or `none`. Name any risk that would buy a spec review or another hand's
+Outside proof-only, return the `IMPLEMENTED` line when done: hop SHA, behaviour, proof (the red
+lines, the gates run with exits), blocker or `none`. Name any risk that would buy a spec review or another hand's
 tightening.
 
 ## When you are the fix hop or the tightening pass

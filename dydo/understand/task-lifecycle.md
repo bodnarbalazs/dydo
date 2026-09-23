@@ -39,11 +39,11 @@ Decision Records carry decisions, and the two are linked rather than copied.
   approval; the admiral then updates the Linear map as fog clears and commissions project-planner
   to commit dated plan amendments, returning only changes to destination,
   scope, acceptance criteria, or governing architecture for fresh review and human approval.
-- **Issue** — high resolution, just in time: the scenarios and gates that make the contract exact,
-  then the files to touch, the pattern to copy with its path, steps and edge cases — until building
-  contains no hidden decisions. A spawned `code-writer` writes it into the parent Issue or direct lane
-  Sub-issue in its first phase, at the Issue Captain's direction. It is reviewed with the code it produced; the Captain
-  may require `spec` before production when route risk warrants it.
+- **Issue** — high resolution, just in time: the Issue Captain's compact acceptance contract on the
+  parent Issue or a direct lane Sub-issue, with its scenarios where the Issue carries Gherkin, owned
+  paths and gates, exact enough to build. The spawned `code-writer` builds from it. The contract is
+  reviewed with the code; the Captain may buy a `spec` review of it before any code when route risk
+  warrants it.
 
 ## Claimed, isolated, executed
 
@@ -57,11 +57,12 @@ Linear owns the Issue's status, priority, assignee, blockers and updates through
 worktree, session, commits, PR and test runs are evidence for that Issue, never additional work
 records.
 
-Every delivery kind starts by making its contract exact. The captain sets Implementing at the
-code-writer's spawn and In Review at a reviewer's; Specifying and Hardening are optional parks it
-chooses, off the default path. A parent whose lanes run is In Progress. The spec names its lanes, or
-none, and the writer's IMPLEMENTED comment names in one line which phases did work; a scenario
-changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next crew member.
+Every delivery kind starts with the captain making its contract exact. The captain sets
+Implementing at the code-writer's spawn and In Review at a reviewer's; Specifying and Hardening are
+optional parks it chooses, off the default path. A parent whose lanes run is In Progress. The writer
+posts nothing before code unless the work splits into disjoint lanes or the contract is inexact;
+its IMPLEMENTED return carries the hop SHA, the red proof, the gates run and any blocker. A
+scenario changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next crew member.
 
 ## Reviewed before it merges
 
@@ -74,12 +75,12 @@ the [Work Model](./work-model.md); the review block's fields are locked in the
 
 A reviewed PR sets the source Issue Ready to Merge and the captain returns `done <key>: PR ready`.
 Its final Merge Sub-issue runs when its native blocker clears; the parent stays Ready to Merge.
-The captain directs specification, merge implementation and fresh merge review, then marks both
+The captain directs the merge by one code-writer and a fresh merge review, then marks both
 Done and returns `done <key>: merged`. A Merge Sub-issue never waits in Ready to Merge. The landing
 Merge does: the human clicks its reviewed PR as a merge commit.
 
-Every FAIL returns to Implementing, whatever it found: a fresh code-writer takes the next fix hop,
-and its Exact phase amends the contract when the scenario or route was wrong. Corrections carry new
+Every FAIL returns to Implementing, whatever it found: a fresh code-writer takes the next fix hop
+with the FAIL block as its contract, amending a scenario only where the block names it. Corrections carry new
 commits and fresh reviews. Merge FAIL
 fixes integration defects inside Merge. A source defect is reverted there, Merge closes Canceled
 and source returns to Implementing; if a later merge depends on it, a following fix Issue replaces

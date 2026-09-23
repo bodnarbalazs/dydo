@@ -335,10 +335,10 @@ with `In Progress` while its lanes run; `Specifying` and `Hardening` appear only
 buys a discretionary extra pass. A Merge Sub-issue runs `Todo` → `Implementing` → `In Review` →
 `Done` and never waits to be merged: one code-writer maps the conflicts, merges, and tightens the
 resolution in place where it refactored. An Inquisition
-Issue runs `Backlog` → `Todo` (the human's confirmation) → `Implementing` for its contract →
-`In Progress` for the sweep and proofs, releases to `Todo` while the separate record Feature delivers, then resumes
-`In Progress` for retention verification before `Done`. The record Feature runs the normal docs
-delivery chain. A Merge Sub-issue
+Issue runs `Backlog` → `Todo`, the human's confirmation → `In Progress`, the captain writes the
+contract, then the sweep and proofs → released `Todo` → resumed `In Progress` → `Done`. It is
+released while its separate record Feature runs the normal docs delivery chain, and resumed for
+retention verification. A Merge Sub-issue
 whose review fails on the landed work is reverted and closes `Canceled` with the reason.
 
 ## 5. Edges: the contract table
@@ -363,7 +363,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 13 | human → issue-captain (HITL or atomic) | C, L | the Issue key; assignment | the same | — |
 | 13b | issue-captain (top-level) → human, admiral | C, L | `done <key>` or `released <key>: <reason>` in its own session; the human tells the admiral | the record | — |
 | 14 | issue-captain → Issue | L, G | branch, base SHA, worktree path | — | — |
-| 15 | issue-captain → code-writer | R (spawn) | the record to write, its kind | the record with parent, blockers, comments; the plan section and DRs; working-tree contract; coding-standards; about; architecture; the kind's resource | `Implementing` |
+| 15 | issue-captain → code-writer | R (spawn) | the record to write, its kind | the owning Issue, and on a fix hop the FAIL block that sent it; the governing Project plan at its linked commit and the Decision Records it names; coding-standards; testing-strategy; the Communication and evidence section of linear-workspace-standard | `Implementing` |
 | 16 | code-writer → issue-captain | R, L, G | before code, only when needed: one comment naming the lanes or the inexact contract line; after: the `IMPLEMENTED` line with implement SHA, behaviour, red proof, the suites and static gates run with exits, blocker, any extra-pass risk | — | — |
 | 17 | issue-captain → Sub-issues | L, G | lane Sub-issues with the parent's Type and Mode, disjoint paths and branches, or retained Bug stages with native ordering and serial path transfer; one Merge Sub-issue per actual integration; a Question Sub-issue for local fog | — | lanes `Todo`; parent `In Progress` |
 | 18 | issue-captain → reviewer(spec), optional, at the captain's discretion before the code | R (spawn) | the record carrying the captain's contract | that text on the Issue, the five fields, base SHA, branch, worktree, owned paths | `Specifying` → `In Review` → `Implementing` |

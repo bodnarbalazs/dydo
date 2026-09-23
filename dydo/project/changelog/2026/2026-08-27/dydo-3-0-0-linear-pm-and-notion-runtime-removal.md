@@ -18,5 +18,5 @@ dydo 3.0 removes the local Notion runtime and keeps live PM in Linear.
 
 ## Upgrade
 
-Follow [Migrate from dydo 2.x to 3.x](../../../../guides/migrating-dydo-2x-to-3x.md). This entry records
+Follow Migrate from dydo 2.x to 3.x. This entry records
 the candidate change; version tagging and publication require separate human acceptance.

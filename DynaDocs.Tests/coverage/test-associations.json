@@ -579,12 +579,6 @@
       ]
     },
     {
-      "module": "Rules/LegacyPmRecordRule.cs",
-      "tests": [
-        "DynaDocs.Tests/Rules/LegacyPmRecordRuleTests.cs"
-      ]
-    },
-    {
       "module": "Rules/NamingRule.cs",
       "tests": [
         "DynaDocs.Tests/Rules/NamingRuleTests.cs"
@@ -769,12 +763,6 @@
       "module": "Services/IValidationService.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
-      ]
-    },
-    {
-      "module": "Services/LegacyPmManifestService.cs",
-      "tests": [
-        "DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs"
       ]
     },
     {

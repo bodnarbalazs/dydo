@@ -137,7 +137,7 @@ public static class InitCommand
             () => ScaffoldTree.Read("Scaffold/dydo/files-off-limits.md"),
             "files-off-limits.md (security config)");
 
-        UpdateGitignore(projectRoot, config.Structure.Root, includeClaudeSettings: integrations.Contains("claude"));
+        UpdateGitignore(projectRoot, config.Structure.Root, integrations);
         Console.WriteLine($"  ✓ Updated .gitignore (agents/, local state)");
 
         if (integrations.Contains("claude"))
@@ -209,7 +209,6 @@ public static class InitCommand
                     () => ScaffoldTree.EntryPoint(Path.GetFileName(projectRoot)),
                     "CLAUDE.md (entry point)");
                 ConfigureClaudeHooks(projectRoot);
-                UpdateGitignore(projectRoot, config?.Structure.Root ?? "dydo", includeClaudeSettings: true);
                 Console.WriteLine("  ✓ Claude Code hooks configured");
             }
 
@@ -222,6 +221,8 @@ public static class InitCommand
                 ConfigureCodexHooks(projectRoot);
                 Console.WriteLine("  - Codex hooks configured");
             }
+
+            UpdateGitignore(projectRoot, config?.Structure.Root ?? "dydo", integrations);
 
             // Joining wires this machine, but the integration set is project state: record it
             // so dydo.json reflects every integration the project actually uses (issue 0300).
@@ -682,7 +683,12 @@ public static class InitCommand
     // and works from a fresh clone (issue 0303 records this deliberate asymmetry).
     private const string ClaudeSettingsEntry = ".claude/settings.local.json";
 
-    private static void UpdateGitignore(string projectRoot, string dydoRoot, bool includeClaudeSettings = false)
+    // setup-skills.mjs projects the authored /skills tree into these host-local discovery
+    // directories; neither is source, so both must stay out of every host's commits.
+    private const string ClaudeSkillsEntry = "/.claude/skills/";
+    private const string CodexSkillsEntry = "/.agents/skills/";
+
+    private static void UpdateGitignore(string projectRoot, string dydoRoot, string[] integrations)
     {
         var gitignorePath = Path.Combine(projectRoot, ".gitignore");
         var sections = new List<(string Comment, string Entry)>
@@ -690,8 +696,13 @@ public static class InitCommand
             ("# DynaDocs agent workspaces (local state)", $"{dydoRoot}/agents/"),
             ("# DynaDocs runtime state", $"{dydoRoot}/_system/.local/"),
         };
-        if (includeClaudeSettings)
+        if (integrations.Contains("claude"))
+        {
             sections.Add(("# Claude Code personal settings (machine-local, wired by 'dydo init claude --join')", ClaudeSettingsEntry));
+            sections.Add(("# Claude Code skill projection (machine-local, wired by setup-skills.mjs)", ClaudeSkillsEntry));
+        }
+        if (integrations.Contains("codex"))
+            sections.Add(("# Codex skill projection (machine-local, wired by setup-skills.mjs)", CodexSkillsEntry));
 
         var content = File.Exists(gitignorePath) ? File.ReadAllText(gitignorePath) : "";
         var modified = !File.Exists(gitignorePath);

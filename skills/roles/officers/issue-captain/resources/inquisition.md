@@ -1,4 +1,4 @@
-# Specify an Inquisition
+# Contract an Inquisition
 
 The human has confirmed its scope and cost. Pin the integrated feature SHA and plan, then make the
 sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
@@ -9,7 +9,7 @@ sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
    that would refute it. A proof-only code-writer writes only the test and returns `confirmed` with
    its red-test SHA, `not reproduced`, or `inconclusive` with the deciding observation.
 3. Plan an `inquisition/<slug>` branch from the feature SHA, never merged, with child proof branches.
-   The Captain deduplicates confirmed problems into Bugs under the Project, using the feature as
+   Deduplicate confirmed problems into Bugs under the Project, using the feature as
    base and linking each reproduction commit. Done when every hypothesis has a verdict and every
    confirmed problem has its Bug and each open Bug's reproduction is linked through a pushed named
    ref independent of the audit branch, with its retention owner recorded.

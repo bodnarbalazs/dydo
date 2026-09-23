@@ -170,11 +170,12 @@ When uncertain about security implications, stop and research or ask.
 
 ## 6. Testing
 
-**Red before green, outside in.** Three claims prove a change, and each has one owner:
+**Test-driven by Type.** A Bug goes red before its fix; a Feature writes its tests with the code and
+proves after green that they fail without it. Three claims prove a change, and each has one owner:
 
 - A **scenario** claims behaviour at the product's boundary, in glossary words, with example tables
-  where values vary. It is contract: the code-writer writes it in Gherkin in its first phase, the
-  acceptance runner runs it, and later phases wire it without editing it.
+  where values vary. It is contract where the Issue calls for Gherkin: the captain decides the set,
+  the code-writer writes and wires it without weakening it, and the acceptance runner runs it.
 - A **test** claims one seam inside, in the code's words. It comes and goes
   with refactors. Every non-trivial module has a test file; generated code and logic-free data types
   are the only exceptions.
@@ -205,7 +206,7 @@ The project's testing guide names its facade, acceptance runner, adopted gates, 
 ## 7. Smells
 
 Twelve shapes that make code worse than it needs to be (Fowler, _Refactoring_, ch. 3). Each reads what
-it is → how to fix; the code-writer's tightening phase works them, the reviewer judges by them.
+it is → how to fix; the reviewer judges by them, and a fix hop or tightening pass works them.
 
 - **Mysterious Name** — hides what it does or holds. → rename; no honest name means a murky design.
 - **Duplicated Code** — one logic shape in two hunks or files. → extract it, call it from both.
@@ -219,6 +220,28 @@ it is → how to fix; the code-writer's tightening phase works them, the reviewe
 - **Message Chains** — long `a.b().c().d()` walks the caller depends on. → hide the walk.
 - **Middle Man** — a unit that mostly delegates onward. → cut it; call the target direct.
 - **Refused Bequest** — a subclass ignoring most of what it inherits. → compose instead.
+
+---
+
+## Deep modules
+
+A module is deep when a small interface hides a lot of functionality (Ousterhout, _A Philosophy of
+Software Design_). Depth is the functionality a module provides over the interface its callers must
+learn; a shallow module, whose interface is nearly as large as its body, costs callers more than it
+saves.
+
+- **Information hiding** — each module owns a design decision and keeps it inside, so changing the
+  decision edits one module; a decision leaking through an interface couples every caller to it.
+- **Pull complexity downward** — complexity that must live somewhere lives in the module, not in its
+  callers; a parameter the caller cannot choose well is one the module decides.
+- **Define errors out of existence** — shape the interface so the error case cannot arise, such as
+  an idempotent delete or a range clamped to what exists, rather than handing every caller an
+  exception.
+- **General-purpose over special-purpose** — an interface slightly more general than its one caller
+  needs is often simpler and deeper than a method per special case.
+
+`codebase-design` carries the method: module, interface, seam and depth, and how to find a deepening
+opportunity.
 
 ---
 

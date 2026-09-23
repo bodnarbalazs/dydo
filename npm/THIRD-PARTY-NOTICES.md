@@ -21,7 +21,7 @@ header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, 
 | `prototype` | `skills/engineering/prototype/SKILL.md`, `skills/engineering/prototype/resources/logic.md`, `skills/engineering/prototype/resources/ui.md` |
 | `research` | `skills/roles/crew/research/SKILL.md` |
 | `retro` | `skills/productivity/self-improvement/SKILL.md` |
-| `tdd` | `skills/roles/crew/code-writer/SKILL.md`, `skills/roles/crew/code-writer/resources/tests.md`, `skills/roles/crew/code-writer/resources/mocking.md`, `skills/roles/crew/reviewer/resources/code.md` |
+| `tdd` | `skills/roles/crew/code-writer/SKILL.md`, `skills/roles/crew/code-writer/resources/tests.md`, `skills/roles/crew/reviewer/resources/code.md` |
 | `teach` | `skills/productivity/teach/SKILL.md`, `skills/productivity/teach/resources/mission-format.md`, `skills/productivity/teach/resources/glossary-format.md`, `skills/productivity/teach/resources/learning-record-format.md`, `skills/productivity/teach/resources/resources-format.md` |
 | `to-spec` | `skills/productivity/to-project/SKILL.md` |
 | `to-tickets` | `skills/roles/crew/project-planner/SKILL.md` |

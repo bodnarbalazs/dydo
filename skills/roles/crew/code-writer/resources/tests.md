@@ -43,7 +43,6 @@ Red flags:
 - Testing private methods
 - Asserting on call counts/order
 - Test breaks when refactoring without behavior change
-- Test name describes HOW not WHAT
 - Verifying through external means instead of interface
 
 ```typescript
@@ -77,3 +76,11 @@ test("calculateTotal sums line items", () => {
   expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15);
 });
 ```
+
+## Where a Mock Belongs
+
+At system boundaries only: external APIs, time and randomness, and sometimes the database or file
+system, where a test instance is better still. Your own modules and internal collaborators stay
+real. At a boundary, inject the dependency, and give each external operation its own function
+(`getUser`, `createOrder`) rather than one generic fetcher, so each mock returns one shape and the
+setup holds no logic.

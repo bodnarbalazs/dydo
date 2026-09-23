@@ -43,11 +43,11 @@ spawned as an agent, so an admiral can direct one per Issue.
 | human | human | the terminal | — | `main`, where his own commits need no Issue, and any session | thinks, files Projects, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time, walks through; tells the admiral after each of his board moves | — |
 | co-thinker | skill | any session without an officer role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic Issue with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic Issue (L) |
 | admiral | officer | top-level session, explicit-only | the human, on a Project at any stage | `feature/<slug>` | wakes on a captain's return or the human's word, reads the Project and acts: sends the planner, owns the plan review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
-| issue-captain | officer, also agent | top-level for an atomic or HITL Issue; spawned by an admiral for an AFK one | the admiral, or the human's session | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review or a separate hardening pass only on a named risk, divides when the spec says so, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
+| issue-captain | officer, also agent | top-level for an atomic or HITL Issue; spawned by an admiral for an AFK one | the admiral, or the human's session | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review or a separate tightening pass only on a named risk, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
 | chief-of-staff | officer | top-level session, explicit-only | the human | none | the bird's-eye view over the admirals: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the human (C); delivery staged for the admiral (L) |
 | research | crew, delegates, web | agent | co-thinker, admiral, issue-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as Issue comment (L) or scratch file (F) |
 | project-planner | crew | agent | the admiral | the initial plan on `main`; amendments on the branch the admiral names | fixes the destination, writes the plan, the first pickable Issues as tracer bullets with their blocking edges, and prepared blocking Question packets for the admiral to file; commits amendments on commission | the admiral: the plan commit, first Issues, bearings, blockers (R) |
-| code-writer | crew | agent | issue-captain, on the parent first, then per lane | the Issue branch; a Merge Sub-issue; a proof-only lane | one Issue end to end in three phases on the `implement` hop: makes the contract exact (scenarios, gates, plan, the lanes when the Issue divides, per-kind resource for Bug, Merge, Inquisition), makes it work (scenario red, tests red, green), makes it good (one-level static gates with HCRAP and cognitive complexity, mutation on code and example values, smells, depth). On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis | the captain: spec, plan, SHA, files, trace of each contract line to its proof, gates incl. mutation, any extra-pass risk (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
+| code-writer | crew | agent | issue-captain, on the parent first, then per lane | the Issue branch; a Merge Sub-issue; a proof-only lane | one Issue's contract on the `implement` hop, test-driven by Type: a Bug red before its fix and red again with the fix reverted; a Feature's acceptance lines as named tests written with the code, proved to fail with the code stashed; the full suite and static gate of each changed stack once, HCRAP and cognitive complexity fixed in changed methods. Posts nothing before code unless it names lanes or an inexact contract. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis | the captain: the `IMPLEMENTED` line with hop SHA, behaviour, red proof, gates run and blocker, any extra-pass risk (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
 | docs-writer | crew | agent | issue-captain, including the separate record Feature's captain for an inquisition | the delivery Issue branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
 | reviewer | crew, non-authoring | agent | admiral, issue-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
 | scout | crew, non-authoring, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
@@ -150,19 +150,19 @@ flowchart TD
   IC <-->|"3 review · In Review"| RC
   IC <-->|"4 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
   subgraph CREW [the crew]
-    CW[1 code-writer<br>exact, then green, then good<br>returns spec, plan, implement SHA, proof trace, gates]:::crew
-    RS{{1b reviewer: spec<br>reads the Exact-phase text on the Issue<br>returns review block}}:::reviewer
+    CW[1 code-writer<br>builds and proves the contract<br>returns implement SHA, red proof, gates]:::crew
+    RS{{1b reviewer: spec<br>reads the contract text on the Issue<br>returns review block}}:::reviewer
     HD[2 code-writer, another hand<br>returns its fix SHA, gates]:::crew
     RC{{3 reviewer: code or docs<br>returns review block}}:::reviewer
     MG[4 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::crew
   end
 ```
 
-### 3c. The captain divides its Issue, when the spec says so
+### 3c. The captain divides its Issue, when the writer names lanes
 
 The map already divided the destination into Issues. The captain's first act on its Issue is a
-`code-writer` on the parent; its first phase makes the contract exact, and that spec shows whether
-the Issue holds separate work that can run at the same time. One dish stays one Issue.
+`code-writer` on the parent; before any code it sees whether the Issue holds separate work that can
+run at the same time, and if so posts one comment naming the lanes and stops. One dish stays one Issue.
 
 An example with nothing to explain: a dinner for eight on Saturday.
 
@@ -183,7 +183,7 @@ flowchart TD
   C1 -.-> P1[...]:::ghost
   C2 -.-> P2[...]:::ghost
   C4 -.-> P4[...]:::ghost
-  C3 --> S[the parent's code-writer, phase 1: the dish's scenarios, and two lanes named]:::lane
+  C3 --> S[the parent's code-writer, before any code: two lanes named in one comment]:::lane
   S --> L1[Sub-issue: the brownie<br>its own branch, worktree and crew loop]:::lane
   S --> L2[Sub-issue: the ice cream<br>its own branch, worktree and crew loop]:::lane
   C3 --> Q[Question, in Todo: which sweetener<br>blocks both Sub-issues until the human answers]:::way
@@ -195,12 +195,12 @@ Charting settled the theme through one Grilling Issue with the human: healthy, n
 vegetarian, food on the table at 19:00. The admiral works that map: three courses cooked in parallel
 by three captains, and the shopping, blocked by all three menus. The diagram follows one captain.
 
-- **The dessert's captain divides.** Its code-writer writes the dish's scenarios and finds that brownie
-  and ice cream are made separately and at the same time, so the captain opens two Sub-issues, each
+- **The dessert's captain divides.** Its code-writer finds, before any code, that brownie and ice
+  cream are made separately and at the same time, so the captain opens two Sub-issues, each
   with its own branch, worktree and crew loop, and keeps the plating on the parent for when both are
   in. Each lane comes back through its own Merge Sub-issue, one at a time; the dish is reviewed
   once, as a whole.
-- **The starter's captain does not.** Its spec names no lane: one dish, one crew loop on the parent.
+- **The starter's captain does not.** Its code-writer names no lane: one dish, one crew loop on the parent.
   Dividing is the exception the work has to earn.
 - **The sweetener is a Question.** Both Sub-issues need one, the recipes are silent, and the theme
   rules out sugar. The captain's discovery finds "no refined sugar" on the Grilling and no
@@ -213,7 +213,7 @@ The rules the captain applies:
 
 | Decision | Rule |
 |---|---|
-| Specify first | the parent's code-writer goes first; the spec it commits names the lanes, or none |
+| Lanes first | the parent's code-writer goes first; before any code it names the lanes in one comment, or posts nothing |
 | Lane or parent | separate work that can run at the same time becomes a lane; ordinary sequential work, the joining step, the parent's scenarios, the one review and the PR stay on the parent |
 | What a lane carries | its parent's Type and Mode, a bounded outcome, a disjoint owned-path subset, exact gates, a child-key branch off the parent branch, an isolated worktree, its own status and evidence, its own [code-writer] → [reviewer] loop |
 | What proves a lane | its gates; the parent's scenarios prove the joined result |
@@ -240,17 +240,17 @@ Step by step, with the Linear status each step leaves behind:
 6. **Claim.** The admiral commissions a captain per pickable AFK Issue; a HITL Issue waits for the
    human to open its captain session. Assignment is the claim; branch, base SHA and worktree path go
    on the Issue before the first edit.
-7. **Write.** The captain spawns one `code-writer` and sets `Implementing`. It makes the contract
-   exact — `## Spec` and `## Plan` on the record, the lanes named, any file it writes committed
-   inside the `implement` hop — then red before green, then the tightening pass, each phase ending
-   on a commit whose SHA is posted. A captain that wants the contract judged before the code asks a
-   fresh `reviewer(spec)` to read that Exact-phase text on the Issue, at its own discretion; a
-   captain that wants the landed code tightened by another hand parks the Issue at `Hardening`.
-8. **Shape.** Only when the spec names lanes: the captain opens lane Sub-issues in `Todo`, each with
-   its own branch and worktree off the parent branch, plus one Merge Sub-issue per lane, wired in
-   order; the parent sits `In Progress` while its lanes run. Section 3c.
-9. **Account for the phases.** The writer's `IMPLEMENTED` comment names in one line which phases
-   did work; every phase that did ends on its commit.
+7. **Write.** The captain spawns one `code-writer` and sets `Implementing`. The captain's contract
+   says whether the Issue carries Gherkin. The writer posts nothing before code unless the work
+   splits into lanes or the contract is inexact; it builds test-driven by Type and ends on the
+   `implement` commit whose SHA is posted. A captain that wants the contract judged before the code
+   buys a fresh `reviewer(spec)` on that text; a captain that wants the landed code tightened by
+   another hand parks the Issue at `Hardening`.
+8. **Shape.** Only when the writer names lanes: the captain writes the lane contracts and opens lane
+   Sub-issues in `Todo`, each with its own branch and worktree off the parent branch, plus one Merge
+   Sub-issue per lane, wired in order; the parent sits `In Progress` while its lanes run. Section 3c.
+9. **Prove red.** The writer's `IMPLEMENTED` return carries its red proof: a Bug's reproduction
+   failing with the fix reverted, a Feature's tests failing with the code stashed.
 10. **Review.** `In Review`; a fresh reviewer with one rubric pins Contract, Candidate and Base and
     returns the block. PASS binds that candidate under that contract. FAIL returns the record to
     `Implementing`, whatever it found.
@@ -299,7 +299,7 @@ stateDiagram-v2
   Backlog --> Canceled: declined
   [*] --> Todo: planner or map holder creates it contracted
   Todo --> Implementing: captain spawns the code-writer
-  Implementing --> InProgress: the spec named lanes
+  Implementing --> InProgress: the writer named lanes
   InProgress --> InReview: lanes merged, review of the whole
   Implementing --> InReview: implement hop posted
   Todo --> Specifying: captain parks it for a contract review before any code
@@ -364,13 +364,13 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 13b | issue-captain (top-level) → human, admiral | C, L | `done <key>` or `released <key>: <reason>` in its own session; the human tells the admiral | the record | — |
 | 14 | issue-captain → Issue | L, G | branch, base SHA, worktree path | — | — |
 | 15 | issue-captain → code-writer | R (spawn) | the record to write, its kind | the record with parent, blockers, comments; the plan section and DRs; working-tree contract; coding-standards; about; architecture; the kind's resource | `Implementing` |
-| 16 | code-writer → issue-captain | R, L, G | spec, plan and the lanes named, `## Spec` and `## Plan` on the record with the feature files committed; implement SHA, files, each scenario and contract line with its proof or gap, gates incl. mutation with output, any extra-pass risk, adjacent findings | — | — |
+| 16 | code-writer → issue-captain | R, L, G | before code, only when needed: one comment naming the lanes or the inexact contract line; after: the `IMPLEMENTED` line with implement SHA, behaviour, red proof, the suites and static gates run with exits, blocker, any extra-pass risk | — | — |
 | 17 | issue-captain → Sub-issues | L, G | lane Sub-issues with the parent's Type and Mode, disjoint paths and branches, or retained Bug stages with native ordering and serial path transfer; one Merge Sub-issue per actual integration; a Question Sub-issue for local fog | — | lanes `Todo`; parent `In Progress` |
-| 18 | issue-captain → reviewer(spec), optional, at the captain's discretion before the code | R (spawn) | the record carrying the Exact phase's `## Spec` and `## Plan` | that text on the Issue, the five fields, base SHA, branch, worktree, owned paths | `Specifying` → `In Review` → `Implementing` |
-| 19 | issue-captain → code-writer (fix hop) | R (spawn) | the Issue, the candidate, the review block that sent it | the Issue with spec and plan, the block, the plan, standards | `Implementing`, whatever the FAIL found |
+| 18 | issue-captain → reviewer(spec), optional, at the captain's discretion before the code | R (spawn) | the record carrying the captain's contract | that text on the Issue, the five fields, base SHA, branch, worktree, owned paths | `Specifying` → `In Review` → `Implementing` |
+| 19 | issue-captain → code-writer (fix hop) | R (spawn) | the Issue, the candidate, the review block that sent it | the Issue, the block, the plan, standards | `Implementing`, whatever the FAIL found |
 | 20 | code-writer (fix hop) → issue-captain | R, G | Issue key, fix SHA, each finding with what closed it, gates rerun | — | — |
-| 21 | issue-captain → code-writer (separate tightening pass), optional, at the captain's discretion | R (spawn) | the Issue, the first writer's return and candidate SHA | the Issue with spec and plan and that return, the plan, standards | `Hardening` |
-| 22 | code-writer (tightening pass) → issue-captain | R, G | Issue key, its fix SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates incl. mutation, out-of-path observations | — | — |
+| 21 | issue-captain → code-writer (separate tightening pass), optional, at the captain's discretion | R (spawn) | the Issue, the first writer's return and candidate SHA | the Issue and that return, the plan, standards | `Hardening` |
+| 22 | code-writer (tightening pass) → issue-captain | R, G | Issue key, its fix SHA, files, cuts and closures with HCRAP before and after, tests sharpened, gates run, out-of-path observations | — | — |
 | 23 | delivery issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan; for a record Feature, its exact owned record/navigation paths and the Inquisition's pinned packet | the delivery Issue, packet, about, writing-docs and working-tree retention contract | record Feature or other docs Issue `Implementing` |
 | 24 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | — | — |
 | 25 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, Contract at the compact acceptance-contract SHA, Candidate SHA, Base SHA | the contract at its governing commit with outcome, scenarios, owned paths, gates; the rubric; the hops | `In Review` |
@@ -467,38 +467,38 @@ flowchart LR
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
   RV{{reviewer verdict}}:::reviewer -->|PASS block| OK[captain records block, opens PR, returns done &lt;key&gt;: PR ready to admiral]
   RV -->|"FAIL, fewer than five in a row"| RT{captain takes the findings}
-  RT -->|"every finding, whatever it is · Implementing"| IM[fresh code-writer: fix hop; its Exact phase amends the contract when a scenario was wrong]:::crew
+  RT -->|"every finding, whatever it is · Implementing"| IM[fresh code-writer: fix hop; it amends a scenario when the FAIL block names it]:::crew
   IM --> FR{{fresh reviewer, new Candidate SHA · In Review}}:::reviewer
   FR --> RV
   RV -->|fifth consecutive FAIL| ESC[escalate: comment on the Issue, Question Issue as blocker, admiral, then human]
 ```
 
 The contract: FAIL is binding; every FAIL returns the record to `Implementing`, whatever it found,
-and a wrong or missing scenario is amended by the next fix hop's Exact phase; every
+and a wrong or missing scenario is amended by the next fix hop; every
 correction is its own commit and the re-review pins the new SHA; a note is a finding; the fifth consecutive FAIL
-in one review loop stops the loop rather than softening the verdict. A spec amendment that changes
+in one review loop stops the loop rather than softening the verdict. A contract amendment that changes
 acceptance is an amendment of the contract and, under a Project, goes to the admiral as a plan
 amendment.
 
-### 6.3 The spec or the route is disproved mid-implementation
+### 6.3 The contract or the route is disproved mid-implementation
 
 ```mermaid
 flowchart TD
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
-  IM[the code-writer, in a later phase, meets a crossroads the plan left open, or a scenario it cannot satisfy]:::crew --> ST[stops at the choice, reports the mismatch]
+  IM[the code-writer meets a crossroads the contract left open, or a scenario it cannot satisfy]:::crew --> ST[stops at the choice, reports the mismatch]
   ST --> IC[issue-captain]:::officer
-  IC -->|the route was wrong, the contract stands| SP[fresh code-writer: amend the plan]:::crew
-  IC -->|a scenario was wrong| SP2[fresh code-writer: spec amendment recorded on the Issue]:::crew
+  IC -->|the route was wrong, the contract stands| SP[fresh code-writer on the corrected route]:::crew
+  IC -->|a scenario was wrong| SP2[captain amends the contract on the Issue; fresh code-writer]:::crew
   IC -->|acceptance, scope, destination or architecture would move| AD[admiral: plan amendment, re-review of project-plan]:::officer
   SP --> RES[resume the writing from the amended contract]
   SP2 --> RES
   AD --> RES
 ```
 
-The contract: a scenario is contract the moment it is committed, so later phases wire it and never
-edit it; only a fresh code-writer changes one, and the change is written on the Issue; a contract change above the
-Issue's authority climbs the ladder before work resumes.
+The contract: the scenario set is the captain's, so the writer wires each scenario and changes one
+only when asked; the change is written on the Issue; a contract change above the Issue's authority
+climbs the ladder before work resumes.
 
 ### 6.4 Plan amendment
 
@@ -544,7 +544,7 @@ flowchart TD
   AD[admiral: the feature is integrated]:::officer -->|Inquisition Issue in Backlog: scope, parts, lenses, cost| H([human]):::human
   H -->|moves it to Todo and tells the admiral, which commissions, or cancels it| IC[issue-captain of the inquisition]:::officer
   IC -->|inquisition branch off the feature SHA, never merged| BR[(inquisition/slug)]
-  IC -->|Implementing: the parts, the lenses, the shape of a hypothesis| SP[code-writer, phase 1]:::crew
+  IC -->|contracts it: the parts, the lenses, the shape of a hypothesis| SP[(the Inquisition Issue)]
   IC --> P1[inquisitor: module A]:::crew
   IC --> P2[inquisitor: module B]:::crew
   IC --> P3[inquisitor: the whole, at the seams]:::crew
@@ -608,8 +608,8 @@ Issue in `Todo`; never silent waiting.
 ### 6.9 A prototype
 
 A Prototype Issue is held by a captain and run for the human: fast sketches that settle a visual or
-behavioural choice, co-thinking in code. Its spec names the question and the variants; its
-code-writer builds them on `prototype/<name>` in its own worktree; there is no tightening phase, and the
+behavioural choice, co-thinking in code. Its contract names the question and the variants; its
+code-writer builds them on `prototype/<name>` in its own worktree; there is no tightening pass, and the
 human is the review, in the session. The verdict goes on the Issue with the winning commit. The
 branch is kept and linked from the Issue until the delivery Issue is `Done`; that Issue's code-writer
 reads it as input, never as a base, and nothing on it is ever submitted or merged (DR 047 §5).
@@ -646,8 +646,8 @@ with its evidence recorded. Each stage has its own contract, chain, branch and w
 actual integration has a Merge Sub-issue. This Type-map exception does not relax disjoint ownership
 for parallel lanes; joining acceptance and final review stay on the parent. An elusive defect turns identification into hypotheses and proof tests,
 as the inquisition does; a trivial one collapses to one record. The reproduction is a scenario when
-the defect shows at the product's boundary, else a red test written through diagnosing-bugs,
-and it hardens nothing; the fix hardens everything. A Bug the inquisition filed arrives with its red
+the defect shows at the product's boundary, else a red test written through diagnosing-bugs; the
+fix proves itself by reverting and watching that reproduction fail again. A Bug the inquisition filed arrives with its red
 test at a commit, which the fixing code-writer adopts. Under a Project it lands like any Issue; outside one it
 is atomic.
 

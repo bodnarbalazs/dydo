@@ -42,11 +42,6 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Project plan** — a reviewed repository contract for coordinated, cross-cutting, or
   architecture-sensitive work, at low resolution: destination, acceptance, architecture, and an Issue
   map. Its `linear-project` URL is provenance, not synchronization.
-- **Issue-resolution plan** — the high-resolution spec and plan the code-writer writes into an
-  implementation Issue in its first phase, before its code: the scenarios and gates that make the contract exact, then
-  the files to touch, the pattern to copy, steps and edge cases that make the route mechanical. It is
-  reviewed with the code it governs; the Issue Captain may require a separate pre-code `spec` review
-  when route risk warrants the extra gate.
 - **FutureFeature** — an unscheduled strategic possibility recorded as a Linear Issue, distinct from
   a generic idea or delivery contract. It stays in `FutureFeature` until the human promotes or cancels it.
 - **Assimilation brief** — the durable account of what changed, what was learned, and what remains.
@@ -79,11 +74,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Reviewed intent** — the rule that implementation begins only from an independently reviewable
   contract: an atomic Issue or a linked reviewed Project plan plus its Issues.
 - **Scenario** — one acceptance criterion at the product's boundary, written in Gherkin in the
-  Issue's feature files by the code-writer. It is contract: later phases wire it and never edit it;
-  a change to it is a spec amendment.
+  Issue's feature files by the code-writer, where the Issue's contract calls for Gherkin. It is
+  contract: the captain decides the set and the writer wires it without weakening it; a change to it
+  is a contract amendment.
 - **Gate** — any explicit pass/fail checkpoint.
-- **Phase** — one of the code-writer's three ordered passes over its Issue inside a single hop:
-  exact, then green, then good. The writer's `IMPLEMENTED` return names which of them did work.
 - **Hop** — one crew member's committed pass over an Issue branch: `implement`, `fix` or `merge`. Its
   SHA is evidence on the Issue, and the reviewer reads the hops in order.
 - **Issue review** — an independent reviewer's verdict on one candidate against one named rubric,
@@ -120,7 +114,9 @@ manager, orchestrator, and the run-sprint workflow (internally
 run-issues) gave way to the officers — an admiral coordinates one Project, an Issue Captain owns one
 Issue. Hat and worker are retired too (DR 050): a session keeps the role it was given and loads skills
 as the work needs them, and a spawned role is crew. Issue planner and test-writer gave way to `code-writer`, which since 2026-09-21 also absorbs the
-specifier, implementer and hardener chain that briefly replaced it (DR 047, amended by DYD-222). Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
+specifier, implementer and hardener chain that briefly replaced it (DR 047, amended by DYD-222). Its
+phases and the Issue-resolution plan it posted retired on 2026-09-23 (DR 046, amended by DYD-230):
+the captain's contract is the Issue's only contract text. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the map Issues above. Workflow retired with the old inquisition harness. Inquisition is now an Issue Type with the
 filing outcome above. None of these words creates a file, command, lifecycle, or Linear type.
 

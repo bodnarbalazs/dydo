@@ -196,7 +196,9 @@ at most 20. Functions have at most seven parameters outside constructors. Nested
 mechanism; clones of at least 15 lines and 100 tokens are forbidden, and namespace or module
 dependency cycles are forbidden.
 
-Only code not maintained here (generated, vendored, or minified) is excluded. There are no tiers, tier annotations, tier
+Only code not maintained here (generated, vendored, or minified) is excluded, plus the two
+external-host drivers exempt from the coverage thresholds alone under DR 048's Amendment 2026-09-17
+(see the recorded triages in [Testing Strategy](testing-strategy.md)). There are no tiers, tier annotations, tier
 registries, classic CRAP thresholds, per-file suppressions, or nesting-depth gate. Mutation is a
 separate assurance gate. A stack that lacks a reviewed mechanism reports the capability unavailable;
 absence cannot become a pass. No changed-code mutant may survive or remain uncovered. A survivor

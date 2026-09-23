@@ -84,8 +84,9 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
    the host takes both; where it takes only a model, leave effort host-owned and record that limit.
    Brief the requested value so the crew member's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
-   table. Validate uncertain native interface shapes early. Brief each hop's proof focused — the
-   tests its change reaches plus the cheap checks — and name the gate where the full suites run.
+   table. Validate uncertain native interface shapes early. Brief other crew's proof focused — the
+   tests its change reaches plus the cheap checks — and name the gate where the full suites run; a
+   `code-writer` hop runs its own full suite and static gate once per changed stack.
    Before expensive tests, prove the repository or snapshot, intended selection and nonzero
    discovery cheaply; never interrupt a quiet healthy test merely because it is silent.
    **Done:** each candidate accounts for its paths, passes
@@ -102,8 +103,8 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
    findings and wires a prepared Question through the scope rule below. Record each gate result with
    its candidate, command, environment or session, exit and result location. Reuse exact-candidate
    evidence when that gate and environment permit; rerun only after relevant change or concern, or at
-   a distinct mandatory integration or release boundary. Judge a hop on its focused run instead of
-   scheduling a suite the gate will run.
+   a distinct mandatory integration or release boundary. Judge a hop on the proof it ran instead of
+   scheduling a suite again.
 6. **Offer.** Direct each passed lane's Merge Sub-issue with one `code-writer`: it maps conflicts
    and combined gates, performs the merge, and tightens in place when the resolution refactored.
    Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-Issue
@@ -134,8 +135,9 @@ A Prototype
 uses `prototype`, has no tightening pass, and closes on the human's verdict with its winning branch linked,
 never submitted. Enablement uses `wizard` for the steps only the human can perform.
 
-An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. Contract it
-by [inquisition](resources/inquisition.md), then set `In Progress` for read-only inquisitors sweeping parts/lenses and proof-only
+An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. Set
+`In Progress` on the human's confirmation, contract it by [inquisition](resources/inquisition.md),
+then brief read-only inquisitors sweeping parts/lenses and proof-only
 code-writers testing hypotheses on child proof branches. Deduplicate confirmed findings into Bugs
 with their red-test SHAs and pin the completed packet on the Issue. Retain each open Bug's
 reproduction on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**

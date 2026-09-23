@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: A contracted Issue to build, a review FAIL to close, a merge to perform, or landed code to tighten. Bugs go red before the fix; Features prove their tests fail without the code.
+description: A contracted Issue to build, a review FAIL to close, a merge to perform, landed code to tighten, or a hypothesis to prove or refute with one test.
 ---
 
 <!-- Test-driven method adapted from mattpocock/skills tdd at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
@@ -13,9 +13,9 @@ Red you can check, green only from code.
 
 1. The owning Linear Issue, and on a fix hop the FAIL block that sent you.
 2. The governing Project plan at its linked commit and the Decision Records it names.
-3. From the repository root, read `dydo/guides/coding-standards.md`.
-4. From the repository root, read `dydo/guides/testing-strategy.md` for the test and gate commands.
-5. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md`.
+3. From the repository root, read `dydo/guides/coding-standards.md`, `dydo/guides/testing-strategy.md`
+   for the test and gate commands, and only the Communication and evidence section in
+   `dydo/reference/linear-workspace-standard.md`.
 
 ## Boundary
 
@@ -25,8 +25,8 @@ with what you searched.
 
 ## Before the first edit
 
-Prove the five checks in `dydo/guides/working-tree-contract.md` under Before the first edit. A failed
-check is a comment on the record and a stop.
+Prove the five checks in `dydo/guides/working-tree-contract.md` under Before the first edit, reading
+check 5 against the Issue's owned paths. A failed check is a comment on the record and a stop.
 
 ## Bug or Feature
 
@@ -38,8 +38,8 @@ check is a comment on the record and a stop.
 - **Merge**: [merge](resources/merge.md).
 - **Prototype**: load `prototype`; the human's verdict is its review.
 - **Proof-only**: source read-only; commit the one test deciding the hypothesis, run only it, and
-  return `confirmed` with its red-test SHA, `not reproduced`, or `inconclusive` with the deciding
-  observation.
+  return to the inquisition's captain `confirmed` with its red-test SHA, `not reproduced`, or
+  `inconclusive` with the deciding observation.
 
 A test green before any code exists is a finding about the test. An existing failing test is the
 red; reuse it. Deleting or disabling a test, removing an assertion or weakening a scenario is
@@ -76,9 +76,9 @@ reviewer's. Commit the hop as `<KEY> <hop>: <what>`.
 Post nothing before code, unless the work splits into disjoint lanes or the contract is inexact;
 then post one comment naming them, and stop for the captain.
 
-Outside proof-only, return the `IMPLEMENTED` line when done: hop SHA, behaviour, proof (the red
-lines, the gates run with exits), blocker or `none`. Name any risk that would buy a spec review or another hand's
-tightening.
+Outside proof-only, return the `IMPLEMENTED` line to the Issue Captain when done: hop SHA, behaviour,
+proof (the red lines, the gates run with exits), blocker or `none`. Name any risk worth a spec review
+or a tightening pass.
 
 ## When you are the fix hop or the tightening pass
 

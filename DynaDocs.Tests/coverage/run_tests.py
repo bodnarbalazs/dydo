@@ -19,6 +19,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -37,6 +38,18 @@ MARKER_SCHEMA = 1
 # dotnet-test child, never from this process's own view of its environment).
 STALE_TEST_WORKTREE_SECONDS = 4 * 60 * 60
 STALE_WORKTREE_AGE_ENV = "DYDO_TEST_WORKTREE_STALE_SECONDS"
+
+# The shared compiler server (VBCSCompiler), reusable MSBuild nodes and the MSBuild server outlive
+# the build that started them and serve every later build on the machine; the compiler server also
+# holds files under the TEMP it started with. The isolated run starts none of them, so ending its
+# own processes never ends a service another build is using.
+ISOLATED_BUILD_ENVIRONMENT = {
+    "UseSharedCompilation": "false",
+    "MSBUILDDISABLENODEREUSE": "1",
+    "DOTNET_CLI_USE_MSBUILD_SERVER": "0",
+}
+# How long the run's remaining processes get to exit after termination, the windows_job teardown.
+DESCENDANT_EXIT_SECONDS = 10
 
 
 def isolated_environment():
@@ -465,6 +478,62 @@ def defer_interruption():
             raise KeyboardInterrupt
 
 
+def contain_descendants():
+    """Join this process to a new kill-on-close Windows job and return the job, so every process
+    the run starts is a member and none outlives this process. MSBuild launches some build processes
+    detached from the console, where the interrupt never reaches them. Returns None elsewhere.
+    """
+    if sys.platform != "win32":
+        return None
+    import ctypes
+    from ctypes import wintypes
+    from windows_job import BasicLimits, Limits, bindings, checked
+    kernel = bindings()
+    kernel.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+    kernel.GetCurrentProcess.restype = wintypes.HANDLE
+    job = checked(kernel.CreateJobObjectW(None, None))
+    limits = Limits(basic=BasicLimits(flags=0x2000))  # KILL_ON_JOB_CLOSE
+    checked(kernel.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits)))
+    checked(kernel.AssignProcessToJobObject(job, kernel.GetCurrentProcess()))
+    return job
+
+
+def _end_member(kernel, job, pid, deadline):
+    import ctypes
+    from ctypes import wintypes
+    from windows_job import checked, close_handle
+    handle = kernel.OpenProcess(0x101001, False, pid)  # SYNCHRONIZE | QUERY_LIMITED | TERMINATE
+    if not handle:
+        return  # it exited after the membership listing
+    try:
+        # The held handle pins the pid, so a member confirmed here cannot be a reused pid.
+        inside = wintypes.BOOL()
+        checked(kernel.IsProcessInJob(handle, job, ctypes.byref(inside)))
+        if inside.value:
+            kernel.TerminateProcess(handle, 1)
+            kernel.WaitForSingleObject(handle, max(0, int((deadline - time.monotonic()) * 1000)))
+    finally:
+        close_handle(kernel, handle)
+
+
+def end_descendants(job):
+    """End every other member of `job` and wait for each to exit, so no process the run started
+    still holds the worktree or its TEMP when cleanup begins."""
+    if job is None:
+        return
+    from ctypes import wintypes
+    from windows_job import bindings, members
+    kernel = bindings()
+    kernel.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
+    deadline = time.monotonic() + DESCENDANT_EXIT_SECONDS
+    while time.monotonic() < deadline:
+        others = [pid for pid in members(kernel, job) if pid != os.getpid()]
+        if not others:
+            return
+        for pid in others:
+            _end_member(kernel, job, pid, deadline)
+
+
 def _campaign_identities(worktree, result_root):
     excluded = {"bin", "obj", ".git", "node_modules", ".local"}
     sources = [path for path in worktree.rglob("*.cs")
@@ -514,8 +583,9 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
     return owner_result.get("subject_status") if type(owner_result.get("subject_status")) is int else 2
 
 
-def run_tests(extra_args=None, assurance_output=None):
-    """Create worktree, run tests, clean up. Returns the dotnet exit code."""
+def run_tests(extra_args=None, assurance_output=None, job=None):
+    """Create worktree, run tests, clean up. Returns the dotnet exit code. `job`, from
+    contain_descendants, has its other members ended before the worktree is removed."""
     worktree = None
     try:
         try:
@@ -547,7 +617,7 @@ def run_tests(extra_args=None, assurance_output=None):
             return _run_assurance_campaign(worktree, extra_args, assurance_output)
 
         cmd = test_command(extra_args)
-        env = isolated_environment()
+        env = {**isolated_environment(), **ISOLATED_BUILD_ENVIRONMENT}
         print(f"  Running: {' '.join(cmd)}")
         # Tests that install Console.In must not inherit an attached host console: .NET's
         # Console.KeyAvailable probes the process handle instead of the installed reader.
@@ -555,9 +625,14 @@ def run_tests(extra_args=None, assurance_output=None):
 
         return result.returncode
     finally:
-        if worktree and (worktree.exists() or is_registered_worktree(worktree)):
-            print("  Cleaning up worktree...")
-            remove_worktree(worktree)
+        # An interrupt that lands during cleanup is delivered once cleanup has finished.
+        with defer_interruption():
+            try:
+                end_descendants(job)
+            finally:
+                if worktree and (worktree.exists() or is_registered_worktree(worktree)):
+                    print("  Cleaning up worktree...")
+                    remove_worktree(worktree)
 
 
 def main():
@@ -572,8 +647,10 @@ def main():
         extra = extra[1:]
 
     print("\n--- Running tests (worktree-isolated) ---")
+    # The assurance campaign owns its processes in its own job and confirms their cleanup.
+    job = None if args.assurance_output else contain_descendants()
     try:
-        rc = run_tests(extra_args=extra or None, assurance_output=args.assurance_output)
+        rc = run_tests(extra_args=extra or None, assurance_output=args.assurance_output, job=job)
     except KeyboardInterrupt:
         rc = 130
 

@@ -50,6 +50,12 @@ ISOLATED_BUILD_ENVIRONMENT = {
 }
 # How long the run's remaining processes get to exit after termination, the windows_job teardown.
 DESCENDANT_EXIT_SECONDS = 10
+# Linux prctl option: orphaned descendants reparent to this process rather than to init.
+PR_SET_CHILD_SUBREAPER = 36
+# The handle contain_descendants returns on Linux, where the descendants are found through /proc.
+SUBREAPER = "subreaper"
+# Where Linux lists its processes; tests replace it with a fake table.
+PROC_ROOT = Path("/proc")
 
 
 def isolated_environment():
@@ -479,12 +485,30 @@ def defer_interruption():
 
 
 def contain_descendants():
-    """Join this process to a new kill-on-close Windows job and return the job, so every process
-    the run starts is a member and none outlives this process. MSBuild launches some build processes
-    detached from the console, where the interrupt never reaches them. Returns None elsewhere.
+    """Make every process the run starts reachable at cleanup, and return the handle
+    `end_descendants` takes. On Windows this joins a new kill-on-close job, so none outlives this
+    process: MSBuild launches some build processes detached from the console, where the interrupt
+    never reaches them. On Linux this process becomes the subreaper of its descendants, so a build
+    process the interrupted dotnet leaves orphaned stays one of them instead of passing to init.
+    Returns None elsewhere.
     """
-    if sys.platform != "win32":
-        return None
+    if sys.platform == "win32":
+        return _join_kill_on_close_job()
+    if sys.platform == "linux":
+        return _become_subreaper()
+    return None
+
+
+def _become_subreaper():
+    import ctypes
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, f"prctl(PR_SET_CHILD_SUBREAPER): {os.strerror(error)}")
+    return SUBREAPER
+
+
+def _join_kill_on_close_job():
     import ctypes
     from ctypes import wintypes
     from windows_job import BasicLimits, Limits, bindings, checked
@@ -517,10 +541,71 @@ def _end_member(kernel, job, pid, deadline):
 
 
 def end_descendants(job):
-    """End every other member of `job` and wait for each to exit, so no process the run started
-    still holds the worktree or its TEMP when cleanup begins."""
+    """End every other process the run started, from `job` as contain_descendants returned it, and
+    wait for each to exit, so none still holds or writes into the worktree or its TEMP when cleanup
+    begins."""
     if job is None:
         return
+    if job == SUBREAPER:
+        _end_reaped_descendants()
+    else:
+        _end_job_members(job)
+
+
+def _stat_fields(pid):
+    """Return (parent pid, state) from /proc/<pid>/stat, or None when the process already exited."""
+    try:
+        stat = (PROC_ROOT / pid / "stat").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    # The command name sits in parentheses and may itself hold spaces or parentheses.
+    state, parent = stat[stat.rindex(")") + 2:].split()[:2]
+    return int(parent), state
+
+
+def _process_table():
+    """Map each running process id to its (parent pid, state)."""
+    table = {}
+    for name in os.listdir(PROC_ROOT):
+        fields = _stat_fields(name) if name.isdigit() else None
+        if fields:
+            table[int(name)] = fields
+    return table
+
+
+def _live_descendants(root):
+    """Every descendant of `root` that has not yet exited; an exited one (a zombie) holds no file."""
+    table = _process_table()
+    found, frontier = [], [root]
+    while frontier:
+        parent = frontier.pop()
+        children = [pid for pid, (ppid, _) in table.items() if ppid == parent]
+        found += children
+        frontier += children
+    return [pid for pid in found if table[pid][1] != "Z"]
+
+
+def _kill(pid):
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass  # it exited after the listing
+
+
+def _end_reaped_descendants():
+    """Kill every descendant of this process and wait until each has exited. As their subreaper
+    this process still finds the ones whose own parent, the interrupted dotnet, is already gone."""
+    deadline = time.monotonic() + DESCENDANT_EXIT_SECONDS
+    while time.monotonic() < deadline:
+        live = _live_descendants(os.getpid())
+        if not live:
+            return
+        for pid in live:
+            _kill(pid)
+        time.sleep(0.05)
+
+
+def _end_job_members(job):
     from ctypes import wintypes
     from windows_job import bindings, members
     kernel = bindings()

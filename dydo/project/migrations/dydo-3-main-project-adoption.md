@@ -13,5 +13,5 @@ consumerless external-data sync engine. It does not read, alter, archive, or del
 content or local rollback stores.
 
 Projects adopting dydo 3 should update their native artifacts with `dydo template update` and
-`dydo sync`, validate with `dydo check`, and follow the [2.x to 3.x migration guide](../../guides/migrating-dydo-2x-to-3x.md).
+`dydo sync`, validate with `dydo check`, and follow the 2.x to 3.x migration guide.
 Release, tag, and publication remain separate human acceptance actions.

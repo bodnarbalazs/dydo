@@ -44,7 +44,7 @@ provide the Issue worktree; otherwise place it beside the repository at
 |---|---|---|
 | Open the Project | `admiral`, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
 | Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Implementing` when it spawns the code-writer. |
-| Resolve the work | `issue-captain` | A small prompt/docs change uses its compact acceptance contract; a stronger route's parent spec makes the work mechanical and names its lanes, or none. Parallel crew receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
+| Resolve the work | `issue-captain` | The captain's compact acceptance contract names the lanes, or none; when the work splits beyond it, the writer's one pre-code comment names them. Parallel crew receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, or `merge`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
@@ -61,7 +61,7 @@ on that work item instead of working around a failure:
 2. The repository root is the isolated worktree, not the main checkout.
 3. The posted base SHA is an ancestor of `HEAD`.
 4. The worktree is clean.
-5. The work item owns every path named in its plan.
+5. Every path the work item will touch is in the Issue's owned paths.
 
 ## Delivery scale and evidence
 

@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import shutil
+import signal
 import sys
 import unittest
 import tempfile
@@ -517,6 +518,113 @@ class WorktreeCleanupTests(unittest.TestCase):
 
         unlock_call = next(call for call in calls if call[0] == ("worktree", "unlock", str(worktree)))
         self.assertTrue(unlock_call[1], "the unlock call must pass capture=True")
+
+
+SELF_PID = 100
+SIGKILL = getattr(signal, "SIGKILL", 9)
+
+
+def write_stat(proc, pid, command, state, parent):
+    write_file(proc / str(pid) / "stat", f"{pid} ({command}) {state} {parent} {pid} {pid} 0 -1 4194304\n")
+
+
+def fake_process_table(proc):
+    """This runner (100) as subreaper: dotnet (101) and its child (102) whose command name holds
+    ") ", an orphaned build process reparented to the runner (104), an exited zombie (103), an
+    unrelated process (200), a process that exited during the listing (300) and non-process entries."""
+    write_stat(proc, SELF_PID, "python", "S", 1)
+    write_stat(proc, 101, "dotnet", "S", SELF_PID)
+    write_stat(proc, 102, "weird) R 1 (name", "R", 101)
+    write_stat(proc, 103, "zombie", "Z", SELF_PID)
+    write_stat(proc, 104, "orphan build", "S", SELF_PID)
+    write_stat(proc, 200, "unrelated", "S", 1)
+    (proc / "300").mkdir()
+    (proc / "self").mkdir()
+    write_file(proc / "meminfo", "MemTotal: 1 kB\n")
+
+
+class LinuxDescendantCleanupTests(unittest.TestCase):
+    """On Linux the runner, as subreaper, finds its descendants through /proc and ends each one,
+    bounded by DESCENDANT_EXIT_SECONDS, before the worktree is removed."""
+
+    def _clock(self, step):
+        """A fake monotonic clock that only a fake sleep advances; a loop that outlives any sane
+        deadline fails instead of hanging."""
+        now = [0.0]
+
+        def sleep(_seconds):
+            now[0] += step
+            if now[0] > 100 * run_tests.DESCENDANT_EXIT_SECONDS:
+                raise AssertionError("the kill loop outlived its deadline")
+
+        return now, patch.object(run_tests.time, "monotonic", side_effect=lambda: now[0]), \
+            patch.object(run_tests.time, "sleep", side_effect=sleep)
+
+    def test_live_descendants_walk_the_whole_tree_and_skip_zombies_and_strangers(self):
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            with patch.object(run_tests, "PROC_ROOT", proc):
+                table = run_tests._process_table()
+                live = run_tests._live_descendants(SELF_PID)
+
+        self.assertEqual({SELF_PID: (1, "S"), 101: (SELF_PID, "S"), 102: (101, "R"),
+                          103: (SELF_PID, "Z"), 104: (SELF_PID, "S"), 200: (1, "S")}, table)
+        self.assertCountEqual([101, 102, 104], live)
+
+    def test_reaped_descendants_are_killed_once_and_the_wait_ends_when_none_is_live(self):
+        kills = []
+
+        def kill(pid, sig):
+            kills.append((pid, sig))
+            if pid == 104:
+                shutil.rmtree(proc / "104")
+                raise ProcessLookupError(pid)  # it exited after the listing
+            write_stat(proc, pid, "killed", "Z", 101 if pid == 102 else SELF_PID)
+
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "kill", side_effect=kill), \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True):
+                run_tests.end_descendants(run_tests.SUBREAPER)
+                remaining = run_tests._live_descendants(SELF_PID)
+
+        self.assertCountEqual([(101, SIGKILL), (102, SIGKILL), (104, SIGKILL)], kills)
+        self.assertEqual([], remaining)
+        self.assertLess(now[0], run_tests.DESCENDANT_EXIT_SECONDS)
+
+    def test_the_kill_loop_gives_up_at_the_deadline_when_a_descendant_never_exits(self):
+        kills = []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            now, monotonic, sleep = self._clock(step=4.0)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests, "DESCENDANT_EXIT_SECONDS", 10), \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "kill", side_effect=lambda pid, sig: kills.append(pid)), \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True):
+                run_tests._end_reaped_descendants()
+
+        # Rounds at 0, 4 and 8 seconds; at 12 the 10-second deadline has passed.
+        self.assertEqual(12.0, now[0])
+        self.assertCountEqual([101, 102, 104] * 3, kills)
+
+    def test_end_descendants_dispatches_by_the_contained_handle(self):
+        with patch.object(run_tests, "_end_reaped_descendants") as reaped, \
+             patch.object(run_tests, "_end_job_members") as members:
+            run_tests.end_descendants(None)
+            self.assertFalse(reaped.called or members.called)
+            run_tests.end_descendants(run_tests.SUBREAPER)
+            reaped.assert_called_once_with()
+            members.assert_not_called()
+            run_tests.end_descendants(42)
+            members.assert_called_once_with(42)
+            reaped.assert_called_once_with()
 
 
 class StaleWorktreeAgeOverrideTests(unittest.TestCase):

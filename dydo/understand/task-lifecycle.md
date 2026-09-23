@@ -58,8 +58,8 @@ worktree, session, commits, PR and test runs are evidence for that Issue, never 
 records.
 
 Every delivery kind starts with the captain making its contract exact. The captain sets
-Implementing at the code-writer's spawn and In Review at a reviewer's; Specifying and Hardening are
-optional parks it chooses, off the default path. A parent whose lanes run is In Progress. The writer
+Implementing at the code-writer's spawn and In Review at a reviewer's, the optional spec review
+before any code included. A parent whose lanes run is In Progress. The writer
 posts nothing before code unless the work splits into disjoint lanes or the contract is inexact;
 its IMPLEMENTED return carries the hop SHA, the red proof, the gates run and any blocker. A
 scenario changes only through a fresh code-writer. Every hop's SHA is posted, preserved and passed to the next crew member.
@@ -70,11 +70,11 @@ A fresh reviewer judges the candidate against the rubric it targets before any m
 reviewer applies the `merge` rubric after the merge lands; both return the review block, which is
 posted on the work judged: its Issue or Merge Issue, and in the PR body when present. A fifth consecutive FAIL on the same review loop is
 itself an escalation — stop looping and raise a hand. Review, inquisition and the verdict's rule are in
-the [Work Model](./work-model.md); the review block's fields are locked in the
-[dydo Glossary](../reference/dydo-glossary.md).
+the [Work Model](./work-model.md); the review block's one-line form is locked in the
+[Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence).
 
 A reviewed PR sets the source Issue Ready to Merge and the captain returns `done <key>: PR ready`.
-Its final Merge Sub-issue runs when its native blocker clears; the parent stays Ready to Merge.
+A Project Issue's final Merge Sub-issue runs when its native blocker clears; the parent stays Ready to Merge.
 The captain directs the merge by one code-writer and a fresh merge review, then marks both
 Done and returns `done <key>: merged`. A Merge Sub-issue never waits in Ready to Merge. The landing
 Merge does: the human clicks its reviewed PR as a merge commit.
@@ -103,7 +103,8 @@ last recorded hop without a final push. The admiral's next wake picks up blocker
 
 Project-plan approval; Questions and HITL work; an escalation that survived the ladder; confirming
 an Inquisition; the feature → main merge-commit click; and the Walkthrough after it. Findings reopen
-a lap in the same Project. An atomic Issue branches from main and uses its own final Merge Sub-issue.
+a lap in the same Project. An atomic Issue branches from main and has no Merge Sub-issue: once its
+PR carries a reviewer PASS and CI is green, the human clicks it, and its captain closes it Done.
 The [workspace standard](../reference/linear-workspace-standard.md) owns the Type/Mode and priority rules.
 
 Linear status is the only delivery status. dydo does not copy it into frontmatter, infer it from Git,

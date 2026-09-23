@@ -206,7 +206,7 @@ The project's testing guide names its facade, acceptance runner, adopted gates, 
 ## 7. Smells
 
 Twelve shapes that make code worse than it needs to be (Fowler, _Refactoring_, ch. 3). Each reads what
-it is → how to fix; the reviewer judges by them, and a fix hop or tightening pass works them.
+it is → how to fix; the reviewer judges by them, and a fix hop works them.
 
 - **Mysterious Name** — hides what it does or holds. → rename; no honest name means a murky design.
 - **Duplicated Code** — one logic shape in two hunks or files. → extract it, call it from both.

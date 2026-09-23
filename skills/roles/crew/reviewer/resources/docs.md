@@ -2,7 +2,7 @@
 
 Target: one documentation change delivered by a Linear Issue. Two kinds arrive here: human-facing
 dydo documents under `dydo/`, judged against the code they describe, and agent-facing documents
-(skill templates, their resources, entry points), judged as prompt files that must fire and route.
+(skills, their resources, entry points), judged as prompt files that must fire and route.
 **Drift** is the failure both kinds share: a claim the tree no longer supports, or an environment
 restated in prose (directory layout, `--help`, config) where a pointer would not have gone stale.
 Every item below is a FAIL when it holds.
@@ -37,7 +37,9 @@ Every item below is a FAIL when it holds.
 - **Anchor missing or doubled, or a tagline that changes nothing.** The no-op test grades against
   the model's default, and a failing line is deleted rather than softened.
 - **Shape broken.** Officers and crew: H1 → one-line job → Must-Reads → Boundary → Method with a
-  completion criterion on every step → Return or Handoff. Methods keep their upstream shape.
+  completion criterion on every step → Return or Handoff. A section order the human set for a role
+  stands in place of Method; Must-Reads, Boundary, Return, and a completion criterion wherever steps
+  exist still bind. Methods keep their upstream shape.
 - **Off the map.** Must-Reads that do not name what the sender hands over, a Return that does not
   name its receiver, or a sentence narrating what a neighbour does.
 - **A cross-reference missing or extra** against the exact set its brief binds.

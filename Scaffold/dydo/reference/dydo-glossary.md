@@ -78,8 +78,9 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   contract: the captain decides the set and the writer wires it without weakening it; a change to it
   is a contract amendment.
 - **Gate** — any explicit pass/fail checkpoint.
-- **Hop** — one crew member's committed pass over an Issue branch: `implement`, `fix` or `merge`. Its
-  SHA is evidence on the Issue, and the reviewer reads the hops in order.
+- **Hop** — one crew member's committed pass over an Issue branch: `implement`, `fix` or `merge`, and
+  `proof` for a proof-only test on an Inquisition's proof branch. Its SHA is evidence on the Issue,
+  and the reviewer reads the hops in order.
 - **Issue review** — an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. PASS means no findings; a note is a finding, and a finding is a FAIL.
 - **Merge review** — the `merge` rubric run after every merge: a mechanical spot check of the
@@ -87,13 +88,13 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Inquisition** — a human-confirmed Type held by a captain: read-only sweeps, hypotheses proved
   by tests, deduplicated Bugs and an inquisition record. It files outcomes, never PASS or FAIL.
 - **Merge** — a Type for one merge operation, with its own implement/review chain and
-  integrated gates. The human clicks the Project landing; every operation preserves hop SHAs.
+  integrated gates. The human clicks the Project landing and an atomic Issue's PR, which has no Merge
+  Issue; every operation preserves hop SHAs.
 - **Release** — a captain leaves a resume SHA on the record, pushes its branch, removes the worktree,
   returns the parent to `Todo`, unassigns and wires any blocker. A dead session has no final push.
 - **Review block** — the reviewer's whole return, and the only thing that fills an Issue Captain's
-  review slot: rubric, reviewer label and model, the contract at its governing SHA, candidate and
-  base SHA, verdict, the gates rerun with their results, and findings as
-  `file:line → consequence → correction`. A PASS binds one candidate under one contract; a change to
+  review slot, in the one-line `PASS` or `FAIL` form of the
+  [Linear Workspace Standard](./linear-workspace-standard.md#communication-and-evidence). A PASS binds one candidate under one contract; a change to
   either calls for a fresh review. It lives on the work judged: a Project update for a plan, its Merge Issue for a merge, otherwise
   its Issue; a PR carries the block when one exists.
 - **Evidence** — a commit, PR, test result, review verdict, or audit artifact linked to an Issue; it
@@ -116,7 +117,9 @@ Issue. Hat and worker are retired too (DR 050): a session keeps the role it was 
 as the work needs them, and a spawned role is crew. Issue planner and test-writer gave way to `code-writer`, which since 2026-09-21 also absorbs the
 specifier, implementer and hardener chain that briefly replaced it (DR 047, amended by DYD-222). Its
 phases and the Issue-resolution plan it posted retired on 2026-09-23 (DR 046, amended by DYD-230):
-the captain's contract is the Issue's only contract text. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
+the captain's contract is the Issue's only contract text. The `Specifying` and `Hardening` statuses
+and the tightening or hardening pass retired the same day (DR 047, amended 2026-09-23): a spec review
+shows `In Review`. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the map Issues above. Workflow retired with the old inquisition harness. Inquisition is now an Issue Type with the
 filing outcome above. None of these words creates a file, command, lifecycle, or Linear type.
 

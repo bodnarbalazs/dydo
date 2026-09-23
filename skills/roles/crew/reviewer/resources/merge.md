@@ -5,8 +5,8 @@ between them passed nothing, and neither did the merge itself. Read the integrat
 scale of what landed: a two-file merge is minutes of mechanical checking, a whole feature is not.
 Scope is what this merge created or exposed.
 
-Every operation has its own Merge Issue: a lane into its parent, an Issue into the feature, an
-atomic Issue into main, or the landing. Read that record's pinned source, target and combined gates.
+Every operation has its own Merge Issue: a lane into its parent, an Issue into the feature, or
+the landing. Read that record's pinned source, target and combined gates.
 No review at another level substitutes for this one; final landing also proves Project acceptance.
 
 ## Method

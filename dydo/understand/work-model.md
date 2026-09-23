@@ -93,8 +93,8 @@ to an Issue. They are not extra levels in the work graph.
    It catches what got through; it never proves zero defects.
 
 Every reviewer verdict is the same **review block**: a Project update for a plan, on the Merge
-Issue for a merge, otherwise on its Issue, and in the PR body when one exists; its fields are locked in the
-[dydo Glossary](../reference/dydo-glossary.md). Independence here is independence of *context*: the
+Issue for a merge, otherwise on its Issue, and in the PR body when one exists; its one-line form is locked in the
+[Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence). Independence here is independence of *context*: the
 reviewer arrives fresh and reads the candidate itself rather than the story told about it. There is
 no PASS with notes; a note is a finding, and a finding is a FAIL.
 

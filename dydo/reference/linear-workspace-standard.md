@@ -27,7 +27,7 @@ There are no canonical Project labels: a Project's status and Issue graph carry 
 
 ## Issue statuses
 
-One set for primary Issues and Sub-issues alike, twelve statuses in Linear's categories and in this
+One set for primary Issues and Sub-issues alike, ten statuses in Linear's categories and in this
 order. The captain alone sets a delivery Issue's status; the record that runs the chain flips on
 every chain spawn, and nothing else flips it.
 
@@ -36,18 +36,16 @@ every chain spawn, and nothing else flips it.
 | `FutureFeature` | backlog | An unscheduled strategic possibility with no Type yet. Only the human promotes it. |
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the human's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
-| `Specifying` | started | Optional and captain-chosen, entered only from `Todo` or `Implementing`: it sits off the default path, and a captain uses it only to park an Issue whose contract is being reviewed before any code. It returns to `Implementing`. |
 | `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep, proofs and final retention verification. |
-| `Implementing` | started | The code-writer is spawned — contract, code and tightening in one hop — a fix hop after a FAIL included. |
-| `Hardening` | started | Optional and captain-chosen, entered only from `Implementing`: it sits off the default path, and a captain uses it only to park an Issue whose landed code another hand is tightening. It returns to `Implementing`. |
-| `In Review` | started | Any reviewer is spawned. A FAIL returns the record to `Implementing`, whatever it found. |
-| `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-issue runs; the landing waits here for the human's click, one Project at a time. A merge review FAIL that reverts sends it back to `Implementing`. |
+| `Implementing` | started | The author of the change's kind is spawned for one hop — a `code-writer`, or a `docs-writer` for a documentation change — a fix hop after a FAIL included. |
+| `In Review` | started | Any reviewer is spawned, the optional spec review of the contract before any code included. A FAIL returns the record to `Implementing`, whatever it found; a spec review returns it there on either verdict. |
+| `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-issue runs; the landing, one Project at a time, and an atomic Issue wait here for the human's click. A merge review FAIL that reverts sends it back to `Implementing`. |
 | `Done` | completed | Merged, or the outcome the Type names reached, with its evidence. |
 | `Canceled` | canceled | The Issue will not be completed; the record says why. |
 | `Duplicate` | canceled | Another Issue owns the outcome; the record links to it. |
 
-`Ready to Merge` holds for a lane into its parent, a primary into the feature branch and the landing
-into main; a Merge Sub-issue never enters it, since it runs the chain and closes. `In Review` on the
+`Ready to Merge` holds for a lane into its parent, a primary into the feature branch, and an atomic
+Issue or the landing into main; a Merge Sub-issue never enters it, since it runs the chain and closes. `In Review` on the
 board always means a reviewer is running. An Issue with an open native blocker is blocked in any
 status; do not add a `Blocked` status that can drift from Linear's dependency graph. Assignment is
 the claim: assigned means taken; unassigned, `Todo` and unblocked means pickable.
@@ -77,9 +75,9 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
 A captain-held Issue normally uses one author — `code-writer`, or `docs-writer` for a documentation
-change — and one fresh independent whole-change reviewer. A spec review or a separate hardening pass
-needs one short concrete risk reason; persistence, migrations, permissions and uncertain native interfaces are examples needing
-stronger stages. Required G/M, integration and release gates remain. The captain records one compact
+change — and one fresh independent whole-change reviewer. A spec review of the contract before any
+code needs one short concrete risk reason, recorded in the contract; persistence, migrations, permissions and uncertain native
+interfaces are examples of such a risk. Required G/M, integration and release gates remain. The captain records one compact
 acceptance contract and points to its evidence. A map-holder-held Issue is run
 directly by the admiral or captain whose map it clears; it receives no captain, branch, PR or review
 loop. `Task` names the captain-held Issue's role on a map; it is not a label.
@@ -129,7 +127,8 @@ files a `Question` only when judgment remains.
 
 A captain creates Sub-issues one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,
-a Merge Sub-issue for each merge operation, and a map-holder-held Sub-issue for fog that blocks only
+a Merge Sub-issue for each merge operation except an atomic Issue's own merge into main, which the
+human clicks once its PR carries a reviewer PASS and CI is green, and a map-holder-held Sub-issue for fog that blocks only
 its parent or a lane and stays inside the approved Project destination and Issue outcome. A lane that
 needs splitting is replaced by sibling lanes. When the answer can change other Issues, a shared
 contract, or the Project's destination, scope, acceptance criteria or governing architecture, the
@@ -182,7 +181,9 @@ required connector capability.
 
 `## Exact gates` lists its two scales separately: the cheap checks and change-relevant tests that
 prove one hop, and the full suites and whole gate set that run at the Issue's final gates, its Merge
-Sub-issue's combined gates and the landing. A crew member briefed for one hop takes the first list alone.
+Sub-issue's combined gates and the landing. A `code-writer` hop runs the relevant tests while
+building, then the full suite and static gate of each changed stack once before it returns; other
+crew briefed for one hop take the first list alone.
 
 ## Communication and evidence
 
@@ -202,11 +203,14 @@ updates, or token, cost, or latency claims. Review gates stay where their workfl
 
 Start each post with the applicable form:
 
-- `PASS — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
-- `FAIL — rubric/type: <rubric>; candidate <SHA>; reviewer/model: <name>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `PASS — rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
+- `FAIL — rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 - `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
 - `STATE — <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
+
+A review block's `contract <ref>` is the contract its brief pinned, for an Issue
+`<KEY> description as of <Linear updatedAt>`; `base <SHA>` is the brief's base.
 
 Brevity is soft: ordinary events aim for at most 800 characters, descriptions and state for at most
 1,500 characters or 12 lines. A necessary finding, gap, blocker, or evidence may exceed those aims;
@@ -225,7 +229,7 @@ signature, so do not add a second or conflicting one. Historical comments stay u
 Examples:
 
 - `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
-- `PASS — rubric/type: docs; candidate <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
+- `PASS — rubric/type: docs; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
 - `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
 - `STATE — Implementing; owner: code-writer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
 

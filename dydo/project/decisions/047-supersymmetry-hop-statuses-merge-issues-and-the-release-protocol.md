@@ -371,6 +371,22 @@ from `Implementing`; both return to `Implementing`. Every review FAIL returns th
 `Implementing` whatever it found, with a wrong or missing scenario amended by the next `fix` hop,
 so no FAIL routes to either park.
 
+## Amendment 2026-09-23
+
+Decided by the human on 2026-09-23 for the skill-harmony fix pass, DYD-253, its witness. Three
+changes; every other section stands.
+
+- **No tightening pass.** The separate hardening or tightening pass is removed from every skill and
+  document, and with it the `Hardening` status.
+- **No `Specifying`.** The status is removed; the standard lists ten. The optional spec review still
+  judges the captain's contract before any code, bought with one risk the captain records in the
+  contract. The Issue shows `In Review` while it runs, then `Implementing`.
+- **An atomic Issue merges without a Merge Sub-issue.** An Issue with no Project merges into main by
+  its captain's PR carrying the reviewer PASS, CI green and the human's click; the captain then closes
+  it `Done` and cleans up. Merge Sub-issues stay for feature branches inside Projects. This replaces
+  §6's "An atomic Issue merges into main through its own final Merge
+  Sub-issue", and the two parks kept in the amendments above.
+
 ---
 
 ## Affects

@@ -8,6 +8,11 @@ type: reference
 Terms specific to this repository's documentation. The dydo product's locked Linear, knowledge, and
 execution vocabulary lives in the [dydo glossary](./reference/dydo-glossary.md).
 
+Keep it around 15-20 terms max. Each term is an alphabetized `##` heading, its anchor the term's
+kebab-case name, followed by its definition; link to one as `[Term](./glossary.md#term-name)`. When
+several words exist for one concept, pick one and list the others on an `_Avoid_:` line under the
+term.
+
 ## HCRAP
 
 Hybrid CRAP, the per-method change-risk score of

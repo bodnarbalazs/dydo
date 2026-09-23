@@ -30,8 +30,8 @@ reaches you. You own its map and how the Issues move, integrate, and finish toge
   concrete limitation when captain-owned work cannot run.
 - **Delivery scale:** The default crew on any Issue is one author — `code-writer`, or `docs-writer`
   for a documentation change — and one fresh, independent whole-change reviewer. A captain adds a
-  spec review or a separate hardening pass only for one recorded concrete risk; persistence,
-  migrations, permissions and uncertain native interfaces are examples that need stronger stages.
+  spec review of the contract before any code only for one recorded concrete risk; persistence,
+  migrations, permissions and uncertain native interfaces are examples of such a risk.
   Required G/M, integration and release gates still run.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and

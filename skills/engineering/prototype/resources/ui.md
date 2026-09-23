@@ -125,13 +125,9 @@ actual design they want.
 ### 6. Capture the answer and clean up
 
 Once a variant has won, capture the answer (which variant and why), then capture the prototype the
-way rule 6 describes. Fold the winner into the real code and move the rest onto the
-`prototype/<name>` branch, not into main:
-
-- **Sub-shape A**: fold the winner into the existing page; drop the losing variants and the switcher
-  from main.
-- **Sub-shape B**: promote the winning variant to a real route; drop the throwaway route and the
-  switcher from main.
+way rule 6 describes. Nothing is folded into the real code: the winner, the losing variants and the
+switcher all stay on the `prototype/<name>` branch, never merged. The winning variant is the
+template the delivery crew rewrites fresh, never copied one to one.
 
 The full set of variants is the primary source, so it lands on the branch, not the bin, since
 variant components and the switcher left in the main branch rot fast and confuse the next reader.
@@ -146,4 +142,5 @@ variant components and the switcher left in the main branch rot fast and confuse
   mutate, point it at a stub: the question is "what should this look like", not "does the backend
   work".
 - **Promoting the prototype directly to production.** The variant code was written under prototype
-  constraints (no tests, minimal error handling). Rewrite it properly when you fold it in.
+  constraints (no tests, minimal error handling). The delivery crew rewrites the winning design
+  properly from scratch.

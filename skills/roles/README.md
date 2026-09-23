@@ -16,9 +16,9 @@ never becomes an admiral, or the reverse.
 
 Crew are spawned for one bounded job, hold nothing, and return their result to whoever sent them.
 
-- **code-writer** (model-invoked): A contracted Issue to build, a review FAIL to close, a merge to perform, landed code to tighten, or a hypothesis to prove or refute with one test.
+- **code-writer** (model-invoked): A contracted Issue to build, a review FAIL to close, a merge to perform, or a hypothesis to prove or refute with one test.
 - **docs-writer** (model-invoked): Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Issue Captain.
-- **inquisitor** (model-invoked): Refute-first sweep of landed work. Use when the inquisition's Captain assigns one lens over the named scope, or over one part of it.
+- **inquisitor** (model-invoked): Refute-first sweep of landed work. Use when the inquisition's Captain assigns one part of the named scope, or one lens across it.
 - **project-planner** (model-invoked): Ripe Project intent, no reliable route. Write the first pickable Issues and bearings; return the committed plan to the admiral.
 - **research** (model-invoked): Primary sources, cited. Use when a fact a choice waits on could hide in Decision Records, plans, code, history, or outside sources, or when docs, specs, or API behaviour must be established before work depends on them.
 - **reviewer** (model-invoked): An Issue's code or docs, a spec, a Project plan, or a merged tree — one candidate, one named rubric, one binding verdict.

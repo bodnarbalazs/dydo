@@ -169,7 +169,7 @@ required connector capability.
 
 | Template | Body |
 |---|---|
-| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`: the captain's compact acceptance contract, which is the spec the code-writer builds from. |
+| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`: the captain's compact acceptance contract, which is the spec the code-writer builds from; `## Exact gates` names the command for each test, suite and static gate. |
 | `Bug` | the five fields, then `## Observed`, `## Expected`, `## Reproduction` (a scenario at the boundary, else the red test); default Sub-issues: *reproduce or identify*, *fix*. |
 | `Merge` | `## Source` and `## Target` at their SHAs, `## Plan order` (the Merge Sub-issue this one is blocked by), `## Combined gates`, `## Conflicts expected`. |
 | `Enablement` | `## Condition` that must become true, `## Steps only the human can do`, `## Evidence` when done. |

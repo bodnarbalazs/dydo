@@ -20,7 +20,9 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 ## Contract
 
 - The candidate matches the governing commit, the owned paths and the requested outcome
-- Every scenario stands as the writer's contract phase committed it, and every scenario passes
+- Every scenario the contract calls for stands unweakened, and every scenario passes
+- The `IMPLEMENTED` return carries its red proof line: a Bug's reproduction failing with the fix
+  reverted, a Feature's tests failing with the code stashed
 - Every behaviour, edge case and risk the contract names is claimed by a scenario or a test; a bug
   fix carries the test that reproduces the bug
 - Nothing the implement hop had that the contract needed was dropped by a later hop
@@ -32,9 +34,9 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 - `dydo/guides/coding-standards.md`, read from the repository root, and any stack-specific standard
   bind, the anti-slop mandate included, with the `codebase-design` lens on every seam the diff
   touches; a documented standard beats your taste, and a rule the tooling enforces is closed
-- The tightening left in the candidate changed only what was warranted, and everything that was:
-  smaller, simpler, standard or deeper, with a candidate already good left as it was; an abstraction or optimisation
-  ahead of a need is a finding
+- The code the candidate touched is no worse than it was found, and smaller, simpler, standard or
+  deeper wherever the change warranted it; an abstraction or optimisation ahead of a need is a
+  finding
 - The twelve smells in the standards, each a question against the diff, the hunk quoted, a finding
   only with its concrete consequence named; every smell answered, not the first one found
 - Code that was already bad is a finding when this change builds on it
@@ -46,8 +48,12 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 ## Gates
 
-- At a hop, the selection: the tests the change reaches ran green beside the cheap checks the Issue
-  names, and a relevant test the run left out is a finding; the full suites belong to the gate
+- At a hop, the writer's run: the full suite and the static gate of every stack the change touched,
+  once each, green beside the cheap checks the Issue names
+- The HCRAP row of that static gate, read for every method the change touched; one over the bar is
+  a finding
+- The project's changed-code mutation gate, in its `--since <base>` form, run by you when the
+  project has one; a surviving or uncovered mutant is a finding
 - At a gate — the Issue's final gates, a merge, the landing — the whole set below on that exact
   candidate, read from its gate record or run by you:
   - The Issue's gate-scale commands and the full suites, all green

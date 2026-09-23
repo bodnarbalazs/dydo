@@ -344,28 +344,32 @@ Amends DR 044's status and label list through the rewritten standard. Keeps DR 0
 and narrows it to two tiers in use.
 
 Amended by DYD-222 (2026-09-21): `specifier`, `implementer` and `hardener` consolidate into one
-`code-writer` skill carrying all three as ordered phases of one hop, so the crew chain becomes
+`code-writer` skill doing their work in one hop, so the crew chain becomes
 code-writer → fresh reviewer, with more hands only at the captain's discretion against one short
 concrete risk.
 
-The `specify` and `harden` hops are retired with the roles that owned them: worker hops are exactly
-`implement`, `fix` and `merge`. The Exact phase produces its contract as text on the Issue, or in
-the spec file the Issue names, and any file it writes is committed inside the `implement` hop, so
-nothing produces a specify SHA and no reviewer may be pinned to one. A captain that wants a contract
-judged before the code asks a fresh reviewer for that Exact-phase text under the `spec` rubric.
+The `specify` and `harden` hops are retired with the roles that owned them: crew hops are exactly
+`implement`, `fix` and `merge`. The contract is the captain's text on the Issue, and any file the
+code-writer writes is committed inside its hop, so nothing produces a specify SHA and no reviewer
+may be pinned to one. A captain that wants the contract judged before the code buys a fresh
+reviewer for that text under the `spec` rubric.
 
-Declaring a phase empty is no longer required. The code-writer's `IMPLEMENTED` return names in one
-line which phases did work.
+The code-writer's `IMPLEMENTED` return carries its red proof. Before code it posts nothing, unless
+the work splits into disjoint lanes or the contract is inexact; then it posts one comment and stops
+for the captain, which writes the lane contracts. The Inquisition's contract is the captain's own
+work, by the issue-captain's inquisition resource. (Amended by DYD-230, 2026-09-23, with DR 046.)
 
 The default Issue path is `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with
 `In Progress` while lanes run; a Merge Sub-issue runs `Todo` → `Implementing` → `In Review` →
-`Done`, and an Inquisition `Backlog` → `Todo` → `Implementing` for its contract → `In Progress`.
+`Done`, and an Inquisition `Backlog` → `Todo`, the human's confirmation → `In Progress`, the
+captain writes the contract, then the sweep and proofs → released `Todo` → resumed `In Progress` →
+`Done`.
 `Specifying` and `Hardening` stay defined in the workspace standard as optional, captain-chosen
-parks off that path: one for an Issue whose contract is under review before any code, entered only
-from `Todo` or `Implementing`, the other for an Issue whose landed code another hand is tightening,
-entered only from `Implementing`; both return to `Implementing`. Every review FAIL returns the Issue
-to `Implementing` whatever it found, with a wrong or missing scenario amended by the next `fix`
-hop's Exact phase, so no FAIL routes to either park.
+parks off that path: one for a spec review the captain has bought, entered only from `Todo` or
+`Implementing`, the other for an Issue whose landed code another hand is tightening, entered only
+from `Implementing`; both return to `Implementing`. Every review FAIL returns the Issue to
+`Implementing` whatever it found, with a wrong or missing scenario amended by the next `fix` hop,
+so no FAIL routes to either park.
 
 ---
 

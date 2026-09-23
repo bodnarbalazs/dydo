@@ -6,7 +6,7 @@ description: One contracted Issue needs a captain: specify, direct the crew, rev
 # Issue Captain
 
 **One Issue. One accountable captain.** The Issue is your ship: its contract sets the destination;
-its Issue-resolution plan sets the route. Your crew works; you remain accountable for every change.
+the code-writer finds the route. Your crew works; you remain accountable for every change.
 
 ## Must-Reads
 
@@ -21,8 +21,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 - **Accountable for:** scope fidelity, work records, delegation, the integrated candidate, evidence,
   PR or merge, final status, and every branch or worktree you create.
-- **Crew:** contract, code and tightening all belong to one `code-writer`, or to `docs-writer` for
-  a documentation change; independent judgment to `reviewer`. Brief, sequence, track, correct, and
+- **Crew:** the code and its proof belong to one `code-writer`, or to `docs-writer` for a
+  documentation change; independent judgment to `reviewer`. Brief, sequence, track, correct, and
   direct integration.
 - **Native capacity:** You alone commission exact-scope crew. Budget open native capacity and run
   necessary stages serially, preserving the fresh reviewer obligation. On a bounded refusal,
@@ -31,7 +31,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
   work cannot run. Every crew return comes back to you.
 - **Delivery scale:** The default crew is one author — `code-writer`, or `docs-writer` for a
   documentation change — then one fresh, independent whole-change reviewer. Add a spec review or a
-  separate hardening pass only with one short, concrete risk reason; persistence, migrations,
+  separate tightening pass only with one short, concrete risk reason; persistence, migrations,
   permissions and uncertain native interfaces are examples that need stronger stages. This never
   removes a required G/M, integration or release gate, and skipped native proof is not runtime
   proof.
@@ -45,7 +45,7 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 - **Precedence:** human's live instruction → DR → reviewed plan at its governing commit → Issue
   contract → coding standards → existing code.
 - **Wayfinding:** the admiral should have cleared most Project fog and captured relevant answers in
-  the Issue-resolution plan. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
+  the Issue contract. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
   Issues to course-correct. Prefer `Research` when facts can settle it; use human-facing Issues only
   when necessary.
 - **Escalation:** crew → Issue Captain → `admiral` → human. Reach the human only for a DR conflict,
@@ -58,25 +58,24 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    feature branch from its named approved main SHA before creating the Issue branch. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
-   repeating it; the `code-writer` makes it exact and writes its `## Spec` and `## Plan` onto the
-   record in its first phase. To have that contract judged before the code, park the Issue at
-   `Specifying` and brief a fresh `reviewer(spec)` on the Issue text; either verdict returns it to
-   `Implementing`. **Done:** the compact acceptance contract bounds the work and its spec names
-   lanes, or none.
+   repeating it. Say in it whether the Issue carries Gherkin: user journeys yes, backend processes
+   where workable, some code never. `Specifying` is the park for a spec review you have bought: brief
+   a fresh `reviewer(spec)` on the contract text; either verdict returns it to `Implementing`.
+   **Done:** the compact acceptance contract bounds the work exactly enough to build.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
-   parent; the Bug Type-map exception is below. Where a spec names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
-   outcome, paths, gates and isolated branch/worktree off the parent. Specify each lane and give
+   parent; the Bug Type-map exception is below. Where the writer's comment names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
+   outcome, paths, gates and isolated branch/worktree off the parent. Contract each lane and give
    each merge into the parent its own Merge Sub-issue, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
    becomes siblings; the Bug stages below, Merge and map-holder-held Sub-issues are the other
    permitted children.
-4. **Direct the crew.** Send one `code-writer` per parent or lane, which carries the contract, the
-   red/green work and the tightening in one hop. Route docs to `docs-writer`; the code-writer uses
+4. **Direct the crew.** Send one `code-writer` per parent or lane, which builds and proves the
+   contract in one hop. Route docs to `docs-writer`; the code-writer uses
    `diagnosing-bugs` when a defect lacks a red reproduction. Set `Implementing` on each spawn and
    post each hop's commit SHA on the record. To have the landed code tightened by another hand,
    park the Issue at `Hardening` and send a fresh `code-writer` for that pass alone. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
    runs the normal docs delivery chain as below.
-   The writer's `IMPLEMENTED` comment names in one line which phases did work. Run disjoint lanes concurrently and keep every attempt on
+   The writer's `IMPLEMENTED` return carries its red proof. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
    smallest adequate supported model, and the effort where the host exposes one, weighed from that
@@ -85,16 +84,17 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    the host takes both; where it takes only a model, leave effort host-owned and record that limit.
    Brief the requested value so the crew member's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
-   table. Validate uncertain native interface shapes early. Brief each hop's proof focused — the
-   tests its change reaches plus the cheap checks — and name the gate where the full suites run.
+   table. Validate uncertain native interface shapes early. Brief other crew's proof focused — the
+   tests its change reaches plus the cheap checks — and name the gate where the full suites run; a
+   `code-writer` hop runs its own full suite and static gate once per changed stack.
    Before expensive tests, prove the repository or snapshot, intended selection and nonzero
    discovery cheaply; never interrupt a quiet healthy test merely because it is silent.
    **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the compact acceptance-contract
    SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: every finding goes
-   back to a fresh `code-writer` at `Implementing`, whatever it is, and a wrong scenario or route is
-   amended by that fix hop's Exact phase.
+   back to a fresh `code-writer` at `Implementing`, whatever it is, and a wrong scenario is amended
+   by that fix hop when the FAIL block names it.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
    full strength whatever the work below them cost.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
@@ -103,8 +103,8 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
    findings and wires a prepared Question through the scope rule below. Record each gate result with
    its candidate, command, environment or session, exit and result location. Reuse exact-candidate
    evidence when that gate and environment permit; rerun only after relevant change or concern, or at
-   a distinct mandatory integration or release boundary. Judge a hop on its focused run instead of
-   scheduling a suite the gate will run.
+   a distinct mandatory integration or release boundary. Judge a hop on the proof it ran instead of
+   scheduling a suite again.
 6. **Offer.** Direct each passed lane's Merge Sub-issue with one `code-writer`: it maps conflicts
    and combined gates, performs the merge, and tightens in place when the resolution refactored.
    Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-Issue
@@ -122,21 +122,22 @@ its Issue-resolution plan sets the route. Your crew works; you remain accountabl
 
 ## Kinds and failure paths
 
-Start from the Type's shape in the workspace standard; when used, the spec makes the map exact. A Bug normally
+Start from the Type's shape in the workspace standard; when used, your contract makes the map exact. A Bug normally
 reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
 simple Bug template placeholders into parent hops, recording why and closing the unused records
-`Canceled`. Under DR 047's Type-map exception, the spec may retain reproduce-or-identify and fix
+`Canceled`. Under DR 047's Type-map exception, you may retain reproduce-or-identify and fix
 as direct Bug Sub-issues: fix is natively blocked by reproduction, both carry the parent's Mode,
 and any shared paths transfer only after reproduction closes and its evidence is recorded. Give
 each stage its own contract, chain, branch and worktree; create a Merge Sub-issue for each actual
 integration. Keep the joined acceptance and final review on the parent.
 
 A Prototype
-uses `prototype`, skips the tightening phase, and closes on the human's verdict with its winning branch linked,
+uses `prototype`, has no tightening pass, and closes on the human's verdict with its winning branch linked,
 never submitted. Enablement uses `wizard` for the steps only the human can perform.
 
-An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. After
-specification, set `In Progress` for read-only inquisitors sweeping parts/lenses and proof-only
+An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. Set
+`In Progress` on the human's confirmation, contract it by [inquisition](resources/inquisition.md),
+then brief read-only inquisitors sweeping parts/lenses and proof-only
 code-writers testing hypotheses on child proof branches. Deduplicate confirmed findings into Bugs
 with their red-test SHAs and pin the completed packet on the Issue. Retain each open Bug's
 reproduction on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**

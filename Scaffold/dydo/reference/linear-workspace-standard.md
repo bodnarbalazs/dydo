@@ -123,7 +123,7 @@ files a `Question` only when judgment remains.
 | `Research` | `Todo` → `In Progress` → `Done` |
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
-| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `Implementing` for its contract → `In Progress`, the sweep and proofs → released `Todo` while its record Feature delivers → resumed `In Progress` for retention verification → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
+| `Inquisition` | `Backlog` → `Todo`, the human's confirmation → `In Progress`, the captain writes the contract, then the sweep and proofs → released `Todo` → resumed `In Progress` → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
 | captain-held default, subject to the Type exceptions | `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
 | Merge Sub-issue | `Todo` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
 
@@ -169,7 +169,7 @@ required connector capability.
 
 | Template | Body |
 |---|---|
-| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`; the code-writer adds `## Spec` and `## Plan`. |
+| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`: the captain's compact acceptance contract, which is the spec the code-writer builds from. |
 | `Bug` | the five fields, then `## Observed`, `## Expected`, `## Reproduction` (a scenario at the boundary, else the red test); default Sub-issues: *reproduce or identify*, *fix*. |
 | `Merge` | `## Source` and `## Target` at their SHAs, `## Plan order` (the Merge Sub-issue this one is blocked by), `## Combined gates`, `## Conflicts expected`. |
 | `Enablement` | `## Condition` that must become true, `## Steps only the human can do`, `## Evidence` when done. |

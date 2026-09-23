@@ -1,16 +1,9 @@
-# Specify a Bug
+# Bug
 
-Make the reproduction and the fix separately provable. Read the reported behavior and any existing
-red test at its commit; an inquisition's reproduction is input, not work to repeat.
-
-1. Name expected and observed behavior at the highest stable seam. A boundary-visible defect becomes
-   a scenario; an internal defect becomes a gate requiring a red regression test through
-   `diagnosing-bugs`. Done when one observation can refute the claimed reproduction.
-2. Map reproduce-or-identify, then fix. A trivial known cause may stay on one record; an elusive one
-   names hypotheses and proof tests. If the Captain retains the default staged Sub-issues, fix is
-   natively blocked by reproduction; name the evidence handoff and serial transfer of any shared
-   paths, with a separate branch, worktree and contract per stage. If it collapses them, name the
-   parent hops and unused placeholders to close. Reproduction skips Phase 3; the fix takes all
-   three phases. Done when each step has its evidence and the fix cannot claim success without the red case.
-3. Carry the existing reproduction SHA, affected seam, failure inputs and exact regression/full
-   gates into the plan. Return the proposed map to the Captain; it creates any Sub-issues.
+1. Name the expected and observed behaviour at the highest stable seam, and the behaviour the fix
+   must not change.
+2. Reproduce it red: a scenario when the defect shows at the product's boundary, else a test at
+   the seam. An existing red test, an inquisition's among them, is the reproduction; adopt it.
+   Done when one observation could refute the reproduction.
+3. Fix it, then revert the fix, watch the reproduction fail, and restore. The fix claims success
+   only with that red line in the return, and with the unchanged behaviour still green.

@@ -172,6 +172,85 @@ Never run an open-ended poll in an agent shell call, such as `tail -f` or a `whi
 
 ---
 
+## 6. Testing
+
+**Test-driven by Type.** A Bug goes red before its fix; a Feature writes its tests with the code and
+proves after green that they fail without it. Three claims prove a change, and each has one owner:
+
+- A **scenario** claims behaviour at the product's boundary, in glossary words, with example tables
+  where values vary. It is contract where the Issue calls for Gherkin: the captain decides the set,
+  the code-writer writes and wires it without weakening it, and the acceptance runner runs it.
+- A **test** claims one seam inside, in the code's words. It comes and goes
+  with refactors. Every non-trivial module has a test file; generated code and logic-free data types
+  are the only exceptions.
+- A **gate** is a command whose exit code proves what neither can state: the coverage bar, the
+  mutation run, the docs check.
+
+An acceptance criterion is a scenario when it can be one, else a gate.
+
+Every maintained module has one assurance policy. Build warnings and stack strictness are errors; no
+unused locals, parameters, private members, exports, or files remain; all tests pass and every
+non-trivial module has a test file. Per module, line coverage is at least 80% and branch coverage is
+at least 60%. Per method, HCRAP (`CC² × (1 − coverage)³ + cognitive`) and cognitive complexity are
+at most 20. Functions have at most seven parameters outside constructors. Nested ternaries are forbidden where a stack has a
+mechanism; clones of at least 15 lines and 100 tokens are forbidden, and namespace or module
+dependency cycles are forbidden.
+
+Only code not maintained here (generated, vendored, or minified) is excluded, plus the two
+external-host drivers exempt from the coverage thresholds alone under DR 048's Amendment 2026-09-17
+(see the recorded triages in [Testing Strategy](testing-strategy.md)). There are no tiers, tier annotations, tier
+registries, classic CRAP thresholds, per-file suppressions, or nesting-depth gate. Mutation is a
+separate assurance gate. A stack that lacks a reviewed mechanism reports the capability unavailable;
+absence cannot become a pass. No changed-code mutant may survive or remain uncovered. A survivor
+requires a sharper assertion or dead-code deletion, never a lower threshold. Acceptance mutation
+changes one example value at a time; a scenario still green marks a step that asserts nothing.
+
+The project's testing guide names its facade, acceptance runner, adopted gates, and mutation command.
+
+---
+
+## 7. Smells
+
+Twelve shapes that make code worse than it needs to be (Fowler, _Refactoring_, ch. 3). Each reads what
+it is → how to fix; the reviewer judges by them, and a fix hop or tightening pass works them.
+
+- **Mysterious Name** — hides what it does or holds. → rename; no honest name means a murky design.
+- **Duplicated Code** — one logic shape in two hunks or files. → extract it, call it from both.
+- **Feature Envy** — a method using another object's data more than its own. → move it there.
+- **Data Clumps** — the same fields always travelling together. → bundle them into one type.
+- **Primitive Obsession** — a primitive standing in for a domain concept. → give it its own type.
+- **Repeated Switches** — the same cascade on one type, twice. → polymorphism or a shared map.
+- **Shotgun Surgery** — one change forcing scattered edits. → gather what changes together.
+- **Divergent Change** — one file edited for unrelated reasons. → split it by reason.
+- **Speculative Generality** — abstraction for needs the contract does not have. → delete it.
+- **Message Chains** — long `a.b().c().d()` walks the caller depends on. → hide the walk.
+- **Middle Man** — a unit that mostly delegates onward. → cut it; call the target direct.
+- **Refused Bequest** — a subclass ignoring most of what it inherits. → compose instead.
+
+---
+
+## Deep modules
+
+A module is deep when a small interface hides a lot of functionality (Ousterhout, _A Philosophy of
+Software Design_). Depth is the functionality a module provides over the interface its callers must
+learn; a shallow module, whose interface is nearly as large as its body, costs callers more than it
+saves.
+
+- **Information hiding** — each module owns a design decision and keeps it inside, so changing the
+  decision edits one module; a decision leaking through an interface couples every caller to it.
+- **Pull complexity downward** — complexity that must live somewhere lives in the module, not in its
+  callers; a parameter the caller cannot choose well is one the module decides.
+- **Define errors out of existence** — shape the interface so the error case cannot arise, such as
+  an idempotent delete or a range clamped to what exists, rather than handing every caller an
+  exception.
+- **General-purpose over special-purpose** — an interface slightly more general than its one caller
+  needs is often simpler and deeper than a method per special case.
+
+`codebase-design` carries the method: module, interface, seam and depth, and how to find a deepening
+opportunity.
+
+---
+
 ## Rules
 
 Violating these causes real problems.

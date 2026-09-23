@@ -128,6 +128,11 @@ reverses DYD-69's resolution.
 
 Amended by [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) (2026-09-04): every delivery Issue has a specify hop, the specifier carries per-kind resources, and the hops are also statuses.
 
+Amended by DYD-230 (2026-09-23; participants: balazs and the Claude admiral): Red before green is
+required where a reproduction exists before the fix, which is every Bug; a Feature writes its tests
+with the code and proves after green that they fail without it. The separate specify commit and the
+posted Spec and Plan are retired.
+
 ---
 
 ## Affects

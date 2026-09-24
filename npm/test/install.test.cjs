@@ -130,5 +130,5 @@ test('a failed download reports recovery instructions and exits one', async func
 
   assert.deepEqual(exits, [1]);
   assert.match(errors.join('\n'), /fixture failure/);
-  assert.match(errors.join('\n'), /releases\/tag\/v3\.0\.0/);
+  assert.match(errors.join('\n'), /releases\/tag\/v3\.0\.0(?:\n|$)/);
 });

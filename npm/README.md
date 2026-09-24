@@ -50,9 +50,8 @@ The skills do not come with this package, and `dydo init` does not write them. B
 agent session, copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` (the MIT notices of
 the adapted skills travel with them) from the
 [dydo repository](https://github.com/bodnarbalazs/dydo) into the project root, commit them, and run
-`node setup-skills.mjs`. The script always creates both `.claude/skills/` and `.agents/skills/`, but
-`dydo init` and every `--join` add only the wired host's folder to `.gitignore`; a single-host
-project adds the other folder's line itself, or wires both hosts with `all`. Edit the
+`node setup-skills.mjs`. The script always creates both `.claude/skills/` and `.agents/skills/`, and
+`dydo init` and every `--join` add both to `.gitignore` in every mode. Edit the
 canonical `skills/<category>/<name>/` folder directly; there is no compile step or automatic
 reconciliation. OpenCode may read the same two folders; that is untested, and dydo has no OpenCode
 init mode.

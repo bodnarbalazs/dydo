@@ -51,7 +51,7 @@ Workflow as an operating-model concept; no workflow scripts exist. What each met
 [Customizing Roles](../guides/customizing-roles.md), the shapes and link rules in
 [Scaffold and Customization](./scaffold-and-customization.md).
 
-The folders under `skills/` are the only editable skill source. Host projections are local setup; init gitignores only the wired host's root.
+The folders under `skills/` are the only editable skill source. Host projections are local setup; init gitignores both hosts' roots, in every mode.
 
 ## Knowledge and work boundary
 

@@ -36,18 +36,18 @@ Fresh tree:
 dydo init codex       # or: dydo init claude / dydo init all / dydo init none
 ```
 
-Every mode creates the documentation tree and `CLAUDE.md`. The `claude`, `codex` and `all` modes
-wire the guard hooks for the chosen runtimes and add the host's skill projection folder to
-`.gitignore`, `/.claude/skills/` for Claude Code and `/.agents/skills/` for Codex; Codex selections
-add `AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file
-init writes. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
+Every mode creates the documentation tree and `CLAUDE.md`, and adds both skill projection folders
+to `.gitignore` — `/.claude/skills/` for Claude Code and `/.agents/skills/` for Codex. The `claude`,
+`codex` and `all` modes also wire the guard hooks for the chosen runtimes; Codex selections add
+`AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file init
+writes. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
 documentation; live work stays in Linear.
 
 An existing tree, which has `dydo.json` at its root, is not re-initialized. The framework documents
 under `dydo/` are the project's own from then on; edit them in place. Another machine or runtime
 joining an already-initialized project runs `dydo init codex --join` or `dydo init claude --join`,
-which wires the local runtime without touching the documentation tree, and adds the same skill
-projection lines to `.gitignore`.
+which wires the local runtime without touching the documentation tree, and keeps both skill
+projection lines in `.gitignore`.
 
 ## 3. Install the skills
 
@@ -65,9 +65,8 @@ come with the npm or .NET package, and `dydo init` does not write them.
 3. Run `node setup-skills.mjs` from the project root. It walks the tree by rule, so a folder holding
    `SKILL.md` is a skill and any other folder a category, and links each skill flat into
    `.claude/skills/<name>/` and `.agents/skills/<name>/`. Every fresh clone runs it once.
-4. The script always creates both folders, but init ignores only the wired host's folder. A
-   single-host project adds the other one to `.gitignore` itself (`/.agents/skills/` after
-   `dydo init claude`, `/.claude/skills/` after `dydo init codex`), or wires both hosts with `all`.
+4. The script always creates both folders, and init gitignores both regardless of which host is
+   wired, so no single-host project needs to add the other folder's line itself.
 
 Done when the Claude and Codex discovery roots contain whole-directory projections for every skill.
 OpenCode may read those roots as well; that is untested, and dydo has no OpenCode init mode.

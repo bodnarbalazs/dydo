@@ -683,8 +683,9 @@ public static class InitCommand
     // and works from a fresh clone (issue 0303 records this deliberate asymmetry).
     private const string ClaudeSettingsEntry = ".claude/settings.local.json";
 
-    // setup-skills.mjs projects the authored /skills tree into these host-local discovery
-    // directories; neither is source, so both must stay out of every host's commits.
+    // setup-skills.mjs always projects the authored /skills tree into BOTH host-local discovery
+    // directories, regardless of which host is wired; neither is source, so both must stay out of
+    // every project's commits in every init mode, including 'none'.
     private const string ClaudeSkillsEntry = "/.claude/skills/";
     private const string CodexSkillsEntry = "/.agents/skills/";
 
@@ -695,14 +696,11 @@ public static class InitCommand
         {
             ("# DynaDocs agent workspaces (local state)", $"{dydoRoot}/agents/"),
             ("# DynaDocs runtime state", $"{dydoRoot}/_system/.local/"),
+            ("# Claude Code skill projection (machine-local, wired by setup-skills.mjs)", ClaudeSkillsEntry),
+            ("# Codex skill projection (machine-local, wired by setup-skills.mjs)", CodexSkillsEntry),
         };
         if (integrations.Contains("claude"))
-        {
             sections.Add(("# Claude Code personal settings (machine-local, wired by 'dydo init claude --join')", ClaudeSettingsEntry));
-            sections.Add(("# Claude Code skill projection (machine-local, wired by setup-skills.mjs)", ClaudeSkillsEntry));
-        }
-        if (integrations.Contains("codex"))
-            sections.Add(("# Codex skill projection (machine-local, wired by setup-skills.mjs)", CodexSkillsEntry));
 
         var content = File.Exists(gitignorePath) ? File.ReadAllText(gitignorePath) : "";
         var modified = !File.Exists(gitignorePath);

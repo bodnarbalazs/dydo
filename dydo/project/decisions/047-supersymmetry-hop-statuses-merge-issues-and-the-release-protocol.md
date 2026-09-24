@@ -385,7 +385,9 @@ changes; every other section stands.
   its captain's PR carrying the reviewer PASS, CI green and the human's click; the captain then closes
   it `Done` and cleans up. Merge Sub-issues stay for feature branches inside Projects. This replaces
   §6's "An atomic Issue merges into main through its own final Merge
-  Sub-issue", and the two parks kept in the amendments above.
+  Sub-issue".
+
+Bullets 1 and 2 replace the two parks kept in the amendments above.
 
 ---
 

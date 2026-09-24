@@ -63,7 +63,7 @@ The verdict is a fresh reviewer's **review block**, in the one-line form of the
 and PASS means no findings.
 
 Every reviewer brief names five fields: rubric, `Contract: <KEY> description as of <Linear updatedAt>`,
-Candidate SHA, Base SHA and the code-writer's `IMPLEMENTED` line. Write the brief so every field of the block can be filled from it. Gates that are not commands cannot
+Candidate SHA, Base SHA and the writer's `IMPLEMENTED` line. Write the brief so every field of the block can be filled from it. Gates that are not commands cannot
 be rerun; an outcome with no observable form cannot be judged; a candidate with no owned paths has no
 boundary to be judged against.
 

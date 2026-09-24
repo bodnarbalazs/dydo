@@ -7,8 +7,8 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>3.0.0-beta.3</Version>
-        <InformationalVersion>3.0.0-beta.3</InformationalVersion>
+        <Version>3.0.0</Version>
+        <InformationalVersion>3.0.0</InformationalVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <Description>Documentation, native skill authoring, and guardrails for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
@@ -19,7 +19,7 @@
         <PackageTags>codex;claude;documentation;ai-agents;cli</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>dydo 3.0 adopts Linear for live work and focuses on durable knowledge, native skills, and guardrails.</PackageReleaseNotes>
+        <PackageReleaseNotes>https://github.com/bodnarbalazs/dydo/blob/v3.0.0/dydo/project/changelog/2026/2026-08-27/dydo-3-0-0-linear-pm-and-notion-runtime-removal.md</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>

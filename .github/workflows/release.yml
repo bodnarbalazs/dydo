@@ -2,8 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - feature/dydo-3-consolidation
     tags:
       - 'v*'
   workflow_dispatch:
@@ -126,7 +124,7 @@ jobs:
         run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
 
   release:
-    if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -145,16 +143,7 @@ jobs:
           sha256sum * > checksums.txt
           cat checksums.txt
 
-      - name: Create beta release
-        if: github.ref == 'refs/tags/v3.0.0-beta.3'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/*
-          generate_release_notes: true
-          prerelease: true
-
       - name: Create stable release
-        if: github.ref == 'refs/tags/v3.0.0'
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
@@ -162,7 +151,7 @@ jobs:
           prerelease: false
 
   nuget:
-    if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -195,7 +184,7 @@ jobs:
         run: dotnet nuget push nupkg/dydo.${{ steps.version.outputs.VERSION }}.nupkg --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   npm:
-    if: ${{ github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0') }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
     needs: [build, validation, release]
     runs-on: ubuntu-latest
     permissions:
@@ -221,5 +210,5 @@ jobs:
         working-directory: npm
 
       - name: Publish to npm
-        run: npm publish --access public --provenance --tag ${{ github.ref == 'refs/tags/v3.0.0-beta.3' && 'beta' || 'latest' }}
+        run: npm publish --access public --provenance --tag latest
         working-directory: npm

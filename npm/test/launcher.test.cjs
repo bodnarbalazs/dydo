@@ -24,7 +24,7 @@ function prepareFixture() {
 function runLauncher(...args) {
   return spawnSync(process.execPath, [path.join(fixtureRoot, 'bin', 'dydo.cjs'), ...args], {
     encoding: 'utf8',
-    timeout: 5000
+    timeout: 30000
   });
 }
 

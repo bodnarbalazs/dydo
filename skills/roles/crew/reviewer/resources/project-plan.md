@@ -1,15 +1,18 @@
 # Reviewing a Project Plan
 
-Target: one committed Project plan proposed for human approval, or an amendment to it, judged in the
-shape the project-planner skill fixes, at the plan's candidate commit. PASS means the plan can reach
-human approval and open the first work; it certifies a starting route, not a complete one.
+Target: one committed Project plan the map holder wrote for a cross-cutting architecture contract,
+proposed for human approval, or an amendment to it, judged in the shape below at the plan's
+candidate commit. PASS means the plan can reach human approval and open the first work; it certifies
+a starting route, not a complete one.
 
 ## Method
 
 1. **Check the shape.** Frontmatter carries `title`, `status`, `area`, `type` and `linear-project`;
-   the six numbered sections stand in order, with First pickable Issues, Later bearings, exact gates
-   and any Not yet specified fog; `dydo check` passes. Done when every required element exists or
-   is one finding.
+   six numbered sections stand in order: 1 Specification (intent, in scope, out of scope,
+   acceptance criteria, questions and answers), 2 Prior art, 3 Design, 4 Implementation Issue map
+   (First pickable Issues, Later bearings, Exact gates), 5 Ordering and isolation, 6 Watch-outs;
+   any Not yet specified fog closes it; `dydo check` passes. Done when every required element exists
+   or is one finding.
 2. **Verify the ground.** Read every cited Decision, path, pattern and specification at the
    candidate commit. Done when every material claim matches its source or is one finding.
 3. **Test the destination.** Intent, scope, acceptance and governing design agree, and each
@@ -27,7 +30,7 @@ human approval and open the first work; it certifies a starting route, not a com
    journey without hiding or inventing what comes later.
 
 **Wayfinding fog is not a gap.** A sharp blocker left after authoritative homework and needing human
-judgment is a `Question` Issue in `Todo`, created by the admiral, recording its homework and
+judgment is a `Question` Issue in `Todo`, created by the map holder, recording its homework and
 blocking every Issue that waits on it, with priority by that standard.
-The admiral owns the review loop and presents approval to the human; the second FAIL is their choice. Dimmer uncertainty stays in `## Not yet specified`. A plan
+The map holder owns the review loop and presents approval to the human; the second FAIL is their choice. Dimmer uncertainty stays in `## Not yet specified`. A plan
 that pretends either is settled FAILs; honest placement passes.

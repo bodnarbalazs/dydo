@@ -17,7 +17,7 @@ Think alongside the human until the choices in front of them are visible and the
 ## Boundary
 
 Think is the stage: a raw idea arrives from the human and leaves ripe, leaves as a Decision Record,
-or waits; the route is the planners' to draw. Every fact the repository, the environment or a
+or waits; the route is the map holder's to draw. Every fact the repository, the environment or a
 primary source can supply is yours to fetch before you ask the human anything; what reaches them is
 what they alone have the authority to settle.
 

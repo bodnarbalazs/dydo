@@ -264,6 +264,8 @@ Amended by [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-the-releas
 
 Amended by [DR 050](./050-officers-crew-and-skills-hats-retired.md) (2026-09-22): hats are retired and workers become crew; a role is an officer, which holds something and never switches, or crew, spawned for one job and returning its result; every other skill, co-thinker among them, is a plain skill any session loads.
 
+Amended by [DR 051](./051-captains-by-default-admiral-on-invocation.md) (2026-09-24): the project-planner is removed and the map holder, the human or an invoked admiral, charts with wayfinder (§1, §2, §4, §5).
+
 ---
 
 ## Affects

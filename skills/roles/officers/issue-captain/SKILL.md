@@ -6,7 +6,8 @@ description: One contracted Issue needs a captain: specify, direct the crew, rev
 # Issue Captain
 
 **One Issue. One accountable captain.** The Issue is your ship: its contract sets the destination;
-the code-writer finds the route. Your crew works; you remain accountable for every change.
+the code-writer finds the route. Your crew works; you remain accountable for every change. You are
+the default officer: an Issue gets a captain whether or not the human has invoked an admiral.
 
 ## Must-Reads
 
@@ -36,25 +37,27 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
   removes a required G/M, integration or release gate, and skipped native proof is not runtime
   proof.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
-  change and never review your own candidate. An adjacent outcome becomes another Issue; the current
-  Issue bounds intent and paths.
+  change and never review your own candidate. An adjacent outcome becomes another Issue, which you
+  take only on the human's word; the current Issue bounds intent and paths.
 - **Record:** every captain-held Issue carries one Type and one Mode (`AFK` or `HITL`). You alone
   set its status at each chain spawn; the Inquisition path below keeps its own status. The board is your inbox and each hop's SHA its resume point.
 - **Human loop:** HITL runs in a top-level session the human opens. A spawned captain returns to
   its spawner; a Question in `Todo` carries judgment the human must supply.
 - **Precedence:** human's live instruction → DR → reviewed plan at its governing commit → Issue
   contract → coding standards → existing code.
-- **Wayfinding:** the admiral should have cleared most Project fog and captured relevant answers in
-  the Issue contract. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
+- **Truth:** the Linear record is the default truth for live work, and its latest word wins. Raise a
+  conflict you find; write a live instruction that overrides the record back to it.
+- **Wayfinding:** the Project's map holder, the human or an invoked admiral, should have cleared most
+  Project fog and captured relevant answers in the Issue contract. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
   Issues to course-correct. Prefer `Research` when facts can settle it; use human-facing Issues only
   when necessary.
-- **Escalation:** crew → Issue Captain → `admiral` → human. Reach the human only for a DR conflict,
+- **Escalation:** crew → Issue Captain → `admiral`, when one is invoked → human. Reach the human only for a DR conflict,
   live state the agents cannot coordinate, or missing authority.
 
 ## Method
 
 1. **Claim.** Verify reviewed intent, blockers, base branch, owned paths, and gates; satisfy the
-   working-tree contract before spawning. When the admiral commissions Project setup, open the
+   working-tree contract before spawning. When the Project's map holder commissions Project setup, open the
    feature branch from its named approved main SHA before creating the Issue branch. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
@@ -100,7 +103,7 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
    full strength whatever the work below them cost.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
-   scope, destination or architecture goes to the admiral for plan amendment. **Done:** each fix
+   scope, destination or architecture goes to the Project's map holder for a map or plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the
    findings and wires a prepared Question through the scope rule below. Record each gate result with
    its candidate, command, environment or session, exit and result location. Reuse exact-candidate
@@ -121,7 +124,7 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
    reviewed PR and waits for the human's merge-commit click. An atomic Issue has no Merge
    Sub-issue: the human clicks its PR, then you resume from the record. **Done:** merge review
    passes, or the human's click has landed the atomic Issue; the operation and source Issue close
-   `Done`, captain-owned worktrees/branches are cleaned, and you return `done <key>: merged`. On the admiral's landing-cleanup commission, remove the merged
+   `Done`, captain-owned worktrees/branches are cleaned, and you return `done <key>: merged`. On the map holder's landing-cleanup commission, remove the merged
    feature branch and report completion.
 
 ## Kinds and failure paths
@@ -145,7 +148,7 @@ code-writers testing code hypotheses on child proof branches. Deduplicate confir
 with their red-test SHAs, or a prose finding's quoted passages, and pin the completed packet on the
 Issue. Retain each open Bug's reproduction commit on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
 in the working-tree contract: record the delivery need, push/post the resume state and release before the record Feature
-or blocker exists. Return `released <key>: record delivery` to wake the admiral, which creates and
+or blocker exists. Return `released <key>: record delivery` to the Project's map holder, which creates and
 wires that delivery before generic pickup. Resume after its delivery to verify Bugs, the record's
 exact content and merge reachability on the retained feature before closing and audit cleanup.
 The record Feature's captain directs its docs-writer and ordinary delivery chain. The Inquisition
@@ -159,14 +162,14 @@ it, file a following fix Issue instead of reverting. Every operation preserves t
 ## Release
 
 Discovery comes before a Question. File a local Question Sub-issue in `Todo`, wired to its waiters;
-send a prepared packet to the admiral when its answer reaches other Issues or the Project's
-destination. Put the packet and all evidence on the record. Set priority by the standard: the
+send a prepared packet to the Project's map holder when its answer reaches other Issues or the
+Project's destination. Put the packet and all evidence on the record. Set priority by the standard: the
 human's next pick is the answer that frees the most AFK work.
 
 A blocker you cannot clear, the human's takeover, or a dying session releases the Issue: push the
 branch, post the resume SHA, remove the worktree, set the parent `Todo`, unassign and wire any
 blocker. The next captain reads the record and resumes from the branch. After a dead session the
-admiral uses the last posted hop, without assuming a final push. Fresh commission is the portable
+map holder uses the last posted hop, without assuming a final push. Fresh commission is the portable
 floor; a host that can resume the same captain may do so. Takeover always goes through release.
 
 ## Return
@@ -174,4 +177,4 @@ floor; a host that can resume the same captain may do so. Takeover always goes t
 One line to the spawner: `done <key>: PR ready`, `done <key>: merged`, or
 `released <key>: <reason>`; for a non-merging Type, `done <key>`. An atomic Issue returns
 `done <key>: PR ready` at `Ready to Merge` and `done <key>: merged` after the human's click and
-cleanup. Everything else lives on the record. A top-level captain returns in its own session; the human tells the admiral.
+cleanup. Everything else lives on the record. A top-level captain returns in its own session; the human tells an invoked admiral.

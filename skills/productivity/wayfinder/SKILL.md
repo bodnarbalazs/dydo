@@ -11,8 +11,10 @@ The destination is known, but the route is wrapped in **fog**. Wayfinding finds 
 not charge at the destination. The map holds the low-resolution view, and its **Wayfinding Issues**
 clear one part of the route at a time.
 
-The Project Planner charts the first Project map, the admiral works it during delivery, and an Issue
-Captain may chart local fog inside one approved delivery outcome.
+The **map holder** charts and grills. A Project's map holder is the human, driving the map in their
+own session, or an admiral the human invoked, until the human takes the map back; the Project
+description names the current holder. An Issue Captain may chart local fog inside one approved
+delivery outcome.
 
 For a communication protocol, from the repository root read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md`, not the whole workspace standard.
 
@@ -35,6 +37,8 @@ Wayfinding Issue stores its own context and resolution. Open Issues stay out of 
 are found through Linear queries.
 
 ```markdown
+**Map holder:** <the human, or the admiral the human invoked; rewritten when the map changes hands>
+
 ## Destination
 
 <what will exist or work differently when this Project is complete; one or two lines>
@@ -56,10 +60,10 @@ are found through Linear queries.
 <!-- see "Out of scope": work ruled beyond the destination; closed, never graduates -->
 ```
 
-At delivery scale, the parent Task is the local map; the admiral should already have cleared most of
-its fog. If delivery reveals more, the Captain creates a direct Wayfinding Sub-issue and reports its
-resolution to the admiral. Anything that could affect another Issue, a shared contract, or the
-Project map is escalated instead.
+At delivery scale, the parent Task is the local map; the Project's map holder should already have
+cleared most of its fog. If delivery reveals more, the Captain creates a direct Wayfinding Sub-issue
+and records its resolution on it. Anything that could affect another Issue, a shared
+contract, or the Project map is escalated to the Project's map holder instead.
 
 ## Issues
 
@@ -77,8 +81,8 @@ unassigned Issues at the edge of the known.
 The resolution is recorded as a named evidence comment using the `DECIDED` form in the communication
 protocol. Assets created while resolving an Issue are linked from it, not pasted in.
 
-For the admiral, contracts are Issues under the Project; for a captain they are Sub-issues under
-its Issue. The same Types, statuses and chain hold. The captain specifies its parent before naming
+For the Project's map holder, contracts are Issues under the Project; for a captain they are
+Sub-issues under its Issue. The same Types, statuses and chain hold. The captain specifies its parent before naming
 disjoint parallel lanes, and each merging lane or Issue gets its own Merge Sub-issue in order.
 The standard owns the full Type set and status/priority rules: from the repository root, read
 `dydo/reference/linear-workspace-standard.md`.
@@ -90,9 +94,9 @@ or **AFK**, driven by the agent alone. A HITL Issue only resolves through that l
 agent never stands in for the human's side of it (a grilling agent that answers its own questions has
 broken this).
 
-- **Task** (HITL or AFK): A `Feature` or `Bug` Issue built by an Issue Captain and crew — one
-  `code-writer`, then one fresh reviewer, more only at the captain's discretion — through its
-  contract, production, review, and its Merge Sub-issue.
+- **Task** (HITL or AFK): the role a captain-held Issue plays on the map, as the standard defines
+  it. Its Issue Captain and crew — one author, then one fresh reviewer, more only at the captain's
+  discretion — carry it through its contract, production, review, and its Merge Sub-issue.
 - **Research**: Reading documentation, third-party APIs, or local resources like knowledge
   bases to surface a fact a decision waits on. Resolved by a subagent that calls the Skill tool with
   "research". Use when authoritative evidence, inside or outside the repository, can settle the fact.
@@ -104,11 +108,10 @@ broken this).
   "grilling" and "domain-modeling".
 - **Question**: One prepared human choice that authoritative sources and the other Issue types
   cannot settle. The Issue carries the homework, credible options, trade-offs, and recommendation.
-- **Enablement** (HITL or AFK): Manual work that must happen before a _decision_ can be made:
-  nothing to decide, prototype, or research, but the discussion is blocked until it is done. Signing
-  up for a service so its API can be judged, provisioning access, moving data so its shape can be
-  seen. This is the one Wayfinding type that _does_ rather than decides, and it earns its place by
-  unblocking a decision, not by delivering the destination.
+- **Enablement** (HITL or AFK): the access, environment, credentials or material other work needs,
+  as the standard defines it: nothing to decide, prototype, or research, but the work is blocked
+  until it is done. Signing up for a service so its API can be judged, provisioning access, moving
+  data so its shape can be seen. This is the one Wayfinding type that _does_ rather than decides.
 
 A captain drives Enablement alone where it can (AFK); for human-only steps it uses `wizard` in
 a top-level HITL session. Prototype also has a captain; Research, Grilling and Question stay with
@@ -149,10 +152,9 @@ Fog can surface through several hands:
 
 | Found by | Recording path |
 |---|---|
-| Project Planner | return the prepared Question packet and its waiters to the admiral |
-| admiral | create and wire it as delivery clears Project fog |
+| Project's map holder | create and wire it while charting, or as delivery clears Project fog |
 | Code Writer or other crew | return a prepared hand-raise to the Issue Captain |
-| Issue Captain | create a local Sub-issue, or escalate a Project-level packet to the admiral |
+| Issue Captain | create a local Sub-issue, or escalate a Project-level packet to the Project's map holder |
 
 An answer graduates to a Decision Record only when it is hard to reverse, surprising later, and the
 result of a real trade-off. The Issue carries the question and its working resolution; the Decision
@@ -176,8 +178,9 @@ walked; a scope boundary isn't a step on it.
 
 ## Invocation
 
-Two modes. Either way, never resolve more than one Wayfinding Issue per session, with the exception
-of Research Issues. Tasks may run concurrently under separate Issue Captains.
+Two modes. Either way, a session the human drives never resolves more than one Wayfinding Issue,
+with the exception of Research Issues: one Issue is sized to one session. An invoked admiral is
+exempt. Tasks may run concurrently under separate Issue Captains.
 
 ### Chart the map
 
@@ -213,7 +216,7 @@ one, take the next Issue rather than asking the human to choose.
 4. Record the resolution when the Type's outcome is reached: post the answer as a **resolution
    comment**, mark the Issue `Done`, and
    append a context pointer to the map's Resolutions so far. For local fog, link the resolution from
-   the parent delivery Issue and inform the admiral instead.
+   the parent delivery Issue instead; the record is the whole report.
 5. Add newly surfaced Issues (create then wire); graduate any fog the answer has made specifiable,
    clearing each graduated patch from **Not yet specified** so it lives only as its new Issue. If the
    answer reveals that an Issue sits beyond the destination, rule it out of scope. If the resolution

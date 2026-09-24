@@ -19,7 +19,7 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 | Stage | Who | Output | Gate |
 |---|---|---|---|
 | Think | any session, loading co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
-| Chart and plan a Project | admiral, sending project-planner | committed plan, first Issues, prepared Questions | admiral-owned project-plan review, then human approval |
+| Chart and plan a Project | the map holder, the human or an invoked admiral, with wayfinder | the map in the Linear Project, first Issues, Questions; a repository plan only for a cross-cutting architecture contract | project-plan review of that plan, then human approval |
 | Make an Issue exact | issue-captain, through its compact acceptance contract | a just-in-time contract with no hidden implementation decisions; the route stays the writer's | optional spec review |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, or into main for an atomic Issue, evidence on the Issue | reviewer PASS |
 | Coordinate | admiral | captains in flight, wired Merge Sub-issues, plan amendments | each captain directs its own merge review |

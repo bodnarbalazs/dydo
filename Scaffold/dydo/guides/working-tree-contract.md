@@ -5,9 +5,9 @@ type: guide
 
 # Working-Tree Contract
 
-The bird's-eye view of how a Project moves through branches and worktrees. Admirals use it to know
-what to expect from Issue Captains and their lane crew; Issue Captains use it to know what they own
-and what they hand back. The `chief-of-staff` audits failures of this contract, not routine cleanup.
+The bird's-eye view of how a Project moves through branches and worktrees. A Project's map holder,
+the human or an invoked admiral, uses it to know what to expect from Issue Captains and their lane
+crew; Issue Captains use it to know what they own and what they hand back. The `chief-of-staff` audits failures of this contract, not routine cleanup.
 
 ## Invariants
 
@@ -43,13 +43,13 @@ provide the Issue worktree; otherwise place it beside the repository at
 
 | Stage | Owner | Required state |
 |---|---|---|
-| Open the Project | `admiral`, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
+| Open the Project | the map holder, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
 | Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Implementing` when it spawns the author, a code-writer or a docs-writer. |
 | Resolve the work | `issue-captain` | The captain's compact acceptance contract names the lanes, or none; when the work splits beyond it, the writer's one pre-code comment names them. Parallel crew receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, `merge`, or `proof`, which commits as `<KEY> proof: <hypothesis>`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
-| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs a code-writer — conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side — then a fresh merge reviewer, preserving the merge commit and hop SHAs; the admiral wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
+| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs a code-writer — conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side — then a fresh merge reviewer, preserving the merge commit and hop SHAs; the map holder wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
 | Integrate an Atomic Issue | `issue-captain` | No Merge Sub-issue: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the human clicks the merge. The captain then closes the Issue `Done` and cleans up. |
 | Land the Project | human | The landing Merge Issue prepares main into feature and obtains acceptance PASS; the human clicks feature into main as a merge commit, never squash. |
 
@@ -130,7 +130,7 @@ the human's click closes it `Done`, cleans up and returns `done <key>: merged`.
 For an uncleared blocker or human takeover: push, post the resume SHA, remove the worktree, set the
 parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
 treated as release from its last recorded hop without a final push. Fresh commission from the
-record works on both hosts. The admiral wakes on a captain's return or the human's word and rereads
+record works on both hosts. An invoked admiral wakes on a captain's return or the human's word and rereads
 the board, including released and blocker-cleared Issues.
 
 Merge FAIL stays owned: fix integration defects inside Merge; revert a source defect there and
@@ -143,17 +143,17 @@ The Inquisition captain pins the completed evidence packet on its Issue: audited
 scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
 reproduction SHAs, or a prose Bug's quoted passages. The captain pushes and posts its resume state, removes its worktree, sets the
 Inquisition `Todo`, unassigns and returns `released <key>: record delivery`. The record Feature and
-its blocker do not exist yet; this release return is the admiral's ordinary wake.
+its blocker do not exist yet; this release return reaches the Project's map holder.
 
-On that wake, before generic pickable commissioning, the admiral uses the packet to contract a
+On that return, before generic pickable commissioning, the map holder uses the packet to contract a
 separate primary `Feature` / `AFK` record-delivery Issue from the retained feature branch. Its ownership names the exact
 `dydo/project/inquisitions/` record file and exact authored navigation paths only when the record-delivery Issue contract requires them. Its own
 captain directs the ordinary specification, docs-writer, docs review and final Merge Sub-issue
 into the feature. Audit and proof branches never merge.
 
 First wire the Inquisition **blocked by the record Feature**, never the reverse, then commission
-record delivery from the completed packet. The admiral does not recommission the Inquisition from
-its temporary `Todo` gap. On the normal board loop after record delivery is `Done`, the admiral
+record delivery from the completed packet. The map holder does not recommission the Inquisition from
+its temporary `Todo` gap. On the normal board loop after record delivery is `Done`, the map holder
 resumes that captain from the Issue. It returns to
 `In Progress`, verifies the filed Bugs and the exact record path and blob or content digest on the
 retained feature, and records the delivery merge's ancestry/reachability there. Only then does it
@@ -175,8 +175,8 @@ chain. This is ordinary Feature delivery and release, not a new Type or a serial
 | Integrated lane Sub-issue branch | `issue-captain` | The branch is deleted after it passes review and is integrated into the parent Issue branch. |
 | Merged Project-Issue branch | `issue-captain` | The branch is deleted after the merge. |
 | Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the human clicks its PR into main. |
-| Merged feature branch | `admiral`, commissioning the landing Captain | The landing Captain deletes the branch after the human lands it and reports completion. |
-| Prototype branch | `issue-captain`, tracked by the admiral | Keep the winning code linked as delivery-spec input; delete when that delivery Issue is Done or with feature cleanup. |
+| Merged feature branch | the map holder, commissioning the landing Captain | The landing Captain deletes the branch after the human lands it and reports completion. |
+| Prototype branch | `issue-captain`, tracked by the map holder | Keep the winning code linked as delivery-spec input; delete when that delivery Issue is Done or with feature cleanup. |
 | Inquisition branch | `issue-captain` | Delete at Done after the record/proof retention checks above; never merge it or delete the independently retained Bug refs. |
 
 The `chief-of-staff` compares `git worktree list` and merged branches with Linear during board hygiene.

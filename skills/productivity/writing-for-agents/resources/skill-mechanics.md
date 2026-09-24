@@ -63,6 +63,6 @@ Two choices, trading the two loads:
 ## Distribution
 
 One `skills/<category>/<name>/` folder is committed and hand-maintained. `node setup-skills.mjs` creates
-per-skill POSIX symlinks or Windows junctions in the Claude and Codex discovery roots; OpenCode reads
-both roots. A skill change edits the canonical folder once. Setup never copies or reconciles prose.
+per-skill POSIX symlinks or Windows junctions in the Claude and Codex discovery roots; OpenCode may read
+both roots too, but that is untested. A skill change edits the canonical folder once. Setup never copies or reconciles prose.
 What no tool may rewrite is listed in `dydo/files-off-limits.md`, read from the repository root.

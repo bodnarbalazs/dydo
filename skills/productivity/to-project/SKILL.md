@@ -17,5 +17,5 @@ records it without another interview.
 2. Write the Project title, short summary and intent description under those four headings. Link
    the records and source FutureFeature when present. Done when the Project carries the intent and
    its provenance, with unresolved points still identified as unresolved.
-3. Create the Project in `Backlog`, with no Issues. Return its link; the human may open an admiral
-   session on it at any stage. Done when the recorded Project can be read without this conversation.
+3. Create the Project in `Backlog`, with no Issues. Return its link and the next step: the human
+   breaks it into Issues with `to-issue`, or invokes an admiral on it at any stage. Done when the recorded Project can be read without this conversation.

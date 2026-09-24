@@ -18,11 +18,11 @@ public sealed class CanonicalSkillAssertionTests
         "skills/engineering/improve-codebase-architecture/SKILL.md",
         "skills/roles/crew/inquisitor/SKILL.md",
         "skills/roles/officers/issue-captain/SKILL.md",
-        "skills/roles/crew/project-planner/SKILL.md",
         "skills/roles/crew/research/SKILL.md",
         "skills/roles/crew/reviewer/SKILL.md",
         "skills/roles/crew/scout/SKILL.md",
         "skills/productivity/wayfinder/SKILL.md",
+        "skills/productivity/to-issue/SKILL.md",
         "skills/roles/crew/reviewer/resources/code.md",
         "skills/roles/crew/reviewer/resources/docs.md",
         "skills/roles/crew/reviewer/resources/project-plan.md",
@@ -57,7 +57,7 @@ public sealed class CanonicalSkillAssertionTests
         var expected = new Dictionary<string, string>
         {
             ["admiral"] = "roles/officers", ["issue-captain"] = "roles/officers", ["chief-of-staff"] = "roles/officers",
-            ["project-planner"] = "roles/crew", ["code-writer"] = "roles/crew", ["docs-writer"] = "roles/crew",
+            ["code-writer"] = "roles/crew", ["docs-writer"] = "roles/crew",
             ["reviewer"] = "roles/crew", ["inquisitor"] = "roles/crew", ["research"] = "roles/crew", ["scout"] = "roles/crew",
             ["codebase-design"] = "engineering", ["domain-modeling"] = "engineering", ["diagnosing-bugs"] = "engineering",
             ["prototype"] = "engineering", ["wizard"] = "engineering", ["improve-codebase-architecture"] = "engineering",
@@ -65,7 +65,7 @@ public sealed class CanonicalSkillAssertionTests
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
             ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
             ["writing-for-humans"] = "productivity", ["self-improvement"] = "productivity", ["wayfinder"] = "productivity",
-            ["to-project"] = "productivity"
+            ["to-project"] = "productivity", ["to-issue"] = "productivity"
         };
         Assert.Equal(29, expected.Count);
         var root = Path.Combine(RepositoryRoot(), "skills");

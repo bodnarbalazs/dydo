@@ -16,10 +16,10 @@ status circle from its position in its category.
 
 | Status | Meaning |
 |---|---|
-| `Backlog` | A possible Project retained for later; no admiral has taken it. |
-| `Planning` | The admiral's project-planner is charting the first low-resolution map, and the review loop runs. |
-| `Planned` | The plan passed independent review and human approval; the admiral commissions the first Issue Captain to open the feature. |
-| `In Progress` | The admiral is working the map through Issue Captains toward the destination. |
+| `Backlog` | A possible Project retained for later; no one has started charting it. |
+| `Planning` | The map holder is charting the first low-resolution map with `wayfinder`; a repository plan, when one is written, runs its review loop. |
+| `Planned` | The human approved the charted route, and any repository plan passed independent review; the map holder commissions the first Issue Captain to open the feature. |
+| `In Progress` | The map holder is working the map through Issue Captains toward the destination. |
 | `Completed` | The destination landed and a walkthrough found nothing more. |
 | `Canceled` | The destination was consciously abandoned; the Project records why. |
 
@@ -79,7 +79,7 @@ change — and one fresh independent whole-change reviewer. A spec review of the
 code needs one short concrete risk reason, recorded in the contract; persistence, migrations, permissions and uncertain native
 interfaces are examples of such a risk. Required G/M, integration and release gates remain. The captain records one compact
 acceptance contract and points to its evidence. A map-holder-held Issue is run
-directly by the admiral or captain whose map it clears; it receives no captain, branch, PR or review
+directly by the map holder whose map it clears; it receives no captain, branch, PR or review
 loop. `Task` names the captain-held Issue's role on a map; it is not a label.
 
 Small lookups, conversations and setup stay on the Issue that needs them. Create a map-holder-held
@@ -111,9 +111,10 @@ AFK Issues carry no priority: the plan order and the native blockers carry their
 
 ## Who holds what
 
-The map holder is the admiral for a Project and the captain for an Issue. The map holder writes the
-contracts one level down, sends a planner ahead before dividing, and runs the map-holder-held Issues
-that clear its own fog: it dispatches `research`, runs a Grilling or Walkthrough with the human, and
+The map holder is the human, or an admiral the human invoked, for a Project, and the captain for an
+Issue; the Project description names the Project's current holder. The map holder writes the
+contracts one level down, charts with `wayfinder` before dividing, and runs the map-holder-held
+Issues that clear its own fog: it dispatches `research`, runs a Grilling or Walkthrough with the human, and
 files a `Question` only when judgment remains.
 
 | Type | Normal status path |
@@ -132,7 +133,7 @@ human clicks once its PR carries a reviewer PASS and CI is green, and a map-hold
 its parent or a lane and stays inside the approved Project destination and Issue outcome. A lane that
 needs splitting is replaced by sibling lanes. When the answer can change other Issues, a shared
 contract, or the Project's destination, scope, acceptance criteria or governing architecture, the
-captain prepares the packet and the admiral creates and wires the Project-level Issue. Native blocker
+captain prepares the packet and the Project's map holder creates and wires the Project-level Issue. Native blocker
 relations connect every waiting record to what it waits on.
 
 The Bug Type template is a narrow exception to parallel delivery lanes: its captain may retain

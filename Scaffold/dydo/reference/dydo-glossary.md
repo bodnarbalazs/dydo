@@ -88,7 +88,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   final merge. An atomic Issue's merge into main has none; its Issue review PASS, green CI and the
   human's click stand in its place.
 - **Inquisition** — a human-confirmed Type held by a captain: read-only sweeps, hypotheses proved
-  by tests, deduplicated Bugs and an inquisition record. It files outcomes, never PASS or FAIL.
+  (one in code by a proof-only test, one in prose by its quoted passages), deduplicated Bugs and an
+  inquisition record. It files outcomes, never PASS or FAIL.
 - **Merge** — a Type for one merge operation, with its own implement/review chain and
   integrated gates. The human clicks the Project landing and an atomic Issue's PR, which has no Merge
   Issue; every operation preserves hop SHAs.

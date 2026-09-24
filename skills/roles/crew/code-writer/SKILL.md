@@ -22,8 +22,8 @@ crossroads returns to it with what you searched.
 
 ## Before the first edit
 
-On an `implement` or `fix` hop, prove the working-tree contract's checks; comment on a failure and
-stop:
+On an `implement` or `fix` hop, prove the working-tree contract's checks; return a failure to the
+captain and stop:
 
 1. `HEAD` is on the relevant Issue or Sub-issue branch.
 2. The repository root is the isolated worktree, not the main checkout.

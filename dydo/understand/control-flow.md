@@ -40,7 +40,7 @@ spawned as an agent, so an admiral can direct one per Issue.
 
 | Role | Kind | Runs as | Invoked by | Works in | Does | Returns to |
 |---|---|---|---|---|---|---|
-| human | human | the terminal | — | `main`, where his own commits need no Issue, and any session | thinks, files Projects, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time, walks through; tells the admiral after each of his board moves | — |
+| human | human | the terminal | — | `main`, where his own commits need no Issue, and any session | thinks, files Projects, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic Issue's reviewed PR, walks through; tells the admiral after each of his board moves | — |
 | co-thinker | skill | any session without an officer role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic Issue with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic Issue (L) |
 | admiral | officer | top-level session, explicit-only | the human, on a Project at any stage | `feature/<slug>` | wakes on a captain's return or the human's word, reads the Project and acts: sends the planner, owns the plan review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
 | issue-captain | officer, also agent | top-level for an atomic or HITL Issue; spawned by an admiral for an AFK one | the admiral, or the human's session | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues or, on an atomic Issue, waits for the human's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
@@ -72,7 +72,7 @@ Agent-invoked methods:
 | domain-modeling | co-thinker, wayfinder | a term keeps sliding, or a choice looks durable enough for a DR | `dydo/glossary.md` entries; a Decision Record |
 | codebase-design | code-writer, reviewer | shaping a module or interface, choosing a seam, judging depth | vocabulary applied, nothing written |
 | diagnosing-bugs | the code-writer reproducing a Bug, on the parent or its retained reproduce-or-identify Sub-issue | a defect without a red reproduction | a tight loop that goes red; the regression test; the cause on the Issue |
-| prototype | the code-writer on a Prototype Issue | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the Issue until the delivery Issue is `Done`, read by the delivery Issue's code-writer as input (DR 047 §5) |
+| prototype | the code-writer on a Prototype Issue | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the Issue until the delivery Issue is `Done`, read by the delivery Issue's code-writer as the template for a fresh rewrite, never a base or a copy (DR 047 §5) |
 | wizard | the captain on an Enablement Issue | steps only the human can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
 | self-improvement | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
@@ -215,7 +215,7 @@ The rules the captain applies:
 | Lane or parent | separate work that can run at the same time becomes a lane; ordinary sequential work, the joining step, the parent's scenarios, the one review and the PR stay on the parent |
 | What a lane carries | its parent's Type and Mode, a bounded outcome, a disjoint owned-path subset, exact gates, a child-key branch off the parent branch, an isolated worktree, its own status and evidence, its own [code-writer] → [reviewer] loop |
 | What proves a lane | its gates; the parent's scenarios prove the joined result |
-| Every merge is a Sub-issue | each lane into the parent, in order, then the parent into the feature: one Merge Sub-issue per merge, with its own merge review; never batched |
+| Merges are Sub-issues | each lane into the parent, in order, then the parent into the feature: one Merge Sub-issue per merge, with its own merge review; never batched. An atomic Issue's own merge into main has none: the human clicks its reviewed PR |
 | Depth | one level: a lane that needs splitting is replaced by sibling lanes; the Bug Type-map exception in §6.11, Merge and map-holder-held Sub-issues are the other children |
 | Local fog | a Question that touches only this Issue is a Sub-issue here, in `Todo`; one whose answer reaches other Issues goes to the admiral |
 
@@ -294,7 +294,7 @@ stateDiagram-v2
   Backlog --> Todo: the human schedules it, one Type, one Mode
   Backlog --> Canceled: declined
   [*] --> Todo: planner or map holder creates it contracted
-  Todo --> Implementing: captain spawns the code-writer
+  Todo --> Implementing: captain spawns the author
   Implementing --> InProgress: the writer named lanes
   InProgress --> InReview: lanes merged, review of the whole
   Implementing --> InReview: implement hop posted
@@ -375,7 +375,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 35 | inquisition captain → Git | G | `inquisition/<slug>` off the feature SHA, never merged; a child branch per proof | — | — |
 | 36 | inquisition captain → inquisitors | R (spawn) | one part or one lens each, the scope, the plan, the Issue review evidence | the assignment with its evidence, about, architecture, coding-standards | `In Progress` |
 | 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it, or, in prose, docs or a prompt file, both contradicting passages quoted at `file:line`, which are its reproduction with no test and no proof branch | — | — |
-| 38 | inquisition captain → code-writer (proof-only) | R (spawn) | one hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | — |
+| 38 | inquisition captain → code-writer (proof-only) | R (spawn) | one code hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | — |
 | 39 | code-writer (proof-only) → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | — | — |
 | 40 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref (a prose Bug: its quoted passages), Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
 | 41 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed/posted resume state; `released <key>: record delivery` before record Feature/blocker exists | this return wakes admiral to read packet and working-tree retention contract | Inquisition released `Todo`, unassigned, worktree removed; no not-yet-created blocker required |
@@ -519,8 +519,9 @@ no Merge Sub-issue, so a defect found on `main` after its merge is a Bug.
 
 An Issue like any other, with its own captain, run once the feature is integrated and the human has
 confirmed the spend. It does what a review does, at two scales a single review cannot reach: many
-read-only eyes on the parts and on the whole, and hypotheses of what could go wrong turned into
-tests. It does not gate; it files.
+read-only eyes on the parts and on the whole, and hypotheses of what could go wrong proved: one in
+code by a proof-only test, one in prose, docs or a prompt file by its quoted passages. It does not
+gate; it files.
 
 ```mermaid
 flowchart TD
@@ -537,7 +538,7 @@ flowchart TD
   IC --> P3[inquisitor: the whole, at the seams]:::crew
   IC --> P4[inquisitor: one lens across everything]:::crew
   P1 & P2 & P3 & P4 -->|findings with proof, and hypotheses of what could go wrong| IC
-  IC -->|one hypothesis each, proof-only, on a child branch| IM[code-writers: write the test that would catch it]:::crew
+  IC -->|one code hypothesis each, proof-only, on a child branch| IM[code-writers: write the test that would catch it]:::crew
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
   IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner, or quoted passages| BUG[(Bug Issues in Todo, under the Project)]
   IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::officer
@@ -584,7 +585,7 @@ chooses to raise. The human's own commits on main are outside the model and need
 
 ```mermaid
 flowchart LR
-  W[crew] -->|hand-raise on the Issue| C[issue-captain]
+  W[crew] -->|hand-raise, returned to the captain| C[issue-captain]
   C -->|released &lt;key&gt;: &lt;reason&gt;| A[admiral]
   C --> R[(Issue record: prepared packet and resume SHA)]
   A -->|a DR conflict, live external state, missing authority| H[human]
@@ -592,8 +593,10 @@ flowchart LR
 
 Agents settle operational conflicts themselves, highest first: the human's live instruction, a
 Decision Record, the reviewed plan at its governing commit, the Issue contract, coding standards,
-existing code. Raising a hand is always a comment on the Issue and, when blocked, a wired Question
-Issue in `Todo`; never silent waiting.
+existing code. A crew member raises its hand by returning to its Issue Captain (row 47); the
+captain's rungs are a comment on the Issue and, when blocked, a wired Question Issue in `Todo`;
+never silent waiting. The code-writer's one pre-code comment naming lanes or an inexact contract is
+its scoped exception, not a hand-raise.
 
 ### 6.9 A prototype
 

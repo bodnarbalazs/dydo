@@ -42,8 +42,8 @@ Decision Records carry decisions, and the two are linked rather than copied.
 - **Issue** — high resolution, just in time: the Issue Captain's compact acceptance contract on the
   parent Issue or a direct lane Sub-issue, with its scenarios where the Issue carries Gherkin, owned
   paths and gates, exact enough to build. The spawned `code-writer` builds from it. The contract is
-  reviewed with the code; the Captain may buy a `spec` review of it before any code when route risk
-  warrants it.
+  reviewed with the code; the Captain may buy a `spec` review of it before any code for one risk it
+  records in the contract.
 
 ## Claimed, isolated, executed
 
@@ -58,8 +58,8 @@ worktree, session, commits, PR and test runs are evidence for that Issue, never 
 records.
 
 Every delivery kind starts with the captain making its contract exact. The captain sets
-Implementing at the code-writer's spawn and In Review at a reviewer's, the optional spec review
-before any code included. A parent whose lanes run is In Progress. The writer
+Implementing at the author's spawn, a code-writer or a docs-writer, and In Review at a
+reviewer's, the optional spec review before any code included. A parent whose lanes run is In Progress. The writer
 posts nothing before code unless the work splits into disjoint lanes or the contract is inexact;
 its IMPLEMENTED return carries the hop SHA, the red proof, the gates run and any blocker. A
 scenario changes only through a fresh author's fix hop. Every hop's SHA is posted, preserved and passed to the next crew member.
@@ -96,8 +96,10 @@ Project plan at its governing commit, the Issue contract, coding standards, exis
 is reached only for a conflict with a Decision Record — is it truth, or is it obsolete? — for live
 external state agents cannot coordinate, or for authority the contract cannot supply.
 
-Raising a hand means a comment on the Issue and, when the work is blocked, a Question Issue wired as a
-blocker. A blocked captain releases: post the resume SHA, push the branch, remove the worktree,
+A crew member raises its hand by returning to its Issue Captain; a comment on the Issue and, when
+the work is blocked, a Question Issue wired as a blocker are the captain's rungs. The code-writer's
+one pre-code comment naming lanes or an inexact contract is its scoped exception, not a hand-raise.
+A blocked captain releases: post the resume SHA, push the branch, remove the worktree,
 return the parent to Todo and unassign. A human takeover does the same; a dead session leaves its
 last recorded hop without a final push. The admiral's next wake picks up blocker-cleared work.
 

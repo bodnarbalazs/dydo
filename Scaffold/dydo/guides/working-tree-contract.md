@@ -44,7 +44,7 @@ provide the Issue worktree; otherwise place it beside the repository at
 | Stage | Owner | Required state |
 |---|---|---|
 | Open the Project | `admiral`, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
-| Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Implementing` when it spawns the code-writer. |
+| Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Implementing` when it spawns the author, a code-writer or a docs-writer. |
 | Resolve the work | `issue-captain` | The captain's compact acceptance contract names the lanes, or none; when the work splits beyond it, the writer's one pre-code comment names them. Parallel crew receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, `merge`, or `proof`, which commits as `<KEY> proof: <hypothesis>`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
@@ -56,7 +56,7 @@ provide the Issue worktree; otherwise place it beside the repository at
 ## Before the first edit
 
 Before the first edit of an `implement` or `fix` hop in a parent Issue or lane, its assigned writer
-proves all five checks and comments on that work item instead of working around a failure:
+proves all five checks and returns a failure to its Issue Captain instead of working around it:
 
 1. `HEAD` is on the relevant Issue or Sub-issue branch.
 2. The repository root is the isolated worktree, not the main checkout.
@@ -123,7 +123,7 @@ interface shapes early.
 The captain offers a PR with its PASS block, sets `Ready to Merge`, and returns
 `done <key>: PR ready`. It resumes when its Merge Sub-issue's native blocker clears, or a fresh
 captain takes the record, and returns `done <key>: merged` after merge PASS and cleanup. The record
-holds the detail; each crew hop posts its SHA. A Merge Sub-issue never enters `Ready to Merge`.
+holds the detail; the captain posts each crew hop's SHA. A Merge Sub-issue never enters `Ready to Merge`.
 An atomic Issue has no Merge Sub-issue: its captain sets `Ready to Merge` once CI is green, and after
 the human's click closes it `Done`, cleans up and returns `done <key>: merged`.
 

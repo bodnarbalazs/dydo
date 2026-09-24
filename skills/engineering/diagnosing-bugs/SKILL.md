@@ -14,9 +14,8 @@ When exploring the codebase, from the repository root read `dydo/glossary.md` an
 modules, and check the Decision Records in the area you're touching.
 
 **Run as crew**, you ask and post only through your Issue Captain: each "ask the human" and each post
-"on the Issue" below becomes a hand-raise to the captain carrying what you tried, and nothing goes on
-the Issue before code. A Bug fix needs its red reproduction, so a missing correct seam also returns
-to the captain instead of excusing the regression test. Run directly by the human, the steps stand
+"on the Issue" below becomes a hand-raise to the captain carrying what you tried, never a post of your
+own. A Bug fix needs its red reproduction, so a missing correct seam also returns to the captain instead of excusing the regression test. Run directly by the human, the steps stand
 as written.
 
 ## Redact

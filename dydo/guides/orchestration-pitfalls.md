@@ -105,8 +105,9 @@ worktree supplied it, or whether an edit landed afterwards.
 
 **Rule:** let the review block pin it — candidate and base SHA, and each gate result recorded against
 that candidate with its command, environment, exit and where the output can be seen — posted on the
-Issue and in the PR body. Every merge is followed by its own review of the integrated state, and the
-last one proves the plan's acceptance criteria.
+Issue and in the PR body. Every merge that has a Merge Issue is followed by its own review of the
+integrated state, and the last one proves the plan's acceptance criteria. An atomic Issue's merge
+into main has none; its Issue review PASS, green CI and the human's click stand in its place.
 
 ## 9. A spawned agent without its methodology
 

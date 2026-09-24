@@ -20,10 +20,10 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 |---|---|---|---|
 | Think | any session, loading co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
 | Chart and plan a Project | admiral, sending project-planner | committed plan, first Issues, prepared Questions | admiral-owned project-plan review, then human approval |
-| Make an Issue exact | issue-captain, through its code-writer's first phase | a just-in-time spec and route with no hidden implementation decisions | optional spec review |
-| Implement | issue-captain | an Issue branch, a PR into the feature branch, evidence on the Issue | reviewer PASS |
+| Make an Issue exact | issue-captain, through its compact acceptance contract | a just-in-time contract with no hidden implementation decisions; the route stays the writer's | optional spec review |
+| Implement | issue-captain | an Issue branch, a PR into the feature branch, or into main for an atomic Issue, evidence on the Issue | reviewer PASS |
 | Coordinate | admiral | captains in flight, wired Merge Sub-issues, plan amendments | each captain directs its own merge review |
-| Inquisition | issue-captain | read-only sweeps, proof tests, Bugs and an inquisition record | human confirms Backlog → Todo; it files rather than gates |
+| Inquisition | issue-captain | read-only sweeps, proof tests for code hypotheses and quoted passages for prose ones, Bugs and an inquisition record | human confirms Backlog → Todo; it files rather than gates |
 | Land | the human | the feature branch merged into main | the human's own hands |
 | Walkthrough | admiral with the human | inspected landing, findings as Issues in the same Project | an empty walkthrough closes the Project |
 
@@ -72,7 +72,8 @@ No implementation begins without a contract another agent can review independent
 - One atomic Issue can be its own reviewed contract. Coordinated, cross-cutting, or
   architecture-sensitive work gets one reviewed Project plan in the repository.
 - The plan carries one `linear-project` URL, and its Linear Project links back to the published plan.
-- Every implementation Issue records the exact governing commit before execution.
+- An implementation Issue under a Project plan records the plan's exact governing commit before
+  execution; a review pins the Issue's own contract as its description as of a Linear `updatedAt`.
 - The two planning resolutions, the fields an Issue must carry, and the Question Issue that clears
   fog are in the [Linear Issue Lifecycle](./task-lifecycle.md).
 
@@ -82,19 +83,23 @@ to an Issue. They are not extra levels in the work graph.
 ## Review and inquisition
 
 1. **Issue review** — a fresh reviewer with the rubric the candidate targets: code or docs
-   before merge; `project-plan` before Project approval; `spec` before production only when the
-   Issue Captain requires it.
-2. **Merge review** — a reviewer with the `merge` rubric after *every* merge: a mechanical spot check
+   before merge; `project-plan` before Project approval; `spec` on the contract before any code
+   only for one risk the Issue Captain records in the contract.
+2. **Merge review** — a reviewer with the `merge` rubric after every merge that has a Merge Issue
+   (a lane into its parent, an Issue into the feature, the landing): a mechanical spot check
    scaled to what landed, which at the final feature merge also proves the plan's acceptance criteria.
-3. **Inquisition** — human-confirmed, captain-directed sweeps and proof tests that file Bugs, with
+   An atomic Issue's merge into main has none; its Issue review PASS, green CI and the human's
+   click stand in its place.
+3. **Inquisition** — human-confirmed, captain-directed sweeps that file Bugs, each code hypothesis
+   proved by a proof-only test and each prose one by its quoted passages, with
    a separate record Feature's docs-writer preserving the evidence through normal delivery. The
    Inquisition releases until that delivery lands, then verifies retention before closing; see the
    [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs).
    It catches what got through; it never proves zero defects.
 
 Every reviewer verdict is the same **review block**: a Project update for a plan, on the Merge
-Issue for a merge, otherwise on its Issue, and in the PR body when one exists; its fields are locked in the
-[dydo Glossary](../reference/dydo-glossary.md). Independence here is independence of *context*: the
+Issue for a merge, otherwise on its Issue, and in the PR body when one exists; its one-line form is locked in the
+[Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence). Independence here is independence of *context*: the
 reviewer arrives fresh and reads the candidate itself rather than the story told about it. There is
 no PASS with notes; a note is a finding, and a finding is a FAIL.
 

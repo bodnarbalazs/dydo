@@ -33,10 +33,10 @@ sight, and hand back every judgement call with a recommendation.
 2. **Report the three lists, in this order.** *Answer needed*: the open `Question` Issues in `Todo`,
    ordered by priority, a released Issue's blocker among them. *Approval needed*: a plan at its
    passing commit, waiting on the human's word in the admiral's session, and an Inquisition filed in
-   `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Issue in `Ready to Merge`,
-   waiting on the human's click, and the Walkthrough Issue after it. The human's queue is these and
-   never the assignee filter. Lead with meaning: keep an Issue key, SHA or filename for
-   traceability, paired at first use with its title in plain language, and recommend an outcome for
+   `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Issue and each atomic
+   Issue in `Ready to Merge`, waiting on the human's click, and the Walkthrough Issue after a
+   landing. The human's queue is these and never the assignee filter. Lead with meaning: keep an
+   Issue key, SHA or filename for traceability, paired at first use with its title in plain language, and recommend an outcome for
    every item. Done when each list is empty or one line the human can act on.
 3. **Grill the human through the open questions.** On request, take the *Answer needed* list one
    Issue at a time and reach for `grilling`: press until both the answer and the reasoning behind it
@@ -48,7 +48,7 @@ sight, and hand back every judgement call with a recommendation.
    recommendation.
 5. **Sweep the board.** Hunt stale states: a working status with no crew running, a `Question` without
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
-   active. Sweep orphans too: the worktrees and branches a Merge Issue should have retired, and an
+   active. Sweep orphans too: the worktrees and branches a merge should have retired, and an
    `inquisition/<slug>` past its Issue's `Done`, or a `prototype/<name>` past its delivery Issue's
    `Done`. Fix the mechanical
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free

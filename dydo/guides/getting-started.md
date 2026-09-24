@@ -98,7 +98,7 @@ the team against it over the MCP and fix the differences. The MCP creates labels
 statuses and templates are the human's clicks, so list exactly what is missing, with the standard's
 names and order for statuses and names and colours for labels, and walk the human through it.
 
-1. **Issue statuses.** The twelve, in the standard's categories and order. Linear draws the order as
+1. **Issue statuses.** The ten, in the standard's categories and order. Linear draws the order as
    progress, so `Ready to Merge` is the last of the started ones.
 2. **Project statuses.** `Backlog`, `Planning`, `Planned`, `In Progress`, `Completed`, `Canceled`.
 3. **Labels.** The `Type` group with its ten labels and the `Mode` group with `AFK` and `HITL`,
@@ -147,7 +147,8 @@ touching a status, which only a captain sets.
 
 The operating model is in [Control Flow](../understand/control-flow.md): an idea goes to a
 co-thinker, a ripe one becomes a Project through `to-project`, an admiral reads the Project and acts,
-captains own Issues, every merge is a Merge Issue, and the human acts at the gates. The
+captains own Issues, every merge inside a Project is a Merge Issue, and the human acts at the gates,
+clicking an atomic Issue's reviewed PR into main. The
 [Working-Tree Contract](./working-tree-contract.md) says which branch and worktree each of them works
 in.
 

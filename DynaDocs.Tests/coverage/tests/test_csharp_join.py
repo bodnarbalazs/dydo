@@ -200,15 +200,15 @@ class CSharpJoinTests(unittest.TestCase):
     def test_expression_bodied_property_uses_containing_declared_span_without_exclusion(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            source_path = root / "Services/LegacyPmManifestService.cs"
+            source_path = root / "Services/SampleService.cs"
             source_path.parent.mkdir()
             source_path.write_text("\n" * 40)
-            point = {"path": "Services/LegacyPmManifestService.cs", "origin": "maintained",
+            point = {"path": "Services/SampleService.cs", "origin": "maintained",
                      "checksum_algorithm": "SHA256", "checksum": hashlib.sha256(source_path.read_bytes()).hexdigest(),
                      "line": 20, "column": 20, "end_line": 20, "end_column": 35}
-            key = "DynaDocs.Services.LegacyPmManifestService::get_IsActive`0()"
+            key = "DynaDocs.Services.SampleService::get_IsActive`0()"
             source = {"files": [{"path": point["path"], "methods": [{
-                "id": "LegacyPmManifestService.IsActive", "line": 20, "column": 12,
+                "id": "SampleService.IsActive", "line": 20, "column": 12,
                 "end_line": 20, "end_column": 40, "constructor": False,
                 "cognitive": 0, "policy_cc": 1, "parameters": 0,
             }]}], "generated_files": [], "behavior": {"constructors": [], "fragments": [],
@@ -216,7 +216,7 @@ class CSharpJoinTests(unittest.TestCase):
                     "key": key, "path": point["path"], "line": 20, "column": 0,
                     "end_line": 20, "end_column": 41,
                 }]}}
-            physical = {"token": 1, "identity": "System.Boolean DynaDocs.Services.LegacyPmManifestService::get_IsActive()",
+            physical = {"token": 1, "identity": "System.Boolean DynaDocs.Services.SampleService::get_IsActive()",
                         "key": key, "points": [point]}
             coverage = {physical["identity"]: {"files": {point["path"]: {
                 "Lines": {"20": 1}, "Branches": []}}}}

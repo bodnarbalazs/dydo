@@ -7,8 +7,8 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 ## Method
 
-1. **Pin the contract.** Outcome, scenarios, owned paths, base SHA, exact gates, governing standards and plan
-   at its SHA. Done when you can state what the change had to do without reading it.
+1. **Pin the contract.** The Issue description as of the brief's Linear `updatedAt`: outcome,
+   scenarios, owned paths, base SHA, exact gates; governing standards and plan at its SHA. Done when you can state what the change had to do without reading it.
 2. **Read the hops.** `git log <base>..<candidate>` lists the `implement`, `fix` and `merge`
    commits. The implement hop is judged for doing what the contract says; a fix hop for closing the
    finding that sent it back and nothing else. Done when you can say per hop what it changed and
@@ -19,10 +19,11 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 ## Contract
 
-- The candidate matches the governing commit, the owned paths and the requested outcome
+- The candidate matches the pinned contract, the owned paths and the requested outcome
 - Every scenario the contract calls for stands unweakened, and every scenario passes
-- The `IMPLEMENTED` return carries its red proof line: a Bug's reproduction failing with the fix
-  reverted, a Feature's tests failing with the code stashed
+- The `IMPLEMENTED` line the brief carries holds its red proof line: a Bug's reproduction failing
+  with the fix reverted, a Feature's tests failing with the code stashed; rerun it only on a doubt
+  you state
 - Every behaviour, edge case and risk the contract names is claimed by a scenario or a test; a bug
   fix carries the test that reproduces the bug
 - Nothing the implement hop had that the contract needed was dropped by a later hop
@@ -71,4 +72,5 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 ## Verdict
 
-Each finding in the review block carries its axis: `contract`, `standards`, `gates` or `security`.
+Each finding in the FAIL form carries its axis in the `wrong:` slot, as `wrong: <axis>: <fact>`, the
+axis being `contract`, `standards`, `gates` or `security`.

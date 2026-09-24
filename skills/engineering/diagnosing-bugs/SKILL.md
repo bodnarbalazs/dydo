@@ -13,6 +13,11 @@ When exploring the codebase, from the repository root read `dydo/glossary.md` an
 `dydo/understand/architecture.md` to get a clear mental model of the relevant
 modules, and check the Decision Records in the area you're touching.
 
+**Run as crew**, you ask and post only through your Issue Captain: each "ask the human" and each post
+"on the Issue" below becomes a hand-raise to the captain carrying what you tried, never a post of your
+own. A Bug fix needs its red reproduction, so a missing correct seam also returns to the captain instead of excusing the regression test. Run directly by the human, the steps stand
+as written.
+
 ## Redact
 
 This skill has you show commands, outputs and captured artifacts. **Redact every secret first**: write
@@ -164,7 +169,8 @@ unit test that can't replicate the chain that triggered the bug), a regression t
 confidence.
 
 **If no correct seam exists, that itself is the finding.** Note it. The codebase architecture is
-preventing the bug from being locked down. Flag this for the next phase.
+preventing the bug from being locked down. Flag this for the next phase; as crew, return it to the
+captain before any fix.
 
 If a correct seam exists:
 
@@ -179,7 +185,7 @@ If a correct seam exists:
 Required before declaring done:
 
 - [ ] Original repro no longer reproduces (re-run the Phase 1 loop)
-- [ ] Regression test passes (or absence of seam is documented)
+- [ ] Regression test passes (or, run directly by the human, absence of seam is documented)
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message and on the Issue, so

@@ -1027,6 +1027,51 @@ public class InitCommandTests : IntegrationTestBase
         Assert.DoesNotContain(".claude/settings.local.json", ReadFile(".gitignore"));
     }
 
+    [Fact]
+    public async Task Init_Claude_GitignoresClaudeSkillProjection()
+    {
+        // setup-skills.mjs projects skills into .claude/skills/ for Claude; that's host-local
+        // discovery state, not source, and must never ride a commit.
+        var result = await InitProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileContains(".gitignore", "/.claude/skills/");
+        Assert.DoesNotContain("/.agents/skills/", ReadFile(".gitignore"));
+    }
+
+    [Fact]
+    public async Task Init_Codex_GitignoresCodexSkillProjection()
+    {
+        // setup-skills.mjs projects skills into .agents/skills/ for Codex; same host-local
+        // discovery state as Claude's, gitignored the same way.
+        var result = await InitProjectAsync("codex");
+
+        result.AssertSuccess();
+        AssertFileContains(".gitignore", "/.agents/skills/");
+        Assert.DoesNotContain("/.claude/skills/", ReadFile(".gitignore"));
+    }
+
+    [Fact]
+    public async Task Init_All_GitignoresBothSkillProjections()
+    {
+        var result = await InitProjectAsync("all");
+
+        result.AssertSuccess();
+        AssertFileContains(".gitignore", "/.claude/skills/");
+        AssertFileContains(".gitignore", "/.agents/skills/");
+    }
+
+    [Fact]
+    public async Task Init_None_DoesNotGitignoreSkillProjections()
+    {
+        var result = await InitProjectAsync("none");
+
+        result.AssertSuccess();
+        var gitignore = ReadFile(".gitignore");
+        Assert.DoesNotContain("/.claude/skills/", gitignore);
+        Assert.DoesNotContain("/.agents/skills/", gitignore);
+    }
+
     #endregion
 
     #region Init Join
@@ -1098,6 +1143,20 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileContains(".gitignore", ".claude/settings.local.json");
     }
 
+    [Fact]
+    public async Task Init_Join_Codex_AddsGitignoreEntryForSkillProjection()
+    {
+        // The join gap this closes: UpdateGitignore used to live only inside the
+        // `if (integrations.Contains("claude"))` block, so a codex-only --join on an
+        // already-claude-inited project never touched .gitignore at all.
+        await InitProjectAsync("claude");
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        AssertFileContains(".gitignore", "/.agents/skills/");
+    }
+
     #endregion
 
     #region Error Cases
@@ -1144,6 +1203,24 @@ public class InitCommandTests : IntegrationTestBase
         // Init should fail, but more importantly, the file should not be overwritten
         var content = ReadFile("dydo/understand/architecture.md");
         Assert.Contains("Custom Architecture", content);
+    }
+
+    [Fact]
+    public async Task Init_Join_TwiceDoesNotDuplicateGitignoreEntries()
+    {
+        await InitProjectAsync("claude");
+        await JoinProjectAsync("codex");
+
+        // Re-joining both integrations must not duplicate any line UpdateGitignore already wrote.
+        var result = await JoinProjectAsync("all");
+
+        result.AssertSuccess();
+        var gitignore = ReadFile(".gitignore");
+        Assert.Equal(1, gitignore.Split("/.claude/skills/").Length - 1);
+        Assert.Equal(1, gitignore.Split("/.agents/skills/").Length - 1);
+        Assert.Equal(1, gitignore.Split(".claude/settings.local.json").Length - 1);
+        Assert.Equal(1, gitignore.Split("dydo/agents/").Length - 1);
+        Assert.Equal(1, gitignore.Split("dydo/_system/.local/").Length - 1);
     }
 
     #endregion

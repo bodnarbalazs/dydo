@@ -14,6 +14,7 @@ half set up.
 
 - a Git repository for durable knowledge and reviewable proof;
 - Claude Code or Codex, or both;
+- Node.js, to run `setup-skills.mjs`;
 - a Linear workspace with one team for the project's work.
 
 ## 1. Install or update dydo
@@ -36,24 +37,40 @@ dydo init codex       # or: dydo init claude / dydo init all / dydo init none
 ```
 
 Every mode creates the documentation tree and `CLAUDE.md`. The `claude`, `codex` and `all` modes
-wire the guard hooks for the chosen runtimes, and Codex selections add `AGENTS.md`. Initialization
-creates durable Decisions, changelog, pitfalls and FutureFeature documentation; live work stays in
-Linear.
+wire the guard hooks for the chosen runtimes and add the host's skill projection folder to
+`.gitignore`, `/.claude/skills/` for Claude Code and `/.agents/skills/` for Codex; Codex selections
+add `AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file
+init writes. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
+documentation; live work stays in Linear.
 
 An existing tree, which has `dydo.json` at its root, is not re-initialized. The framework documents
 under `dydo/` are the project's own from then on; edit them in place. Another machine or runtime
 joining an already-initialized project runs `dydo init codex --join` or `dydo init claude --join`,
-which wires the local runtime without touching the documentation tree.
+which wires the local runtime without touching the documentation tree, and adds the same skill
+projection lines to `.gitignore`.
 
-## 3. Author the skills
+## 3. Install the skills
 
-A skill is one plain `skills/<category>/<name>/` folder — the roles under `roles/officers/` and
-`roles/crew/`, every other skill under `engineering/` or `productivity/` — committed and edited
-directly; there is no compile step.
-Run `node setup-skills.mjs` from the project root; it walks the tree by rule, so a folder holding
-`SKILL.md` is a skill and any other folder a category. Done when the Claude and Codex discovery roots
-contain whole-directory projections for every skill. OpenCode consumes those compatibility roots and
-needs no third projection.
+Do this before the first agent session: the scaffolded `CLAUDE.md` and `AGENTS.md` send a session
+that thinks with the human to the `co-thinker` skill, and every role is a skill. The skills do not
+come with the npm or .NET package, and `dydo init` does not write them.
+
+1. Copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` from the
+   [dydo repository](https://github.com/bodnarbalazs/dydo) into the project root. A skill is one
+   plain `skills/<category>/<name>/` folder: the roles under `roles/officers/` and `roles/crew/`,
+   every other skill under `engineering/` or `productivity/`. The notices carry the MIT licences of
+   the adapted skills and travel with them.
+2. Commit all three. From then on they are the project's own, edited in place; there is no compile
+   step and nothing reconciles them with later dydo versions.
+3. Run `node setup-skills.mjs` from the project root. It walks the tree by rule, so a folder holding
+   `SKILL.md` is a skill and any other folder a category, and links each skill flat into
+   `.claude/skills/<name>/` and `.agents/skills/<name>/`. Every fresh clone runs it once.
+4. The script always creates both folders, but init ignores only the wired host's folder. A
+   single-host project adds the other one to `.gitignore` itself (`/.agents/skills/` after
+   `dydo init claude`, `/.claude/skills/` after `dydo init codex`), or wires both hosts with `all`.
+
+Done when the Claude and Codex discovery roots contain whole-directory projections for every skill.
+OpenCode may read those roots as well; that is untested, and dydo has no OpenCode init mode.
 
 ## 4. Connect Linear
 
@@ -107,7 +124,7 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 
 ## 7. Host configuration
 
-The spawn tree needs three layers below a session: admiral, issue-captain, crew, scout.
+The spawn tree needs three layers below the admiral's session: issue-captain, crew, scout.
 
 - Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
 - Codex: the project's `.codex/config.toml` contains `[agents]` with `max_depth = 3` and

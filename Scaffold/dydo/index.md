@@ -13,7 +13,7 @@ comes after you.
   [about](understand/about.md), what this project stands for.
 - [guides/](guides/_guides.md) - how to work here: the procedures and standards work is held to.
 - [reference/](reference/_reference.md) - exact rules and specifications;
-  [about-dynadocs](reference/about-dynadocs.md) explains the machinery: skill compilation, the
+  [about-dynadocs](reference/about-dynadocs.md) explains the machinery: native skills, the
   guard, the scaffold.
 - [project/](project/_project.md) - what was decided and what happened: Decision Records, plans, evidence,
   release history, pitfalls, and FutureFeatures.

@@ -389,7 +389,7 @@ changes; every other section stands.
 
 Bullets 1 and 2 replace the two parks kept in the amendments above.
 
-Amended by [DR 051](./051-captains-by-default-admiral-on-invocation.md) (2026-09-24): the admiral runs only when the human invokes it, the map holder charts without a project-planner, and a repository plan file is written only for a cross-cutting architecture contract (§1, §2, §8, §10).
+Amended by [DR 051](./051-captains-by-default-admiral-on-invocation.md) (2026-09-24): the admiral runs only when the human invokes it, the map holder charts without a project-planner and sets Project statuses, and a repository plan file is written only for a cross-cutting architecture contract (§1, §2, §3, §8, §10).
 
 ---
 

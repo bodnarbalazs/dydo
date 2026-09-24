@@ -88,7 +88,7 @@ Human commands:
 | Command | The human types it when | Produces |
 |---|---|---|
 | to-project | a co-think is ripe and belongs in Linear | a Project in `Backlog`: title, summary, the intent as description, links to the DR, the glossary entries and the source FutureFeature when one exists; no Issues |
-| to-issue | a plan, spec or conversation is ready to become Issues | pickable tracer-bullet Issues in `Todo`, each with one Type, one Mode and the five fields, wired with native blocking relations |
+| to-issue | a plan, spec or conversation is ready to become Issues | pickable tracer-bullet Issues in `Todo`, each with one Type, a Mode where a captain holds the Type, and the five fields or its Type's own template, wired with native blocking relations |
 | grill-me | a plan or idea of theirs should be pressed | answers and reasoning, recorded by the session in play |
 | bro | an agent's pitch did not land | the same thing said plainly, with the two glossaries in hand |
 | handoff | the session is ending and another agent continues | a handoff document in the scratch directory |
@@ -353,7 +353,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 3 | human → `to-project` → Linear | C, L | the Project: title, summary, intent, decisions taken, out of scope, links to the DR, glossary entries, source FutureFeature | — | Project `Backlog` |
 | 4 | co-thinker → Linear (atomic Issue) | L | an Issue with one Type, one Mode, outcome, owned paths, blockers, exact gates, base branch | — | `Todo` |
 | 5 | human → admiral | C | the Project, at any stage | the Project, its plan at the governing commit when one exists, every Issue contract, working-tree contract | — |
-| 6 | map holder → Linear (chart) | L | through `wayfinder`: the map in the Project description; first Issues with one Type, one Mode, all five fields and native blocking edges; Project-level Questions naming waiters, with priority | the Project, governing DRs, about, architecture, dydo-glossary, linear-workspace-standard | Project `Planning`; first Issues and Questions `Todo` |
+| 6 | map holder → Linear (chart) | L | through `wayfinder`: the map in the Project description; first Issues with one Type, a Mode where a captain holds the Type, the five fields or their Type's own template, and native blocking edges; Project-level Questions naming waiters, with priority | the Project, governing DRs, about, architecture, dydo-glossary, linear-workspace-standard | Project `Planning`; first Issues and Questions `Todo` |
 | 7 | map holder → repository, only for a cross-cutting architecture contract | F | the plan commit on `main` | — | — |
 | 8 | map holder → reviewer(project-plan) | R (spawn) | the plan path at its commit | the plan, the project-plan rubric, cited DRs and paths | — |
 | 9 | reviewer(project-plan) → map holder, Linear | R, L | the review block, as a Project update | — | — |
@@ -736,7 +736,7 @@ Completed rows below name the source, not a claim that generated runtime output 
 
 | File | Disposition |
 |---|---|
-| ~~admiral~~ | Authored: board wakes, planning/review/human approval, captain commissions and merge ordering; no Git; landing and walkthrough. |
+| ~~admiral~~ | Authored: optional, only when the human invokes it (DR 051); charts with `wayfinder` as map holder; board wakes, planning/review/human approval, captain commissions and merge ordering; no Git beyond its plan's commits; landing and walkthrough. |
 | ~~issue-captain~~ | Authored: specify first, lanes/empty hops, statuses, four-field reviewer brief, two-step returns, release and Merge FAIL. |
 | ~~project-planner~~ | Removed by DR 051: the map holder charts with `wayfinder`, and `to-issue` carries upstream tracer bullets and blockers. |
 | ~~specifier, implementer, hardener~~ | Retired: the single `code-writer` absorbs all three (DYD-222); the `Specifying` and `Hardening` statuses retired on 2026-09-23. |

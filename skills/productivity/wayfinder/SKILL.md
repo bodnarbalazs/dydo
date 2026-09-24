@@ -37,6 +37,8 @@ Wayfinding Issue stores its own context and resolution. Open Issues stay out of 
 are found through Linear queries.
 
 ```markdown
+**Map holder:** <the human, or the admiral the human invoked; rewritten when the map changes hands>
+
 ## Destination
 
 <what will exist or work differently when this Project is complete; one or two lines>

@@ -37,10 +37,12 @@ until the human promotes or cancels them; durable knowledge they uncover flows i
 Humans should spend their attention on intent and value choices. Agents implement, test, document,
 review, coordinate, and audit from independently reviewable contracts.
 
-- Officers hold one thing and never switch: the admiral holds a Project, the issue-captain an Issue,
-  the chief-of-staff the board. They keep Linear current.
-- Crew are spawned for one bounded job, hold nothing, and return their result: project-planner,
-  code-writer, docs-writer, reviewer, inquisitor, research, scout.
+- Officers hold one thing and never switch: the issue-captain, the default officer, holds an Issue,
+  and the chief-of-staff the board; an admiral holds a Project only when the human invokes one. They
+  keep Linear current.
+- A Project's map holder, the human or an admiral the human invoked, charts it with `wayfinder`.
+- Crew are spawned for one bounded job, hold nothing, and return their result: code-writer,
+  docs-writer, reviewer, inquisitor, research, scout.
 - Every other skill, `co-thinker` among them, is a plain skill any session loads when the work needs
   it.
 - A fresh agent independently reviews each implementation Issue before human harmonization.

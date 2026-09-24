@@ -46,7 +46,7 @@ Then in 2.0 I learned the lesson that I shouldn't build stuff which OpenAI and A
 ## Overview
 So how does dydo work in practice?
 
-I break the work with a software product into many Linear projects. Each project is a map, where the issues are the nodes, they are marked with statuses and labels. Each project is driven by an Admiral, whose job is to chart the map, manage the PM surface, coordinate the Issue Captains who oversee the completion of the Issues with their crew of (code-writers, docs-writers, reviewers, inquisitors, researchers and scouts).
+I break the work with a software product into many Linear projects. Each project is a map, where the issues are the nodes, they are marked with statuses and labels. By default I hold the map myself and chart it with wayfinder in my own session; when I want throughput (AFK work overnight) I invoke an Admiral to hold it for me. Whoever holds the map charts it, manages the PM surface and coordinates the Issue Captains who oversee the completion of the Issues with their crew of (code-writers, docs-writers, reviewers, inquisitors, researchers and scouts).
 
 Each issue is either AFK or HITL
 - AFK is completed without me if everything goes according to plan
@@ -88,18 +88,19 @@ flowchart TD
 
   H0([human: an idea]):::human --> CT[co-thinker]:::session
   CT -->|ripe| TP([human: to-project, Project in Backlog]):::human
-  TP --> AD[admiral, reads the Project and acts]:::officer
-  AD -->|Project Planning| PP[project-planner: plan on main, first Issues]:::crew
-  PP -->|plan commit| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
-  RP -->|PASS| H1([human approves in the admiral's session, Project Planned]):::human
-  H1 --> OP[admiral commissions first captain to open feature; wires merge order]:::officer
+  TP --> AD[map holder: me, or an admiral I invoke, reads the Project and acts]:::officer
+  AD -->|Project Planning| PP[map holder charts with wayfinder: the map, first Issues]:::session
+  PP -->|plan commit, only for a cross-cutting architecture contract| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
+  PP -->|no plan file| H1
+  RP -->|PASS| H1([human approves, in the admiral's session when one holds the map, Project Planned]):::human
+  H1 --> OP[map holder commissions first captain to open feature; wires merge order]:::officer
   OP <-->|"one captain per pickable AFK Issue: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[issue-captain]:::officer
-  OP -->|all landed: Inquisition Issue in Backlog, scope and cost| H2([human moves it to Todo and tells the admiral, or cancels]):::human
-  H2 -->|the admiral commissions| IQ[issue-captain of the inquisition: Bugs filed]:::officer
+  OP -->|all landed: Inquisition Issue in Backlog, scope and cost| H2([human moves it to Todo and tells the map holder, or cancels]):::human
+  H2 -->|the map holder commissions| IQ[issue-captain of the inquisition: Bugs filed]:::officer
   IQ --> OP
   OP -->|landing Merge Issue: main into the feature, gates, merge review| LM[issue-captain of the landing]:::officer
-  LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells the admiral]):::human
-  H3 -->|admiral commissions landing captain cleanup; asks human to invoke walkthrough| WT[Walkthrough Issue: the admiral with the human]:::officer
+  LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells the map holder]):::human
+  H3 -->|map holder commissions landing captain cleanup; the human invokes walkthrough| WT[Walkthrough Issue: the human, with the admiral when one holds the map]:::officer
   WT -->|findings: Issues, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```
@@ -112,7 +113,7 @@ flowchart TD
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  AD[admiral]:::officer <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::officer
+  AD[map holder]:::officer <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::officer
   IC <-->|"1 write · Implementing"| CW
   IC <-.->|"1b contract review before any code, at the captain's discretion · In Review, then Implementing"| RS
   IC <-->|"2 review · In Review"| RC

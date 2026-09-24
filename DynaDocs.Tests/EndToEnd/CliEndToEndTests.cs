@@ -63,15 +63,15 @@ public class CliEndToEndTests : IDisposable
     }
 
     [Fact]
-    public async Task VersionCommands_ReportTheBetaPackageVersion()
+    public async Task VersionCommands_ReportTheStablePackageVersion()
     {
         var option = await RunDydoAsync("--version");
         var command = await RunDydoAsync("version");
 
         Assert.Equal(0, option.ExitCode);
         Assert.Equal(0, command.ExitCode);
-        Assert.Contains("3.0.0-beta.3", option.Stdout);
-        Assert.Contains("dydo version 3.0.0-beta.3", command.Stdout);
+        Assert.Equal("3.0.0", option.Stdout.Trim());
+        Assert.Equal("dydo version 3.0.0", command.Stdout.Trim());
     }
 
     /// <summary>

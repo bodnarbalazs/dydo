@@ -2,8 +2,8 @@ namespace DynaDocs.Tests.Workflow;
 
 public sealed class ReleaseWorkflowTests
 {
-    private const string AllowedTagGuard = "github.event_name == 'push' && (github.ref == 'refs/tags/v3.0.0-beta.3' || github.ref == 'refs/tags/v3.0.0')";
-    private const string NpmPublishRun = "npm publish --access public --provenance --tag ${{ github.ref == 'refs/tags/v3.0.0-beta.3' && 'beta' || 'latest' }}";
+    private const string AllowedTagGuard = "github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0'";
+    private const string NpmPublishRun = "npm publish --access public --provenance --tag latest";
     private const string PythonVersionFile = "DynaDocs.Tests/coverage/.python-version";
     private const string AssurancePython = "dydo/_system/.local/static-gates/python";
     private const string AssurancePythonExecutable = AssurancePython + "/Scripts/python.exe";
@@ -15,7 +15,7 @@ public sealed class ReleaseWorkflowTests
         var jobs = ActiveJobs(workflow);
 
         Assert.Contains("workflow_dispatch:", ActiveText(workflow));
-        Assert.Equal("  push:\n    branches:\n      - feature/dydo-3-consolidation\n    tags:\n      - 'v*'", ActivePush(workflow));
+        Assert.Equal("  push:\n    tags:\n      - 'v*'", ActivePush(workflow));
         Assert.Equal(5, CountOccurrences(jobs["build"], "rid:"));
 
         var validation = jobs["validation"];
@@ -27,6 +27,7 @@ public sealed class ReleaseWorkflowTests
         Assert.Contains("dotnet build DynaDocs.sln -c Release --warnaserror", validation);
         Assert.Contains("dotnet run --project DynaDocs.csproj -c Release --no-build -- check", validation);
         Assert.DoesNotContain("gate mutation", ActiveText(workflow), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("v3.0.0-beta.3", ActiveText(workflow), StringComparison.Ordinal);
         Assert.DoesNotContain("continue-on-error:", validation);
 
         AssertFailClosedPublicationGraph(workflow);
@@ -97,31 +98,29 @@ public sealed class ReleaseWorkflowTests
         var workflow = Workflow();
 
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => Assert.Equal(
-            "  push:\n    branches:\n      - feature/dydo-3-consolidation\n    tags:\n      - 'v*'",
-            ActivePush(workflow.Replace("      - feature/dydo-3-consolidation", "      - feature/dydo-3-consolidation\n      - release", StringComparison.Ordinal))));
+            "  push:\n    tags:\n      - 'v*'",
+            ActivePush(workflow.Replace("    tags:", "    branches:\n      - release\n    tags:", StringComparison.Ordinal))));
         AssertRejected(workflow.Replace($"if: ${{{{ {AllowedTagGuard} }}}}", $"# if: ${{{{ {AllowedTagGuard} }}}}", StringComparison.Ordinal));
-        AssertRejected(workflow.Replace(AllowedTagGuard, "github.event_name == 'push' && github.ref == 'refs/heads/feature/dydo-3-consolidation'", StringComparison.Ordinal));
+        AssertRejected(workflow.Replace(AllowedTagGuard, "github.event_name == 'push' && github.ref == 'refs/heads/release'", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build", StringComparison.Ordinal));
         AssertRejected(workflow.Replace("needs: [build, validation]", "needs: build # needs: [build, validation]", StringComparison.Ordinal));
         AssertRejected(workflow + "\n  rogue:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm publish --access public\n");
-        AssertRejected(Swap(workflow, "prerelease: true", "prerelease: false"));
-        AssertRejected(Swap(workflow, "if: github.ref == 'refs/tags/v3.0.0-beta.3'", "if: github.ref == 'refs/tags/v3.0.0'"));
-        AssertRejected(Swap(workflow, "'beta'", "'latest'"));
+        AssertRejected(workflow.Replace("prerelease: false", "prerelease: true", StringComparison.Ordinal));
+        AssertRejected(workflow.Replace(NpmPublishRun, "npm publish --access public --provenance --tag beta", StringComparison.Ordinal));
         AssertRejected(workflow
             .Replace(NpmPublishRun, "npm publish --access public --provenance --tag wrong", StringComparison.Ordinal)
             .Replace("- name: Publish to npm", $"- name: Publish to npm # {NpmPublishRun}", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void ReleaseWorkflow_UsesExplicitBetaAndStableChannels()
+    public void ReleaseWorkflow_PublishesStableOnLatest()
     {
         var jobs = ActiveJobs(Workflow());
         var release = jobs["release"];
 
-        Assert.Contains("- name: Create beta release", release);
-        Assert.Contains("prerelease: true", release);
         Assert.Contains("- name: Create stable release", release);
         Assert.Contains("prerelease: false", release);
+        Assert.DoesNotContain("prerelease: true", release);
         Assert.Equal(NpmPublishRun, StepField(JobStep(jobs["npm"], "Publish to npm"), "run"));
     }
 
@@ -194,8 +193,7 @@ public sealed class ReleaseWorkflowTests
             Assert.Contains(PublicationAction(name), body);
         }
 
-        AssertReleaseStep(jobs["release"], "Create beta release", "github.ref == 'refs/tags/v3.0.0-beta.3'", "true");
-        AssertReleaseStep(jobs["release"], "Create stable release", "github.ref == 'refs/tags/v3.0.0'", "false");
+        AssertReleaseStep(jobs["release"], "Create stable release", "false");
         Assert.Equal(NpmPublishRun, StepField(JobStep(jobs["npm"], "Publish to npm"), "run"));
     }
 
@@ -206,10 +204,10 @@ public sealed class ReleaseWorkflowTests
         _ => "npm publish"
     };
 
-    private static void AssertReleaseStep(string release, string name, string guard, string prerelease)
+    private static void AssertReleaseStep(string release, string name, string prerelease)
     {
         var step = JobStep(release, name);
-        Assert.Equal(guard, StepField(step, "if"));
+        Assert.Null(StepField(step, "if"));
         Assert.Equal("softprops/action-gh-release@v2", StepField(step, "uses"));
         Assert.Equal(prerelease, StepField(step, "prerelease"));
     }

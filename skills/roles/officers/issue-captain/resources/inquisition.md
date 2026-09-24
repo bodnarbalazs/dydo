@@ -15,7 +15,7 @@ sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
    Deduplicate confirmed problems into Bugs under the Project, using the feature as
    base and linking each reproduction commit, or quoting the passages of a prose finding. Done when
    every hypothesis has a verdict and every confirmed problem has its Bug and each open Bug's
-   reproduction commit is linked through a pushed named ref independent of the audit branch, with
+   reproduction commit, where it has one, is linked through a pushed named ref independent of the audit branch, with
    its retention owner recorded.
 4. Name the completed evidence packet for the admiral: scope, feature SHA, parts/lenses, findings,
    hypotheses/verdicts and Bugs. Follow **Retaining an Inquisition's record and proofs** in the

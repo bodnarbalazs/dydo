@@ -141,7 +141,7 @@ use a following fix Issue. Each corrected candidate gets fresh merge review.
 
 The Inquisition captain pins the completed evidence packet on its Issue: audited feature SHA,
 scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
-reproduction SHAs. The captain pushes and posts its resume state, removes its worktree, sets the
+reproduction SHAs, or a prose Bug's quoted passages. The captain pushes and posts its resume state, removes its worktree, sets the
 Inquisition `Todo`, unassigns and returns `released <key>: record delivery`. The record Feature and
 its blocker do not exist yet; this release return is the admiral's ordinary wake.
 
@@ -160,8 +160,9 @@ retained feature, and records the delivery merge's ancestry/reachability there. 
 close `Done`, return `done <key>` and delete the audit branch. A record present only on an unmerged
 audit branch cannot satisfy this check.
 
-Before release or audit cleanup, every open Bug's reproduction SHA must remain reachable from a
-pushed named ref independent of the audit branch, linked on that Bug. The Inquisition captain owns
+Before release or audit cleanup, every open Bug with a reproduction commit keeps its SHA reachable
+from a pushed named ref independent of the audit branch, linked on that Bug. A prose Bug carries
+its quoted passages instead and has no ref to retain. The Inquisition captain owns
 that retention until the Bug captain records adoption of the reproduction and transfer of cleanup
 responsibility. Audit cleanup never deletes those refs; they remain input to each Bug's normal
 chain. This is ordinary Feature delivery and release, not a new Type or a serial-lane exception.

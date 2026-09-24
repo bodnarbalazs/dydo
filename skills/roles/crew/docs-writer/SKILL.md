@@ -41,7 +41,7 @@ words.
    contract and the Inquisition's pinned evidence packet. Work on that Feature's branch, following
    the working-tree contract's retention route: a document in
    `dydo/project/inquisitions/` naming scope and feature SHA, parts and lenses swept, findings,
-   hypotheses with verdicts, and Bugs filed with their reproduction commits. Done when every claim
+   hypotheses with verdicts, and Bugs filed with their reproduction commits or quoted passages. Done when every claim
    traces to the packet, with an empty section explicitly recorded as such; return the exact path
    and blob or content digest for the delivery review and the Inquisition captain's later check.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then this hop's

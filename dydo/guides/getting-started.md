@@ -133,7 +133,8 @@ touching a status, which only a captain sets.
 
 The operating model is in [Control Flow](../understand/control-flow.md): an idea goes to a
 co-thinker, a ripe one becomes a Project through `to-project`, an admiral reads the Project and acts,
-captains own Issues, every merge is a Merge Issue, and the human acts at the gates. The
+captains own Issues, every merge inside a Project is a Merge Issue, and the human acts at the gates,
+clicking an atomic Issue's reviewed PR into main. The
 [Working-Tree Contract](./working-tree-contract.md) says which branch and worktree each of them works
 in.
 

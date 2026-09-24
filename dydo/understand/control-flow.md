@@ -374,10 +374,10 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 34 | admiral → issue-captain (inquisition) | R (spawn), L | the Inquisition Issue key; assignment | the Issue, the plan at its governing commit, the integrated feature SHA, working-tree contract | — |
 | 35 | inquisition captain → Git | G | `inquisition/<slug>` off the feature SHA, never merged; a child branch per proof | — | — |
 | 36 | inquisition captain → inquisitors | R (spawn) | one part or one lens each, the scope, the plan, the Issue review evidence | the assignment with its evidence, about, architecture, coding-standards | `In Progress` |
-| 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it | — | — |
+| 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it, or, in prose, docs or a prompt file, both contradicting passages quoted at `file:line`, which are its reproduction with no test and no proof branch | — | — |
 | 38 | inquisition captain → code-writer (proof-only) | R (spawn) | one hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | — |
 | 39 | code-writer (proof-only) → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | — | — |
-| 40 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref, Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
+| 40 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref (a prose Bug: its quoted passages), Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
 | 41 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed/posted resume state; `released <key>: record delivery` before record Feature/blocker exists | this return wakes admiral to read packet and working-tree retention contract | Inquisition released `Todo`, unassigned, worktree removed; no not-yet-created blocker required |
 | 41a | admiral → record Feature captain, Linear | R (spawn), L | on row41 wake, first contract separate primary Feature/AFK on retained feature with exact record and authored navigation paths, packet and gates; wire only Inquisition blocked by Feature before generic pickup, then commission record captain | record captain reads contract/packet and directs docs-writer → docs review → final Merge Sub-issue | record Feature `Todo`, pickable from packet; audit is not recommissioned from temporary Todo gap |
 | 41b | record Feature captain → admiral, Inquisition Issue | R, L, G | `done <key>: merged`; exact record path/blob or digest, delivery merge SHA and retained feature ref, review/gates on delivery records | normal board loop reads delivery `Done` and resumes released Inquisition captain | record Feature `Done`; Inquisition resumes `In Progress` |
@@ -539,7 +539,7 @@ flowchart TD
   P1 & P2 & P3 & P4 -->|findings with proof, and hypotheses of what could go wrong| IC
   IC -->|one hypothesis each, proof-only, on a child branch| IM[code-writers: write the test that would catch it]:::crew
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
-  IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner| BUG[(Bug Issues in Todo, under the Project)]
+  IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner, or quoted passages| BUG[(Bug Issues in Todo, under the Project)]
   IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::officer
   REL -->|released &lt;key&gt;: record delivery wakes admiral| AD2[admiral]:::officer
   AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and navigation paths]:::officer
@@ -556,11 +556,12 @@ lenses it wants swept and the cost; the human confirms by moving it to `Todo`, w
 045 reserves; the captain claims it like any Issue and works on `inquisition/<slug>`, cut from the
 integrated feature SHA and deleted when the Issue is `Done`, so nothing on it can leak into the
 product; inquisitors are read-only and refute their own catches, and their second product is the
-hypothesis list; each hypothesis goes to a proof-only code-writer whose only output is a test, red if
-the hypothesis holds; a confirmed hypothesis is no longer a hypothesis and joins the findings; the
-captain deduplicates and files one Bug per problem under the Project, with the feature as base branch
-and the red test's commit as reproduction, so each is picked up by a captain and fixed through the
-normal loop. The completed packet goes to the admiral, whose separate record Feature delivers
+hypothesis list; each hypothesis in code goes to a proof-only code-writer whose only output is a test,
+red if the hypothesis holds, while one in prose, docs or a prompt file is proved by both contradicting
+passages quoted at `file:line` on the feature SHA, with no test and no proof branch; a confirmed
+hypothesis is no longer a hypothesis and joins the findings; the captain deduplicates and files one
+Bug per problem under the Project, with the feature as base branch and the red test's commit, or the
+quoted passages, as reproduction, so each is picked up by a captain and fixed through the normal loop. The completed packet goes to the admiral, whose separate record Feature delivers
 `dydo/project/inquisitions/` through its own captain, docs-writer, reviews and Merge Sub-issue.
 The [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs)
 owns the one-way blocker, release/resume, durable-content checks and independent Bug proof refs.
@@ -637,7 +638,7 @@ for parallel lanes; joining acceptance and final review stay on the parent. An e
 as the inquisition does; a trivial one collapses to one record. The reproduction is a scenario when
 the defect shows at the product's boundary, else a red test written through diagnosing-bugs; the
 fix proves itself by reverting and watching that reproduction fail again. A Bug the inquisition filed arrives with its red
-test at a commit, which the fixing code-writer adopts. Under a Project it lands like any Issue; outside one it
+test at a commit, which the fixing code-writer adopts, or, from prose, with its quoted passages. Under a Project it lands like any Issue; outside one it
 is atomic.
 
 ### 6.12 The second lap

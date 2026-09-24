@@ -85,8 +85,11 @@ to an Issue. They are not extra levels in the work graph.
 1. **Issue review** — a fresh reviewer with the rubric the candidate targets: code or docs
    before merge; `project-plan` before Project approval; `spec` before production only when the
    Issue Captain requires it.
-2. **Merge review** — a reviewer with the `merge` rubric after *every* merge: a mechanical spot check
+2. **Merge review** — a reviewer with the `merge` rubric after every merge that has a Merge Issue
+   (a lane into its parent, an Issue into the feature, the landing): a mechanical spot check
    scaled to what landed, which at the final feature merge also proves the plan's acceptance criteria.
+   An atomic Issue's merge into main has none; its Issue review PASS, green CI and the human's
+   click stand in its place.
 3. **Inquisition** — human-confirmed, captain-directed sweeps and proof tests that file Bugs, with
    a separate record Feature's docs-writer preserving the evidence through normal delivery. The
    Inquisition releases until that delivery lands, then verifies retention before closing; see the

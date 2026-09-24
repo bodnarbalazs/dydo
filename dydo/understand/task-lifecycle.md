@@ -66,9 +66,10 @@ scenario changes only through a fresh author's fix hop. Every hop's SHA is poste
 
 ## Reviewed before it merges
 
-A fresh reviewer judges the candidate against the rubric it targets before any merge, and a second
-reviewer applies the `merge` rubric after the merge lands; both return the review block, which is
-posted on the work judged: its Issue or Merge Issue, and in the PR body when present. A fifth consecutive FAIL on the same review loop is
+A fresh reviewer judges the candidate against the rubric it targets before any merge, and where the
+merge has a Merge Issue a second reviewer applies the `merge` rubric after the merge lands. An
+atomic Issue's merge into main has none; its Issue review PASS, green CI and the human's click stand
+in its place. Each reviewer returns the review block, which is posted on the work judged: its Issue or Merge Issue, and in the PR body when present. A fifth consecutive FAIL on the same review loop is
 itself an escalation — stop looping and raise a hand. Review, inquisition and the verdict's rule are in
 the [Work Model](./work-model.md); the review block's one-line form is locked in the
 [Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence).

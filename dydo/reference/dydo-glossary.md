@@ -83,8 +83,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   and the reviewer reads the hops in order.
 - **Issue review** — an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. PASS means no findings; a note is a finding, and a finding is a FAIL.
-- **Merge review** — the `merge` rubric run after every merge: a mechanical spot check of the
-  integrated state that also proves the plan's acceptance criteria at a feature's final merge.
+- **Merge review** — the `merge` rubric run after every merge that has a Merge Issue: a mechanical
+  spot check of the integrated state that also proves the plan's acceptance criteria at a feature's
+  final merge. An atomic Issue's merge into main has none; its Issue review PASS, green CI and the
+  human's click stand in its place.
 - **Inquisition** — a human-confirmed Type held by a captain: read-only sweeps, hypotheses proved
   by tests, deduplicated Bugs and an inquisition record. It files outcomes, never PASS or FAIL.
 - **Merge** — a Type for one merge operation, with its own implement/review chain and

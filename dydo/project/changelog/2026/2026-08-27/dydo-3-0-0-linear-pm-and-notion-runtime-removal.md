@@ -1,6 +1,7 @@
 ---
-area: project
-type: context
+area: general
+type: changelog
+date: 2026-08-27
 ---
 
 # dydo 3.0.0 — Linear PM and Notion runtime removal

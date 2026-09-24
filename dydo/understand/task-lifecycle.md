@@ -90,9 +90,11 @@ the revert. Plan review has its own two-round cap before the human chooses.
 
 ## Raising a hand
 
-The ladder runs crew → Issue Captain → admiral → human, and agents settle operational conflicts
-themselves by precedence, highest first: the human's live instruction, a Decision Record, the reviewed
-Project plan at its governing commit, the Issue contract, coding standards, existing code. The human
+The ladder runs crew → Issue Captain → an invoked admiral → human when one holds the map; without an
+invoked admiral, the Issue Captain escalates straight to the human, already the map holder. Agents
+settle operational conflicts themselves by precedence, highest first: the human's live instruction, a
+Decision Record, the reviewed Project plan at its governing commit, the Issue contract, coding
+standards, existing code. The human
 is reached only for a conflict with a Decision Record — is it truth, or is it obsolete? — for live
 external state agents cannot coordinate, or for authority the contract cannot supply.
 
@@ -101,7 +103,8 @@ the work is blocked, a Question Issue wired as a blocker are the captain's rungs
 one pre-code comment naming lanes or an inexact contract is its scoped exception, not a hand-raise.
 A blocked captain releases: post the resume SHA, push the branch, remove the worktree,
 return the parent to Todo and unassign. A human takeover does the same; a dead session leaves its
-last recorded hop without a final push. The admiral's next wake picks up blocker-cleared work.
+last recorded hop without a final push. The map holder's next wake — an invoked admiral's, or the
+human's own return to the board when none is invoked — picks up blocker-cleared work.
 
 ## Where the human is asked
 

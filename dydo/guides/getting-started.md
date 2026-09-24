@@ -123,7 +123,8 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 
 ## 7. Host configuration
 
-The spawn tree needs three layers below the admiral's session: issue-captain, crew, scout.
+The spawn tree needs three layers below the top-level session — the human's own, or an invoked
+admiral's: issue-captain, crew, scout.
 
 - Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
 - Codex: the project's `.codex/config.toml` contains `[agents]` with `max_depth = 3` and
@@ -148,8 +149,9 @@ touching a status, which only a captain sets.
 ## Run work through Linear
 
 The operating model is in [Control Flow](../understand/control-flow.md): an idea goes to a
-co-thinker, a ripe one becomes a Project through `to-project`, an admiral reads the Project and acts,
-captains own Issues, every merge inside a Project is a Merge Issue, and the human acts at the gates,
+co-thinker, a ripe one becomes a Project through `to-project`, the map holder — the human by default,
+or an invoked admiral — reads the Project and acts, captains own Issues, every merge inside a
+Project is a Merge Issue, and the human acts at the gates,
 clicking an atomic Issue's reviewed PR into main. The
 [Working-Tree Contract](./working-tree-contract.md) says which branch and worktree each of them works
 in.

@@ -77,6 +77,8 @@ Iterate until the user approves the breakdown.
 
 Publish one Issue per approved slice in dependency order (blockers first), so each Issue's blocking edges can reference real keys, and wire every edge as Linear's native blocked-by relation. Create each Issue in `Todo`, unassigned, with its Type label, its Mode label where a captain holds the Type, and settled owned paths: pickable by construction.
 
+Set priority, per the standard's Priority section in `dydo/reference/linear-workspace-standard.md`, on a `Question` or HITL Issue it creates; leave AFK Issues without one.
+
 Work the **frontier**: any Issue whose blockers are all done. For a purely linear chain that means top to bottom.
 
 Do NOT close or modify any parent Issue.

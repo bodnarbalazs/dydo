@@ -111,6 +111,7 @@ Amends [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-the-release-pr
   project-planner ahead.
 - §2, first bullet: an admiral runs only when the human invokes one, and a Grilling under a Project
   runs in the map holder's session.
+- §3: "The admiral sets Project statuses" becomes the map holder sets them, per decision 4.
 - §8: the project-planner bullet is removed, and upstream `to-tickets` moves into `to-issue`; the
   `to-project` bullet ends as decision 10 says; the plan-file bullet holds only for decision 6's plan
   file, written by the map holder.

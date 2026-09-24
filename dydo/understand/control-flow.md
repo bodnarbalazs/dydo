@@ -739,8 +739,7 @@ Completed rows below name the source, not a claim that generated runtime output 
 | ~~admiral~~ | Authored: board wakes, planning/review/human approval, captain commissions and merge ordering; no Git; landing and walkthrough. |
 | ~~issue-captain~~ | Authored: specify first, lanes/empty hops, statuses, four-field reviewer brief, two-step returns, release and Merge FAIL. |
 | ~~project-planner~~ | Removed by DR 051: the map holder charts with `wayfinder`, and `to-issue` carries upstream tracer bullets and blockers. |
-| ~~specifier~~ | Authored: captain owns status, lanes/empty hops, every delivery kind; Bug, Merge and Inquisition resources. |
-| ~~implementer, hardener~~ | Authored: FAIL block Must-Read; merge/proof-only modes; HCRAP and one-level static policy with separate mutation. |
+| ~~specifier, implementer, hardener~~ | Retired: the single `code-writer` absorbs all three (DYD-222); the `Specifying` and `Hardening` statuses retired on 2026-09-23. |
 | ~~reviewer~~ | Authored: four-field brief, pinned block on work judged, same merge rubric at every level. |
 | ~~docs-writer~~ | Authored: captain invocation, committed evidence and inquisition record. |
 | ~~inquisitor~~ | Authored: read-only captain assignment, findings/hypotheses with proof seam; no workflow verify job. |
@@ -751,7 +750,7 @@ Completed rows below name the source, not a claim that generated runtime output 
 | compiler workflow emission | Retired by DR 049: the compiler is gone, so there is no workflow discovery, emission, or summary. Roles are native `SKILL.md` folders. |
 | ~~types.json~~ | Inspected: document vocabulary already has inquisition and no workflow; Linear's ten Types are a separate standard. |
 | dydo init | Deferred to DYD-86: native nesting depth and host setup proof. |
-| ~~working-tree contract~~ | Authored/local twin: captain's Merge at each level, branch exceptions, Specifying, release and merge-commit landing. |
+| ~~working-tree contract~~ | Authored/local twin: captain's Merge at each level, branch exceptions, release and merge-commit landing. |
 | getting-started | Deferred to DYD-91: framework setup checklist and template registration. |
 | ~~dydo.json~~ | Removed in source: no model or effort property remains; the delegating role chooses both at dispatch (DYD-134). |
 | ~~work-model, task-lifecycle, dydo-glossary~~ | Authored/local prose: current flow, Types, release, Questions, inquisition and supersymmetry. |

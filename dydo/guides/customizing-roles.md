@@ -34,7 +34,7 @@ explicit role costs no context and has to be remembered instead, which is why th
 
 | Artifact | Canonical path | Host behavior |
 |---|---|---|
-| the skill | `skills/<category>/<name>/SKILL.md` | Claude Code, Codex, and OpenCode read the same body through their discovery roots. |
+| the skill | `skills/<category>/<name>/SKILL.md` | Claude Code and Codex read the same body through their discovery roots. OpenCode may read those roots too; that is untested. |
 | the role's own resource | `skills/<category>/<name>/resources/<n>.md` | Relative links resolve from the whole-folder projection. |
 | explicit invocation | `disable-model-invocation: true` in `SKILL.md`; `skills/<category>/<name>/agents/openai.yaml` with `allow_implicit_invocation: false` | Claude Code and Codex respectively. Stable OpenCode has no claimed explicit-only control. |
 | an argument hint | `argument-hint:` in `SKILL.md`; `skills/<category>/<name>/agents/openai.yaml` with `interface.default_prompt` | Claude Code and Codex respectively. |

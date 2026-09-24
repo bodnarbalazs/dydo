@@ -173,9 +173,10 @@ Before the first agent session:
 3. Run `node setup-skills.mjs`. It links every skill folder, flat, into `.claude/skills/` and
    `.agents/skills/`.
 
-`dydo init` adds `/.claude/skills/` to `.gitignore` when Claude Code is wired and `/.agents/skills/`
-when Codex is, and every `dydo init <integration> --join` does the same, so the links stay local and
-each clone runs `node setup-skills.mjs` once. The script is safe to rerun. It checks its whole plan
+The script always creates both folders, but `dydo init` and every `dydo init <integration> --join`
+add only the wired host's folder to `.gitignore`: `/.claude/skills/` for Claude Code,
+`/.agents/skills/` for Codex. A single-host project adds the other folder's line itself, or wires
+both hosts with `all`. Each clone runs `node setup-skills.mjs` once. The script is safe to rerun. It checks its whole plan
 before creating anything, stops at the first collision it names, and never replaces host
 configuration or unrelated skills. OpenCode may read the same two folders; that is untested, and
 dydo has no OpenCode init mode.

@@ -69,9 +69,10 @@ generated agent definition. The host runtime owns agent identity and orchestrati
 
 Skills do not ship with the package or `dydo init`. Copy `skills/`, `setup-skills.mjs` and
 `THIRD-PARTY-NOTICES.md` (the MIT notices of the adapted skills travel with them) from the dydo
-repository into the project root, commit them, and run `node setup-skills.mjs`. `dydo init`
-and every `dydo init <integration> --join` add `/.claude/skills/` to `.gitignore` when Claude Code
-is wired and `/.agents/skills/` when Codex is, so the projections stay local.
+repository into the project root, commit them, and run `node setup-skills.mjs`. The script always
+creates both `.claude/skills/` and `.agents/skills/`, but `dydo init` and every
+`dydo init <integration> --join` add only the wired host's folder to `.gitignore`; a single-host
+project adds the other folder's line itself, or wires both hosts with `all`.
 
 ### 3. Enforced project rules
 
@@ -142,8 +143,8 @@ project/
 |-- setup-skills.mjs             # Copied from the dydo repository; creates the host projections
 |-- skills/                      # Copied from the dydo repository; roles/officers/, roles/crew/, engineering/, productivity/
 |-- THIRD-PARTY-NOTICES.md       # Copied from the dydo repository; MIT notices of the adapted skills
-|-- .claude/skills/              # Ignored per-skill Claude projections
-|-- .agents/skills/              # Ignored per-skill Codex projections
+|-- .claude/skills/              # Per-skill Claude projections; ignored by init when Claude is wired
+|-- .agents/skills/              # Per-skill Codex projections; ignored by init when Codex is wired
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture

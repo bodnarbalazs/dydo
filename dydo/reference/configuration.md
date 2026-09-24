@@ -139,8 +139,8 @@ and blocks reject the action. Nudges enforce project process; they do not create
 
 ## Customization points
 
-- `skills/<category>/<name>/` — the only editable skill folders. Run `node setup-skills.mjs` to create the ignored
-  Claude and Codex discovery projections. OpenCode is not a supported host: it may read both roots,
+- `skills/<category>/<name>/` — the only editable skill folders. Run `node setup-skills.mjs` to create the
+  Claude and Codex discovery projections; init ignores only the wired host's root. OpenCode is not a supported host: it may read both roots,
   but that is untested and there is no OpenCode init mode.
 - `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
   read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.

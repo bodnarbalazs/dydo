@@ -64,8 +64,10 @@ come with the npm or .NET package, and `dydo init` does not write them.
    step and nothing reconciles them with later dydo versions.
 3. Run `node setup-skills.mjs` from the project root. It walks the tree by rule, so a folder holding
    `SKILL.md` is a skill and any other folder a category, and links each skill flat into
-   `.claude/skills/<name>/` and `.agents/skills/<name>/`. Every fresh clone runs it once; those
-   folders are gitignored.
+   `.claude/skills/<name>/` and `.agents/skills/<name>/`. Every fresh clone runs it once.
+4. The script always creates both folders, but init ignores only the wired host's folder. A
+   single-host project adds the other one to `.gitignore` itself (`/.agents/skills/` after
+   `dydo init claude`, `/.claude/skills/` after `dydo init codex`), or wires both hosts with `all`.
 
 Done when the Claude and Codex discovery roots contain whole-directory projections for every skill.
 OpenCode may read those roots as well; that is untested, and dydo has no OpenCode init mode.

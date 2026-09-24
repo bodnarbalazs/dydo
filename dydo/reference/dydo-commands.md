@@ -56,8 +56,10 @@ or overwriting the tree, and records the integration in `dydo.json`.
 dydo does not compile or install skills, and none ship with the package. A skill is one folder under
 `skills/<category>/<name>/`: copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` (the
 MIT notices of the adapted skills travel with them) from the dydo repository into the project root,
-commit them, and run `node setup-skills.mjs` to create the host discovery links that init already
-ignores.
+commit them, and run `node setup-skills.mjs` to create the host discovery links. The script always
+creates both `.claude/skills/` and `.agents/skills/`; init ignores only the wired host's folder (the
+`.gitignore` rows above), so a single-host project adds the other folder's line itself, or wires both
+hosts with `all`.
 
 ---
 

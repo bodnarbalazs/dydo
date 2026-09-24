@@ -112,6 +112,8 @@ and workers is replaced by officers, crew and plain skills, and sessions no long
 Amends [DR 049](./049-skills-are-the-source-retire-the-compiler.md): adds a second layout line to its
 2026-09-21 amendment.
 
+Amended by [DR 051](./051-captains-by-default-admiral-on-invocation.md) (2026-09-24): the admiral holds a Project only when the human invokes it, project-planner leaves the crew, and `to-issue` joins `productivity/` (Decisions 1 and 4).
+
 ## Affects
 
 - [dydo Glossary](../../reference/dydo-glossary.md)

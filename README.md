@@ -1,80 +1,132 @@
-# DynaDocs (dydo)
+# Dydo
 
-Own your project's durable knowledge, use Linear for live work, and let native coding agents execute.
+## What it is
+Dydo is my opinionated workflow to build software projects with agents.
+It has:
+- Skills
+	- Telling agents how to get work done, what roles they should play and how they should interact with the other agents
+- A CLI tool which
+	- Scaffolds the docs and wires the guard hook into Codex and Claude Code
+	- Has a nudge system which uses Regex patterns in a guard hook to deny/warn on agent actions with helpful messages like
+		- Don't hand-edit migrations, use "X" instead.
+		- Don't invoke "this command" like this use it "like this"
+	- Provides other handy commands like
+		- Proxies a python swiss-army knife test runner script
+		- Checks for broken links in the docs
+- Documentation structure
+	- [Diátaxis](https://diataxis.fr/) inspired structure
+		- Guides
+		- Reference
+		- Understand
+		- Project
+		- Glossary
+	- Auto generated placeholder files like
+		- About
+		- Architecture
+		- Coding Standards
 
-DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
-project knowledge explicit and versioned in Git, authors shared role methods as native skills for
-Claude Code, Codex, and OpenCode, and enforces project rules through hooks. Linear owns the live
-Initiative/Project/Issue graph; the coding platform owns sessions, worktrees, delegation, and scheduling.
+## How to use it
+Don't. Seriously. Build your own system.
+Because it should reflect:
+- How you work
+- What you work on
+- With what stack
+- What "good" (code) looks like to you
 
-This project is an opinionated personal harness, not a compatibility-first product. It evolves with the
-projects using it and deliberately removes machinery that native runtimes or dedicated work-management
-tools now do better.
+So I suggest you cherry pick ideas, fork the project, point your agent at it, steal what you need.
+You can use it as is (as I use it), but it will reflect MY values and not necessarily yours.
+It is built to be customizable, but only to a degree. If you still want to give it a try as is point your agent to [Getting Started](https://github.com/bodnarbalazs/dydo/blob/master/dydo/guides/getting-started.md) and follow their instructions.
 
-## The Project That Remembers
+## Rant (feel free to skip)
+I started building DyDo, back then DynaDocs, "Dynamic documentation", because Claude didn't work like I wanted it to. Every time I had to reexplain it things about the project, what its job would be, what it shouldn't mess up (and it did every new session if I didn't tell it) and the Claude.md just wasn't enough. So I "invented" an onboarding system where the Claude.md would tell them that they were invoked with either a name like "Adele" or they should "claim" their own identity then follow the further instructions inside their folder which doubled as their workspace as well. So "Adele" arrived at "Project/dydo/agents/Adele/index.md" and was presented with a choice on what role they would play. There were co-thinker, planner, code-writer, test-writer, docs-writer, reviewer, later orchestrator, inquisitor. And then they would be presented with their job-description, tools, and access. Because co-thinkers couldn't write code outside of their workspace, code-writers couldn't write tests, test-writers couldn't have access to the rest of the code (yes, this was stupid in hindsight).
+The guard enforced all of this. If they didn't claim their identity they couldn't even read files not needed for that. If they didn't read the files which were the "must reads" for their role they couldn't read or write, they couldn't get their task done otherwise. I didn't want to waste the context and attention on coding-standards of an agent who is brainstorming with me and someone whose job is to write the damn code shouldn't be bored with what the docs structure looks like. Progressive disclosure reinvented from first principles.
+Then I felt like a flight-traffic controller juggling many agents so I made orchestrator agents. Mind you this was way before sub-agents were a thing. It was glorious. These agents were able to use "dydo dispatch" to open a new terminal and spin up another top-level agent in it, which would onboard, look at its inbox and start to work. 4-5 terminal tabs in each terminal window. Then I got tired of closing them when they were done so I added that as well. And it worked all nice until the terminal app crashed and I had to clean up stale identities and try to resume sessions.
+Then in 2.0 I learned the lesson that I shouldn't build stuff which OpenAI and Anthropic would build anyways - and build it better, because this is not my main product, it's theirs. The goal is that dydo should be my workflow and customization on top of their harnesses. So I embraced skills (and I no longer enforce that they actually read them). In 2.0 I had a Notion sync and view cooked up so it would provide a better interface to interact with the project management records. I didn't like it. So in 3.0 I made the explicit decision that this should support my work and I won't think about "backwards compatibility" or generally anything which I would do if this was a product meant to be used by others. I built the entire new system around Matt Pocock's wayfinder skill and the divide and conquer idea within it. I had adapted a bunch of other skills from others like: [Matt Pocock](https://github.com/mattpocock/skills), [HumanLayer](https://github.com/humanlayer/skills), Lauren Tan's [pstack](https://github.com/cursor/plugins) (full list in [THIRD-PARTY-NOTICES.md](https://github.com/bodnarbalazs/dydo/blob/master/THIRD-PARTY-NOTICES.md)) and harmonized them with each other. I also gave up on hand rolling the PM layer and adopted Linear as the platform to use and removed all the Notion sync stuff.
 
-Decisions, architecture, guides, reviewed Project plans, audits, assimilation briefs, and changelog live
-as Markdown in Git. They are human-readable, reviewable, linkable at an exact commit, and written for AI
-consumption as much as for people.
+## Overview
+So how does dydo work in practice?
 
-Linear holds volatile work state: Initiatives, Projects, Issues, optional Milestones and Cycles, status,
-priority, assignment, dependencies, current updates, and review state. dydo does not copy that graph into
-Markdown. Linear links to durable repository artifacts; knowledge discovered during execution flows back
-into the appropriate Decision, guide, plan, audit, or assimilation brief.
+I break the work with a software product into many Linear projects. Each project is a map, where the issues are the nodes, they are marked with statuses and labels. Each project is driven by an Admiral, whose job is to chart the map, manage the PM surface, coordinate the Issue Captains who oversee the completion of the Issues with their crew of (code-writers, docs-writers, reviewers, inquisitors, researchers and scouts).
 
-FutureFeatures are the deliberate exception. An unscheduled idea remains repo-native until the human
-promotes it to exactly one Linear Initiative, Project, or Issue. The idea records the stable Linear URL
-once and never mirrors subsequent delivery state.
+Each issue is either AFK or HITL
+- AFK is completed without me if everything goes according to plan
+- HITL happens with my direct involvement and guidance
 
-## What dydo Provides
+These are the types of issues:
+- Feature
+	- Some new feature is being built or improved upon
+- Bug
+	- A bug gets reported, then it gets reproduced and fixed
+- Enablement
+	- Some human-involved setup which other work depends on (creating an api key)
+- Inquisition
+	- An audit where sub agents not only look at the code like reviewers, but also try to come up with ways which it could break and they test these hypotheses out to verify them
+- Grilling
+	- An agent asks me questions about my intent and vision, I understand and weigh the choices and out of these sessions come Decision Records, plans and further issues which can be navigated
+- Merge
+	- Each project is a feature branch, each issue where code gets written is a sub branch and each lane or sub issue within that issue also gets its child branch so agents never collide. When these are merged back to their parent, it's a merge issue.
+- Prototype
+	- An interactive session where throwaway code gets created mostly for UI decisions, the winner code may become preserved as a starting guide for the actual implementation
+- Question
+	- When some decision is needed which is not answerable from any previous artifact (implementation plan, DR, docs, etc.) work stops until it's resolved so things don't go in incorrect ways
+- Research
+	- When some question needs to be answered there is a research work where an agent sends out scouts then verifies the evidence and presents the findings
+- Walkthrough
+	- Happens each time the feature is merged back to master (or when requested), this is the final, hands-on review where things get spot checked by me and I get in touch with the codebase so I understand what's going on and if I don't like something I'll send it back to be fixed
 
-### Durable, AI-friendly knowledge
+Here are some nice charts about the workflow:
 
-A structured tree (`understand/`, `guides/`, `reference/`, and durable `project/` knowledge) with
-validation, auto-fixing, indexes, and graph tooling. Agents onboard through progressive disclosure,
-reading only the durable context relevant to the current Issue.
+One Project, from idea to walkthrough:
 
-### One skill, native on each host
+```mermaid
+flowchart TD
+  classDef human fill:#f6d365,stroke:#8a6d00,color:#000
+  classDef session fill:#e9ecef,stroke:#6c757d,color:#000
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
+  classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-A skill is one plain `skills/<category>/<name>/` folder in the cross-vendor `SKILL.md` format,
-sorted by kind: the roles under `roles/officers/` and `roles/crew/`, every other skill under
-`engineering/` or `productivity/`. Run
-`node setup-skills.mjs` once after checkout: it walks the tree by rule (a folder holding `SKILL.md`
-is a skill, any other folder a category) and exposes each whole folder flat at Claude Code's
-`.claude/skills/<name>/` and Codex's `.agents/skills/<name>/` discovery paths — no category level in
-the host roots. OpenCode reads those
-compatibility roots, so setup creates no third copy. There is no compile step. The host runtime owns
-agent identity and orchestration.
+  H0([human: an idea]):::human --> CT[co-thinker]:::session
+  CT -->|ripe| TP([human: to-project, Project in Backlog]):::human
+  TP --> AD[admiral, reads the Project and acts]:::officer
+  AD -->|Project Planning| PP[project-planner: plan on main, first Issues]:::crew
+  PP -->|plan commit| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
+  RP -->|PASS| H1([human approves in the admiral's session, Project Planned]):::human
+  H1 --> OP[admiral commissions first captain to open feature; wires merge order]:::officer
+  OP <-->|"one captain per pickable AFK Issue: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[issue-captain]:::officer
+  OP -->|all landed: Inquisition Issue in Backlog, scope and cost| H2([human moves it to Todo and tells the admiral, or cancels]):::human
+  H2 -->|the admiral commissions| IQ[issue-captain of the inquisition: Bugs filed]:::officer
+  IQ --> OP
+  OP -->|landing Merge Issue: main into the feature, gates, merge review| LM[issue-captain of the landing]:::officer
+  LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells the admiral]):::human
+  H3 -->|admiral commissions landing captain cleanup; asks human to invoke walkthrough| WT[Walkthrough Issue: the admiral with the human]:::officer
+  WT -->|findings: Issues, a second lap on the re-cut feature| OP
+  WT -->|nothing: Project Completed| END([done]):::human
+```
 
-### Enforced project rules
+One Issue, inside its captain's loop:
 
-`dydo guard` checks every tool call, including subagents and workflows. Off-limits paths and dangerous
-commands hard-block; project nudges add configurable notices, warnings, and blocks.
+```mermaid
+flowchart TD
+  classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
+  classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
+  classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-### An opinionated scaffold
+  AD[admiral]:::officer <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::officer
+  IC <-->|"1 write · Implementing"| CW
+  IC <-.->|"1b contract review before any code, at the captain's discretion · In Review, then Implementing"| RS
+  IC <-->|"2 review · In Review"| RC
+  IC <-->|"3 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
+  subgraph CREW [the crew]
+    CW[1 code-writer<br>builds and proves the contract<br>returns implement SHA, red proof, gates]:::crew
+    RS{{1b reviewer: spec<br>reads the contract text on the Issue<br>returns review block}}:::reviewer
+    RC{{2 reviewer: code or docs<br>returns review block}}:::reviewer
+    MG[3 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::crew
+  end
+```
 
-Every `dydo init` mode creates the knowledge tree, and `CLAUDE.md`. The `claude`,
-`codex`, and `all` modes wire guard hooks only for the selected runtimes; Codex selections also add
-`AGENTS.md`. The `none` mode installs no guard hooks and no `AGENTS.md`. A new project contains durable
-Decisions, changelog, pitfalls, and FutureFeature idea documentation. It creates no repository-backed
-live-work hierarchy: use Linear for work management.
-
-## How Work Runs
-
-1. **Shape intent** — record durable decisions and create the appropriately sized Linear Issue or Project.
-2. **Review the contract** — an atomic Issue may be its own contract; coordinated, cross-cutting, or
-   architecture-sensitive work links to one reviewed repository Project plan.
-3. **Execute Issues** — native agents work in isolated branches or worktrees and attach governing commits,
-   tests, reviews, and delivery evidence to the Issue.
-4. **Audit Projects** — verify the combined result against the linked plan, then publish durable audit and
-   assimilation evidence.
-
-Each implementation Issue receives a fresh independent review before completion. Branches, worktrees,
-sessions, subagents, commits, pull requests, and reviewer attempts are evidence linked to an Issue; they
-are not additional work types.
-
-No dydo command reads, writes, caches, polls, provisions, or mirrors Linear. Agents use Linear's official
-MCP, UI, API, and integrations outside the dydo runtime.
+here's the further workflow documented: [Control Flow](https://github.com/bodnarbalazs/dydo/blob/master/dydo/understand/control-flow.md)
+and here's the Linear setup dydo and the agents expect: [Linear Workspace Standard](https://github.com/bodnarbalazs/dydo/blob/master/dydo/reference/linear-workspace-standard.md)
 
 ## Installation
 
@@ -86,7 +138,7 @@ npm install -g dydo
 dotnet tool install -g dydo
 ```
 
-## Quick Start
+## Quick start
 
 Run from the project root:
 
@@ -96,106 +148,59 @@ dydo check            # validate the documentation tree
 dydo fix              # repair supported documentation issues
 ```
 
+Every mode writes `dydo.json`, the `dydo/` documentation tree and `CLAUDE.md`. The `claude`, `codex`
+and `all` modes also wire `dydo guard` as a hook for the chosen hosts, set the host's agent spawn
+depth, and add the host's skill folder to `.gitignore`; Codex selections add `AGENTS.md`. `none`
+wires no host. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
+documentation; live work stays in Linear.
+
 Fill in `dydo/understand/about.md` and `dydo/understand/architecture.md`, then adapt
-`dydo/guides/coding-standards.md` and `dydo.json` to the project. Use `--join` when wiring another
-runtime or machine into an existing project. The full checklist, Linear workspace and host
-configuration included, is [Getting Started](dydo/guides/getting-started.md); point an agent at it
-to set dydo up in a project.
+`dydo/guides/coding-standards.md` and `dydo.json` to the project. Use `dydo init <integration> --join`
+when wiring another host or machine into an existing project. The full checklist, Linear workspace
+and host configuration included, is
+[Getting Started](https://github.com/bodnarbalazs/dydo/blob/master/dydo/guides/getting-started.md).
 
-For this repository's skills, also run `node setup-skills.mjs`. It is safe to rerun, works on its own
-directory unless you pass `--root <checkout>`, and refuses any other argument. Setup accepts
-missing projections, links already aimed at the canonical folder, and a link left by an older
-layout of `skills/` (even a now-dangling one) — that last case it migrates to the current canonical
-path rather than refusing; it removes, and counts, each link of its own whose skill was deleted;
-it preflights the whole plan before creating anything and stops at the
-first collision it names, so nothing is created until the plan is validated, and it never replaces
-host configuration or unrelated skills. Resolve the named collision yourself, then rerun. OpenCode
-may report each name from both compatibility roots; both entries resolve to the same canonical
-directory.
+## Install the skills
 
-Keep current work in Linear. Put information in Git only when it should remain useful and reviewable
-after current workflow state changes.
+The skills do not come with the npm or .NET package, and `dydo init` does not write them. Each skill
+is one plain `skills/<category>/<name>/` folder in the [dydo repository](https://github.com/bodnarbalazs/dydo).
+Before the first agent session:
 
-## Customize
+1. Copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` from the dydo repository into
+   the project root. The notices carry the MIT licences of the adapted skills and travel with them.
+2. Commit them. They are the project's own from then on: edit them in place; nothing reconciles them
+   with later dydo versions.
+3. Run `node setup-skills.mjs`. It links every skill folder, flat, into `.claude/skills/` and
+   `.agents/skills/`.
 
-- **Nudges** — project regex rules and messages in `dydo.json`.
-- **Skills** — plain `skills/<category>/<name>/` folders, edited directly and exposed to hosts flat by `setup-skills.mjs`.
+The script always creates both folders, but `dydo init` and every `dydo init <integration> --join`
+add only the wired host's folder to `.gitignore`: `/.claude/skills/` for Claude Code,
+`/.agents/skills/` for Codex. A single-host project adds the other folder's line itself, or wires
+both hosts with `all`. Each clone runs `node setup-skills.mjs` once. The script is safe to rerun. It checks its whole plan
+before creating anything, stops at the first collision it names, and never replaces host
+configuration or unrelated skills. OpenCode may read the same two folders; that is untested, and
+dydo has no OpenCode init mode.
 
-A skill is its own source; there is no compile step and no automatic reconciliation.
-
-## Folder Structure
-
-```text
-project/
-|-- dydo.json                    # Integrations, scan exclusions, nudges
-|-- CLAUDE.md                    # Claude Code entry point
-|-- AGENTS.md                    # Codex entry point
-|-- setup-skills.mjs             # Create safe host discovery projections
-|-- skills/                      # roles/officers/, roles/crew/, engineering/, productivity/; one folder per skill
-|-- .claude/skills/              # Ignored per-skill Claude projections
-|-- .agents/skills/              # Ignored per-skill Codex projections; OpenCode also reads both roots
-`-- dydo/
-    |-- index.md                 # Knowledge map
-    |-- understand/              # Domain concepts and architecture
-    |-- guides/                  # How-to guidance
-    |-- reference/               # Exact commands and specifications
-    |-- project/                 # Durable knowledge and delivery proof
-    |   |-- decisions/           # Accepted choices
-    |   |-- plans/               # Reviewed coordinated-work contracts
-    |   |-- future-features/     # Unscheduled repo-native ideas
-    |   |-- changelog/           # Completed change and release history
-    |   `-- pitfalls/            # Recurring gotchas and constraints
-    |-- _system/                 # types.json and local runtime state
-    `-- _assets/
-```
-
-## For Teams
-
-Share the repository and the Linear workspace. Each member wires up their machine's local integration
-for the already-initialized project:
-
-```bash
-dydo init codex --join
-# or
-dydo init claude --join
-```
-
-Git carries durable knowledge; Linear carries current work and attention state. Do not create a second
-work graph in repository files.
-
-## Command Reference
-
-### Setup
+## Commands
 
 | Command | Description |
 |---|---|
 | `dydo init <integration>` | Initialize for `claude`, `codex`, `all`, or `none` |
-| `dydo init <integration> --join` | Wire another runtime or machine into an existing project |
-
-### Documentation and validation
-
-| Command | Description |
-|---|---|
+| `dydo init <integration> --join` | Wire another host or machine into an existing project |
 | `dydo check [path]` | Validate documentation |
 | `dydo fix [path]` | Apply supported documentation repairs |
 | `dydo index [path]` | Regenerate documentation indexes |
 | `dydo graph <file>` | Show document graph connections |
-| `dydo graph stats [--top N]` | Summarize graph connectivity |
+| `dydo graph stats [--top N]` | Rank documents by incoming links |
+| `dydo guard` | Evaluate one tool call against the hook rules and nudges (run by the hooks) |
 | `dydo validate` | Validate local configuration and nudges |
+| `dydo gap-check [args]` | Run the test runner configured in `dydo.json`, passing the arguments through |
+| `dydo completions <shell>` | Print a completion script for `bash`, `zsh`, or `powershell` |
+| `dydo version` | Print the version |
+| `dydo help` | Print the command summary |
 
-### Guard
-
-| Command | Description |
-|---|---|
-| `dydo guard` | Evaluate universal hook rules |
-
-See the [complete CLI reference](dydo/reference/dydo-commands.md) for options, examples, transition-only
-commands, and exit codes.
-
-## Self-Documentation
-
-dydo documents itself using its own system. Browse the `dydo/` tree in this repository to see durable
-knowledge, reviewed plans, migration evidence, and product guidance in practice.
+Options, examples and exit codes are in the
+[command reference](https://github.com/bodnarbalazs/dydo/blob/master/dydo/reference/dydo-commands.md).
 
 ## License
 

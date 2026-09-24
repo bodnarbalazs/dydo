@@ -8,8 +8,8 @@ type: reference
 Own your project's knowledge, use Linear for live work, and let native coding agents execute.
 
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
-durable project knowledge explicit and versioned, authors shared role methods as native skills for
-Claude Code, Codex, and OpenCode, and enforces project rules through hooks.
+durable project knowledge explicit and versioned, authors shared methods as native skills for
+Claude Code and Codex, and enforces project rules through hooks.
 Linear owns the live Initiative/Project/Issue graph; the coding platform owns sessions, worktrees,
 delegation, and scheduling.
 
@@ -37,9 +37,12 @@ until the human promotes or cancels them; durable knowledge they uncover flows i
 Humans should spend their attention on intent and value choices. Agents implement, test, document,
 review, coordinate, and audit from independently reviewable contracts.
 
-- Thinking and coordination roles help shape intent, publish a reviewed Project plan when needed, and
-  keep Linear current.
-- Execution roles implement one Linear Issue, prove its gates, and return commit and test evidence.
+- Officers hold one thing and never switch: the admiral holds a Project, the issue-captain an Issue,
+  the chief-of-staff the board. They keep Linear current.
+- Crew are spawned for one bounded job, hold nothing, and return their result: project-planner,
+  code-writer, docs-writer, reviewer, inquisitor, research, scout.
+- Every other skill, `co-thinker` among them, is a plain skill any session loads when the work needs
+  it.
 - A fresh agent independently reviews each implementation Issue before human harmonization.
 - The [Working-Tree Contract](../guides/working-tree-contract.md) governs Project integration,
   optional Inquisition record delivery, and landing.
@@ -60,19 +63,28 @@ A skill is one plain `skills/<category>/<name>/` folder in the cross-vendor form
 the roles under `roles/officers/` and `roles/crew/`, every other skill under `engineering/` or
 `productivity/`. `node setup-skills.mjs` walks the tree by rule (a folder holding `SKILL.md` is a
 skill, any other folder a category) and
-exposes it flat (no category level) through Claude Code and Codex discovery roots; OpenCode reads
-those compatibility roots. There is no compile step or generated agent definition. The host runtime
-owns agent identity and orchestration.
+exposes it flat (no category level) through Claude Code and Codex discovery roots. OpenCode may read
+those roots too; that is untested, and dydo has no OpenCode init mode. There is no compile step or
+generated agent definition. The host runtime owns agent identity and orchestration.
+
+Skills do not ship with the package or `dydo init`. Copy `skills/`, `setup-skills.mjs` and
+`THIRD-PARTY-NOTICES.md` (the MIT notices of the adapted skills travel with them) from the dydo
+repository into the project root, commit them, and run `node setup-skills.mjs`. The script always
+creates both `.claude/skills/` and `.agents/skills/`, but `dydo init` and every
+`dydo init <integration> --join` add only the wired host's folder to `.gitignore`; a single-host
+project adds the other folder's line itself, or wires both hosts with `all`.
 
 ### 3. Enforced project rules
 
-`dydo guard` checks every tool call, including native subagents. Off-limits paths and dangerous
-commands hard-block; project nudges add configurable notices, warnings, and blocks.
+`dydo guard` checks every tool call its hook matcher names, native subagents' calls included.
+Off-limits paths and dangerous commands hard-block; project nudges add configurable notices,
+warnings, and blocks.
 
 ### 4. An opinionated scaffold
 
 `dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, guard wiring,
-and runtime entry files. It does not create a second live work graph; use Linear for work
+and runtime entry files; `dydo init none` creates the tree and `CLAUDE.md` without guard wiring. It
+does not create a second live work graph; use Linear for work
 management, including FutureFeatures.
 
 ## How Work Runs
@@ -104,14 +116,15 @@ dotnet tool install -g dydo
 ## Quick Start
 
 ```bash
-dydo init codex       # or: dydo init claude / dydo init all
+dydo init codex       # or: dydo init claude / dydo init all / dydo init none
 dydo check            # validate the documentation tree
 dydo fix              # repair supported documentation issues
 ```
 
 Fill in `dydo/understand/about.md` and `dydo/understand/architecture.md`, then adapt
 `dydo/guides/coding-standards.md` and `dydo.json` to the project. Use `--join` when wiring another
-runtime or machine into an existing project.
+runtime or machine into an existing project. Install the skills as described above before the first
+agent session: the `CLAUDE.md` and `AGENTS.md` entry points send a thinking session to `co-thinker`.
 
 ## Customize
 
@@ -127,10 +140,11 @@ project/
 |-- dydo.json                    # Integrations, scan exclusions, nudges, testing
 |-- CLAUDE.md                    # Claude Code entry point
 |-- AGENTS.md                    # Codex entry point
-|-- setup-skills.mjs             # Create safe host discovery projections
-|-- skills/                      # roles/officers/, roles/crew/, engineering/, productivity/; one folder per skill
-|-- .claude/skills/              # Ignored per-skill Claude projections
-|-- .agents/skills/              # Ignored per-skill Codex projections; OpenCode reads both roots
+|-- setup-skills.mjs             # Copied from the dydo repository; creates the host projections
+|-- skills/                      # Copied from the dydo repository; roles/officers/, roles/crew/, engineering/, productivity/
+|-- THIRD-PARTY-NOTICES.md       # Copied from the dydo repository; MIT notices of the adapted skills
+|-- .claude/skills/              # Per-skill Claude projections; ignored by init when Claude is wired
+|-- .agents/skills/              # Per-skill Codex projections; ignored by init when Codex is wired
 `-- dydo/
     |-- index.md                 # Knowledge map
     |-- understand/              # Domain concepts and architecture

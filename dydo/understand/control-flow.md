@@ -49,7 +49,7 @@ session or an invoked admiral can direct one per Issue.
 |---|---|---|---|---|---|---|
 | human | human | the terminal | — | `main`, where his own commits need no Issue, and any session | thinks, files Projects, holds a Project's map by default and charts it with `wayfinder`, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic Issue's reviewed PR, walks through; tells an invoked admiral after each of his board moves, and takes the map back at any time | — |
 | co-thinker | skill | any session without an officer role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic Issue with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic Issue (L) |
-| admiral | officer, optional | top-level session, explicit-only | the human, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` | holds the map until the human takes it back; wakes on a captain's return or the human's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
+| admiral | officer, optional | top-level session, explicit-only | the human, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` once the map holder opens one at Open; none before that, or on a Project with no feature branch | holds the map until the human takes it back; wakes on a captain's return or the human's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
 | issue-captain | officer, the default, also agent | top-level for an atomic or HITL Issue; spawned by the human's session or an invoked admiral for an AFK one | the human's session, or an invoked admiral | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, takes an adjacent Issue only on the human's word, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues or, on an atomic Issue, waits for the human's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
 | chief-of-staff | officer | top-level session, explicit-only | the human | none | the bird's-eye view over the Projects in flight: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the human (C); delivery staged on its Project for the map holder (L) |
 | research | crew, delegates, web | agent | co-thinker, the map holder, issue-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as Issue comment (L) or scratch file (F) |
@@ -475,7 +475,7 @@ The contract: FAIL is binding; every FAIL returns the record to `Implementing`, 
 and a wrong or missing scenario is amended by the next fix hop; every
 correction is its own commit and the re-review pins the new SHA; a note is a finding; the fifth consecutive FAIL
 in one review loop stops the loop rather than softening the verdict. A contract amendment that changes
-acceptance is an amendment of the contract and, under a Project, goes to the admiral as a plan
+acceptance is an amendment of the contract and, under a Project, goes to the map holder as a plan
 amendment.
 
 ### 6.3 The contract or the route is disproved mid-implementation
@@ -502,7 +502,10 @@ climbs the ladder before work resumes.
 
 The approved route fixes the destination, not every turn. The map holder creates, splits, drops and
 resequences Issues and records discoveries; where a repository plan exists, it commits dated
-`## Amendment — <date>` sections to it. Route-only amendments need no review. An amendment
+`## Amendment — <date>` sections to it. With the project-planner gone, the map holder commits a
+repository plan — the initial plan and its amendments alike — on `main` through an atomic docs Issue
+when the Project has no feature branch yet, or none exists at all for a standalone cross-cutting
+plan, and on the Project's feature branch once one is open. Route-only amendments need no review. An amendment
 that changes destination, scope, acceptance criteria or governing architecture goes back through
 `reviewer(project-plan)`, when a plan exists, and human approval before the affected Issues are
 commissioned. The review

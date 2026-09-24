@@ -22,10 +22,10 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 | Chart and plan a Project | the map holder, the human or an invoked admiral, with wayfinder | the map in the Linear Project, first Issues, Questions; a repository plan only for a cross-cutting architecture contract | project-plan review of that plan, then human approval |
 | Make an Issue exact | issue-captain, through its compact acceptance contract | a just-in-time contract with no hidden implementation decisions; the route stays the writer's | optional spec review |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, or into main for an atomic Issue, evidence on the Issue | reviewer PASS |
-| Coordinate | admiral | captains in flight, wired Merge Sub-issues, plan amendments | each captain directs its own merge review |
+| Coordinate | the map holder, the human or an invoked admiral | captains in flight, wired Merge Sub-issues, plan amendments | each captain directs its own merge review |
 | Inquisition | issue-captain | read-only sweeps, proof tests for code hypotheses and quoted passages for prose ones, Bugs and an inquisition record | human confirms Backlog → Todo; it files rather than gates |
 | Land | the human | the feature branch merged into main | the human's own hands |
-| Walkthrough | admiral with the human | inspected landing, findings as Issues in the same Project | an empty walkthrough closes the Project |
+| Walkthrough | the map holder, the human or an invoked admiral, with the human | inspected landing, findings as Issues in the same Project | an empty walkthrough closes the Project |
 
 Some work has no stage of its own: chief-of-staff triages the human's attention and never delivers,
 and any session may reach for self-improvement, writing-for-agents and diagnosing-bugs; bro is the human's
@@ -40,8 +40,8 @@ corrective for agent-speak, at any stage.
 - **Methods** are plain skills — reference and procedure a session applies inside its own thread, never a separate
   session.
 - **Human commands** are invoked by the human typing their name, and by nothing else. For the
-  post-landing tour, the admiral opens the Walkthrough Issue and asks the human to invoke
-  `walkthrough` in that same session before facilitating it.
+  post-landing tour, the map holder — an invoked admiral, or the human itself — opens the Walkthrough
+  Issue and asks the human to invoke `walkthrough` in that same session before facilitating it.
 
 The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder — see
 [Scaffold and Customization](./scaffold-and-customization.md).

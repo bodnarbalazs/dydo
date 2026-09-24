@@ -32,7 +32,8 @@ sight, and hand back every judgement call with a recommendation.
    still unclassified.
 2. **Report the three lists, in this order.** *Answer needed*: the open `Question` Issues in `Todo`,
    ordered by priority, a released Issue's blocker among them. *Approval needed*: a plan at its
-   passing commit, waiting on the human's word in the admiral's session, and an Inquisition filed in
+   passing commit, waiting on the human's word in the map holder's session — the human's own when no
+   admiral is invoked, an invoked admiral's otherwise — and an Inquisition filed in
    `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Issue and each atomic
    Issue in `Ready to Merge`, waiting on the human's click, and the Walkthrough Issue after a
    landing. The human's queue is these and never the assignee filter. Lead with meaning: keep an
@@ -54,10 +55,11 @@ sight, and hand back every judgement call with a recommendation.
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free
    of a second status board. Done when the board reads true and every orphan is cleared or named
    with the reason it survives.
-6. **Route what is not yours.** Delivery is the admiral's: stage what its Project needs on the
-   Project, and tell the human, whose word is the admiral's wake. Friction that keeps recurring
-   across sessions goes to `self-improvement` with the occurrences named. Done when everything you
-   did not close has a named owner.
+6. **Route what is not yours.** Delivery belongs to the Project's map holder — an invoked admiral, or
+   the human doing it directly when none is invoked: stage what its Project needs on the Project,
+   and tell the human, whose word wakes an admiral only when one is invoked. Friction that keeps
+   recurring across sessions goes to `self-improvement` with the occurrences named. Done when
+   everything you did not close has a named owner.
 
 ## Return
 

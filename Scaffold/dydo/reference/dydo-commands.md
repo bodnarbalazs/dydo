@@ -30,19 +30,19 @@ dydo init <integration> --join       # wire this machine, or an added runtime, i
 
 Every mode writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents,
 `files-off-limits.md` and `_system/types.json`, writes the `CLAUDE.md` entry point, and adds
-`dydo/agents/` and `dydo/_system/.local/` to `.gitignore`. A documentation or entry-point file that
-already exists is left as it is. `none` stops there: no runtime integration. The runtime modes add,
-per selected host:
+`dydo/agents/`, `dydo/_system/.local/`, `/.claude/skills/` and `/.agents/skills/` to `.gitignore`. A
+documentation or entry-point file that already exists is left as it is. `none` stops there: no
+runtime integration. The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
 | `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)` and `PowerShell(dydo:*)` |
 | `claude` | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` |
-| `claude` | `.gitignore` | `.claude/settings.local.json` and `/.claude/skills/` |
+| `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `AGENTS.md` | the same entry point as `CLAUDE.md` |
 | `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools, and a `Stop` hook running `dydo guard --stop` |
 | `codex` | `.codex/config.toml` | `[agents]` with `max_depth = 3` and `max_concurrent_threads_per_session = 16` |
-| `codex` | `.gitignore` | `/.agents/skills/` |
+| `codex` | `.gitignore` | `/.claude/skills/` and `/.agents/skills/` |
 
 `all` selects both hosts. Only tool calls the hook's matcher names reach `dydo guard`. When
 `.claude/settings.json` or `.codex/config.toml` already holds a conflicting value for a key init
@@ -57,9 +57,8 @@ dydo does not compile or install skills, and none ship with the package. A skill
 `skills/<category>/<name>/`: copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` (the
 MIT notices of the adapted skills travel with them) from the dydo repository into the project root,
 commit them, and run `node setup-skills.mjs` to create the host discovery links. The script always
-creates both `.claude/skills/` and `.agents/skills/`; init ignores only the wired host's folder (the
-`.gitignore` rows above), so a single-host project adds the other folder's line itself, or wires both
-hosts with `all`.
+creates both `.claude/skills/` and `.agents/skills/`, and init always gitignores both (the
+`.gitignore` rows above), in every mode including `none`.
 
 ---
 

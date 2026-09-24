@@ -1028,27 +1028,28 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Init_Claude_GitignoresClaudeSkillProjection()
+    public async Task Init_Claude_GitignoresBothSkillProjections()
     {
-        // setup-skills.mjs projects skills into .claude/skills/ for Claude; that's host-local
-        // discovery state, not source, and must never ride a commit.
+        // setup-skills.mjs always creates BOTH .claude/skills/ and .agents/skills/ regardless of
+        // which host is wired; that's host-local discovery state, not source, and must never ride
+        // a commit — for either host.
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
         AssertFileContains(".gitignore", "/.claude/skills/");
-        Assert.DoesNotContain("/.agents/skills/", ReadFile(".gitignore"));
+        AssertFileContains(".gitignore", "/.agents/skills/");
     }
 
     [Fact]
-    public async Task Init_Codex_GitignoresCodexSkillProjection()
+    public async Task Init_Codex_GitignoresBothSkillProjections()
     {
-        // setup-skills.mjs projects skills into .agents/skills/ for Codex; same host-local
-        // discovery state as Claude's, gitignored the same way.
+        // setup-skills.mjs always creates BOTH .claude/skills/ and .agents/skills/ regardless of
+        // which host is wired, so both must be gitignored even on a codex-only init.
         var result = await InitProjectAsync("codex");
 
         result.AssertSuccess();
         AssertFileContains(".gitignore", "/.agents/skills/");
-        Assert.DoesNotContain("/.claude/skills/", ReadFile(".gitignore"));
+        AssertFileContains(".gitignore", "/.claude/skills/");
     }
 
     [Fact]
@@ -1062,14 +1063,17 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Init_None_DoesNotGitignoreSkillProjections()
+    public async Task Init_None_GitignoresBothSkillProjections()
     {
+        // setup-skills.mjs always creates both projection folders even when no host is wired, so
+        // 'none' mode must still gitignore both — otherwise whichever host a developer later uses
+        // locally leaves an untracked folder easy to commit by accident.
         var result = await InitProjectAsync("none");
 
         result.AssertSuccess();
         var gitignore = ReadFile(".gitignore");
-        Assert.DoesNotContain("/.claude/skills/", gitignore);
-        Assert.DoesNotContain("/.agents/skills/", gitignore);
+        Assert.Contains("/.claude/skills/", gitignore);
+        Assert.Contains("/.agents/skills/", gitignore);
     }
 
     #endregion
@@ -1144,17 +1148,18 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Init_Join_Codex_AddsGitignoreEntryForSkillProjection()
+    public async Task Init_Join_Codex_KeepsBothGitignoreEntriesAfterJoin()
     {
-        // The join gap this closes: UpdateGitignore used to live only inside the
-        // `if (integrations.Contains("claude"))` block, so a codex-only --join on an
-        // already-claude-inited project never touched .gitignore at all.
+        // Both skill-projection entries are unconditional now (added at init time regardless of
+        // mode), so a later codex --join must find them already present and stay idempotent
+        // rather than duplicating or dropping either line.
         await InitProjectAsync("claude");
 
         var result = await JoinProjectAsync("codex");
 
         result.AssertSuccess();
         AssertFileContains(".gitignore", "/.agents/skills/");
+        AssertFileContains(".gitignore", "/.claude/skills/");
     }
 
     #endregion
@@ -1221,6 +1226,22 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Equal(1, gitignore.Split(".claude/settings.local.json").Length - 1);
         Assert.Equal(1, gitignore.Split("dydo/agents/").Length - 1);
         Assert.Equal(1, gitignore.Split("dydo/_system/.local/").Length - 1);
+    }
+
+    [Fact]
+    public async Task Init_Join_None_TwiceDoesNotDuplicateGitignoreEntries()
+    {
+        // The skill-projection entries are now unconditional even in 'none' mode; repeated
+        // no-op joins in 'none' mode must not duplicate them either.
+        await InitProjectAsync("none");
+        await JoinProjectAsync("none");
+
+        var result = await JoinProjectAsync("none");
+
+        result.AssertSuccess();
+        var gitignore = ReadFile(".gitignore");
+        Assert.Equal(1, gitignore.Split("/.claude/skills/").Length - 1);
+        Assert.Equal(1, gitignore.Split("/.agents/skills/").Length - 1);
     }
 
     #endregion

@@ -265,21 +265,21 @@ Step by step, with the Linear status each step leaves behind:
     `Implementing`, whatever it found.
 11. **Offer.** The captain pushes the branch, opens the PR into the feature branch with the block in
     its body, sets `Ready to Merge`, and returns `done <key>: PR ready`.
-12. **Merge.** When the Merge Sub-issue's blocker clears, the previous Issue's merge, the admiral
+12. **Merge.** When the Merge Sub-issue's blocker clears, the previous Issue's merge, the map holder
     resumes the captain with one word; when the next PR in plan order is not ready and a ready one
-    does not depend on it, the admiral re-wires the order first. Its code-writer merges with `--no-ff`, a
+    does not depend on it, the map holder re-wires the order first. Its code-writer merges with `--no-ff`, a
     resolution that refactored leaving its code no worse than either side, before a fresh `reviewer(merge)` judges the integrated feature; PASS sets the Sub-issue and the primary `Done`.
     The captain cleans up and returns `done <key>: merged`. PR by PR, in plan order, never batched.
-13. **Inquisition (rare).** The admiral files an Inquisition Issue with scope and cost in `Backlog`;
-    the human confirms by moving it to `Todo` and telling the admiral; a captain runs it and files
-    Bugs, which land through the normal loop before the landing. Section 6.6.
-14. **Land.** The admiral files the landing Merge Issue; its captain directs a code-writer to merge `main` into
+13. **Inquisition (rare).** The map holder files an Inquisition Issue with scope and cost in `Backlog`;
+    the human moves it to `Todo` and tells an invoked admiral, or cancels; the map holder commissions
+    a captain who runs it and files Bugs, which land through the normal loop before the landing. Section 6.6.
+14. **Land.** The map holder files the landing Merge Issue; its captain directs a code-writer to merge `main` into
     the feature, a resolution that refactored leaving its code no worse than either side, verifies combined gates, and obtains the merge review that proves the plan's acceptance criteria, opens
     the PR into `main`, sets `Ready to Merge`, and prepares the walkthrough. The human clicks, one
     Project at a time; the PR lands as a merge commit.
-15. **Walk through.** The admiral commissions the landing Captain to clean up after the human
+15. **Walk through.** The map holder commissions the landing Captain to clean up after the human
     lands, opens the Walkthrough Issue and asks the human to invoke `walkthrough` in the same
-    session before facilitating it. Findings become Issues; the admiral commissions the first fix
+    session before facilitating it. Findings become Issues; the map holder commissions the first fix
     Captain to re-cut the feature from `main` under the same name. Nothing found sets the Project
     `Completed`, with the landing Captain's artifact cleanup confirmed.
 
@@ -543,8 +543,8 @@ flowchart TD
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
 
-  AD[admiral: the feature is integrated]:::officer -->|Inquisition Issue in Backlog: scope, parts, lenses, cost| H([human]):::human
-  H -->|moves it to Todo and tells the admiral, which commissions, or cancels it| IC[issue-captain of the inquisition]:::officer
+  AD[map holder: the human, or an admiral the human invoked; the feature is integrated]:::officer -->|Inquisition Issue in Backlog: scope, parts, lenses, cost| H([human]):::human
+  H -->|moves it to Todo and tells an invoked admiral, or cancels; the map holder commissions| IC[issue-captain of the inquisition]:::officer
   IC -->|inquisition branch off the feature SHA, never merged| BR[(inquisition/slug)]
   IC -->|contracts it: the parts, the lenses, the shape of a hypothesis| SP[(the Inquisition Issue)]
   IC --> P1[inquisitor: module A]:::crew
@@ -556,7 +556,7 @@ flowchart TD
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
   IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner, or quoted passages| BUG[(Bug Issues in Todo, under the Project)]
   IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::officer
-  REL -->|released &lt;key&gt;: record delivery wakes admiral| AD2[admiral]:::officer
+  REL -->|released &lt;key&gt;: record delivery wakes the map holder| AD2[map holder]:::officer
   AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and navigation paths]:::officer
   RC --> DW[docs-writer on the record Feature branch]:::crew
   DW --> RV[docs review, then final Merge Sub-issue into retained feature]
@@ -566,7 +566,7 @@ flowchart TD
   BUG -->|the normal loop, a captain each, before the landing| FIX[fixes through PR, review, Merge Sub-issue]
 ```
 
-The contract: the admiral proposes by filing the Inquisition Issue in `Backlog` with the parts and
+The contract: the map holder proposes by filing the Inquisition Issue in `Backlog` with the parts and
 lenses it wants swept and the cost; the human confirms by moving it to `Todo`, which is the gate DR
 045 reserves; the captain claims it like any Issue and works on `inquisition/<slug>`, cut from the
 integrated feature SHA and deleted when the Issue is `Done`, so nothing on it can leak into the
@@ -576,7 +576,7 @@ red if the hypothesis holds, while one in prose, docs or a prompt file is proved
 passages quoted at `file:line` on the feature SHA, with no test and no proof branch; a confirmed
 hypothesis is no longer a hypothesis and joins the findings; the captain deduplicates and files one
 Bug per problem under the Project, with the feature as base branch and the red test's commit, or the
-quoted passages, as reproduction, so each is picked up by a captain and fixed through the normal loop. The completed packet goes to the admiral, whose separate record Feature delivers
+quoted passages, as reproduction, so each is picked up by a captain and fixed through the normal loop. The completed packet goes to the map holder, whose separate record Feature delivers
 `dydo/project/inquisitions/` through its own captain, docs-writer, reviews and Merge Sub-issue.
 The [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs)
 owns the one-way blocker, release/resume, durable-content checks and independent Bug proof refs.
@@ -632,8 +632,8 @@ flowchart LR
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   B[a blocker the captain cannot clear] --> REL
-  T([the human wants to drive it]):::human -->|release, through the admiral| REL
-  D[the session dies, no return] -.->|the admiral treats it as a release without the push| REL
+  T([the human wants to drive it]):::human -->|release, through the map holder| REL
+  D[the session dies, no return] -.->|the map holder treats it as a release without the push| REL
   REL[the captain releases: branch pushed, worktree removed, parent to Todo, unassigned, blocker wired]:::officer --> REC[(the record: every hop's SHA, the last one is the resume point)]
   REC -->|blocker cleared, next wake| RC[a fresh captain resumes from the branch]:::officer
   REC -->|a top-level captain session| H2([the human drives it]):::human

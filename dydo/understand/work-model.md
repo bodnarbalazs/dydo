@@ -25,7 +25,7 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 | Coordinate | the map holder, the human or an invoked admiral | captains in flight, wired Merge Sub-issues, plan amendments | each captain directs its own merge review |
 | Inquisition | issue-captain | read-only sweeps, proof tests for code hypotheses and quoted passages for prose ones, Bugs and an inquisition record | human confirms Backlog → Todo; it files rather than gates |
 | Land | the human | the feature branch merged into main | the human's own hands |
-| Walkthrough | the map holder, the human or an invoked admiral, with the human | inspected landing, findings as Issues in the same Project | an empty walkthrough closes the Project |
+| Walkthrough | an invoked admiral with the human, or the human alone | inspected landing, findings as Issues in the same Project | an empty walkthrough closes the Project |
 
 Some work has no stage of its own: chief-of-staff triages the human's attention and never delivers,
 and any session may reach for self-improvement, writing-for-agents and diagnosing-bugs; bro is the human's

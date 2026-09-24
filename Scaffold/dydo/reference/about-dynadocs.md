@@ -67,8 +67,9 @@ exposes it flat (no category level) through Claude Code and Codex discovery root
 those roots too; that is untested, and dydo has no OpenCode init mode. There is no compile step or
 generated agent definition. The host runtime owns agent identity and orchestration.
 
-Skills do not ship with the package or `dydo init`. Copy `skills/` and `setup-skills.mjs` from the
-dydo repository into the project root, commit them, and run `node setup-skills.mjs`. `dydo init`
+Skills do not ship with the package or `dydo init`. Copy `skills/`, `setup-skills.mjs` and
+`THIRD-PARTY-NOTICES.md` (the MIT notices of the adapted skills travel with them) from the dydo
+repository into the project root, commit them, and run `node setup-skills.mjs`. `dydo init`
 and every `dydo init <integration> --join` add `/.claude/skills/` to `.gitignore` when Claude Code
 is wired and `/.agents/skills/` when Codex is, so the projections stay local.
 
@@ -140,6 +141,7 @@ project/
 |-- AGENTS.md                    # Codex entry point
 |-- setup-skills.mjs             # Copied from the dydo repository; creates the host projections
 |-- skills/                      # Copied from the dydo repository; roles/officers/, roles/crew/, engineering/, productivity/
+|-- THIRD-PARTY-NOTICES.md       # Copied from the dydo repository; MIT notices of the adapted skills
 |-- .claude/skills/              # Ignored per-skill Claude projections
 |-- .agents/skills/              # Ignored per-skill Codex projections
 `-- dydo/

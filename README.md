@@ -114,16 +114,14 @@ flowchart TD
 
   AD[admiral]:::officer <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::officer
   IC <-->|"1 write · Implementing"| CW
-  IC <-.->|"1b contract review, at the captain's discretion · Specifying, In Review, back to Implementing"| RS
-  IC <-.->|"2 extra tightening by another hand · Hardening, back to Implementing"| HD
-  IC <-->|"3 review · In Review"| RC
-  IC <-->|"4 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
+  IC <-.->|"1b contract review before any code, at the captain's discretion · In Review, then Implementing"| RS
+  IC <-->|"2 review · In Review"| RC
+  IC <-->|"3 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
   subgraph CREW [the crew]
     CW[1 code-writer<br>builds and proves the contract<br>returns implement SHA, red proof, gates]:::crew
     RS{{1b reviewer: spec<br>reads the contract text on the Issue<br>returns review block}}:::reviewer
-    HD[2 code-writer, another hand<br>returns its fix SHA, gates]:::crew
-    RC{{3 reviewer: code or docs<br>returns review block}}:::reviewer
-    MG[4 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::crew
+    RC{{2 reviewer: code or docs<br>returns review block}}:::reviewer
+    MG[3 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::crew
   end
 ```
 
@@ -168,7 +166,8 @@ The skills do not come with the npm or .NET package, and `dydo init` does not wr
 is one plain `skills/<category>/<name>/` folder in the [dydo repository](https://github.com/bodnarbalazs/dydo).
 Before the first agent session:
 
-1. Copy `skills/` and `setup-skills.mjs` from the dydo repository into the project root.
+1. Copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` from the dydo repository into
+   the project root. The notices carry the MIT licences of the adapted skills and travel with them.
 2. Commit them. They are the project's own from then on: edit them in place; nothing reconciles them
    with later dydo versions.
 3. Run `node setup-skills.mjs`. It links every skill folder, flat, into `.claude/skills/` and

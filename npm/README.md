@@ -47,12 +47,14 @@ another runtime or machine into an existing project.
 ## Skills
 
 The skills do not come with this package, and `dydo init` does not write them. Before the first
-agent session, copy `skills/` and `setup-skills.mjs` from the
+agent session, copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` (the MIT notices of
+the adapted skills travel with them) from the
 [dydo repository](https://github.com/bodnarbalazs/dydo) into the project root, commit them, and run
 `node setup-skills.mjs`. `dydo init` and every `--join` add `/.claude/skills/` to `.gitignore` when
 Claude Code is wired and `/.agents/skills/` when Codex is, so the projections stay local. Edit the
 canonical `skills/<category>/<name>/` folder directly; there is no compile step or automatic
-reconciliation. OpenCode may read the same two folders; that is untested.
+reconciliation. OpenCode may read the same two folders; that is untested, and dydo has no OpenCode
+init mode.
 
 ## Commands
 

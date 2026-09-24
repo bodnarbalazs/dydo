@@ -45,7 +45,8 @@ canonical folder is `skills/<category>/<name>/`, sorted by kind
 keeps Claude's frontmatter, resources, and Codex's `agents/openai.yaml` together. The
 dependency-free `setup-skills.mjs` walks the tree by rule — a folder holding `SKILL.md` is a skill,
 any other folder a category — and creates one directory symlink or Windows junction per skill in
-`.claude/skills/` and `.agents/skills/`, flat with no category level; OpenCode reads those two compatibility roots without a third projection. DR 047 retires
+`.claude/skills/` and `.agents/skills/`, flat with no category level. OpenCode is not a supported host: it may read those two roots, but
+that is untested, dydo has no OpenCode init mode, and setup creates no third projection. DR 047 retires
 Workflow as an operating-model concept; no workflow scripts exist. What each metadata key means is in
 [Customizing Roles](../guides/customizing-roles.md), the shapes and link rules in
 [Scaffold and Customization](./scaffold-and-customization.md).

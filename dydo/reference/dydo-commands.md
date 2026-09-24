@@ -54,9 +54,10 @@ writes the selected hosts' rows above, and the entry point when it is missing, w
 or overwriting the tree, and records the integration in `dydo.json`.
 
 dydo does not compile or install skills, and none ship with the package. A skill is one folder under
-`skills/<category>/<name>/`: copy `skills/` and `setup-skills.mjs` from the dydo repository into the
-project root, commit them, and run `node setup-skills.mjs` to create the host discovery links that
-init already ignores.
+`skills/<category>/<name>/`: copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` (the
+MIT notices of the adapted skills travel with them) from the dydo repository into the project root,
+commit them, and run `node setup-skills.mjs` to create the host discovery links that init already
+ignores.
 
 ---
 

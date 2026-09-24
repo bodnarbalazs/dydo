@@ -19,8 +19,9 @@ skill's own `resources/` beside it. The canonical tree sorts skills by kind: `<c
 `agents/openai.yaml` stay in that one folder. `node setup-skills.mjs` walks the tree by rule — a
 folder holding `SKILL.md` is a skill, any other folder a category — and projects the whole folder flat (no category level)
 into `.claude/skills/<name>` and
-`.agents/skills/<name>` with a POSIX directory symlink or Windows junction. OpenCode reads both
-compatibility roots; no `.opencode/skills` copy is created. No host transforms the body.
+`.agents/skills/<name>` with a POSIX directory symlink or Windows junction. OpenCode is not a supported
+host: it may read both roots, but that is untested, dydo has no OpenCode init mode, and no
+`.opencode/skills` copy is created. No host transforms the body.
 
 ## Links
 

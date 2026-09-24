@@ -55,12 +55,13 @@ Do this before the first agent session: the scaffolded `CLAUDE.md` and `AGENTS.m
 that thinks with the human to the `co-thinker` skill, and every role is a skill. The skills do not
 come with the npm or .NET package, and `dydo init` does not write them.
 
-1. Copy `skills/` and `setup-skills.mjs` from the
+1. Copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` from the
    [dydo repository](https://github.com/bodnarbalazs/dydo) into the project root. A skill is one
    plain `skills/<category>/<name>/` folder: the roles under `roles/officers/` and `roles/crew/`,
-   every other skill under `engineering/` or `productivity/`.
-2. Commit both. From then on they are the project's own, edited in place; there is no compile step
-   and nothing reconciles them with later dydo versions.
+   every other skill under `engineering/` or `productivity/`. The notices carry the MIT licences of
+   the adapted skills and travel with them.
+2. Commit all three. From then on they are the project's own, edited in place; there is no compile
+   step and nothing reconciles them with later dydo versions.
 3. Run `node setup-skills.mjs` from the project root. It walks the tree by rule, so a folder holding
    `SKILL.md` is a skill and any other folder a category, and links each skill flat into
    `.claude/skills/<name>/` and `.agents/skills/<name>/`. Every fresh clone runs it once; those

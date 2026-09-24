@@ -84,7 +84,7 @@ the team against it over the MCP and fix the differences. The MCP creates labels
 statuses and templates are the human's clicks, so list exactly what is missing, with the standard's
 names and order for statuses and names and colours for labels, and walk the human through it.
 
-1. **Issue statuses.** The twelve, in the standard's categories and order. Linear draws the order as
+1. **Issue statuses.** The ten, in the standard's categories and order. Linear draws the order as
    progress, so `Ready to Merge` is the last of the started ones.
 2. **Project statuses.** `Backlog`, `Planning`, `Planned`, `In Progress`, `Completed`, `Canceled`.
 3. **Labels.** The `Type` group with its ten labels and the `Mode` group with `AFK` and `HITL`,

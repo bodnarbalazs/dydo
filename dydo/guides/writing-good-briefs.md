@@ -28,11 +28,10 @@ Every implementation Issue carries five fields. They are the contract; the rest 
 | **Base branch** | the branch this one is cut from |
 
 What the Issue deliberately does **not** carry is the route. Pre-writing it ages badly and buys
-nothing: the implementing agent reads the code you were guessing about, and the spec and plan are
-written just in time by `code-writer` in its first phase, at the Issue Captain's direction — the two
-planning resolutions are in the [Linear Issue Lifecycle](../understand/task-lifecycle.md). The writer
-names route risk; the Captain may require `spec` before production when that extra gate is worth its
-cost.
+nothing: the implementing agent reads the code you were guessing about. The Issue Captain writes the
+compact acceptance contract just in time, and the route stays the writer's — the two planning
+resolutions are in the [Linear Issue Lifecycle](../understand/task-lifecycle.md). The Captain buys a
+`spec` review of the contract before any code only for one risk it records in the contract.
 
 Owned paths do double duty. They are the brief's scope and the isolation that lets Issues run in
 parallel, so two Issues in flight together own disjoint files or say plainly that they are serial. The
@@ -59,11 +58,12 @@ a product decision to finish, the brief is not ready.
 
 ## What comes back
 
-The verdict is a fresh reviewer's **review block** — its fields are locked in the
-[dydo Glossary](../reference/dydo-glossary.md) — and PASS means no findings.
+The verdict is a fresh reviewer's **review block**, in the one-line form of the
+[Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence),
+and PASS means no findings.
 
-Every reviewer brief names four fields: rubric, Contract at its governing SHA, Candidate SHA and
-Base SHA. Write the brief so every field of the block can be filled from it. Gates that are not commands cannot
+Every reviewer brief names five fields: rubric, `Contract: <KEY> description as of <Linear updatedAt>`,
+Candidate SHA, Base SHA and the writer's `IMPLEMENTED` line. Write the brief so every field of the block can be filled from it. Gates that are not commands cannot
 be rerun; an outcome with no observable form cannot be judged; a candidate with no owned paths has no
 boundary to be judged against.
 

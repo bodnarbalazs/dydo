@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: A contracted Issue to build, a review FAIL to close, a merge to perform, landed code to tighten, or a hypothesis to prove or refute with one test.
+description: A contracted Issue to build, a review FAIL to close, a merge to perform, or a hypothesis to prove or refute with one test.
 ---
 
 <!-- Test-driven method adapted from mattpocock/skills tdd at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
@@ -17,12 +17,13 @@ Red you can check, green only from code.
 
 ## Boundary
 
-The Issue Captain owns status, records and integration. Missing scope or an open crossroads returns
-to it with what you searched.
+The Issue Captain owns status, records and integration. Missing scope, a hard unknown or an open
+crossroads returns to it with what you searched.
 
 ## Before the first edit
 
-Prove these checks from the working-tree contract; comment on a failure and stop:
+On an `implement` or `fix` hop, prove the working-tree contract's checks; return a failure to the
+captain and stop:
 
 1. `HEAD` is on the relevant Issue or Sub-issue branch.
 2. The repository root is the isolated worktree, not the main checkout.
@@ -30,8 +31,11 @@ Prove these checks from the working-tree contract; comment on a failure and stop
 4. The worktree is clean.
 5. Every path the work item will touch is in the Issue's owned paths.
 
+Merge proves the pins in [merge](resources/merge.md); proof-only, `HEAD` on its brief's child branch
+off the audit SHA, a clean worktree and only the test path touched.
+
 Commits touch owned paths only. Each hop ends on one commit named `<KEY> <hop>: <what>`, where the
-hop is `implement`, `fix` after a FAIL, or `merge`.
+hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> proof: <hypothesis>`.
 
 ## Bug or Feature
 
@@ -42,7 +46,7 @@ hop is `implement`, `fix` after a FAIL, or `merge`.
   reaches, keep one failing line each, restore.
 - **Merge**: [merge](resources/merge.md).
 - **Prototype**: load `prototype`; the human's verdict is its review.
-- **Proof-only**: source read-only; commit and run only the one test deciding the hypothesis;
+- **Proof-only**: run only the one test deciding the hypothesis;
   return to the inquisition's captain `confirmed` with its red-test SHA, `not reproduced`, or
   `inconclusive` with the deciding observation.
 
@@ -58,7 +62,6 @@ Load a skill when its trigger fires:
 - `diagnosing-bugs`: a Bug lacks a red reproduction.
 - `codebase-design`: you design a seam or interface.
 - `domain-modeling`: you touch a glossary term or Decision Record.
-- `research`: a fact is missing.
 - `writing-for-agents`: you edit a skill or entry file.
 - `prototype`: a design question is open; stop and return it.
 
@@ -78,19 +81,16 @@ cognitive-complexity finding in a method you changed. Mutation is the reviewer's
 ## Return
 
 Before code, post only when the work splits into disjoint lanes or the contract is inexact: one
-comment naming them, then stop.
+comment naming them, then stop. Sign every comment and return `code-writer/model: <truthful identity>`.
 
-Outside proof-only, return to the Issue Captain in the form from the workspace standard, proof
-carrying the red lines and gates run with exits:
+Outside proof-only, return to the Issue Captain in the standard's form, proof carrying the red
+lines and gates run with exits:
 
 `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 
-Name any risk worth a spec review or tightening pass.
+## When you are the fix hop
 
-## When you are the fix hop or the tightening pass
-
-As the fix hop, the FAIL block is your contract: close its findings and nothing else. As the
-tightening pass, change no behaviour; rerun the tests the change reaches. Fix at the root: a gap
+The FAIL block is your contract: close its findings and nothing else. Fix at the root: a gap
 gets its test first; cut what the contract does not need; split or flatten what is complex; hide
 what leaks across a seam; a surviving mutant sharpens its test or deletes its code; a surviving
 example value gets its step wired.

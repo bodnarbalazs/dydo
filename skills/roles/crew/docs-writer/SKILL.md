@@ -9,7 +9,8 @@ Make one documentation change true.
 
 ## Must-Reads
 
-1. The owning Linear Issue and its linked Project plan, when present.
+1. The owning Linear Issue and its linked Project plan, when present, and on a fix hop the FAIL
+   block that sent you.
 2. From the repository root, read `dydo/reference/writing-docs.md`.
 3. From the repository root, read `dydo/understand/about.md`.
 4. From the repository root, read `dydo/guides/working-tree-contract.md`.
@@ -29,7 +30,7 @@ words.
 2. **Write it in its one home.** Concepts in `understand/`, procedures in `guides/`, exact contracts
    in `reference/`, delivery history under `project/`; a meaning another document owns is a link.
    A dydo document takes its frontmatter and links from writing-docs.md; an agent-facing
-   document (a skill template, its resources, an entry point) is written by `writing-for-agents`.
+   document (a skill, its resources, an entry point) is written by `writing-for-agents`.
    Cut whatever the code already states plainly. Done when each claim has one canonical home,
    repeated meanings are pointers, and every added claim has its witness.
 3. **Edit the source; regeneration writes the rest.** Author navigation pages when the docs need them;
@@ -40,7 +41,7 @@ words.
    contract and the Inquisition's pinned evidence packet. Work on that Feature's branch, following
    the working-tree contract's retention route: a document in
    `dydo/project/inquisitions/` naming scope and feature SHA, parts and lenses swept, findings,
-   hypotheses with verdicts, and Bugs filed with their reproduction commits. Done when every claim
+   hypotheses with verdicts, and Bugs filed with their reproduction commits or quoted passages. Done when every claim
    traces to the packet, with an empty section explicitly recorded as such; return the exact path
    and blob or content digest for the delivery review and the Inquisition captain's later check.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then this hop's

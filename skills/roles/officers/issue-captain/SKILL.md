@@ -30,9 +30,9 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
   established lifecycle handling, then return or release the concrete limitation when captain-owned
   work cannot run. Every crew return comes back to you.
 - **Delivery scale:** The default crew is one author — `code-writer`, or `docs-writer` for a
-  documentation change — then one fresh, independent whole-change reviewer. Add a spec review or a
-  separate tightening pass only with one short, concrete risk reason; persistence, migrations,
-  permissions and uncertain native interfaces are examples that need stronger stages. This never
+  documentation change — then one fresh, independent whole-change reviewer. Add a spec review of
+  the contract before any code only with one short, concrete risk reason; persistence, migrations,
+  permissions and uncertain native interfaces are examples of such a risk. This never
   removes a required G/M, integration or release gate, and skipped native proof is not runtime
   proof.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
@@ -59,8 +59,9 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
    repeating it. Say in it whether the Issue carries Gherkin: user journeys yes, backend processes
-   where workable, some code never. `Specifying` is the park for a spec review you have bought: brief
-   a fresh `reviewer(spec)` on the contract text; either verdict returns it to `Implementing`.
+   where workable, some code never. When one risk buys a spec review, record that risk in the
+   contract, brief a fresh `reviewer(spec)` on the contract text and set `In Review`; either verdict
+   sets `Implementing`.
    **Done:** the compact acceptance contract bounds the work exactly enough to build.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Where the writer's comment names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
@@ -72,8 +73,7 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
 4. **Direct the crew.** Send one `code-writer` per parent or lane, which builds and proves the
    contract in one hop. Route docs to `docs-writer`; the code-writer uses
    `diagnosing-bugs` when a defect lacks a red reproduction. Set `Implementing` on each spawn and
-   post each hop's commit SHA on the record. To have the landed code tightened by another hand,
-   park the Issue at `Hardening` and send a fresh `code-writer` for that pass alone. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
+   post each hop's commit SHA on the record. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
    runs the normal docs delivery chain as below.
    The writer's `IMPLEMENTED` return carries its red proof. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
@@ -91,10 +91,12 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
    discovery cheaply; never interrupt a quiet healthy test merely because it is silent.
    **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
-5. **Review.** Brief a fresh `reviewer` with rubric, `Contract` at the compact acceptance-contract
-   SHA, plus Candidate SHA and Base SHA; set `In Review`. Treat FAIL as binding: every finding goes
-   back to a fresh `code-writer` at `Implementing`, whatever it is, and a wrong scenario is amended
-   by that fix hop when the FAIL block names it.
+5. **Review.** Brief a fresh `reviewer` with rubric,
+   `Contract: <KEY> description as of <Linear updatedAt>`, Candidate SHA, Base SHA and the writer's
+   `IMPLEMENTED` line; set `In Review`. Treat FAIL as binding: every finding goes back to a fresh
+   author of the change's kind — `code-writer`, or `docs-writer` for a documentation change — at
+   `Implementing`, whatever it is, and a wrong scenario is amended by that fix hop when the FAIL
+   block names it.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
    full strength whatever the work below them cost.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
@@ -106,18 +108,20 @@ the code-writer finds the route. Your crew works; you remain accountable for eve
    a distinct mandatory integration or release boundary. Judge a hop on the proof it ran instead of
    scheduling a suite again.
 6. **Offer.** Direct each passed lane's Merge Sub-issue with one `code-writer`: it maps conflicts
-   and combined gates, performs the merge, and tightens in place when the resolution refactored.
-   Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-Issue
+   and combined gates and performs the merge; a resolution that refactored leaves its code no worse
+   than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-Issue
    PASS once all lanes are in. The full suites and the Issue's whole gate set
    run here, again at each Merge Sub-issue's combined gates and at the landing; within one such run
    each suite executes once. **Done:** push the branch, open the PR with its PASS block on the
-   record and in the body, set `Ready to Merge`, and return `done <key>: PR ready`.
+   record and in the body; on an atomic Issue, also read CI green with `gh pr checks`; set
+   `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-issue's blocker clears, resume from the record and direct
    its chain as above into the contract's target. The parent stays `Ready to Merge` while the
    Sub-issue runs; a Merge Sub-issue never enters that status. A landing Merge instead offers its
-   reviewed PR and waits for the human's merge-commit click. **Done:** merge review passes, the
-   operation and source Issue close `Done`, captain-owned worktrees/branches are cleaned, and you
-   return `done <key>: merged`. On the admiral's landing-cleanup commission, remove the merged
+   reviewed PR and waits for the human's merge-commit click. An atomic Issue has no Merge
+   Sub-issue: the human clicks its PR, then you resume from the record. **Done:** merge review
+   passes, or the human's click has landed the atomic Issue; the operation and source Issue close
+   `Done`, captain-owned worktrees/branches are cleaned, and you return `done <key>: merged`. On the admiral's landing-cleanup commission, remove the merged
    feature branch and report completion.
 
 ## Kinds and failure paths
@@ -132,15 +136,14 @@ each stage its own contract, chain, branch and worktree; create a Merge Sub-issu
 integration. Keep the joined acceptance and final review on the parent.
 
 A Prototype
-uses `prototype`, has no tightening pass, and closes on the human's verdict with its winning branch linked,
-never submitted. Enablement uses `wizard` for the steps only the human can perform.
+uses `prototype` and closes on the human's verdict with its winning branch linked, never submitted. Enablement uses `wizard` for the steps only the human can perform.
 
 An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. Set
 `In Progress` on the human's confirmation, contract it by [inquisition](resources/inquisition.md),
 then brief read-only inquisitors sweeping parts/lenses and proof-only
-code-writers testing hypotheses on child proof branches. Deduplicate confirmed findings into Bugs
-with their red-test SHAs and pin the completed packet on the Issue. Retain each open Bug's
-reproduction on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
+code-writers testing code hypotheses on child proof branches. Deduplicate confirmed findings into Bugs
+with their red-test SHAs, or a prose finding's quoted passages, and pin the completed packet on the
+Issue. Retain each open Bug's reproduction commit on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
 in the working-tree contract: record the delivery need, push/post the resume state and release before the record Feature
 or blocker exists. Return `released <key>: record delivery` to wake the admiral, which creates and
 wires that delivery before generic pickup. Resume after its delivery to verify Bugs, the record's
@@ -169,5 +172,6 @@ floor; a host that can resume the same captain may do so. Takeover always goes t
 ## Return
 
 One line to the spawner: `done <key>: PR ready`, `done <key>: merged`, or
-`released <key>: <reason>`; for a non-merging Type, `done <key>`. Everything else lives on the
-record. A top-level captain returns in its own session; the human tells the admiral.
+`released <key>: <reason>`; for a non-merging Type, `done <key>`. An atomic Issue returns
+`done <key>: PR ready` at `Ready to Merge` and `done <key>: merged` after the human's click and
+cleanup. Everything else lives on the record. A top-level captain returns in its own session; the human tells the admiral.

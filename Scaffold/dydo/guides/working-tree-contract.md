@@ -29,9 +29,10 @@ and what they hand back. The `chief-of-staff` audits failures of this contract, 
 |---|---|---|---|---|
 | Project | `main` | `feature/<project-slug>` | `main` | human |
 | Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | its captain-directed Merge Sub-issue |
-| Atomic Issue | `main` | `DYD-123-<slug>` | `main` | its captain-directed Merge Sub-issue |
+| Atomic Issue | `main` | `DYD-123-<slug>` | `main` | human, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-issue |
 | Lane Sub-issue | its parent Issue branch | `DYD-124-<slug>` | its parent Issue branch | its captain-directed Merge Sub-issue |
 | Inquisition Issue | integrated feature SHA | `inquisition/<slug>` | none; never merges | — |
+| Proof branch | the Inquisition's audit SHA | a child branch named in the proof-only brief | none; never merges | — |
 | Prototype Issue | its feature branch, else `main` | `prototype/<name>` | none; never merges | — |
 
 `DYD-123` is an example: use the Issue's key so Linear attaches the branch and PR. The host may
@@ -43,19 +44,19 @@ provide the Issue worktree; otherwise place it beside the repository at
 | Stage | Owner | Required state |
 |---|---|---|
 | Open the Project | `admiral`, commissioning the first Issue Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every Issue carries outcome, owned paths, blockers, exact gates and base branch. Only then is an Issue pickable. |
-| Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Implementing` when it spawns the code-writer. |
+| Claim the Issue | `issue-captain` | Issue is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the Issue. The captain sets `Implementing` when it spawns the author, a code-writer or a docs-writer. |
 | Resolve the work | `issue-captain` | The captain's compact acceptance contract names the lanes, or none; when the work splits beyond it, the writer's one pre-code comment names them. Parallel crew receive disjoint paths, the Issue's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-issues. |
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
-| Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, or `merge`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
+| Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, `merge`, or `proof`, which commits as `<KEY> proof: <hypothesis>`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
-| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs a code-writer — conflicts and combined gates mapped, the merge performed, the resolution tightened where it refactored — then a fresh merge reviewer, preserving the merge commit and hop SHAs; the admiral wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
-| Integrate an Atomic Issue | `issue-captain` | The final Merge Sub-issue merges to main, reruns combined gates and obtains fresh merge review, as at every other level. |
+| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs a code-writer — conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side — then a fresh merge reviewer, preserving the merge commit and hop SHAs; the admiral wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
+| Integrate an Atomic Issue | `issue-captain` | No Merge Sub-issue: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the human clicks the merge. The captain then closes the Issue `Done` and cleans up. |
 | Land the Project | human | The landing Merge Issue prepares main into feature and obtains acceptance PASS; the human clicks feature into main as a merge commit, never squash. |
 
 ## Before the first edit
 
-Before the first edit in a parent Issue or lane, its assigned writer proves all five checks and comments
-on that work item instead of working around a failure:
+Before the first edit of an `implement` or `fix` hop in a parent Issue or lane, its assigned writer
+proves all five checks and returns a failure to its Issue Captain instead of working around it:
 
 1. `HEAD` is on the relevant Issue or Sub-issue branch.
 2. The repository root is the isolated worktree, not the main checkout.
@@ -63,18 +64,25 @@ on that work item instead of working around a failure:
 4. The worktree is clean.
 5. Every path the work item will touch is in the Issue's owned paths.
 
+Merge work proves instead the pins of the code-writer's `merge` resource: source and target at their
+SHAs, the source's PASS, the governing contract and the combined gates. Proof-only work proves three
+things: `HEAD` is on a child branch cut from the audit SHA and named in its brief, the worktree is
+clean, and only the test path is touched.
+
 ## Delivery scale and evidence
 
 The default crew is one author — `code-writer`, or `docs-writer` for a documentation change — and
-one fresh independent whole-change reviewer. Add a spec review or a separate hardening pass only
-when one short, concrete risk reason calls for it; persistence, migrations, permissions and
-uncertain native interfaces are examples that need stronger stages. Keep one compact acceptance contract and point to evidence rather than copying
+one fresh independent whole-change reviewer. Add a spec review of the contract before any code only
+when one short, concrete risk reason, recorded in the contract, calls for it; persistence, migrations,
+permissions and uncertain native interfaces are examples of such a risk. Keep one compact acceptance contract and point to evidence rather than copying
 it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
 proof is never runtime proof.
 
 Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
-discovery. A crew hop and its review prove with the tests relevant to the change and the cheap
-static checks; the full suites and the whole gate set run at the Issue's final gates, its Merge
+discovery. A `code-writer` hop runs the tests relevant to the change while building, then the full
+suite and static gate of each changed stack once before it returns, and its review judges that run.
+Other crew hops and their reviews prove with the tests relevant to the change and the cheap static
+checks. The full suites and the whole gate set run at the Issue's final gates, its Merge
 Sub-issue's combined gates and the landing. Within one such gate run, each suite executes once.
 Record every gate result with candidate, command, environment or session, exit and result
 location; do not interrupt a quiet healthy test merely because it is silent. Reuse exact-candidate
@@ -115,7 +123,9 @@ interface shapes early.
 The captain offers a PR with its PASS block, sets `Ready to Merge`, and returns
 `done <key>: PR ready`. It resumes when its Merge Sub-issue's native blocker clears, or a fresh
 captain takes the record, and returns `done <key>: merged` after merge PASS and cleanup. The record
-holds the detail; each crew hop posts its SHA. A Merge Sub-issue never enters `Ready to Merge`.
+holds the detail; the captain posts each crew hop's SHA. A Merge Sub-issue never enters `Ready to Merge`.
+An atomic Issue has no Merge Sub-issue: its captain sets `Ready to Merge` once CI is green, and after
+the human's click closes it `Done`, cleans up and returns `done <key>: merged`.
 
 For an uncleared blocker or human takeover: push, post the resume SHA, remove the worktree, set the
 parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
@@ -131,7 +141,7 @@ use a following fix Issue. Each corrected candidate gets fresh merge review.
 
 The Inquisition captain pins the completed evidence packet on its Issue: audited feature SHA,
 scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
-reproduction SHAs. The captain pushes and posts its resume state, removes its worktree, sets the
+reproduction SHAs, or a prose Bug's quoted passages. The captain pushes and posts its resume state, removes its worktree, sets the
 Inquisition `Todo`, unassigns and returns `released <key>: record delivery`. The record Feature and
 its blocker do not exist yet; this release return is the admiral's ordinary wake.
 
@@ -150,8 +160,9 @@ retained feature, and records the delivery merge's ancestry/reachability there. 
 close `Done`, return `done <key>` and delete the audit branch. A record present only on an unmerged
 audit branch cannot satisfy this check.
 
-Before release or audit cleanup, every open Bug's reproduction SHA must remain reachable from a
-pushed named ref independent of the audit branch, linked on that Bug. The Inquisition captain owns
+Before release or audit cleanup, every open Bug with a reproduction commit keeps its SHA reachable
+from a pushed named ref independent of the audit branch, linked on that Bug. A prose Bug carries
+its quoted passages instead and has no ref to retain. The Inquisition captain owns
 that retention until the Bug captain records adoption of the reproduction and transfer of cleanup
 responsibility. Audit cleanup never deletes those refs; they remain input to each Bug's normal
 chain. This is ordinary Feature delivery and release, not a new Type or a serial-lane exception.
@@ -163,7 +174,7 @@ chain. This is ordinary Feature delivery and release, not a new Type or a serial
 | Parent Issue and lane worktrees | `issue-captain` | Every worktree it or its crew created is removed. A spawned Issue Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-issue branch | `issue-captain` | The branch is deleted after it passes review and is integrated into the parent Issue branch. |
 | Merged Project-Issue branch | `issue-captain` | The branch is deleted after the merge. |
-| Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the merge. |
+| Merged Atomic-Issue branch | `issue-captain` | The branch is deleted after the human clicks its PR into main. |
 | Merged feature branch | `admiral`, commissioning the landing Captain | The landing Captain deletes the branch after the human lands it and reports completion. |
 | Prototype branch | `issue-captain`, tracked by the admiral | Keep the winning code linked as delivery-spec input; delete when that delivery Issue is Done or with feature cleanup. |
 | Inquisition branch | `issue-captain` | Delete at Done after the record/proof retention checks above; never merge it or delete the independently retained Bug refs. |

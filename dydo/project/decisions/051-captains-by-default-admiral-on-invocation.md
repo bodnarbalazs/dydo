@@ -88,8 +88,7 @@ map holder instead, with the admiral as an optional right hand.
 - **Adoption:** [DYD-254](https://linear.app/bodnar-balazs/issue/DYD-254/dr-051-and-its-adoption-captains-by-default-the-admiral-on-invocation)
   carries this record through the skills and documents: `wayfinder`, the admiral, the issue-captain,
   `to-project`, the new `to-issue`, the roles READMEs, the standard, control flow, the glossary, the
-  working-tree contract and the entry point. Until it lands, those still describe the planner and a
-  standing admiral.
+  working-tree contract and the entry point.
 
 ---
 

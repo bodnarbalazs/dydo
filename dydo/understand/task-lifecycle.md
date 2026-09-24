@@ -21,9 +21,9 @@ blocks planning or implementation and is too big or too uncertain to settle inli
 discovery → Question Issue*: an agent in fog first runs a bounded discovery — the Decision index, the
 Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
 the question become an Issue that records what was searched and blocks every named plan or
-implementation Issue awaiting its answer. Project planners prepare Question packets for the admiral;
-every other crew member raises a hand to its captain. Captains file local Question Sub-issues; the
-admiral alone files Project-level Questions. The admiral routes AFK homework and sends only HITL judgment to the human.
+implementation Issue awaiting its answer. A crew member raises a hand to its captain. Captains file
+local Question Sub-issues; the Project's map holder, the human or an invoked admiral, alone files
+Project-level Questions. An invoked admiral routes AFK homework and sends only HITL judgment to the human.
 Facts are the agent's job; choices are the human's.
 
 Its resolution is an *answer* posted on the Issue. The answer graduates to a Decision Record only when
@@ -32,13 +32,13 @@ Decision Records carry decisions, and the two are linked rather than copied.
 
 ## Planned at two resolutions
 
-- **Project** — low resolution: destination, scope, acceptance criteria,
-  architecture-level design, the first pickable tracer-bullet Issues, and rough later bearings. When
-  the route is foggy it says so in `## Not yet specified` and files blocking Question Issues instead
-  of pretending a complete route. A fresh reviewer passes it against `project-plan` before human
-  approval; the admiral then updates the Linear map as fog clears and commissions project-planner
-  to commit dated plan amendments, returning only changes to destination,
-  scope, acceptance criteria, or governing architecture for fresh review and human approval.
+- **Project** — low resolution: the Linear Project and its Issues are the plan, charted by the map
+  holder with `wayfinder`: destination, the first pickable tracer-bullet Issues, and fog written
+  down in `## Not yet specified`, with blocking Question Issues instead of a pretended complete
+  route. Only a cross-cutting architecture contract earns a repository plan file, written by the
+  map holder; a fresh reviewer passes it against `project-plan` before human approval, and dated
+  amendments return only changes to destination, scope, acceptance criteria, or governing
+  architecture for fresh review and human approval.
 - **Issue** — high resolution, just in time: the Issue Captain's compact acceptance contract on the
   parent Issue or a direct lane Sub-issue, with its scenarios where the Issue carries Gherkin, owned
   paths and gates, exact enough to build. The spawned `code-writer` builds from it. The contract is

@@ -2,15 +2,15 @@
 
 The 29 canonical dydo skills, sorted by kind:
 
-- [`roles/`](roles/README.md) — 10 skills. The skills that carry an identity: `roles/officers/`
+- [`roles/`](roles/README.md) — 9 skills. The skills that carry an identity: `roles/officers/`
   hold something and never switch (admiral, issue-captain, chief-of-staff); `roles/crew/` are
   spawned for one bounded job and return their result to whoever sent them.
 - [`engineering/`](engineering/README.md) — 6 skills. The craft: diagnosing, shaping and designing
   code.
-- [`productivity/`](productivity/README.md) — 13 skills. Thinking, writing, and moving work along
+- [`productivity/`](productivity/README.md) — 14 skills. Thinking, writing, and moving work along
   with the human.
 
-10 + 6 + 13 = 29, the full canonical set.
+9 + 6 + 14 = 29, the full canonical set.
 
 `setup-skills.mjs` walks the tree by rule, not by depth: a folder holding `SKILL.md` is a skill, and
 any other folder under `skills/` is a category to walk into. It still projects every skill flat into

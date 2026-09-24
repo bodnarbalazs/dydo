@@ -9,4 +9,4 @@ Linear owns live work. Git and dydo own durable knowledge and evidence.
 - Thinking with the human? Load `co-thinker`.
 - Load any other skill when the work needs it; each skill names the next.
 
-The human hands out the officer roles by name.
+The human hands out the officer roles by name: an issue-captain by default, an admiral only when invoked.

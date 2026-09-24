@@ -24,7 +24,7 @@ header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, 
 | `tdd` | `skills/roles/crew/code-writer/SKILL.md`, `skills/roles/crew/code-writer/resources/tests.md`, `skills/roles/crew/reviewer/resources/code.md` |
 | `teach` | `skills/productivity/teach/SKILL.md`, `skills/productivity/teach/resources/mission-format.md`, `skills/productivity/teach/resources/glossary-format.md`, `skills/productivity/teach/resources/learning-record-format.md`, `skills/productivity/teach/resources/resources-format.md` |
 | `to-spec` | `skills/productivity/to-project/SKILL.md` |
-| `to-tickets` | `skills/roles/crew/project-planner/SKILL.md` |
+| `to-tickets` | `skills/productivity/to-issue/SKILL.md` |
 | `wizard` and its `template.sh` | `skills/engineering/wizard/SKILL.md`, `skills/engineering/wizard/resources/template.md` |
 | `wait-what` | `skills/productivity/bro/SKILL.md` |
 | `wayfinder` | `skills/productivity/wayfinder/SKILL.md` |

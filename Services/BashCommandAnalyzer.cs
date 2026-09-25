@@ -242,7 +242,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)")]
     private static partial Regex DirectDiskWriteRegex();
 
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d|mapper/[^\s'"";&|]+)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?!null(?:\s|$|['"";&|]))[^\s'"";&|]+", RegexOptions.IgnoreCase)]
     private static partial Regex DdDiskWriteRegex();
 
     [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase)]
@@ -342,7 +342,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s'""]+)/\.password-store(?:/|(?=\s|$|['"";&|]))", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPasswordStorePathRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s+['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass)|[^;&|\r\n]*/Applications/(?:1Password|Bitwarden|NordPass|KeePassXC)\.app)(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s+['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass)|[^;&|\r\n]*[/\s'""](?:1Password|Bitwarden|NordPass|KeePassXC)\.app)(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPasswordAppRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.

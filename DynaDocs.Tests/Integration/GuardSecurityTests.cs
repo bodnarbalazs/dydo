@@ -17,8 +17,12 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("bw export --format json")]
     [InlineData("mkfs.ext4 /dev/sda1")]
     [InlineData("dd if=/dev/zero of=/dev/mapper/vg-root")]
+    [InlineData("dd if=/dev/zero of=/dev/loop0")]
+    [InlineData("dd if=/dev/zero of=/dev/dm-0")]
     [InlineData("gpg2 --export-secret-keys ABC")]
     [InlineData("cat /Applications/Bitwarden.app/Contents/Info.plist")]
+    [InlineData("cat /tmp/Bitwarden.app/Contents/Info.plist")]
+    [InlineData("ls Bitwarden.app")]
     public async Task OndrejDenylist_HookBlocksDangerousCommand(string command)
     {
         await SetupClaimedAgent();
@@ -34,6 +38,8 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("gh auth status")]
     [InlineData("op --version")]
     [InlineData("dd if=/dev/zero of=/dev/null")]
+    [InlineData("cat /tmp/Safari.app/Contents/Info.plist")]
+    [InlineData("ls Safari.app")]
     public async Task OndrejDenylist_HookAllowsBenignCommand(string command)
     {
         await SetupClaimedAgent();

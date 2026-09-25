@@ -137,13 +137,15 @@ every exit path, including a failing suite, an exception and an interrupt; at st
 prunes any marked `dydo-test-*` snapshot older than a configurable age.
 
 Every G row therefore has a real mechanism: four test adapters, four static adapters and four
-coverage adapters. Mutation is the only unavailable capability, and it belongs to DYD-103. Its
-policy is already settled and does not wait on the adapter: DynaDocs requires no surviving or
-uncovered changed-code mutants, as the [Testing Strategy](../guides/testing-strategy.md) states it.
-Nothing here measures that today — every stack's mutation row is `unavailable` with the reason
-`Pending DYD-103`, so the gate cannot run, and cannot pass, until that Issue lands a reviewed
-mechanism. Whether a given candidate passes is what its result artifact says; no document stands in
-for a run.
+coverage adapters. Mutation is the only unavailable capability. On `dotnet`, `python` and `node` it
+belongs to DYD-103, whose policy is already settled and does not wait on the adapter: DynaDocs
+requires no surviving or uncovered changed-code mutants, as the [Testing
+Strategy](../guides/testing-strategy.md) states it. Nothing here measures that today — those three
+stacks' mutation rows are `unavailable` with the reason `Pending DYD-103`, so the gate cannot run,
+and cannot pass, until that Issue lands a reviewed mechanism. `viewer`'s mutation row is
+`unavailable` for a different reason: no TypeScript mutation mechanism is adopted, and no Issue
+currently tracks that gap. Whether a given candidate passes is what its result artifact says; no
+document stands in for a run.
 
 ---
 

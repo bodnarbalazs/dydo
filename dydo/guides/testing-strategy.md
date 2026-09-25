@@ -168,8 +168,9 @@ Amendment 2026-09-17, `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and
 every static gate and in the association manifest, and their inventory row carries
 `coverageExemption` only while their extracted modules and the drivers themselves stay associated.
 
-Two gaps are recorded rather than dropped or weakened. The first is mutation on every stack, which
-is DYD-103. The
+Two gaps are recorded rather than dropped or weakened. The first is mutation: on `dotnet`, `python`
+and `node` it is DYD-103; on `viewer` no TypeScript mutation mechanism is adopted, and no Issue
+currently tracks that gap. The
 JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
 maintained JavaScript file with no filename extension would be reported as a gap naming DYD-105
 rather than measured as less than the inventory, and no maintained JavaScript file here lacks an

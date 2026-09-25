@@ -4,14 +4,69 @@ on:
   push:
     branches: [master, main]
   pull_request:
-    branches: [master, main]
 
 jobs:
-  build:
+  viewer:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: pnpm
+          cache-dependency-path: viewer/pnpm-lock.yaml
+
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -C viewer run typecheck
+
+      - name: Lint
+        run: pnpm -C viewer run lint
+
+      - name: Test
+        run: pnpm -C viewer run test
+
+      - name: Coverage
+        run: pnpm -C viewer run coverage
+
+      - name: Build
+        run: pnpm -C viewer run build
+
+      - name: Install Playwright Chromium
+        run: pnpm -C viewer exec playwright install --with-deps chromium
+
+      - name: E2E
+        run: pnpm -C viewer run e2e
+
+      - name: Upload viewer bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: viewer-dist
+          path: viewer/dist
+          if-no-files-found: error
+
+  build:
+    needs: viewer
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download viewer bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: viewer-dist
+          path: viewer/dist
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -26,3 +81,45 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --verbosity normal
+
+  full-stack:
+    needs: viewer
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download viewer bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: viewer-dist
+          path: viewer/dist
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish dydo (linux-x64)
+        run: dotnet publish DynaDocs.csproj -c Release -r linux-x64 -o artifacts/map-e2e
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: pnpm
+          cache-dependency-path: viewer/pnpm-lock.yaml
+
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm -C viewer exec playwright install --with-deps chromium
+
+      - name: Full-stack E2E
+        run: pnpm -C viewer run e2e:full-stack

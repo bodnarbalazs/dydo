@@ -9,7 +9,8 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "build": "vite build",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:full-stack": "playwright test --project=full-stack"
   },
   "dependencies": {
     "@xyflow/react": "^12.11.6",

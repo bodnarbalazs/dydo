@@ -125,19 +125,39 @@ public class BashCommandAnalyzerTests
         Assert.False(dangerous, reason);
     }
 
-    // Matching must grow linearly with the wrapper chain: a quadratic pattern exceeds its own match
-    // timeout here and fails closed as "too complex", while a linear one stays far below it.
+    // Matching must grow linearly with the wrapper chain. Eight times the chain costs a linear matcher
+    // about eight times the time and a quadratic one about sixty-four. The ratio, not an absolute limit,
+    // decides, so coverage instrumentation (about 50x slower) cancels out; the long chain stays far
+    // below the 250ms per-pattern match timeout even instrumented. Interleaved best-of rounds damp noise.
     [Theory]
     [InlineData("sudo -a ")]
     [InlineData("env -a ")]
-    public void CheckDangerousPatterns_ThousandsOfWrapperOptions_StayWithinMatchTimeout(string wrapper)
+    public void CheckDangerousPatterns_LongWrapperOptionChain_GrowsLinearly(string wrapper)
     {
-        var command = string.Concat(Enumerable.Repeat(wrapper, 4000)) + "ls";
+        var shortChain = string.Concat(Enumerable.Repeat(wrapper, 64)) + "ls";
+        var longChain = string.Concat(Enumerable.Repeat(wrapper, 512)) + "ls";
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
 
-        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+        for (var round = 0; round < 5; round++)
+        {
+            shortBest = Min(shortBest, TimeCheck(shortChain));
+            longBest = Min(longBest, TimeCheck(longChain));
+        }
 
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(longChain);
         Assert.False(dangerous, reason);
+        var growth = longBest / shortBest;
+        Assert.True(growth < 20, $"8x chain took {growth:F1}x as long ({shortBest} -> {longBest})");
     }
+
+    private TimeSpan TimeCheck(string command)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _analyzer.CheckDangerousPatterns(command);
+        return stopwatch.Elapsed;
+    }
+
+    private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
     [Fact]
     public void CheckDangerousPatterns_MatchTimeout_FailsClosed()

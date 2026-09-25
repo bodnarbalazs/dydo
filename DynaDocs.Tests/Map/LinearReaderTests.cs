@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Map;
 
 using DynaDocs.Services.Map;
+using DynaDocs.Services.Map.Contract;
 using static LinearJson;
 
 public class LinearReaderTests

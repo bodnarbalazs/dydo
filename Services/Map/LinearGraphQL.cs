@@ -1,6 +1,7 @@
 namespace DynaDocs.Services.Map;
 
 using System.Net;
+using DynaDocs.Services.Map.Contract;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using DynaDocs.Serialization;

@@ -1,4 +1,4 @@
-namespace DynaDocs.Services.Map;
+namespace DynaDocs.Services.Map.Contract;
 
 /// <summary>
 /// One Project's work graph: its non-archived issues, the non-archived far ends outside it, and the

@@ -1,6 +1,7 @@
 namespace DynaDocs.Services.Map;
 
 using System.Text.Json;
+using DynaDocs.Services.Map.Contract;
 
 /// <summary>
 /// Reads teams, a team's projects, and one Project's work graph from Linear, fresh on every call,

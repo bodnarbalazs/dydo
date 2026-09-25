@@ -1,7 +1,7 @@
 namespace DynaDocs.Serialization;
 
 using System.Text.Json.Serialization;
-using DynaDocs.Services.Map;
+using DynaDocs.Services.Map.Contract;
 
 /// <summary>
 /// JSON context for `dydo map`: the local HTTP API the viewer reads (plan §3 "HTTP API contract")

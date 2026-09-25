@@ -883,7 +883,7 @@
       ]
     },
     {
-      "module": "Services/Map/GraphQLRequest.cs",
+      "module": "Services/Map/Contract/GraphQLRequest.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
       ]
@@ -914,62 +914,62 @@
       ]
     },
     {
-      "module": "Services/Map/MapError.cs",
+      "module": "Services/Map/Contract/MapError.cs",
       "tests": [
         "DynaDocs.Tests/Map/MapServerTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapGraph.cs",
+      "module": "Services/Map/Contract/MapGraph.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs",
         "DynaDocs.Tests/Map/MapServerTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapGraphProject.cs",
+      "module": "Services/Map/Contract/MapGraphProject.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapIssue.cs",
+      "module": "Services/Map/Contract/MapIssue.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapIssueProject.cs",
+      "module": "Services/Map/Contract/MapIssueProject.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapIssueState.cs",
+      "module": "Services/Map/Contract/MapIssueState.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapIssueTeam.cs",
+      "module": "Services/Map/Contract/MapIssueTeam.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapProject.cs",
+      "module": "Services/Map/Contract/MapProject.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapProjectStatus.cs",
+      "module": "Services/Map/Contract/MapProjectStatus.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
     },
     {
-      "module": "Services/Map/MapRelation.cs",
+      "module": "Services/Map/Contract/MapRelation.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]
@@ -981,7 +981,7 @@
       ]
     },
     {
-      "module": "Services/Map/MapTeam.cs",
+      "module": "Services/Map/Contract/MapTeam.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
       ]

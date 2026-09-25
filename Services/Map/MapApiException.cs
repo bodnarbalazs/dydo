@@ -1,6 +1,7 @@
 namespace DynaDocs.Services.Map;
 
 using System.Text.Json;
+using DynaDocs.Services.Map.Contract;
 using DynaDocs.Serialization;
 
 /// <summary>

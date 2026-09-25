@@ -1,4 +1,4 @@
-namespace DynaDocs.Services.Map;
+namespace DynaDocs.Services.Map.Contract;
 
 /// <summary>One issue as the viewer sees it; <see cref="Assignee"/> is a display name.</summary>
 internal sealed record MapIssue(

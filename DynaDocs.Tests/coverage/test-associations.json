@@ -862,6 +862,136 @@
       "tests": [
         "DynaDocs.Tests/Utils/TitlePrettifierTests.cs"
       ]
+    },
+    {
+      "module": "Commands/MapCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Serialization/MapJsonContext.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs",
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/BrowserLauncher.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/BrowserLauncherTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/GraphQLRequest.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearGraphQL.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearReader.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapApi.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapApiException.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapError.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapGraph.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapGraphProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssue.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueState.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueTeam.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapProjectStatus.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapRelation.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapServer.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapTeam.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/ViewerBundle.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/ViewerBundleTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
     }
   ]
 }

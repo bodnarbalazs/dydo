@@ -7,7 +7,7 @@ public static class CompletionProvider
     private static readonly string[] TopLevelCommands =
     [
         "check", "fix", "index", "init", "graph", "guard",
-        "completions", "complete", "validate", "gap-check",
+        "completions", "complete", "validate", "gap-check", "map",
         "version", "help"
     ];
 

@@ -46,7 +46,7 @@ public class ConfigFactoryTests
         // The alternation lists exactly the commands Program.cs registers — nothing retired.
         Assert.Equal(
             ["check", "fix", "index", "init", "graph", "guard",
-                "completions", "complete", "validate", "version", "help"],
+                "completions", "complete", "validate", "map", "version", "help"],
             Regex.Match(nudge.Pattern, @"\(\?:([\w|]+)\)\\b").Groups[1].Value.Split('|'));
     }
 

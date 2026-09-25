@@ -54,6 +54,7 @@
         <EmbeddedResource Remove="DynaDocs.Tests\**" />
         <None Remove="DynaDocs.Tests\**" />
         <None Remove="nupkg\dydo.1.2.22.nupkg" />
+        <None Remove="viewer\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -62,6 +63,14 @@
              naming mangles directory components that are not identifiers (future-features →
              future_features) and joins them with dots. -->
         <EmbeddedResource Include="Scaffold\**\*"
+                          LogicalName="$([System.String]::Copy('%(Identity)').Replace('\','/'))" />
+    </ItemGroup>
+
+    <!-- The `dydo map` viewer bundle, built by `pnpm -C viewer run build` and never committed. It is
+         embedded the same way as the scaffold when it exists; without it `dydo map` serves a
+         "viewer not built" page at `/`. -->
+    <ItemGroup Condition="Exists('viewer/dist/index.html')">
+        <EmbeddedResource Include="viewer\dist\**\*"
                           LogicalName="$([System.String]::Copy('%(Identity)').Replace('\','/'))" />
     </ItemGroup>
 

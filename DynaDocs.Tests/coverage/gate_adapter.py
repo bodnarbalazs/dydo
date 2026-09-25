@@ -78,6 +78,13 @@ def _locked_pins(text):
             for name, row in json.loads(text)["dependencies"]["net10.0"].items()}
 
 
+def _pnpm_pins(text):
+    """The viewer importer's resolved versions, read from pnpm's lock without a YAML parser."""
+    importer = text.split("\nimporters:\n", 1)[1].split("\npackages:\n", 1)[0]
+    return dict(re.findall(r"(?m)^      '?([^'\s]+?)'?:\n        specifier: \S+\n        version: ([^\s(]+)",
+                           importer))
+
+
 def _manifest_pins(text):
     return {name: row["version"] for name, row in json.loads(text)["tools"].items()}
 
@@ -111,7 +118,8 @@ def gate_tools(root):
                 ("python", f"{tools}/requirements.lock", _requirement_pins),
                 ("javascript", f"{tools}/package.json", _package_pins),
                 ("dotnet", f"{tools}/metrics/packages.lock.json", _locked_pins),
-                ("altcover", ".config/dotnet-tools.json", _manifest_pins))}}
+                ("altcover", ".config/dotnet-tools.json", _manifest_pins),
+                ("viewer", "viewer/pnpm-lock.yaml", _pnpm_pins))}}
 
 
 def _report_root(raw):
@@ -340,12 +348,22 @@ def _node_discovery(path, relative):
     return None
 
 
+def _vitest_discovery(path, relative):
+    if not (relative.startswith("viewer/src/") and re.search(r"\.test\.tsx?$", relative)):
+        return None
+    text = path.read_text(encoding="utf-8-sig")
+    if re.search(r"\b(?:test|it)\s*\(", text) and re.search(r"""\bfrom\s+['"]vitest['"]""", text):
+        return {"id": relative + "#vitest", "file": relative}
+    return None
+
+
 def _ordinary_discovery(root, paths):
     rows = []
     for relative in paths:
         path = root / relative
         if path.is_file():
-            row = _unittest_discovery(path, relative) or _node_discovery(path, relative)
+            row = (_unittest_discovery(path, relative) or _node_discovery(path, relative)
+                   or _vitest_discovery(path, relative))
             if row:
                 rows.append(row)
     return rows
@@ -382,6 +400,13 @@ def _stack_methods(collector, stack):
                         "javascript-dependencies": collector.javascript_dependencies,
                         "javascript-unused-exports": collector.javascript_unused_exports,
                         "clones": collector.clones})
+    elif stack == "viewer":
+        methods.update({"typescript-build": collector.viewer_typecheck,
+                        "typescript-lint": collector.viewer_lint,
+                        "typescript-source": collector.typescript_source,
+                        "typescript-dependencies": collector.typescript_dependencies,
+                        "typescript-unused-exports": collector.typescript_unused_exports,
+                        "clones": collector.typescript_clones})
     else:
         raise ValueError(f"Unknown stack: {stack}")
     return methods
@@ -505,6 +530,68 @@ def collect_node_coverage(root, raw, inventory, initial_fingerprint=None):
                             commands, _raw_artifacts([request_path, raw / "joined.json"], run))
 
 
+def _vitest_suite(report):
+    """The suite verdict vitest itself recorded, apart from its own coverage thresholds."""
+    try:
+        payload = json.loads(Path(report).read_text(encoding="utf-8"))
+        failed = payload["numFailedTests"] + payload["numFailedTestSuites"]
+        names = [test["fullName"] for suite in payload["testResults"]
+                 for test in suite["assertionResults"] if test["status"] == "failed"]
+        ran = payload["numTotalTests"] > 0
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, []
+    return (1 if failed or not ran else 0), names
+
+
+def _walked_targets(root, raw, inventory, targets):
+    """The static row's own walker, run over the coverage targets."""
+    from gate_collect import Collectors
+    collector = Collectors(root, raw / "walker")
+    payload = json.loads(Path(inventory).read_text(encoding="utf-8"))
+    collector.inventory = {**payload, "sources": [row for row in payload["sources"] if row["path"] in targets]}
+    walk = collector.typescript_source()
+    return {row["path"]: row for row in walk["facts"].get("modules", [])}, walk["errors"], collector.log.rows
+
+
+def collect_viewer_coverage(root, raw, inventory):
+    from gate_collect import viewer_script
+    from gate_policy import evaluate_policy
+    from typescript_join import join
+    run = _report_root(raw)
+    raw.mkdir(parents=True)
+    report, lcov = raw / "vitest.json", raw / "coverage" / "lcov.info"
+    argv = viewer_script("coverage", "--coverage.reporter=lcov",
+                         f"--coverage.reportsDirectory={raw / 'coverage'}",
+                         "--reporter=default", "--reporter=json", f"--outputFile.json={report}")
+    started = time.monotonic()
+    child = run_coverage_command(argv, root)
+    commands = [_inherited_row("typescript-coverage", argv, root, child, started)]
+    suite, failing = _vitest_suite(report)
+    facts = {"child_exit": child, "suite_exit": suite, "raw": _report_location(raw, run)}
+    artifacts = _raw_artifacts([report, lcov], run)
+    if suite is None:
+        return _coverage_report("typescript-coverage", facts, [], [
+            {"gate": "typescript-coverage", "message": "vitest recorded no readable suite result"}],
+            commands, artifacts)
+    if suite:
+        summary = f"{len(failing)} failing tests" if failing else "failed without a named test"
+        return _coverage_report("typescript-coverage", facts, [
+            {"gate": "functional", "child_exit": suite, "failingTests": failing[:SUBJECT_NAME_CAP],
+             "failingTestsSummary": summary}], [], commands, artifacts)
+    targets = _target_paths(inventory, "typescript")
+    walked, errors, rows = _walked_targets(root, raw, inventory, set(targets))
+    commands.extend(_logged_commands(rows, run))
+    if errors:
+        return _coverage_report("typescript-coverage", facts, [], errors, commands, artifacts)
+    modules = join(lcov, root, root / "viewer", targets, walked)
+    findings = evaluate_policy(modules)
+    if child and not findings:
+        errors.append({"gate": "typescript-coverage", "child_exit": child,
+                       "message": "vitest failed for a reason the gate did not measure"})
+    return _coverage_report("typescript-coverage", {**facts, "modules": modules}, findings, errors,
+                            commands, artifacts)
+
+
 def collect_dotnet_coverage(root, raw):
     run, evidence = _report_root(raw), raw / "raw"
     script = root / "DynaDocs.Tests/coverage/run_tests.py"
@@ -544,13 +631,15 @@ def collect_coverage(root, output, stack, inventory):
                                      payload["candidate"]["sourceFingerprint"])
     if stack == "dotnet":
         return collect_dotnet_coverage(root, raw)
+    if stack == "viewer":
+        return collect_viewer_coverage(root, raw, inventory)
     raise ValueError(f"Unknown stack: {stack}")
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gate", choices=("static", "coverage"), required=True)
-    parser.add_argument("--stack", choices=("dotnet", "python", "node"), required=True)
+    parser.add_argument("--stack", choices=("dotnet", "python", "node", "viewer"), required=True)
     parser.add_argument("--root")
     parser.add_argument("--output")
     args = parser.parse_args()

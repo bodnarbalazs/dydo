@@ -270,6 +270,58 @@ class GateInventoryTests(unittest.TestCase):
             self.assertEqual(sorted(_DRIVERS),
                              sorted(path for path, row in rows.items() if 'coverageExemption' in row))
 
+    def test_viewer_source_typescript_is_measured_and_the_rest_of_the_viewer_is_recorded(self):
+        measured = ['viewer/src/a.test.ts', 'viewer/src/a.ts', 'viewer/src/map/b.tsx']
+        recorded = ['viewer/coverage/lcov-report/c.ts', 'viewer/dist/assets/d.ts', 'viewer/e2e/e.spec.ts',
+                    'viewer/fixtures/f.test.ts', 'viewer/node_modules/g/index.ts', 'viewer/vite.config.ts']
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for path in measured + recorded:
+                (root / path).parent.mkdir(parents=True, exist_ok=True)
+                (root / path).write_text('export const value = 1;\n', encoding='utf-8')
+            discovery = [{'id': 'viewer/src/a.test.ts#vitest', 'file': 'viewer/src/a.test.ts'}]
+
+            report = assemble_inventory(root, sorted(measured + recorded), [], discovery)
+
+        self.assertEqual([('viewer/src/a.test.ts', 'typescript', 'test'), ('viewer/src/a.ts', 'typescript', 'target'),
+                          ('viewer/src/map/b.tsx', 'typescript', 'target')],
+                         [(row['path'], row['language'], row['role']) for row in report['sources']])
+        self.assertEqual({(path, 'typescript-outside-viewer-src') for path in recorded},
+                         {(row['path'], row['reason']) for row in report['excluded']})
+
+    def test_a_viewer_module_importing_the_runner_is_harness_no_association_can_name(self):
+        from associations import validate_associations
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / 'viewer/src').mkdir(parents=True)
+            (root / 'viewer/src/testSetup.ts').write_text("import { afterEach } from 'vitest';\n", encoding='utf-8')
+            (root / 'viewer/src/a.ts').write_text('export const a = 1;\n', encoding='utf-8')
+
+            report = assemble_inventory(root, ['viewer/src/a.ts', 'viewer/src/testSetup.ts'], [], [])
+
+        harness = report['sources'][1]
+        self.assertEqual(('test', False), (harness['role'], harness['nativeTest']))
+        manifest = {'schema': 1, 'modules': [{'module': 'viewer/src/a.ts', 'tests': ['viewer/src/testSetup.ts']}]}
+        with self.assertRaisesRegex(ValueError, 'non-test association'):
+            validate_associations(report['sources'], manifest)
+
+    def test_every_viewer_module_names_a_test_file_in_this_repository(self):
+        import gate_adapter
+        from associations import validate_associations
+        from inventory import git_file_state
+        repository = Path(__file__).resolve().parents[3]
+        manifest = json.loads((repository / 'DynaDocs.Tests/coverage/test-associations.json')
+                              .read_text(encoding='utf-8'))
+        paths = [path for path in git_file_state(repository)[0] if path.startswith('viewer/src/')]
+        modules = {'schema': 1, 'modules': [row for row in manifest['modules'] if row['module'] in paths]}
+
+        report = assemble_inventory(repository, paths, [], gate_adapter._ordinary_discovery(repository, paths),
+                                    associations=modules)
+
+        self.assertEqual([], report['errors'])
+        self.assertTrue(any(row['role'] == 'target' for row in report['sources']))
+        self.assertEqual([], validate_associations(report['sources'], modules))
+
     def test_the_two_named_host_drivers_hold_their_exemption_in_this_repository(self):
         repository = Path(__file__).resolve().parents[3]
         manifest = json.loads((repository / 'DynaDocs.Tests/coverage/test-associations.json')

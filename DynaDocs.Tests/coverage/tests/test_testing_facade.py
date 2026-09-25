@@ -1082,13 +1082,18 @@ class TestingFacadeTests(unittest.TestCase):
     def test_active_manifest(self):
         data = json.loads((ROOT / 'DynaDocs.Tests/coverage/gap_check.json').read_text())
         self.assertEqual('DynaDocs.Tests/coverage/results', data['artifactRoot'])
-        dotnet, python, node = data['stacks']
+        dotnet, python, node, viewer = data['stacks']
         self.assertEqual({'kind': 'current-python', 'argv': ['-u', 'DynaDocs.Tests/coverage/run_tests.py', '--']}, dotnet['capabilities']['test']['command'])
         self.assertEqual({'requirement': 'git-worktree-copy-working-changes', 'evidence': {'state': 'verified', 'kind': 'adapter', 'path': 'DynaDocs.Tests/coverage/run_tests.py'}}, dotnet['isolation'])
         self.assertEqual({'kind': 'current-python', 'argv': ['-m', 'unittest', 'discover', '-s', 'DynaDocs.Tests/coverage/tests', '-p', 'test_*.py']}, python['capabilities']['test']['command'])
         self.assertEqual(['node', 'DynaDocs.Tests/coverage/node_tests.cjs'], node['capabilities']['test']['command']['argv'])
+        self.assertEqual({'kind': 'argv', 'argv': ['pnpm', '-C', 'viewer', 'run', 'test']}, viewer['capabilities']['test']['command'])
+        self.assertEqual({'requirement': 'in-place', 'evidence': {'state': 'verified', 'kind': 'direct'}}, viewer['isolation'])
+        self.assertEqual(unavailable('No mutation mechanism is adopted for TypeScript; the DYD-103 lane the other stacks cite is canceled'),
+                         viewer['capabilities']['mutation'])
         for item in data['stacks']:
-            self.assertEqual(unavailable('Pending DYD-103'), item['capabilities']['mutation'])
+            if item['name'] != 'viewer':
+                self.assertEqual(unavailable('Pending DYD-103'), item['capabilities']['mutation'])
             for capability in ['static', 'coverage']:
                 row = item['capabilities'][capability]
                 self.assertEqual('configured', row['state'])
@@ -1096,8 +1101,10 @@ class TestingFacadeTests(unittest.TestCase):
                 self.assertEqual(['DynaDocs.Tests/coverage/gate_adapter.py', '--stack', item['name'], '--gate', capability], row['command']['argv'])
                 self.assertEqual([{'path': f'DynaDocs.Tests/coverage/results/adapters/{item["name"]}-{capability}.json', 'required': True}], row['artifacts'])
                 if capability == 'coverage':
-                    collector = {'dotnet': 'csharp-coverage', 'python': 'python-coverage', 'node': 'javascript-coverage'}[item['name']]
-                    self.assertEqual({'exit': ['collectors', collector, 'facts', 'child_exit'],
+                    collector = {'dotnet': 'csharp-coverage', 'python': 'python-coverage', 'node': 'javascript-coverage',
+                                 'viewer': 'typescript-coverage'}[item['name']]
+                    verdict = 'suite_exit' if item['name'] == 'viewer' else 'child_exit'
+                    self.assertEqual({'exit': ['collectors', collector, 'facts', verdict],
                                       'failure': ['collectors', collector, 'findings', {'gate': 'functional'}]}, row['suiteVerdict'])
 
     def test_identity(self):

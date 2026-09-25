@@ -36,7 +36,7 @@ def _native(runner, paths, label, minimum=15):
     output = runner.output / 'clones' / label
     maximum = max((runner.root / path).stat().st_size for path in paths) + 1
     command = runner.log.run('jscpd-' + label, ['node', runner.coverage / 'node_modules/jscpd/run-jscpd.js',
-        '--absolute', '--format', 'csharp,python,javascript', '--formats-names', 'javascript:dydo',
+        '--absolute', '--format', 'csharp,python,javascript,typescript,tsx', '--formats-names', 'javascript:dydo',
         '--no-gitignore', '--min-lines', str(minimum), '--min-tokens', '100' if minimum == 15 else '1',
         '--max-lines', '2147483647', '--max-size', str(maximum), '--mode', 'strict', '--reporters', 'json',
         '--output', output, '--silent', '--no-tips', *paths])
@@ -86,8 +86,18 @@ def _findings(runner, duplicates, paths):
     return findings
 
 
-def collect_clones(runner):
-    sources = runner.inventory['sources']
+def _format(source):
+    """jscpd's own format name for an inventory source; TSX has a grammar of its own."""
+    if source['language'] == 'typescript':
+        return 'tsx' if source['path'].endswith('.tsx') else 'typescript'
+    return 'csharp' if source['language'] == 'cs' else source['language']
+
+
+def collect_clones(runner, languages=frozenset({'cs', 'python', 'javascript'})):
+    """jscpd matches clones only within one format, so a stack's languages are measured apart;
+    a source with no language belongs to no stack, so every stack reports it."""
+    sources = [source for source in runner.inventory['sources']
+               if 'language' not in source or source['language'] in languages]
     paths = [source['path'] for source in sources]
     batch = _native(runner, paths, 'all')
     findings = _findings(runner, batch['data']['duplicates'], paths)
@@ -97,8 +107,7 @@ def collect_clones(runner):
             audits.append(_audit(runner, source))
         except (ValueError, KeyError, OSError) as error:
             errors.append({'path': source['path'], 'message': str(error)})
-    expected = Counter('csharp' if row['language'] == 'cs' else row['language']
-                       for row in audits if row['standard_included'])
+    expected = Counter(_format(row) for row in audits if row['standard_included'])
     measured = {key: value['sources'] for key, value in batch['data']['statistics']['formats'].items() if value['sources']}
     if dict(expected) != measured:
         errors.append({'message': 'Batch clone inventory disagrees with exact per-source eligibility',

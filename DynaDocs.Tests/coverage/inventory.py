@@ -49,7 +49,8 @@ def checked_paths(root, paths):
 def language_of(path):
     path = Path(path)
     language = {".cs": "cs", ".py": "python", ".js": "javascript",
-                ".cjs": "javascript", ".mjs": "javascript"}.get(path.suffix.lower())
+                ".cjs": "javascript", ".mjs": "javascript",
+                ".ts": "typescript", ".tsx": "typescript"}.get(path.suffix.lower())
     if language or path.suffix:
         return language
     with path.open(encoding="utf-8", errors="replace") as stream:

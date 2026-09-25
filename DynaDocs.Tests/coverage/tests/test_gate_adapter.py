@@ -67,6 +67,46 @@ NODE_SUITE = ("'use strict';\n"
               "test('sum adds', () => { assert.strictEqual(sum(1, 2), 3); });\n")
 
 
+# The fixture viewer walks with the real producer, which a copy would lose its node_modules for.
+WALKER_SHIM = (
+    "'use strict';\n"
+    "const { spawnSync } = require('node:child_process');\n"
+    "const answer = spawnSync(process.execPath,\n"
+    "  [" + json.dumps((TOOLS / "js_metrics.cjs").as_posix()) + ", ...process.argv.slice(2)],\n"
+    "  { stdio: 'inherit' });\n"
+    "process.exitCode = answer.status === null ? 130 : answer.status;\n")
+VIEWER_SOURCES = {
+    "viewer/src/sum.ts": "export function sum(a: number, b: number): number {\n  return a + b;\n}\n",
+    "viewer/src/unused.ts": ("export function unused(flag: boolean): number {\n  if (flag) {\n"
+                             "    return 1;\n  }\n  return 0;\n}\n"),
+    "viewer/src/types.ts": "export interface Pair {\n  left: number;\n}\n",
+    "viewer/src/sum.test.ts": ("import { expect, it } from 'vitest';\nimport { sum } from './sum';\n\n"
+                               "it('adds', () => {\n  expect(sum(1, 2)).toBe(3);\n});\n"),
+}
+VIEWER_LCOV = ("TN:\nSF:src/sum.ts\nFN:1,sum\nFNDA:1,sum\nDA:2,1\nend_of_record\n"
+               "SF:src/unused.ts\nFN:1,unused\nFNDA:0,unused\nDA:2,0\nDA:3,0\nDA:5,0\n"
+               "BRDA:2,0,0,0\nBRDA:2,0,1,0\nend_of_record\n")
+
+
+def vitest_report(failed=()):
+    results = [{"fullName": "adds", "status": "passed"},
+               *({"fullName": name, "status": "failed"} for name in failed)]
+    return json.dumps({"numFailedTests": len(failed), "numFailedTestSuites": 0,
+                       "numTotalTests": len(results), "success": not failed,
+                       "testResults": [{"assertionResults": results}]})
+
+
+def fake_vitest(exit_code=0, report=None, lcov=VIEWER_LCOV):
+    """Stands in for the vitest child: writes the suite report and LCOV where the argv asks."""
+    def run(argv, _cwd):
+        options = dict(item.split("=", 1) for item in argv if item.startswith("--") and "=" in item)
+        if report is not None:
+            Path(options["--outputFile.json"]).write_text(report, encoding="utf-8")
+        write_file(Path(options["--coverage.reportsDirectory"]), "lcov.info", lcov)
+        return exit_code
+    return run
+
+
 def write_file(root, relative, text):
     path = root / relative
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -326,6 +366,17 @@ class PublishedProvenanceTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256((TOOLS / "requirements.lock").read_bytes()).hexdigest(),
                          pins["python"]["sha256"])
 
+    def test_the_viewer_lock_is_republished_with_the_versions_its_scripts_run(self):
+        root = TOOLS.parents[1]
+
+        pin = gate_adapter.gate_tools(root)["pins"]["viewer"]
+
+        manifest = json.loads((root / "viewer/package.json").read_text(encoding="utf-8"))
+        self.assertEqual("viewer/pnpm-lock.yaml", pin["path"])
+        self.assertEqual(sorted({**manifest["dependencies"], **manifest["devDependencies"]}), sorted(pin["resolved"]))
+        self.assertEqual("5.9.3", pin["resolved"]["typescript"])
+        self.assertEqual("12.11.6", pin["resolved"]["@xyflow/react"])
+
     def test_an_unreadable_pin_is_named_without_destroying_the_measurement(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -538,6 +589,78 @@ class NativeDiscoveryTests(unittest.TestCase):
         self.assertEqual([{"collector": "b", "gate": "line-coverage"}], answer["findings"])
         self.assertEqual([{"collector": "c", "message": "no native producer"}], answer["errors"])
         self.assertEqual(rows[2], answer["facts"]["collectors"])
+
+
+class ViewerGateTests(unittest.TestCase):
+    def test_vitest_discovery_accepts_only_viewer_source_test_files_that_use_vitest(self):
+        sources = {"viewer/src/a.test.tsx": "import { it } from 'vitest';\nit('a', () => {});\n",
+                   "viewer/src/b.test.ts": "it('b', () => {});\n",
+                   "viewer/src/c.ts": "import { it } from 'vitest';\nit('c', () => {});\n",
+                   "viewer/fixtures/d.test.ts": "import { it } from 'vitest';\nit('d', () => {});\n"}
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for relative, text in sources.items():
+                write_file(root, relative, text)
+
+            rows = gate_adapter._ordinary_discovery(root, sorted(sources))
+
+        self.assertEqual([{"id": "viewer/src/a.test.tsx#vitest", "file": "viewer/src/a.test.tsx"}], rows)
+
+    def viewer_repository(self, folder):
+        from gate_inventory import assemble_inventory
+        from inventory import git_file_state
+        root = Path(folder) / "repo"
+        for relative, text in VIEWER_SOURCES.items():
+            write_file(root, relative, text)
+        write_file(root, "DynaDocs.Tests/coverage/js_metrics.cjs", WALKER_SHIM)
+        git_repository(root)
+        paths, deleted = git_file_state(root)
+        payload = assemble_inventory(root, paths, [], gate_adapter._ordinary_discovery(root, paths), deleted)
+        inventory = root.parent / "inventory.json"
+        inventory.write_text(json.dumps(payload), encoding="utf-8")
+        raw = Path(folder) / "output/raw"
+        raw.parent.mkdir()
+        return root, raw, inventory
+
+    def coverage(self, folder, child):
+        root, raw, inventory = self.viewer_repository(folder)
+        with mock.patch.object(gate_adapter, "run_coverage_command", side_effect=child):
+            return gate_adapter.collect_viewer_coverage(root, raw, inventory)
+
+    def test_an_uncovered_viewer_module_fails_the_coverage_floors_it_misses(self):
+        with tempfile.TemporaryDirectory() as folder:
+            answer = self.coverage(folder, fake_vitest(report=vitest_report()))
+
+        row = collector_row(answer, "typescript-coverage")
+        self.assertEqual("fail", answer["status"], json.dumps(answer["errors"]))
+        self.assertEqual(["viewer/src/sum.ts", "viewer/src/types.ts", "viewer/src/unused.ts"],
+                         [module["path"] for module in row["facts"]["modules"]])
+        self.assertEqual({("viewer/src/unused.ts", "line-coverage"), ("viewer/src/unused.ts", "branch-coverage")},
+                         {(finding["path"], finding["gate"]) for finding in answer["findings"]})
+        self.assertEqual(0, row["facts"]["suite_exit"])
+
+    def test_a_failing_viewer_suite_is_named_before_any_policy(self):
+        with tempfile.TemporaryDirectory() as folder:
+            answer = self.coverage(folder, fake_vitest(1, vitest_report(["breaks"])))
+
+        self.assertEqual([{"gate": "functional", "child_exit": 1, "failingTests": ["breaks"],
+                           "failingTestsSummary": "1 failing tests"}], answer["findings"])
+        self.assertNotIn("modules", collector_row(answer, "typescript-coverage")["facts"])
+
+    def test_a_viewer_run_without_a_readable_suite_report_is_a_measurement_gap(self):
+        with tempfile.TemporaryDirectory() as folder:
+            answer = self.coverage(folder, fake_vitest(1))
+
+        self.assertEqual("error", answer["status"])
+        self.assertEqual("vitest recorded no readable suite result", answer["errors"][0]["message"])
+
+    def test_a_vitest_failure_the_gate_did_not_measure_is_a_measurement_gap(self):
+        covered = VIEWER_LCOV.replace(":0\n", ":1\n").replace(",0\n", ",1\n")
+        with tempfile.TemporaryDirectory() as folder:
+            answer = self.coverage(folder, fake_vitest(1, vitest_report(), covered))
+
+        self.assertEqual("error", answer["status"], json.dumps(answer["findings"]))
+        self.assertEqual("vitest failed for a reason the gate did not measure", answer["errors"][0]["message"])
 
 
 class CandidateInventoryTests(unittest.TestCase):

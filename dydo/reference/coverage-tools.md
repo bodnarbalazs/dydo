@@ -28,6 +28,8 @@ python -m venv dydo/_system/.local/static-gates/python
 & dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 # the Node assurance toolchain, from DynaDocs.Tests/coverage
 npm ci
+# the viewer's own toolchain, which the viewer rows call through its pnpm scripts
+pnpm -C viewer install --frozen-lockfile
 # AltCover and the metrics closure
 dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
@@ -74,7 +76,7 @@ $py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
 
 `all` runs test rows only. Each `gate` operation runs exactly the named capability, defaulting to
 every declared stack in manifest order. `--force-run` is the compatibility full-G operation: it
-selects test, static and coverage for every stack — nine rows here — and never selects mutation.
+selects test, static and coverage for every stack — twelve rows here — and never selects mutation.
 Where a stack's coverage row declares `suiteVerdict`, `--force-run` derives that stack's test row
 from the coverage row's single instrumented run instead of launching the suite a second time.
 
@@ -116,26 +118,34 @@ caller's identity propagates into every adapter.
 | `node` | test | `node DynaDocs.Tests/coverage/node_tests.cjs` | none | — |
 | `node` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate static` | `results/adapters/node-static.json` | — |
 | `node` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate coverage` | `results/adapters/node-coverage.json` | `collectors.javascript-coverage.facts.child_exit`; `collectors.javascript-coverage.findings[gate=functional]` |
-| every stack | mutation | unavailable, reason `Pending DYD-103` | none | — |
+| `viewer` | test | `pnpm -C viewer run test` | none | — |
+| `viewer` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack viewer --gate static` | `results/adapters/viewer-static.json` | — |
+| `viewer` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack viewer --gate coverage` | `results/adapters/viewer-coverage.json` | `collectors.typescript-coverage.facts.suite_exit`; `collectors.typescript-coverage.findings[gate=functional]` |
+| `dotnet`, `python`, `node` | mutation | unavailable, reason `Pending DYD-103` | none | — |
+| `viewer` | mutation | unavailable: no TypeScript mutation mechanism is adopted | none | — |
 
 Artifact paths are shown relative to `DynaDocs.Tests/coverage/`; the manifest declares them
 repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`. The `dotnet` stack declares isolation
 `git-worktree-copy-working-changes`, verified by the adapter `DynaDocs.Tests/coverage/run_tests.py`;
-`python` and `node` declare verified `in-place` isolation. The runner also materializes the
+`python`, `node` and `viewer` declare verified `in-place` isolation. The `viewer` coverage row
+writes its LCOV and vitest reports under its own run directory, not under the ignored
+`viewer/coverage/`. The runner also materializes the
 gitignored `.claude/skills` and `.agents/skills` host discovery directories into the snapshot, so
 the canonical-tree guard's link-resolution check is not vacuous there. The runner marks its
 snapshot with a schema-versioned marker before running anything in it and removes the snapshot on
 every exit path, including a failing suite, an exception and an interrupt; at startup it also
 prunes any marked `dydo-test-*` snapshot older than a configurable age.
 
-Every G row therefore has a real mechanism: three test adapters, three static adapters and three
-coverage adapters. Mutation is the only unavailable capability, and it belongs to DYD-103. Its
-policy is already settled and does not wait on the adapter: DynaDocs requires no surviving or
-uncovered changed-code mutants, as the [Testing Strategy](../guides/testing-strategy.md) states it.
-Nothing here measures that today — every stack's mutation row is `unavailable` with the reason
-`Pending DYD-103`, so the gate cannot run, and cannot pass, until that Issue lands a reviewed
-mechanism. Whether a given candidate passes is what its result artifact says; no document stands in
-for a run.
+Every G row therefore has a real mechanism: four test adapters, four static adapters and four
+coverage adapters. Mutation is the only unavailable capability. On `dotnet`, `python` and `node` it
+belongs to DYD-103, whose policy is already settled and does not wait on the adapter: DynaDocs
+requires no surviving or uncovered changed-code mutants, as the [Testing
+Strategy](../guides/testing-strategy.md) states it. Nothing here measures that today — those three
+stacks' mutation rows are `unavailable` with the reason `Pending DYD-103`, so the gate cannot run,
+and cannot pass, until that Issue lands a reviewed mechanism. `viewer`'s mutation row is
+`unavailable` for a different reason: no TypeScript mutation mechanism is adopted, and no Issue
+currently tracks that gap. Whether a given candidate passes is what its result artifact says; no
+document stands in for a run.
 
 ---
 
@@ -203,7 +213,9 @@ never a silent overwrite. The identical bytes remain at
     "dotnet": {"path": "DynaDocs.Tests/coverage/metrics/packages.lock.json", "sha256": "<hex>",
                "resolved": {"Microsoft.CodeAnalysis.CSharp": "<version>"}},
     "altcover": {"path": ".config/dotnet-tools.json", "sha256": "<hex>",
-                 "resolved": {"altcover.global": "9.0.102"}}
+                 "resolved": {"altcover.global": "9.0.102"}},
+    "viewer": {"path": "viewer/pnpm-lock.yaml", "sha256": "<hex>",
+               "resolved": {"typescript": "5.9.3", "vitest": "4.1.11"}}
   }
 }
 ```
@@ -224,8 +236,8 @@ and `DOTNET_CLI_USE_MSBUILD_SERVER`, `MSBUILDDISABLENODEREUSE` and
 `DYNADOCS_GATE_METRICS_PREBUILT_DLL` inside the C# campaign — never the inherited process
 environment, so ambient secrets stay out of the artifact.
 
-The three coverage wrapper rows `python-coverage`, `javascript-coverage` and `csharp-campaign`
-record `"stdout": null`, `"stderr": null` and `"streams": "inherited"`: those campaigns deliberately
+The four coverage wrapper rows `python-coverage`, `javascript-coverage`, `typescript-coverage` and
+`csharp-campaign` record `"stdout": null`, `"stderr": null` and `"streams": "inherited"`: those campaigns deliberately
 inherit the child's streams so an operator can watch a long run. Every native command inside the C#
 campaign is republished as its own row, with hashed streams, from the campaign's `commands.json`.
 
@@ -260,7 +272,13 @@ Before collecting, the adapter sets `APPDATA` to `dydo/_system/.local/appdata` a
 | `node` | `javascript-source` | `js_metrics.cjs`: ESLint with `eslint-plugin-sonarjs`, `allowInlineConfig: false`, complexity and cognitive complexity reported at threshold 0 so every function yields its value |
 | `node` | `javascript-dependencies` | `dependency-cruiser` over the maintained set: cycles and unresolved imports |
 | `node` | `javascript-unused-exports` | `knip` across the `DynaDocs.Tests/coverage` and `npm` packages, its counters cross-checked against the detailed report |
-| `node` | `clones` | `jscpd` over the complete maintained source set of every stack, plus a per-source eligibility proof that a skipped file really is under 15 lines or 100 tokens |
+| `node` | `clones` | `jscpd` over the maintained C#, Python and JavaScript sources, plus a per-source eligibility proof that a skipped file really is under 15 lines or 100 tokens |
+| `viewer` | `typescript-build` | `pnpm -C viewer run typecheck` (`tsc --noEmit`, strict with `noUnused*`); each `file(line,col): error TSnnnn` line is a finding, a nonzero exit with none is a gap |
+| `viewer` | `typescript-lint` | `pnpm -C viewer run lint --no-inline-config --format json --output-file <raw>/eslint.json`; every message, warnings included, is a finding, and exit 2 or a lint failure with no message is a gap |
+| `viewer` | `typescript-source` | `js_metrics.cjs typescript` or `tsx`: the same ESLint and SonarJS walker parsing through `@typescript-eslint/parser`, plus the module's top-level score. TypeScript's compiler owns unused bindings, so ESLint's JavaScript-only unused rules stay off |
+| `viewer` | `typescript-dependencies` | `dependency-cruiser --ts-pre-compilation-deps` over `viewer/src`, so a type-only import is still an edge |
+| `viewer` | `typescript-unused-exports` | `knip` over the viewer package with `src/main.tsx` and the test files as entries; its plugins load the whole package, so the out-of-root viewer TypeScript is judged too and counted |
+| `viewer` | `clones` | `jscpd` over `viewer/src`, `.ts` under its `typescript` grammar and `.tsx` under `tsx`, with the same eligibility proof |
 
 Three of those rows feed one judgment. `csharp-source` derives namespace edges with
 `GateMetrics.NamespaceDependencies`, from every identifier outside a `using` directive whose symbol
@@ -273,13 +291,13 @@ strongly connected components of that graph — every component of more than one
 self-edge — rather than a bounded search, so no traversal depth can omit a cycle. The `dotnet`
 edges are pooled across every project before the components are computed, so dependency cycles that
 close through a second project are still found. Each one is a single finding carrying its whole
-component as sorted `members`, named `namespace-cycle` on `dotnet` and `module-cycle` on `python`
-and `node`.
+component as sorted `members`, named `namespace-cycle` on `dotnet` and `module-cycle` on `python`,
+`node` and `viewer`.
 
 Suppression is itself a finding: a suppressed C# analyzer diagnostic on maintained source is
 reported as `maintained-diagnostic-suppression`, an `istanbul`, `c8` or `v8 ignore` comment in
-JavaScript is reported as `coverage-suppression`, and inline ESLint configuration is disabled
-outright.
+JavaScript or TypeScript is reported as `coverage-suppression`, and inline ESLint configuration is
+disabled outright, in the walker and in the viewer's lint.
 
 `versions` runs in the `dotnet` static row and measures the *caller* process, so running the facade
 with any interpreter other than `dydo/_system/.local/static-gates/python/Scripts/python.exe`
@@ -295,11 +313,12 @@ exit 2.
 | `python` | `python-coverage` | coverage.py 7.16.0 with branch coverage, plus a flat per-process callable witness. `python_coverage.collect` writes `config.json` and a generated `startup/sitecustomize.py` onto `PYTHONPATH`, runs the ordinary unittest suite, then combines the `.coverage` data with every `counter-*.json` receipt |
 | `node` | `javascript-coverage` | `node javascript_coverage.cjs` driving c8 12.0.0 with `--all --exclude-after-remap=false` over `node_tests.cjs`; Istanbul function and branch counters are joined to the ESLint callable inventory |
 | `dotnet` | `csharp-coverage` | `run_tests.py --assurance-output <dir>`: one isolated Git worktree copy of the working candidate, one AltCover campaign inside a Windows Job object, evidence published back outside the snapshot |
+| `viewer` | `typescript-coverage` | `pnpm -C viewer run coverage` with `--coverage.reporter=lcov`, `--coverage.reportsDirectory=<raw>/coverage` and a vitest JSON report added; `typescript_join.py` joins the Istanbul LCOV to the `typescript-source` walker's callables |
 
 A maintained JavaScript file with no filename extension is recorded as a gap naming DYD-105, so the
 row fails closed rather than quietly measuring less than the inventory.
 
-The Python and JavaScript rows take their targets from the source inventory through
+The Python, JavaScript and TypeScript rows take their targets from the source inventory through
 `gate_adapter._target_paths`: the stack's non-test rows, minus any row carrying `coverageExemption`.
 `gate_inventory._coverage_exemption` writes that field, and the only rows that carry it are the two
 external-host drivers of DR 048's Amendment 2026-09-17,
@@ -308,11 +327,26 @@ coverage-scoped: both files are still measured by every static collector above. 
 closed — an unextracted or unassociated driver produces the gap `host-driver-logic-untested` or
 `host-driver-unassociated` instead of the exemption, and the file returns to the coverage targets.
 
+The TypeScript join reads Istanbul LCOV per module: `DA` lines for the line floor, `BRDA` branches
+for the branch floor, and `FN`/`FNDA` function counters. Each `DA` line belongs to the innermost
+callable spanning it, so a component is charged neither the complexity nor the coverage of its
+callbacks. A callable whose own Istanbul counter is zero covers none of its lines, even on a line
+other code hit, and a callable with no line of its own is measured by that counter alone; with no
+single counter on its line it is a gap. Top-level statements form a `<module>` callable scored by
+the walker's module metrics, as Python's module entry is. A target absent from the LCOV is
+declarative only when the walker finds no runtime statement in it. The viewer's `vite.config.ts`
+keeps `src/api/types.ts` out of the report, so that file passes this way. Any other absent target
+is a gap. The suite verdict is `suite_exit`,
+taken from vitest's JSON report rather than the process exit, because the viewer's own
+per-file coverage thresholds also fail that process. A nonzero process exit that neither the suite
+nor a measured finding explains is a gap.
+
 Each row above is the stack's single suite execution under `--force-run`: the declaring stack's test
 row is derived from it and launches nothing of its own. The C# campaign is Windows-only, so a Linux
 host derives no verdict for `dotnet` and keeps that stack's separate test execution. The Python and
 JavaScript collectors need `DynaDocs.Tests/coverage/requirements.lock` and
-`DynaDocs.Tests/coverage`'s npm lock installed, or they cannot launch a suite at all.
+`DynaDocs.Tests/coverage`'s npm lock installed, or they cannot launch a suite at all. The TypeScript
+collector also needs `viewer/node_modules` from `pnpm -C viewer install --frozen-lockfile`.
 
 `gate_policy.evaluate_policy` judges the joined modules of every stack the same way: line coverage
 at least 80% and branch coverage at least 60% per module, HCRAP
@@ -416,7 +450,10 @@ each measured on their own control flow, and a top-level-statements file is meas
 synthetic `Program::<Main>$` member.
 
 The other stacks use their own producers for the same two numbers: radon plus complexipy for
-Python, ESLint's `complexity` and `sonar/cognitive-complexity` rules for JavaScript.
+Python, ESLint's `complexity` and `sonar/cognitive-complexity` rules for JavaScript and TypeScript.
+For TypeScript a class field's non-function initializer, which ESLint scores as its own code path,
+is its own callable row; JavaScript keeps refusing it, because its V8 join has no function literal
+to match it to.
 
 ---
 
@@ -443,8 +480,8 @@ checksum fails the join. The measured per-assembly document facts are retained i
 ## Toolchain provenance
 
 `dydo/_system/.local/` is git-ignored, so each machine provisions its own measurement environment
-and no gate ever installs anything. Four tool declarations and one CI runtime declaration define
-what that environment must contain. Tool summaries republish the four tool declarations with their
+and no gate ever installs anything. Five tool declarations and one CI runtime declaration define
+what that environment must contain. Tool summaries republish the five tool declarations with their
 hashes in `tools.pins`; the Python inventory separately republishes the runtime declaration and hash:
 
 | Declaration | Supplies | Restored into |
@@ -452,7 +489,8 @@ hashes in `tools.pins`; the Python inventory separately republishes the runtime 
 | `.config/dotnet-tools.json` | AltCover 9.0.102 | the tool manifest, by `dotnet tool restore --tool-manifest .config/dotnet-tools.json` |
 | `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.12.10 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
 | `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.12.10 environment at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
-| `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
+| `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | @typescript-eslint/parser, c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
+| `viewer/package.json`, resolved by `viewer/pnpm-lock.yaml` | the viewer's TypeScript, ESLint, vitest and Istanbul toolchain its scripts run | `viewer/node_modules`, by `pnpm -C viewer install --frozen-lockfile` |
 | `DynaDocs.Tests/coverage/metrics/packages.lock.json` | the Roslyn, SonarAnalyzer and Cecil closure of `GateMetrics.csproj` | that project's `obj/project.assets.json`, by `dotnet restore` |
 
 The `versions` collector fails the `dotnet` static row closed if an installed version differs from

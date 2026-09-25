@@ -135,6 +135,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         ["scp"] = FileOperationType.Copy,
     };
 
+    // Upstream's anchor for the command-shaped denylist entries: a command name starts at the beginning
+    // or after whitespace or a shell separator, so wrappers, launchers, assignments and keywords need no
+    // list. A quote opens a command only after a shell -c flag or an ssh remote command. An optional
+    // path prefix follows (/usr/bin/dd). Names inside quoted prose after whitespace match too: fail closed.
+    private const string CommandStart =
+        @"(?<=^|[\s;&|(){}`!\\]|\s-[a-zA-Z]*c\s*['""]|\bssh\s[^;&|'""]*['""])(?:[^\s;&|'""`()]*/)?";
+
+    private const int DangerousPatternTimeoutMs = 250;
+
+    // A command word ends at whitespace, the end, a quote or backtick closing a -c string or substitution, or a separator.
+    private const string CommandEnd = @"(?=\s|$|['""`);&|])";
+
     // Dangerous patterns that should always be blocked
     private static readonly (Regex Pattern, string Reason)[] DangerousPatterns =
     [
@@ -152,6 +164,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Direct disk writes
         (DirectDiskWriteRegex(), "Direct disk write attempt"),
         (DdDiskWriteRegex(), "Direct disk write via dd"),
+        (DdKnownDiskWriteRegex(), "Direct disk write via dd"),
 
         // Base64 decode piped to interpreter
         (Base64DecodePipeExecRegex(), "Base64 decode piped to interpreter"),
@@ -182,6 +195,26 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (ShadowFileAccessRegex(), "Shadow file access attempt"),
         (PasswdModifyRegex(), "Password file modification attempt"),
 
+        // David Ondrej's global command denylist, pinned in DYD-188.
+        (OndrejRmRegex(), "Deletion of system or home directory"),
+        (OndrejDiskRegex(), "Disk format or erase attempt"),
+        (OndrejSudoRmRegex(), "Privileged delete attempt"),
+        (OndrejCurlPipeRegex(), "Download and execute as shell"),
+        (OndrejGitPushRegex(), "Destructive remote Git push"),
+        (OndrejGitRecoveryRegex(), "Git recovery history destruction"),
+        (OndrejSystemPermissionsRegex(), "System permission or ownership change"),
+        (OndrejGhDeleteRegex(), "Destructive GitHub operation"),
+        (OndrejGhApiDeleteRegex(), "GitHub API delete operation"),
+        (OndrejGhVisibilityRegex(), "GitHub repository visibility change"),
+        (OndrejGhTokenRegex(), "GitHub authentication token access"),
+        (OndrejPasswordCliRegex(), "Password manager access"),
+        (OndrejPassRegex(), "Password store access"),
+        (OndrejOpRegex(), "1Password secret access"),
+        (OndrejKeychainRegex(), "Keychain password access"),
+        (OndrejGpgSecretRegex(), "GPG secret key export"),
+        (OndrejPasswordStorePathRegex(), "Password store path access"),
+        (OndrejPasswordAppRegex(), "Password manager application access"),
+
         // Inline interpreter execution — bypasses all file operation analysis
         (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
     ];
@@ -204,78 +237,136 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex VariableExpansionRegex();
 
     // Dangerous pattern regexes (generated for performance)
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)")]
+    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveDeleteRootRegex();
 
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)")]
+    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveDeleteGlobRegex();
 
-    [GeneratedRegex(@"Remove-Item\b(?=.*-Recurse\b)(?=.*-Force\b).*(\s[/~]|\s[A-Z]:\\)\s*($|;|&&|\|\|)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"Remove-Item\b(?=.*-Recurse\b)(?=.*-Force\b).*(\s[/~]|\s[A-Z]:\\)\s*($|;|&&|\|\|)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex PowerShellRecursiveDeleteRegex();
 
-    [GeneratedRegex(@":\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:")]
+    [GeneratedRegex(@":\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex ForkBombClassicRegex();
 
-    [GeneratedRegex(@"\.\s*/\s*\.:")]
+    [GeneratedRegex(@"\.\s*/\s*\.:", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex ForkBombAltRegex();
 
-    [GeneratedRegex(@">\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)")]
+    [GeneratedRegex(@">\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex DirectDiskWriteRegex();
 
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"dd\s+[^;&|\r\n]*\bof\s*=\s*['""]?/dev/(?!null(?:\s|$|['"";&|)`]))[^\s'"";&|]+", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex DdDiskWriteRegex();
 
-    [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase)]
+    // Master's floor, kept unanchored: known disk targets block anywhere in the command text.
+    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex DdKnownDiskWriteRegex();
+
+    [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex Base64DecodePipeExecRegex();
 
-    [GeneratedRegex(@"curl\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"curl\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex CurlPipeShRegex();
 
-    [GeneratedRegex(@"wget\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"wget\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex WgetPipeShRegex();
 
-    [GeneratedRegex(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex WgetOutputPipeShRegex();
 
-    [GeneratedRegex(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex PowerShellIwrIexRegex();
 
-    [GeneratedRegex(@"iwr\s+[^|]*\|\s*iex", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"iwr\s+[^|]*\|\s*iex", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex PowerShellIwrIexShortRegex();
 
-    [GeneratedRegex(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex PowerShellDownloadStringRegex();
 
-    [GeneratedRegex(@"eval\s+\$")]
+    [GeneratedRegex(@"eval\s+\$", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex EvalVariableRegex();
 
-    [GeneratedRegex(@"history\s+-c")]
+    [GeneratedRegex(@"history\s+-c", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex HistoryClearRegex();
 
-    [GeneratedRegex(@">\s*~/\.bash_history|>\s*~/\.zsh_history")]
+    [GeneratedRegex(@">\s*~/\.bash_history|>\s*~/\.zsh_history", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex HistoryFileTruncateRegex();
 
-    [GeneratedRegex(@"Remove-Item.*ConsoleHost_history\.txt", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"Remove-Item.*ConsoleHost_history\.txt", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex PowerShellHistoryDeleteRegex();
 
-    [GeneratedRegex(@"setenforce\s+0")]
+    [GeneratedRegex(@"setenforce\s+0", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex SelinuxDisableRegex();
 
-    [GeneratedRegex(@"iptables\s+-F")]
+    [GeneratedRegex(@"iptables\s+-F", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex FirewallFlushRegex();
 
-    [GeneratedRegex(@"cat\s+/etc/shadow|head\s+/etc/shadow|tail\s+/etc/shadow")]
+    [GeneratedRegex(@"cat\s+/etc/shadow|head\s+/etc/shadow|tail\s+/etc/shadow", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex ShadowFileAccessRegex();
 
-    [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd")]
+    [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex PasswdModifyRegex();
+
+    [GeneratedRegex(CommandStart + @"rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejRmRegex();
+
+    [GeneratedRegex(CommandStart + @"(?:mkfs(?:\.[a-z0-9]+)?" + CommandEnd + @"|diskutil\s+(?:erase\w*|partitionDisk|zeroDisk|secureErase|apfs\s+(?:delete|erase)\w*)" + CommandEnd + @")|>\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d+)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejDiskRegex();
+
+    [GeneratedRegex(CommandStart + @"sudo(?:\s+-[a-zA-Z-]*(?:=[^\s;&|]*|\s+[^-\s;&|][^\s;&|]*)?)*\s+rm" + CommandEnd, RegexOptions.None, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejSudoRmRegex();
+
+    [GeneratedRegex(CommandStart + @"(?:curl|wget)\s+[^;&|]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejCurlPipeRegex();
+
+    [GeneratedRegex(CommandStart + @"git\s+push" + CommandEnd + @"[^;&|\r\n]*(?:\s(?:-f|--force|--delete|-d)" + CommandEnd + @"|\s\+[a-z0-9._/-]|\s:[a-z0-9._/-])", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejGitPushRegex();
+
+    [GeneratedRegex(CommandStart + @"git\s+(?:reflog\s+expire\b[^;&|\r\n]*--expire(?:-unreachable)?(?:=|\s+)now\b|gc\b[^;&|\r\n]*--prune(?:=|\s+)(?:now|all)\b)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejGitRecoveryRegex();
+
+    [GeneratedRegex(CommandStart + @"(?:chmod\s+[^;&|\r\n]*\b777\s['""]?/['""]?(?=\s|$|[;&|])|chown\s+-R\b[^;&|\r\n]*\s['""]?/['""]?(?=\s|$|[;&|]))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejSystemPermissionsRegex();
+
+    [GeneratedRegex(CommandStart + @"gh\s+(?:(?:repo|release|secret|ssh-key|gpg-key)\s+delete)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejGhDeleteRegex();
+
+    [GeneratedRegex(CommandStart + @"gh\s+api\b[^;&|\r\n]*(?:-X|--method)(?:=|\s+)DELETE" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejGhApiDeleteRegex();
+
+    [GeneratedRegex(CommandStart + @"gh\s+repo\s+edit\b[^;&|\r\n]*--visibility(?:=|\s+)public" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejGhVisibilityRegex();
+
+    [GeneratedRegex(CommandStart + @"gh\s+auth\s+token" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejGhTokenRegex();
+
+    [GeneratedRegex(CommandStart + @"(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejPasswordCliRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n({`])\s*(?:[^\s;&|'""`()]*/)?pass\s+\S", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejPassRegex();
+
+    [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejOpRegex();
+
+    [GeneratedRegex(CommandStart + @"security\s+(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:find-generic-password|find-internet-password|dump-keychain)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejKeychainRegex();
+
+    [GeneratedRegex(@"--export-secret-(?:key|keys|subkey|subkeys)(?=\s|=|$)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejGpgSecretRegex();
+
+    [GeneratedRegex(@"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s'""]+)/\.password-store(?:/|(?=\s|$|['"";&|]))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejPasswordStorePathRegex();
+
+    [GeneratedRegex(CommandStart + @"(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass))(?=\s|$|['""/;&|])|(?<=^|[/\s'""])(?:1Password|Bitwarden|NordPass|KeePassXC)\.app(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex OndrejPasswordAppRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
     // Does NOT include bash/sh/zsh -c — those are handled by shell -c subcommand extraction
     // in AnalyzeSubCommand, which analyzes the inner command's file operations instead of
     // blocking outright (blocking all bash -c would cause massive false positives).
     // Does NOT match script file execution (python script.py) or version flags (python --version).
-    [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex InlineInterpreterRegex();
 
     // Coaching: detect needless change-directory + command compounds.
@@ -365,10 +456,17 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     public (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command)
     {
-        foreach (var (pattern, reason) in DangerousPatterns)
+        try
         {
-            if (pattern.IsMatch(command))
-                return (true, reason);
+            foreach (var (pattern, reason) in DangerousPatterns)
+            {
+                if (pattern.IsMatch(command))
+                    return (true, reason);
+            }
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return (true, "Command too complex to verify safely");
         }
         return (false, null);
     }

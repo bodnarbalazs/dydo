@@ -11,6 +11,86 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class GuardSecurityTests : IntegrationTestBase
 {
+    [Theory]
+    [InlineData("git push --force origin main")]
+    [InlineData("gh auth token")]
+    [InlineData("bw export --format json")]
+    [InlineData("mkfs.ext4 /dev/sda1")]
+    [InlineData("dd if=/dev/zero of=/dev/mapper/vg-root")]
+    [InlineData("dd if=/dev/zero of=/dev/loop0")]
+    [InlineData("dd if=/dev/zero of=/dev/dm-0")]
+    [InlineData("dd if=x of='/dev/loop0'")]
+    [InlineData("dd if=x of='/dev/mapper/vg-root'")]
+    [InlineData("gpg2 --export-secret-keys ABC")]
+    [InlineData("cat /Applications/Bitwarden.app/Contents/Info.plist")]
+    [InlineData("cat /tmp/Bitwarden.app/Contents/Info.plist")]
+    [InlineData("ls Bitwarden.app")]
+    [InlineData("sudo dd if=/dev/zero of=/dev/sda")]
+    [InlineData("sudo chmod -R 777 /")]
+    [InlineData("sudo chown -R me /")]
+    [InlineData("sudo mkfs.ext4 /dev/sda1")]
+    [InlineData("sudo diskutil eraseDisk JHFS+ Blank disk2")]
+    [InlineData("sudo gpg --export-secret-keys ABC")]
+    [InlineData("sudo -u root rm file.txt")]
+    [InlineData("doas dd if=x of=/dev/sda")]
+    [InlineData("time dd if=x of=/dev/sda")]
+    [InlineData("nohup git push --force origin main")]
+    [InlineData("env FOO=1 git push --force")]
+    [InlineData("(dd if=x of=/dev/sda)")]
+    [InlineData("{ dd if=x of=/dev/sda; }")]
+    [InlineData("echo $(dd if=x of=/dev/sda)")]
+    [InlineData("echo `dd if=x of=/dev/sda`")]
+    [InlineData("bash -c 'git push --force origin main'")]
+    [InlineData("bash -lc 'git push --force'")]
+    [InlineData("sh -c \"dd if=x of=/dev/sda\"")]
+    [InlineData("zsh -c 'gh auth token'")]
+    [InlineData("/usr/bin/dd if=x of=/dev/sda")]
+    [InlineData("LC_ALL=C dd if=x of=/dev/sda")]
+    [InlineData("if true; then dd if=x of=/dev/sda; fi")]
+    [InlineData("sudo -- dd if=x of=/dev/sda")]
+    [InlineData("nice -n 10 dd if=x of=/dev/sda")]
+    [InlineData("xargs dd of=/dev/sda")]
+    [InlineData("ssh host 'dd if=x of=/dev/sda'")]
+    [InlineData("GIT_SSH=x git push --force")]
+    [InlineData("echo 'sudo dd if=x of=/dev/sda'")]
+    [InlineData("eval 'dd if=/dev/zero of=/dev/sda'")]
+    [InlineData("echo 'dd if=/dev/zero of=/dev/sda' | sh")]
+    [InlineData("bash <<< 'dd if=/dev/zero of=/dev/sda'")]
+    [InlineData("bash -c -- 'dd if=/dev/zero of=/dev/sda'")]
+    [InlineData("powershell -Command \"dd if=/dev/zero of=/dev/sda\"")]
+    public async Task OndrejDenylist_HookBlocksDangerousCommand(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(BashJson(command));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Dangerous");
+    }
+
+    [Theory]
+    [InlineData("git push --force-with-lease origin main")]
+    [InlineData("gh auth status")]
+    [InlineData("op --version")]
+    [InlineData("dd if=/dev/zero of=/dev/null")]
+    [InlineData("dd if=x of='/dev/null'")]
+    [InlineData("echo 'dd if=x of=/dev/loop0'")]
+    [InlineData("grep 'dd if=x of=/dev/mapper/vg-root' README.md")]
+    [InlineData("cat /tmp/Safari.app/Contents/Info.plist")]
+    [InlineData("ls Safari.app")]
+    [InlineData("sudo -u me git status")]
+    [InlineData("nohup rm file.txt")]
+    [InlineData("bash -c 'git push --force-with-lease origin main'")]
+    [InlineData("(dd if=x of=/dev/null)")]
+    public async Task OndrejDenylist_HookAllowsBenignCommand(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(BashJson(command));
+
+        result.AssertSuccess();
+    }
+
     private async Task SetupClaimedAgent()
     {
         await InitProjectAsync("none");

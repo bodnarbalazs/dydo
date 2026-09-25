@@ -1,6 +1,7 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using System.Diagnostics;
 using DynaDocs.Services.Map;
 using DynaDocs.Utils;
 
@@ -30,7 +31,7 @@ public static class MapCommand
             Environment.GetEnvironmentVariable("LINEAR_API_KEY"),
             // Test seam: the full-stack e2e points dydo map at a fake Linear.
             Environment.GetEnvironmentVariable("DYDO_LINEAR_ENDPOINT"),
-            parseResult.GetValue(noBrowserOption) ? null : BrowserLauncher.Open,
+            parseResult.GetValue(noBrowserOption) ? null : url => BrowserLauncher.Open(url, Process.Start),
             ct));
         return command;
     }

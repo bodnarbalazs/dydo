@@ -6,11 +6,12 @@ using System.Diagnostics;
 /// <summary>Opens a URL in the default browser: the shell on Windows, `open` on macOS, `xdg-open` elsewhere.</summary>
 internal static class BrowserLauncher
 {
-    public static void Open(Uri url)
+    /// <param name="start">Starts the opener; production passes <see cref="Process.Start(ProcessStartInfo)"/>.</param>
+    public static void Open(Uri url, Func<ProcessStartInfo, Process?> start)
     {
         try
         {
-            using var process = Process.Start(StartInfo(url, OperatingSystem.IsWindows(), OperatingSystem.IsMacOS()));
+            using var process = start(StartInfo(url, OperatingSystem.IsWindows(), OperatingSystem.IsMacOS()));
         }
         catch (Win32Exception)
         {

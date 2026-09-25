@@ -13,6 +13,7 @@ describe('url state', () => {
   it('writes only the keys that have values, in a stable order', () => {
     expect(toSearch({ focus: 'f', team: 't', project: null })).toBe('?team=t&focus=f');
     expect(toSearch({ team: null, project: null, focus: null })).toBe('');
+    expect(toSearch({ team: '', project: 'p', focus: null })).toBe('?project=p');
   });
 
   it('round-trips', () => {

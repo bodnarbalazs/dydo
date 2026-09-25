@@ -79,9 +79,11 @@ describe('buildMapModel edges', () => {
     expect(model.edges).toEqual([{ id: 'blocks:X->P', type: 'blocks', source: 'X', target: 'P', muted: false }]);
   });
 
-  it('keeps a merged edge strong when any of its blockers is open', () => {
-    const graph = makeGraph(tree, [blocks('A', 'X'), blocks('C', 'X')]);
-    const model = buildMapModel(graph, { collapsed: new Set(['P']), showRelated: false });
+  it.each([
+    ['closed first', [blocks('A', 'X'), blocks('C', 'X')]],
+    ['open first', [blocks('C', 'X'), blocks('A', 'X')]],
+  ])('keeps a merged edge strong when any of its blockers is open (%s)', (_order, relations) => {
+    const model = buildMapModel(makeGraph(tree, relations), { collapsed: new Set(['P']), showRelated: false });
     expect(model.edges).toEqual([{ id: 'blocks:P->X', type: 'blocks', source: 'P', target: 'X', muted: false }]);
   });
 

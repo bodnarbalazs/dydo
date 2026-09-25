@@ -65,25 +65,7 @@ public class BashCommandAnalyzerTests
     [InlineData("brew uninstall --cask nordpass")]
     [InlineData("brew uninstall bitwarden-cli")]
     [InlineData("cat ~/.password-store/github.gpg")]
-    [InlineData("sudo dd if=/dev/zero of=/dev/sda")]
-    [InlineData("sudo chmod -R 777 /")]
-    [InlineData("sudo chown -R me /")]
-    [InlineData("sudo mkfs.ext4 /dev/sda1")]
-    [InlineData("sudo diskutil eraseDisk JHFS+ Blank disk2")]
-    [InlineData("sudo gpg --export-secret-keys ABC")]
-    [InlineData("sudo -u root rm file.txt")]
-    [InlineData("doas dd if=x of=/dev/sda")]
-    [InlineData("time dd if=x of=/dev/sda")]
-    [InlineData("nohup git push --force origin main")]
-    [InlineData("env FOO=1 git push --force")]
-    [InlineData("(dd if=x of=/dev/sda)")]
-    [InlineData("{ dd if=x of=/dev/sda; }")]
-    [InlineData("echo $(dd if=x of=/dev/sda)")]
-    [InlineData("echo `dd if=x of=/dev/sda`")]
-    [InlineData("bash -c 'git push --force origin main'")]
-    [InlineData("bash -lc 'git push --force'")]
-    [InlineData("sh -c \"dd if=x of=/dev/sda\"")]
-    [InlineData("zsh -c 'gh auth token'")]
+    [MemberData(nameof(DangerousCommandCases.WrappedFamilies), MemberType = typeof(DangerousCommandCases))]
     public void OndrejDenylist_BlocksMissingFamilies(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
@@ -140,6 +122,20 @@ public class BashCommandAnalyzerTests
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
 
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), $"Took {stopwatch.Elapsed}");
+        Assert.False(dangerous, reason);
+    }
+
+    // Matching must grow linearly with the wrapper chain: a quadratic pattern exceeds its own match
+    // timeout here and fails closed as "too complex", while a linear one stays far below it.
+    [Theory]
+    [InlineData("sudo -a ")]
+    [InlineData("env -a ")]
+    public void CheckDangerousPatterns_ThousandsOfWrapperOptions_StayWithinMatchTimeout(string wrapper)
+    {
+        var command = string.Concat(Enumerable.Repeat(wrapper, 4000)) + "ls";
+
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
         Assert.False(dangerous, reason);
     }
 

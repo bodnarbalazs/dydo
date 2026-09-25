@@ -125,22 +125,38 @@ registration have disappeared before the result is reported.
 
 ## What this repository measures
 
-Nine rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`
-and `node`. Mutation is unavailable on all three with the reason `Pending DYD-103`, and an
+Twelve rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`,
+`node` and `viewer`. Mutation is unavailable on every stack: on the first three with the reason
+`Pending DYD-103`, and on `viewer` because no TypeScript mutation mechanism is adopted. An
 unavailable capability is a failed-closed 2, never a passing gate. Each stack's coverage row
 declares its suite verdict, so under `--force-run` a declaring stack's test verdict comes from its
 coverage row's single instrumented execution. The `dotnet` stack runs inside
-an isolated Git worktree copy of the working candidate; `python` and `node` run in place.
+an isolated Git worktree copy of the working candidate; `python`, `node` and `viewer` run in place.
 [Coverage Tools](../reference/coverage-tools.md) holds the exact commands, artifacts, exit meanings
 and summary schema.
+
+The `viewer` stack is the map viewer's TypeScript under `viewer/src/`. Its rows call the viewer's
+own pnpm scripts: `test` runs `pnpm -C viewer run test`, the static row runs `typecheck` and `lint`
+and reads each compiler and ESLint diagnostic as a finding, and the coverage row runs `coverage`
+with an LCOV reporter and a vitest JSON report added on the command line. Every other gate comes from
+the tools the other stacks use, pointed at the viewer's sources: the same ESLint and SonarJS walker
+for cyclomatic complexity, cognitive complexity and parameters, dependency-cruiser for cycles (type-only
+imports count as edges), knip for unused files and exports, and jscpd for clones. Coverage is
+read per module from Istanbul LCOV and joined to the walker's callables for HCRAP. The build
+command is not a gate row: the typecheck carries the strict-types invariant, and building would write
+the `viewer/dist` that the .NET build embeds.
 
 Static measurement covers all maintained source of a stack, test files included: complexity,
 parameters, dead code, nested ternaries, dependency cycles, unused exports, clones and the native
 analyzers all read test code as well as product code.
 
 Coverage measures only target modules. The role comes from the build, not from a naming
-convention: for C# from each project's evaluated `IsTestProject`, for Python and JavaScript from
-native test discovery. Test bodies, fixtures and assertion helpers supply the evidence; they are
+convention: for C# from each project's evaluated `IsTestProject`, for Python, JavaScript and
+TypeScript from native test discovery. A viewer test is a `viewer/src/**/*.test.ts(x)` file that
+imports `vitest` and calls `test` or `it`. Any other viewer module that imports `vitest`, such as
+the `testSetup.ts` vitest loads before every file, can only run under the runner, so it is test
+harness: role `test` with `nativeTest: false`, which no association can name as another module's
+test file. Test bodies, fixtures and assertion helpers supply the evidence; they are
 not coverage targets and are never required to cover themselves. A maintained gate producer or
 runner is a target even under a test directory — `GateMetrics` and the `DynaDocs.Tests/coverage`
 runners are measured, while the `DynaDocs.Tests` assembly is instrumented for identity only.
@@ -152,11 +168,26 @@ Amendment 2026-09-17, `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and
 every static gate and in the association manifest, and their inventory row carries
 `coverageExemption` only while their extracted modules and the drivers themselves stay associated.
 
-One gap is recorded rather than dropped or weakened: mutation on every stack, which is DYD-103. The
+Two gaps are recorded rather than dropped or weakened. The first is mutation on every stack, which
+is DYD-103. The
 JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
 maintained JavaScript file with no filename extension would be reported as a gap naming DYD-105
 rather than measured as less than the inventory, and no maintained JavaScript file here lacks an
 extension.
+
+The second gap is the viewer's TypeScript outside `viewer/src/`, which is DYD-276. That means the
+Playwright specs and helpers under `viewer/e2e/`, `viewer/fixtures/fixtures.test.ts`, and the root
+configs `vite.config.ts`, `eslint.config.ts` and `playwright.config.ts`. The source inventory lists
+each in `excluded` with the reason `typescript-outside-viewer-src`. They stay under the typecheck,
+whose tsconfig includes them, and under the lint, whose `eslint .` enforces cognitive complexity,
+nested ternaries and parameters. knip's viewer graph judges them too, since its plugins load the
+whole package and an unused verdict needs that graph. What they lack is the gap_check walker, the
+clone and cycle gates and the association gate. TypeScript under `viewer/dist`, `viewer/coverage`
+or `viewer/node_modules` would fall outside `viewer/src/` the same way, and Git ignores all three.
+
+A viewer module absent from the LCOV report passes only if the walker proves it declarative, with
+every top-level statement a type, an interface or a type-only import or export, as
+`viewer/src/api/types.ts` is. Any other absent module is a measurement gap.
 
 ## Recorded gate correction: three dynamic Vulture uses
 

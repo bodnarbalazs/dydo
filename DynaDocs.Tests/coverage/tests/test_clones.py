@@ -16,6 +16,9 @@ from gate_run import CommandLog
 SHARED = '\n'.join(f'    step_{index} = ({index} + total) * (total - {index}) + len(str(total))'
                    for index in range(20))
 DUPLICATED = f'def measure(total):\n{SHARED}\n    return total\n'
+TYPED = '\n'.join(f'  const step{index} = ({index} + total) * (total - {index}) + String(total).length;'
+                  for index in range(20))
+TYPED_DUPLICATE = f'export function measure(total: number): number {{\n{TYPED}\n  return total;\n}}\n'
 
 
 class CloneEligibilityTests(unittest.TestCase):
@@ -132,6 +135,22 @@ class NativeCloneCollectionTests(unittest.TestCase):
         self.assertEqual('pass', answer['status'])
         self.assertEqual(['small.py'], [row['path'] for row in answer['facts']['eligibility']])
         self.assertFalse(answer['facts']['eligibility'][0]['eligible'])
+
+    def test_a_stack_measures_its_own_languages_and_tsx_under_its_own_grammar(self):
+        (self.root / 'first.ts').write_text(TYPED_DUPLICATE, encoding='utf-8')
+        (self.root / 'second.ts').write_text('import { a } from "./a";\n' + TYPED_DUPLICATE, encoding='utf-8')
+        (self.root / 'view.tsx').write_text(TYPED_DUPLICATE, encoding='utf-8')
+        sources = [{'path': 'first.py', 'language': 'python'},
+                   *({'path': name, 'language': 'typescript'} for name in ('first.ts', 'second.ts', 'view.tsx'))]
+
+        viewer = collect_clones(self.runner(sources), {'typescript'})
+        node = collect_clones(self.runner(sources))
+
+        self.assertEqual([], viewer['errors'])
+        self.assertEqual([['first.ts', 'second.ts']],
+                         [[row['path'] for row in finding['fragments']] for finding in viewer['findings']])
+        self.assertEqual(['first.ts', 'second.ts', 'view.tsx'], [row['path'] for row in viewer['facts']['eligibility']])
+        self.assertEqual(['first.py'], [row['path'] for row in node['facts']['eligibility']])
 
     def test_source_without_a_measurable_identity_is_an_accounted_error(self):
         sources = [{'path': 'first.py', 'language': 'python'}, {'path': 'second.py', 'language': 'python'},

@@ -90,3 +90,42 @@ test('member rows carry the diagnostic head and the runtime literal as separate 
     ['static:2:60', '() { return 6; }'],
   ]);
 });
+
+test('TypeScript and TSX use the official metrics and score a component apart from its callbacks', () => {
+  const source = 'export function Panel({ items }: { items: string[] }) {\n'
+    + '  if (items.length === 0) return null;\n'
+    + '  return <ul onClick={(event: MouseEvent) => { if (event.shiftKey) { for (const x of items) { if (x) log(x); } } }}>{items}</ul>;\n'
+    + '}\n';
+  const rows = analyze(source, 'tsx').methods;
+  assert.deepEqual(rows.map(row => [row.id, row.cc, row.cognitive, row.parameters]),
+    [['Panel:1:7', 2, 1, 1], ['<anonymous>:3:22', 4, 6, 1]]);
+  assert.deepEqual(analyze('export const pick = (flag: boolean): number => (flag ? 1 : 2);', 'typescript')
+    .methods.map(row => [row.cc, row.cognitive]), [[2, 1]]);
+});
+
+test('TypeScript leaves unused bindings to its compiler yet still refuses nested ternaries', () => {
+  const result = analyze('type Unused = number;\nexport function f(a: number, unused: Unused) { return a ? (a > 1 ? 1 : 2) : 3; }', 'typescript');
+  assert.deepEqual(result.diagnostics.map(row => row.ruleId), ['no-nested-ternary']);
+});
+
+test('a module the compiler erases entirely has no runtime statement', () => {
+  assert.equal(analyze('import type { A } from "./a";\nexport interface B { a: A }\nexport type C = B;\ntype D = C;', 'typescript').runtime, false);
+  assert.equal(analyze('export interface B { a: number }\nexport const b: B = { a: 1 };', 'typescript').runtime, true);
+  assert.equal(analyze('module.exports = {};').runtime, true);
+});
+
+test('a TypeScript class field initializer is its own callable row; a function field is still refused', () => {
+  const rows = analyze('class Tree {\n  private readonly parent = new Map<string, string>();\n  depth = flag ? 1 : 2;\n}', 'typescript').methods;
+  assert.deepEqual(rows.map(row => [row.id, row.cc, row.cognitive, row.parameters, row.constructor]),
+    [['parent:2:28', 1, 0, 0, false], ['depth:3:10', 2, 0, 0, false]]);
+  assert.throws(() => analyze('class A { f = (x: number) => (x ? 1 : 2); }', 'typescript'), /Missing or ambiguous/);
+  assert.throws(() => analyze('class A { parent = new Map(); }'), /Missing or ambiguous/);
+});
+
+test('TypeScript module metrics score top-level statements without borrowing function bodies', () => {
+  const { moduleMetrics } = require('../js_metrics.cjs');
+  const source = 'import type { A } from "./a";\nexport interface B { a: A }\nconst root = find();\n'
+    + 'if (root === null) throw new Error("none");\nexport function f(x: number) { if (x) return 1; return 0; }';
+  assert.deepEqual(moduleMetrics(source, 'typescript'), { cc: 2, cognitive: 1 });
+  assert.throws(() => analyze('const a = 1;', 'python'), /Unknown JavaScript source type/);
+});

@@ -48,6 +48,9 @@ _DERIVED_SOURCE = 'DynaDocs.Tests/coverage/gap_check.py'
 _DERIVED_PRODUCER = 'DynaDocs.Tests/coverage/sync_testing_example.py'
 _DERIVED_TEST = 'DynaDocs.Tests/coverage/tests/test_sync_testing_example.py'
 _NATIVE_EVIDENCE = 'dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence'
+_TYPESCRIPT_ROOT = 'viewer/src/'
+TYPESCRIPT_OUTSIDE_ROOT = 'typescript-outside-viewer-src'
+_VITEST_IMPORT = re.compile(r'''\bfrom\s+['"]vitest['"]''')
 
 
 def _manifest_digests(text):
@@ -130,6 +133,15 @@ def _coverage_exemption(root, relative, paths, association_map):
                        'tests': association_map[relative]}}, None
 
 
+def _typescript_scope(relative):
+    """The viewer's application source is the TypeScript the gates measure; its Playwright specs,
+    fixtures and tool configs outside it are recorded, never silently dropped."""
+    if relative.startswith(_TYPESCRIPT_ROOT):
+        return None
+    return {'path': relative, 'reason': TYPESCRIPT_OUTSIDE_ROOT,
+            'origin': {'root': _TYPESCRIPT_ROOT, 'gap': 'dydo/guides/testing-strategy.md', 'issue': 'DYD-276'}}
+
+
 def _discovered_test_files(paths, discovery):
     test_files = {row['file'] for row in discovery}
     if not test_files <= set(paths):
@@ -144,6 +156,9 @@ def _source_row(root, relative, path, existing, projects, test_files, associatio
     language = language_of(path)
     if language is None:
         return None, None, []
+    scope = _typescript_scope(relative) if language == 'typescript' else None
+    if scope:
+        return None, scope, []
     exclusion, exclusion_error = _structural_exclusion(root, relative, existing, test_files)
     if exclusion:
         return None, exclusion, []
@@ -155,6 +170,10 @@ def _source_row(root, relative, path, existing, projects, test_files, associatio
     source = {'path': relative, 'sha256': digest, 'language': language, 'role': role,
               'projects': [owner['path'] for owner in owners], 'executable': executable,
               'testFiles': association_map.get(relative, [])}
+    if language == 'typescript' and role == 'target' and _VITEST_IMPORT.search(text):
+        # Only the runner can load a module importing it, so it is test harness, as a C# test
+        # project's helpers are; it cannot be named as another module's test file.
+        source.update(role='test', nativeTest=False)
     exemption, exemption_error = _coverage_exemption(root, relative, existing, association_map)
     if exemption:
         source['coverageExemption'] = exemption

@@ -1,11 +1,45 @@
-/* Source identities and official ESLint/SonarJS metrics for maintained JavaScript. */
+/* Source identities and official ESLint/SonarJS metrics for maintained JavaScript and TypeScript. */
 const { createRequire } = require('node:module');
 const path = require('node:path');
 const loadTool = createRequire(path.join(__dirname, 'package.json'));
 const { Linter } = loadTool('eslint');
 const sonar = loadTool('eslint-plugin-sonarjs');
+const typescriptParser = loadTool('@typescript-eslint/parser');
 
-function collectFunctions(rows, suppressions, moduleEdits, tokens) {
+// TypeScript's own compiler owns its dead-code gate (noUnused*), so ESLint's JavaScript-only
+// unused-binding rules, which misread type positions, run for JavaScript alone.
+const JAVASCRIPT_DEAD_CODE = { 'no-unused-vars': ['error', { args: 'all', caughtErrors: 'all' }],
+  'no-unused-private-class-members': 'error' };
+const LANGUAGES = {
+  commonjs: { sourceType: 'commonjs', filename: 'source.cjs', rules: JAVASCRIPT_DEAD_CODE },
+  module: { sourceType: 'module', filename: 'source.cjs', rules: JAVASCRIPT_DEAD_CODE },
+  typescript: { sourceType: 'module', filename: 'source.ts', parser: typescriptParser, rules: {}, lineJoined: true },
+  tsx: { sourceType: 'module', filename: 'source.tsx', parser: typescriptParser, rules: {}, lineJoined: true }
+};
+const FUNCTION_VALUES = new Set(['ArrowFunctionExpression', 'FunctionExpression']);
+const TYPE_DECLARATIONS = new Set(['TSInterfaceDeclaration', 'TSTypeAliasDeclaration']);
+
+// A statement the compiler erases leaves nothing to execute, so a module made only of them has no
+// coverage points to report.
+function erased(statement) {
+  return TYPE_DECLARATIONS.has(statement.type) || statement.importKind === 'type' || statement.exportKind === 'type'
+    || (statement.type === 'ExportNamedDeclaration' && TYPE_DECLARATIONS.has(statement.declaration?.type));
+}
+
+// ESLint scores a class field's non-function initializer as its own code path at the value. The
+// TypeScript join reads lines, so that path gets a row there; the JavaScript join matches V8
+// function literals, which an initializer is not, so JavaScript keeps refusing it as unjoinable.
+function initializerRow(field) {
+  const value = field.value;
+  return { id: `${field.key?.name || '<initializer>'}:${value.loc.start.line}:${value.loc.start.column}`,
+    line: value.loc.start.line, column: value.loc.start.column,
+    end_line: value.loc.end.line, end_column: value.loc.end.column,
+    body: { start: value.loc.start, end: value.loc.end }, parameters: 0, constructor: false,
+    cognitive: 0, cc: null, start: value.range[0], end: value.range[1] };
+}
+
+function collectFunctions(found, language) {
+  const { methods: rows, suppressions, moduleEdits, tokens } = found;
   return {
     meta: { schema: [] },
     create(context) {
@@ -19,6 +53,7 @@ function collectFunctions(rows, suppressions, moduleEdits, tokens) {
             kind: token.type, text: context.sourceCode.getText(token), line: token.loc.start.line,
             column: token.loc.start.column, end_line: token.loc.end.line, end_column: token.loc.end.column
           });
+          found.runtime = !node.body.every(erased);
           suppressions.push(...context.sourceCode.getAllComments().filter(comment => /(?:istanbul|c8|v8)\s+ignore\b/.test(comment.value)).map(comment => comment.loc.start));
           for (const statement of node.body) {
             const edit = moduleEdit(statement, context.sourceCode.text);
@@ -43,6 +78,9 @@ function collectFunctions(rows, suppressions, moduleEdits, tokens) {
             parameters: node.params.length, constructor: parent.kind === 'constructor',
             cognitive: 0, cc: null, start: literalStart(context.sourceCode, node), end: node.range[1]
           });
+        },
+        PropertyDefinition(node) {
+          if (language.lineJoined && node.value && !FUNCTION_VALUES.has(node.value.type)) rows.push(initializerRow(node));
         }
       };
     }
@@ -101,32 +139,30 @@ function applyMetric(rows, message) {
 
 function analyze(source, sourceType = 'commonjs') {
   source = source.replace(/^\uFEFF/, '');
-  if (!['commonjs', 'module'].includes(sourceType)) throw new Error('Unknown JavaScript source type');
-  const methods = [];
-  const suppressions = [];
-  const moduleEdits = [];
-  const tokens = [];
+  const language = LANGUAGES[sourceType];
+  if (!Object.hasOwn(LANGUAGES, sourceType)) throw new Error('Unknown JavaScript source type');
+  const found = { methods: [], suppressions: [], moduleEdits: [], tokens: [], runtime: true };
   const globals = Object.fromEntries(['require', 'module', 'exports', '__dirname', '__filename',
     'console', 'process', 'Buffer', 'URL', 'setTimeout', 'clearTimeout', 'setInterval',
     'clearInterval', 'fetch', 'AbortController'].map(name => [name, 'readonly']));
   const config = {
-    languageOptions: { ecmaVersion: 'latest', sourceType, globals },
-    plugins: { local: { rules: { collect: collectFunctions(methods, suppressions, moduleEdits, tokens) } }, sonar },
+    files: [`**/${language.filename}`],
+    languageOptions: { ecmaVersion: 'latest', sourceType: language.sourceType, globals,
+      ...(language.parser && { parser: language.parser }) },
+    plugins: { local: { rules: { collect: collectFunctions(found, language) } }, sonar },
     rules: { 'local/collect': 'error', complexity: ['error', 0],
-      'sonar/cognitive-complexity': ['error', 0],
-      'no-unused-vars': ['error', { args: 'all', caughtErrors: 'all' }],
-      'no-unused-private-class-members': 'error', 'no-nested-ternary': 'error' }
+      'sonar/cognitive-complexity': ['error', 0], 'no-nested-ternary': 'error', ...language.rules }
   };
-  const messages = new Linter().verify(source, config, { filename: 'source.cjs', allowInlineConfig: false });
+  const messages = new Linter().verify(source, config, { filename: language.filename, allowInlineConfig: false });
   const fatal = messages.find(message => message.fatal);
   if (fatal) throw new Error(`JavaScript parse failure: ${fatal.message}`);
   const diagnostics = [];
   for (const message of messages) {
-    if (['complexity', 'sonar/cognitive-complexity'].includes(message.ruleId)) applyMetric(methods, message);
+    if (['complexity', 'sonar/cognitive-complexity'].includes(message.ruleId)) applyMetric(found.methods, message);
     else diagnostics.push(message);
   }
-  if (methods.some(row => row.cc === null)) throw new Error('Missing JavaScript cyclomatic metric');
-  return { methods, diagnostics, suppressions, moduleEdits, tokens };
+  if (found.methods.some(row => row.cc === null)) throw new Error('Missing JavaScript cyclomatic metric');
+  return { ...found, diagnostics };
 }
 
 function moduleMetrics(source, sourceType) {
@@ -146,5 +182,9 @@ module.exports = { analyze, moduleMetrics };
 
 if (require.main === module) {
   const fs = require('node:fs');
-  process.stdout.write(JSON.stringify(analyze(fs.readFileSync(0, 'utf8'), process.argv[2])));
+  const [source, kind] = [fs.readFileSync(0, 'utf8'), process.argv[2] ?? 'commonjs'];
+  const row = analyze(source, kind);
+  // The line-joined TypeScript coverage scores top-level statements as the module's own callable.
+  if (LANGUAGES[kind].lineJoined) row.module = moduleMetrics(source, kind);
+  process.stdout.write(JSON.stringify(row));
 }

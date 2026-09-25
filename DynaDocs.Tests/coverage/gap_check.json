@@ -37,6 +37,18 @@
         "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "node", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/node-coverage.json", "required": true}], "suiteVerdict": {"exit": ["collectors", "javascript-coverage", "facts", "child_exit"], "failure": ["collectors", "javascript-coverage", "findings", {"gate": "functional"}]}},
         "mutation": {"state": "unavailable", "reason": "Pending DYD-103"}
       }
+    },
+    {
+      "name": "viewer",
+      "kind": "vitest",
+      "cwd": ".",
+      "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
+      "capabilities": {
+        "test": {"state": "configured", "command": {"kind": "argv", "argv": ["pnpm", "-C", "viewer", "run", "test"]}, "artifacts": []},
+        "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "viewer", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/viewer-static.json", "required": true}]},
+        "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "viewer", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/viewer-coverage.json", "required": true}], "suiteVerdict": {"exit": ["collectors", "typescript-coverage", "facts", "suite_exit"], "failure": ["collectors", "typescript-coverage", "findings", {"gate": "functional"}]}},
+        "mutation": {"state": "unavailable", "reason": "No mutation mechanism is adopted for TypeScript; the DYD-103 lane the other stacks cite is canceled"}
+      }
     }
   ]
 }

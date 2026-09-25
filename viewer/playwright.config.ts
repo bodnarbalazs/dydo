@@ -7,6 +7,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env['CI']),
   reporter: [['list']],
+  // ELK lays out the 161-issue fixture in 3-5 s on an idle machine and far slower under parallel
+  // workers; the default 5 s wait flaked. Budget each wait, and each test, for the loaded case.
+  timeout: 60_000,
+  expect: { timeout: 30_000 },
   use: {
     baseURL: `http://localhost:${String(PORT)}`,
     trace: 'retain-on-failure',

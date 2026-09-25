@@ -116,3 +116,22 @@ test.describe('large Project close-ups', () => {
     });
   }
 });
+
+test.describe('large Project mid-zoom', () => {
+  // The fit-all overview only shows structure; this shot shows a busy region with readable cards.
+  test.use({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 2 });
+
+  test('zooms out from DYD-164 over the busy column', async ({ page }) => {
+    await openLarge(page, issueId(graph, 'DYD-164'));
+    await expect(node(page, 'DYD-164')).toBeInViewport();
+    await page.mouse.move(800, 500);
+    await expect
+      .poll(async () => {
+        await page.mouse.wheel(0, 100);
+        return (await viewport(page)).a;
+      })
+      .toBeLessThan(0.55);
+    await expect(node(page, 'DYD-164')).toBeInViewport();
+    await page.screenshot({ path: `${SHOTS}/large-mid-zoom.png` });
+  });
+});

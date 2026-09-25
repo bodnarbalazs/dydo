@@ -12,7 +12,7 @@ export default defineConfig({
     coverage: {
       provider: 'istanbul',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/testSetup.ts', 'src/main.tsx', 'src/api/types.ts'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/testSetup.ts', 'src/api/types.ts'],
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
       thresholds: { perFile: true, lines: 80, branches: 60 },

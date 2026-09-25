@@ -170,7 +170,7 @@ jobs:
         run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
 
   release:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -199,7 +199,7 @@ jobs:
           prerelease: false
 
   nuget:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -238,7 +238,7 @@ jobs:
         run: dotnet nuget push nupkg/dydo.${{ steps.version.outputs.VERSION }}.nupkg --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   npm:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0' }}
     needs: [build, validation, release]
     runs-on: ubuntu-latest
     permissions:

@@ -39,6 +39,11 @@ Required sections:
 - **Summary** - What was done and why
 - **Files Changed** - Every file touched (critical for debugging)
 
+## Releases
+
+- [dydo 3.1.0 — Linear project map](./2026/2026-09-25/dydo-3-1-0-linear-project-map.md)
+- [dydo 3.0.0 — Linear PM and Notion runtime removal](./2026/2026-08-27/dydo-3-0-0-linear-pm-and-notion-runtime-removal.md)
+
 ---
 
 ## Related

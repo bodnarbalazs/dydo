@@ -42,6 +42,11 @@ describe('api client', () => {
     await expect(fetchTeams()).rejects.toMatchObject({ code: 'http_200' });
   });
 
+  it('tells the user what the server answered when it sent no error body', async () => {
+    answer(502, '<html>');
+    await expect(fetchTeams()).rejects.toMatchObject({ message: 'The map server answered 502 Bad Gateway without an error body.' });
+  });
+
   it('raises the error envelope as an ApiError', async () => {
     answer(502, JSON.stringify({ error: { code: 'linear_auth', message: 'Linear rejected the key.' } }));
     await expect(fetchGraph('p1')).rejects.toEqual(new ApiError('linear_auth', 'Linear rejected the key.'));

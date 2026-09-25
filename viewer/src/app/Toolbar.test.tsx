@@ -38,6 +38,20 @@ describe('Toolbar', () => {
     expect(props.onShowRelated).toHaveBeenCalledWith(true);
   });
 
+  it('prompts for a team and a Project until they are chosen, and neither prompt is a choice', () => {
+    renderToolbar({ team: null });
+    const selects = screen.getAllByRole<HTMLSelectElement>('combobox');
+    expect(selects.map((select) => select.selectedOptions[0]?.textContent)).toEqual(['Choose a team', 'Choose a Project']);
+    expect(selects.map((select) => select.selectedOptions[0]?.disabled)).toEqual([true, true]);
+    expect(screen.getByText('dydo map')).toBeTruthy();
+  });
+
+  it('shows the chosen team and whether related links are shown', () => {
+    renderToolbar({ showRelated: true });
+    expect(screen.getAllByRole<HTMLSelectElement>('combobox')[0]?.selectedOptions[0]?.textContent).toBe('Team (T)');
+    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Show related' }).checked).toBe(true);
+  });
+
   it('names each Project with its status', () => {
     renderToolbar();
     expect(screen.getByRole('option', { name: 'Map · Completed' })).toBeTruthy();
@@ -47,6 +61,7 @@ describe('Toolbar', () => {
     renderToolbar({ team: null, hasPlates: false, summary: 'Map: 3 issues' });
     expect((screen.getAllByRole('combobox')[1] as HTMLSelectElement).disabled).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Collapse all' }).disabled).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Expand all' }).disabled).toBe(true);
     expect(screen.getByText('Map: 3 issues')).toBeTruthy();
   });
 });

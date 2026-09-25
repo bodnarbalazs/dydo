@@ -34,7 +34,7 @@ export function IssueSummary({ issue, pickable }: IssueSummaryProps) {
 export function LinearButton({ issue }: { issue: Issue }) {
   return (
     <a
-      className="linear-button nodrag"
+      className="linear-button"
       href={issue.url}
       target="_blank"
       rel="noopener"

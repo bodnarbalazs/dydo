@@ -76,6 +76,23 @@ test.describe('large Project map', () => {
     await expect.poll(async () => (await viewport(page)).e).toBeLessThan(zoomed.e);
   });
 
+  test('zooms and pans from the minimap', async ({ page }) => {
+    await openLarge(page);
+    const minimap = await page.locator('.react-flow__minimap-svg').boundingBox();
+    if (minimap === null) throw new Error('the minimap is not on screen');
+    const centre = { x: minimap.x + minimap.width / 2, y: minimap.y + minimap.height / 2 };
+    const before = await viewport(page);
+    await page.mouse.move(centre.x, centre.y);
+    await page.mouse.wheel(0, -300);
+    await expect.poll(async () => (await viewport(page)).a).toBeGreaterThan(before.a);
+    const zoomed = await viewport(page);
+    await page.mouse.move(centre.x, centre.y);
+    await page.mouse.down();
+    await page.mouse.move(centre.x - 40, centre.y - 30, { steps: 5 });
+    await page.mouse.up();
+    await expect.poll(async () => (await viewport(page)).e).not.toBe(zoomed.e);
+  });
+
   test('Collapse all keeps only top-level plates and Expand all restores them', async ({ page }) => {
     await openLarge(page);
     await page.getByRole('button', { name: 'Collapse all' }).click();

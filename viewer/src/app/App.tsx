@@ -15,51 +15,80 @@ interface Failure {
   message: string;
 }
 
-/** Where a failure happened: the team list, one team's Projects, or one Project's map. */
-type FailedView = 'teams' | `team:${string}` | `project:${string}`;
+/** A request's outcome: its answer, or the failure shown to the user. */
+type Loaded<T> = { value: T } | { failure: Failure };
+
+/** The URL and what has loaded for it; moving to another team or Project starts that part empty. */
+interface View {
+  url: UrlState;
+  projects: Loaded<Project[]> | null;
+  graph: Loaded<Graph> | null;
+}
 
 function failure(error: unknown): Failure {
   if (error instanceof ApiError) return { code: error.code, message: error.message };
   return { code: 'viewer_error', message: error instanceof Error ? error.message : String(error) };
 }
 
+function valueOf<T>(loaded: Loaded<T> | null): T | null {
+  return loaded !== null && 'value' in loaded ? loaded.value : null;
+}
+
+function failureOf(loaded: Loaded<unknown> | null): Failure | null {
+  return loaded !== null && 'failure' in loaded ? loaded.failure : null;
+}
+
+/** Hands the outcome of `request` to `done` unless the returned cleanup ran first, so a view left behind ignores late answers. */
+function settle<T>(request: Promise<T>, done: (loaded: Loaded<T>) => void): () => void {
+  let live = true;
+  request.then(
+    (value) => {
+      if (live) done({ value });
+    },
+    (reason: unknown) => {
+      if (live) done({ failure: failure(reason) });
+    },
+  );
+  return () => {
+    live = false;
+  };
+}
+
+function moveTo(view: View, url: UrlState): View {
+  return {
+    url,
+    projects: url.team === view.url.team ? view.projects : null,
+    graph: url.project === view.url.project ? view.graph : null,
+  };
+}
+
 export function App({ elk }: { elk: ELK }) {
-  const [url, setUrl] = useState<UrlState>(() => readUrlState(window.location.search));
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loadedProjects, setLoadedProjects] = useState<{ team: string; projects: Project[] } | null>(null);
-  const [loadedGraph, setLoadedGraph] = useState<{ project: string; graph: Graph } | null>(null);
-  const [failures, setFailures] = useState<ReadonlyMap<FailedView, Failure>>(new Map());
+  const [view, setView] = useState<View>(() => ({ url: readUrlState(window.location.search), projects: null, graph: null }));
+  const [teams, setTeams] = useState<Loaded<Team[]> | null>(null);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [showRelated, setShowRelated] = useState(false);
-  const [laidOut, setLaidOut] = useState<{ graph: Graph; flow: MapFlow; fitKey: number } | null>(null);
+  const [layout, setLayout] = useState<{ graph: Graph; loaded: Loaded<{ flow: MapFlow; fitKey: number }> } | null>(null);
   const [fitKey, setFitKey] = useState(0);
 
-  const projects = loadedProjects !== null && loadedProjects.team === url.team ? loadedProjects.projects : [];
-  const current = loadedGraph !== null && loadedGraph.project === url.project ? loadedGraph : null;
-  const graph = current?.graph ?? null;
-  const shown = laidOut !== null && laidOut.graph === graph ? laidOut : null;
-  // A failure is shown only while its view is on screen, so navigating away drops it.
-  const error = failures.get('teams') ?? failures.get(`team:${url.team}`) ?? failures.get(`project:${url.project}`) ?? null;
-
-  const record = useCallback((view: FailedView, outcome: Failure | null) => {
-    setFailures((previous) => {
-      const next = new Map(previous);
-      if (outcome === null) next.delete(view);
-      else next.set(view, outcome);
-      return next;
-    });
-  }, []);
+  const { url } = view;
+  const graph = valueOf(view.graph);
+  const laidOut = layout?.graph === graph ? layout.loaded : null;
+  const map = valueOf(laidOut);
+  const mapFailure = failureOf(view.graph) ?? failureOf(laidOut);
+  // One slot per stage, in a fixed order, so each failure on screen keeps its place.
+  const failures = [failureOf(teams), failureOf(view.projects), mapFailure];
 
   const navigate = useCallback((next: UrlState, mode: 'push' | 'replace') => {
     const target = `${window.location.pathname}${toSearch(next)}`;
     if (mode === 'push') window.history.pushState(null, '', target);
     else window.history.replaceState(null, '', target);
-    setUrl(next);
+    setView((current) => moveTo(current, next));
   }, []);
 
   useEffect(() => {
     const onPop = () => {
-      setUrl(readUrlState(window.location.search));
+      const next = readUrlState(window.location.search);
+      setView((current) => moveTo(current, next));
     };
     window.addEventListener('popstate', onPop);
     return () => {
@@ -67,85 +96,41 @@ export function App({ elk }: { elk: ELK }) {
     };
   }, []);
 
-  useEffect(() => {
-    fetchTeams().then(setTeams, (reason: unknown) => {
-      record('teams', failure(reason));
-    });
-  }, [record]);
+  useEffect(() => settle(fetchTeams(), setTeams), []);
 
   useEffect(() => {
     const team = url.team;
     if (team === null) return undefined;
-    let live = true;
-    fetchProjects(team).then(
-      (loaded) => {
-        if (!live) return;
-        record(`team:${team}`, null);
-        setLoadedProjects({ team, projects: loaded });
-      },
-      (reason: unknown) => {
-        if (live) record(`team:${team}`, failure(reason));
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [url.team, record]);
+    return settle(fetchProjects(team), (projects) => setView((current) => ({ ...current, projects })));
+  }, [url.team]);
 
   useEffect(() => {
     const project = url.project;
     if (project === null) return undefined;
-    let live = true;
-    fetchGraph(project).then(
-      (loaded) => {
-        if (!live) return;
-        record(`project:${project}`, null);
-        setCollapsed(new Set());
-        setLoadedGraph({ project, graph: loaded });
-      },
-      (reason: unknown) => {
-        if (live) record(`project:${project}`, failure(reason));
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [url.project, record]);
+    return settle(fetchGraph(project), (loaded) => {
+      setCollapsed(new Set());
+      setView((current) => ({ ...current, graph: loaded }));
+    });
+  }, [url.project]);
 
   useEffect(() => {
-    if (current === null) return undefined;
-    const { project, graph: drawn } = current;
-    let live = true;
-    layoutMap(elk, buildMapModel(drawn, { collapsed, showRelated })).then(
-      (next) => {
-        if (!live) return;
-        record(`project:${project}`, null);
-        setLaidOut({ graph: drawn, flow: next, fitKey });
-      },
-      (reason: unknown) => {
-        if (live) record(`project:${project}`, failure(reason));
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [elk, current, collapsed, showRelated, fitKey, record]);
+    if (graph === null) return undefined;
+    const request = layoutMap(elk, buildMapModel(graph, { collapsed, showRelated })).then((flow) => ({ flow, fitKey }));
+    return settle(request, (loaded) => setLayout({ graph, loaded }));
+  }, [elk, graph, collapsed, showRelated, fitKey]);
 
   const plateIds = useMemo(() => new Set(graph?.issues.flatMap((issue) => (issue.parentId === null ? [] : [issue.parentId]))), [graph]);
   const allPlates = useMemo(() => new Set(graph?.issues.filter((issue) => plateIds.has(issue.id)).map((issue) => issue.id)), [graph, plateIds]);
 
   const focus = useCallback((id: string) => navigate({ ...url, focus: id }, 'replace'), [navigate, url]);
-  const togglePlate = useCallback(
-    (id: string) => {
-      setCollapsed((current) => {
-        const next = new Set(current);
-        if (!next.delete(id)) next.add(id);
-        return next;
-      });
-      focus(id);
-    },
-    [focus],
-  );
+  // The pill's click also reaches its plate, which focuses it.
+  const togglePlate = useCallback((id: string) => {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }, []);
   const openExternal = useCallback(
     (issue: Issue) => navigate({ team: issue.team.id, project: issue.project?.id ?? null, focus: issue.id }, 'push'),
     [navigate],
@@ -158,8 +143,8 @@ export function App({ elk }: { elk: ELK }) {
   return (
     <div className="app">
       <Toolbar
-        teams={teams}
-        projects={projects}
+        teams={valueOf(teams) ?? []}
+        projects={valueOf(view.projects) ?? []}
         team={url.team}
         project={url.project}
         hasPlates={allPlates.size > 0}
@@ -171,17 +156,20 @@ export function App({ elk }: { elk: ELK }) {
         onExpandAll={() => setAll(new Set())}
         onShowRelated={setShowRelated}
       />
-      {error !== null && (
-        <div className="error" role="alert">
-          <strong>{error.code}</strong> {error.message}
-        </div>
+      {failures.map(
+        (shown, stage) =>
+          shown !== null && (
+            <div key={stage} className="error" role="alert">
+              <strong>{shown.code}</strong> {shown.message}
+            </div>
+          ),
       )}
       <main className="canvas">
-        {shown === null ? (
-          <Placeholder url={url} loading={error === null} />
+        {map === null ? (
+          <Placeholder url={url} loading={mapFailure === null} />
         ) : (
           <ReactFlowProvider>
-            <MapCanvas flow={shown.flow} focus={url.focus} fitKey={shown.fitKey} onFocus={focus} onOpenExternal={openExternal} onTogglePlate={togglePlate} />
+            <MapCanvas flow={map.flow} focus={url.focus} fitKey={map.fitKey} onFocus={focus} onOpenExternal={openExternal} onTogglePlate={togglePlate} />
           </ReactFlowProvider>
         )}
       </main>

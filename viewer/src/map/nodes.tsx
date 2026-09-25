@@ -47,13 +47,10 @@ function PlateNode({ data, selected }: NodeProps<MapFlowNode>) {
       </div>
       <button
         type="button"
-        className="plate-toggle nodrag"
+        className="plate-toggle"
         aria-expanded={!collapsed}
         aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${issue.identifier}`}
-        onClick={(event) => {
-          event.stopPropagation();
-          togglePlate(issue.id);
-        }}
+        onClick={() => togglePlate(issue.id)}
       >
         {collapsed ? '▸' : '▾'} {descendants} sub-issue{descendants === 1 ? '' : 's'}
       </button>

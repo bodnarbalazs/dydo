@@ -1,4 +1,4 @@
-import { Background, Controls, MiniMap, Panel, ReactFlow, useNodesInitialized, useReactFlow, type NodeMouseHandler } from '@xyflow/react';
+import { Background, Controls, MiniMap, Panel, ReactFlow, useReactFlow, type NodeMouseHandler } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Issue } from '../api/types';
 import type { MapFlow, MapFlowNode } from '../layout/toFlow';
@@ -22,8 +22,7 @@ export function MapCanvas({ flow, focus, fitKey, onFocus, onOpenExternal, onTogg
   const nodes = useMemo(() => flow.nodes.map((node) => ({ ...node, selected: node.id === focus })), [flow.nodes, focus]);
   const actions = useMemo(() => ({ togglePlate: onTogglePlate }), [onTogglePlate]);
 
-  const onNodeClick: NodeMouseHandler<MapFlowNode> = (event, node) => {
-    if (event.target instanceof Element && event.target.closest('a, button')) return;
+  const onNodeClick: NodeMouseHandler<MapFlowNode> = (_event, node) => {
     const { issue, kind } = node.data.node;
     if (kind === 'external' && issue.project !== null) onOpenExternal(issue);
     else onFocus(issue.id);
@@ -58,13 +57,11 @@ export function MapCanvas({ flow, focus, fitKey, onFocus, onOpenExternal, onTogg
 /** Fits the map on a new layout request and centres the focused node whenever focus moves. */
 function Viewport({ nodes, focus, fitKey }: { nodes: MapFlowNode[]; focus: string | null; fitKey: number }) {
   const { fitView } = useReactFlow();
-  const initialized = useNodesInitialized();
   const fitted = useRef<number | null>(null);
   const centred = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!initialized) return;
-    const target = focus !== null && nodes.some((node) => node.id === focus) ? focus : null;
+    const target = nodes.some((node) => node.id === focus) ? focus : null;
     if (fitted.current !== fitKey) {
       fitted.current = fitKey;
       centred.current = target;
@@ -73,6 +70,6 @@ function Viewport({ nodes, focus, fitKey }: { nodes: MapFlowNode[]; focus: strin
       centred.current = target;
       void fitView({ nodes: [{ id: target }], maxZoom: 1, minZoom: 0.6, duration: 300 });
     }
-  }, [initialized, nodes, focus, fitKey, fitView]);
+  }, [nodes, focus, fitKey, fitView]);
   return null;
 }

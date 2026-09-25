@@ -178,10 +178,10 @@ describe('App errors', () => {
     expect(screen.getByText('The map could not be drawn.')).toBeTruthy();
   });
 
-  it('shows a failed team list', async () => {
+  it('shows a failed team list, and the failed Project list beside it', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ error: { code: 'linear_auth', message: 'Key rejected.' } }, 502))));
     open('?team=team-1');
-    expect((await screen.findByRole('alert')).textContent).toBe('linear_auth Key rejected.');
+    await waitFor(() => expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual(['linear_auth Key rejected.', 'linear_auth Key rejected.']));
   });
 
   it('shows a layout failure', async () => {
@@ -264,6 +264,99 @@ describe('App errors belong to the view that failed', () => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     expect((await screen.findByRole('alert')).textContent).toContain('linear_rate_limited');
+  });
+
+  /** Opens Project One with a map, leaves for Project Two, which never answers, then returns. */
+  async function revisitProjectOne(elk: ElkApi, refetch: () => Promise<Response>) {
+    answers['project-1'] = () => Promise.resolve(json(graphOne));
+    window.history.replaceState(null, '', '/?team=team-1&project=project-1');
+    render(<App elk={elk} />);
+    await mapShown();
+    await screen.findByRole('option', { name: 'Project Two · Planned' });
+    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    answers['project-1'] = refetch;
+    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+  }
+
+  it('draws nothing from an earlier visit while a revisited Project refetches', async () => {
+    await revisitProjectOne(new ELK(), () => new Promise<Response>(() => undefined));
+    expect(card('T-X')).toBeNull();
+    expect(screen.getByText('Loading the Project map…')).toBeTruthy();
+  });
+
+  it('keeps a revisited Project\'s refetch failure through a relayout request', async () => {
+    const real = new ELK();
+    let layouts = 0;
+    const counted = {
+      layout: (graph: Parameters<ElkApi['layout']>[0]) => {
+        layouts += 1;
+        return real.layout(graph);
+      },
+    } as unknown as ElkApi;
+    await revisitProjectOne(counted, () => Promise.resolve(rateLimited()));
+    expect((await screen.findByRole('alert')).textContent).toContain('linear_rate_limited');
+    const before = layouts;
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show related' }));
+    expect(layouts).toBe(before);
+    expect(screen.getByRole('alert').textContent).toContain('linear_rate_limited');
+    expect(screen.getByText('The map could not be drawn.')).toBeTruthy();
+    expect(card('T-X')).toBeNull();
+  });
+
+  it('keeps a revisited Project\'s refetch failure when a layout of that Project finishes late', async () => {
+    const real = new ELK();
+    const held: { graph: Parameters<ElkApi['layout']>[0]; result: ReturnType<typeof deferred<Awaited<ReturnType<ElkApi['layout']>>>> }[] = [];
+    const elk = {
+      layout: (graph: Parameters<ElkApi['layout']>[0]) => {
+        const result = deferred<Awaited<ReturnType<ElkApi['layout']>>>();
+        held.push({ graph, result });
+        // The first layout answers at once so the map is drawn; later ones wait for the test.
+        if (held.length === 1) void real.layout(graph).then(result.resolve);
+        return result.promise;
+      },
+    } as unknown as ElkApi;
+    await revisitProjectOne(elk, () => Promise.resolve(rateLimited()));
+    expect((await screen.findByRole('alert')).textContent).toContain('linear_rate_limited');
+    await act(async () => {
+      for (const layout of held.slice(1)) layout.result.resolve(await real.layout(layout.graph));
+      // A zero-delay task runs after every promise callback those answers queued.
+      await new Promise((drained) => setTimeout(drained, 0));
+    });
+    expect(screen.getByRole('alert').textContent).toContain('linear_rate_limited');
+    expect(card('T-X')).toBeNull();
+  });
+
+  it('shows the failure of every stage on screen, and a team list failure is no map failure', async () => {
+    let graphAnswer: () => Promise<Response> = () => new Promise<Response>(() => undefined);
+    vi.mocked(fetch).mockImplementation((input) => {
+      const url = new URL(input as string, 'http://localhost');
+      if (url.pathname === '/api/teams') return Promise.resolve(json({ error: { code: 'linear_auth', message: 'Key rejected.' } }, 502));
+      if (url.pathname === '/api/projects') return Promise.resolve(json({ projects: twoProjects }));
+      return graphAnswer();
+    });
+    open('?team=team-1&project=project-1');
+    expect((await screen.findByRole('alert')).textContent).toBe('linear_auth Key rejected.');
+    expect(screen.getByText('Loading the Project map…')).toBeTruthy();
+    graphAnswer = () => Promise.resolve(rateLimited());
+    await screen.findByRole('option', { name: 'Project Two · Planned' });
+    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual(['linear_auth Key rejected.', 'linear_rate_limited Linear is rate limiting this key.']);
+    expect(screen.getByText('The map could not be drawn.')).toBeTruthy();
+  });
+
+  it('shows a failed relayout instead of the map it could not redraw', async () => {
+    const real = new ELK();
+    let calls = 0;
+    const flaky = { layout: (graph: Parameters<ElkApi['layout']>[0]) => (++calls === 2 ? Promise.reject(new Error('ELK exploded')) : real.layout(graph)) } as unknown as ElkApi;
+    answers['project-1'] = () => Promise.resolve(json(graphOne));
+    window.history.replaceState(null, '', '/?team=team-1&project=project-1');
+    render(<App elk={flaky} />);
+    await mapShown();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show related' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('viewer_error ELK exploded');
+    expect(card('T-X')).toBeNull();
+    expect(screen.getByText('The map could not be drawn.')).toBeTruthy();
   });
 
   it('clears a layout failure once the map lays out', async () => {
@@ -370,6 +463,8 @@ describe('App ignores answers for a view it has left', () => {
     await answer('project-1', json(graphOne));
     await new Promise((settle) => setTimeout(settle, 50));
     expect(card('T-E')).not.toBeNull();
+    expect(card('T-X')).toBeNull();
+    expect(screen.getByText('Project Two: 1 issues, 0 plates')).toBeTruthy();
   });
 
   it('drops a graph failure that arrives after the Project changed', async () => {
@@ -378,6 +473,7 @@ describe('App ignores answers for a view it has left', () => {
     await screen.findByRole('option', { name: 'Project Two · Planned' });
     pick(1, 'project-2');
     await answer('project-1', rateLimited());
+    expect(screen.queryByRole('alert')).toBeNull();
     pick(1, 'project-1');
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('Loading the Project map…')).toBeTruthy();

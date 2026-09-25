@@ -31,10 +31,23 @@ def stub_script(stdout, exit_code):
     return script
 
 
+def aliased(directory):
+    """The directory reached through a second name, as Windows reaches a temp folder through its 8.3
+    short name while the tools report the long one; the plain directory where links are refused."""
+    directory.mkdir()
+    alias = directory.with_name("RUNNER~1")
+    try:
+        alias.symlink_to(directory, target_is_directory=True)
+    except OSError:
+        return directory
+    return alias
+
+
 class TypeScriptCollectorTests(unittest.TestCase):
     def setUp(self):
-        self.repository = Path(tempfile.mkdtemp(prefix="dyd266-typescript-collectors-"))
-        self.addCleanup(shutil.rmtree, self.repository, True)
+        base = Path(tempfile.mkdtemp(prefix="dyd266-typescript-collectors-"))
+        self.addCleanup(shutil.rmtree, base, True)
+        self.repository = aliased(base / "repository")
         sources = {"viewer/src/left.ts": "import type { Right } from './right';\nexport const left = (r: Right) => r;\n",
                    "viewer/src/right.ts": "import { left } from './left';\nexport type Right = typeof left;\n",
                    "viewer/src/view.tsx": "export function View() {\n  return <p>{1}</p>;\n}\n",
@@ -45,9 +58,10 @@ class TypeScriptCollectorTests(unittest.TestCase):
 
     def collector(self, names):
         runner = Collectors.__new__(Collectors)
-        runner.root, runner.coverage = self.repository, TOOLS
-        runner.output = self.repository / "gate-output"
-        runner.log = CommandLog(self.repository, runner.output / "commands")
+        # Collectors.__init__ resolves its root; so does this stand-in for it.
+        runner.root, runner.coverage = self.repository.resolve(), TOOLS
+        runner.output = runner.root / "gate-output"
+        runner.log = CommandLog(runner.root, runner.output / "commands")
         runner.inventory = {"sources": [{"path": name, "language": "typescript"} for name in names],
                             "excluded": []}
         runner.static = {}

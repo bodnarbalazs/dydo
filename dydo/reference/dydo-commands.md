@@ -8,7 +8,7 @@ type: reference
 Complete reference for dydo's local setup, documentation, guard, validation, testing, and utility
 commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-caches, polls, or mirrors a Linear object. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
+caches, polls, or mirrors a Linear object; `dydo map` only reads Linear, when its local page asks. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
 durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
@@ -142,6 +142,32 @@ Bash included. Both tiers bind on every caller; [Files Off-Limits](../files-off-
 them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudges are configured in
 `dydo.json` — see [DynaDocs](./about-dynadocs.md). `--stop` is a retained no-op so existing Stop-hook
 wiring keeps resolving.
+
+---
+
+## Linear Command
+
+### dydo map
+
+Serve a read-only, local browser map of one Linear Project.
+
+```bash
+dydo map                  # print the URL and open it in the default browser
+dydo map --no-browser     # print the URL only
+```
+
+`dydo map` reads a personal Linear API key from `LINEAR_API_KEY`. Without one it prints how to create
+a key and exits `2` before any network call. Otherwise it serves `http://localhost:<free port>/`,
+prints that URL, opens it unless `--no-browser` is given, and runs until Ctrl+C. The server answers
+GET only; the key stays in the dydo process and never reaches the browser.
+
+The page reads `GET /api/teams`, `GET /api/projects?team=<teamId>` and `GET /api/graph?project=<projectId>`.
+Each request reads Linear afresh, so reloading the page shows Linear's current state; nothing is
+cached or written. The viewer is embedded when `viewer/dist/` was built before dydo; a dydo built
+without it serves a page at `/` saying the viewer was not built, and `dydo map --help` says so too.
+
+`DYDO_LINEAR_ENDPOINT` replaces the Linear GraphQL URL. It is a test seam for pointing dydo map at a
+fake Linear, not a user setting.
 
 ---
 

@@ -35,6 +35,7 @@ public class CompleteCommandTests : IDisposable
         Assert.DoesNotContain("clean", completions);
         Assert.Contains("completions", completions);
         Assert.Contains("gap-check", completions);
+        Assert.Contains("map", completions);
     }
 
     [Theory]

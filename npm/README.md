@@ -65,6 +65,7 @@ init mode.
 | `dydo guard` | Evaluate hook rules and nudges. |
 | `dydo validate` | Validate local configuration and nudges. |
 | `dydo gap-check` | Run the test runner configured in `dydo.json`. |
+| `dydo map` | Serve a read-only map of a Linear Project on localhost. |
 | `dydo completions`, `version`, `help` | Shell and utility commands. |
 
 See the full [command reference](https://github.com/bodnarbalazs/dydo/blob/master/dydo/reference/dydo-commands.md).

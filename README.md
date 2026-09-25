@@ -195,6 +195,7 @@ dydo has no OpenCode init mode.
 | `dydo guard` | Evaluate one tool call against the hook rules and nudges (run by the hooks) |
 | `dydo validate` | Validate local configuration and nudges |
 | `dydo gap-check [args]` | Run the test runner configured in `dydo.json`, passing the arguments through |
+| `dydo map [--no-browser]` | Serve a read-only map of a Linear Project on localhost (needs `LINEAR_API_KEY`) |
 | `dydo completions <shell>` | Print a completion script for `bash`, `zsh`, or `powershell` |
 | `dydo version` | Print the version |
 | `dydo help` | Print the command summary |

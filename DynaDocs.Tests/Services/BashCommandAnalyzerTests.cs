@@ -92,6 +92,62 @@ public class BashCommandAnalyzerTests
     }
 
     [Theory]
+    [InlineData("/usr/bin/dd if=x of=/dev/sda")]
+    [InlineData("FOO=1 dd if=x of=/dev/sda")]
+    [InlineData("LC_ALL=C dd if=x of=/dev/sda")]
+    [InlineData("if true; then dd if=x of=/dev/sda; fi")]
+    [InlineData("for i in 1; do dd if=x of=/dev/sda; done")]
+    [InlineData("! dd if=x of=/dev/sda")]
+    [InlineData("\\dd if=x of=/dev/sda")]
+    [InlineData("sudo -- dd if=x of=/dev/sda")]
+    [InlineData("command -p dd if=x of=/dev/sda")]
+    [InlineData("nice -n 10 dd if=x of=/dev/sda")]
+    [InlineData("ionice -c3 dd if=x of=/dev/sda")]
+    [InlineData("timeout 60 dd if=x of=/dev/sda")]
+    [InlineData("stdbuf -o0 dd if=x of=/dev/sda")]
+    [InlineData("xargs dd of=/dev/sda")]
+    [InlineData("ssh host dd if=x of=/dev/sda")]
+    [InlineData("ssh host 'dd if=x of=/dev/sda'")]
+    [InlineData("ssh host \"dd if=x of=/dev/sda\"")]
+    [InlineData("nice git push --force")]
+    [InlineData("GIT_SSH=x git push --force")]
+    [InlineData("echo 'sudo dd if=x of=/dev/sda'")]
+    [InlineData("xargs -n1 gh repo delete --yes")]
+    [InlineData("/usr/bin/gpg --export-secret-keys")]
+    [InlineData("sudo -- rm file.txt")]
+    public void OndrejDenylist_BlocksCommandAfterAnySeparator(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.False(string.IsNullOrWhiteSpace(reason));
+    }
+
+    [Theory]
+    [InlineData("sudo -a ")]
+    [InlineData("env -a ")]
+    public void CheckDangerousPatterns_RepeatedWrapperOptions_FinishesQuickly(string wrapper)
+    {
+        var command = string.Concat(Enumerable.Repeat(wrapper, 200)) + "ls";
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), $"Took {stopwatch.Elapsed}");
+        Assert.False(dangerous, reason);
+    }
+
+    [Fact]
+    public void CheckDangerousPatterns_MatchTimeout_FailsClosed()
+    {
+        var command = string.Concat(Enumerable.Repeat("dd ", 100_000));
+
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous);
+        Assert.Equal("Command too complex to verify safely", reason);
+    }
+
+    [Theory]
     [InlineData("rm -rf /tmp/build-cache")]
     [InlineData("rm -rf ~/old-project")]
     [InlineData("dd if=input.iso of=backup.img bs=4m")]
@@ -124,7 +180,6 @@ public class BashCommandAnalyzerTests
     [InlineData("git commit -m \"git push --force\"")]
     [InlineData("echo \"please pass the token\"")]
     [InlineData("npm run pass-tests")]
-    [InlineData("echo 'sudo dd if=x of=/dev/sda'")]
     [InlineData("sudo -u me git status")]
     [InlineData("nohup rm file.txt")]
     [InlineData("bash -c 'git push --force-with-lease origin main'")]

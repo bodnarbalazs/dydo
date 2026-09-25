@@ -44,6 +44,15 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("bash -lc 'git push --force'")]
     [InlineData("sh -c \"dd if=x of=/dev/sda\"")]
     [InlineData("zsh -c 'gh auth token'")]
+    [InlineData("/usr/bin/dd if=x of=/dev/sda")]
+    [InlineData("LC_ALL=C dd if=x of=/dev/sda")]
+    [InlineData("if true; then dd if=x of=/dev/sda; fi")]
+    [InlineData("sudo -- dd if=x of=/dev/sda")]
+    [InlineData("nice -n 10 dd if=x of=/dev/sda")]
+    [InlineData("xargs dd of=/dev/sda")]
+    [InlineData("ssh host 'dd if=x of=/dev/sda'")]
+    [InlineData("GIT_SSH=x git push --force")]
+    [InlineData("echo 'sudo dd if=x of=/dev/sda'")]
     public async Task OndrejDenylist_HookBlocksDangerousCommand(string command)
     {
         await SetupClaimedAgent();
@@ -64,7 +73,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("grep 'dd if=x of=/dev/mapper/vg-root' README.md")]
     [InlineData("cat /tmp/Safari.app/Contents/Info.plist")]
     [InlineData("ls Safari.app")]
-    [InlineData("echo 'sudo dd if=x of=/dev/sda'")]
     [InlineData("sudo -u me git status")]
     [InlineData("nohup rm file.txt")]
     [InlineData("bash -c 'git push --force-with-lease origin main'")]

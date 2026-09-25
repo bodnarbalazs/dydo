@@ -82,13 +82,13 @@ The guard fires on `dydo` commands themselves too — dangerous patterns, nudges
 
 ### David Ondrej denylist audit
 
-DYD-188 compared [the upstream denylist](https://github.com/davidondrej/skills/blob/main/hooks/dangerous-patterns.txt) (blob `02e930aaf9879b879475baff5142f78e2df52f2a`) and its [test matrix](https://github.com/davidondrej/skills/blob/main/hooks/test-guard.sh) with the built-in analyzer. The following table records the disposition of each family. Detections are anchored to executable position for commands whose names can also appear as arguments or prose; that position also follows `(`, `{`, `$(`, a backtick, a `sh -c`/`bash -c` string opener and wrappers (`sudo`/`doas` with flags, `time`, `nohup`, `exec`, `command`, `env` with assignments). Option values and path targets limit false positives.
+DYD-188 compared [the upstream denylist](https://github.com/davidondrej/skills/blob/main/hooks/dangerous-patterns.txt) (blob `02e930aaf9879b879475baff5142f78e2df52f2a`) and its [test matrix](https://github.com/davidondrej/skills/blob/main/hooks/test-guard.sh) with the built-in analyzer. The following table records the disposition of each family. Command-shaped detections use upstream's anchor: the command name, optionally path-qualified (`/usr/bin/dd`), starts the line or follows whitespace or a shell separator (`;`, `&`, `|`, `(`, `)`, `{`, `}`, a backtick, `!`, `\`). So `sudo`, `nice`, `xargs`, `ssh host`, assignments such as `LC_ALL=C` and keywords such as `then` need no wrapper list. A quote starts a command only after a shell `-c` flag or an `ssh` remote command, so `echo 'dd ... of=/dev/sda'` is allowed. A command named later inside quoted prose follows whitespace and is blocked, as upstream does: `echo 'sudo dd ... of=/dev/sda'` fails closed. Every rule has a 250 ms match timeout; a command that exceeds it is blocked as too complex to verify. Option values and path targets limit false positives.
 
 | Family | Disposition | Boundary and benign example |
 |---|---|---|
 | Root/home delete, fork bomb, shell download-and-execute | Already covered; extended `rm` for `/Users`, `--no-preserve-root` and `curl \| sudo zsh` | `rm -rf /tmp/build-cache`, `curl ... \| jq` allowed |
-| Disk write/format | Extended `dd` writes to `/dev/*` except `/dev/null`; added `mkfs*` and destructive `diskutil` verbs | `dd ... of=backup.img`, `dd ... of=/dev/null` allowed |
-| Privileged delete | Added `sudo` with optional flags followed by `rm` | `sudo brew services restart` allowed |
+| Disk write/format | Extended `dd` writes to `/dev/*` except `/dev/null`, at any command boundary above; added `mkfs*` and destructive `diskutil` verbs | `dd ... of=backup.img`, `dd ... of=/dev/null` allowed |
+| Privileged delete | Added `sudo` with optional flags, flag values or `--` followed by `rm` | `sudo brew services restart` allowed |
 | Remote Git rewrite/delete | Added `git push -f`, `--force`, `--delete`, `-d`, `+ref`, `:ref` | `--force-with-lease`, normal push, dry run allowed |
 | Git recovery removal | Added reflog expiry `now` and gc prune `now`/`all` | dated expiry and prune allowed |
 | System permissions | Added `chmod 777 /` and `chown -R ... /` | changes to a named file or directory allowed |

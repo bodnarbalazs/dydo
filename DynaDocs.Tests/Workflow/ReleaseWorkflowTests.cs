@@ -2,7 +2,7 @@ namespace DynaDocs.Tests.Workflow;
 
 public sealed class ReleaseWorkflowTests
 {
-    private const string AllowedTagGuard = "github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0'";
+    private const string AllowedTagGuard = "github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0'";
     private const string NpmPublishRun = "npm publish --access public --provenance --tag latest";
     private const string PythonVersionFile = "DynaDocs.Tests/coverage/.python-version";
     private const string AssurancePython = "dydo/_system/.local/static-gates/python";

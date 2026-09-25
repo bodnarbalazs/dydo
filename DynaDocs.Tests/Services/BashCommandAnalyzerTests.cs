@@ -125,35 +125,39 @@ public class BashCommandAnalyzerTests
         Assert.False(dangerous, reason);
     }
 
-    // Matching must grow linearly with the wrapper chain. Eight times the chain costs a linear matcher
-    // about eight times the time and a quadratic one about sixty-four. The ratio, not an absolute limit,
-    // decides, so coverage instrumentation (about 50x slower) cancels out; the long chain stays far
-    // below the 250ms per-pattern match timeout even instrumented. Interleaved best-of rounds damp noise.
+    // Matching must grow linearly with the wrapper chain. One sample checks the short chain eight times
+    // and the eight-times-longer chain once, so a linear matcher spends about the same time on each and a
+    // quadratic one about eight times as long on the long chain. Equal windows are preempted alike under
+    // CPU contention, and the ratio, not an absolute limit, decides, so coverage instrumentation (about
+    // 50x slower) cancels out; each single check stays far below the 250ms per-pattern match timeout
+    // even instrumented. Interleaved best-of rounds damp noise.
     [Theory]
     [InlineData("sudo -a ")]
     [InlineData("env -a ")]
     public void CheckDangerousPatterns_LongWrapperOptionChain_GrowsLinearly(string wrapper)
     {
+        const int growth = 8;
         var shortChain = string.Concat(Enumerable.Repeat(wrapper, 64)) + "ls";
-        var longChain = string.Concat(Enumerable.Repeat(wrapper, 512)) + "ls";
+        var longChain = string.Concat(Enumerable.Repeat(wrapper, 64 * growth)) + "ls";
         var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
 
-        for (var round = 0; round < 5; round++)
+        for (var round = 0; round < 7; round++)
         {
-            shortBest = Min(shortBest, TimeCheck(shortChain));
-            longBest = Min(longBest, TimeCheck(longChain));
+            shortBest = Min(shortBest, TimeChecks(shortChain, growth));
+            longBest = Min(longBest, TimeChecks(longChain, 1));
         }
 
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(longChain);
         Assert.False(dangerous, reason);
-        var growth = longBest / shortBest;
-        Assert.True(growth < 20, $"8x chain took {growth:F1}x as long ({shortBest} -> {longBest})");
+        var ratio = longBest / shortBest;
+        Assert.True(ratio < 2.5, $"one 8x chain took {ratio:F2}x as long as eight short ones ({shortBest} vs {longBest})");
     }
 
-    private TimeSpan TimeCheck(string command)
+    private TimeSpan TimeChecks(string command, int times)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        _analyzer.CheckDangerousPatterns(command);
+        for (var i = 0; i < times; i++)
+            _analyzer.CheckDangerousPatterns(command);
         return stopwatch.Elapsed;
     }
 

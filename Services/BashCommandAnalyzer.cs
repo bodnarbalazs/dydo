@@ -139,13 +139,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // or after whitespace or a shell separator, so wrappers, launchers, assignments and keywords need no
     // list. A quote opens a command only after a shell -c flag or an ssh remote command. An optional
     // path prefix follows (/usr/bin/dd). Names inside quoted prose after whitespace match too: fail closed.
-    private const string CommandStart =
-        @"(?<=^|[\s;&|(){}`!\\]|\s-[a-zA-Z]*c\s*['""]|\bssh\s[^;&|'""]*['""])(?:[^\s;&|'""`()]*/)?";
+    private const string CommandContext = @"^|[\s;&|(){}`!\\]|\s-[a-zA-Z]*c\s*['""]|\bssh\s[^;&|'""]*['""]";
+    private const string CommandPath = @"(?:[^\s;&|'""`()]*/)?";
+    private const string CommandStart = "(?<=" + CommandContext + ")" + CommandPath;
+
+    // NonBacktracking has no lookarounds, so its patterns consume the context instead; for IsMatch that
+    // is equivalent.
+    private const string LinearCommandStart = "(?:" + CommandContext + ")" + CommandPath;
 
     private const int DangerousPatternTimeoutMs = 250;
 
     // A command word ends at whitespace, the end, a quote or backtick closing a -c string or substitution, or a separator.
-    private const string CommandEnd = @"(?=\s|$|['""`);&|])";
+    private const string CommandEndContext = @"\s|$|['""`);&|]";
+    private const string CommandEnd = "(?=" + CommandEndContext + ")";
 
     // Dangerous patterns that should always be blocked
     private static readonly (Regex Pattern, string Reason)[] DangerousPatterns =
@@ -313,7 +319,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(CommandStart + @"(?:mkfs(?:\.[a-z0-9]+)?" + CommandEnd + @"|diskutil\s+(?:erase\w*|partitionDisk|zeroDisk|secureErase|apfs\s+(?:delete|erase)\w*)" + CommandEnd + @")|>\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d+)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejDiskRegex();
 
-    [GeneratedRegex(CommandStart + @"sudo(?:\s+-[a-zA-Z-]*(?:=[^\s;&|]*|\s+[^-\s;&|][^\s;&|]*)?)*\s+rm" + CommandEnd, RegexOptions.None, DangerousPatternTimeoutMs)]
+    // Every sudo inside a chain of option arguments is also a command start, and each backtracking restart
+    // rescans the rest of the chain: quadratic in its length. NonBacktracking matches in linear time.
+    [GeneratedRegex(LinearCommandStart + @"sudo(?:\s+-[a-zA-Z-]*(?:=[^\s;&|]*|\s+[^-\s;&|][^\s;&|]*)?)*\s+rm(?:" + CommandEndContext + ")", RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejSudoRmRegex();
 
     [GeneratedRegex(CommandStart + @"(?:curl|wget)\s+[^;&|]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]

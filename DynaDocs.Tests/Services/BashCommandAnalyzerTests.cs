@@ -65,25 +65,7 @@ public class BashCommandAnalyzerTests
     [InlineData("brew uninstall --cask nordpass")]
     [InlineData("brew uninstall bitwarden-cli")]
     [InlineData("cat ~/.password-store/github.gpg")]
-    [InlineData("sudo dd if=/dev/zero of=/dev/sda")]
-    [InlineData("sudo chmod -R 777 /")]
-    [InlineData("sudo chown -R me /")]
-    [InlineData("sudo mkfs.ext4 /dev/sda1")]
-    [InlineData("sudo diskutil eraseDisk JHFS+ Blank disk2")]
-    [InlineData("sudo gpg --export-secret-keys ABC")]
-    [InlineData("sudo -u root rm file.txt")]
-    [InlineData("doas dd if=x of=/dev/sda")]
-    [InlineData("time dd if=x of=/dev/sda")]
-    [InlineData("nohup git push --force origin main")]
-    [InlineData("env FOO=1 git push --force")]
-    [InlineData("(dd if=x of=/dev/sda)")]
-    [InlineData("{ dd if=x of=/dev/sda; }")]
-    [InlineData("echo $(dd if=x of=/dev/sda)")]
-    [InlineData("echo `dd if=x of=/dev/sda`")]
-    [InlineData("bash -c 'git push --force origin main'")]
-    [InlineData("bash -lc 'git push --force'")]
-    [InlineData("sh -c \"dd if=x of=/dev/sda\"")]
-    [InlineData("zsh -c 'gh auth token'")]
+    [MemberData(nameof(DangerousCommandCases.WrappedFamilies), MemberType = typeof(DangerousCommandCases))]
     public void OndrejDenylist_BlocksMissingFamilies(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
@@ -142,6 +124,44 @@ public class BashCommandAnalyzerTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), $"Took {stopwatch.Elapsed}");
         Assert.False(dangerous, reason);
     }
+
+    // Matching must grow linearly with the wrapper chain. One sample checks the short chain eight times
+    // and the eight-times-longer chain once, so a linear matcher spends about the same time on each and a
+    // quadratic one about eight times as long on the long chain. Equal windows are preempted alike under
+    // CPU contention, and the ratio, not an absolute limit, decides, so coverage instrumentation (about
+    // 50x slower) cancels out; each single check stays far below the 250ms per-pattern match timeout
+    // even instrumented. Interleaved best-of rounds damp noise.
+    [Theory]
+    [InlineData("sudo -a ")]
+    [InlineData("env -a ")]
+    public void CheckDangerousPatterns_LongWrapperOptionChain_GrowsLinearly(string wrapper)
+    {
+        const int growth = 8;
+        var shortChain = string.Concat(Enumerable.Repeat(wrapper, 64)) + "ls";
+        var longChain = string.Concat(Enumerable.Repeat(wrapper, 64 * growth)) + "ls";
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, TimeChecks(shortChain, growth));
+            longBest = Min(longBest, TimeChecks(longChain, 1));
+        }
+
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(longChain);
+        Assert.False(dangerous, reason);
+        var ratio = longBest / shortBest;
+        Assert.True(ratio < 2.5, $"one 8x chain took {ratio:F2}x as long as eight short ones ({shortBest} vs {longBest})");
+    }
+
+    private TimeSpan TimeChecks(string command, int times)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        for (var i = 0; i < times; i++)
+            _analyzer.CheckDangerousPatterns(command);
+        return stopwatch.Elapsed;
+    }
+
+    private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
     [Fact]
     public void CheckDangerousPatterns_MatchTimeout_FailsClosed()

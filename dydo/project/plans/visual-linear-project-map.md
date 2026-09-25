@@ -56,8 +56,8 @@ follows:
 4. **Stays in the map.** e2e: clicking a regular node's body selects it and the page URL keeps its
    origin; related edges are absent until the toggle is on, and they use a distinct style.
 5. **Fresh on F5.** The CLI's `/api/graph` has no cache, which a server test proves: two requests
-   make two GraphQL calls. The full-stack e2e changes the fake Linear's answer between two reloads
-   and sees the new state.
+   make two GraphQL calls (a DYD-264 contract test). The full-stack e2e (DYD-267) changes the fake
+   Linear's answer between two reloads and sees the new state.
 
 Live proof against the real Linear API needs the human's key, so it runs in the landing
 walkthrough.
@@ -145,7 +145,7 @@ Graph   = {"project":{"id","name","url"},
            "external":[Issue],      // non-archived far ends outside the Project
            "relations":[Relation]}  // deduplicated by id
 Issue   = {"id","identifier","title","url",
-           "state":{"name","type","color"},       // type: triage|backlog|unstarted|started|completed|canceled
+           "state":{"name","type","color"},       // type: triage|backlog|unstarted|started|completed|canceled|duplicate
            "assignee": string|null,               // display name
            "parentId": string|null,
            "team":{"id","key"},
@@ -172,14 +172,15 @@ present in `issues` or `external`. A `parentId` that names no issue in `issues` 
   target=_blank rel=noopener>`). Clicking the body selects the node and centres it; it never
   navigates away.
 - **Pickable**: `state.type == "unstarted"` and `assignee == null` and no **open** blocker. An open
-  blocker is an incoming `blocks` relation whose `from` issue has `state.type` other than
-  `completed` or `canceled`. In Dydo the only `unstarted` status is `Todo`, so this is the
+  blocker is an incoming `blocks` relation whose `from` issue is not **closed**. An issue is closed
+  when its `state.type` is `completed`, `canceled` or `duplicate`; the Dydo `Duplicate` status has
+  type `duplicate`. In Dydo the only `unstarted` status is `Todo`, so this is the
   standard's rule, made portable to other teams.
 - **Edges**: `blocks` is a solid arrow from blocker to blocked, muted when the blocker is
-  closed. `related` is dashed, has no arrowhead, and is hidden until "Show related" is on.
+  closed (same closed rule). `related` is dashed, has no arrowhead, and is hidden until "Show related" is on.
 - **External**: a small dashed node. With a `project`, its body sets the URL to that team and
   Project and focuses its id; with none, it only focuses.
-- **Emphasis**: completed, canceled and duplicate issues stay visible at reduced opacity; started
+- **Emphasis**: closed issues stay visible at reduced opacity; started
   work and open blockers are full strength.
 
 ### Stack and tooling (human's standing choices, from LC DR 001, 004, 007, 023, 030)
@@ -188,7 +189,12 @@ pnpm 11 with `minimumReleaseAge: 21600` and a committed lockfile. TypeScript str
 `exactOptionalPropertyTypes`. Vitest 4 with Istanbul coverage. Unit tests are colocated
 (`*.test.tsx`); Playwright specs live in `viewer/e2e/`. ESLint has `no-explicit-any`, sonarjs cognitive
 complexity ≤ 20 and `no-nested-ternary` as errors. elkjs is used under its EPL-2.0 option, with a
-notice.
+notice. Notices cite committed paths or URLs only; the .NET notice tests check every backticked path.
+
+**Every authored file under `viewer/` is `.ts` or `.tsx`**, configs included (`vite.config.ts`,
+`eslint.config.ts`, `playwright.config.ts`, and the fake Linear server, run with
+`node --experimental-strip-types`). `inventory.py` measures every `.js`/`.cjs`/`.mjs` it sees, so a
+stray JavaScript file would put the viewer into the JS gates before DYD-266 gates it properly.
 
 ## 4. Implementation Issue map
 
@@ -200,8 +206,8 @@ blockers, exact gates and base branch.
 
 | Issue | Outcome | Owned paths (summary) |
 |---|---|---|
-| [DYD-263](https://linear.app/bodnar-balazs/issue/DYD-263) Record dydo map as a read-only Linear view (DR 052) | DR 052 accepted; DR 044 amendment pointer; boundary text corrected | `dydo/project/decisions/{052-*,044-*,_decisions}.md`, `dydo/understand/{architecture,about}.md`, `dydo/guides/adding-a-command.md`, `dydo/reference/about-dynadocs.md` |
-| [DYD-264](https://linear.app/bodnar-balazs/issue/DYD-264) dydo map command: local server and Linear graph API | the command, server, API contract, GraphQL client, embedding | `Commands/MapCommand.cs`, `Services/Map/**`, `Serialization/MapJsonContext.cs`, `Program.cs`, `Commands/HelpCommand.cs`, `DynaDocs.csproj`, `DynaDocs.Tests/Map/**` and command-row tests, both `dydo-commands.md` copies, `test-associations.json` rows for the new C# files |
+| [DYD-263](https://linear.app/bodnar-balazs/issue/DYD-263) Record dydo map as a read-only Linear view (DR 052) | DR 052 accepted; DR 044 amendment pointer; boundary text corrected | `dydo/project/decisions/{052-*,044-*,_decisions}.md`, `dydo/understand/{architecture,about,work-model}.md`, `dydo/guides/adding-a-command.md`, `dydo/reference/about-dynadocs.md` and its byte-identical `Scaffold/dydo/reference/about-dynadocs.md` |
+| [DYD-264](https://linear.app/bodnar-balazs/issue/DYD-264) dydo map command: local server and Linear graph API | the command, server, API contract, GraphQL client, embedding | `Commands/MapCommand.cs`, `Services/Map/**`, `Serialization/MapJsonContext.cs`, `Program.cs`, `Commands/HelpCommand.cs`, `DynaDocs.csproj`, `DynaDocs.Tests/Map/**` and command-row tests, both `dydo-commands.md` copies, `README.md` and `npm/README.md` command tables, `test-associations.json` rows for the new C# files |
 | [DYD-265](https://linear.app/bodnar-balazs/issue/DYD-265) Project map viewer: React Flow graph of a Linear Project | the viewer, the fixture capture, e2e with fixtures | `viewer/**`, `.gitignore`, both `THIRD-PARTY-NOTICES.md` |
 
 ### Later bearings
@@ -221,6 +227,9 @@ blockers, exact gates and base branch.
 - **Docs**: `~/.dotnet/dotnet run --project DynaDocs.csproj -- check`.
 - **Viewer**: `pnpm -C viewer install --frozen-lockfile`, then `run typecheck`, `run lint`, `run test`,
   `run coverage`, `run build`, `run e2e` (and `run e2e:full-stack` from DYD-267 on).
+- **Published binary** (full-stack e2e): `pnpm -C viewer run build && ~/.dotnet/dotnet publish
+  DynaDocs.csproj -c Release -r linux-x64 -o artifacts/map-e2e`. The spec reads the binary path
+  from `DYDO_E2E_BIN` (default `../artifacts/map-e2e/dydo` relative to `viewer/`).
 - **Whole set**: `$PY DynaDocs.Tests/coverage/gap_check.py all`, with `$PY` the static-gates venv
   interpreter described in [Coverage Tools](../../reference/coverage-tools.md) (`bin/python` on
   Linux). It gains viewer rows from DYD-266 on.
@@ -243,6 +252,8 @@ contract change comes back to the admiral as a plan amendment.
 - The same-Project relation appears in both `relations` and `inverseRelations`, so dedupe by id.
 - elkjs is about 1.6 MB raw. Run it in a Web Worker so layout never blocks the page.
 - A committed `viewer/dist` would enter the gate inventory and fail coverage. Keep it ignored.
+- Every viewer merge (DYD-270 on) runs `gap_check.py all` too, so a gate regression lands on the
+  Issue that caused it, not on DYD-266.
 - A Windows HttpListener on `localhost` without admin rights is unmeasured. Release smoke on Windows is
   the human's walkthrough item.
 - Fixtures come from real Linear data. Keep only the contract fields; the assignee is a display name.

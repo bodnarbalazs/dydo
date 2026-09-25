@@ -28,3 +28,13 @@ dydo/_system/.local/
 /DynaDocs.Tests/coverage/__pycache__/
 /DynaDocs.Tests/coverage/tests/__pycache__/
 /DynaDocs.Tests/TestResults
+
+# Map viewer: dependencies and built or generated output
+/viewer/node_modules/
+/viewer/dist/
+/viewer/coverage/
+/viewer/test-results/
+/viewer/playwright-report/
+/viewer/blob-report/
+/viewer/e2e/screenshots/
+/artifacts/

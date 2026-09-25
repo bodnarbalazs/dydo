@@ -166,7 +166,8 @@
     {
       "module": "DynaDocs.Tests/coverage/gate_collect.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_orchestration.py"
+        "DynaDocs.Tests/coverage/tests/test_orchestration.py",
+        "DynaDocs.Tests/coverage/tests/test_typescript_collectors.py"
       ]
     },
     {
@@ -184,7 +185,8 @@
     {
       "module": "DynaDocs.Tests/coverage/gate_knip.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_knip.py"
+        "DynaDocs.Tests/coverage/tests/test_knip.py",
+        "DynaDocs.Tests/coverage/tests/test_typescript_collectors.py"
       ]
     },
     {
@@ -450,6 +452,12 @@
       "module": "DynaDocs.Tests/coverage/sync_testing_example.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_sync_testing_example.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/typescript_join.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_typescript_join.py"
       ]
     },
     {
@@ -861,6 +869,251 @@
       "module": "Utils/TitlePrettifier.cs",
       "tests": [
         "DynaDocs.Tests/Utils/TitlePrettifierTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/MapCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Serialization/MapJsonContext.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs",
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/BrowserLauncher.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/BrowserLauncherTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/GraphQLRequest.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearGraphQL.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearReader.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapApi.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapApiException.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapError.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapGraph.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapGraphProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssue.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueState.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueTeam.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapProjectStatus.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapRelation.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapServer.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapTeam.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/ViewerBundle.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/ViewerBundleTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "viewer/src/api/client.ts",
+      "tests": [
+        "viewer/src/api/client.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/api/types.ts",
+      "tests": [
+        "viewer/src/api/client.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/app/App.tsx",
+      "tests": [
+        "viewer/src/app/App.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/app/Toolbar.tsx",
+      "tests": [
+        "viewer/src/app/Toolbar.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/app/urlState.ts",
+      "tests": [
+        "viewer/src/app/urlState.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/mapModel.ts",
+      "tests": [
+        "viewer/src/graph/mapModel.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/rules.ts",
+      "tests": [
+        "viewer/src/graph/rules.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/testIssues.ts",
+      "tests": [
+        "viewer/src/graph/mapModel.test.ts",
+        "viewer/src/graph/rules.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/layout/layout.ts",
+      "tests": [
+        "viewer/src/layout/layout.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/layout/toFlow.ts",
+      "tests": [
+        "viewer/src/layout/toFlow.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/main.tsx",
+      "tests": [
+        "viewer/src/main.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/IssueSummary.tsx",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/Legend.tsx",
+      "tests": [
+        "viewer/src/map/Legend.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/MapActions.ts",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/MapCanvas.tsx",
+      "tests": [
+        "viewer/src/map/MapCanvas.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/RoutedEdge.tsx",
+      "tests": [
+        "viewer/src/map/RoutedEdge.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/StatusIcon.tsx",
+      "tests": [
+        "viewer/src/map/StatusIcon.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/colors.ts",
+      "tests": [
+        "viewer/src/map/colors.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/map/nodes.tsx",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
       ]
     }
   ]

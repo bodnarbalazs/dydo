@@ -119,3 +119,9 @@ parts of DR 041. It supersedes DR 042's mandatory Sprint-root/Slice shape while 
 as the reviewed-intent rule above. Its 2026-09-01 amendment moves FutureFeatures from dydo to Linear,
 superseding the repository-home rulings in DR 023, 034, and 040 while retaining the distinct
 FutureFeature type and human-only promotion rule. Wayfinding's Fog/frontier distinction remains.
+
+## Amendment — 2026-09-25
+
+[DR 052](./052-dydo-map-read-only-linear-view.md) adds `dydo map`, a read-only, on-demand view of
+one Linear Project. It reads Linear's API with the user's `LINEAR_API_KEY` and never writes, caches,
+polls, subscribes to or mirrors Linear. The canonical ownership above stands.

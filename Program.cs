@@ -33,6 +33,7 @@ rootCommand.Subcommands.Add(CompletionsCommand.Create());
 rootCommand.Subcommands.Add(CompleteCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
 rootCommand.Subcommands.Add(GapCheckCommand.Create());
+rootCommand.Subcommands.Add(MapCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>

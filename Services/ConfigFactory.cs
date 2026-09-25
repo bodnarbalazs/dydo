@@ -34,7 +34,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|version|help)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|map|version|help)\b.*)",
             Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },

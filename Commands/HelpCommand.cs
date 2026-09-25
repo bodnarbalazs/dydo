@@ -30,6 +30,9 @@ public static class HelpCommand
         Console.WriteLine("  graph <file>           Show graph connections for a file");
         Console.WriteLine("  graph stats [--top N]  Show top docs by incoming links");
         Console.WriteLine();
+        Console.WriteLine("Linear Commands:");
+        Console.WriteLine("  map [--no-browser]     Serve a read-only map of a Linear Project on localhost");
+        Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
         Console.WriteLine();

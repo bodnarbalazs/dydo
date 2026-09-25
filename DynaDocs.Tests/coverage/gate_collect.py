@@ -1,6 +1,7 @@
 """Execute independent collectors and retain exact gaps beside measured findings."""
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -17,6 +18,17 @@ _DYNAMIC_VULTURE_USES = {
     ("DynaDocs.Tests/coverage/windows_job.py", "unused attribute 'flags'"):
         "windows-native-abi",
 }
+
+
+_METRIC_KINDS = {'javascript': lambda path: 'module' if path.endswith('.mjs') else 'commonjs',
+                 'typescript': lambda path: 'tsx' if path.endswith('.tsx') else 'typescript'}
+_TSC_DIAGNOSTIC = re.compile(r'(?m)^(?P<path>[^\s(][^(\r\n]*)\((?P<line>\d+),(?P<column>\d+)\): '
+                             r'(?P<severity>error|warning) (?P<code>TS\d+): (?P<message>.*)$')
+
+
+def viewer_script(script, *arguments):
+    """The viewer's own pnpm script; pnpm resolves through PATH, including its Windows shim."""
+    return [shutil.which('pnpm') or 'pnpm', '-C', 'viewer', 'run', script, *map(str, arguments)]
 
 
 def read_json(path):
@@ -294,33 +306,76 @@ class Collectors:
         return result({'edges': edges, 'search_roots': roots}, findings, errors)
 
     def javascript_source(self):
+        return self._walked_source('javascript')
+
+    def typescript_source(self):
+        return self._walked_source('typescript')
+
+    def _walked_source(self, language):
         from positions import canonical_text
         facts, findings, errors = [], [], []
-        for index, source in enumerate(self.sources('javascript')):
+        for index, source in enumerate(self.sources(language)):
             try:
-                kind = 'module' if source['path'].endswith('.mjs') else 'commonjs'
+                kind = _METRIC_KINDS[language](source['path'])
                 text = canonical_text((self.root / source['path']).read_bytes())
-                row = self.command_json(f'javascript-source-{index}',
+                row = self.command_json(f'{language}-source-{index}',
                     ['node', self.coverage / 'js_metrics.cjs', kind], stdin=_source_stdin(text))
                 row['path'] = source['path']
                 facts.append(row)
                 findings.extend(metric_findings(row['path'], row['methods']))
-                findings.extend({'path': row['path'], 'gate': 'javascript-analyzer', 'diagnostic': value} for value in row['diagnostics'])
+                findings.extend({'path': row['path'], 'gate': f'{language}-analyzer', 'diagnostic': value} for value in row['diagnostics'])
                 findings.extend({'path': row['path'], 'gate': 'coverage-suppression', 'diagnostic': value} for value in row['suppressions'])
+                if 'module' in row and row['module']['cognitive'] > 20:
+                    findings.append({'path': row['path'], 'member': '<module>', 'gate': 'cognitive',
+                                     'actual': row['module']['cognitive'], 'threshold': 20})
             except (ValueError, KeyError, OSError) as error:
                 errors.append({'path': source['path'], 'message': str(error)})
-        self.static['javascript'] = facts
+        self.static[language] = facts
         return result({'modules': facts}, findings, errors)
+
+    def viewer_typecheck(self):
+        row = self.log.run('viewer-typecheck', viewer_script('typecheck'))
+        output = Path(row['stdout']).read_text(encoding='utf-8')
+        findings = [{'gate': 'typescript-build', **match.groupdict(), 'path': 'viewer/' + match['path'].strip()}
+                    for match in _TSC_DIAGNOSTIC.finditer(output)]
+        errors = [] if row['exit_code'] == 0 or findings else [
+            {'message': 'Viewer typecheck failed without a compiler diagnostic', 'command': row}]
+        return result({'command': row}, findings, errors)
+
+    def viewer_lint(self):
+        report = self.output / 'eslint.json'
+        # An inline disable comment is an escape hatch DR 048 refuses, so the lint ignores them.
+        row = self.log.run('viewer-lint', viewer_script('lint', '--no-inline-config', '--format', 'json',
+                                                        '--output-file', report))
+        if row['exit_code'] not in (0, 1) or not report.is_file():
+            return result({'command': row}, errors=[{'message': 'Viewer lint execution failure', 'command': row}])
+        findings = [{'gate': 'eslint', 'path': Path(module['filePath']).resolve().relative_to(self.root).as_posix(),
+                     'diagnostic': message}
+                    for module in read_json(report) for message in module['messages']]
+        errors = [] if row['exit_code'] == 0 or findings else [
+            {'message': 'Viewer lint failed without an accounted diagnostic', 'command': row}]
+        return result({'command': row}, findings, errors)
 
     def clones(self):
         from gate_clones import collect_clones
         return collect_clones(self)
 
+    def typescript_clones(self):
+        from gate_clones import collect_clones
+        return collect_clones(self, {'typescript'})
+
     def javascript_dependencies(self):
-        paths = {row['path'] for row in self.sources('javascript')}
+        return self._module_graph('javascript')
+
+    def typescript_dependencies(self):
+        # A type-only import is still a module edge; the compiler erasing it does not undo the cycle.
+        return self._module_graph('typescript', '--ts-pre-compilation-deps')
+
+    def _module_graph(self, language, *options):
+        paths = {row['path'] for row in self.sources(language)}
         native = self.command_json('dependency-cruiser', ['node',
             self.coverage / 'node_modules/dependency-cruiser/bin/dependency-cruise.mjs',
-            '--no-config', '--output-type', 'json', '--do-not-follow', 'node_modules', *sorted(paths)])
+            '--no-config', '--output-type', 'json', '--do-not-follow', 'node_modules', *options, *sorted(paths)])
         modules = native['modules']
         identities = [row['source'] for row in modules]
         if len(identities) != len(set(identities)) or not paths <= set(identities):
@@ -340,6 +395,10 @@ class Collectors:
     def javascript_unused_exports(self):
         from gate_knip import collect_knip
         return collect_knip(self)
+
+    def typescript_unused_exports(self):
+        from gate_knip import collect_knip
+        return collect_knip(self, 'typescript')
 
     def pending(self, name, detail):
         return result(errors=[{'type': 'implementation-gap', 'collector': name, 'message': detail}])

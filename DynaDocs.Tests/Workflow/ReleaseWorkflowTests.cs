@@ -2,11 +2,13 @@ namespace DynaDocs.Tests.Workflow;
 
 public sealed class ReleaseWorkflowTests
 {
-    private const string AllowedTagGuard = "github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0'";
+    private const string AllowedTagGuard = "github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0'";
     private const string NpmPublishRun = "npm publish --access public --provenance --tag latest";
     private const string PythonVersionFile = "DynaDocs.Tests/coverage/.python-version";
     private const string AssurancePython = "dydo/_system/.local/static-gates/python";
     private const string AssurancePythonExecutable = AssurancePython + "/Scripts/python.exe";
+    private const string ViewerInstallStep = "Install viewer dependencies";
+    private const string CoverageEvidenceStep = "Upload coverage evidence";
 
     [Fact]
     public void ReleaseWorkflow_ValidatesTheBuildBeforeEveryPublicationAction()
@@ -93,6 +95,42 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Fact]
+    public void ReleaseWorkflow_RejectsValidationWithoutTheViewerToolchain()
+    {
+        var workflow = Workflow();
+        var validation = ActiveJobs(workflow)["validation"];
+
+        AssertValidationViewerToolchain(validation);
+        foreach (var step in new[] { "Setup pnpm", ViewerInstallStep })
+            AssertViewerToolchainRejected(validation.Replace(JobStep(validation, step) + "\n", "", StringComparison.Ordinal));
+        AssertViewerToolchainRejected(validation.Replace("version: 11", "version: 10", StringComparison.Ordinal));
+        AssertViewerToolchainRejected(validation.Replace("uses: pnpm/action-setup@v4", "uses: pnpm/action-setup@v3", StringComparison.Ordinal));
+        AssertViewerToolchainRejected(validation.Replace("cache: pnpm", "cache: npm", StringComparison.Ordinal));
+        AssertViewerToolchainRejected(validation.Replace("cache-dependency-path: viewer/pnpm-lock.yaml", "cache-dependency-path: pnpm-lock.yaml", StringComparison.Ordinal));
+        AssertViewerToolchainRejected(validation.Replace("pnpm -C viewer install --frozen-lockfile", "pnpm -C viewer install", StringComparison.Ordinal));
+        AssertViewerToolchainRejected(Swap(validation, JobStep(validation, "Setup pnpm"), JobStep(validation, "Setup Node.js")));
+        AssertViewerToolchainRejected(Swap(validation, JobStep(validation, ViewerInstallStep), JobStep(validation, "Run coverage gate")));
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_UploadsTheCoverageEvidenceEvenWhenValidationFails()
+    {
+        var validation = ActiveJobs(Workflow())["validation"];
+        var upload = JobStep(validation, CoverageEvidenceStep);
+
+        Assert.Equal("actions/upload-artifact@v4", StepField(upload, "uses"));
+        Assert.Equal("${{ always() }}", StepField(upload, "if"));
+        Assert.Equal("validation-coverage-evidence", StepField(upload, "name"));
+        Assert.Contains("\n            DynaDocs.Tests/coverage/results/**\n", upload + "\n");
+        Assert.Contains("\n            DynaDocs.Tests/TestResults/**\n", upload + "\n");
+        Assert.True(StepIndex(validation, "Run coverage gate") < StepIndex(validation, CoverageEvidenceStep),
+            "The coverage evidence upload must follow the coverage gate it records.");
+    }
+
+    private static void AssertViewerToolchainRejected(string validation) =>
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationViewerToolchain(validation));
+
+    [Fact]
     public void ReleaseWorkflow_RejectsCommentedGuardsMissingValidationAndRoguePublishers()
     {
         var workflow = Workflow();
@@ -162,7 +200,27 @@ public sealed class ReleaseWorkflowTests
         var adapter = validation.IndexOf("- name: Run isolated test adapter", StringComparison.Ordinal);
         foreach (var name in new[] { "Create Python assurance environment", "Install Python assurance toolchain", "Restore AltCover", "Restore coverage metrics", "Install Node assurance toolchain" })
             Assert.True(validation.IndexOf($"- name: {name}", StringComparison.Ordinal) < adapter, $"{name} must precede the isolated test adapter.");
+        AssertValidationViewerToolchain(validation);
     }
+
+    // The viewer gap_check stack runs its test, static and coverage rows through the viewer's own
+    // pnpm scripts, so the coverage gate needs pnpm and the viewer's locked dependencies.
+    private static void AssertValidationViewerToolchain(string validation)
+    {
+        var setupPnpm = JobStep(validation, "Setup pnpm");
+        var setupNode = JobStep(validation, "Setup Node.js");
+        Assert.Equal("pnpm/action-setup@v4", StepField(setupPnpm, "uses"));
+        Assert.Equal("11", StepField(setupPnpm, "version"));
+        Assert.Equal("pnpm", StepField(setupNode, "cache"));
+        Assert.Equal("viewer/pnpm-lock.yaml", StepField(setupNode, "cache-dependency-path"));
+        Assert.Equal("pnpm -C viewer install --frozen-lockfile", StepField(JobStep(validation, ViewerInstallStep), "run"));
+
+        Assert.True(StepIndex(validation, "Setup pnpm") < StepIndex(validation, "Setup Node.js"), "Setup pnpm must precede Setup Node.js, whose pnpm cache needs it.");
+        Assert.True(StepIndex(validation, "Setup Node.js") < StepIndex(validation, ViewerInstallStep), "Setup Node.js must precede the viewer install.");
+        Assert.True(StepIndex(validation, ViewerInstallStep) < StepIndex(validation, "Run coverage gate"), "The viewer install must precede the coverage gate.");
+    }
+
+    private static int StepIndex(string job, string name) => job.IndexOf($"      - name: {name}\n", StringComparison.Ordinal);
 
     private static void AssertFailClosedPublicationGraph(string workflow)
     {

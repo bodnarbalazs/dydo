@@ -241,6 +241,43 @@ class CSharpJoinTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Duplicate SourceBehavior declared member"):
                 join_methods(root, duplicate, {"assembly_name": "dydo", "methods": [physical]}, coverage)
 
+    def test_a_method_whose_whole_body_is_a_lambda_owns_its_emitted_body_and_the_lambda_owns_its_own(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source_path = root / "A.cs"
+            source_path.write_text("\n" * 4)
+            checksum = hashlib.sha256(source_path.read_bytes()).hexdigest()
+
+            def point(line, column, end_line, end_column):
+                return {"path": "A.cs", "origin": "maintained", "checksum_algorithm": "SHA256",
+                        "checksum": checksum, "line": line, "column": column,
+                        "end_line": end_line, "end_column": end_column}
+
+            def row(identity, span):
+                line, column, end_line, end_column = span
+                return {"id": identity, "line": line, "column": column, "end_line": end_line,
+                        "end_column": end_column, "constructor": False, "cognitive": 0,
+                        "policy_cc": 1, "parameters": 1}
+
+            # static Func<string, int> Outer(string r) => n => { ... };
+            outer_key = "A::Outer`0(System.String)"
+            source = {"files": [{"path": "A.cs", "methods": [
+                row("A::Outer", (1, 4, 3, 6)), row("A.Outer::<lambda>", (1, 50, 3, 5))]}],
+                "generated_files": [], "behavior": {"constructors": [], "fragments": [],
+                "structural_methods": [], "declared_methods": [
+                    {"key": outer_key, "path": "A.cs", "line": 1, "column": 4, "end_line": 3, "end_column": 6}]}}
+            outer = {"token": 1, "identity": "System.Func A::Outer(System.String)", "key": outer_key,
+                     "points": [point(1, 50, 3, 5)]}
+            closure = {"token": 2, "identity": "System.Int32 A/<>c__DisplayClass0_0::<Outer>b__0(System.String)",
+                       "key": "A/<>c__DisplayClass0_0::<Outer>b__0`0(System.String)", "points": [point(2, 8, 2, 20)]}
+            coverage = {outer["identity"]: {"files": {"A.cs": {"Lines": {"1": 1}, "Branches": []}}},
+                        closure["identity"]: {"files": {"A.cs": {"Lines": {"2": 1}, "Branches": []}}}}
+
+            joined = join_methods(root, source, {"assembly_name": "A", "methods": [outer, closure]}, coverage)
+
+            self.assertEqual(["A::Outer|" + outer["identity"], "A.Outer::<lambda>|" + closure["identity"]],
+                             [method["id"] for method in joined["modules"][0]["methods"]])
+
 
 if __name__ == "__main__":
     unittest.main()

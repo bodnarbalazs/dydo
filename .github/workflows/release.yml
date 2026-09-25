@@ -7,7 +7,41 @@ on:
   workflow_dispatch:
 
 jobs:
+  viewer:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: pnpm
+          cache-dependency-path: viewer/pnpm-lock.yaml
+
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Build viewer bundle
+        run: pnpm -C viewer run build
+
+      - name: Upload viewer bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: viewer-dist
+          path: viewer/dist
+          if-no-files-found: error
+
   build:
+    needs: viewer
     permissions:
       contents: read
     strategy:
@@ -34,6 +68,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download viewer bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: viewer-dist
+          path: viewer/dist
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -75,6 +115,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download viewer bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: viewer-dist
+          path: viewer/dist
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -90,10 +136,17 @@ jobs:
       - name: Verify .NET SDK
         run: if ((dotnet --version) -ne '10.0.300') { throw 'Expected .NET SDK 10.0.300.' }
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: pnpm
+          cache-dependency-path: viewer/pnpm-lock.yaml
 
       - name: Create Python assurance environment
         run: python -m venv dydo/_system/.local/static-gates/python
@@ -111,6 +164,9 @@ jobs:
         run: npm ci
         working-directory: DynaDocs.Tests/coverage
 
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
       - name: Run isolated test adapter
         run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/run_tests.py
 
@@ -123,8 +179,19 @@ jobs:
       - name: Run coverage gate
         run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
 
+      # The gate's per-row reports, command logs and campaign streams, so a failed row carries its detail.
+      - name: Upload coverage evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-coverage-evidence
+          path: |
+            DynaDocs.Tests/coverage/results/**
+            DynaDocs.Tests/TestResults/**
+          if-no-files-found: warn
+
   release:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -135,6 +202,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          # The binaries only; the viewer-dist bundle is already embedded in them.
+          pattern: dydo-*
           merge-multiple: true
 
       - name: Generate checksums
@@ -151,7 +220,7 @@ jobs:
           prerelease: false
 
   nuget:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -161,6 +230,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download viewer bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: viewer-dist
+          path: viewer/dist
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -184,7 +259,7 @@ jobs:
         run: dotnet nuget push nupkg/dydo.${{ steps.version.outputs.VERSION }}.nupkg --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   npm:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0' }}
     needs: [build, validation, release]
     runs-on: ubuntu-latest
     permissions:

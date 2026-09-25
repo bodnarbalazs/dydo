@@ -179,6 +179,17 @@ jobs:
       - name: Run coverage gate
         run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
 
+      # The gate's per-row reports, command logs and campaign streams, so a failed row carries its detail.
+      - name: Upload coverage evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-coverage-evidence
+          path: |
+            DynaDocs.Tests/coverage/results/**
+            DynaDocs.Tests/TestResults/**
+          if-no-files-found: warn
+
   release:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.0' }}
     needs: [build, validation]

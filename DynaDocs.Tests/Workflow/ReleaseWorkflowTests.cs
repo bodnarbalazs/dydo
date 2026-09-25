@@ -8,6 +8,7 @@ public sealed class ReleaseWorkflowTests
     private const string AssurancePython = "dydo/_system/.local/static-gates/python";
     private const string AssurancePythonExecutable = AssurancePython + "/Scripts/python.exe";
     private const string ViewerInstallStep = "Install viewer dependencies";
+    private const string CoverageEvidenceStep = "Upload coverage evidence";
 
     [Fact]
     public void ReleaseWorkflow_ValidatesTheBuildBeforeEveryPublicationAction()
@@ -109,6 +110,21 @@ public sealed class ReleaseWorkflowTests
         AssertViewerToolchainRejected(validation.Replace("pnpm -C viewer install --frozen-lockfile", "pnpm -C viewer install", StringComparison.Ordinal));
         AssertViewerToolchainRejected(Swap(validation, JobStep(validation, "Setup pnpm"), JobStep(validation, "Setup Node.js")));
         AssertViewerToolchainRejected(Swap(validation, JobStep(validation, ViewerInstallStep), JobStep(validation, "Run coverage gate")));
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_UploadsTheCoverageEvidenceEvenWhenValidationFails()
+    {
+        var validation = ActiveJobs(Workflow())["validation"];
+        var upload = JobStep(validation, CoverageEvidenceStep);
+
+        Assert.Equal("actions/upload-artifact@v4", StepField(upload, "uses"));
+        Assert.Equal("${{ always() }}", StepField(upload, "if"));
+        Assert.Equal("validation-coverage-evidence", StepField(upload, "name"));
+        Assert.Contains("\n            DynaDocs.Tests/coverage/results/**\n", upload + "\n");
+        Assert.Contains("\n            DynaDocs.Tests/TestResults/**\n", upload + "\n");
+        Assert.True(StepIndex(validation, "Run coverage gate") < StepIndex(validation, CoverageEvidenceStep),
+            "The coverage evidence upload must follow the coverage gate it records.");
     }
 
     private static void AssertViewerToolchainRejected(string validation) =>

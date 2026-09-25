@@ -33,8 +33,14 @@ function servingUrl(map: ChildProcessWithoutNullStreams): Promise<string> {
 }
 
 const test = base.extend<{ linear: FakeLinear; map: string }>({
-  // eslint-disable-next-line no-empty-pattern -- Playwright fixtures destructure their dependencies.
-  linear: async ({}, provide) => {
+  // Playwright requires the first fixture argument to be an object destructuring
+  // pattern (a rest-only pattern is rejected too), but `linear` has no fixture
+  // dependencies of its own. `browserName` is a plain string read from worker
+  // config, not something that launches a browser or page, so naming it here
+  // costs nothing and keeps the pattern non-empty for `no-empty-pattern`; `void`
+  // marks it deliberately unused for `no-unused-vars`.
+  linear: async ({ browserName }, provide) => {
+    void browserName;
     const linear = await startFakeLinear(API_KEY);
     await provide(linear);
     await linear.close();

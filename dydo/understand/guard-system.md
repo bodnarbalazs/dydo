@@ -72,13 +72,31 @@ BLOCKED: Path is protected — every agent may read it, none may write or delete
 
 Bash commands get deeper treatment than direct tool calls:
 
-1. **Dangerous pattern detection** (immediate block): recursive root/home deletes, fork bombs, direct disk writes (`dd`), download-and-execute (`curl | sh`), base64 decoded into an interpreter, eval of variable content, history clearing, security disables (SELinux, firewall), shadow/passwd access, and inline interpreter execution (`python -c`), which would hide file operations from the analysis below.
+1. **Dangerous pattern detection** (immediate block): recursive root/home deletes, fork bombs, direct disk writes (`dd`), download-and-execute (`curl | sh`), base64 decoded into an interpreter, eval of variable content, history clearing, security disables (SELinux, firewall), shadow/passwd access, and inline interpreter execution (`python -c`), which would hide file operations from the analysis below. The built-in list also blocks destructive Git pushes and recovery removal, destructive GitHub CLI commands, disk formatting, privileged deletes, system-wide permission changes, and access to password managers or secret-key exports. These rules cannot be configured away.
 2. **Nudges**: Layer 3 is evaluated here, on the raw command text, before any path is extracted.
 3. **Chained `cd` block**: `cd /path && command` breaks path analysis — run `cd` separately or use absolute paths. Skipped for dydo's own commands.
 4. **Bypass detection**: command substitution (`$(...)`), base64/hex decode, variable expansion, embedded newlines — flagged because they can obscure the paths actually being touched. On their own each is a `WARNING:` on stderr and the command proceeds; combined with any extracted write, delete, move, copy or permission change the command is **blocked outright**, because the path it would touch cannot be verified. So `cat $FILE` warns and runs, while `echo x > $OUT` exits 2.
 5. **File operation extraction**: the command is tokenized into reads (`cat`, `grep`), writes (`tee`, `>`, `>>`, `sed -i`), deletes (`rm`), copies/moves (`cp`, `mv`), and permission changes (`chmod`) — and each extracted path is checked against off-limits — and, for anything that is not a read of it, the protected tier — individually. A chain can't smuggle a guarded path past the guard.
 
 The guard fires on `dydo` commands themselves too — dangerous patterns, nudges and the path checks apply to dydo's own CLI like anything else; only the `cd` coaching is skipped for them.
+
+### David Ondrej denylist audit
+
+DYD-188 compared [the upstream denylist](https://github.com/davidondrej/skills/blob/main/hooks/dangerous-patterns.txt) (blob `02e930aaf9879b879475baff5142f78e2df52f2a`) and its [test matrix](https://github.com/davidondrej/skills/blob/main/hooks/test-guard.sh) with the built-in analyzer. The following table records the disposition of each family. Detections are anchored to executable position for commands whose names can also appear as arguments or prose; option values and path targets limit false positives.
+
+| Family | Disposition | Boundary and benign example |
+|---|---|---|
+| Root/home delete, fork bomb, shell download-and-execute | Already covered; extended `rm` for `/Users`, `--no-preserve-root` and `curl \| sudo zsh` | `rm -rf /tmp/build-cache`, `curl ... \| jq` allowed |
+| Disk write/format | Extended raw-device writes for `/dev/disk*` and `/dev/rdisk*`; added `mkfs*` and destructive `diskutil` verbs | `dd ... of=backup.img`, `echo > /dev/null` allowed |
+| Privileged delete | Added `sudo` with optional flags followed by `rm` | `sudo brew services restart` allowed |
+| Remote Git rewrite/delete | Added `git push -f`, `--force`, `--delete`, `-d`, `+ref`, `:ref` | `--force-with-lease`, normal push, dry run allowed |
+| Git recovery removal | Added reflog expiry `now` and gc prune `now`/`all` | dated expiry and prune allowed |
+| System permissions | Added `chmod 777 /` and `chown -R ... /` | changes to a named file or directory allowed |
+| GitHub CLI mutation and tokens | Added repository/release/secret/key delete, API DELETE, public visibility and `gh auth token` | repo view, API GET/POST, auth status allowed |
+| Credential stores | Added named password CLIs, sensitive `op` subcommands, macOS keychain password verbs, GPG secret export, `.password-store` paths and password app launch/removal | `op --version`, certificate lookup, public GPG export, unrelated `brew`/`open` allowed |
+| Generic `git reset` and `git clean` | Excluded: absent from upstream and local, recoverable operations outside this Issue's contract | Existing path guard still evaluates extracted operations |
+
+The upstream POSIX expressions are translated to .NET regexes rather than copied verbatim. The hook evaluates these before nudges or path analysis, so a matching command blocks for every caller even when it names no local file.
 
 ---
 

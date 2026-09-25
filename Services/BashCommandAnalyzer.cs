@@ -182,6 +182,26 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (ShadowFileAccessRegex(), "Shadow file access attempt"),
         (PasswdModifyRegex(), "Password file modification attempt"),
 
+        // David Ondrej's global command denylist, pinned in DYD-188.
+        (OndrejRmRegex(), "Deletion of system or home directory"),
+        (OndrejDiskRegex(), "Disk format or erase attempt"),
+        (OndrejSudoRmRegex(), "Privileged delete attempt"),
+        (OndrejCurlPipeRegex(), "Download and execute as shell"),
+        (OndrejGitPushRegex(), "Destructive remote Git push"),
+        (OndrejGitRecoveryRegex(), "Git recovery history destruction"),
+        (OndrejSystemPermissionsRegex(), "System permission or ownership change"),
+        (OndrejGhDeleteRegex(), "Destructive GitHub operation"),
+        (OndrejGhApiDeleteRegex(), "GitHub API delete operation"),
+        (OndrejGhVisibilityRegex(), "GitHub repository visibility change"),
+        (OndrejGhTokenRegex(), "GitHub authentication token access"),
+        (OndrejPasswordCliRegex(), "Password manager access"),
+        (OndrejPassRegex(), "Password store access"),
+        (OndrejOpRegex(), "1Password secret access"),
+        (OndrejKeychainRegex(), "Keychain password access"),
+        (OndrejGpgSecretRegex(), "GPG secret key export"),
+        (OndrejPasswordStorePathRegex(), "Password store path access"),
+        (OndrejPasswordAppRegex(), "Password manager application access"),
+
         // Inline interpreter execution — bypasses all file operation analysis
         (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
     ];
@@ -219,10 +239,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\.\s*/\s*\.:")]
     private static partial Regex ForkBombAltRegex();
 
-    [GeneratedRegex(@">\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)")]
+    [GeneratedRegex(@">\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)")]
     private static partial Regex DirectDiskWriteRegex();
 
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase)]
     private static partial Regex DdDiskWriteRegex();
 
     [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase)]
@@ -269,6 +289,61 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd")]
     private static partial Regex PasswdModifyRegex();
+
+    // Command-position anchors avoid treating prose or an argument to another executable as a command.
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejRmRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:mkfs(?:\.[a-z0-9]+)?(?=\s|$)|diskutil\s+(?:erase\w*|partitionDisk|zeroDisk|secureErase|apfs\s+(?:delete|erase)\w*)(?=\s|$))|>\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d+)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejDiskRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*sudo\s+(?:-[a-zA-Z]+\s+)*rm(?=\s|$)")]
+    private static partial Regex OndrejSudoRmRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:curl|wget)\s+[^;&|]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejCurlPipeRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*git\s+push(?=\s|$)[^;&|\r\n]*(?:\s(?:-f|--force|--delete|-d)(?=\s|$)|\s\+[a-z0-9._/-]|\s:[a-z0-9._/-])", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejGitPushRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*git\s+(?:reflog\s+expire\b[^;&|\r\n]*--expire(?:-unreachable)?(?:=|\s+)now\b|gc\b[^;&|\r\n]*--prune(?:=|\s+)(?:now|all)\b)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejGitRecoveryRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:chmod\s+[^;&|\r\n]*\b777\s+['""]?/['""]?(?=\s|$|[;&|])|chown\s+-R\b[^;&|\r\n]*\s+['""]?/['""]?(?=\s|$|[;&|]))", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejSystemPermissionsRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+(?:(?:repo|release|secret|ssh-key|gpg-key)\s+delete)(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejGhDeleteRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+api\b[^;&|\r\n]*(?:-X|--method)(?:=|\s+)DELETE(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejGhApiDeleteRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+repo\s+edit\b[^;&|\r\n]*--visibility(?:=|\s+)public(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejGhVisibilityRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+auth\s+token(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejGhTokenRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejPasswordCliRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*pass\s+\S+", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejPassRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejOpRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*security\s+(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:find-generic-password|find-internet-password|dump-keychain)(?=\s|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejKeychainRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gpg\b[^;&|\r\n]*--export-secret-(?:key|keys|subkey|subkeys)(?=\s|=|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejGpgSecretRegex();
+
+    [GeneratedRegex(@"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s'""]+)/\.password-store(?:/|(?=\s|$|['"";&|]))", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejPasswordStorePathRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s+['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass)|rm\s+[^;&|\r\n]*/Applications/(?:1Password|Bitwarden|NordPass|KeePassXC)\.app)(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase)]
+    private static partial Regex OndrejPasswordAppRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
     // Does NOT include bash/sh/zsh -c — those are handled by shell -c subcommand extraction

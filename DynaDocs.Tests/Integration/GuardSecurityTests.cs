@@ -11,6 +11,34 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class GuardSecurityTests : IntegrationTestBase
 {
+    [Theory]
+    [InlineData("git push --force origin main")]
+    [InlineData("gh auth token")]
+    [InlineData("bw export --format json")]
+    [InlineData("mkfs.ext4 /dev/sda1")]
+    public async Task OndrejDenylist_HookBlocksDangerousCommand(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(BashJson(command));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Dangerous");
+    }
+
+    [Theory]
+    [InlineData("git push --force-with-lease origin main")]
+    [InlineData("gh auth status")]
+    [InlineData("op --version")]
+    public async Task OndrejDenylist_HookAllowsBenignCommand(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(BashJson(command));
+
+        result.AssertSuccess();
+    }
+
     private async Task SetupClaimedAgent()
     {
         await InitProjectAsync("none");

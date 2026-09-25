@@ -48,16 +48,23 @@ follows:
    release" (150+ issues, captured from Linear) shows expanded parent plates, completed issues,
    status cues, arrow direction, pan and zoom. Collapse all and Expand all change the plate
    count as expected. Screenshots are posted on the viewer Issue.
-2. **Pickable.** Unit tests of the pickable rule, plus e2e: the fixture's `Todo`, unassigned,
-   unblocked issue carries the pickable marker. Swapping in a fixture variant with an assignee or an
-   open blocker removes it after a reload.
-3. **External blocker.** e2e: a dashed external node's body changes `team` and `project` in the URL
+2. **Pickable.** Unit tests of the pickable rule, plus e2e on the scenario fixture (below): its
+   `Todo`, unassigned, unblocked issue carries the pickable marker. Serving a variant with an
+   assignee, or with an open blocker, removes the marker after a reload.
+3. **External blocker.** e2e on the scenario fixture: a dashed external node's body changes `team` and `project` in the URL
    and focuses the node; its Linear button has `href` equal to the issue `url` and `target=_blank`.
 4. **Stays in the map.** e2e: clicking a regular node's body selects it and the page URL keeps its
    origin; related edges are absent until the toggle is on, and they use a distinct style.
 5. **Fresh on F5.** The CLI's `/api/graph` has no cache, which a server test proves: two requests
    make two GraphQL calls (a DYD-264 contract test). The full-stack e2e (DYD-267) changes the fake
    Linear's answer between two reloads and sees the new state.
+
+**Fixtures** (DYD-265, `viewer/fixtures/`, all in the §3 contract shape): the *large* fixture is a capture
+of "dydo 3.0 / Consolidate and release" (161 issues, but none in `Todo`), proving AC1. The *scenario*
+fixture is a capture of this Project, P-DYD-20, which has `Todo` issues, blocked issues and Merge
+sub-issues. It is extended by hand-built variants so it certainly holds a pickable issue, an assigned
+`Todo`, an open blocker, a closed blocker (muted edge), an external blocker with a Project, one
+without a Project, and a related link. It proves AC2 through AC4.
 
 Live proof against the real Linear API needs the human's key, so it runs in the landing
 walkthrough.
@@ -191,7 +198,7 @@ pnpm 11 with `minimumReleaseAge: 21600` and a committed lockfile. TypeScript str
 complexity ≤ 20 and `no-nested-ternary` as errors. elkjs is used under its EPL-2.0 option, with a
 notice. Notices cite committed paths or URLs only; the .NET notice tests check every backticked path.
 
-**Every authored file under `viewer/` is `.ts` or `.tsx`**, configs included (`vite.config.ts`,
+**No authored script under `viewer/` is JavaScript**: every script is `.ts` or `.tsx`, configs included (`vite.config.ts`,
 `eslint.config.ts`, `playwright.config.ts`, and the fake Linear server, run with
 `node --experimental-strip-types`). `inventory.py` measures every `.js`/`.cjs`/`.mjs` it sees, so a
 stray JavaScript file would put the viewer into the JS gates before DYD-266 gates it properly.
@@ -206,7 +213,7 @@ blockers, exact gates and base branch.
 
 | Issue | Outcome | Owned paths (summary) |
 |---|---|---|
-| [DYD-263](https://linear.app/bodnar-balazs/issue/DYD-263) Record dydo map as a read-only Linear view (DR 052) | DR 052 accepted; DR 044 amendment pointer; boundary text corrected | `dydo/project/decisions/{052-*,044-*,_decisions}.md`, `dydo/understand/{architecture,about,work-model}.md`, `dydo/guides/adding-a-command.md`, `dydo/reference/about-dynadocs.md` and its byte-identical `Scaffold/dydo/reference/about-dynadocs.md` |
+| [DYD-263](https://linear.app/bodnar-balazs/issue/DYD-263) Record dydo map as a read-only Linear view (DR 052) | DR 052 accepted; DR 044 amendment pointer; boundary text corrected | `dydo/project/decisions/{052-*,044-*,_decisions}.md`, `dydo/understand/{architecture,about,work-model}.md`, `dydo/guides/{adding-a-command,troubleshooting}.md`, `dydo/reference/about-dynadocs.md` and its byte-identical `Scaffold/dydo/reference/about-dynadocs.md` |
 | [DYD-264](https://linear.app/bodnar-balazs/issue/DYD-264) dydo map command: local server and Linear graph API | the command, server, API contract, GraphQL client, embedding | `Commands/MapCommand.cs`, `Services/Map/**`, `Serialization/MapJsonContext.cs`, `Program.cs`, `Commands/HelpCommand.cs`, `DynaDocs.csproj`, `DynaDocs.Tests/Map/**` and command-row tests, both `dydo-commands.md` copies, `README.md` and `npm/README.md` command tables, `test-associations.json` rows for the new C# files |
 | [DYD-265](https://linear.app/bodnar-balazs/issue/DYD-265) Project map viewer: React Flow graph of a Linear Project | the viewer, the fixture capture, e2e with fixtures | `viewer/**`, `.gitignore`, both `THIRD-PARTY-NOTICES.md` |
 

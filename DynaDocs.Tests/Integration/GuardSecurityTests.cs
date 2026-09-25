@@ -53,6 +53,11 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("ssh host 'dd if=x of=/dev/sda'")]
     [InlineData("GIT_SSH=x git push --force")]
     [InlineData("echo 'sudo dd if=x of=/dev/sda'")]
+    [InlineData("eval 'dd if=/dev/zero of=/dev/sda'")]
+    [InlineData("echo 'dd if=/dev/zero of=/dev/sda' | sh")]
+    [InlineData("bash <<< 'dd if=/dev/zero of=/dev/sda'")]
+    [InlineData("bash -c -- 'dd if=/dev/zero of=/dev/sda'")]
+    [InlineData("powershell -Command \"dd if=/dev/zero of=/dev/sda\"")]
     public async Task OndrejDenylist_HookBlocksDangerousCommand(string command)
     {
         await SetupClaimedAgent();

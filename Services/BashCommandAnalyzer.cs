@@ -164,6 +164,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Direct disk writes
         (DirectDiskWriteRegex(), "Direct disk write attempt"),
         (DdDiskWriteRegex(), "Direct disk write via dd"),
+        (DdKnownDiskWriteRegex(), "Direct disk write via dd"),
 
         // Base64 decode piped to interpreter
         (Base64DecodePipeExecRegex(), "Base64 decode piped to interpreter"),
@@ -256,6 +257,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex(CommandStart + @"dd\s+[^;&|\r\n]*\bof\s*=\s*['""]?/dev/(?!null(?:\s|$|['"";&|)`]))[^\s'"";&|]+", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex DdDiskWriteRegex();
+
+    // Master's floor, kept unanchored: known disk targets block anywhere in the command text.
+    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex DdKnownDiskWriteRegex();
 
     [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex Base64DecodePipeExecRegex();

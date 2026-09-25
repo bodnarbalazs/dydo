@@ -172,8 +172,13 @@ def _contains_span(outer, inner):
     return outer[:2] <= inner[:2] and inner[2:] <= outer[2:]
 
 
-def _point_owner(point, methods):
+def _point_owner(point, methods, declared=None):
     candidates = [row for row in methods if contains(_span(row), point["line"], point["column"])]
+    if declared is not None:
+        # A lambda or local function emits its own method, so a declared member's body is never owned
+        # by a callable nested in it, even where that body is nothing but the callable (`=> x => ...`).
+        candidates = [row for row in candidates
+                      if contains(_span(row), declared["line"], declared["column"])] or candidates
     smallest = [row for row in candidates if not any(
         other is not row and _span(other) != _span(row)
         and _contains_span(_span(row), _span(other))
@@ -245,16 +250,18 @@ def _constructor_order(physical, constructor, fragments):
 
 
 def _normal_owner(physical, source_methods, declared):
+    key = physical.get("kickoff_key") or physical["key"]
+    semantic = declared.get(key)
     owners = {}
     for point in physical["points"]:
         if point["path"] not in source_methods:
             continue
-        owner = _point_owner(point, source_methods[point["path"]])
+        anchor = semantic if semantic is not None and semantic["path"] == point["path"] else None
+        owner = _point_owner(point, source_methods[point["path"]], anchor)
         owners[(point["path"], owner["id"])] = owner
     if len(owners) != 1:
         raise ValueError(f"Unexplained physical-to-source relation: {physical['identity']}: {list(owners)}")
     (path, _), owner = next(iter(owners.items()))
-    key = physical.get("kickoff_key") or physical["key"]
     if key in declared:
         semantic = declared[key]
         if semantic["path"] != path or not (_contains_span(_span(semantic), _span(owner))

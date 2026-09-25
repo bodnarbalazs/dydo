@@ -214,7 +214,7 @@ blockers, exact gates and base branch.
 | Issue | Outcome | Owned paths (summary) |
 |---|---|---|
 | [DYD-263](https://linear.app/bodnar-balazs/issue/DYD-263) Record dydo map as a read-only Linear view (DR 052) | DR 052 accepted; DR 044 amendment pointer; boundary text corrected | `dydo/project/decisions/{052-*,044-*,_decisions}.md`, `dydo/understand/{architecture,about,work-model}.md`, `dydo/guides/{adding-a-command,troubleshooting}.md`, `dydo/reference/about-dynadocs.md` and its byte-identical `Scaffold/dydo/reference/about-dynadocs.md` |
-| [DYD-264](https://linear.app/bodnar-balazs/issue/DYD-264) dydo map command: local server and Linear graph API | the command, server, API contract, GraphQL client, embedding | `Commands/MapCommand.cs`, `Services/Map/**`, `Serialization/MapJsonContext.cs`, `Program.cs`, `Commands/HelpCommand.cs`, `DynaDocs.csproj`, `DynaDocs.Tests/Map/**` and command-row tests, both `dydo-commands.md` copies, `README.md` and `npm/README.md` command tables, `test-associations.json` rows for the new C# files |
+| [DYD-264](https://linear.app/bodnar-balazs/issue/DYD-264) dydo map command: local server and Linear graph API | the command, server, API contract, GraphQL client, embedding | `Commands/MapCommand.cs`, `Services/Map/**`, `Serialization/MapJsonContext.cs`, `Program.cs`, `Commands/HelpCommand.cs`, `Services/CompletionProvider.cs` (top-level `map`), `Services/ConfigFactory.cs` (`map` in the dotnet-run nudge list), `DynaDocs.csproj`, `DynaDocs.Tests/Map/**` and command-row tests, both `dydo-commands.md` copies, `README.md` and `npm/README.md` command tables, `test-associations.json` rows for the new C# files |
 | [DYD-265](https://linear.app/bodnar-balazs/issue/DYD-265) Project map viewer: React Flow graph of a Linear Project | the viewer, the fixture capture, e2e with fixtures | `viewer/**`, `.gitignore`, both `THIRD-PARTY-NOTICES.md` |
 
 ### Later bearings
@@ -247,7 +247,7 @@ The first captain opens `feature/visual-linear-project-map` from this plan's rev
 branches from the feature head into its own worktree. The merge order is DYD-268 → DYD-269 → DYD-270 →
 DYD-271 → DYD-272 (the Merge Sub-issues of 263 → 264 → 265 → 266 → 267); the admiral rewires an
 independent ready PR forward. Hot shared paths are serial: `test-associations.json` goes to DYD-264, then
-DYD-266. `viewer/playwright.config.ts` goes to DYD-265, then DYD-267. `.gitignore` belongs to DYD-265
+DYD-266. `viewer/playwright.config.ts` and `viewer/package.json` go to DYD-265, then DYD-267 alone, which adds the `e2e:full-stack` script. DYD-266 edits nothing under `viewer/`: its adapters call the scripts DYD-265 contracts (`typecheck`, `lint`, `test`, `coverage`, `build`, `e2e`). If it needs another script or config, it hands that back to the admiral. `.gitignore` belongs to DYD-265
 alone. The API contract in §3 is fixed, so DYD-264 and DYD-265 never wait on each other. A needed
 contract change comes back to the admiral as a plan amendment.
 

@@ -1,0 +1,592 @@
+{
+ "project": {
+  "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+  "name": "Visual Linear project map",
+  "url": "https://linear.app/bodnar-balazs/project/visual-linear-project-map-9894ea3c35b1"
+ },
+ "issues": [
+  {
+   "id": "228c533f-4109-4f9c-9bee-d3ee4bce0b73",
+   "identifier": "DYD-272",
+   "title": "Merge DYD-267 into feature/visual-linear-project-map",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-272/merge-dyd-267-into-featurevisual-linear-project-map",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": null,
+   "parentId": "dabebccd-0618-4a41-a4a5-df801fed72a3",
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "0925ea81-82c4-46cd-9261-7ec7c2b0072e",
+   "identifier": "DYD-271",
+   "title": "Merge DYD-266 into feature/visual-linear-project-map",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-271/merge-dyd-266-into-featurevisual-linear-project-map",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": null,
+   "parentId": "ae042f65-0b27-4654-a142-9a0a8e2f123c",
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "8706dd64-bd9e-41e4-94c5-1e19ce0f7aa9",
+   "identifier": "DYD-270",
+   "title": "Merge DYD-265 into feature/visual-linear-project-map",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-270/merge-dyd-265-into-featurevisual-linear-project-map",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": null,
+   "parentId": "5bb8ed11-c2ec-422d-a194-b2a0c8a2662e",
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "3e3e139f-d6cd-4b2e-ba6b-68ebf017220d",
+   "identifier": "DYD-269",
+   "title": "Merge DYD-264 into feature/visual-linear-project-map",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-269/merge-dyd-264-into-featurevisual-linear-project-map",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": null,
+   "parentId": "80e512e6-baa3-4229-9307-103dc210c72b",
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "2a74257b-ce5d-4eb8-a99d-5738fd1d6c9f",
+   "identifier": "DYD-268",
+   "title": "Merge DYD-263 into feature/visual-linear-project-map",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-268/merge-dyd-263-into-featurevisual-linear-project-map",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": null,
+   "parentId": "f7847ba7-95ff-4285-829d-610102116d6c",
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "dabebccd-0618-4a41-a4a5-df801fed72a3",
+   "identifier": "DYD-267",
+   "title": "Build and ship the map viewer in CI and release, with full-stack e2e",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-267/build-and-ship-the-map-viewer-in-ci-and-release-with-full-stack-e2e",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": null,
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "ae042f65-0b27-4654-a142-9a0a8e2f123c",
+   "identifier": "DYD-266",
+   "title": "Gate the viewer TypeScript stack in gap_check",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-266/gate-the-viewer-typescript-stack-in-gap-check",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": null,
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "5bb8ed11-c2ec-422d-a194-b2a0c8a2662e",
+   "identifier": "DYD-265",
+   "title": "Project map viewer: React Flow graph of a Linear Project",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-265/project-map-viewer-react-flow-graph-of-a-linear-project",
+   "state": {
+    "name": "Implementing",
+    "type": "started",
+    "color": "#f2994a"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "80e512e6-baa3-4229-9307-103dc210c72b",
+   "identifier": "DYD-264",
+   "title": "dydo map command: local server and Linear graph API",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-264/dydo-map-command-local-server-and-linear-graph-api",
+   "state": {
+    "name": "Implementing",
+    "type": "started",
+    "color": "#f2994a"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "f7847ba7-95ff-4285-829d-610102116d6c",
+   "identifier": "DYD-263",
+   "title": "Record dydo map as a read-only Linear view (DR 052)",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-263/record-dydo-map-as-a-read-only-linear-view-dr-052",
+   "state": {
+    "name": "In Review",
+    "type": "started",
+    "color": "#26b5ce"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "257e75d1-e3d9-4c7b-b422-d6b38439755a",
+   "identifier": "DYD-262",
+   "title": "Research: ship a React Flow viewer from the dydo AOT CLI",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-262/research-ship-a-react-flow-viewer-from-the-dydo-aot-cli",
+   "state": {
+    "name": "Done",
+    "type": "completed",
+    "color": "#5e6ad2"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "d988131e-19e9-4908-8a39-204b85b94745",
+   "identifier": "DYD-261",
+   "title": "Research: Linear GraphQL queries for the project map",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-261/research-linear-graphql-queries-for-the-project-map",
+   "state": {
+    "name": "Done",
+    "type": "completed",
+    "color": "#5e6ad2"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  },
+  {
+   "id": "df580cf1-3c2a-5760-aee3-4ebc1e7586d5",
+   "identifier": "DYD-9001",
+   "title": "Fixture: an assigned Todo issue",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-9001/fixture-an-assigned-todo-issue",
+   "state": {
+    "name": "Todo",
+    "type": "unstarted",
+    "color": "#e2e2e2"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
+    "name": "Visual Linear project map"
+   }
+  }
+ ],
+ "external": [
+  {
+   "id": "0aa9a73e-9813-4e1c-a4a1-87be4c3f8496",
+   "identifier": "DYD-217",
+   "title": "Walk through the landed dydo 3.0 on master",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-217/walk-through-the-landed-dydo-30-on-master",
+   "state": {
+    "name": "In Progress",
+    "type": "started",
+    "color": "#f2c94c"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+    "name": "dydo 3.0 / Consolidate and release"
+   }
+  },
+  {
+   "id": "18f968c9-a7ec-46c7-9baf-345d27146854",
+   "identifier": "DYD-253",
+   "title": "Skill-harmony fix pass: close the DYD-235 inquisition Bugs and apply the human's 2026-09-23 decisions in one change",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-253/skill-harmony-fix-pass-close-the-dyd-235-inquisition-bugs-and-apply",
+   "state": {
+    "name": "Done",
+    "type": "completed",
+    "color": "#5e6ad2"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+    "name": "dydo 3.0 / Consolidate and release"
+   }
+  },
+  {
+   "id": "46514b05-7b70-43de-a774-34ac51aa9c7d",
+   "identifier": "DYD-198",
+   "title": "Consider the idiot boss/genius worker model",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-198/consider-the-idiot-bossgenius-worker-model",
+   "state": {
+    "name": "Canceled",
+    "type": "canceled",
+    "color": "#95a2b3"
+   },
+   "assignee": null,
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": null
+  },
+  {
+   "id": "4a3e8ab4-d730-4efb-b31b-768ee42246a5",
+   "identifier": "DYD-88",
+   "title": "Verify Codex sub-agent lifecycle contracts",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-88/verify-codex-sub-agent-lifecycle-contracts",
+   "state": {
+    "name": "Canceled",
+    "type": "canceled",
+    "color": "#95a2b3"
+   },
+   "assignee": null,
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+    "name": "dydo 3.0 / Consolidate and release"
+   }
+  },
+  {
+   "id": "4be9fa5f-4f86-426c-b669-c87b724f5699",
+   "identifier": "DYD-231",
+   "title": "Master CI red on Linux since DYD-228: the interrupt-cleanup scenarios leave the isolated worktree behind on ubuntu, and the PR was merged with its check already failed",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-231/master-ci-red-on-linux-since-dyd-228-the-interrupt-cleanup-scenarios",
+   "state": {
+    "name": "Done",
+    "type": "completed",
+    "color": "#5e6ad2"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+    "name": "dydo 3.0 / Consolidate and release"
+   }
+  },
+  {
+   "id": "66d9ec96-9385-4677-a31f-4bdbb2e592d2",
+   "identifier": "DYD-65",
+   "title": "Audit the integrated 3.0 candidate and retain its findings",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-65/audit-the-integrated-30-candidate-and-retain-its-findings",
+   "state": {
+    "name": "Canceled",
+    "type": "canceled",
+    "color": "#95a2b3"
+   },
+   "assignee": null,
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+    "name": "dydo 3.0 / Consolidate and release"
+   }
+  },
+  {
+   "id": "f7bafd41-e5c3-4896-bd23-9bd34158b932",
+   "identifier": "DYD-11",
+   "title": "Repair release gates, audit, and ship dydo 3.0.0",
+   "url": "https://linear.app/bodnar-balazs/issue/DYD-11/repair-release-gates-audit-and-ship-dydo-300",
+   "state": {
+    "name": "Done",
+    "type": "completed",
+    "color": "#5e6ad2"
+   },
+   "assignee": "Balazs",
+   "parentId": null,
+   "team": {
+    "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+    "key": "DYD"
+   },
+   "project": {
+    "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
+    "name": "dydo 3.0 / Consolidate and release"
+   }
+  }
+ ],
+ "relations": [
+  {
+   "id": "0c08eed7-340e-572e-8f58-40abec61ed0b",
+   "type": "related",
+   "from": "4a3e8ab4-d730-4efb-b31b-768ee42246a5",
+   "to": "d988131e-19e9-4908-8a39-204b85b94745"
+  },
+  {
+   "id": "0c8a3314-80e2-5175-b41d-d76eaff16426",
+   "type": "related",
+   "from": "80e512e6-baa3-4229-9307-103dc210c72b",
+   "to": "d988131e-19e9-4908-8a39-204b85b94745"
+  },
+  {
+   "id": "259a258b-e25e-59aa-82d8-744d78dc751f",
+   "type": "blocks",
+   "from": "3e3e139f-d6cd-4b2e-ba6b-68ebf017220d",
+   "to": "dabebccd-0618-4a41-a4a5-df801fed72a3"
+  },
+  {
+   "id": "402f6925-b180-5eba-86d0-f7b6dc9fe59a",
+   "type": "related",
+   "from": "4be9fa5f-4f86-426c-b669-c87b724f5699",
+   "to": "d988131e-19e9-4908-8a39-204b85b94745"
+  },
+  {
+   "id": "4cc684c9-d3b0-581b-89b9-c4415a6f3a83",
+   "type": "blocks",
+   "from": "2a74257b-ce5d-4eb8-a99d-5738fd1d6c9f",
+   "to": "3e3e139f-d6cd-4b2e-ba6b-68ebf017220d"
+  },
+  {
+   "id": "54c227ca-bc88-5df3-b9b3-12c3dd348d18",
+   "type": "blocks",
+   "from": "8706dd64-bd9e-41e4-94c5-1e19ce0f7aa9",
+   "to": "0925ea81-82c4-46cd-9261-7ec7c2b0072e"
+  },
+  {
+   "id": "584dd45b-fdfa-5f2e-b1a3-09c3c22cb3b8",
+   "type": "related",
+   "from": "5bb8ed11-c2ec-422d-a194-b2a0c8a2662e",
+   "to": "ae042f65-0b27-4654-a142-9a0a8e2f123c"
+  },
+  {
+   "id": "671989a6-b6b3-52ee-b4bf-1b5d9d750caf",
+   "type": "related",
+   "from": "66d9ec96-9385-4677-a31f-4bdbb2e592d2",
+   "to": "d988131e-19e9-4908-8a39-204b85b94745"
+  },
+  {
+   "id": "6b1ba799-e054-57fa-81aa-197498805d27",
+   "type": "blocks",
+   "from": "0925ea81-82c4-46cd-9261-7ec7c2b0072e",
+   "to": "228c533f-4109-4f9c-9bee-d3ee4bce0b73"
+  },
+  {
+   "id": "6b7b4da1-e813-5869-89a3-7e2ca5b94b4a",
+   "type": "related",
+   "from": "d988131e-19e9-4908-8a39-204b85b94745",
+   "to": "f7bafd41-e5c3-4896-bd23-9bd34158b932"
+  },
+  {
+   "id": "78e89748-9658-57ee-a627-5f31807e32a2",
+   "type": "related",
+   "from": "257e75d1-e3d9-4c7b-b422-d6b38439755a",
+   "to": "ae042f65-0b27-4654-a142-9a0a8e2f123c"
+  },
+  {
+   "id": "867a8878-da64-5b67-a77f-dacc6025080a",
+   "type": "related",
+   "from": "3e3e139f-d6cd-4b2e-ba6b-68ebf017220d",
+   "to": "f7847ba7-95ff-4285-829d-610102116d6c"
+  },
+  {
+   "id": "881ecbc6-5459-50cc-b20e-c36e4405c303",
+   "type": "related",
+   "from": "257e75d1-e3d9-4c7b-b422-d6b38439755a",
+   "to": "80e512e6-baa3-4229-9307-103dc210c72b"
+  },
+  {
+   "id": "8aa7b2dc-1a5e-5c2f-8468-72d3e824b353",
+   "type": "blocks",
+   "from": "8706dd64-bd9e-41e4-94c5-1e19ce0f7aa9",
+   "to": "dabebccd-0618-4a41-a4a5-df801fed72a3"
+  },
+  {
+   "id": "8c898eb9-6785-55e5-a2c8-49c5347faff9",
+   "type": "related",
+   "from": "ae042f65-0b27-4654-a142-9a0a8e2f123c",
+   "to": "dabebccd-0618-4a41-a4a5-df801fed72a3"
+  },
+  {
+   "id": "afc67374-37f2-5699-b67e-120995a4efa4",
+   "type": "related",
+   "from": "228c533f-4109-4f9c-9bee-d3ee4bce0b73",
+   "to": "ae042f65-0b27-4654-a142-9a0a8e2f123c"
+  },
+  {
+   "id": "bb9d1ac5-69a7-5ba3-b152-227bfdaa764e",
+   "type": "blocks",
+   "from": "8706dd64-bd9e-41e4-94c5-1e19ce0f7aa9",
+   "to": "ae042f65-0b27-4654-a142-9a0a8e2f123c"
+  },
+  {
+   "id": "c01dbbab-734e-56c1-963a-69e7ec579f40",
+   "type": "related",
+   "from": "80e512e6-baa3-4229-9307-103dc210c72b",
+   "to": "8706dd64-bd9e-41e4-94c5-1e19ce0f7aa9"
+  },
+  {
+   "id": "d1627c64-df49-51cf-a053-cbf0c5f1ccd8",
+   "type": "related",
+   "from": "d988131e-19e9-4908-8a39-204b85b94745",
+   "to": "f7847ba7-95ff-4285-829d-610102116d6c"
+  },
+  {
+   "id": "d41105cc-2492-541e-872d-31d0bb9368e2",
+   "type": "related",
+   "from": "5bb8ed11-c2ec-422d-a194-b2a0c8a2662e",
+   "to": "dabebccd-0618-4a41-a4a5-df801fed72a3"
+  },
+  {
+   "id": "eec1ca67-20e1-5adc-a072-babecf955e77",
+   "type": "related",
+   "from": "0925ea81-82c4-46cd-9261-7ec7c2b0072e",
+   "to": "5bb8ed11-c2ec-422d-a194-b2a0c8a2662e"
+  },
+  {
+   "id": "f163e6c0-0942-57f5-94f5-bed73410d826",
+   "type": "related",
+   "from": "18f968c9-a7ec-46c7-9baf-345d27146854",
+   "to": "d988131e-19e9-4908-8a39-204b85b94745"
+  },
+  {
+   "id": "fcf1c610-e4f2-5a12-bc25-cfd1fceb22ba",
+   "type": "blocks",
+   "from": "3e3e139f-d6cd-4b2e-ba6b-68ebf017220d",
+   "to": "8706dd64-bd9e-41e4-94c5-1e19ce0f7aa9"
+  },
+  {
+   "id": "fd06486d-e66a-5bd8-8520-648e6770ffdc",
+   "type": "blocks",
+   "from": "3e3e139f-d6cd-4b2e-ba6b-68ebf017220d",
+   "to": "ae042f65-0b27-4654-a142-9a0a8e2f123c"
+  },
+  {
+   "id": "0a1ba66b-2d7c-55e3-ab0a-f0e32a63c67b",
+   "type": "blocks",
+   "from": "d988131e-19e9-4908-8a39-204b85b94745",
+   "to": "dabebccd-0618-4a41-a4a5-df801fed72a3"
+  },
+  {
+   "id": "03aa7852-f355-5776-8490-422f311eaf98",
+   "type": "blocks",
+   "from": "0aa9a73e-9813-4e1c-a4a1-87be4c3f8496",
+   "to": "0925ea81-82c4-46cd-9261-7ec7c2b0072e"
+  },
+  {
+   "id": "8fcfce3d-0564-5cfc-b6d3-105a1748e0ab",
+   "type": "blocks",
+   "from": "46514b05-7b70-43de-a774-34ac51aa9c7d",
+   "to": "228c533f-4109-4f9c-9bee-d3ee4bce0b73"
+  }
+ ]
+}

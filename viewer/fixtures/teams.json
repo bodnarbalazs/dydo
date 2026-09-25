@@ -1,0 +1,19 @@
+{
+ "teams": [
+  {
+   "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
+   "key": "DYD",
+   "name": "Dydo"
+  },
+  {
+   "id": "b16c9cf6-231f-457a-9a1c-7aa8234aebaf",
+   "key": "IND",
+   "name": "IndigoPulse"
+  },
+  {
+   "id": "a28cfa4a-0c65-49f3-9e15-265f78698791",
+   "key": "LC",
+   "name": "LC"
+  }
+ ]
+}

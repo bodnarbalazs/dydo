@@ -1,6 +1,6 @@
 ---
 title: Visual Linear project map
-status: draft
+status: reviewed
 area: project
 type: context
 linear-project: https://linear.app/bodnar-balazs/project/visual-linear-project-map-9894ea3c35b1
@@ -270,3 +270,10 @@ contract change comes back to the admiral as a plan amendment.
 - Whether ELK's layered layout reads well at 150+ issues with plates and crossing blockers. The
   fixture screenshots answer that first; the human's live look settles it. A poor result reopens
   layout tuning as a new Issue, not a redesign.
+
+## Review evidence — 2026-09-25
+
+Four fresh `reviewer(project-plan)` passes ran, each posted on the Linear Project. FAILs at `e807339`
+(7 findings), `575b4a5` (2) and `d7fa9cb` (2) were corrected. The PASS is at `3e88cc6`. The human delegated
+approval to the admiral for this AFK run (Project Notes, 2026-09-25); the admiral approved the
+route at that PASS. This section and the `reviewed` status are the only changes since.

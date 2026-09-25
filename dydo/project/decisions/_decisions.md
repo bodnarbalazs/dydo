@@ -38,6 +38,7 @@ Required frontmatter:
 
 - [050 — Officers, Crew and Skills: Hats Retired](./050-officers-crew-and-skills-hats-retired.md) — role vocabulary and the skill tree layout; amends 045 and 049
 - [051 — Captains by Default, the Admiral on Invocation](./051-captains-by-default-admiral-on-invocation.md) — the admiral optional, the map holder, project-planner removed, one Wayfinding Issue per human-driven session, `to-issue`; amends 045, 047 and 050
+- [052 — `dydo map`: a Read-Only Linear View](./052-dydo-map-read-only-linear-view.md) — `dydo map` reads one Linear Project on demand with the user's key and never writes, caches, polls or mirrors it; amends 044
 
 ---
 

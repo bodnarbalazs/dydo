@@ -5,7 +5,6 @@ export class ApiError extends Error {
 
   constructor(code: string, message: string) {
     super(message);
-    this.name = 'ApiError';
     this.code = code;
   }
 }
@@ -23,7 +22,7 @@ export function fetchGraph(projectId: string): Promise<Graph> {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(path, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+  const response = await fetch(path, { cache: 'no-store' });
   const body: unknown = await response.json().catch(() => null);
   if (response.ok && body !== null) return body as T;
   if (isErrorEnvelope(body)) throw new ApiError(body.error.code, body.error.message);

@@ -73,6 +73,13 @@ describe('buildMapModel edges', () => {
     ]);
   });
 
+  it('never mutes a related link, even from a closed issue', () => {
+    const graph = makeGraph(tree, [related('A', 'X')]);
+    expect(buildMapModel(graph, { ...expanded, showRelated: true }).edges).toEqual([
+      { id: 'related:A->X', type: 'related', source: 'A', target: 'X', muted: false },
+    ]);
+  });
+
   it('re-anchors edges of hidden sub-issues to the outermost collapsed plate and merges duplicates', () => {
     const graph = makeGraph(tree, [blocks('X', 'C'), blocks('X', 'A'), blocks('C', 'A')]);
     const model = buildMapModel(graph, { collapsed: new Set(['P', 'B']), showRelated: false });
@@ -87,6 +94,22 @@ describe('buildMapModel edges', () => {
     expect(model.edges).toEqual([{ id: 'blocks:P->X', type: 'blocks', source: 'P', target: 'X', muted: false }]);
   });
 
+  it('mutes the edge from a closed external blocker and draws the blocker as a closed external node', () => {
+    const outside = makeIssue('E', { type: 'completed', project: null });
+    const model = buildMapModel(makeGraph(tree, [blocks('E', 'X')], [outside]), expanded);
+    expect(model.edges).toEqual([{ id: 'blocks:E->X', type: 'blocks', source: 'E', target: 'X', muted: true }]);
+    expect(model.nodes.find((node) => node.id === 'E')).toEqual({
+      id: 'E',
+      kind: 'external',
+      issue: outside,
+      parentId: null,
+      pickable: false,
+      closed: true,
+      collapsed: false,
+      descendants: 0,
+    });
+  });
+
   it('shows an external issue only while one of its edges is visible', () => {
     const outside = makeIssue('E', { project: null, team: { id: 'team-2', key: 'U' } });
     const graph = makeGraph(tree, [related('E', 'X')], [outside]);
@@ -97,6 +120,52 @@ describe('buildMapModel edges', () => {
 });
 
 describe('buildMapModel ELK input', () => {
+  it('feeds ELK fixed card sizes, plate padding and the tuned layout options', () => {
+    const outside = makeIssue('E', { project: null });
+    const { elk } = buildMapModel(makeGraph(tree, [blocks('E', 'X')], [outside]), expanded);
+    expect(elk.layoutOptions).toEqual({
+      'elk.algorithm': 'rectpacking',
+      'elk.aspectRatio': '1.7',
+      'elk.spacing.nodeNode': '60',
+      'elk.json.edgeCoords': 'ROOT',
+      'elk.json.shapeCoords': 'PARENT',
+    });
+    expect(elk.children?.[0]?.layoutOptions).toEqual({
+      'elk.algorithm': 'layered',
+      'elk.direction': 'RIGHT',
+      'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.layered.mergeEdges': 'true',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '56',
+      'elk.layered.spacing.edgeNodeBetweenLayers': '14',
+      'elk.layered.spacing.edgeEdgeBetweenLayers': '6',
+      'elk.spacing.nodeNode': '18',
+      'elk.spacing.edgeNode': '16',
+      'elk.spacing.edgeEdge': '8',
+      'elk.padding': '[top=0,left=0,bottom=0,right=0]',
+    });
+    const shapes = Object.fromEntries(
+      (elk.children ?? []).flatMap((group) => group.children ?? []).map(({ id, width, height, layoutOptions }) => [id, { width, height, layoutOptions }]),
+    );
+    expect(shapes).toEqual({
+      X: { width: 280, height: 96, layoutOptions: undefined },
+      E: { width: 230, height: 70, layoutOptions: undefined },
+      P: { width: undefined, height: undefined, layoutOptions: { 'elk.padding': '[top=130,left=18,bottom=18,right=18]' } },
+    });
+  });
+
+  it('groups by top-level issue and keeps each group\'s edges with that group, sub-issue edges included', () => {
+    const graph = makeGraph(
+      [...tree, makeIssue('Y'), makeIssue('Z'), makeIssue('W')],
+      [blocks('X', 'Y'), blocks('Y', 'Z'), blocks('C', 'W')],
+    );
+    const { elk } = buildMapModel(graph, expanded);
+    expect(elk.children?.map((group) => group.children?.map((child) => child.id))).toEqual([['X', 'Y', 'Z'], ['P', 'W']]);
+    expect(elk.children?.map((group) => group.edges?.map((edge) => edge.id))).toEqual([['blocks:X->Y', 'blocks:Y->Z'], ['blocks:C->W']]);
+  });
+
   it('lays out each connected group layered to the right with plates holding their children', () => {
     const { elk } = buildMapModel(makeGraph(tree, [blocks('X', 'C')]), expanded);
     expect(elk.layoutOptions?.['elk.algorithm']).toBe('rectpacking');
@@ -122,8 +191,11 @@ describe('buildMapModel ELK input', () => {
     expect(plate?.children).toBeUndefined();
   });
 
-  it('leaves an edge between a plate and its own sub-issue out of the layout', () => {
-    const model = buildMapModel(makeGraph(tree, [blocks('P', 'C')]), expanded);
+  it.each([
+    ['plate to sub-issue', blocks('P', 'C')],
+    ['sub-issue to plate', blocks('C', 'P')],
+  ])('leaves an edge between a plate and its own sub-issue out of the layout (%s)', (_direction, relation) => {
+    const model = buildMapModel(makeGraph(tree, [relation]), expanded);
     expect(model.edges).toHaveLength(1);
     expect(model.elk.children?.flatMap((group) => group.edges ?? [])).toEqual([]);
   });
@@ -132,5 +204,6 @@ describe('buildMapModel ELK input', () => {
 describe('connectedGroups', () => {
   it('joins linked ids and orders groups biggest first', () => {
     expect(connectedGroups(['a', 'b', 'c', 'd', 'e'], [['d', 'e'], ['c', 'd']])).toEqual([['c', 'd', 'e'], ['a'], ['b']]);
+    expect(connectedGroups(['a', 'b', 'c'], [['a', 'b'], ['a', 'c']])).toEqual([['a', 'b', 'c']]);
   });
 });

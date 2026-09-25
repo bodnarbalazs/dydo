@@ -15,6 +15,9 @@ interface Failure {
   message: string;
 }
 
+/** Where a failure happened: the team list, one team's Projects, or one Project's map. */
+type FailedView = 'teams' | `team:${string}` | `project:${string}`;
+
 function failure(error: unknown): Failure {
   if (error instanceof ApiError) return { code: error.code, message: error.message };
   return { code: 'viewer_error', message: error instanceof Error ? error.message : String(error) };
@@ -25,15 +28,27 @@ export function App({ elk }: { elk: ELK }) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loadedProjects, setLoadedProjects] = useState<{ team: string; projects: Project[] } | null>(null);
   const [loadedGraph, setLoadedGraph] = useState<{ project: string; graph: Graph } | null>(null);
-  const [error, setError] = useState<Failure | null>(null);
+  const [failures, setFailures] = useState<ReadonlyMap<FailedView, Failure>>(new Map());
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [showRelated, setShowRelated] = useState(false);
   const [laidOut, setLaidOut] = useState<{ graph: Graph; flow: MapFlow; fitKey: number } | null>(null);
   const [fitKey, setFitKey] = useState(0);
 
   const projects = loadedProjects !== null && loadedProjects.team === url.team ? loadedProjects.projects : [];
-  const graph = loadedGraph !== null && loadedGraph.project === url.project ? loadedGraph.graph : null;
+  const current = loadedGraph !== null && loadedGraph.project === url.project ? loadedGraph : null;
+  const graph = current?.graph ?? null;
   const shown = laidOut !== null && laidOut.graph === graph ? laidOut : null;
+  // A failure is shown only while its view is on screen, so navigating away drops it.
+  const error = failures.get('teams') ?? failures.get(`team:${url.team}`) ?? failures.get(`project:${url.project}`) ?? null;
+
+  const record = useCallback((view: FailedView, outcome: Failure | null) => {
+    setFailures((previous) => {
+      const next = new Map(previous);
+      if (outcome === null) next.delete(view);
+      else next.set(view, outcome);
+      return next;
+    });
+  }, []);
 
   const navigate = useCallback((next: UrlState, mode: 'push' | 'replace') => {
     const target = `${window.location.pathname}${toSearch(next)}`;
@@ -54,9 +69,9 @@ export function App({ elk }: { elk: ELK }) {
 
   useEffect(() => {
     fetchTeams().then(setTeams, (reason: unknown) => {
-      setError(failure(reason));
+      record('teams', failure(reason));
     });
-  }, []);
+  }, [record]);
 
   useEffect(() => {
     const team = url.team;
@@ -64,16 +79,18 @@ export function App({ elk }: { elk: ELK }) {
     let live = true;
     fetchProjects(team).then(
       (loaded) => {
-        if (live) setLoadedProjects({ team, projects: loaded });
+        if (!live) return;
+        record(`team:${team}`, null);
+        setLoadedProjects({ team, projects: loaded });
       },
       (reason: unknown) => {
-        if (live) setError(failure(reason));
+        if (live) record(`team:${team}`, failure(reason));
       },
     );
     return () => {
       live = false;
     };
-  }, [url.team]);
+  }, [url.team, record]);
 
   useEffect(() => {
     const project = url.project;
@@ -82,35 +99,37 @@ export function App({ elk }: { elk: ELK }) {
     fetchGraph(project).then(
       (loaded) => {
         if (!live) return;
-        setError(null);
+        record(`project:${project}`, null);
         setCollapsed(new Set());
         setLoadedGraph({ project, graph: loaded });
-        setFitKey((key) => key + 1);
       },
       (reason: unknown) => {
-        if (live) setError(failure(reason));
+        if (live) record(`project:${project}`, failure(reason));
       },
     );
     return () => {
       live = false;
     };
-  }, [url.project]);
+  }, [url.project, record]);
 
   useEffect(() => {
-    if (graph === null) return undefined;
+    if (current === null) return undefined;
+    const { project, graph: drawn } = current;
     let live = true;
-    layoutMap(elk, buildMapModel(graph, { collapsed, showRelated })).then(
+    layoutMap(elk, buildMapModel(drawn, { collapsed, showRelated })).then(
       (next) => {
-        if (live) setLaidOut({ graph, flow: next, fitKey });
+        if (!live) return;
+        record(`project:${project}`, null);
+        setLaidOut({ graph: drawn, flow: next, fitKey });
       },
       (reason: unknown) => {
-        if (live) setError(failure(reason));
+        if (live) record(`project:${project}`, failure(reason));
       },
     );
     return () => {
       live = false;
     };
-  }, [elk, graph, collapsed, showRelated, fitKey]);
+  }, [elk, current, collapsed, showRelated, fitKey, record]);
 
   const plateIds = useMemo(() => new Set(graph?.issues.flatMap((issue) => (issue.parentId === null ? [] : [issue.parentId]))), [graph]);
   const allPlates = useMemo(() => new Set(graph?.issues.filter((issue) => plateIds.has(issue.id)).map((issue) => issue.id)), [graph, plateIds]);

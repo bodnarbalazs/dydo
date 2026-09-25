@@ -31,6 +31,17 @@ describe('api client', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/graph?project=p1', expect.anything());
   });
 
+  it('escapes the project id', async () => {
+    const fetchMock = answer(200, JSON.stringify(makeGraph([])));
+    await fetchGraph('a&b');
+    expect(fetchMock).toHaveBeenCalledWith('/api/graph?project=a%26b', expect.anything());
+  });
+
+  it('reports a successful answer without a JSON body by its HTTP status', async () => {
+    answer(200, '<html>');
+    await expect(fetchTeams()).rejects.toMatchObject({ code: 'http_200' });
+  });
+
   it('raises the error envelope as an ApiError', async () => {
     answer(502, JSON.stringify({ error: { code: 'linear_auth', message: 'Linear rejected the key.' } }));
     await expect(fetchGraph('p1')).rejects.toEqual(new ApiError('linear_auth', 'Linear rejected the key.'));
@@ -42,6 +53,10 @@ describe('api client', () => {
     ['a body without an envelope', '{"oops":1}'],
     ['a malformed envelope', '{"error":{"code":7}}'],
     ['a null error', '{"error":null}'],
+    ['a JSON string', '"oops"'],
+    ['an error that is a string', '{"error":"boom"}'],
+    ['an error code that is not a string', '{"error":{"code":7,"message":"m"}}'],
+    ['an error message that is not a string', '{"error":{"code":"c","message":7}}'],
   ])('reports %s by its HTTP status', async (_, body) => {
     answer(502, body);
     await expect(fetchTeams()).rejects.toMatchObject({ code: 'http_502' });

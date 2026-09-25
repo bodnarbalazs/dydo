@@ -115,24 +115,19 @@ const LAYERED: Record<string, string> = {
  */
 function elkGraph(nodes: MapNode[], edges: MapEdge[], tree: IssueTree): ElkNode {
   const elkNodes = new Map<string, ElkNode>();
-  const topOf = new Map<string, string>();
   for (const node of nodes) {
     const elkNode: ElkNode =
       node.kind === 'plate' && !node.collapsed
         ? { id: node.id, layoutOptions: { 'elk.padding': PLATE_PADDING }, children: [] }
         : { id: node.id, ...(node.kind === 'external' ? EXTERNAL : CARD) };
     elkNodes.set(node.id, elkNode);
-    if (node.parentId === null) topOf.set(node.id, node.id);
-    else {
-      elkNodes.get(node.parentId)?.children?.push(elkNode);
-      topOf.set(node.id, topOf.get(node.parentId) ?? node.parentId);
-    }
+    if (node.parentId !== null) elkNodes.get(node.parentId)?.children?.push(elkNode);
   }
   // ELK cannot route an edge between a plate and its own descendant; such edges are drawn unrouted.
   const routable = edges.filter((edge) => !tree.isAncestor(edge.source, edge.target) && !tree.isAncestor(edge.target, edge.source));
   const groups = connectedGroups(
     nodes.filter((node) => node.parentId === null).map((node) => node.id),
-    routable.map((edge) => [topOf.get(edge.source) ?? edge.source, topOf.get(edge.target) ?? edge.target]),
+    routable.map((edge) => [tree.top(edge.source), tree.top(edge.target)]),
   );
   const groupOf = new Map(groups.flatMap((group, index) => group.map((id) => [id, index] as const)));
   const components = groups.map(
@@ -144,7 +139,7 @@ function elkGraph(nodes: MapNode[], edges: MapEdge[], tree: IssueTree): ElkNode 
     }),
   );
   for (const edge of routable) {
-    const component = components[groupOf.get(topOf.get(edge.source) ?? edge.source) ?? 0];
+    const component = components[groupOf.get(tree.top(edge.source)) ?? 0];
     component?.edges?.push({ id: edge.id, sources: [edge.source], targets: [edge.target] });
   }
   return {
@@ -215,6 +210,13 @@ class IssueTree {
       if (collapsed.has(up)) anchor = up;
     }
     return anchor;
+  }
+
+  /** The top-level issue an issue sits under, or the issue itself. */
+  top(id: string): string {
+    let top = id;
+    for (let up = this.parent.get(id); up !== undefined; up = this.parent.get(up)) top = up;
+    return top;
   }
 
   isAncestor(ancestor: string, id: string): boolean {

@@ -105,7 +105,7 @@ jobs:
           path: ${{ matrix.artifact }}
 
   validation:
-    needs: [viewer, build]
+    needs: build
     runs-on: windows-latest
     permissions:
       contents: read
@@ -200,7 +200,7 @@ jobs:
 
   nuget:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.0.0' }}
-    needs: [viewer, build, validation]
+    needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
       contents: read

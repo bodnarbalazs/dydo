@@ -135,6 +135,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         ["scp"] = FileOperationType.Copy,
     };
 
+    // Command-position anchor for the command-shaped denylist entries. A command starts at the
+    // beginning, after a separator or subshell opener ("(" also covers "$("), after a shell -c string
+    // opener, and after any run of transparent wrappers: sudo/doas, time, nohup, exec, command, env.
+    private const string WrapperOptions = @"(?:\s+--?[a-zA-Z][a-zA-Z-]*(?:=\S+|\s+(?![-;&|])[^\s;&|]+)?)*";
+
+    private const string CommandStart =
+        @"(?:^|[;&|\r\n({`])\s*(?:(?:(?:sudo|doas)" + WrapperOptions + @"|time(?:\s+-p)?|nohup|exec|command|env" + WrapperOptions +
+        @"(?:\s+[A-Za-z_][A-Za-z0-9_]*=[^\s;&|]*)*)\s+|(?:ba|z|da|k)?sh(?:\s+-[a-zA-Z]+)*\s+-[a-zA-Z]*c\s+(?:['""]\s*)?)*";
+
+    // A command word ends at whitespace, the end, a quote or backtick closing a -c string or substitution, or a separator.
+    private const string CommandEnd = @"(?=\s|$|['""`);&|])";
+
     // Dangerous patterns that should always be blocked
     private static readonly (Regex Pattern, string Reason)[] DangerousPatterns =
     [
@@ -242,7 +254,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)")]
     private static partial Regex DirectDiskWriteRegex();
 
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?!null(?:\s|$|['"";&|]))[^\s'"";&|]+", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"dd\s+[^;&|\r\n]*\bof\s*=\s*['""]?/dev/(?!null(?:\s|$|['"";&|)`]))[^\s'"";&|]+", RegexOptions.IgnoreCase)]
     private static partial Regex DdDiskWriteRegex();
 
     [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase)]
@@ -290,59 +302,58 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd")]
     private static partial Regex PasswdModifyRegex();
 
-    // Command-position anchors avoid treating prose or an argument to another executable as a command.
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejRmRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:mkfs(?:\.[a-z0-9]+)?(?=\s|$)|diskutil\s+(?:erase\w*|partitionDisk|zeroDisk|secureErase|apfs\s+(?:delete|erase)\w*)(?=\s|$))|>\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d+)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"(?:mkfs(?:\.[a-z0-9]+)?" + CommandEnd + @"|diskutil\s+(?:erase\w*|partitionDisk|zeroDisk|secureErase|apfs\s+(?:delete|erase)\w*)" + CommandEnd + @")|>\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejDiskRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*sudo\s+(?:-[a-zA-Z]+\s+)*rm(?=\s|$)")]
+    [GeneratedRegex(CommandStart + "sudo" + WrapperOptions + @"\s+rm" + CommandEnd)]
     private static partial Regex OndrejSudoRmRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:curl|wget)\s+[^;&|]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"(?:curl|wget)\s+[^;&|]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejCurlPipeRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*git\s+push(?=\s|$)[^;&|\r\n]*(?:\s(?:-f|--force|--delete|-d)(?=\s|$)|\s\+[a-z0-9._/-]|\s:[a-z0-9._/-])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"git\s+push" + CommandEnd + @"[^;&|\r\n]*(?:\s(?:-f|--force|--delete|-d)" + CommandEnd + @"|\s\+[a-z0-9._/-]|\s:[a-z0-9._/-])", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGitPushRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*git\s+(?:reflog\s+expire\b[^;&|\r\n]*--expire(?:-unreachable)?(?:=|\s+)now\b|gc\b[^;&|\r\n]*--prune(?:=|\s+)(?:now|all)\b)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"git\s+(?:reflog\s+expire\b[^;&|\r\n]*--expire(?:-unreachable)?(?:=|\s+)now\b|gc\b[^;&|\r\n]*--prune(?:=|\s+)(?:now|all)\b)", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGitRecoveryRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:chmod\s+[^;&|\r\n]*\b777\s+['""]?/['""]?(?=\s|$|[;&|])|chown\s+-R\b[^;&|\r\n]*\s+['""]?/['""]?(?=\s|$|[;&|]))", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"(?:chmod\s+[^;&|\r\n]*\b777\s+['""]?/['""]?(?=\s|$|[;&|])|chown\s+-R\b[^;&|\r\n]*\s+['""]?/['""]?(?=\s|$|[;&|]))", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejSystemPermissionsRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+(?:(?:repo|release|secret|ssh-key|gpg-key)\s+delete)(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"gh\s+(?:(?:repo|release|secret|ssh-key|gpg-key)\s+delete)" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGhDeleteRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+api\b[^;&|\r\n]*(?:-X|--method)(?:=|\s+)DELETE(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"gh\s+api\b[^;&|\r\n]*(?:-X|--method)(?:=|\s+)DELETE" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGhApiDeleteRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+repo\s+edit\b[^;&|\r\n]*--visibility(?:=|\s+)public(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"gh\s+repo\s+edit\b[^;&|\r\n]*--visibility(?:=|\s+)public" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGhVisibilityRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gh\s+auth\s+token(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"gh\s+auth\s+token" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGhTokenRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPasswordCliRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*pass\s+\S+", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"pass\s+\S+", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPassRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejOpRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*security\s+(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:find-generic-password|find-internet-password|dump-keychain)(?=\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"security\s+(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:find-generic-password|find-internet-password|dump-keychain)" + CommandEnd, RegexOptions.IgnoreCase)]
     private static partial Regex OndrejKeychainRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gpg(?:2)?\b[^;&|\r\n]*--export-secret-(?:key|keys|subkey|subkeys)(?=\s|=|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"gpg(?:2)?\b[^;&|\r\n]*--export-secret-(?:key|keys|subkey|subkeys)(?=\s|=|$)", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGpgSecretRegex();
 
     [GeneratedRegex(@"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s'""]+)/\.password-store(?:/|(?=\s|$|['"";&|]))", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPasswordStorePathRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s+['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass)|[^;&|\r\n]*[/\s'""](?:1Password|Bitwarden|NordPass|KeePassXC)\.app)(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(CommandStart + @"(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s+['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass)|[^;&|\r\n]*[/\s'""](?:1Password|Bitwarden|NordPass|KeePassXC)\.app)(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPasswordAppRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.

@@ -82,7 +82,7 @@ The guard fires on `dydo` commands themselves too — dangerous patterns, nudges
 
 ### David Ondrej denylist audit
 
-DYD-188 compared [the upstream denylist](https://github.com/davidondrej/skills/blob/main/hooks/dangerous-patterns.txt) (blob `02e930aaf9879b879475baff5142f78e2df52f2a`) and its [test matrix](https://github.com/davidondrej/skills/blob/main/hooks/test-guard.sh) with the built-in analyzer. The following table records the disposition of each family. Detections are anchored to executable position for commands whose names can also appear as arguments or prose; option values and path targets limit false positives.
+DYD-188 compared [the upstream denylist](https://github.com/davidondrej/skills/blob/main/hooks/dangerous-patterns.txt) (blob `02e930aaf9879b879475baff5142f78e2df52f2a`) and its [test matrix](https://github.com/davidondrej/skills/blob/main/hooks/test-guard.sh) with the built-in analyzer. The following table records the disposition of each family. Detections are anchored to executable position for commands whose names can also appear as arguments or prose; that position also follows `(`, `{`, `$(`, a backtick, a `sh -c`/`bash -c` string opener and wrappers (`sudo`/`doas` with flags, `time`, `nohup`, `exec`, `command`, `env` with assignments). Option values and path targets limit false positives.
 
 | Family | Disposition | Boundary and benign example |
 |---|---|---|

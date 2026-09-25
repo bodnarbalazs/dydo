@@ -118,3 +118,59 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Map viewer bundle
+
+The `dydo map` viewer, built from `viewer/package.json` with the versions pinned in
+`viewer/pnpm-lock.yaml`, bundles these packages into the browser code it serves.
+
+| Package | License | Copyright |
+|---|---|---|
+| [React](https://github.com/facebook/react) (`react`, `react-dom`, `scheduler`) | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
+| [use-sync-external-store](https://github.com/facebook/react) | MIT | Copyright (c) Meta Platforms, Inc. and affiliates. |
+| [React Flow](https://github.com/xyflow/xyflow) (`@xyflow/react`, `@xyflow/system`) | MIT | Copyright (c) 2019-2025 webkid GmbH |
+| [zustand](https://github.com/pmndrs/zustand) | MIT | Copyright (c) 2019 Paul Henschel |
+| [classcat](https://github.com/jorgebucaran/classcat) | MIT | Copyright (c) Jorge Bucaran |
+| [d3-color, d3-dispatch, d3-drag, d3-ease, d3-interpolate, d3-selection, d3-timer, d3-transition, d3-zoom](https://github.com/d3/d3) | ISC | Copyright 2010-2022 Mike Bostock |
+| [elkjs](https://github.com/kieler/elkjs) | EPL-2.0 (chosen from EPL-2.0 OR GPL-3.0-or-later) | Copyright (c) 2019 TypeFox and others |
+
+### MIT License (React, use-sync-external-store, React Flow, zustand, classcat)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+### ISC License (d3 modules)
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+
+### Eclipse Public License 2.0 (elkjs)
+
+elkjs is distributed under the Eclipse Public License 2.0, whose full text is at
+https://www.eclipse.org/legal/epl-2.0/. The bundle carries elkjs unmodified; its source code is
+available from https://github.com/kieler/elkjs (release 0.12.0 is the one the lockfile pins) and from
+the npm registry at https://www.npmjs.com/package/elkjs.

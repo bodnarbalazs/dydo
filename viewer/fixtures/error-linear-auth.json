@@ -1,0 +1,6 @@
+{
+ "error": {
+  "code": "linear_auth",
+  "message": "Linear rejected the API key: Authentication required, not authenticated."
+ }
+}

@@ -58,6 +58,32 @@ public sealed class MapServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public void Start_RetriesWithAFreshListener_WhenTheFirstProbedPortIsTaken()
+    {
+        var occupied = FreeTcpPort();
+        using var blocker = new HttpListener();
+        blocker.Prefixes.Add($"http://localhost:{occupied}/");
+        blocker.Start();
+        var free = FreeTcpPort();
+        var ports = new Queue<int>([occupied, free]);
+
+        using var server = new MapServer(new MapApi(_linear.Reader()), new ViewerBundle(_ => null), () => ports.Dequeue());
+        var url = server.Start();
+
+        Assert.Equal(free, url.Port);
+        Assert.Empty(ports);
+    }
+
+    private static int FreeTcpPort()
+    {
+        var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        var port = ((IPEndPoint)probe.LocalEndpoint).Port;
+        probe.Stop();
+        return port;
+    }
+
+    [Fact]
     public async Task Teams_AnswerTheContractShape()
     {
         _linear.Serve(_ => """{"data":{"teams":{"nodes":[{"id":"t1","key":"DYD","name":"Dydo"}],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}""");

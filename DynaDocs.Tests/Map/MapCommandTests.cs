@@ -19,6 +19,7 @@ public class MapCommandTests
         Assert.Equal(ExitCodes.ToolError, exitCode);
         Assert.Contains("LINEAR_API_KEY is not set", stderr);
         Assert.Contains("Personal API keys", stderr);
+        Assert.EndsWith("\n", stderr);
         Assert.Empty(stdout);
         Assert.Empty(opened);
     }

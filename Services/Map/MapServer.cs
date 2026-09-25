@@ -8,24 +8,30 @@ using System.Net.Sockets;
 /// viewer bundle at `/` and the API under `/api/`. The `localhost` prefix needs no URL reservation on
 /// Windows and refuses requests whose Host header names anything else.
 /// </summary>
-internal sealed class MapServer(MapApi api, ViewerBundle viewer) : IDisposable
+internal sealed class MapServer(MapApi api, ViewerBundle viewer, Func<int>? portSource = null) : IDisposable
 {
     private const int BindAttempts = 5;
     private const string Json = "application/json; charset=utf-8";
 
-    private readonly HttpListener listener = new();
+    // Test seam: the bind-retry test holds a port occupied so the first attempt fails, then hands
+    // back a free one to prove the retry binds with a fresh listener.
+    private readonly Func<int> nextPort = portSource ?? FreePort;
+
+    private HttpListener listener = null!;
 
     /// <summary>Binds a free loopback port and returns the URL the browser opens.</summary>
     public Uri Start()
     {
         for (var attempt = 1; ; attempt++)
         {
-            var url = $"http://localhost:{FreePort()}/";
-            listener.Prefixes.Clear();
-            listener.Prefixes.Add(url);
+            var url = $"http://localhost:{nextPort()}/";
+            // A failed Start() disposes the HttpListener instance, so each attempt needs its own.
+            var candidate = new HttpListener();
+            candidate.Prefixes.Add(url);
             try
             {
-                listener.Start();
+                candidate.Start();
+                listener = candidate;
                 return new Uri(url);
             }
             // Another process can take the probed port before the listener binds it.
@@ -50,7 +56,7 @@ internal sealed class MapServer(MapApi api, ViewerBundle viewer) : IDisposable
         }
     }
 
-    public void Dispose() => listener.Close();
+    public void Dispose() => listener?.Close();
 
     private async Task RespondAsync(HttpListenerContext context, CancellationToken ct)
     {

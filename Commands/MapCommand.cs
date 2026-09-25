@@ -14,6 +14,7 @@ public static class MapCommand
         Personal API keys (https://linear.app/settings/account/security), then set it:
           export LINEAR_API_KEY=<your key>          (bash, zsh)
           $env:LINEAR_API_KEY = "<your key>"        (PowerShell)
+
         """;
 
     public static Command Create()

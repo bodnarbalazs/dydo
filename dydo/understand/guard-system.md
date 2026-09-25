@@ -87,13 +87,13 @@ DYD-188 compared [the upstream denylist](https://github.com/davidondrej/skills/b
 | Family | Disposition | Boundary and benign example |
 |---|---|---|
 | Root/home delete, fork bomb, shell download-and-execute | Already covered; extended `rm` for `/Users`, `--no-preserve-root` and `curl \| sudo zsh` | `rm -rf /tmp/build-cache`, `curl ... \| jq` allowed |
-| Disk write/format | Extended raw-device writes for `/dev/disk*` and `/dev/rdisk*`; added `mkfs*` and destructive `diskutil` verbs | `dd ... of=backup.img`, `echo > /dev/null` allowed |
+| Disk write/format | Extended raw-device writes for `/dev/disk*`, `/dev/rdisk*` and `/dev/mapper/*`; added `mkfs*` and destructive `diskutil` verbs | `dd ... of=backup.img`, `dd ... of=/dev/null` allowed |
 | Privileged delete | Added `sudo` with optional flags followed by `rm` | `sudo brew services restart` allowed |
 | Remote Git rewrite/delete | Added `git push -f`, `--force`, `--delete`, `-d`, `+ref`, `:ref` | `--force-with-lease`, normal push, dry run allowed |
 | Git recovery removal | Added reflog expiry `now` and gc prune `now`/`all` | dated expiry and prune allowed |
 | System permissions | Added `chmod 777 /` and `chown -R ... /` | changes to a named file or directory allowed |
 | GitHub CLI mutation and tokens | Added repository/release/secret/key delete, API DELETE, public visibility and `gh auth token` | repo view, API GET/POST, auth status allowed |
-| Credential stores | Added named password CLIs, sensitive `op` subcommands, macOS keychain password verbs, GPG secret export, `.password-store` paths and password app launch/removal | `op --version`, certificate lookup, public GPG export, unrelated `brew`/`open` allowed |
+| Credential stores | Added named password CLIs, sensitive `op` subcommands, macOS keychain password verbs, GPG/GPG2 secret export, `.password-store` paths and password app path access/launch/removal | `op --version`, certificate lookup, public GPG export, unrelated `brew`/`open` allowed |
 | Generic `git reset` and `git clean` | Excluded: absent from upstream and local, recoverable operations outside this Issue's contract | Existing path guard still evaluates extracted operations |
 
 The upstream POSIX expressions are translated to .NET regexes rather than copied verbatim. The hook evaluates these before nudges or path analysis, so a matching command blocks for every caller even when it names no local file.

@@ -242,7 +242,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)")]
     private static partial Regex DirectDiskWriteRegex();
 
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d|vd[a-z]|mmcblk\d|mapper/[^\s'"";&|]+)", RegexOptions.IgnoreCase)]
     private static partial Regex DdDiskWriteRegex();
 
     [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase)]
@@ -336,13 +336,13 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"(?:^|[;&|\r\n])\s*security\s+(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:find-generic-password|find-internet-password|dump-keychain)(?=\s|$)", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejKeychainRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gpg\b[^;&|\r\n]*--export-secret-(?:key|keys|subkey|subkeys)(?=\s|=|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*gpg(?:2)?\b[^;&|\r\n]*--export-secret-(?:key|keys|subkey|subkeys)(?=\s|=|$)", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejGpgSecretRegex();
 
     [GeneratedRegex(@"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s'""]+)/\.password-store(?:/|(?=\s|$|['"";&|]))", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPasswordStorePathRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s+['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass)|rm\s+[^;&|\r\n]*/Applications/(?:1Password|Bitwarden|NordPass|KeePassXC)\.app)(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|\r\n])\s*(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s+['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass)|[^;&|\r\n]*/Applications/(?:1Password|Bitwarden|NordPass|KeePassXC)\.app)(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase)]
     private static partial Regex OndrejPasswordAppRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.

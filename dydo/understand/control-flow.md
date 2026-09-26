@@ -82,6 +82,7 @@ Agent-invoked methods:
 | wizard | the captain on an Enablement Issue | steps only the human can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
 | self-improvement | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
+| maintain-verification-skill | any agent driving the app through a project's verification skill; the map holder before a landing | a drive contradicts the feature map, a touched area has no map file, or the whole map needs an audit | `clean`, `changed` with one PR of proven map or harness corrections, or `blocked`; product regressions reported as Bugs |
 
 Human commands:
 
@@ -95,6 +96,7 @@ Human commands:
 | walkthrough | a Walkthrough Issue is open | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
 | teach | the human wants to learn a topic in the workspace | a mission and its learning records |
 | improve-codebase-architecture | the codebase's architecture should be examined | a grilled candidate with its report |
+| create-verification-skill | the project has no scripted way to drive the app as a user | a proven `verify-<app>` skill, its control CLI and a seeded feature map |
 
 The explicit-only officers admiral and chief-of-staff are also typed by the human; they are actors and
 stand in the roster.

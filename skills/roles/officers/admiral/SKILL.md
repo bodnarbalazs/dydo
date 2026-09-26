@@ -74,8 +74,8 @@ map and how the Issues move, integrate, and finish together.
    every merging delivery Issue a final Merge Sub-issue, blocked by the previous merge in plan
    order. Set the Project `In Progress`. On every wake commission each pickable AFK Issue, including
    blocker-cleared and released ones, from its record; HITL waits for the human's captain session.
-   Choose each commission's capability yourself: the smallest adequate supported model, and the
-   effort where the host exposes one, weighed from that Issue's difficulty, uncertainty,
+   Choose each commission's capability yourself: the strongest supported model for real
+   engineering challenges, the smallest adequate one otherwise, and the effort where the host exposes one, weighed from that Issue's difficulty, uncertainty,
    consequence of error, required independence, context size and likely retries. Start adequate and
    escalate on evidence; keep every review and gate at full strength whatever it costs. Select model
    and effort together where the host takes both; where it takes only a model, leave effort

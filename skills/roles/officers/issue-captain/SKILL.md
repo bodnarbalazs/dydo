@@ -81,7 +81,8 @@ the default officer: an Issue gets a captain whether or not the human has invoke
    The writer's `IMPLEMENTED` return carries its red proof. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
-   smallest adequate supported model, and the effort where the host exposes one, weighed from that
+   strongest supported model for real engineering challenges, the smallest adequate one otherwise,
+   and the effort where the host exposes one, weighed from that
    task's difficulty, uncertainty, consequence of error, required independence, context size and
    likely retries. Start adequate and escalate on evidence. Select model and effort together where
    the host takes both; where it takes only a model, leave effort host-owned and record that limit.

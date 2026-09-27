@@ -2,7 +2,8 @@ import { MarkerType, type Edge, type Node, type XYPosition } from '@xyflow/react
 import type { ElkExtendedEdge, ElkNode } from 'elkjs/lib/elk-api';
 import { COMPONENT_PREFIX, type MapEdge, type MapModel, type MapNode, type MapNodeKind } from '../graph/mapModel';
 
-export const EDGE_COLORS = { blocks: '#334155', muted: '#b4bcc8', related: '#8b5cf6' } as const;
+// Each theme sets these in styles.css, so the edges, their arrowheads and the legend follow it.
+export const EDGE_COLORS = { blocks: 'var(--edge-blocks)', muted: 'var(--edge-muted)', related: 'var(--edge-related)' } as const;
 
 export type MapFlowNode = Node<{ node: MapNode }, MapNodeKind>;
 export type MapFlowEdge = Edge<{ edge: MapEdge; points: XYPosition[] | null }, 'routed'>;

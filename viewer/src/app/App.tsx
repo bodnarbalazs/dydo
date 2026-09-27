@@ -7,6 +7,7 @@ import { buildMapModel } from '../graph/mapModel';
 import { layoutMap } from '../layout/layout';
 import type { MapFlow } from '../layout/toFlow';
 import { MapCanvas } from '../map/MapCanvas';
+import { ThemeContext, useThemePreference } from '../theme/useTheme';
 import { Toolbar } from './Toolbar';
 import { readUrlState, toSearch, type UrlState } from './urlState';
 
@@ -69,6 +70,7 @@ export function App({ elk }: { elk: ELK }) {
   const [showRelated, setShowRelated] = useState(false);
   const [layout, setLayout] = useState<{ graph: Graph; loaded: Loaded<{ flow: MapFlow; fitKey: number }> } | null>(null);
   const [fitKey, setFitKey] = useState(0);
+  const { preference, theme, choose } = useThemePreference();
 
   const { url } = view;
   const graph = valueOf(view.graph);
@@ -141,39 +143,43 @@ export function App({ elk }: { elk: ELK }) {
   };
 
   return (
-    <div className="app">
-      <Toolbar
-        teams={valueOf(teams) ?? []}
-        projects={valueOf(view.projects) ?? []}
-        team={url.team}
-        project={url.project}
-        hasPlates={allPlates.size > 0}
-        showRelated={showRelated}
-        summary={graph === null ? null : summarize(graph, allPlates.size)}
-        onTeam={(team) => navigate({ team, project: null, focus: null }, 'push')}
-        onProject={(project) => navigate({ ...url, project, focus: null }, 'push')}
-        onCollapseAll={() => setAll(allPlates)}
-        onExpandAll={() => setAll(new Set())}
-        onShowRelated={setShowRelated}
-      />
-      {failures.map(
-        (shown, stage) =>
-          shown !== null && (
-            <div key={stage} className="error" role="alert">
-              <strong>{shown.code}</strong> {shown.message}
-            </div>
-          ),
-      )}
-      <main className="canvas">
-        {map === null ? (
-          <Placeholder url={url} loading={mapFailure === null} />
-        ) : (
-          <ReactFlowProvider>
-            <MapCanvas flow={map.flow} focus={url.focus} fitKey={map.fitKey} onFocus={focus} onOpenExternal={openExternal} onTogglePlate={togglePlate} />
-          </ReactFlowProvider>
+    <ThemeContext.Provider value={theme}>
+      <div className="app">
+        <Toolbar
+          teams={valueOf(teams) ?? []}
+          projects={valueOf(view.projects) ?? []}
+          team={url.team}
+          project={url.project}
+          hasPlates={allPlates.size > 0}
+          showRelated={showRelated}
+          summary={graph === null ? null : summarize(graph, allPlates.size)}
+          onTeam={(team) => navigate({ team, project: null, focus: null }, 'push')}
+          onProject={(project) => navigate({ ...url, project, focus: null }, 'push')}
+          onCollapseAll={() => setAll(allPlates)}
+          onExpandAll={() => setAll(new Set())}
+          onShowRelated={setShowRelated}
+          theme={preference}
+          onTheme={choose}
+        />
+        {failures.map(
+          (shown, stage) =>
+            shown !== null && (
+              <div key={stage} className="error" role="alert">
+                <strong>{shown.code}</strong> {shown.message}
+              </div>
+            ),
         )}
-      </main>
-    </div>
+        <main className="canvas">
+          {map === null ? (
+            <Placeholder url={url} loading={mapFailure === null} />
+          ) : (
+            <ReactFlowProvider>
+              <MapCanvas flow={map.flow} focus={url.focus} fitKey={map.fitKey} onFocus={focus} onOpenExternal={openExternal} onTogglePlate={togglePlate} />
+            </ReactFlowProvider>
+          )}
+        </main>
+      </div>
+    </ThemeContext.Provider>
   );
 }
 

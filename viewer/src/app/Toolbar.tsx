@@ -1,5 +1,7 @@
 import type { Project, Team } from '../api/types';
 import { ProjectPicker } from '../picker/ProjectPicker';
+import type { ThemePreference } from '../theme/theme';
+import { ThemeControl } from '../theme/ThemeControl';
 
 interface ToolbarProps {
   teams: Team[];
@@ -9,11 +11,13 @@ interface ToolbarProps {
   hasPlates: boolean;
   showRelated: boolean;
   summary: string | null;
+  theme: ThemePreference;
   onTeam: (id: string) => void;
   onProject: (id: string) => void;
   onCollapseAll: () => void;
   onExpandAll: () => void;
   onShowRelated: (show: boolean) => void;
+  onTheme: (preference: ThemePreference) => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
@@ -46,6 +50,7 @@ export function Toolbar(props: ToolbarProps) {
         Show related
       </label>
       {summary !== null && <span className="summary">{summary}</span>}
+      <ThemeControl preference={props.theme} onChoose={props.onTheme} />
     </header>
   );
 }

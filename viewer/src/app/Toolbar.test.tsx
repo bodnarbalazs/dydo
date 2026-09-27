@@ -16,6 +16,8 @@ function renderToolbar(overrides: Partial<Parameters<typeof Toolbar>[0]> = {}) {
     onCollapseAll: vi.fn(),
     onExpandAll: vi.fn(),
     onShowRelated: vi.fn(),
+    theme: 'system' as const,
+    onTheme: vi.fn(),
     ...overrides,
   };
   render(<Toolbar {...props} />);
@@ -23,6 +25,13 @@ function renderToolbar(overrides: Partial<Parameters<typeof Toolbar>[0]> = {}) {
 }
 
 describe('Toolbar', () => {
+  it('shows the theme preference and reports a new one', () => {
+    const props = renderToolbar({ theme: 'light' });
+    expect(screen.getByRole('button', { name: 'Light theme' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Dark theme' }));
+    expect(props.onTheme).toHaveBeenCalledWith('dark');
+  });
+
   it('reports each choice', () => {
     const props = renderToolbar();
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 't' } });

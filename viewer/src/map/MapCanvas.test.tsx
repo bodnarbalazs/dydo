@@ -7,6 +7,8 @@ import { buildMapModel } from '../graph/mapModel';
 import { makeGraph, makeIssue } from '../graph/testIssues';
 import { layoutMap } from '../layout/layout';
 import type { MapFlow } from '../layout/toFlow';
+import { ThemeContext } from '../theme/useTheme';
+import { readableOnDark } from './colors';
 import { MapCanvas } from './MapCanvas';
 
 const fitView = vi.fn((options?: object) => Promise.resolve(options !== undefined));
@@ -96,11 +98,17 @@ describe('MapCanvas chrome', () => {
     });
   });
 
-  it('draws a 24 px dot grid, zoom controls without the lock, and the legend bottom left', () => {
+  it('draws graph paper with a faint 24 px grid under a stronger 120 px one, zoom controls without the lock, and the legend bottom left', () => {
     render(canvas(null, 0));
-    const background = document.querySelector<SVGElement>('.react-flow__background');
-    expect(background?.style.getPropertyValue('--xy-background-pattern-color-props')).toBe('#dfe3ea');
-    expect(background?.querySelector('pattern')?.getAttribute('width')).toBe('24');
+    const grids = [...document.querySelectorAll<SVGElement>('.react-flow__background')].map((background) => [
+      background.style.getPropertyValue('--xy-background-pattern-color-props'),
+      background.querySelector('pattern')?.getAttribute('width'),
+      background.querySelector('path')?.classList.contains('lines'),
+    ]);
+    expect(grids).toEqual([
+      ['var(--grid-minor)', '24', true],
+      ['var(--grid-major)', '120', true],
+    ]);
     expect([...document.querySelectorAll('.react-flow__controls button')].map((button) => button.getAttribute('aria-label'))).toEqual(['Zoom In', 'Zoom Out', 'Fit View']);
     expect(document.querySelector('[aria-label="Legend"]')?.parentElement?.className).toBe('react-flow__panel bottom left');
   });
@@ -114,5 +122,19 @@ describe('MapCanvas chrome', () => {
       ['rgb(157, 166, 178)', '0'],
       ['rgb(157, 166, 178)', '0'],
     ]);
+  });
+
+  it('themes React Flow and shows the minimap in dark readable colours in the dark theme', () => {
+    render(<ThemeContext.Provider value="dark">{canvas(null, 0)}</ThemeContext.Provider>);
+    expect(document.querySelector('.react-flow')?.classList.contains('dark')).toBe(true);
+    const fills = [...document.querySelectorAll<SVGRectElement>('.react-flow__minimap-node')].map((node) => node.style.fill);
+    const probe = document.createElement('div');
+    probe.style.color = readableOnDark('#e2e2e2');
+    expect(fills).toEqual([probe.style.color, probe.style.color]);
+  });
+
+  it('keeps React Flow light in the light theme', () => {
+    render(canvas(null, 0));
+    expect(document.querySelector('.react-flow')?.classList.contains('light')).toBe(true);
   });
 });

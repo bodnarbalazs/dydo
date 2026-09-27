@@ -3,7 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>dydo map</title>
+    <script>
+      // Themes the page before its first paint, as src/theme/theme.ts would: no light flash on dark.
+      (() => {
+        const stored = localStorage.getItem('dydo-map-theme');
+        const preference = stored === 'light' || stored === 'dark' ? stored : 'system';
+        const systemDark = matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

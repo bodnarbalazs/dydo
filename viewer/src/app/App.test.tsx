@@ -183,6 +183,22 @@ describe('App map', () => {
   });
 });
 
+describe('App theme', () => {
+  it('themes the page, and the cards on the map, from the toolbar', async () => {
+    localStorage.clear();
+    open('?team=team-1&project=project-1');
+    await mapShown();
+    const background = () => (card('T-X') as HTMLElement).style.background;
+    const light = background();
+    fireEvent.click(screen.getByRole('button', { name: 'Dark theme' }));
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+    expect(background()).not.toBe(light);
+    fireEvent.click(screen.getByRole('button', { name: 'System theme' }));
+    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(background()).toBe(light);
+  });
+});
+
 describe('App errors', () => {
   it('shows the error envelope to the user', async () => {
     graphAnswer = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);

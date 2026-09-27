@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { MapNode } from '../graph/mapModel';
-import type { Cascade } from './cascade';
+import type { Cascade, NodeMark } from './cascade';
 
 /** The latest refresh's marks, for the nodes to draw their part of it. */
 export const CascadeContext = createContext<Cascade | null>(null);
@@ -18,12 +18,16 @@ interface RefreshLayersProps {
 /** A changed node's old look fading off it and a ring in its new status colour, each at the node's turn in the cascade. */
 export function RefreshLayers({ id, ring, region, drawOld }: RefreshLayersProps) {
   const mark = useContext(CascadeContext)?.nodes.get(id);
-  const [faded, setFaded] = useState(false);
+  // The mark whose old look has faded; each refresh brings a new mark, and its own old look.
+  const [faded, setFaded] = useState<NodeMark | null>(null);
   if (mark === undefined || mark.kind === 'removed') return null;
   return (
     <>
-      {mark.kind === 'changed' && mark.previous !== null && !faded && (
-        <div className="refresh-ghost" aria-hidden="true" onAnimationEnd={(event) => setFaded(event.target === event.currentTarget)}>
+      {mark.kind === 'changed' && mark.previous !== null && faded !== mark && (
+        <div className="refresh-ghost" aria-hidden="true" onAnimationEnd={(event) => {
+            if (event.target === event.currentTarget) setFaded(mark);
+          }}
+        >
           {drawOld(mark.previous)}
         </div>
       )}

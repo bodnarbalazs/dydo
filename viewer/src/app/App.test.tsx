@@ -761,6 +761,66 @@ describe('App refresh in place', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 
+  it('stays busy until the refreshed map has landed, so a second Refresh cannot drop the first one\'s marks', async () => {
+    await openMap();
+    const viewport = transform();
+    const placeholders: string[] = [];
+    const watch = new MutationObserver(() => {
+      const shown = document.querySelector('.placeholder');
+      if (shown !== null) placeholders.push(shown.textContent);
+    });
+    watch.observe(document.body, { childList: true, subtree: true });
+    graphAnswer = () => json(makeGraph(withoutX.issues.map((issue) => (issue.id === 'A' ? { ...issue, title: 'Renamed' } : issue)), withoutX.relations, withoutX.external));
+
+    fireEvent.click(refreshButton());
+    expect((await notice()).textContent).toBe('1 changed · 1 removed · 1 link removed');
+    // The answer is in, but the old map still shows its removal fading while the new one lays out.
+    expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    expect(refreshButton().disabled).toBe(true);
+    const fetches = vi.mocked(fetch).mock.calls.length;
+    fireEvent.keyDown(document.body, { key: 'r' });
+    fireEvent.click(refreshButton());
+    expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
+
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    expect(wrapper('T-A')?.classList.contains('refresh-changed')).toBe(true);
+    expect(screen.getByRole('status').textContent).toBe('1 changed · 1 removed · 1 link removed');
+    expect(transform()).toBe(viewport);
+    expect(refreshButton().disabled).toBe(false);
+    watch.disconnect();
+    expect(placeholders).toEqual([]);
+  });
+
+  it('cannot refresh while the Project\'s map is first loading', async () => {
+    open('?team=team-1&project=project-1');
+    expect(refreshButton().disabled).toBe(true);
+    await mapShown();
+    expect(refreshButton().disabled).toBe(false);
+  });
+
+  it('frees Refresh on leaving a Project mid-refresh, and drops that answer on coming back', async () => {
+    await openMap();
+    const answer = deferred<Response>();
+    vi.mocked(fetch).mockImplementationOnce(() => answer.promise);
+    fireEvent.click(refreshButton());
+    const go = (search: string) =>
+      act(() => {
+        window.history.pushState(null, '', `/${search}`);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+    go('?team=team-1&project=project-2');
+    await waitFor(() => expect(card('T-E')).not.toBeNull());
+    expect(refreshButton().disabled).toBe(false);
+    go('?team=team-1&project=project-1');
+    await mapShown();
+    await act(async () => {
+      answer.resolve(json(withoutX));
+      await new Promise((settle) => setTimeout(settle, 20));
+    });
+    expect(card('T-X')).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('cannot refresh before a Project is chosen', async () => {
     open('?team=team-1');
     await listed('Project One');

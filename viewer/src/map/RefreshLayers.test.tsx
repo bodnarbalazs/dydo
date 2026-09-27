@@ -26,10 +26,10 @@ const node = (kind: MapNode['kind'], overrides: Partial<MapNode> = {}): MapNode 
 });
 const previous = (kind: MapNode['kind']) => node(kind, { issue: makeIssue('a', { title: 'Old title' }) });
 
-function draw(shown: MapNode, mark: NodeMark | null, theme: Theme = 'light') {
+function tree(shown: MapNode, mark: NodeMark | null, theme: Theme = 'light') {
   const Component = nodeTypes[shown.kind] as ComponentType<{ id: string; data: { node: MapNode }; selected: boolean }>;
   const cascade: Cascade = { nodes: new Map(mark === null ? [] : [[shown.id, mark]]), edges: new Map(), glide: false };
-  return render(
+  return (
     <ThemeContext.Provider value={theme}>
       <CascadeContext.Provider value={cascade}>
         <ReactFlowProvider>
@@ -38,9 +38,11 @@ function draw(shown: MapNode, mark: NodeMark | null, theme: Theme = 'light') {
           </MapActionsContext.Provider>
         </ReactFlowProvider>
       </CascadeContext.Provider>
-    </ThemeContext.Provider>,
+    </ThemeContext.Provider>
   );
 }
+
+const draw = (shown: MapNode, mark: NodeMark | null, theme: Theme = 'light') => render(tree(shown, mark, theme));
 
 const ghost = () => document.querySelector<HTMLElement>('.refresh-ghost');
 const ring = () => document.querySelector<HTMLElement>('.refresh-ring');
@@ -82,6 +84,17 @@ describe('RefreshLayers', () => {
     expect(ghost()).not.toBeNull();
     animationEnd(ghost()!);
     expect(ghost()).toBeNull();
+    expect(ring()).not.toBeNull();
+  });
+
+  it('lays the old look over a card again when a later refresh changes it again', () => {
+    const animationEnd = (element: Element) => fireEvent(element, new Event('webkitAnimationEnd', { bubbles: true }));
+    const { rerender } = draw(node('issue'), { kind: 'changed', delay: 0, previous: previous('issue') });
+    animationEnd(ghost()!);
+    expect(ghost()).toBeNull();
+    const again = node('issue', { issue: makeIssue('a', { title: 'Newer title' }) });
+    rerender(tree(again, { kind: 'changed', delay: 150, previous: node('issue') }));
+    expect(ghost()?.querySelector('.title')?.textContent).toBe('Issue a');
     expect(ring()).not.toBeNull();
   });
 

@@ -61,6 +61,45 @@ test('Refresh swaps in the new graph in place and cascades what changed, then fi
   expect(await viewport(page)).toBe(shown);
 });
 
+test('a second Refresh waits for the first to land, keeping the map, its viewport and its marks', async ({ page }) => {
+  await openA(page);
+  await page.evaluate(() => {
+    const seen: string[] = [];
+    Object.assign(window, { placeholdersSeen: seen });
+    new MutationObserver(() => {
+      const shown = document.querySelector('.placeholder');
+      if (shown !== null) seen.push(shown.textContent ?? '');
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  const shown = await viewport(page);
+
+  await refresh(page).click();
+  await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
+  // The answer is in; the old map still shows while the new one lays out, and Refresh stays busy.
+  await expect(refresh(page)).toBeDisabled();
+  await page.keyboard.press('r');
+  for (const identifier of CHANGED) await expect(node(page, identifier)).toHaveClass(/refresh-changed/);
+  await expect(refresh(page)).toBeEnabled();
+  await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
+  expect(await viewport(page)).toBe(shown);
+  expect(await page.evaluate(() => (window as unknown as { placeholdersSeen: string[] }).placeholdersSeen)).toEqual([]);
+});
+
+test('each refresh cross-fades the cards it changed from their old look, the same cards again too', async ({ page }) => {
+  const served = await openA(page);
+  const oldLooks = (count: number) =>
+    page.waitForFunction((expected) => document.querySelectorAll('.react-flow__node.refresh-changed > .refresh-ghost').length === expected, count, { timeout: 30_000 });
+
+  await refresh(page).click();
+  await oldLooks(CHANGED.length);
+  await expect(page.locator('.refresh-ghost')).toHaveCount(0);
+  served.graphs[SCENARIO_PROJECT] = 'graph-scenario.json';
+  await refresh(page).click();
+  await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 1 link added · 2 links removed');
+  await oldLooks(CHANGED.length);
+  await expect(node(page, 'DYD-265').locator('.refresh-ghost .plate-header .state-name')).toHaveText('In Review');
+});
+
 test('with reduced motion a refresh applies at once and rings what changed', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openA(page);

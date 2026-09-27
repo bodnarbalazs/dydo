@@ -33,6 +33,8 @@ interface View {
   projects: Loaded<Project[]> | null;
   graph: Loaded<Graph> | null;
   refresh: Refresh | null;
+  /** A refresh is fetching this Project; leaving the Project drops it. */
+  refreshing: boolean;
   /** A refresh that failed; the map it would have replaced stays. */
   refreshFailure: Failure | null;
 }
@@ -44,7 +46,7 @@ interface Layout {
   cascade: Cascade | null;
 }
 
-const NO_GRAPH = { graph: null, refresh: null, refreshFailure: null };
+const NO_GRAPH = { graph: null, refresh: null, refreshing: false, refreshFailure: null };
 
 function failure(error: unknown): Failure {
   if (error instanceof ApiError) return { code: error.code, message: error.message };
@@ -86,9 +88,9 @@ function moveTo(view: View, url: UrlState): View {
 
 /** A refresh's answer: a new graph, diffed against the one it replaces, or a failure that keeps the map. */
 function refreshed(view: View, loaded: Loaded<Graph>): View {
-  if ('failure' in loaded) return { ...view, refreshFailure: loaded.failure };
+  if ('failure' in loaded) return { ...view, refreshing: false, refreshFailure: loaded.failure };
   const from = valueOf(view.graph);
-  return { ...view, graph: loaded, refresh: from === null ? null : { from, diff: diffGraphs(from, loaded.value) }, refreshFailure: null };
+  return { ...view, graph: loaded, refresh: from === null ? null : { from, diff: diffGraphs(from, loaded.value) }, refreshing: false, refreshFailure: null };
 }
 
 /** The marks of the refresh a new layout lands: only its first layout, replacing the map it refreshed. */
@@ -108,15 +110,16 @@ export function App({ elk }: { elk: ELK }) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [showRelated, setShowRelated] = useState(false);
   const [layout, setLayout] = useState<Layout | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [fitKey, setFitKey] = useState(0);
   const { preference, theme, choose } = useThemePreference();
 
-  const { url, refresh } = view;
+  const { url, refresh, refreshing } = view;
   const graph = valueOf(view.graph);
   // While a refresh lays out, the map it replaces stays, its removals fading.
   const replacing = refresh !== null && layout?.graph === refresh.from;
   const exiting = useMemo(() => (refresh === null ? null : exitCascade(refresh.diff)), [refresh]);
+  // Refresh waits until the last one has landed, so the map it compares with is the one on screen.
+  const busy = refreshing || replacing;
   const laidOut = layout !== null && (layout.graph === graph || replacing) ? layout.loaded : null;
   const map = valueOf(laidOut);
   const mapFailure = failureOf(view.graph) ?? failureOf(laidOut);
@@ -161,10 +164,9 @@ export function App({ elk }: { elk: ELK }) {
   const refreshMap = useCallback(() => {
     const project = url.project;
     if (project === null) return;
-    setRefreshing(true);
+    setView((current) => ({ ...current, refreshing: true }));
     settle(fetchGraph(project), (loaded) => {
-      setRefreshing(false);
-      setView((current) => (current.url.project === project ? refreshed(current, loaded) : current));
+      setView((current) => (current.url.project === project && current.refreshing ? refreshed(current, loaded) : current));
     });
   }, [url.project]);
 
@@ -215,8 +217,8 @@ export function App({ elk }: { elk: ELK }) {
           hasPlates={allPlates.size > 0}
           showRelated={showRelated}
           summary={graph === null ? null : summarize(graph, allPlates.size)}
-          canRefresh={url.project !== null}
-          refreshing={refreshing}
+          canRefresh={view.graph !== null}
+          refreshing={busy}
           notice={refreshing || view.refreshFailure !== null || refresh === null ? null : describeDiff(refresh.diff)}
           onRefresh={refreshMap}
           onTeam={(team) => navigate({ team, project: null, focus: null }, 'push')}

@@ -60,7 +60,7 @@ describe('toFlow', () => {
       target: 'A',
       data: { edge: model.edges[0], points: [{ x: 1, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 4 }] },
       focusable: false,
-      markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: '#b4bcc8' },
+      markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: 'var(--edge-muted)' },
       zIndex: 1,
     });
   });
@@ -100,6 +100,6 @@ describe('toFlow', () => {
 
   it('draws an open blocker with the strong arrowhead', () => {
     const open = buildMapModel(makeGraph([makeIssue('a'), makeIssue('b')], [blocks('a', 'b')]), { collapsed: new Set(), showRelated: false });
-    expect(toFlow(open, { id: 'root' }).edges[0]?.markerEnd).toMatchObject({ color: '#334155' });
+    expect(toFlow(open, { id: 'root' }).edges[0]?.markerEnd).toMatchObject({ color: 'var(--edge-blocks)' });
   });
 });

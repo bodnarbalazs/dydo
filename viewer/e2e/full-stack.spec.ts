@@ -70,7 +70,10 @@ test('a team and a Project are chosen and their graph is drawn from Linear', asy
   await page.goto(map);
   await page.getByRole('combobox').first().selectOption({ label: 'Dydo (DYD)' });
   await expect.poll(() => search(page).get('team')).toBe('team-dyd');
-  await page.getByRole('combobox').nth(1).selectOption({ label: 'Project map · In Progress' });
+  await page.getByRole('button', { name: 'Project Choose a Project' }).click();
+  await expect(page.getByRole('option', { name: /^Project map/ })).toContainText('Oct 3');
+  await page.getByRole('option', { name: /^Project map/ }).click();
+  await expect(page.getByRole('button', { name: 'Project Project map' })).toBeVisible();
   await expect.poll(() => search(page).get('project')).toBe('project-map');
   await expect(node(page, 'DYD-1')).toBeVisible();
   await expect(node(page, 'DYD-3')).toBeVisible();
@@ -107,4 +110,13 @@ base('without LINEAR_API_KEY dydo map exits with the key help', async () => {
   const [code] = (await once(map, 'close')) as [number | null];
   expect(code).toBe(2);
   expect(stderr).toContain('LINEAR_API_KEY is not set, so dydo map cannot read Linear.');
+});
+
+test('the embedded bundle serves the favicon index.html links', async ({ page, map }) => {
+  await page.goto(map);
+  const href = await page.locator('link[rel="icon"]').getAttribute('href');
+  const response = await page.request.get(new URL(href ?? '', page.url()).toString());
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('image/svg+xml');
+  expect(await response.text()).toContain('<svg');
 });

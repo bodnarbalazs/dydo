@@ -1,7 +1,91 @@
 :root {
+  /* Theme tokens: every colour below reads one, and [data-theme='dark'] redefines them. */
+  --canvas: #f8fafc;
+  --surface: #fff;
+  --surface-raised: #fff;
+  --surface-hover: #f1f5f9;
+  --surface-active: #e0e7ff;
+  --text: #1e293b;
+  --text-strong: #0f172a;
+  --text-secondary: #334155;
+  --text-label: #475569;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --border: #cbd5e1;
+  --border-subtle: #e2e8f0;
+  --accent: #4f46e5;
+  --overdue: #dc2626;
+  --overdue-surface: #fef2f2;
+  --shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  --card: #fff;
+  --card-border: #d5dbe3;
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --link-hover-surface: #eef2ff;
+  --link-hover-border: #818cf8;
+  --link-hover-text: #3730a3;
+  --pickable: #22c55e;
+  --pickable-glow: rgba(34, 197, 94, 0.35);
+  --pickable-surface: #dcfce7;
+  --pickable-text: #166534;
+  --selected: #3b82f6;
+  --external-surface: #fafafa;
+  --external-border: #94a3b8;
+  --legend-surface: rgba(255, 255, 255, 0.94);
+  --error-surface: #fef2f2;
+  --error-border: #fecaca;
+  --error-text: #991b1b;
+  --edge-blocks: #334155;
+  --edge-muted: #b4bcc8;
+  --edge-related: #8b5cf6;
+  --grid-minor: #f0f2f6;
+  --grid-major: #e1e6ed;
   font-family: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
-  color: #1e293b;
-  background: #f8fafc;
+  color: var(--text);
+  background: var(--canvas);
+}
+
+/* Modelled on Linear's dark theme: a near-black canvas, slate cards, muted borders. */
+:root[data-theme='dark'] {
+  --canvas: #0f1011;
+  --surface: #141517;
+  --surface-raised: #1a1b1f;
+  --surface-hover: #23252a;
+  --surface-active: #292b45;
+  --text: #e2e4e9;
+  --text-strong: #f4f5f7;
+  --text-secondary: #b4b8c0;
+  --text-label: #9da2ab;
+  --text-muted: #8a8f98;
+  --text-faint: #62666d;
+  --border: #2e3036;
+  --border-subtle: #222328;
+  --accent: #7b82f0;
+  --overdue: #f87171;
+  --overdue-surface: rgba(248, 113, 113, 0.12);
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  /* colors.ts DARK_CARD */
+  --card: #1c1d22;
+  --card-border: #2b2d33;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --link-hover-surface: #262846;
+  --link-hover-border: #5d63c9;
+  --link-hover-text: #c7cafc;
+  --pickable: #2fb865;
+  --pickable-glow: rgba(47, 184, 101, 0.3);
+  --pickable-surface: rgba(47, 184, 101, 0.16);
+  --pickable-text: #6ee7a0;
+  --selected: #5b9cf5;
+  --external-surface: #141518;
+  --external-border: #4a4e57;
+  --legend-surface: rgba(20, 21, 23, 0.94);
+  --error-surface: #2a1417;
+  --error-border: #5a2027;
+  --error-text: #fca5a5;
+  --edge-blocks: #a0a5ae;
+  --edge-muted: #545962;
+  --edge-related: #a78bfa;
+  --grid-minor: #151619;
+  --grid-major: #1c1d21;
 }
 
 * {
@@ -22,13 +106,14 @@ body,
 }
 
 .toolbar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
-  background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 13px;
 }
 
@@ -42,17 +127,17 @@ body,
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #475569;
+  color: var(--text-label);
 }
 
 .toolbar select,
 .toolbar button {
   font: inherit;
   padding: 4px 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
-  color: #1e293b;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .toolbar select {
@@ -64,19 +149,252 @@ body,
 }
 
 .toolbar button:hover:not(:disabled) {
-  background: #f1f5f9;
+  background: var(--surface-hover);
+}
+
+.toolbar input[type='checkbox'] {
+  accent-color: var(--accent);
+}
+
+/* Theme switch: three icon buttons joined into one segmented control */
+
+.theme-control {
+  display: flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.toolbar .theme-control button {
+  display: flex;
+  padding: 3px 6px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.toolbar .theme-control button:hover {
+  color: var(--text);
+}
+
+.toolbar .theme-control button[aria-pressed='true'] {
+  background: var(--surface-active);
+  color: var(--accent);
+}
+
+/* Project picker */
+
+.picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-label);
+}
+
+.toolbar .picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+  max-width: 340px;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+  text-align: left;
+}
+
+.toolbar .picker-trigger:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.picker-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-caret {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.picker-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  max-height: min(80vh, 720px);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+
+.picker-search {
+  margin: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.picker-search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.picker-list {
+  overflow-y: auto;
+  padding: 0 4px 6px;
+}
+
+.picker-group + .picker-group {
+  margin-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 4px;
+}
+
+.picker-heading {
+  padding: 6px 8px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.picker-row:hover {
+  background: var(--surface-hover);
+}
+
+.picker-row.active {
+  background: var(--surface-active);
+}
+
+.picker-row[aria-selected='true'] .picker-name {
+  font-weight: 600;
+}
+
+.picker-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-closed,
+.picker-showAll {
+  color: var(--text-muted);
+}
+
+.picker-closed .picker-name {
+  font-weight: 600;
+}
+
+.picker-date {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.picker-date.overdue {
+  padding: 0 5px;
+  border-radius: 4px;
+  color: var(--overdue);
+  background: var(--overdue-surface);
+}
+
+.picker-cue {
+  flex: none;
+  padding: 0 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+}
+
+.picker-cue.cue-completed,
+.picker-cue.cue-canceled {
+  font-style: italic;
+}
+
+.picker-empty {
+  margin: 4px 12px 12px;
+  color: var(--text-muted);
 }
 
 .toolbar .summary {
   margin-left: auto;
-  color: #64748b;
+  color: var(--text-muted);
+}
+
+/* Refresh: the button, and the notice of what it changed, which fades after a few seconds */
+
+.toolbar .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.refresh-icon.spinning {
+  animation: refresh-spin 0.8s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.toolbar .refresh-notice {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 14px;
+  z-index: 10;
+  padding: 3px 10px;
+  box-shadow: var(--shadow);
+  border-radius: 999px;
+  background: var(--surface-active);
+  color: var(--accent);
+  font-weight: 600;
+  animation: refresh-notice 6s ease-in forwards;
+}
+
+@keyframes refresh-notice {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .error {
   padding: 10px 14px;
-  background: #fef2f2;
-  border-bottom: 1px solid #fecaca;
-  color: #991b1b;
+  background: var(--error-surface);
+  border-bottom: 1px solid var(--error-border);
+  color: var(--error-text);
   font-size: 14px;
 }
 
@@ -94,7 +412,7 @@ body,
 .placeholder {
   margin: 48px auto;
   text-align: center;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 /* Cards */
@@ -113,11 +431,11 @@ body,
 .issue-card {
   width: 100%;
   height: 100%;
-  background: #fff;
-  border: 1px solid #d5dbe3;
+  background: var(--card);
+  border: 1px solid var(--card-border);
   border-left: 5px solid;
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--card-shadow);
   cursor: pointer;
 }
 
@@ -131,13 +449,13 @@ body,
   font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
   font-size: 11.5px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-label);
 }
 
 .title {
   font-size: 13.5px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-strong);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -165,40 +483,40 @@ body,
 }
 
 .assignee {
-  color: #334155;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .assignee.unassigned {
-  color: #94a3b8;
+  color: var(--text-faint);
   font-style: italic;
 }
 
 .linear-button {
   margin-left: auto;
   padding: 1px 6px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   border-radius: 5px;
   font-size: 10.5px;
-  color: #475569;
+  color: var(--text-label);
   text-decoration: none;
-  background: #fff;
+  background: var(--card);
   white-space: nowrap;
 }
 
 .linear-button:hover {
-  background: #eef2ff;
-  border-color: #818cf8;
-  color: #3730a3;
+  background: var(--link-hover-surface);
+  border-color: var(--link-hover-border);
+  color: var(--link-hover-text);
 }
 
 .pickable-badge {
   padding: 1px 6px;
   border-radius: 999px;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--pickable-surface);
+  color: var(--pickable-text);
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -208,8 +526,25 @@ body,
 .issue-card.pickable,
 .plate.pickable > .plate-header {
   box-shadow:
-    0 0 0 3px #22c55e,
-    0 4px 14px rgba(34, 197, 94, 0.35);
+    0 0 0 3px var(--pickable),
+    0 4px 14px var(--pickable-glow);
+}
+
+/* Dark only: a started issue glows softly in its status colour, set inline as --status. */
+
+[data-theme='dark'] .issue-card.started,
+[data-theme='dark'] .plate.started > .plate-header {
+  --glow:
+    0 0 0 1px color-mix(in srgb, var(--status) 38%, transparent),
+    0 0 18px -3px color-mix(in srgb, var(--status) 55%, transparent);
+  box-shadow: var(--glow);
+}
+
+[data-theme='dark'] .issue-card.started.pickable,
+[data-theme='dark'] .plate.started.pickable > .plate-header {
+  box-shadow:
+    0 0 0 3px var(--pickable),
+    var(--glow);
 }
 
 .closed.issue-card,
@@ -222,7 +557,7 @@ body,
 .selected.issue-card,
 .selected.external-card,
 .plate.selected > .plate-header {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--selected);
   outline-offset: 2px;
   opacity: 1;
 }
@@ -239,20 +574,20 @@ body,
 
 .plate-header {
   height: 96px;
-  background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--card);
+  border-bottom: 1px solid var(--border-subtle);
   border-left: 5px solid;
   border-radius: 11px 11px 0 0;
   cursor: pointer;
 }
 
 .plate.collapsed {
-  background: #fff;
+  background: var(--card);
   box-shadow:
-    4px 4px 0 -1px #fff,
-    4px 4px 0 0 #cbd5e1,
-    8px 8px 0 -1px #fff,
-    8px 8px 0 0 #cbd5e1;
+    4px 4px 0 -1px var(--card),
+    4px 4px 0 0 var(--border),
+    8px 8px 0 -1px var(--card),
+    8px 8px 0 0 var(--border);
 }
 
 .plate.collapsed .plate-header {
@@ -265,12 +600,12 @@ body,
   top: 104px;
   left: 14px;
   padding: 2px 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
   font-size: 11px;
-  color: #334155;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
@@ -286,8 +621,8 @@ body,
   height: 100%;
   gap: 3px;
   padding: 7px 10px;
-  background: #fafafa;
-  border: 1.5px dashed #94a3b8;
+  background: var(--external-surface);
+  border: 1.5px dashed var(--external-border);
   border-radius: 8px;
   cursor: pointer;
 }
@@ -300,7 +635,7 @@ body,
 
 .external-project {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -318,11 +653,11 @@ body,
   flex-direction: column;
   gap: 4px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #e2e8f0;
+  background: var(--legend-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   font-size: 11.5px;
-  color: #334155;
+  color: var(--text-secondary);
 }
 
 .legend-row {
@@ -338,11 +673,162 @@ body,
 }
 
 .pickable-swatch {
-  border: 2px solid #22c55e;
-  background: #dcfce7;
+  border: 2px solid var(--pickable);
+  background: var(--pickable-surface);
 }
 
 .external-swatch {
-  border: 1.5px dashed #94a3b8;
-  background: #fafafa;
+  border: 1.5px dashed var(--external-border);
+  background: var(--external-surface);
+}
+
+/* React Flow chrome: its dark mode, retinted to the palette above */
+
+.react-flow {
+  --xy-background-color: transparent;
+}
+
+.react-flow.dark {
+  --xy-controls-button-background-color: var(--surface-raised);
+  --xy-controls-button-background-color-hover: var(--surface-hover);
+  --xy-controls-button-color: var(--text-secondary);
+  --xy-controls-button-color-hover: var(--text-strong);
+  --xy-controls-button-border-color: var(--border);
+  --xy-controls-box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.4);
+  --xy-minimap-background-color: var(--surface);
+  --xy-minimap-mask-background-color: rgba(15, 16, 17, 0.72);
+  --xy-minimap-mask-stroke-color: var(--border);
+  --xy-attribution-background-color: rgba(20, 21, 23, 0.6);
+}
+
+.react-flow.dark .react-flow__attribution a {
+  color: var(--text-faint);
+}
+
+/*
+ * The refresh cascade. cascade.ts owns the timing and hands it over as --refresh-* properties on the
+ * map, and each marked node or link carries its turn as --refresh-delay.
+ */
+
+.refresh-glide .react-flow__node {
+  transition:
+    transform var(--refresh-glide) ease-in-out,
+    width var(--refresh-glide) ease-in-out,
+    height var(--refresh-glide) ease-in-out;
+}
+
+/* Links cannot glide with their ends, so they wait out the glide and fade back in. */
+.refresh-glide .react-flow__edges {
+  animation: refresh-links-return calc(var(--refresh-glide) + 250ms) ease-out both;
+}
+
+@keyframes refresh-links-return {
+  0%,
+  60% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.react-flow__node.refresh-removed,
+.react-flow__edge.refresh-removed {
+  animation: refresh-fade-out var(--refresh-exit) ease-in forwards;
+}
+
+.react-flow__node.refresh-added {
+  animation: refresh-enter var(--refresh-crossFade) cubic-bezier(0.2, 0.8, 0.3, 1.15) var(--refresh-delay) both;
+}
+
+.react-flow__edge.refresh-added .react-flow__edge-path {
+  animation: refresh-link-enter var(--refresh-crossFade) ease-out var(--refresh-delay) both;
+}
+
+@keyframes refresh-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes refresh-enter {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+@keyframes refresh-link-enter {
+  from {
+    opacity: 0;
+    stroke-width: 5px;
+  }
+}
+
+/* A changed card's old look, laid over its new one until its turn, then fading off it. */
+.refresh-ghost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: refresh-fade-out var(--refresh-crossFade) ease-in-out var(--refresh-delay) both;
+}
+
+/* A ring in the new status colour that pulses as the new look settles, then fades. */
+.refresh-ring {
+  position: absolute;
+  inset: -5px;
+  border: 3px solid var(--ring);
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0;
+  animation: refresh-pulse var(--refresh-pulse) ease-out calc(var(--refresh-delay) + var(--refresh-crossFade) / 2) forwards;
+}
+
+.refresh-ring.refresh-header {
+  inset: -4px -4px auto;
+  height: 107px;
+}
+
+@keyframes refresh-pulse {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring) 60%, transparent);
+  }
+  20% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+  21% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring) 45%, transparent);
+  }
+  45% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the new map at once, changed and added cards ringed until the next layout. */
+@media (prefers-reduced-motion: reduce) {
+  .refresh-icon.spinning,
+  .refresh-glide .react-flow__edges,
+  .react-flow__node.refresh-added,
+  .react-flow__edge.refresh-added .react-flow__edge-path {
+    animation: none;
+  }
+
+  .refresh-glide .react-flow__node {
+    transition: none;
+  }
+
+  .react-flow__node.refresh-removed,
+  .react-flow__edge.refresh-removed {
+    animation: none;
+    opacity: 0;
+  }
+
+  .refresh-ring {
+    animation: none;
+    opacity: 1;
+  }
 }

@@ -35,7 +35,7 @@ internal sealed class LinearReader(LinearGraphQL linear)
         query TeamProjects($teamId: String!, $after: String) {
           team(id: $teamId) {
             projects(first: 100, after: $after) {
-              nodes { id name url status { name type } }
+              nodes { id name url status { name type } targetDate completedAt canceledAt }
               pageInfo { hasNextPage endCursor }
             }
           }
@@ -226,7 +226,8 @@ internal sealed class LinearReader(LinearGraphQL linear)
     {
         var status = node.GetProperty("status");
         return new MapProject(Text(node, "id"), Text(node, "name"), Text(node, "url"),
-            new MapProjectStatus(Text(status, "name"), Text(status, "type")));
+            new MapProjectStatus(Text(status, "name"), Text(status, "type")),
+            OptionalText(node, "targetDate"), OptionalText(node, "completedAt"), OptionalText(node, "canceledAt"));
     }
 
     private static MapIssue ToIssue(JsonElement node)

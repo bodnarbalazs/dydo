@@ -103,8 +103,18 @@ public sealed class MapServerTests : IAsyncLifetime
         var (status, _, body) = await Get("/api/projects?team=t1");
 
         Assert.Equal(HttpStatusCode.OK, status);
-        Assert.Equal("""{"projects":[{"id":"p1","name":"Map","url":"https://l/p1","status":{"name":"Planned","type":"planned"}}]}""", body);
+        Assert.Equal("""{"projects":[{"id":"p1","name":"Map","url":"https://l/p1","status":{"name":"Planned","type":"planned"},"targetDate":null,"completedAt":null,"canceledAt":null}]}""", body);
         Assert.Equal("t1", _linear.Calls.Single().Var("teamId"));
+    }
+
+    [Fact]
+    public async Task Projects_AnswerTheirDates_AndNullWhenUnset()
+    {
+        _linear.Serve(_ => """{"data":{"team":{"projects":{"nodes":[{"id":"p1","name":"Map","url":"https://l/p1","status":{"name":"Completed","type":"completed"},"targetDate":"2026-10-03","completedAt":"2026-09-20T10:00:00.000Z","canceledAt":null}],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}""");
+
+        var (_, _, body) = await Get("/api/projects?team=t1");
+
+        Assert.Equal("""{"projects":[{"id":"p1","name":"Map","url":"https://l/p1","status":{"name":"Completed","type":"completed"},"targetDate":"2026-10-03","completedAt":"2026-09-20T10:00:00.000Z","canceledAt":null}]}""", body);
     }
 
     [Fact]

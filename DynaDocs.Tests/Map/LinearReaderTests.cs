@@ -46,6 +46,26 @@ public class LinearReaderTests
     }
 
     [Fact]
+    public async Task Projects_CarryTheirDates_OrNullWhenUnset()
+    {
+        _linear.Serve(_ => """
+            {"data":{"team":{"projects":{"nodes":[
+              {"id":"p1","name":"Dated","url":"u1","status":{"name":"Completed","type":"completed"},
+               "targetDate":"2026-10-03","completedAt":"2026-09-20T10:00:00.000Z","canceledAt":"2026-09-21T11:00:00.000Z"},
+              {"id":"p2","name":"Undated","url":"u2","status":{"name":"Backlog","type":"backlog"},
+               "targetDate":null,"completedAt":null,"canceledAt":null}
+            ],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
+            """);
+
+        var projects = await _linear.Reader().GetProjectsAsync("t1", CancellationToken.None);
+
+        Assert.Equal(("2026-10-03", "2026-09-20T10:00:00.000Z", "2026-09-21T11:00:00.000Z"),
+            (projects[0].TargetDate, projects[0].CompletedAt, projects[0].CanceledAt));
+        Assert.Equal((null, null, null), (projects[1].TargetDate, projects[1].CompletedAt, projects[1].CanceledAt));
+        Assert.Contains("targetDate completedAt canceledAt", _linear.Calls.Single().Query);
+    }
+
+    [Fact]
     public async Task Projects_OfUnknownTeam_AreNotFound()
     {
         _linear.Serve(_ => """{"data":{"team":null}}""");

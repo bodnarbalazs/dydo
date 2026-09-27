@@ -1,13 +1,136 @@
 {
  "projects": [
   {
+   "id": "6b0626aa-3d2d-5168-b174-b72424d22ef3",
+   "name": "CLI telemetry opt-out",
+   "url": "https://linear.app/bodnar-balazs/project/cli-telemetry-opt-out-fixture",
+   "status": {
+    "name": "Completed",
+    "type": "completed"
+   },
+   "targetDate": null,
+   "completedAt": "2026-09-12T15:30:00.000Z",
+   "canceledAt": null
+  },
+  {
+   "id": "962fa7a1-e465-531c-b013-3785cb324d59",
+   "name": "Docs site refresh",
+   "url": "https://linear.app/bodnar-balazs/project/docs-site-refresh-fixture",
+   "status": {
+    "name": "Planned",
+    "type": "planned"
+   },
+   "targetDate": "2026-08-31",
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
+   "id": "67c153a3-2e91-5dd3-890e-922b266d6917",
+   "name": "Linear webhooks",
+   "url": "https://linear.app/bodnar-balazs/project/linear-webhooks-fixture",
+   "status": {
+    "name": "Paused",
+    "type": "paused"
+   },
+   "targetDate": "2026-12-01",
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
+   "id": "3cba3ec4-5a13-54c9-b10e-fbdd2a53e74a",
+   "name": "Map export to PNG",
+   "url": "https://linear.app/bodnar-balazs/project/map-export-to-png-fixture",
+   "status": {
+    "name": "Planned",
+    "type": "planned"
+   },
+   "targetDate": "2027-02-12",
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
+   "id": "f2c3b955-d4a0-5a27-ba9c-dbac7e052d75",
+   "name": "Offline cache",
+   "url": "https://linear.app/bodnar-balazs/project/offline-cache-fixture",
+   "status": {
+    "name": "Backlog",
+    "type": "backlog"
+   },
+   "targetDate": null,
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
+   "id": "c592f13f-ef0e-50eb-adf5-5723f28e3eb2",
+   "name": "Onboarding tour",
+   "url": "https://linear.app/bodnar-balazs/project/onboarding-tour-fixture",
+   "status": {
+    "name": "In Progress",
+    "type": "started"
+   },
+   "targetDate": "2026-10-03",
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
    "id": "bc3dfaa6-2e11-4df9-9ce7-f507f462a76c",
    "name": "OpenCode Host Support",
    "url": "https://linear.app/bodnar-balazs/project/opencode-host-support-f8402cc8ab67",
    "status": {
     "name": "Canceled",
     "type": "canceled"
-   }
+   },
+   "targetDate": null,
+   "completedAt": null,
+   "canceledAt": "2026-09-11T23:46:03.817Z"
+  },
+  {
+   "id": "91373241-969a-52ef-acc4-d0ceec8f3132",
+   "name": "Plugin marketplace",
+   "url": "https://linear.app/bodnar-balazs/project/plugin-marketplace-fixture",
+   "status": {
+    "name": "Paused",
+    "type": "paused"
+   },
+   "targetDate": null,
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
+   "id": "e8829201-fe93-5fdf-aa7a-c2e2c71bed60",
+   "name": "Release pipeline hardening",
+   "url": "https://linear.app/bodnar-balazs/project/release-pipeline-hardening-fixture",
+   "status": {
+    "name": "In Progress",
+    "type": "started"
+   },
+   "targetDate": "2026-09-15",
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
+   "id": "fce86148-1dff-54fc-95ee-86fbed4f8326",
+   "name": "Search index rebuild",
+   "url": "https://linear.app/bodnar-balazs/project/search-index-rebuild-fixture",
+   "status": {
+    "name": "Completed",
+    "type": "completed"
+   },
+   "targetDate": null,
+   "completedAt": "2026-09-20T09:00:00.000Z",
+   "canceledAt": null
+  },
+  {
+   "id": "fab973c8-47f9-5e7c-a218-13b7f41ca551",
+   "name": "Viewer dark mode",
+   "url": "https://linear.app/bodnar-balazs/project/viewer-dark-mode-fixture",
+   "status": {
+    "name": "Planned",
+    "type": "planned"
+   },
+   "targetDate": "2026-11-20",
+   "completedAt": null,
+   "canceledAt": null
   },
   {
    "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
@@ -16,7 +139,22 @@
    "status": {
     "name": "In Progress",
     "type": "started"
-   }
+   },
+   "targetDate": null,
+   "completedAt": null,
+   "canceledAt": null
+  },
+  {
+   "id": "46679b91-d588-5669-80c8-c138ccf44e36",
+   "name": "Windows installer",
+   "url": "https://linear.app/bodnar-balazs/project/windows-installer-fixture",
+   "status": {
+    "name": "Backlog",
+    "type": "backlog"
+   },
+   "targetDate": "2027-03-01",
+   "completedAt": null,
+   "canceledAt": null
   },
   {
    "id": "44eba9ff-0242-4179-b94b-932339b364fd",
@@ -25,7 +163,10 @@
    "status": {
     "name": "Completed",
     "type": "completed"
-   }
+   },
+   "targetDate": null,
+   "completedAt": "2026-08-28T13:11:10.078Z",
+   "canceledAt": null
   },
   {
    "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
@@ -34,7 +175,10 @@
    "status": {
     "name": "In Progress",
     "type": "started"
-   }
+   },
+   "targetDate": null,
+   "completedAt": null,
+   "canceledAt": null
   },
   {
    "id": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
@@ -43,7 +187,10 @@
    "status": {
     "name": "Canceled",
     "type": "canceled"
-   }
+   },
+   "targetDate": null,
+   "completedAt": null,
+   "canceledAt": "2026-09-05T00:26:25.154Z"
   },
   {
    "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
@@ -52,7 +199,10 @@
    "status": {
     "name": "In Progress",
     "type": "started"
-   }
+   },
+   "targetDate": null,
+   "completedAt": null,
+   "canceledAt": null
   },
   {
    "id": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
@@ -61,7 +211,10 @@
    "status": {
     "name": "Completed",
     "type": "completed"
-   }
+   },
+   "targetDate": null,
+   "completedAt": "2026-08-29T08:09:04.538Z",
+   "canceledAt": null
   },
   {
    "id": "82243b25-9699-473f-9efb-69746732473c",
@@ -70,7 +223,10 @@
    "status": {
     "name": "Completed",
     "type": "completed"
-   }
+   },
+   "targetDate": null,
+   "completedAt": "2026-08-28T18:11:02.317Z",
+   "canceledAt": null
   },
   {
    "id": "cd465155-187a-4114-bf22-7c871c6f7730",
@@ -79,7 +235,10 @@
    "status": {
     "name": "Completed",
     "type": "completed"
-   }
+   },
+   "targetDate": null,
+   "completedAt": "2026-08-30T18:09:32.243Z",
+   "canceledAt": null
   },
   {
    "id": "f7f7100d-69b5-474f-9830-c36a3264435b",
@@ -88,7 +247,10 @@
    "status": {
     "name": "Completed",
     "type": "completed"
-   }
+   },
+   "targetDate": null,
+   "completedAt": "2026-09-05T00:26:28.798Z",
+   "canceledAt": null
   }
  ]
 }

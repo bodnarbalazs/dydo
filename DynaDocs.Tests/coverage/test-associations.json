@@ -1020,6 +1020,12 @@
       ]
     },
     {
+      "module": "viewer/src/app/RefreshButton.tsx",
+      "tests": [
+        "viewer/src/app/RefreshButton.test.tsx"
+      ]
+    },
+    {
       "module": "viewer/src/app/Toolbar.tsx",
       "tests": [
         "viewer/src/app/Toolbar.test.tsx"
@@ -1029,6 +1035,12 @@
       "module": "viewer/src/app/urlState.ts",
       "tests": [
         "viewer/src/app/urlState.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/graphDiff.ts",
+      "tests": [
+        "viewer/src/graph/graphDiff.test.ts"
       ]
     },
     {
@@ -1093,6 +1105,12 @@
       ]
     },
     {
+      "module": "viewer/src/map/RefreshLayers.tsx",
+      "tests": [
+        "viewer/src/map/RefreshLayers.test.tsx"
+      ]
+    },
+    {
       "module": "viewer/src/map/RoutedEdge.tsx",
       "tests": [
         "viewer/src/map/RoutedEdge.test.tsx"
@@ -1105,6 +1123,12 @@
       ]
     },
     {
+      "module": "viewer/src/map/cascade.ts",
+      "tests": [
+        "viewer/src/map/cascade.test.ts"
+      ]
+    },
+    {
       "module": "viewer/src/map/colors.ts",
       "tests": [
         "viewer/src/map/colors.test.ts"
@@ -1114,6 +1138,36 @@
       "module": "viewer/src/map/nodes.tsx",
       "tests": [
         "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/picker/ProjectPicker.tsx",
+      "tests": [
+        "viewer/src/picker/ProjectPicker.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/picker/projectList.ts",
+      "tests": [
+        "viewer/src/picker/projectList.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/ThemeControl.tsx",
+      "tests": [
+        "viewer/src/theme/useTheme.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/theme.ts",
+      "tests": [
+        "viewer/src/theme/theme.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/useTheme.ts",
+      "tests": [
+        "viewer/src/theme/useTheme.test.tsx"
       ]
     }
   ]

@@ -10,7 +10,7 @@ const teams: Team[] = [
   { id: 'team-1', key: 'T', name: 'Team One' },
   { id: 'team-2', key: 'U', name: 'Team Two' },
 ];
-const projects: Project[] = [{ id: 'project-1', name: 'Project One', url: 'https://linear.app/p1', status: { name: 'In Progress', type: 'started' } }];
+const projects: Project[] = [{ id: 'project-1', name: 'Project One', url: 'https://linear.app/p1', status: { name: 'In Progress', type: 'started' }, targetDate: null, completedAt: null, canceledAt: null }];
 const otherProject = { id: 'project-2', name: 'Project Two' };
 
 const graphOne: Graph = makeGraph(
@@ -58,6 +58,20 @@ function open(search: string) {
   return render(<App elk={new ELK()} />);
 }
 
+const projectPicker = () => screen.getByRole('button', { name: /^Project / });
+
+/** Opens the Project picker, waits until it lists `name`, and closes it again. */
+async function listed(name: string) {
+  fireEvent.click(projectPicker());
+  await screen.findByRole('option', { name });
+  fireEvent.keyDown(screen.getByRole('combobox', { name: 'Search Projects' }), { key: 'Escape' });
+}
+
+function chooseProject(name: string) {
+  fireEvent.click(projectPicker());
+  fireEvent.click(screen.getByRole('option', { name }));
+}
+
 const card = (identifier: string) => document.querySelector(`[data-identifier="${identifier}"]`);
 
 async function mapShown() {
@@ -68,12 +82,12 @@ describe('App selectors and URL state', () => {
   it('asks for a team first, then lists its Projects and writes both into the URL', async () => {
     open('');
     expect(await screen.findByText('Choose a team to list its Projects.')).toBeTruthy();
-    const [teamSelect, projectSelect] = screen.getAllByRole('combobox');
+    const teamSelect = screen.getByRole('combobox');
     await screen.findByRole('option', { name: 'Team One (T)' });
-    fireEvent.change(teamSelect!, { target: { value: 'team-1' } });
+    fireEvent.change(teamSelect, { target: { value: 'team-1' } });
     expect(window.location.search).toBe('?team=team-1');
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
-    fireEvent.change(projectSelect!, { target: { value: 'project-1' } });
+    await listed('Project One');
+    chooseProject('Project One');
     expect(window.location.search).toBe('?team=team-1&project=project-1');
     await mapShown();
     expect(screen.getByText('Project One: 4 issues, 1 plates')).toBeTruthy();
@@ -169,6 +183,22 @@ describe('App map', () => {
   });
 });
 
+describe('App theme', () => {
+  it('themes the page, and the cards on the map, from the toolbar', async () => {
+    localStorage.clear();
+    open('?team=team-1&project=project-1');
+    await mapShown();
+    const background = () => (card('T-X') as HTMLElement).style.background;
+    const light = background();
+    fireEvent.click(screen.getByRole('button', { name: 'Dark theme' }));
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+    expect(background()).not.toBe(light);
+    fireEvent.click(screen.getByRole('button', { name: 'System theme' }));
+    expect(document.documentElement.dataset['theme']).toBe('light');
+    expect(background()).toBe(light);
+  });
+});
+
 describe('App errors', () => {
   it('shows the error envelope to the user', async () => {
     graphAnswer = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);
@@ -194,7 +224,7 @@ describe('App errors', () => {
 
 describe('App errors belong to the view that failed', () => {
   const rateLimited = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);
-  const twoProjects: Project[] = [...projects, { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' } }];
+  const twoProjects: Project[] = [...projects, { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' }, targetDate: null, completedAt: null, canceledAt: null }];
   let answers: Record<string, () => Promise<Response>>;
 
   beforeEach(() => {
@@ -216,12 +246,12 @@ describe('App errors belong to the view that failed', () => {
   async function failedProjectOne() {
     open('?team=team-1&project=project-1');
     await screen.findByRole('alert');
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
+    await listed('Project Two');
   }
 
   it('drops a failed Project\'s error when another Project loads', async () => {
     await failedProjectOne();
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    chooseProject('Project Two');
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('Loading the Project map…')).toBeTruthy();
   });
@@ -235,7 +265,7 @@ describe('App errors belong to the view that failed', () => {
 
   it('clears a Project\'s error once it loads on a later visit', async () => {
     await failedProjectOne();
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    chooseProject('Project Two');
     answers['project-1'] = () => Promise.resolve(json(graphOne));
     act(() => {
       window.history.back();
@@ -272,10 +302,10 @@ describe('App errors belong to the view that failed', () => {
     window.history.replaceState(null, '', '/?team=team-1&project=project-1');
     render(<App elk={elk} />);
     await mapShown();
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    await listed('Project Two');
+    chooseProject('Project Two');
     answers['project-1'] = refetch;
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    chooseProject('Project One');
   }
 
   it('draws nothing from an earlier visit while a revisited Project refetches', async () => {
@@ -338,8 +368,8 @@ describe('App errors belong to the view that failed', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('linear_auth Key rejected.');
     expect(screen.getByText('Loading the Project map…')).toBeTruthy();
     graphAnswer = () => Promise.resolve(rateLimited());
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    await listed('Project Two');
+    chooseProject('Project Two');
     await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
     expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual(['linear_auth Key rejected.', 'linear_rate_limited Linear is rate limiting this key.']);
     expect(screen.getByText('The map could not be drawn.')).toBeTruthy();
@@ -385,7 +415,7 @@ function deferred<T>() {
 
 describe('App ignores answers for a view it has left', () => {
   const rateLimited = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);
-  const projectTwo: Project = { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' } };
+  const projectTwo: Project = { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' }, targetDate: null, completedAt: null, canceledAt: null };
   let pending: Map<string, ReturnType<typeof deferred<Response>>[]>;
 
   /** Each request waits until the test answers it, oldest first per path and parameter. */
@@ -420,17 +450,18 @@ describe('App ignores answers for a view it has left', () => {
     await screen.findByRole('option', { name: 'Team Two (U)' });
     pick(0, 'team-2');
     await answer('team-2', json({ projects: [projectTwo] }));
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
+    await listed('Project Two');
     await answer('team-1', json({ projects }));
-    expect(screen.getByRole('option', { name: 'Project Two · Planned' })).toBeTruthy();
+    await listed('Project Two');
   });
 
   it('lists no Projects of the old team while the new team\'s list loads', async () => {
     open('?team=team-1');
     await answer('team-1', json({ projects }));
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
+    await listed('Project One');
     pick(0, 'team-2');
-    expect(screen.queryByRole('option', { name: 'Project One · In Progress' })).toBeNull();
+    fireEvent.click(projectPicker());
+    expect(screen.queryByRole('option', { name: 'Project One' })).toBeNull();
   });
 
   it('drops a Project list failure that arrives after the team changed', async () => {
@@ -449,15 +480,15 @@ describe('App ignores answers for a view it has left', () => {
     pick(0, 'team-2');
     pick(0, 'team-1');
     await answer('team-1', json({ projects }));
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
+    await listed('Project One');
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('keeps the new Project\'s map when the old Project\'s graph arrives late', async () => {
     open('?team=team-1&project=project-1');
     await answer('team-1', json({ projects: [...projects, projectTwo] }));
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    pick(1, 'project-2');
+    await listed('Project Two');
+    chooseProject('Project Two');
     await answer('project-2', json(graphTwo));
     await waitFor(() => expect(card('T-E')).not.toBeNull());
     await answer('project-1', json(graphOne));
@@ -470,11 +501,11 @@ describe('App ignores answers for a view it has left', () => {
   it('drops a graph failure that arrives after the Project changed', async () => {
     open('?team=team-1&project=project-1');
     await answer('team-1', json({ projects: [...projects, projectTwo] }));
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    pick(1, 'project-2');
+    await listed('Project Two');
+    chooseProject('Project Two');
     await answer('project-1', rateLimited());
     expect(screen.queryByRole('alert')).toBeNull();
-    pick(1, 'project-1');
+    chooseProject('Project One');
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('Loading the Project map…')).toBeTruthy();
   });
@@ -545,10 +576,10 @@ describe('App ignores layouts it no longer needs', () => {
     });
     openWithElk('?team=team-1&project=project-1');
     await screen.findByRole('alert');
-    await screen.findByRole('option', { name: 'Project Two · In Progress' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    await listed('Project Two');
+    chooseProject('Project Two');
     graphFails = false;
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    chooseProject('Project One');
     await waitFor(() => expect(layouts).toHaveLength(1));
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -566,9 +597,9 @@ describe('App navigation and fitting', () => {
 
   it('adds a history entry per selector change, external jump and nothing for a focus', async () => {
     open('?team=team-1');
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
+    await listed('Project One');
     const start = window.history.length;
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    chooseProject('Project One');
     await mapShown();
     fireEvent.click(card('T-X')!);
     expect(window.history.length).toBe(start + 1);
@@ -581,8 +612,8 @@ describe('App navigation and fitting', () => {
 
   it('drops the focus when another Project is chosen', async () => {
     open('?team=team-1&project=project-2&focus=E');
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    await listed('Project One');
+    chooseProject('Project One');
     expect(window.location.search).toBe('?team=team-1&project=project-1');
   });
 
@@ -632,5 +663,200 @@ describe('App navigation and fitting', () => {
     await waitFor(() => expect(card('T-A')).toBeNull());
     await settle();
     expect(scale()).toBeGreaterThan(expanded);
+  });
+});
+
+describe('App refresh in place', () => {
+  const transform = () => document.querySelector<HTMLElement>('.react-flow__viewport')?.style.transform;
+  const refreshButton = () => screen.getByRole<HTMLButtonElement>('button', { name: 'Refresh' });
+  const wrapper = (identifier: string) => card(identifier)?.closest('.react-flow__node');
+  const notice = () => screen.findByRole('status');
+  const withoutX = makeGraph(
+    graphOne.issues.filter((issue) => issue.id !== 'X'),
+    graphOne.relations.filter((relation) => relation.to !== 'X' && relation.from !== 'X'),
+    graphOne.external,
+  );
+
+  /** Lets React Flow apply the fits it queued for the latest nodes. */
+  const settle = () => act(() => new Promise((done) => setTimeout(done, 50)));
+
+  async function openMap(focus = '') {
+    open(`?team=team-1&project=project-1${focus}`);
+    await mapShown();
+    await settle();
+  }
+
+  it('re-fetches the Project and keeps the viewport, plates, focus and Show related, marking what changed', async () => {
+    // A focus opened from the URL is centred at once, where a clicked one glides there.
+    await openMap('&focus=X');
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show related' }));
+    await waitFor(() => expect(card('T-A')).toBeNull());
+    await waitFor(() => expect(card('T-R')).not.toBeNull());
+    await settle();
+    const viewport = transform();
+    const search = window.location.search;
+    graphAnswer = () => json(makeGraph([...graphOne.issues.map((issue) => (issue.id === 'X' ? { ...issue, assignee: 'Bo' } : issue)), makeIssue('Y')], graphOne.relations, graphOne.external));
+
+    fireEvent.click(refreshButton());
+    expect(refreshButton().disabled).toBe(true);
+    expect((await notice()).textContent).toBe('1 changed · 1 new');
+    await waitFor(() => expect(card('T-Y')).not.toBeNull());
+    expect(wrapper('T-Y')?.classList.contains('refresh-added')).toBe(true);
+    expect(wrapper('T-X')?.classList.contains('refresh-changed')).toBe(true);
+    expect(card('T-X')?.textContent).toContain('Bo');
+    expect(card('T-X')?.className).toContain('selected');
+    expect(card('T-A')).toBeNull();
+    expect(card('T-R')).not.toBeNull();
+    expect(transform()).toBe(viewport);
+    expect(window.location.search).toBe(search);
+    expect(refreshButton().disabled).toBe(false);
+    expect(screen.getByText('Project One: 5 issues, 1 plates')).toBeTruthy();
+  });
+
+  it('fades a removed issue out on the old map before the new one replaces it', async () => {
+    await openMap();
+    const timers = vi.spyOn(window, 'setTimeout');
+    graphAnswer = () => json(withoutX);
+    fireEvent.click(refreshButton());
+    expect((await notice()).textContent).toBe('1 removed · 1 link removed');
+    expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    expect(timers).toHaveBeenCalledWith(expect.any(Function), 300);
+    timers.mockRestore();
+  });
+
+  it('reads No changes and marks nothing when a second refresh finds nothing new', async () => {
+    await openMap();
+    graphAnswer = () => json(withoutX);
+    fireEvent.click(refreshButton());
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    fireEvent.keyDown(document.body, { key: 'r' });
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('No changes'));
+    await waitFor(() => expect(document.querySelector('.react-flow__node[class*="refresh-"]')).toBeNull());
+  });
+
+  it('keeps the map and shows the error when a refresh fails, until one succeeds', async () => {
+    await openMap();
+    graphAnswer = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);
+    fireEvent.click(refreshButton());
+    expect((await screen.findByRole('alert')).textContent).toBe('linear_rate_limited Linear is rate limiting this key.');
+    expect(card('T-X')).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(refreshButton().disabled).toBe(false);
+    graphAnswer = () => json(graphOne);
+    fireEvent.click(refreshButton());
+    expect((await notice()).textContent).toBe('No changes');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('draws a map a refresh fetched after the first fetch failed, with nothing to compare', async () => {
+    graphAnswer = () => json({ error: { code: 'linear_error', message: 'Linear failed.' } }, 502);
+    open('?team=team-1&project=project-1');
+    await screen.findByRole('alert');
+    graphAnswer = () => json(graphOne);
+    fireEvent.click(refreshButton());
+    await mapShown();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('stays busy until the refreshed map has landed, so a second Refresh cannot drop the first one\'s marks', async () => {
+    await openMap();
+    const viewport = transform();
+    const placeholders: string[] = [];
+    const watch = new MutationObserver(() => {
+      const shown = document.querySelector('.placeholder');
+      if (shown !== null) placeholders.push(shown.textContent);
+    });
+    watch.observe(document.body, { childList: true, subtree: true });
+    graphAnswer = () => json(makeGraph(withoutX.issues.map((issue) => (issue.id === 'A' ? { ...issue, title: 'Renamed' } : issue)), withoutX.relations, withoutX.external));
+
+    fireEvent.click(refreshButton());
+    expect((await notice()).textContent).toBe('1 changed · 1 removed · 1 link removed');
+    // The answer is in, but the old map still shows its removal fading while the new one lays out.
+    expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    expect(refreshButton().disabled).toBe(true);
+    const fetches = vi.mocked(fetch).mock.calls.length;
+    fireEvent.keyDown(document.body, { key: 'r' });
+    fireEvent.click(refreshButton());
+    expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
+
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    expect(wrapper('T-A')?.classList.contains('refresh-changed')).toBe(true);
+    expect(screen.getByRole('status').textContent).toBe('1 changed · 1 removed · 1 link removed');
+    expect(transform()).toBe(viewport);
+    expect(refreshButton().disabled).toBe(false);
+    watch.disconnect();
+    expect(placeholders).toEqual([]);
+  });
+
+  it('cannot refresh while the Project\'s map is first loading', async () => {
+    open('?team=team-1&project=project-1');
+    expect(refreshButton().disabled).toBe(true);
+    await mapShown();
+    expect(refreshButton().disabled).toBe(false);
+  });
+
+  it('frees Refresh on leaving a Project mid-refresh, and drops that answer on coming back', async () => {
+    await openMap();
+    const answer = deferred<Response>();
+    vi.mocked(fetch).mockImplementationOnce(() => answer.promise);
+    fireEvent.click(refreshButton());
+    const go = (search: string) =>
+      act(() => {
+        window.history.pushState(null, '', `/${search}`);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+    go('?team=team-1&project=project-2');
+    await waitFor(() => expect(card('T-E')).not.toBeNull());
+    expect(refreshButton().disabled).toBe(false);
+    go('?team=team-1&project=project-1');
+    await mapShown();
+    await act(async () => {
+      answer.resolve(json(withoutX));
+      await new Promise((settle) => setTimeout(settle, 20));
+    });
+    expect(card('T-X')).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('cannot refresh before a Project is chosen', async () => {
+    open('?team=team-1');
+    await listed('Project One');
+    expect(refreshButton().disabled).toBe(true);
+  });
+
+  it('drops a refresh answer for a Project it has left', async () => {
+    await openMap();
+    const answer = deferred<Response>();
+    graphAnswer = () => json(withoutX);
+    vi.mocked(fetch).mockImplementationOnce(() => answer.promise);
+    fireEvent.click(refreshButton());
+    act(() => {
+      window.history.pushState(null, '', '/?team=team-1&project=project-2');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => expect(card('T-E')).not.toBeNull());
+    await act(async () => {
+      answer.resolve(json(withoutX));
+      await new Promise((settle) => setTimeout(settle, 20));
+    });
+    expect(screen.getByText('Project Two: 1 issues, 0 plates')).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('with reduced motion swaps the map at once and rings what changed without old looks', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)', addEventListener: () => undefined, removeEventListener: () => undefined }));
+    await openMap();
+    const timers = vi.spyOn(window, 'setTimeout');
+    graphAnswer = () => json(makeGraph(withoutX.issues.map((issue) => (issue.id === 'A' ? { ...issue, title: 'Renamed' } : issue)), withoutX.relations, withoutX.external));
+    fireEvent.click(refreshButton());
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    expect(wrapper('T-A')?.querySelector('.refresh-ring')).not.toBeNull();
+    expect(document.querySelector('.refresh-ghost')).toBeNull();
+    expect(document.querySelector('.refresh-glide')).toBeNull();
+    expect(timers).not.toHaveBeenCalledWith(expect.any(Function), 300);
+    timers.mockRestore();
   });
 });

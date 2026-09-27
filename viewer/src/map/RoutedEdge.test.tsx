@@ -5,7 +5,7 @@ import type { MapEdge } from '../graph/mapModel';
 import type { MapFlowEdge } from '../layout/toFlow';
 import { RoutedEdge, roundedPath } from './RoutedEdge';
 
-function draw(edge: MapEdge, points: { x: number; y: number }[] | null) {
+function draw(edge: MapEdge, points: { x: number; y: number }[] | null, style?: React.CSSProperties) {
   const props = {
     id: edge.id,
     source: edge.source,
@@ -18,6 +18,7 @@ function draw(edge: MapEdge, points: { x: number; y: number }[] | null) {
     targetPosition: Position.Left,
     data: { edge, points },
     markerEnd: 'url(#arrow)',
+    style,
   } as unknown as EdgeProps<MapFlowEdge>;
   const { container } = render(
     <svg>
@@ -41,21 +42,27 @@ describe('RoutedEdge', () => {
     expect(path.getAttribute('d')).toBe('M 0 0 L 42 0 Q 50 0 50 8 L 50 40');
     expect(path.getAttribute('marker-end')).toBe('url(#arrow)');
     expect(path.getAttribute('class')).toContain('edge-blocks');
-    expect((path as SVGPathElement).style.stroke).toBe('rgb(51, 65, 85)');
+    expect((path as SVGPathElement).style.stroke).toBe('var(--edge-blocks)');
     expect((path as SVGPathElement).style.strokeWidth).toBe('1.8');
     expect((path as SVGPathElement).style.strokeDasharray).toBe('');
   });
 
+  it('carries its refresh turn onto the path it draws, under its own stroke', () => {
+    const path = draw(blocking, null, { '--refresh-delay': '150ms', stroke: 'red' } as React.CSSProperties) as SVGPathElement;
+    expect(path.style.getPropertyValue('--refresh-delay')).toBe('150ms');
+    expect(path.style.stroke).toBe('var(--edge-blocks)');
+  });
+
   it('mutes a resolved blocker', () => {
     const path = draw({ ...blocking, muted: true }, null);
-    expect((path as SVGPathElement).style.stroke).toBe('rgb(180, 188, 200)');
+    expect((path as SVGPathElement).style.stroke).toBe('var(--edge-muted)');
   });
 
   it('draws related dashed and falls back to a smooth step without a route', () => {
     const path = draw({ ...blocking, type: 'related' }, null);
     expect(path.getAttribute('class')).toContain('edge-related');
     expect((path as SVGPathElement).style.strokeDasharray).toBe('6 4');
-    expect((path as SVGPathElement).style.stroke).toBe('rgb(139, 92, 246)');
+    expect((path as SVGPathElement).style.stroke).toBe('var(--edge-related)');
     expect((path as SVGPathElement).style.strokeWidth).toBe('1.4');
     expect(path.getAttribute('d')).toMatch(/^M/);
   });

@@ -7,7 +7,9 @@ date: 2026-09-27
 # dydo 3.1.1 — Map polish
 
 dydo 3.1.1 is a refinement release for the `dydo map` viewer introduced in 3.1.0: a faster way to
-find a Project, a dark theme, and a Refresh that updates the map without losing your place.
+find a Project, a dark theme, and a Refresh that updates the map without losing your place. It also
+ships agent-guidance changes: two new verification-authoring skills, the officers' strongest-model
+choice for real engineering challenges, and a branch-cleanup change.
 
 ## Added
 
@@ -39,7 +41,7 @@ find a Project, a dark theme, and a Refresh that updates the map without losing 
 ## Changed
 
 - `dydo map`'s CLI surface, Linear API access and read-only behaviour are unchanged from 3.1.0;
-  everything above is viewer-side polish.
+  everything in the Added section's map items above is viewer-side polish.
 - The `issue-captain` and `admiral` skills now choose the strongest supported model for a real
   engineering challenge and the smallest adequate one otherwise.
 - GitHub now cleans up merged branches: `bodnarbalazs/dydo` deletes a PR's head branch on merge,

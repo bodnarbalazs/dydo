@@ -351,7 +351,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(CommandStart + @"(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPasswordCliRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n({`])\s*(?:[^\s;&|'""`()]*/)?pass\s+\S", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // Deliberate difference from upstream DYD-188: the original `pass\s+\S` also matches prose
+    // shaped like the password-store CLI (a body line, a table cell, "pass the lease to..."),
+    // so a PR body or commit message containing the word "pass" gets denied. Requiring a known
+    // subcommand, a flag, or a name-only argument that ends the line/quote (as `pass <name>`
+    // does when actually invoked) keeps every real invocation blocked without flagging prose.
+    [GeneratedRegex(@"(?:^|[;&|\r\n({`])\s*(?:[^\s;&|'""`()]*/)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)\b|\s+-\S|\s+[^\s;&|'""`()]+(?=$|[\r\n;&|'""`)]))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPassRegex();
 
     [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]

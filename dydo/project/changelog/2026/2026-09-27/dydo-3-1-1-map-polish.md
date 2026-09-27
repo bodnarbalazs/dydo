@@ -22,11 +22,11 @@ find a Project, a dark theme, and a Refresh that updates the map without losing 
 - The canvas now shows a graph-paper background, a 24px minor grid and a 120px major grid, styled
   for both the light and dark palettes.
 - A favicon of three linked nodes in the viewer's accent colour, with its own dark-mode variant.
-- A toolbar **Refresh** button (and its `R` keyboard shortcut, which fires whenever focus isn't in
-  a text field) re-fetches the current Project in place, without a page reload. It keeps the
-  viewport, selection and theme as they were, animates changed, added and removed issues in reading
-  order, and reports what changed with a notice such as "3 changed · 1 new · 1 removed" or
-  "No changes".
+- A toolbar **Refresh** button (and its `R` keyboard shortcut, which fires when focus isn't in a
+  text field or dropdown and no modifier key is held) re-fetches the current Project in place,
+  without a page reload. It keeps the viewport, selection and theme as they were, fades out removed
+  issues, then animates changed and added issues one by one in reading order, and reports what
+  changed with a notice such as "3 changed · 1 new · 1 removed" or "No changes".
 
 ## Changed
 

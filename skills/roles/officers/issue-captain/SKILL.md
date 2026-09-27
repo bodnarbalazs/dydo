@@ -127,8 +127,9 @@ the default officer: an Issue gets a captain whether or not the human has invoke
    passes, or the human's click has landed the atomic Issue; the operation and source Issue close
    `Done`, captain-owned worktrees and local branches are removed (`git worktree remove`,
    `git branch -d`, `git fetch --prune`), and you return `done <key>: merged`. GitHub deletes a
-   merged PR's remote branch itself; the guard blocks remote deletion, so name any other merged
-   remote branch on the record for the human. On the map holder's landing-cleanup commission,
+   merged PR's remote branch itself; the guard blocks remote deletion, so name any other remote
+   branch due for deletion, an `inquisition/` or `prototype/` branch included, on the record for
+   the human. On the map holder's landing-cleanup commission,
    remove the merged feature branch locally and report completion.
 
 ## Kinds and failure paths

@@ -111,3 +111,12 @@ base('without LINEAR_API_KEY dydo map exits with the key help', async () => {
   expect(code).toBe(2);
   expect(stderr).toContain('LINEAR_API_KEY is not set, so dydo map cannot read Linear.');
 });
+
+test('the embedded bundle serves the favicon index.html links', async ({ page, map }) => {
+  await page.goto(map);
+  const href = await page.locator('link[rel="icon"]').getAttribute('href');
+  const response = await page.request.get(new URL(href ?? '', page.url()).toString());
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('image/svg+xml');
+  expect(await response.text()).toContain('<svg');
+});

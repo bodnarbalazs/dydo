@@ -1,6 +1,8 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { MapFlowNode } from '../layout/toFlow';
-import { readableColor, wash } from './colors';
+import type { Issue } from '../api/types';
+import { useTheme } from '../theme/useTheme';
+import { statusPalette } from './colors';
 import { IssueSummary, LinearButton } from './IssueSummary';
 import { useMapActions } from './MapActions';
 import { StatusIcon } from './StatusIcon';
@@ -18,16 +20,22 @@ function classes(...names: (string | false)[]): string {
   return names.filter(Boolean).join(' ');
 }
 
+/** A started issue carries its status colour for the stylesheet's glow. */
+function started(issue: Issue): React.CSSProperties {
+  return issue.state.type === 'started' ? ({ '--status': issue.state.color } as React.CSSProperties) : {};
+}
+
 function IssueNode({ data, selected }: NodeProps<MapFlowNode>) {
   const { issue, pickable, closed } = data.node;
+  const palette = statusPalette(issue.state.color, useTheme());
   return (
     <div
-      className={classes('issue-card', closed && 'closed', pickable && 'pickable', selected && 'selected')}
-      style={{ borderLeftColor: issue.state.color, background: wash(issue.state.color, 0.2) }}
+      className={classes('issue-card', issue.state.type === 'started' && 'started', closed && 'closed', pickable && 'pickable', selected && 'selected')}
+      style={{ borderLeftColor: issue.state.color, background: palette.card, ...started(issue) }}
       data-identifier={issue.identifier}
     >
       <Handles />
-      <IssueSummary issue={issue} pickable={pickable} />
+      <IssueSummary issue={issue} pickable={pickable} color={palette.readable} />
     </div>
   );
 }
@@ -35,15 +43,23 @@ function IssueNode({ data, selected }: NodeProps<MapFlowNode>) {
 function PlateNode({ data, selected }: NodeProps<MapFlowNode>) {
   const { issue, pickable, closed, collapsed, descendants } = data.node;
   const { togglePlate } = useMapActions();
+  const palette = statusPalette(issue.state.color, useTheme());
   return (
     <div
-      className={classes('plate', collapsed && 'collapsed', closed && 'closed', pickable && 'pickable', selected && 'selected')}
-      style={{ borderColor: readableColor(issue.state.color), background: collapsed ? undefined : wash(issue.state.color, 0.1) }}
+      className={classes(
+        'plate',
+        issue.state.type === 'started' && 'started',
+        collapsed && 'collapsed',
+        closed && 'closed',
+        pickable && 'pickable',
+        selected && 'selected',
+      )}
+      style={{ borderColor: palette.frame, background: collapsed ? undefined : palette.plate, ...started(issue) }}
       data-identifier={issue.identifier}
     >
       <Handles />
-      <div className="plate-header" style={{ borderLeftColor: issue.state.color, background: wash(issue.state.color, 0.2) }}>
-        <IssueSummary issue={issue} pickable={pickable} />
+      <div className="plate-header" style={{ borderLeftColor: issue.state.color, background: palette.card }}>
+        <IssueSummary issue={issue} pickable={pickable} color={palette.readable} />
       </div>
       <button
         type="button"
@@ -60,7 +76,7 @@ function PlateNode({ data, selected }: NodeProps<MapFlowNode>) {
 
 function ExternalNode({ data, selected }: NodeProps<MapFlowNode>) {
   const { issue, closed } = data.node;
-  const color = readableColor(issue.state.color);
+  const color = statusPalette(issue.state.color, useTheme()).readable;
   return (
     <div className={classes('external-card', closed && 'closed', selected && 'selected')} data-identifier={issue.identifier}>
       <Handles />

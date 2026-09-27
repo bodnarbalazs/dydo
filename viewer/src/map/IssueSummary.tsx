@@ -1,15 +1,15 @@
 import type { Issue } from '../api/types';
-import { readableColor } from './colors';
 import { StatusIcon } from './StatusIcon';
 
 interface IssueSummaryProps {
   issue: Issue;
   pickable: boolean;
+  /** The status colour as it reads on this card. */
+  color: string;
 }
 
 /** The identifier, title, status and assignee every map card shows. */
-export function IssueSummary({ issue, pickable }: IssueSummaryProps) {
-  const color = readableColor(issue.state.color);
+export function IssueSummary({ issue, pickable, color }: IssueSummaryProps) {
   return (
     <>
       <div className="card-top">

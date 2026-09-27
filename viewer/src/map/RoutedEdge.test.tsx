@@ -41,21 +41,21 @@ describe('RoutedEdge', () => {
     expect(path.getAttribute('d')).toBe('M 0 0 L 42 0 Q 50 0 50 8 L 50 40');
     expect(path.getAttribute('marker-end')).toBe('url(#arrow)');
     expect(path.getAttribute('class')).toContain('edge-blocks');
-    expect((path as SVGPathElement).style.stroke).toBe('rgb(51, 65, 85)');
+    expect((path as SVGPathElement).style.stroke).toBe('var(--edge-blocks)');
     expect((path as SVGPathElement).style.strokeWidth).toBe('1.8');
     expect((path as SVGPathElement).style.strokeDasharray).toBe('');
   });
 
   it('mutes a resolved blocker', () => {
     const path = draw({ ...blocking, muted: true }, null);
-    expect((path as SVGPathElement).style.stroke).toBe('rgb(180, 188, 200)');
+    expect((path as SVGPathElement).style.stroke).toBe('var(--edge-muted)');
   });
 
   it('draws related dashed and falls back to a smooth step without a route', () => {
     const path = draw({ ...blocking, type: 'related' }, null);
     expect(path.getAttribute('class')).toContain('edge-related');
     expect((path as SVGPathElement).style.strokeDasharray).toBe('6 4');
-    expect((path as SVGPathElement).style.stroke).toBe('rgb(139, 92, 246)');
+    expect((path as SVGPathElement).style.stroke).toBe('var(--edge-related)');
     expect((path as SVGPathElement).style.strokeWidth).toBe('1.4');
     expect(path.getAttribute('d')).toMatch(/^M/);
   });

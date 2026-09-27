@@ -1,8 +1,9 @@
-import { Background, Controls, MiniMap, Panel, ReactFlow, useReactFlow, type NodeMouseHandler } from '@xyflow/react';
+import { Background, BackgroundVariant, Controls, MiniMap, Panel, ReactFlow, useReactFlow, type NodeMouseHandler } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Issue } from '../api/types';
 import type { MapFlow, MapFlowNode } from '../layout/toFlow';
-import { readableColor } from './colors';
+import { useTheme } from '../theme/useTheme';
+import { statusPalette } from './colors';
 import { Legend } from './Legend';
 import { MapActionsContext } from './MapActions';
 import { nodeTypes } from './nodes';
@@ -21,6 +22,7 @@ interface MapCanvasProps {
 export function MapCanvas({ flow, focus, fitKey, onFocus, onOpenExternal, onTogglePlate }: MapCanvasProps) {
   const nodes = useMemo(() => flow.nodes.map((node) => ({ ...node, selected: node.id === focus })), [flow.nodes, focus]);
   const actions = useMemo(() => ({ togglePlate: onTogglePlate }), [onTogglePlate]);
+  const theme = useTheme();
 
   const onNodeClick: NodeMouseHandler<MapFlowNode> = (_event, node) => {
     const { issue, kind } = node.data.node;
@@ -41,11 +43,14 @@ export function MapCanvas({ flow, focus, fitKey, onFocus, onOpenExternal, onTogg
         elementsSelectable={false}
         minZoom={0.05}
         maxZoom={2}
+        colorMode={theme}
       >
         <Viewport nodes={nodes} focus={focus} fitKey={fitKey} />
-        <Background gap={24} color="#dfe3ea" />
+        {/* Graph paper: a faint line every 24 px under a stronger one every five cells. */}
+        <Background id="minor" variant={BackgroundVariant.Lines} gap={24} color="var(--grid-minor)" />
+        <Background id="major" variant={BackgroundVariant.Lines} gap={120} color="var(--grid-major)" />
         <Controls showInteractive={false} />
-        <MiniMap pannable zoomable nodeColor={(node: MapFlowNode) => readableColor(node.data.node.issue.state.color)} nodeStrokeWidth={0} />
+        <MiniMap pannable zoomable nodeColor={(node: MapFlowNode) => statusPalette(node.data.node.issue.state.color, theme).frame} nodeStrokeWidth={0} />
         <Panel position="bottom-left">
           <Legend />
         </Panel>

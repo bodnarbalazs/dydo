@@ -16,7 +16,10 @@ class DOMMatrixReadOnlyStub {
   }
 }
 
-Object.assign(globalThis, { ResizeObserver: ResizeObserverStub, DOMMatrixReadOnly: DOMMatrixReadOnlyStub });
+// jsdom has no matchMedia either: the OS scheme reads light unless a test stubs its own.
+const lightOs = () => ({ matches: false, addEventListener: () => undefined, removeEventListener: () => undefined });
+
+Object.assign(globalThis, { ResizeObserver: ResizeObserverStub, DOMMatrixReadOnly: DOMMatrixReadOnlyStub, matchMedia: lightOs });
 
 afterEach(() => {
   cleanup();

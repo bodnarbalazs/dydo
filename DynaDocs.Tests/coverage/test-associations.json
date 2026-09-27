@@ -1127,6 +1127,24 @@
       "tests": [
         "viewer/src/picker/projectList.test.ts"
       ]
+    },
+    {
+      "module": "viewer/src/theme/ThemeControl.tsx",
+      "tests": [
+        "viewer/src/theme/useTheme.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/theme.ts",
+      "tests": [
+        "viewer/src/theme/theme.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/useTheme.ts",
+      "tests": [
+        "viewer/src/theme/useTheme.test.tsx"
+      ]
     }
   ]
 }

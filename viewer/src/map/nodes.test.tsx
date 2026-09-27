@@ -4,7 +4,8 @@ import type { ComponentType } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { MapNode } from '../graph/mapModel';
 import { makeIssue } from '../graph/testIssues';
-import { readableColor, wash } from './colors';
+import { ThemeContext } from '../theme/useTheme';
+import { readableColor, statusPalette, wash } from './colors';
 import { MapActionsContext } from './MapActions';
 import { nodeTypes } from './nodes';
 
@@ -18,6 +19,19 @@ function draw(node: MapNode, selected = false, togglePlate = vi.fn()) {
     </ReactFlowProvider>,
   );
   return togglePlate;
+}
+
+function drawDark(node: MapNode) {
+  const Component = nodeTypes[node.kind] as ComponentType<{ id: string; data: { node: MapNode }; selected: boolean }>;
+  render(
+    <ThemeContext.Provider value="dark">
+      <ReactFlowProvider>
+        <MapActionsContext.Provider value={{ togglePlate: vi.fn() }}>
+          <Component id={node.id} data={{ node }} selected={false} />
+        </MapActionsContext.Provider>
+      </ReactFlowProvider>
+    </ThemeContext.Provider>,
+  );
 }
 
 const base: MapNode = { id: 'a', kind: 'issue', issue: makeIssue('a'), parentId: null, pickable: false, closed: false, collapsed: false, descendants: 0 };
@@ -141,6 +155,51 @@ describe('map nodes', () => {
     draw({ ...base, kind: 'external', closed: true, issue: makeIssue('e', { project: null }) }, true);
     expect(document.querySelector('.external-card')?.className).toBe('external-card closed selected');
     expect(screen.getByText('No project')).toBeTruthy();
+  });
+});
+
+describe('map nodes in the dark theme', () => {
+  const inProgress = makeIssue('a', { state: { name: 'In Progress', type: 'started', color: '#0f783c' } });
+
+  it('tints a card faintly on the dark surface and reads its status there', () => {
+    drawDark({ ...base, issue: inProgress });
+    const dark = statusPalette('#0f783c', 'dark');
+    const card = document.querySelector<HTMLElement>('.issue-card');
+    expect(card?.style.borderLeftColor).toBe(cssColor('#0f783c'));
+    expect(card?.style.background).toBe(cssColor(dark.card));
+    expect(document.querySelector<HTMLElement>('.state')?.style.color).toBe(cssColor(dark.readable));
+  });
+
+  it('washes a plate and its header on the dark surface', () => {
+    drawDark({ ...base, kind: 'plate', descendants: 1, issue: inProgress });
+    const dark = statusPalette('#0f783c', 'dark');
+    const plate = document.querySelector<HTMLElement>('.plate');
+    expect(plate?.style.background).toBe(cssColor(dark.plate));
+    expect(plate?.style.borderColor).toBe(cssColor(dark.frame));
+    expect(document.querySelector<HTMLElement>('.plate-header')?.style.background).toBe(cssColor(dark.card));
+  });
+
+  it('draws an external issue icon in its dark readable colour', () => {
+    drawDark({ ...base, kind: 'external', issue: inProgress });
+    expect(document.querySelector('.external-card .status-icon')?.innerHTML).toContain(statusPalette('#0f783c', 'dark').readable);
+  });
+});
+
+describe('started issues', () => {
+  it('mark a started card and plate and carry their status colour for the glow', () => {
+    const started = makeIssue('a', { state: { name: 'In Progress', type: 'started', color: '#f2c94c' } });
+    draw({ ...base, issue: started });
+    draw({ ...base, kind: 'plate', descendants: 1, issue: started });
+    const card = document.querySelector<HTMLElement>('.issue-card');
+    const plate = document.querySelector<HTMLElement>('.plate');
+    expect([card?.className, plate?.className]).toEqual(['issue-card started', 'plate started']);
+    expect([card?.style.getPropertyValue('--status'), plate?.style.getPropertyValue('--status')]).toEqual(['#f2c94c', '#f2c94c']);
+  });
+
+  it('are the only ones marked', () => {
+    draw({ ...base, issue: makeIssue('a', { type: 'completed' }) });
+    draw({ ...base, kind: 'plate', descendants: 1, issue: makeIssue('b', { type: 'unstarted' }) });
+    expect(document.querySelectorAll('.started')).toHaveLength(0);
   });
 });
 

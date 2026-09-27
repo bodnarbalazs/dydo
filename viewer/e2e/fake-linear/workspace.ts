@@ -9,6 +9,9 @@ export interface FakeProject {
   name: string;
   url: string;
   status: { name: string; type: string };
+  targetDate: string | null;
+  completedAt: string | null;
+  canceledAt: string | null;
   teamId: string;
 }
 
@@ -67,8 +70,8 @@ export function createWorkspace(): Workspace {
       { id: 'team-dyd', key: 'DYD', name: 'Dydo' },
     ],
     projects: [
-      { id: 'project-map', name: 'Project map', url: 'https://linear.app/fake/project/map', status: { name: 'In Progress', type: 'started' }, teamId: 'team-dyd' },
-      { id: 'project-release', name: 'Release', url: 'https://linear.app/fake/project/release', status: { name: 'Planned', type: 'planned' }, teamId: 'team-dyd' },
+      { id: 'project-map', name: 'Project map', url: 'https://linear.app/fake/project/map', status: { name: 'In Progress', type: 'started' }, targetDate: '2026-10-03', completedAt: null, canceledAt: null, teamId: 'team-dyd' },
+      { id: 'project-release', name: 'Release', url: 'https://linear.app/fake/project/release', status: { name: 'Planned', type: 'planned' }, targetDate: null, completedAt: null, canceledAt: null, teamId: 'team-dyd' },
     ],
     issues: [
       issue('DYD-1', 'Draw the map', 'project-map'),

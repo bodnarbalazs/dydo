@@ -1115,6 +1115,18 @@
       "tests": [
         "viewer/src/map/nodes.test.tsx"
       ]
+    },
+    {
+      "module": "viewer/src/picker/ProjectPicker.tsx",
+      "tests": [
+        "viewer/src/picker/ProjectPicker.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/picker/projectList.ts",
+      "tests": [
+        "viewer/src/picker/projectList.test.ts"
+      ]
     }
   ]
 }

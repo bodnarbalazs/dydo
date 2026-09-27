@@ -66,7 +66,7 @@ function answer(workspace: Workspace, { query, variables }: GraphQLRequest): unk
         team: {
           projects: connection(workspace.projects
             .filter((project) => project.teamId === variables['teamId'])
-            .map(({ id, name, url, status }) => ({ id, name, url, status }))),
+            .map(({ id, name, url, status, targetDate, completedAt, canceledAt }) => ({ id, name, url, status, targetDate, completedAt, canceledAt }))),
         },
       };
     case 'ProjectIssues': {

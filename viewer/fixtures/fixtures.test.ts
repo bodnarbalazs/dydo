@@ -20,10 +20,16 @@
  * (In Progress, with a Project) blocks DYD-271, and external DYD-198 (Canceled, no Project) blocks
  * DYD-272. DYD-268 is the pickable issue; graph-scenario-assigned.json gives it an assignee and
  * graph-scenario-blocked.json adds its open blocker DYD-263.
+ *
+ * projects-dydo.json holds the team's Projects captured 2026-09-27 through the Linear MCP
+ * (list_projects with targetDate, completedAt and canceledAt), plus hand-built Projects whose URLs end
+ * in `-fixture` and whose ids are UUIDv5 (URL namespace) of `dydo-map-fixture/project/<name>`. They
+ * give the picker every case: each open status type with past, future and undated target dates
+ * (relative to the e2e clock, 2026-09-27), more than five completed Projects and a target in another year.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { Graph, Issue } from '../src/api/types';
+import type { Graph, Issue, Project } from '../src/api/types';
 import { pickableIds } from '../src/graph/rules';
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(name, import.meta.url), 'utf-8')) as T;
@@ -100,6 +106,27 @@ describe('selector and error fixtures', () => {
     const projects = load<{ projects: { name: string }[] }>('projects-dydo.json').projects;
     expect(names(teams)).toEqual([...names(teams)].sort());
     expect(names(projects)).toEqual([...names(projects)].sort());
+  });
+
+  it('holds Projects in the contract shape covering every picker rule', () => {
+    const projects = load<{ projects: Project[] }>('projects-dydo.json').projects;
+    const today = '2026-09-27';
+    const ofType = (type: string) => projects.filter((project) => project.status.type === type);
+    projects.forEach((project) => {
+      expect(Object.keys(project).sort()).toEqual(['canceledAt', 'completedAt', 'id', 'name', 'status', 'targetDate', 'url']);
+      expect(project.id).toMatch(UUID);
+      expect(project.targetDate ?? '2026-01-01').toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(project.completedAt !== null).toBe(project.status.type === 'completed');
+      expect(project.canceledAt !== null).toBe(project.status.type === 'canceled');
+    });
+    for (const type of ['started', 'planned', 'paused', 'backlog']) expect(ofType(type).length).toBeGreaterThan(0);
+    const open = projects.filter((project) => !['completed', 'canceled'].includes(project.status.type));
+    expect(open.some((project) => project.targetDate !== null && project.targetDate < today)).toBe(true);
+    expect(open.some((project) => project.targetDate !== null && project.targetDate > today)).toBe(true);
+    expect(open.some((project) => project.targetDate?.startsWith('2027'))).toBe(true);
+    expect(open.some((project) => project.targetDate === null)).toBe(true);
+    expect(ofType('completed').length).toBeGreaterThan(5);
+    expect(ofType('canceled').length).toBeGreaterThanOrEqual(1);
   });
 
   it('holds an error envelope', () => {

@@ -1,4 +1,5 @@
 import type { Project, Team } from '../api/types';
+import { ProjectPicker } from '../picker/ProjectPicker';
 
 interface ToolbarProps {
   teams: Team[];
@@ -33,19 +34,7 @@ export function Toolbar(props: ToolbarProps) {
           ))}
         </select>
       </label>
-      <label>
-        Project
-        <select value={project ?? ''} disabled={team === null} onChange={(event) => props.onProject(event.target.value)}>
-          <option value="" disabled>
-            Choose a Project
-          </option>
-          {projects.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name} · {option.status.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <ProjectPicker projects={projects} value={project} disabled={team === null} onSelect={props.onProject} />
       <button type="button" disabled={!hasPlates} onClick={props.onCollapseAll}>
         Collapse all
       </button>

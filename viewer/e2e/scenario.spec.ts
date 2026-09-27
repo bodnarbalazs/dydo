@@ -29,7 +29,8 @@ test('selectors write team and Project into the URL and draw the map', async ({ 
   await page.goto('/');
   await page.getByRole('combobox').first().selectOption({ label: 'Dydo (DYD)' });
   await expect.poll(() => search(page).get('team')).toBe(DYDO_TEAM);
-  await page.getByRole('combobox').nth(1).selectOption({ label: 'Visual Linear project map · In Progress' });
+  await page.getByRole('button', { name: 'Project Choose a Project' }).click();
+  await page.getByRole('option', { name: 'Visual Linear project map' }).click();
   await expect.poll(() => search(page).get('project')).toBe(SCENARIO_PROJECT);
   await expect(node(page, 'DYD-265')).toBeVisible();
   await page.screenshot({ path: 'e2e/screenshots/scenario.png' });

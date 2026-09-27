@@ -179,6 +179,10 @@ chain. This is ordinary Feature delivery and release, not a new Type or a serial
 | Prototype branch | `issue-captain`, tracked by the map holder | Keep the winning code linked as delivery-spec input; delete when that delivery Issue is Done or with feature cleanup. |
 | Inquisition branch | `issue-captain` | Delete at Done after the record/proof retention checks above; never merge it or delete the independently retained Bug refs. |
 
+Deleting a branch here means the local branch. GitHub deletes a merged PR's remote branch on merge,
+and the guard blocks agents from deleting remote branches, so the accountable officer names any
+other remote branch due for deletion on its record for the human.
+
 The `chief-of-staff` compares `git worktree list` and merged branches with Linear during board hygiene.
 Anything it finds is a contract failure to clear or route with its owner named, not normal cleanup
 delegated to staff.

@@ -1,11 +1,13 @@
 import { ReactFlowProvider } from '@xyflow/react';
 import type { ELK } from 'elkjs/lib/elk-api';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, fetchGraph, fetchProjects, fetchTeams } from '../api/client';
 import type { Graph, Issue, Project, Team } from '../api/types';
+import { describeDiff, diffGraphs, type GraphDiff } from '../graph/graphDiff';
 import { buildMapModel } from '../graph/mapModel';
 import { layoutMap } from '../layout/layout';
 import type { MapFlow } from '../layout/toFlow';
+import { exitCascade, exitHold, planCascade, REDUCED_MOTION, type Cascade } from '../map/cascade';
 import { MapCanvas } from '../map/MapCanvas';
 import { ThemeContext, useThemePreference } from '../theme/useTheme';
 import { Toolbar } from './Toolbar';
@@ -19,12 +21,30 @@ interface Failure {
 /** A request's outcome: its answer, or the failure shown to the user. */
 type Loaded<T> = { value: T } | { failure: Failure };
 
+/** An in-place refresh that replaced `from` with the current graph, and what it changed. */
+interface Refresh {
+  from: Graph;
+  diff: GraphDiff;
+}
+
 /** The URL and what has loaded for it; moving to another team or Project starts that part empty. */
 interface View {
   url: UrlState;
   projects: Loaded<Project[]> | null;
   graph: Loaded<Graph> | null;
+  refresh: Refresh | null;
+  /** A refresh that failed; the map it would have replaced stays. */
+  refreshFailure: Failure | null;
 }
+
+/** A laid-out graph, and the marks of the refresh it landed, if it did. */
+interface Layout {
+  graph: Graph;
+  loaded: Loaded<{ flow: MapFlow; fitKey: number }>;
+  cascade: Cascade | null;
+}
+
+const NO_GRAPH = { graph: null, refresh: null, refreshFailure: null };
 
 function failure(error: unknown): Failure {
   if (error instanceof ApiError) return { code: error.code, message: error.message };
@@ -57,28 +77,51 @@ function settle<T>(request: Promise<T>, done: (loaded: Loaded<T>) => void): () =
 
 function moveTo(view: View, url: UrlState): View {
   return {
+    ...view,
     url,
     projects: url.team === view.url.team ? view.projects : null,
-    graph: url.project === view.url.project ? view.graph : null,
+    ...(url.project === view.url.project ? {} : NO_GRAPH),
   };
 }
 
+/** A refresh's answer: a new graph, diffed against the one it replaces, or a failure that keeps the map. */
+function refreshed(view: View, loaded: Loaded<Graph>): View {
+  if ('failure' in loaded) return { ...view, refreshFailure: loaded.failure };
+  const from = valueOf(view.graph);
+  return { ...view, graph: loaded, refresh: from === null ? null : { from, diff: diffGraphs(from, loaded.value) }, refreshFailure: null };
+}
+
+/** The marks of the refresh a new layout lands: only its first layout, replacing the map it refreshed. */
+function landed(refresh: Refresh | null, shown: Layout | null, loaded: Layout['loaded'], reduced: boolean): Cascade | null {
+  const before = valueOf(shown?.loaded ?? null);
+  const after = valueOf(loaded);
+  if (refresh === null || shown?.graph !== refresh.from || before === null || after === null) return null;
+  return planCascade(refresh.diff, before.flow, after.flow, reduced);
+}
+
+const prefersReducedMotion = () => window.matchMedia(REDUCED_MOTION).matches;
+const pause = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
+
 export function App({ elk }: { elk: ELK }) {
-  const [view, setView] = useState<View>(() => ({ url: readUrlState(window.location.search), projects: null, graph: null }));
+  const [view, setView] = useState<View>(() => ({ url: readUrlState(window.location.search), projects: null, ...NO_GRAPH }));
   const [teams, setTeams] = useState<Loaded<Team[]> | null>(null);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [showRelated, setShowRelated] = useState(false);
-  const [layout, setLayout] = useState<{ graph: Graph; loaded: Loaded<{ flow: MapFlow; fitKey: number }> } | null>(null);
+  const [layout, setLayout] = useState<Layout | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [fitKey, setFitKey] = useState(0);
   const { preference, theme, choose } = useThemePreference();
 
-  const { url } = view;
+  const { url, refresh } = view;
   const graph = valueOf(view.graph);
-  const laidOut = layout?.graph === graph ? layout.loaded : null;
+  // While a refresh lays out, the map it replaces stays, its removals fading.
+  const replacing = refresh !== null && layout?.graph === refresh.from;
+  const exiting = useMemo(() => (refresh === null ? null : exitCascade(refresh.diff)), [refresh]);
+  const laidOut = layout !== null && (layout.graph === graph || replacing) ? layout.loaded : null;
   const map = valueOf(laidOut);
   const mapFailure = failureOf(view.graph) ?? failureOf(laidOut);
   // One slot per stage, in a fixed order, so each failure on screen keeps its place.
-  const failures = [failureOf(teams), failureOf(view.projects), mapFailure];
+  const failures = [failureOf(teams), failureOf(view.projects), mapFailure, view.refreshFailure];
 
   const navigate = useCallback((next: UrlState, mode: 'push' | 'replace') => {
     const target = `${window.location.pathname}${toSearch(next)}`;
@@ -111,15 +154,34 @@ export function App({ elk }: { elk: ELK }) {
     if (project === null) return undefined;
     return settle(fetchGraph(project), (loaded) => {
       setCollapsed(new Set());
-      setView((current) => ({ ...current, graph: loaded }));
+      setView((current) => ({ ...current, ...NO_GRAPH, graph: loaded }));
     });
   }, [url.project]);
 
+  const refreshMap = useCallback(() => {
+    const project = url.project;
+    if (project === null) return;
+    setRefreshing(true);
+    settle(fetchGraph(project), (loaded) => {
+      setRefreshing(false);
+      setView((current) => (current.url.project === project ? refreshed(current, loaded) : current));
+    });
+  }, [url.project]);
+
+  // The layout effect needs to know whether its graph replaces the map on screen, without relaying out when that map changes.
+  const shownLayout = useRef(layout);
+  useEffect(() => {
+    shownLayout.current = layout;
+  });
+
   useEffect(() => {
     if (graph === null) return undefined;
-    const request = layoutMap(elk, buildMapModel(graph, { collapsed, showRelated })).then((flow) => ({ flow, fitKey }));
-    return settle(request, (loaded) => setLayout({ graph, loaded }));
-  }, [elk, graph, collapsed, showRelated, fitKey]);
+    const reduced = prefersReducedMotion();
+    const hold = refresh !== null && shownLayout.current?.graph === refresh.from ? exitHold(refresh.diff, reduced) : 0;
+    const laid = layoutMap(elk, buildMapModel(graph, { collapsed, showRelated }));
+    const request = (hold === 0 ? laid : Promise.all([laid, pause(hold)]).then(([flow]) => flow)).then((flow) => ({ flow, fitKey }));
+    return settle(request, (loaded) => setLayout((shown) => ({ graph, loaded, cascade: landed(refresh, shown, loaded, reduced) })));
+  }, [elk, graph, collapsed, showRelated, fitKey, refresh]);
 
   const plateIds = useMemo(() => new Set(graph?.issues.flatMap((issue) => (issue.parentId === null ? [] : [issue.parentId]))), [graph]);
   const allPlates = useMemo(() => new Set(graph?.issues.filter((issue) => plateIds.has(issue.id)).map((issue) => issue.id)), [graph, plateIds]);
@@ -153,6 +215,10 @@ export function App({ elk }: { elk: ELK }) {
           hasPlates={allPlates.size > 0}
           showRelated={showRelated}
           summary={graph === null ? null : summarize(graph, allPlates.size)}
+          canRefresh={url.project !== null}
+          refreshing={refreshing}
+          notice={refreshing || view.refreshFailure !== null || refresh === null ? null : describeDiff(refresh.diff)}
+          onRefresh={refreshMap}
           onTeam={(team) => navigate({ team, project: null, focus: null }, 'push')}
           onProject={(project) => navigate({ ...url, project, focus: null }, 'push')}
           onCollapseAll={() => setAll(allPlates)}
@@ -174,7 +240,15 @@ export function App({ elk }: { elk: ELK }) {
             <Placeholder url={url} loading={mapFailure === null} />
           ) : (
             <ReactFlowProvider>
-              <MapCanvas flow={map.flow} focus={url.focus} fitKey={map.fitKey} onFocus={focus} onOpenExternal={openExternal} onTogglePlate={togglePlate} />
+              <MapCanvas
+                flow={map.flow}
+                focus={url.focus}
+                fitKey={map.fitKey}
+                cascade={replacing ? exiting : (layout?.cascade ?? null)}
+                onFocus={focus}
+                onOpenExternal={openExternal}
+                onTogglePlate={togglePlate}
+              />
             </ReactFlowProvider>
           )}
         </main>

@@ -21,6 +21,12 @@
  * DYD-272. DYD-268 is the pickable issue; graph-scenario-assigned.json gives it an assignee and
  * graph-scenario-blocked.json adds its open blocker DYD-263.
  *
+ * graph-scenario-refreshed.json is what a Refresh of graph-scenario.json finds (DYD-289): DYD-263,
+ * DYD-264 and DYD-265 move on a status, DYD-268 is taken (In Progress, assigned, no longer pickable),
+ * DYD-266 is renamed, DYD-262 and DYD-9001 are gone, DYD-290 and DYD-291 (under DYD-265) are new with
+ * UUIDv5 ids of `dydo-map-fixture/issue/<identifier>`, DYD-264 blocks DYD-290 which blocks DYD-291, and
+ * DYD-270 no longer blocks DYD-266.
+ *
  * projects-dydo.json holds the team's Projects captured 2026-09-27 through the Linear MCP
  * (list_projects with targetDate, completedAt and canceledAt), plus hand-built Projects whose URLs end
  * in `-fixture` and whose ids are UUIDv5 (URL namespace) of `dydo-map-fixture/project/<name>`. They
@@ -30,6 +36,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Graph, Issue, Project } from '../src/api/types';
+import { describeDiff, diffGraphs } from '../src/graph/graphDiff';
 import { pickableIds } from '../src/graph/rules';
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(name, import.meta.url), 'utf-8')) as T;
@@ -92,6 +99,22 @@ describe('scenario fixtures', () => {
     expect(blockers('DYD-272')).toContain(byIdentifier(scenario, 'DYD-198').id);
     expect(byIdentifier(scenario, 'DYD-198').project).toBeNull();
     expect(scenario.relations.some((relation) => relation.type === 'related')).toBe(true);
+  });
+
+  it('refreshes into several changed, added and removed issues and a changed blocking link', () => {
+    const refreshed = load<Graph>('graph-scenario-refreshed.json');
+    const diff = diffGraphs(scenario, refreshed);
+    const identifiers = (graph: Graph, ids: Iterable<string>) => [...ids].map((id) => [...graph.issues, ...graph.external].find((issue) => issue.id === id)?.identifier).sort();
+    expect(Object.fromEntries([...diff.changed].map(([id, fields]) => [identifiers(scenario, [id])[0], fields]))).toEqual({
+      'DYD-263': ['state'],
+      'DYD-264': ['state'],
+      'DYD-265': ['state'],
+      'DYD-266': ['title'],
+      'DYD-268': ['state', 'assignee', 'pickable'],
+    });
+    expect(identifiers(refreshed, diff.added)).toEqual(['DYD-290', 'DYD-291']);
+    expect(identifiers(scenario, diff.removed)).toEqual(['DYD-262', 'DYD-9001']);
+    expect(describeDiff(diff)).toBe('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
   });
 
   it.each(['graph-scenario-assigned.json', 'graph-scenario-blocked.json'])('%s removes the pickable marker', (name) => {

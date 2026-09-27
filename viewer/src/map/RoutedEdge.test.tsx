@@ -5,7 +5,7 @@ import type { MapEdge } from '../graph/mapModel';
 import type { MapFlowEdge } from '../layout/toFlow';
 import { RoutedEdge, roundedPath } from './RoutedEdge';
 
-function draw(edge: MapEdge, points: { x: number; y: number }[] | null) {
+function draw(edge: MapEdge, points: { x: number; y: number }[] | null, style?: React.CSSProperties) {
   const props = {
     id: edge.id,
     source: edge.source,
@@ -18,6 +18,7 @@ function draw(edge: MapEdge, points: { x: number; y: number }[] | null) {
     targetPosition: Position.Left,
     data: { edge, points },
     markerEnd: 'url(#arrow)',
+    style,
   } as unknown as EdgeProps<MapFlowEdge>;
   const { container } = render(
     <svg>
@@ -44,6 +45,12 @@ describe('RoutedEdge', () => {
     expect((path as SVGPathElement).style.stroke).toBe('var(--edge-blocks)');
     expect((path as SVGPathElement).style.strokeWidth).toBe('1.8');
     expect((path as SVGPathElement).style.strokeDasharray).toBe('');
+  });
+
+  it('carries its refresh turn onto the path it draws, under its own stroke', () => {
+    const path = draw(blocking, null, { '--refresh-delay': '150ms', stroke: 'red' } as React.CSSProperties) as SVGPathElement;
+    expect(path.style.getPropertyValue('--refresh-delay')).toBe('150ms');
+    expect(path.style.stroke).toBe('var(--edge-blocks)');
   });
 
   it('mutes a resolved blocker', () => {

@@ -3,7 +3,7 @@ import { EDGE_COLORS, type MapFlowEdge } from '../layout/toFlow';
 
 /** Draws ELK's orthogonal route with rounded corners; an unrouted edge falls back to a smooth step. */
 export function RoutedEdge(props: EdgeProps<MapFlowEdge>) {
-  const { id, data, markerEnd, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = props;
+  const { id, data, style, markerEnd, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = props;
   const path =
     data?.points == null
       ? getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition })[0]
@@ -17,7 +17,7 @@ export function RoutedEdge(props: EdgeProps<MapFlowEdge>) {
       path={path}
       {...(markerEnd === undefined ? {} : { markerEnd })}
       className={related ? 'edge-related' : 'edge-blocks'}
-      style={{ stroke: color, strokeWidth: related ? 1.4 : 1.8, ...(related ? { strokeDasharray: '6 4' } : {}) }}
+      style={{ ...style, stroke: color, strokeWidth: related ? 1.4 : 1.8, ...(related ? { strokeDasharray: '6 4' } : {}) }}
     />
   );
 }

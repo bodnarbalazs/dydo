@@ -86,11 +86,15 @@ function visibleEdges(graph: Graph, view: ViewOptions, tree: IssueTree): MapEdge
     if (source === target) continue;
     const blocker = byId.get(relation.from);
     const muted = relation.type === 'blocks' && blocker !== undefined && isClosed(blocker);
-    const id = `${relation.type}:${source}->${target}`;
+    const id = edgeId(relation.type, source, target);
     const existing = edges.get(id);
     edges.set(id, { id, type: relation.type, source, target, muted: muted && (existing?.muted ?? true) });
   }
   return [...edges.values()];
+}
+
+export function edgeId(type: Relation['type'], source: string, target: string): string {
+  return `${type}:${source}->${target}`;
 }
 
 const LAYERED: Record<string, string> = {

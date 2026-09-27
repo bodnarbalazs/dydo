@@ -106,6 +106,7 @@ body,
 }
 
 .toolbar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -345,6 +346,48 @@ body,
 .toolbar .summary {
   margin-left: auto;
   color: var(--text-muted);
+}
+
+/* Refresh: the button, and the notice of what it changed, which fades after a few seconds */
+
+.toolbar .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.refresh-icon.spinning {
+  animation: refresh-spin 0.8s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.toolbar .refresh-notice {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 14px;
+  z-index: 10;
+  padding: 3px 10px;
+  box-shadow: var(--shadow);
+  border-radius: 999px;
+  background: var(--surface-active);
+  color: var(--accent);
+  font-weight: 600;
+  animation: refresh-notice 6s ease-in forwards;
+}
+
+@keyframes refresh-notice {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .error {
@@ -660,4 +703,132 @@ body,
 
 .react-flow.dark .react-flow__attribution a {
   color: var(--text-faint);
+}
+
+/*
+ * The refresh cascade. cascade.ts owns the timing and hands it over as --refresh-* properties on the
+ * map, and each marked node or link carries its turn as --refresh-delay.
+ */
+
+.refresh-glide .react-flow__node {
+  transition:
+    transform var(--refresh-glide) ease-in-out,
+    width var(--refresh-glide) ease-in-out,
+    height var(--refresh-glide) ease-in-out;
+}
+
+/* Links cannot glide with their ends, so they wait out the glide and fade back in. */
+.refresh-glide .react-flow__edges {
+  animation: refresh-links-return calc(var(--refresh-glide) + 250ms) ease-out both;
+}
+
+@keyframes refresh-links-return {
+  0%,
+  60% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.react-flow__node.refresh-removed,
+.react-flow__edge.refresh-removed {
+  animation: refresh-fade-out var(--refresh-exit) ease-in forwards;
+}
+
+.react-flow__node.refresh-added {
+  animation: refresh-enter var(--refresh-crossFade) cubic-bezier(0.2, 0.8, 0.3, 1.15) var(--refresh-delay) both;
+}
+
+.react-flow__edge.refresh-added .react-flow__edge-path {
+  animation: refresh-link-enter var(--refresh-crossFade) ease-out var(--refresh-delay) both;
+}
+
+@keyframes refresh-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes refresh-enter {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+@keyframes refresh-link-enter {
+  from {
+    opacity: 0;
+    stroke-width: 5px;
+  }
+}
+
+/* A changed card's old look, laid over its new one until its turn, then fading off it. */
+.refresh-ghost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: refresh-fade-out var(--refresh-crossFade) ease-in-out var(--refresh-delay) both;
+}
+
+/* A ring in the new status colour that pulses as the new look settles, then fades. */
+.refresh-ring {
+  position: absolute;
+  inset: -5px;
+  border: 3px solid var(--ring);
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0;
+  animation: refresh-pulse var(--refresh-pulse) ease-out calc(var(--refresh-delay) + var(--refresh-crossFade) / 2) forwards;
+}
+
+.refresh-ring.refresh-header {
+  inset: -4px -4px auto;
+  height: 107px;
+}
+
+@keyframes refresh-pulse {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring) 60%, transparent);
+  }
+  20% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+  21% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring) 45%, transparent);
+  }
+  45% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the new map at once, changed and added cards ringed until the next layout. */
+@media (prefers-reduced-motion: reduce) {
+  .refresh-icon.spinning,
+  .refresh-glide .react-flow__edges,
+  .react-flow__node.refresh-added,
+  .react-flow__edge.refresh-added .react-flow__edge-path {
+    animation: none;
+  }
+
+  .refresh-glide .react-flow__node {
+    transition: none;
+  }
+
+  .react-flow__node.refresh-removed,
+  .react-flow__edge.refresh-removed {
+    animation: none;
+    opacity: 0;
+  }
+
+  .refresh-ring {
+    animation: none;
+    opacity: 1;
+  }
 }

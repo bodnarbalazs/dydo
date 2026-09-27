@@ -4,11 +4,12 @@ import ELK from 'elkjs/lib/elk.bundled.js';
 import { useEffect } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildMapModel } from '../graph/mapModel';
-import { makeGraph, makeIssue } from '../graph/testIssues';
+import { blocks, makeGraph, makeIssue } from '../graph/testIssues';
 import { layoutMap } from '../layout/layout';
 import type { MapFlow } from '../layout/toFlow';
 import { ThemeContext } from '../theme/useTheme';
 import { statusPalette } from './colors';
+import type { Cascade } from './cascade';
 import { MapCanvas } from './MapCanvas';
 
 const fitView = vi.fn((options?: object) => Promise.resolve(options !== undefined));
@@ -37,10 +38,10 @@ function StoreProbe() {
   return null;
 }
 
-function canvas(focus: string | null, fitKey: number, shown: MapFlow = flow) {
+function canvas(focus: string | null, fitKey: number, shown: MapFlow = flow, cascade: Cascade | null = null) {
   return (
     <ReactFlowProvider>
-      <MapCanvas flow={shown} focus={focus} fitKey={fitKey} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} />
+      <MapCanvas flow={shown} focus={focus} fitKey={fitKey} cascade={cascade} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} />
       <StoreProbe />
     </ReactFlowProvider>
   );
@@ -137,5 +138,42 @@ describe('MapCanvas chrome', () => {
   it('keeps React Flow light in the light theme', () => {
     render(canvas(null, 0));
     expect(document.querySelector('.react-flow')?.classList.contains('light')).toBe(true);
+  });
+});
+
+describe('MapCanvas refresh cascade', () => {
+  const node = (id: string) => document.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"]`);
+
+  it('hands the refresh timing to the stylesheet', () => {
+    render(canvas(null, 0));
+    const style = document.querySelector<HTMLElement>('.react-flow')?.style;
+    expect(['exit', 'glide', 'stagger', 'crossFade', 'pulse'].map((name) => style?.getPropertyValue(`--refresh-${name}`))).toEqual(['300ms', '400ms', '150ms', '400ms', '3000ms']);
+  });
+
+  it('marks each node with its part in the refresh and its turn, and glides only when asked', () => {
+    const cascade: Cascade = { nodes: new Map([['A', { kind: 'added', delay: 450 }], ['B', { kind: 'removed' }]]), edges: new Map(), glide: true };
+    render(canvas(null, 0, flow, cascade));
+    expect(node('A')?.classList.contains('refresh-added')).toBe(true);
+    expect(node('A')?.style.getPropertyValue('--refresh-delay')).toBe('450ms');
+    expect(node('B')?.classList.contains('refresh-removed')).toBe(true);
+    expect(node('B')?.style.getPropertyValue('--refresh-delay')).toBe('');
+    expect(document.querySelector('.react-flow')?.classList.contains('refresh-glide')).toBe(true);
+  });
+
+  it('marks nothing without a refresh', () => {
+    render(canvas(null, 0));
+    expect(document.querySelector('[class*="refresh-"]')).toBeNull();
+  });
+
+  it('marks a gained or lost link with its part and turn', async () => {
+    const linked = await layoutMap(new ELK(), buildMapModel(makeGraph([makeIssue('A'), makeIssue('B'), makeIssue('C')], [blocks('A', 'B'), blocks('B', 'C')]), { collapsed: new Set(), showRelated: false }));
+    const cascade: Cascade = { nodes: new Map(), edges: new Map([['blocks:A->B', { kind: 'added', delay: 150 }], ['blocks:B->C', { kind: 'removed' }]]), glide: false };
+    render(canvas(null, 0, linked, cascade));
+    // jsdom measures no handles, so React Flow draws no edges here; its store holds what it was given.
+    const edges = store!.getState().edges.map((edge) => [edge.id, edge.className, edge.style]);
+    expect(edges).toEqual([
+      ['blocks:A->B', 'refresh-added', { '--refresh-delay': '150ms' }],
+      ['blocks:B->C', 'refresh-removed', undefined],
+    ]);
   });
 });

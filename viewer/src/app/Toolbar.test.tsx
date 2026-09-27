@@ -11,6 +11,10 @@ function renderToolbar(overrides: Partial<Parameters<typeof Toolbar>[0]> = {}) {
     hasPlates: true,
     showRelated: false,
     summary: null,
+    canRefresh: true,
+    refreshing: false,
+    notice: null as string | null,
+    onRefresh: vi.fn(),
     onTeam: vi.fn(),
     onProject: vi.fn(),
     onCollapseAll: vi.fn(),
@@ -73,5 +77,26 @@ describe('Toolbar', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Collapse all' }).disabled).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Expand all' }).disabled).toBe(true);
     expect(screen.getByText('Map: 3 issues')).toBeTruthy();
+  });
+
+  it('offers Refresh beside the Project choice and reports it', () => {
+    const props = renderToolbar({ project: 'p' });
+    const buttons = screen.getAllByRole('button').map((button) => button.textContent);
+    expect(buttons.indexOf('Refresh')).toBe(buttons.indexOf('Map▾') + 1);
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    expect(props.onRefresh).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('disables Refresh without a Project and while one runs', () => {
+    renderToolbar({ canRefresh: false });
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Refresh' }).disabled).toBe(true);
+  });
+
+  it('shows what the latest refresh changed right after the summary', () => {
+    renderToolbar({ summary: 'Map: 3 issues', notice: '3 changed · 1 new' });
+    const notice = screen.getByRole('status');
+    expect(notice.textContent).toBe('3 changed · 1 new');
+    expect(notice.previousElementSibling?.textContent).toBe('Map: 3 issues');
   });
 });

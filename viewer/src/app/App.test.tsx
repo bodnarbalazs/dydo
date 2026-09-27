@@ -665,3 +665,198 @@ describe('App navigation and fitting', () => {
     expect(scale()).toBeGreaterThan(expanded);
   });
 });
+
+describe('App refresh in place', () => {
+  const transform = () => document.querySelector<HTMLElement>('.react-flow__viewport')?.style.transform;
+  const refreshButton = () => screen.getByRole<HTMLButtonElement>('button', { name: 'Refresh' });
+  const wrapper = (identifier: string) => card(identifier)?.closest('.react-flow__node');
+  const notice = () => screen.findByRole('status');
+  const withoutX = makeGraph(
+    graphOne.issues.filter((issue) => issue.id !== 'X'),
+    graphOne.relations.filter((relation) => relation.to !== 'X' && relation.from !== 'X'),
+    graphOne.external,
+  );
+
+  /** Lets React Flow apply the fits it queued for the latest nodes. */
+  const settle = () => act(() => new Promise((done) => setTimeout(done, 50)));
+
+  async function openMap(focus = '') {
+    open(`?team=team-1&project=project-1${focus}`);
+    await mapShown();
+    await settle();
+  }
+
+  it('re-fetches the Project and keeps the viewport, plates, focus and Show related, marking what changed', async () => {
+    // A focus opened from the URL is centred at once, where a clicked one glides there.
+    await openMap('&focus=X');
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show related' }));
+    await waitFor(() => expect(card('T-A')).toBeNull());
+    await waitFor(() => expect(card('T-R')).not.toBeNull());
+    await settle();
+    const viewport = transform();
+    const search = window.location.search;
+    graphAnswer = () => json(makeGraph([...graphOne.issues.map((issue) => (issue.id === 'X' ? { ...issue, assignee: 'Bo' } : issue)), makeIssue('Y')], graphOne.relations, graphOne.external));
+
+    fireEvent.click(refreshButton());
+    expect(refreshButton().disabled).toBe(true);
+    expect((await notice()).textContent).toBe('1 changed · 1 new');
+    await waitFor(() => expect(card('T-Y')).not.toBeNull());
+    expect(wrapper('T-Y')?.classList.contains('refresh-added')).toBe(true);
+    expect(wrapper('T-X')?.classList.contains('refresh-changed')).toBe(true);
+    expect(card('T-X')?.textContent).toContain('Bo');
+    expect(card('T-X')?.className).toContain('selected');
+    expect(card('T-A')).toBeNull();
+    expect(card('T-R')).not.toBeNull();
+    expect(transform()).toBe(viewport);
+    expect(window.location.search).toBe(search);
+    expect(refreshButton().disabled).toBe(false);
+    expect(screen.getByText('Project One: 5 issues, 1 plates')).toBeTruthy();
+  });
+
+  it('fades a removed issue out on the old map before the new one replaces it', async () => {
+    await openMap();
+    const timers = vi.spyOn(window, 'setTimeout');
+    graphAnswer = () => json(withoutX);
+    fireEvent.click(refreshButton());
+    expect((await notice()).textContent).toBe('1 removed · 1 link removed');
+    expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    expect(timers).toHaveBeenCalledWith(expect.any(Function), 300);
+    timers.mockRestore();
+  });
+
+  it('reads No changes and marks nothing when a second refresh finds nothing new', async () => {
+    await openMap();
+    graphAnswer = () => json(withoutX);
+    fireEvent.click(refreshButton());
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    fireEvent.keyDown(document.body, { key: 'r' });
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('No changes'));
+    await waitFor(() => expect(document.querySelector('.react-flow__node[class*="refresh-"]')).toBeNull());
+  });
+
+  it('keeps the map and shows the error when a refresh fails, until one succeeds', async () => {
+    await openMap();
+    graphAnswer = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);
+    fireEvent.click(refreshButton());
+    expect((await screen.findByRole('alert')).textContent).toBe('linear_rate_limited Linear is rate limiting this key.');
+    expect(card('T-X')).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(refreshButton().disabled).toBe(false);
+    graphAnswer = () => json(graphOne);
+    fireEvent.click(refreshButton());
+    expect((await notice()).textContent).toBe('No changes');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('draws a map a refresh fetched after the first fetch failed, with nothing to compare', async () => {
+    graphAnswer = () => json({ error: { code: 'linear_error', message: 'Linear failed.' } }, 502);
+    open('?team=team-1&project=project-1');
+    await screen.findByRole('alert');
+    graphAnswer = () => json(graphOne);
+    fireEvent.click(refreshButton());
+    await mapShown();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('stays busy until the refreshed map has landed, so a second Refresh cannot drop the first one\'s marks', async () => {
+    await openMap();
+    const viewport = transform();
+    const placeholders: string[] = [];
+    const watch = new MutationObserver(() => {
+      const shown = document.querySelector('.placeholder');
+      if (shown !== null) placeholders.push(shown.textContent);
+    });
+    watch.observe(document.body, { childList: true, subtree: true });
+    graphAnswer = () => json(makeGraph(withoutX.issues.map((issue) => (issue.id === 'A' ? { ...issue, title: 'Renamed' } : issue)), withoutX.relations, withoutX.external));
+
+    fireEvent.click(refreshButton());
+    expect((await notice()).textContent).toBe('1 changed · 1 removed · 1 link removed');
+    // The answer is in, but the old map still shows its removal fading while the new one lays out.
+    expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    expect(refreshButton().disabled).toBe(true);
+    const fetches = vi.mocked(fetch).mock.calls.length;
+    fireEvent.keyDown(document.body, { key: 'r' });
+    fireEvent.click(refreshButton());
+    expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
+
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    expect(wrapper('T-A')?.classList.contains('refresh-changed')).toBe(true);
+    expect(screen.getByRole('status').textContent).toBe('1 changed · 1 removed · 1 link removed');
+    expect(transform()).toBe(viewport);
+    expect(refreshButton().disabled).toBe(false);
+    watch.disconnect();
+    expect(placeholders).toEqual([]);
+  });
+
+  it('cannot refresh while the Project\'s map is first loading', async () => {
+    open('?team=team-1&project=project-1');
+    expect(refreshButton().disabled).toBe(true);
+    await mapShown();
+    expect(refreshButton().disabled).toBe(false);
+  });
+
+  it('frees Refresh on leaving a Project mid-refresh, and drops that answer on coming back', async () => {
+    await openMap();
+    const answer = deferred<Response>();
+    vi.mocked(fetch).mockImplementationOnce(() => answer.promise);
+    fireEvent.click(refreshButton());
+    const go = (search: string) =>
+      act(() => {
+        window.history.pushState(null, '', `/${search}`);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+    go('?team=team-1&project=project-2');
+    await waitFor(() => expect(card('T-E')).not.toBeNull());
+    expect(refreshButton().disabled).toBe(false);
+    go('?team=team-1&project=project-1');
+    await mapShown();
+    await act(async () => {
+      answer.resolve(json(withoutX));
+      await new Promise((settle) => setTimeout(settle, 20));
+    });
+    expect(card('T-X')).not.toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('cannot refresh before a Project is chosen', async () => {
+    open('?team=team-1');
+    await listed('Project One');
+    expect(refreshButton().disabled).toBe(true);
+  });
+
+  it('drops a refresh answer for a Project it has left', async () => {
+    await openMap();
+    const answer = deferred<Response>();
+    graphAnswer = () => json(withoutX);
+    vi.mocked(fetch).mockImplementationOnce(() => answer.promise);
+    fireEvent.click(refreshButton());
+    act(() => {
+      window.history.pushState(null, '', '/?team=team-1&project=project-2');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => expect(card('T-E')).not.toBeNull());
+    await act(async () => {
+      answer.resolve(json(withoutX));
+      await new Promise((settle) => setTimeout(settle, 20));
+    });
+    expect(screen.getByText('Project Two: 1 issues, 0 plates')).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('with reduced motion swaps the map at once and rings what changed without old looks', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)', addEventListener: () => undefined, removeEventListener: () => undefined }));
+    await openMap();
+    const timers = vi.spyOn(window, 'setTimeout');
+    graphAnswer = () => json(makeGraph(withoutX.issues.map((issue) => (issue.id === 'A' ? { ...issue, title: 'Renamed' } : issue)), withoutX.relations, withoutX.external));
+    fireEvent.click(refreshButton());
+    await waitFor(() => expect(card('T-X')).toBeNull());
+    expect(wrapper('T-A')?.querySelector('.refresh-ring')).not.toBeNull();
+    expect(document.querySelector('.refresh-ghost')).toBeNull();
+    expect(document.querySelector('.refresh-glide')).toBeNull();
+    expect(timers).not.toHaveBeenCalledWith(expect.any(Function), 300);
+    timers.mockRestore();
+  });
+});

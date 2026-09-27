@@ -2,6 +2,7 @@ import type { Project, Team } from '../api/types';
 import { ProjectPicker } from '../picker/ProjectPicker';
 import type { ThemePreference } from '../theme/theme';
 import { ThemeControl } from '../theme/ThemeControl';
+import { RefreshButton } from './RefreshButton';
 
 interface ToolbarProps {
   teams: Team[];
@@ -11,17 +12,22 @@ interface ToolbarProps {
   hasPlates: boolean;
   showRelated: boolean;
   summary: string | null;
+  canRefresh: boolean;
+  refreshing: boolean;
+  /** What the latest refresh changed, shown for a moment beside the summary. */
+  notice: string | null;
   theme: ThemePreference;
   onTeam: (id: string) => void;
   onProject: (id: string) => void;
   onCollapseAll: () => void;
   onExpandAll: () => void;
   onShowRelated: (show: boolean) => void;
+  onRefresh: () => void;
   onTheme: (preference: ThemePreference) => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
-  const { teams, projects, team, project, hasPlates, showRelated, summary } = props;
+  const { teams, projects, team, project, hasPlates, showRelated, summary, notice } = props;
   return (
     <header className="toolbar">
       <span className="brand">dydo map</span>
@@ -39,6 +45,7 @@ export function Toolbar(props: ToolbarProps) {
         </select>
       </label>
       <ProjectPicker projects={projects} value={project} disabled={team === null} onSelect={props.onProject} />
+      <RefreshButton disabled={!props.canRefresh} busy={props.refreshing} onRefresh={props.onRefresh} />
       <button type="button" disabled={!hasPlates} onClick={props.onCollapseAll}>
         Collapse all
       </button>
@@ -50,6 +57,11 @@ export function Toolbar(props: ToolbarProps) {
         Show related
       </label>
       {summary !== null && <span className="summary">{summary}</span>}
+      {notice !== null && (
+        <span className="refresh-notice" role="status">
+          {notice}
+        </span>
+      )}
       <ThemeControl preference={props.theme} onChoose={props.onTheme} />
     </header>
   );

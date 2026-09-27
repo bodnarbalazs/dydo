@@ -1020,6 +1020,12 @@
       ]
     },
     {
+      "module": "viewer/src/app/RefreshButton.tsx",
+      "tests": [
+        "viewer/src/app/RefreshButton.test.tsx"
+      ]
+    },
+    {
       "module": "viewer/src/app/Toolbar.tsx",
       "tests": [
         "viewer/src/app/Toolbar.test.tsx"
@@ -1029,6 +1035,12 @@
       "module": "viewer/src/app/urlState.ts",
       "tests": [
         "viewer/src/app/urlState.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/graphDiff.ts",
+      "tests": [
+        "viewer/src/graph/graphDiff.test.ts"
       ]
     },
     {
@@ -1093,6 +1105,12 @@
       ]
     },
     {
+      "module": "viewer/src/map/RefreshLayers.tsx",
+      "tests": [
+        "viewer/src/map/RefreshLayers.test.tsx"
+      ]
+    },
+    {
       "module": "viewer/src/map/RoutedEdge.tsx",
       "tests": [
         "viewer/src/map/RoutedEdge.test.tsx"
@@ -1102,6 +1120,12 @@
       "module": "viewer/src/map/StatusIcon.tsx",
       "tests": [
         "viewer/src/map/StatusIcon.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/cascade.ts",
+      "tests": [
+        "viewer/src/map/cascade.test.ts"
       ]
     },
     {

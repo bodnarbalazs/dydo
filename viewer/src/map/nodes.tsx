@@ -1,10 +1,13 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import type { MapFlowNode } from '../layout/toFlow';
+import type { ReactNode } from 'react';
 import type { Issue } from '../api/types';
+import type { MapNode } from '../graph/mapModel';
+import type { MapFlowNode } from '../layout/toFlow';
 import { useTheme } from '../theme/useTheme';
 import { statusPalette } from './colors';
 import { IssueSummary, LinearButton } from './IssueSummary';
 import { useMapActions } from './MapActions';
+import { RefreshLayers } from './RefreshLayers';
 import { StatusIcon } from './StatusIcon';
 
 function Handles() {
@@ -25,8 +28,8 @@ function started(issue: Issue): React.CSSProperties {
   return issue.state.type === 'started' ? ({ '--status': issue.state.color } as React.CSSProperties) : {};
 }
 
-function IssueNode({ data, selected }: NodeProps<MapFlowNode>) {
-  const { issue, pickable, closed } = data.node;
+function IssueCard({ node, selected, children }: { node: MapNode; selected: boolean; children?: ReactNode }) {
+  const { issue, pickable, closed } = node;
   const palette = statusPalette(issue.state.color, useTheme());
   return (
     <div
@@ -34,15 +37,36 @@ function IssueNode({ data, selected }: NodeProps<MapFlowNode>) {
       style={{ borderLeftColor: issue.state.color, background: palette.card, ...started(issue) }}
       data-identifier={issue.identifier}
     >
-      <Handles />
+      {children}
       <IssueSummary issue={issue} pickable={pickable} color={palette.readable} />
     </div>
   );
 }
 
-function PlateNode({ data, selected }: NodeProps<MapFlowNode>) {
-  const { issue, pickable, closed, collapsed, descendants } = data.node;
-  const { togglePlate } = useMapActions();
+function IssueNode({ id, data, selected }: NodeProps<MapFlowNode>) {
+  const ring = statusPalette(data.node.issue.state.color, useTheme()).readable;
+  return (
+    <>
+      <IssueCard node={data.node} selected={selected}>
+        <Handles />
+      </IssueCard>
+      <RefreshLayers id={id} ring={ring} region="card" drawOld={(previous) => <IssueCard node={previous} selected={selected} />} />
+    </>
+  );
+}
+
+function PlateHeader({ node }: { node: MapNode }) {
+  const { issue, pickable } = node;
+  const palette = statusPalette(issue.state.color, useTheme());
+  return (
+    <div className="plate-header" style={{ borderLeftColor: issue.state.color, background: palette.card }}>
+      <IssueSummary issue={issue} pickable={pickable} color={palette.readable} />
+    </div>
+  );
+}
+
+function Plate({ node, selected, children }: { node: MapNode; selected: boolean; children: ReactNode }) {
+  const { issue, pickable, closed, collapsed } = node;
   const palette = statusPalette(issue.state.color, useTheme());
   return (
     <div
@@ -57,29 +81,55 @@ function PlateNode({ data, selected }: NodeProps<MapFlowNode>) {
       style={{ borderColor: palette.frame, background: collapsed ? undefined : palette.plate, ...started(issue) }}
       data-identifier={issue.identifier}
     >
-      <Handles />
-      <div className="plate-header" style={{ borderLeftColor: issue.state.color, background: palette.card }}>
-        <IssueSummary issue={issue} pickable={pickable} color={palette.readable} />
-      </div>
-      <button
-        type="button"
-        className="plate-toggle"
-        aria-expanded={!collapsed}
-        aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${issue.identifier}`}
-        onClick={() => togglePlate(issue.id)}
-      >
-        {collapsed ? '▸' : '▾'} {descendants} sub-issue{descendants === 1 ? '' : 's'}
-      </button>
+      {children}
     </div>
   );
 }
 
-function ExternalNode({ data, selected }: NodeProps<MapFlowNode>) {
-  const { issue, closed } = data.node;
+function pill({ collapsed, descendants }: MapNode): string {
+  return `${collapsed ? '▸' : '▾'} ${String(descendants)} sub-issue${descendants === 1 ? '' : 's'}`;
+}
+
+function PlateNode({ id, data, selected }: NodeProps<MapFlowNode>) {
+  const { issue, collapsed } = data.node;
+  const { togglePlate } = useMapActions();
+  const ring = statusPalette(issue.state.color, useTheme()).readable;
+  return (
+    <>
+      <Plate node={data.node} selected={selected}>
+        <Handles />
+        <PlateHeader node={data.node} />
+        <button
+          type="button"
+          className="plate-toggle"
+          aria-expanded={!collapsed}
+          aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${issue.identifier}`}
+          onClick={() => togglePlate(issue.id)}
+        >
+          {pill(data.node)}
+        </button>
+      </Plate>
+      <RefreshLayers
+        id={id}
+        ring={ring}
+        region="header"
+        drawOld={(previous) => (
+          <Plate node={previous} selected={selected}>
+            <PlateHeader node={previous} />
+            <span className="plate-toggle">{pill(previous)}</span>
+          </Plate>
+        )}
+      />
+    </>
+  );
+}
+
+function ExternalCard({ node, selected, children }: { node: MapNode; selected: boolean; children?: ReactNode }) {
+  const { issue, closed } = node;
   const color = statusPalette(issue.state.color, useTheme()).readable;
   return (
     <div className={classes('external-card', closed && 'closed', selected && 'selected')} data-identifier={issue.identifier}>
-      <Handles />
+      {children}
       <div className="card-top">
         <StatusIcon type={issue.state.type} color={color} />
         <span className="identifier">{issue.identifier}</span>
@@ -90,6 +140,18 @@ function ExternalNode({ data, selected }: NodeProps<MapFlowNode>) {
       </div>
       <div className="external-project">{issue.project?.name ?? 'No project'}</div>
     </div>
+  );
+}
+
+function ExternalNode({ id, data, selected }: NodeProps<MapFlowNode>) {
+  const ring = statusPalette(data.node.issue.state.color, useTheme()).readable;
+  return (
+    <>
+      <ExternalCard node={data.node} selected={selected}>
+        <Handles />
+      </ExternalCard>
+      <RefreshLayers id={id} ring={ring} region="card" drawOld={(previous) => <ExternalCard node={previous} selected={selected} />} />
+    </>
   );
 }
 

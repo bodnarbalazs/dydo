@@ -225,11 +225,14 @@ class SkillLinkMaterializationTests(unittest.TestCase):
                             Path(os.path.realpath(worktree / "skills" / category / name)),
                             Path(os.path.realpath(link)))
 
-    def test_absent_source_root_projects_all_29_real_repo_skills_flat(self):
-        # The real repo's category tree (roles/officers 3, roles/crew 7, engineering 6,
-        # productivity 13) must project 29 flat links, proving the small synthetic fixture above
-        # generalizes.
+    def test_absent_source_root_projects_all_real_repo_skills_flat(self):
+        # A skill is any folder holding SKILL.md, at any depth (see the fixed-depth-walk guard
+        # test above). The real repo's category tree must project exactly one flat link per such
+        # folder, proving the small synthetic fixture above generalizes to the live tree. The
+        # expected count is derived from the real skills/ tree rather than pinned as a literal, so
+        # this stays true as skills are added or removed.
         real_root = run_tests.ROOT
+        expected_skill_count = len(list((real_root / "skills").rglob("SKILL.md")))
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "source"
             root.mkdir()
@@ -241,7 +244,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
 
             for relative in (".claude/skills", ".agents/skills"):
                 projected = list((worktree / relative).iterdir())
-                self.assertEqual(29, len(projected))
+                self.assertEqual(expected_skill_count, len(projected))
                 for category in ("roles", "officers", "crew", "engineering", "productivity"):
                     self.assertFalse((worktree / relative / category).exists())
                 self.assertEqual(Path(os.path.realpath(worktree / "skills/roles/crew/reviewer")),

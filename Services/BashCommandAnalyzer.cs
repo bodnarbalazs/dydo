@@ -206,7 +206,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (OndrejDiskRegex(), "Disk format or erase attempt"),
         (OndrejSudoRmRegex(), "Privileged delete attempt"),
         (OndrejCurlPipeRegex(), "Download and execute as shell"),
-        (OndrejGitPushRegex(), "Destructive remote Git push"),
+        (OndrejGitPushRegex(), "Destructive remote Git push. GitHub deletes a merged PR's branch itself; clean up locally with git worktree remove, git branch -d and git fetch --prune, and name any other remote branch for the human"),
         (OndrejGitRecoveryRegex(), "Git recovery history destruction"),
         (OndrejSystemPermissionsRegex(), "System permission or ownership change"),
         (OndrejGhDeleteRegex(), "Destructive GitHub operation"),

@@ -125,8 +125,11 @@ the default officer: an Issue gets a captain whether or not the human has invoke
    reviewed PR and waits for the human's merge-commit click. An atomic Issue has no Merge
    Sub-issue: the human clicks its PR, then you resume from the record. **Done:** merge review
    passes, or the human's click has landed the atomic Issue; the operation and source Issue close
-   `Done`, captain-owned worktrees/branches are cleaned, and you return `done <key>: merged`. On the map holder's landing-cleanup commission, remove the merged
-   feature branch and report completion.
+   `Done`, captain-owned worktrees and local branches are removed (`git worktree remove`,
+   `git branch -d`, `git fetch --prune`), and you return `done <key>: merged`. GitHub deletes a
+   merged PR's remote branch itself; the guard blocks remote deletion, so name any other merged
+   remote branch on the record for the human. On the map holder's landing-cleanup commission,
+   remove the merged feature branch locally and report completion.
 
 ## Kinds and failure paths
 

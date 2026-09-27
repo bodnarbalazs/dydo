@@ -51,7 +51,8 @@ sight, and hand back every judgement call with a recommendation.
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
    active. Sweep orphans too: the worktrees and branches a merge should have retired, and an
    `inquisition/<slug>` past its Issue's `Done`, or a `prototype/<name>` past its delivery Issue's
-   `Done`. Fix the mechanical
+   `Done`. Remove orphaned worktrees and local branches yourself; list a remote branch still
+   standing after its merge for the human, since the guard blocks remote deletion. Fix the mechanical
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free
    of a second status board. Done when the board reads true and every orphan is cleared or named
    with the reason it survives.

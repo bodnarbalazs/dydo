@@ -27,11 +27,28 @@ find a Project, a dark theme, and a Refresh that updates the map without losing 
   without a page reload. It keeps the viewport, selection and theme as they were, fades out removed
   issues, then animates changed and added issues one by one in reading order, and reports what
   changed with a notice such as "3 changed · 1 new · 1 removed" or "No changes".
+- Two new engineering skills, adapted from cursor/plugins pstack: `create-verification-skill`
+  (user-invoked, both host locks) generates a project-local `verify-<app>` skill with a
+  deterministic control CLI, Launch/Doctor/Drive/Evidence/Cleanup sections and a nested feature
+  map, preferring a dev-only quick login over typed credentials; the generated skill itself stays
+  model-invoked. `maintain-verification-skill` (model-invoked) keeps that verify skill and map true
+  to the running app, ending `clean`, `changed` or `blocked`, and reports product regressions as
+  Bugs. Both are registered in the skill READMEs, glossary, control-flow tables and third-party
+  notices, taking the canonical skill count from 29 to 31.
 
 ## Changed
 
 - `dydo map`'s CLI surface, Linear API access and read-only behaviour are unchanged from 3.1.0;
   everything above is viewer-side polish.
+- The `issue-captain` and `admiral` skills now choose the strongest supported model for a real
+  engineering challenge and the smallest adequate one otherwise.
+- GitHub now cleans up merged branches: `bodnarbalazs/dydo` deletes a PR's head branch on merge,
+  and a `protect-default-branch` ruleset blocks deleting or force-pushing `master`, with no bypass
+  actors. The push-delete guard's reason now reflects this, telling agents to clean up locally
+  instead with `git worktree remove`, `git branch -d` and `git fetch --prune`, and to name any
+  other remote branch for the human. The `issue-captain` and `chief-of-staff` skills' cleanup steps
+  changed to match, and the working-tree contract's Cleanup section now says "delete" means the
+  local branch.
 
 ## Upgrade
 

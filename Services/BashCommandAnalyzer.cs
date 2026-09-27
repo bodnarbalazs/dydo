@@ -354,14 +354,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // Deliberate difference from upstream DYD-188: the original `pass\s+\S` also matches prose
     // shaped like the password-store CLI (a body line, a table cell, "pass the lease to..."),
     // so a PR body or commit message containing the word "pass" gets denied. Requiring a known
-    // subcommand, a flag, or a name-only argument that ends the line/quote (as `pass <name>`
-    // does when actually invoked) keeps every real invocation blocked without flagging prose.
-    // Both the subcommand and the name-only terminator must be a real word boundary — not `\b`,
-    // which also fires between a letter and a hyphen, so prose like "pass show-stopper" would
-    // otherwise match the "show" subcommand. The name-only terminator additionally tolerates
-    // trailing whitespace and an optional fd digit before a redirect (`pass x > f`,
-    // `pass x 2>/dev/null`, `pass x `), which a real invocation can carry but prose cannot.
-    [GeneratedRegex(@"(?:^|[;&|\r\n({`])\s*(?:[^\s;&|'""`()]*/)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)(?=[ \t]|$|[\r\n;&|<>'""`)])|\s+-\S|\s+[^\s;&|'""`()<>]+(?=[ \t]*[0-9]*(?:$|[\r\n;&|<>'""`)])))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // subcommand, a flag, or exactly one name argument (as in `pass <name>`, which prints the
+    // secret) keeps every real invocation blocked while prose with two or more words after
+    // "pass" stays allowed. The subcommand must end on a real word boundary, not `\b`, which
+    // also fires between a letter and a hyphen, so "pass show-stopper" would otherwise match
+    // "show". The name may be quoted (`pass "github"`); it must not be all digits, so a table
+    // cell like "| pass 12 |" stays allowed. After the name, optional spaces lead to one
+    // terminator: end, newline, a separator or quote, a redirect with at most one fd digit
+    // tied to it (`pass x > f`, `pass x 2>&1`, `pass x &> f`), or a `#` comment. A digit not
+    // followed by a redirect is prose ("pass stage 2"). A one-word quoted body such as
+    // `-m "fix\npass tests"` is still blocked: it is shaped exactly like `bash -c "pass github"`.
+    // The lead-in skips only spaces and tabs, and the path prefix stops at `{`: each newline or
+    // `{` is its own start, so a long run of them cannot rescan the input from every start.
+    [GeneratedRegex(@"(?:^|[;&|\r\n({`])[ \t]*(?:[^\s;&|'""`(){]*/)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)(?=[ \t]|$|[\r\n;&|<>'""`)])|\s+-\S|\s+(?![0-9]+(?:[\s;&|'""`()<>]|$))(['""]?)[^\s;&|'""`()<>]+\1(?=[ \t]*(?:[0-9]?[<>]|$|[\r\n;&|'""`)])|[ \t]+#))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPassRegex();
 
     [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]

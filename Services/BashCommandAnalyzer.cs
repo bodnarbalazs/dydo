@@ -356,7 +356,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // so a PR body or commit message containing the word "pass" gets denied. Requiring a known
     // subcommand, a flag, or a name-only argument that ends the line/quote (as `pass <name>`
     // does when actually invoked) keeps every real invocation blocked without flagging prose.
-    [GeneratedRegex(@"(?:^|[;&|\r\n({`])\s*(?:[^\s;&|'""`()]*/)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)\b|\s+-\S|\s+[^\s;&|'""`()]+(?=$|[\r\n;&|'""`)]))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // Both the subcommand and the name-only terminator must be a real word boundary — not `\b`,
+    // which also fires between a letter and a hyphen, so prose like "pass show-stopper" would
+    // otherwise match the "show" subcommand. The name-only terminator additionally tolerates
+    // trailing whitespace and an optional fd digit before a redirect (`pass x > f`,
+    // `pass x 2>/dev/null`, `pass x `), which a real invocation can carry but prose cannot.
+    [GeneratedRegex(@"(?:^|[;&|\r\n({`])\s*(?:[^\s;&|'""`()]*/)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)(?=[ \t]|$|[\r\n;&|<>'""`)])|\s+-\S|\s+[^\s;&|'""`()<>]+(?=[ \t]*[0-9]*(?:$|[\r\n;&|<>'""`)])))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPassRegex();
 
     [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]

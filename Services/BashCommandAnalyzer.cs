@@ -351,7 +351,27 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(CommandStart + @"(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPasswordCliRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|\r\n({`])\s*(?:[^\s;&|'""`()]*/)?pass\s+\S", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // Deliberate difference from upstream DYD-188: the original `pass\s+\S` also matches prose
+    // shaped like the password-store CLI (a body line, a table cell, "pass the lease to..."),
+    // so a PR body or commit message containing the word "pass" gets denied. This rule blocks
+    // three shapes: a known subcommand, a flag, or exactly one name token (`pass <name>` prints
+    // the secret) that is bare, quoted (`pass "My Bank"`, spaces allowed inside the quotes) or a
+    // `$(...)` substitution. Prose with two or more words after "pass" stays allowed.
+    // Named gaps, accepted on purpose: an unquoted all-digit name (`pass 12`), a second word
+    // (`pass x y`), an fd of more than one digit (`pass x 10>f`), and the name form written as a
+    // markdown table cell: `pass` after a single pipe with its name before a single pipe, as in
+    // "| unit | pass OK |", which also lets `true | pass github | xclip` through (the name form
+    // ignores stdin). Subcommand and flag forms stay blocked inside a table cell.
+    // The subcommand must end on a real word boundary, not `\b`, which also fires between a
+    // letter and a hyphen, so "pass show-stopper" would otherwise match "show". After the name,
+    // optional spaces lead to one terminator: end, newline, a separator or quote, a redirect with
+    // at most one fd digit tied to it (`pass x > f`, `pass x 2>&1`, `pass x &> f`), or a `#`
+    // comment. A digit not followed by a redirect is prose ("pass stage 2"). A body whose last
+    // line is `pass <one word>` before its closing quote is still blocked: it is shaped exactly
+    // like `bash -c "pass github"`. The lead-in skips only spaces and tabs, the path prefix stops
+    // at `{`, and the quoted and `$(...)` names stop at a newline, quote or paren: each newline
+    // or `{` is its own start, so a long run of them cannot rescan the input from every start.
+    [GeneratedRegex(@"(?:^|(?<cell>(?<!\|)\|(?!\|))|\|\||[;&\r\n({`])[ \t]*(?:[^\s;&|'""`(){]*/)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)(?=[ \t]|$|[\r\n;&|<>'""`)])|\s+-\S|\s+(?:(?<q>['""])[^'""\r\n]+\k<q>|\$\([^()\r\n]*\)|(?![0-9]+(?:[\s;&|'""`()<>]|$))[^\s;&|'""`()<>]+)(?=[ \t]*(?:[0-9]?[<>]|$|[\r\n;&|'""`)])|[ \t]+#)(?(cell)(?![ \t]*\|(?!\|))))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPassRegex();
 
     [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]

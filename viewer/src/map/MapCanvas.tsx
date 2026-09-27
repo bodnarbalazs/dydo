@@ -50,7 +50,7 @@ export function MapCanvas({ flow, focus, fitKey, onFocus, onOpenExternal, onTogg
         <Background id="minor" variant={BackgroundVariant.Lines} gap={24} color="var(--grid-minor)" />
         <Background id="major" variant={BackgroundVariant.Lines} gap={120} color="var(--grid-major)" />
         <Controls showInteractive={false} />
-        <MiniMap pannable zoomable nodeColor={(node: MapFlowNode) => statusPalette(node.data.node.issue.state.color, theme).readable} nodeStrokeWidth={0} />
+        <MiniMap pannable zoomable nodeColor={(node: MapFlowNode) => statusPalette(node.data.node.issue.state.color, theme).frame} nodeStrokeWidth={0} />
         <Panel position="bottom-left">
           <Legend />
         </Panel>

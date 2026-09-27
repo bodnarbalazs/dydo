@@ -42,10 +42,10 @@ describe('the pre-paint script in index.html', () => {
   const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
 
   /** Runs the inline script against a stored value and an OS scheme, returning what it put on the root. */
-  function prePaint(stored: string | null, systemDark: boolean): [string | undefined, string] {
+  function prePaint(stored: string | null, systemDark: boolean, localStorage: Pick<Storage, 'getItem'> = { getItem: (key) => (key === THEME_KEY ? stored : null) }): [string | undefined, string] {
     const root = document.createElement('html');
     runInNewContext(script, {
-      localStorage: { getItem: (key: string) => (key === THEME_KEY ? stored : null) },
+      localStorage,
       matchMedia: (query: string) => ({ matches: query === '(prefers-color-scheme: dark)' && systemDark }),
       document: { documentElement: root },
     });
@@ -64,5 +64,15 @@ describe('the pre-paint script in index.html', () => {
   it.each(cases)('agrees with resolveTheme for the stored value %s and an OS dark scheme of %s', (stored, systemDark) => {
     const theme: Theme = resolveTheme(readPreference(stored) satisfies ThemePreference, systemDark);
     expect(prePaint(stored, systemDark)).toEqual([theme, theme]);
+  });
+
+  it.each([false, true])('reads blocked storage as System with an OS dark scheme of %s', (systemDark) => {
+    const blocked = {
+      getItem: () => {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      },
+    };
+    const theme = systemDark ? 'dark' : 'light';
+    expect(prePaint(null, systemDark, blocked)).toEqual([theme, theme]);
   });
 });

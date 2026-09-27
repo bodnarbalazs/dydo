@@ -8,7 +8,12 @@
     <script>
       // Themes the page before its first paint, as src/theme/theme.ts would: no light flash on dark.
       (() => {
-        const stored = localStorage.getItem('dydo-map-theme');
+        let stored = null;
+        try {
+          stored = localStorage.getItem('dydo-map-theme');
+        } catch {
+          // Blocked storage throws on any access; it reads as System.
+        }
         const preference = stored === 'light' || stored === 'dark' ? stored : 'system';
         const systemDark = matchMedia('(prefers-color-scheme: dark)').matches;
         const theme = preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;

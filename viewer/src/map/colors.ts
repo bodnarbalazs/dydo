@@ -33,9 +33,9 @@ export function darkWash(hex: string, strength: number, base: string = DARK_CARD
 }
 
 export interface StatusPalette {
-  /** Status text, icons and minimap marks. */
+  /** Status text and icons. */
   readable: string;
-  /** A plate's outline: the readable colour on light, a muted one on dark so pale statuses do not glare. */
+  /** A plate's outline and minimap mark: the readable colour on light, a muted one on dark so pale statuses do not glare. */
   frame: string;
   /** A card's or a plate header's background. */
   card: string;

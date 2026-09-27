@@ -89,6 +89,21 @@ describe('useThemePreference', () => {
     expect(shown()).toBe('system:dark');
   });
 
+  it('reads blocked storage as System and still switches the theme for the session', () => {
+    const os = fakeOs(true);
+    const blocked = () => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    };
+    vi.stubGlobal('localStorage', { getItem: blocked, setItem: blocked });
+    render(<Harness />);
+    expect(shown()).toBe('system:dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Light theme' }));
+    expect(shown()).toBe('light:light');
+    act(() => os.flip(false));
+    act(() => os.flip(true));
+    expect(applied()).toEqual(['light', 'light']);
+  });
+
   it('stops listening to the OS once unmounted', () => {
     const os = fakeOs(false);
     const view = render(<Harness />);

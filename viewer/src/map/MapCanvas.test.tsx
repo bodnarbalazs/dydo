@@ -8,7 +8,7 @@ import { makeGraph, makeIssue } from '../graph/testIssues';
 import { layoutMap } from '../layout/layout';
 import type { MapFlow } from '../layout/toFlow';
 import { ThemeContext } from '../theme/useTheme';
-import { readableOnDark } from './colors';
+import { statusPalette } from './colors';
 import { MapCanvas } from './MapCanvas';
 
 const fitView = vi.fn((options?: object) => Promise.resolve(options !== undefined));
@@ -124,12 +124,13 @@ describe('MapCanvas chrome', () => {
     ]);
   });
 
-  it('themes React Flow and shows the minimap in dark readable colours in the dark theme', () => {
+  it('themes React Flow and shows the minimap in muted frame colours in the dark theme', () => {
     render(<ThemeContext.Provider value="dark">{canvas(null, 0)}</ThemeContext.Provider>);
     expect(document.querySelector('.react-flow')?.classList.contains('dark')).toBe(true);
     const fills = [...document.querySelectorAll<SVGRectElement>('.react-flow__minimap-node')].map((node) => node.style.fill);
     const probe = document.createElement('div');
-    probe.style.color = readableOnDark('#e2e2e2');
+    // Pale statuses would glare as near-white blocks at full strength; the dark plate outline mutes them.
+    probe.style.color = statusPalette('#e2e2e2', 'dark').frame;
     expect(fills).toEqual([probe.style.color, probe.style.color]);
   });
 

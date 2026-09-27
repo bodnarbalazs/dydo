@@ -70,7 +70,10 @@ test('a team and a Project are chosen and their graph is drawn from Linear', asy
   await page.goto(map);
   await page.getByRole('combobox').first().selectOption({ label: 'Dydo (DYD)' });
   await expect.poll(() => search(page).get('team')).toBe('team-dyd');
-  await page.getByRole('combobox').nth(1).selectOption({ label: 'Project map · In Progress' });
+  await page.getByRole('button', { name: 'Project Choose a Project' }).click();
+  await expect(page.getByRole('option', { name: /^Project map/ })).toContainText('Oct 3');
+  await page.getByRole('option', { name: /^Project map/ }).click();
+  await expect(page.getByRole('button', { name: 'Project Project map' })).toBeVisible();
   await expect.poll(() => search(page).get('project')).toBe('project-map');
   await expect(node(page, 'DYD-1')).toBeVisible();
   await expect(node(page, 'DYD-3')).toBeVisible();

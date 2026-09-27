@@ -11,6 +11,11 @@ export interface Project {
   name: string;
   url: string;
   status: { name: string; type: string };
+  /** Linear's timeless date, `yyyy-mm-dd`. */
+  targetDate: string | null;
+  /** ISO timestamps. */
+  completedAt: string | null;
+  canceledAt: string | null;
 }
 
 export type StateType = 'triage' | 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled' | 'duplicate';

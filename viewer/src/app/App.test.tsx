@@ -10,7 +10,7 @@ const teams: Team[] = [
   { id: 'team-1', key: 'T', name: 'Team One' },
   { id: 'team-2', key: 'U', name: 'Team Two' },
 ];
-const projects: Project[] = [{ id: 'project-1', name: 'Project One', url: 'https://linear.app/p1', status: { name: 'In Progress', type: 'started' } }];
+const projects: Project[] = [{ id: 'project-1', name: 'Project One', url: 'https://linear.app/p1', status: { name: 'In Progress', type: 'started' }, targetDate: null, completedAt: null, canceledAt: null }];
 const otherProject = { id: 'project-2', name: 'Project Two' };
 
 const graphOne: Graph = makeGraph(
@@ -58,6 +58,20 @@ function open(search: string) {
   return render(<App elk={new ELK()} />);
 }
 
+const projectPicker = () => screen.getByRole('button', { name: /^Project / });
+
+/** Opens the Project picker, waits until it lists `name`, and closes it again. */
+async function listed(name: string) {
+  fireEvent.click(projectPicker());
+  await screen.findByRole('option', { name });
+  fireEvent.keyDown(screen.getByRole('combobox', { name: 'Search Projects' }), { key: 'Escape' });
+}
+
+function chooseProject(name: string) {
+  fireEvent.click(projectPicker());
+  fireEvent.click(screen.getByRole('option', { name }));
+}
+
 const card = (identifier: string) => document.querySelector(`[data-identifier="${identifier}"]`);
 
 async function mapShown() {
@@ -68,12 +82,12 @@ describe('App selectors and URL state', () => {
   it('asks for a team first, then lists its Projects and writes both into the URL', async () => {
     open('');
     expect(await screen.findByText('Choose a team to list its Projects.')).toBeTruthy();
-    const [teamSelect, projectSelect] = screen.getAllByRole('combobox');
+    const teamSelect = screen.getByRole('combobox');
     await screen.findByRole('option', { name: 'Team One (T)' });
-    fireEvent.change(teamSelect!, { target: { value: 'team-1' } });
+    fireEvent.change(teamSelect, { target: { value: 'team-1' } });
     expect(window.location.search).toBe('?team=team-1');
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
-    fireEvent.change(projectSelect!, { target: { value: 'project-1' } });
+    await listed('Project One');
+    chooseProject('Project One');
     expect(window.location.search).toBe('?team=team-1&project=project-1');
     await mapShown();
     expect(screen.getByText('Project One: 4 issues, 1 plates')).toBeTruthy();
@@ -194,7 +208,7 @@ describe('App errors', () => {
 
 describe('App errors belong to the view that failed', () => {
   const rateLimited = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);
-  const twoProjects: Project[] = [...projects, { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' } }];
+  const twoProjects: Project[] = [...projects, { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' }, targetDate: null, completedAt: null, canceledAt: null }];
   let answers: Record<string, () => Promise<Response>>;
 
   beforeEach(() => {
@@ -216,12 +230,12 @@ describe('App errors belong to the view that failed', () => {
   async function failedProjectOne() {
     open('?team=team-1&project=project-1');
     await screen.findByRole('alert');
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
+    await listed('Project Two');
   }
 
   it('drops a failed Project\'s error when another Project loads', async () => {
     await failedProjectOne();
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    chooseProject('Project Two');
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('Loading the Project map…')).toBeTruthy();
   });
@@ -235,7 +249,7 @@ describe('App errors belong to the view that failed', () => {
 
   it('clears a Project\'s error once it loads on a later visit', async () => {
     await failedProjectOne();
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    chooseProject('Project Two');
     answers['project-1'] = () => Promise.resolve(json(graphOne));
     act(() => {
       window.history.back();
@@ -272,10 +286,10 @@ describe('App errors belong to the view that failed', () => {
     window.history.replaceState(null, '', '/?team=team-1&project=project-1');
     render(<App elk={elk} />);
     await mapShown();
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    await listed('Project Two');
+    chooseProject('Project Two');
     answers['project-1'] = refetch;
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    chooseProject('Project One');
   }
 
   it('draws nothing from an earlier visit while a revisited Project refetches', async () => {
@@ -338,8 +352,8 @@ describe('App errors belong to the view that failed', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('linear_auth Key rejected.');
     expect(screen.getByText('Loading the Project map…')).toBeTruthy();
     graphAnswer = () => Promise.resolve(rateLimited());
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    await listed('Project Two');
+    chooseProject('Project Two');
     await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
     expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual(['linear_auth Key rejected.', 'linear_rate_limited Linear is rate limiting this key.']);
     expect(screen.getByText('The map could not be drawn.')).toBeTruthy();
@@ -385,7 +399,7 @@ function deferred<T>() {
 
 describe('App ignores answers for a view it has left', () => {
   const rateLimited = () => json({ error: { code: 'linear_rate_limited', message: 'Linear is rate limiting this key.' } }, 503);
-  const projectTwo: Project = { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' } };
+  const projectTwo: Project = { id: 'project-2', name: 'Project Two', url: 'u', status: { name: 'Planned', type: 'planned' }, targetDate: null, completedAt: null, canceledAt: null };
   let pending: Map<string, ReturnType<typeof deferred<Response>>[]>;
 
   /** Each request waits until the test answers it, oldest first per path and parameter. */
@@ -420,17 +434,18 @@ describe('App ignores answers for a view it has left', () => {
     await screen.findByRole('option', { name: 'Team Two (U)' });
     pick(0, 'team-2');
     await answer('team-2', json({ projects: [projectTwo] }));
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
+    await listed('Project Two');
     await answer('team-1', json({ projects }));
-    expect(screen.getByRole('option', { name: 'Project Two · Planned' })).toBeTruthy();
+    await listed('Project Two');
   });
 
   it('lists no Projects of the old team while the new team\'s list loads', async () => {
     open('?team=team-1');
     await answer('team-1', json({ projects }));
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
+    await listed('Project One');
     pick(0, 'team-2');
-    expect(screen.queryByRole('option', { name: 'Project One · In Progress' })).toBeNull();
+    fireEvent.click(projectPicker());
+    expect(screen.queryByRole('option', { name: 'Project One' })).toBeNull();
   });
 
   it('drops a Project list failure that arrives after the team changed', async () => {
@@ -449,15 +464,15 @@ describe('App ignores answers for a view it has left', () => {
     pick(0, 'team-2');
     pick(0, 'team-1');
     await answer('team-1', json({ projects }));
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
+    await listed('Project One');
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('keeps the new Project\'s map when the old Project\'s graph arrives late', async () => {
     open('?team=team-1&project=project-1');
     await answer('team-1', json({ projects: [...projects, projectTwo] }));
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    pick(1, 'project-2');
+    await listed('Project Two');
+    chooseProject('Project Two');
     await answer('project-2', json(graphTwo));
     await waitFor(() => expect(card('T-E')).not.toBeNull());
     await answer('project-1', json(graphOne));
@@ -470,11 +485,11 @@ describe('App ignores answers for a view it has left', () => {
   it('drops a graph failure that arrives after the Project changed', async () => {
     open('?team=team-1&project=project-1');
     await answer('team-1', json({ projects: [...projects, projectTwo] }));
-    await screen.findByRole('option', { name: 'Project Two · Planned' });
-    pick(1, 'project-2');
+    await listed('Project Two');
+    chooseProject('Project Two');
     await answer('project-1', rateLimited());
     expect(screen.queryByRole('alert')).toBeNull();
-    pick(1, 'project-1');
+    chooseProject('Project One');
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('Loading the Project map…')).toBeTruthy();
   });
@@ -545,10 +560,10 @@ describe('App ignores layouts it no longer needs', () => {
     });
     openWithElk('?team=team-1&project=project-1');
     await screen.findByRole('alert');
-    await screen.findByRole('option', { name: 'Project Two · In Progress' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-2' } });
+    await listed('Project Two');
+    chooseProject('Project Two');
     graphFails = false;
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    chooseProject('Project One');
     await waitFor(() => expect(layouts).toHaveLength(1));
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -566,9 +581,9 @@ describe('App navigation and fitting', () => {
 
   it('adds a history entry per selector change, external jump and nothing for a focus', async () => {
     open('?team=team-1');
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
+    await listed('Project One');
     const start = window.history.length;
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    chooseProject('Project One');
     await mapShown();
     fireEvent.click(card('T-X')!);
     expect(window.history.length).toBe(start + 1);
@@ -581,8 +596,8 @@ describe('App navigation and fitting', () => {
 
   it('drops the focus when another Project is chosen', async () => {
     open('?team=team-1&project=project-2&focus=E');
-    await screen.findByRole('option', { name: 'Project One · In Progress' });
-    fireEvent.change(screen.getAllByRole('combobox')[1]!, { target: { value: 'project-1' } });
+    await listed('Project One');
+    chooseProject('Project One');
     expect(window.location.search).toBe('?team=team-1&project=project-1');
   });
 

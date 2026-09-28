@@ -12,9 +12,20 @@ public static class MapCommand
     internal const string MissingKeyHelp = """
         LINEAR_API_KEY is not set, so dydo map cannot read Linear.
         Create a personal API key in Linear under Settings > Account > Security & access >
-        Personal API keys (https://linear.app/settings/account/security), then set it:
-          export LINEAR_API_KEY=<your key>          (bash, zsh)
-          $env:LINEAR_API_KEY = "<your key>"        (PowerShell)
+        Personal API keys (https://linear.app/settings/account/security), then replace <your key> below.
+
+        Windows PowerShell - use now and save for your Windows account across restarts:
+          $env:LINEAR_API_KEY = '<your key>'
+          [Environment]::SetEnvironmentVariable('LINEAR_API_KEY', $env:LINEAR_API_KEY, 'User')
+        The first line alone lasts only for this session. The second saves it for future apps.
+        Fully restart existing terminal/editor apps to pick up the saved value.
+
+        Bash/zsh - use in this session only:
+          export LINEAR_API_KEY='<your key>'
+        To keep it across restarts, also add that export line to your shell startup file:
+        Bash: ~/.bashrc; ensure your login startup file (e.g. ~/.bash_profile) sources it.
+        Zsh: ~/.zshrc (or $ZDOTDIR/.zshrc if ZDOTDIR is set).
+        New interactive shells will load it; run dydo map from a configured shell.
 
         """;
 

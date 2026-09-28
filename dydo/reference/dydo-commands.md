@@ -161,6 +161,31 @@ a key and exits `2` before any network call. Otherwise it serves `http://localho
 prints that URL, opens it unless `--no-browser` is given, and runs until Ctrl+C. The server answers
 GET only; the key stays in the dydo process and never reaches the browser.
 
+Create a personal API key in Linear under Settings > Account > Security & access > Personal API keys.
+Replace `<your key>` in the commands below with that key.
+
+On **Windows PowerShell**, set it for this session and save it for your Windows account:
+
+```powershell
+$env:LINEAR_API_KEY = '<your key>'
+[Environment]::SetEnvironmentVariable('LINEAR_API_KEY', $env:LINEAR_API_KEY, 'User')
+```
+
+The first line alone is session-only and is lost when the session ends. The second persists across
+restarts for future apps. Fully restart existing terminal/editor apps to pick up the saved value;
+the current shell can run `dydo map` immediately because of the first line.
+
+On **bash/zsh**, set it for the current session:
+
+```bash
+export LINEAR_API_KEY='<your key>'
+```
+
+To persist it across restarts, also add that export line to your shell startup file. For Bash, use
+`~/.bashrc` and ensure your login startup file (for example, `~/.bash_profile`) sources it. For Zsh,
+use `~/.zshrc`, or `$ZDOTDIR/.zshrc` if `ZDOTDIR` is set. New interactive shells will load it; run
+`dydo map` from a configured shell. Running `export` alone does not save it for later sessions.
+
 The page reads `GET /api/teams`, `GET /api/projects?team=<teamId>` and `GET /api/graph?project=<projectId>`.
 Each request reads Linear afresh, so reloading the page shows Linear's current state; nothing is
 cached or written. The viewer is embedded when `viewer/dist/` was built before dydo; a dydo built

@@ -71,8 +71,9 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 
 ## Security and likely bugs
 
-- Every boundary the diff touches validates what crosses it, and the vulnerabilities
-  the standards' Security section names are asked against every such hunk; secrets stay out of source and logs
+- Every boundary the diff touches validates what crosses it, and the vulnerabilities the
+  standards' Security section names are asked against every such hunk; secrets stay out of source
+  and logs
 - Logic holds at the edges (empty, null, first, last, off-by-one), no fallback masks an impossible
   state, and each error path is handled on purpose
 - Ordering, concurrency and resource lifetime, where the diff introduces them

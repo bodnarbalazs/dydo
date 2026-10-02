@@ -8,7 +8,8 @@ date: 2026-10-02
 
 dydo 3.1.2 is a refinement release for the `dydo map` viewer: each card now shows its issue's Linear
 labels, the identifier doubles as the Linear link, and the pickable slot reads more plainly. It also
-tightens the dangerous-bash-command guard and the missing-API-key help text, and ships agent-guidance
+narrows the dangerous-bash-command guard's `pass`-CLI check and expands the missing-API-key help
+text, and ships agent-guidance
 changes: the coding standards (and their Scaffold copy installed by `dydo init`) now say code that
 only tests call is dead and to delete it with its tests once a review or gate flags it, code
 review's rubric carries the same rule for test-only and commented-out code, the inquisitor's
@@ -53,18 +54,23 @@ citation rules now allow citing only Scaffold-carried content.
   `export LINEAR_API_KEY='<your key>'` line to `~/.bashrc` (making sure your login shell sources it)
   or to `~/.zshrc`/`$ZDOTDIR/.zshrc`.
 - The dangerous-bash-command guard's `pass`-CLI check (`BashCommandAnalyzer`'s `OndrejPassRegex`) no
-  longer flags ordinary prose that happens to contain "pass" followed by another word — a PR body
-  table cell, a commit message like "pass the lease to the captain" — as the `pass`
-  password-manager CLI. It now matches only the real CLI: a known subcommand (`show`, `insert`,
-  `add`, `edit`, `generate`, `rm`, `remove`, `delete`, `mv`, `rename`, `cp`, `copy`, `git`, `init`,
-  `ls`, `list`, `find`, `search`, `grep`, `otp`), a flag, or exactly one secret-name token (bare,
-  quoted with spaces, or a `$(...)` substitution).
+  longer flags prose with two or more words after "pass" — a commit message like "pass the lease to
+  the captain" — as the `pass` password-manager CLI. A line reading `pass <one word>` is still
+  blocked: it's shaped exactly like the CLI's name-call form (`pass github` prints a secret). The
+  check still matches a known subcommand (`show`, `insert`, `add`, `edit`, `generate`, `rm`,
+  `remove`, `delete`, `mv`, `rename`, `cp`, `copy`, `git`, `init`, `ls`, `list`, `find`, `search`,
+  `grep`, `otp`), a flag, or exactly one secret-name token (bare, quoted with spaces, or a `$(...)`
+  substitution) — with two named gaps left on purpose: an unquoted all-digit name (`pass 12`), and
+  the one-name form written inside a markdown table cell (`| unit | pass OK |`), which also lets a
+  real piped call like `true | pass github | xclip` through unblocked.
 - Refresh now treats a label change (by name and colour, set-wise) as a changed field like any
   other, so a label edit in Linear is picked up and counted in the Refresh change notice, same as
   other field changes.
 - Label colours come from Linear's own API — there's no hard-coded palette.
 - Skill citation rules were tightened to cite only Scaffold-carried content, and the 3.x adoption
-  migration guide now names its real steps instead of placeholders.
+  migration guide no longer points adopters at the retired `dydo template update`/`dydo sync`
+  commands — it now gives three manual steps: install the skill tree, reconcile the scaffold
+  documents by hand, and run `dydo check`.
 
 ## Upgrade
 

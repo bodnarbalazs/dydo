@@ -59,10 +59,9 @@ citation rules now allow citing only Scaffold-carried content.
   blocked: it's shaped exactly like the CLI's name-call form (`pass github` prints a secret). The
   check still matches a known subcommand (`show`, `insert`, `add`, `edit`, `generate`, `rm`,
   `remove`, `delete`, `mv`, `rename`, `cp`, `copy`, `git`, `init`, `ls`, `list`, `find`, `search`,
-  `grep`, `otp`), a flag, or exactly one secret-name token (bare, quoted with spaces, or a `$(...)`
-  substitution) — with two named gaps left on purpose: an unquoted all-digit name (`pass 12`), and
-  the one-name form written inside a markdown table cell (`| unit | pass OK |`), which also lets a
-  real piped call like `true | pass github | xclip` through unblocked.
+  `grep`, `otp`), a flag, or exactly one secret-name token (bare, quoted (spaces allowed), or a
+  `$(...)` substitution) after `pass`. The gaps this leaves on purpose are named in
+  `OndrejPassRegex`'s comment in `Services/BashCommandAnalyzer.cs`, not enumerated here.
 - Refresh now treats a label change (by name and colour, set-wise) as a changed field like any
   other, so a label edit in Linear is picked up and counted in the Refresh change notice, same as
   other field changes.

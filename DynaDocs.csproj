@@ -7,8 +7,8 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>3.1.1</Version>
-        <InformationalVersion>3.1.1</InformationalVersion>
+        <Version>3.1.2</Version>
+        <InformationalVersion>3.1.2</InformationalVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <Description>Documentation, native skill authoring, and guardrails for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
@@ -19,7 +19,7 @@
         <PackageTags>codex;claude;documentation;ai-agents;cli</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>https://github.com/bodnarbalazs/dydo/blob/v3.1.1/dydo/project/changelog/2026/2026-09-27/dydo-3-1-1-map-polish.md</PackageReleaseNotes>
+        <PackageReleaseNotes>https://github.com/bodnarbalazs/dydo/blob/v3.1.2/dydo/project/changelog/2026/2026-10-02/dydo-3-1-2-map-labels.md</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>

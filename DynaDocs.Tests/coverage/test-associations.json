@@ -965,6 +965,13 @@
       ]
     },
     {
+      "module": "Services/Map/Contract/MapLabel.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
       "module": "Services/Map/Contract/MapProject.cs",
       "tests": [
         "DynaDocs.Tests/Map/LinearReaderTests.cs"
@@ -1082,6 +1089,12 @@
     },
     {
       "module": "viewer/src/map/IssueSummary.tsx",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/LabelChips.tsx",
       "tests": [
         "viewer/src/map/nodes.test.tsx"
       ]

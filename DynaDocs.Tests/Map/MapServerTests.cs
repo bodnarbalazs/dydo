@@ -121,7 +121,7 @@ public sealed class MapServerTests : IAsyncLifetime
     public async Task Graph_AnswersTheContractShape()
     {
         _linear.Serve(_ => IssuesPage(
-            Node(Issue("1"), inverseRelations: Connection(Incoming("r1", "blocks", Issue("9", project: "null"))))));
+            Node(Issue("1", labels: Labels("AFK:#30A46C")), inverseRelations: Connection(Incoming("r1", "blocks", Issue("9", project: "null"))))));
 
         var (status, type, body) = await Get("/api/graph?project=p-map");
 
@@ -130,8 +130,10 @@ public sealed class MapServerTests : IAsyncLifetime
         var graph = JsonDocument.Parse(body).RootElement;
         Assert.Equal(["project", "issues", "external", "relations"], graph.EnumerateObject().Select(p => p.Name));
         Assert.Equal(
-            ["id", "identifier", "title", "url", "state", "assignee", "parentId", "team", "project"],
+            ["id", "identifier", "title", "url", "state", "assignee", "parentId", "team", "project", "labels"],
             graph.GetProperty("issues")[0].EnumerateObject().Select(p => p.Name));
+        Assert.Equal("""[{"name":"AFK","color":"#30A46C"}]""", graph.GetProperty("issues")[0].GetProperty("labels").GetRawText());
+        Assert.Equal("[]", graph.GetProperty("external")[0].GetProperty("labels").GetRawText());
         Assert.Equal(JsonValueKind.Null, graph.GetProperty("external")[0].GetProperty("project").ValueKind);
         Assert.Equal(JsonValueKind.Null, graph.GetProperty("issues")[0].GetProperty("assignee").ValueKind);
         Assert.Equal("""{"id":"r1","type":"blocks","from":"9","to":"1"}""", graph.GetProperty("relations")[0].GetRawText());

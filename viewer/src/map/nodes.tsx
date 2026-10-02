@@ -5,7 +5,8 @@ import type { MapNode } from '../graph/mapModel';
 import type { MapFlowNode } from '../layout/toFlow';
 import { useTheme } from '../theme/useTheme';
 import { statusPalette } from './colors';
-import { IssueSummary, LinearButton } from './IssueSummary';
+import { IssueSummary, LinearLink } from './IssueSummary';
+import { LabelChips } from './LabelChips';
 import { useMapActions } from './MapActions';
 import { RefreshLayers } from './RefreshLayers';
 import { StatusIcon } from './StatusIcon';
@@ -132,8 +133,8 @@ function ExternalCard({ node, selected, children }: { node: MapNode; selected: b
       {children}
       <div className="card-top">
         <StatusIcon type={issue.state.type} color={color} />
-        <span className="identifier">{issue.identifier}</span>
-        <LinearButton issue={issue} />
+        <LabelChips labels={issue.labels} />
+        <LinearLink issue={issue} />
       </div>
       <div className="title" title={issue.title}>
         {issue.title}

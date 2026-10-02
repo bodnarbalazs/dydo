@@ -23,6 +23,8 @@
   --link-hover-surface: #eef2ff;
   --link-hover-border: #818cf8;
   --link-hover-text: #3730a3;
+  --label-surface: rgba(255, 255, 255, 0.72);
+  --label-border: rgba(15, 23, 42, 0.13);
   --pickable: #22c55e;
   --pickable-glow: rgba(34, 197, 94, 0.35);
   --pickable-surface: #dcfce7;
@@ -70,6 +72,8 @@
   --link-hover-surface: #262846;
   --link-hover-border: #5d63c9;
   --link-hover-text: #c7cafc;
+  --label-surface: rgba(255, 255, 255, 0.04);
+  --label-border: rgba(255, 255, 255, 0.11);
   --pickable: #2fb865;
   --pickable-glow: rgba(47, 184, 101, 0.3);
   --pickable-surface: rgba(47, 184, 101, 0.16);
@@ -443,13 +447,53 @@ body,
   display: flex;
   align-items: center;
   gap: 6px;
+  height: 18px;
 }
 
-.identifier {
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-label);
+/*
+ * Label chips: Linear's neutral pill with a dot in the label's colour. The row is one chip tall and
+ * clips what wraps, so a chip that does not fit whole drops to a hidden second line; only a lone
+ * first chip, too wide on its own, shrinks to the row and ends in an ellipsis.
+ */
+.labels {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  height: 18px;
+  overflow: hidden;
+}
+
+.label-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  height: 18px;
+  padding: 0 7px 0 6px;
+  border: 1px solid var(--label-border);
+  border-radius: 999px;
+  background: var(--label-surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  /* Tall enough for the descenders of g, p and y, which the name's overflow would otherwise cut. */
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.label-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.label-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .title {
@@ -494,25 +538,32 @@ body,
   font-style: italic;
 }
 
-.linear-button {
+.linear-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 18px;
   margin-left: auto;
-  padding: 1px 6px;
+  padding: 0 6px;
   border: 1px solid var(--border);
   border-radius: 5px;
-  font-size: 10.5px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-label);
   text-decoration: none;
   background: var(--card);
   white-space: nowrap;
 }
 
-.linear-button:hover {
+.linear-link:hover {
   background: var(--link-hover-surface);
   border-color: var(--link-hover-border);
   color: var(--link-hover-text);
 }
 
 .pickable-badge {
+  flex: none;
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--pickable-surface);

@@ -24,6 +24,7 @@ export interface FakeIssue {
   assignee: string | null;
   teamId: string;
   projectId: string | null;
+  labels: { name: string; color: string }[];
 }
 
 /** `from` blocks, or relates to, `to`. */
@@ -43,6 +44,10 @@ export interface Workspace {
 }
 
 const todo = { name: 'Todo', type: 'unstarted', color: '#e2e2e2' };
+// The Dydo workspace's label colours, as Linear answers them.
+const afk = { name: 'AFK', color: '#30A46C' };
+const feature = { name: 'Feature', color: '#BB87FC' };
+const hitl = { name: 'HITL', color: '#F76B15' };
 const inProgress = { name: 'In Progress', type: 'started', color: '#f2c94c' };
 
 function issue(identifier: string, title: string, projectId: string, rest: Partial<FakeIssue> = {}): FakeIssue {
@@ -55,13 +60,15 @@ function issue(identifier: string, title: string, projectId: string, rest: Parti
     assignee: null,
     teamId: 'team-dyd',
     projectId,
+    labels: [],
     ...rest,
   };
 }
 
 /**
  * Two teams; Dydo holds two Projects. In "Project map", DYD-1 blocks DYD-3, and DYD-2 of "Release"
- * blocks DYD-1, so the map shows an external blocker in another Project.
+ * blocks DYD-1, so the map shows an external blocker in another Project. DYD-1 carries two labels in
+ * Linear's order (not by name), DYD-2 one and DYD-3 none.
  */
 export function createWorkspace(): Workspace {
   return {
@@ -74,8 +81,8 @@ export function createWorkspace(): Workspace {
       { id: 'project-release', name: 'Release', url: 'https://linear.app/fake/project/release', status: { name: 'Planned', type: 'planned' }, targetDate: null, completedAt: null, canceledAt: null, teamId: 'team-dyd' },
     ],
     issues: [
-      issue('DYD-1', 'Draw the map', 'project-map'),
-      issue('DYD-2', 'Ship the CLI', 'project-release', { state: inProgress, assignee: 'Ada' }),
+      issue('DYD-1', 'Draw the map', 'project-map', { labels: [feature, afk] }),
+      issue('DYD-2', 'Ship the CLI', 'project-release', { state: inProgress, assignee: 'Ada', labels: [hitl] }),
       issue('DYD-3', 'Render the graph', 'project-map'),
     ],
     relations: [

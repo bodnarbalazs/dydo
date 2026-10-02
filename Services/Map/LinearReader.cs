@@ -7,7 +7,8 @@ using DynaDocs.Services.Map.Contract;
 /// Reads teams, a team's projects, and one Project's work graph from Linear, fresh on every call,
 /// and normalizes them into the map API's shapes. The query set is DYD-261's: every connection
 /// passes `first` so one page stays under Linear's 10k complexity cap, and a nested relation list
-/// that overflows its first page is followed with `IssueRelationsPage`.
+/// that overflows its first page is followed with `IssueRelationsPage`. With ten labels on every
+/// issue and far end, an issue costs about 434 points, so a page holds 20 issues (about 8.7k).
 /// </summary>
 internal sealed class LinearReader(LinearGraphQL linear)
 {
@@ -19,6 +20,7 @@ internal sealed class LinearReader(LinearGraphQL linear)
           parent { id }
           team { id key }
           project { id name }
+          labels(first: 10) { nodes { name color } }
         }
         """;
 
@@ -46,7 +48,7 @@ internal sealed class LinearReader(LinearGraphQL linear)
         query ProjectIssues($projectId: String!, $after: String) {
           project(id: $projectId) {
             id name url
-            issues(first: 25, after: $after) {
+            issues(first: 20, after: $after) {
               pageInfo { hasNextPage endCursor }
               nodes {
                 ...IssueFields
@@ -240,8 +242,14 @@ internal sealed class LinearReader(LinearGraphQL linear)
             Optional(node, "assignee") is { } assignee ? Text(assignee, "name") : null,
             Optional(node, "parent") is { } parent ? Text(parent, "id") : null,
             new MapIssueTeam(Text(team, "id"), Text(team, "key")),
-            Optional(node, "project") is { } project ? new MapIssueProject(Text(project, "id"), Text(project, "name")) : null);
+            Optional(node, "project") is { } project ? new MapIssueProject(Text(project, "id"), Text(project, "name")) : null,
+            Labels(node));
     }
+
+    private static List<MapLabel> Labels(JsonElement node) =>
+        Optional(node, "labels") is { } labels
+            ? [.. labels.GetProperty("nodes").EnumerateArray().Select(label => new MapLabel(Text(label, "name"), Text(label, "color")))]
+            : [];
 
     private static bool IsArchived(JsonElement issue) => OptionalText(issue, "archivedAt") != null;
 

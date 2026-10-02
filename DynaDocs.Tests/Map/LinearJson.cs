@@ -15,11 +15,16 @@ internal static class LinearJson
         string project = InMap,
         string assignee = "null",
         string parent = "null",
-        string archivedAt = "null") => $$"""
+        string archivedAt = "null",
+        string? labels = null) => $$"""
         "id":"{{id}}","identifier":"DYD-{{id}}","title":"Issue {{id}}","url":"https://linear.app/x/issue/DYD-{{id}}",
         "archivedAt":{{archivedAt}},"state":{{state}},"assignee":{{assignee}},"parent":{{parent}},
-        "team":{"id":"t-dyd","key":"DYD"},"project":{{project}}
+        "team":{"id":"t-dyd","key":"DYD"},"project":{{project}}{{(labels == null ? "" : $",\"labels\":{labels}")}}
         """;
+
+    /// <summary>An issue's `labels` connection, from `name:color` pairs.</summary>
+    public static string Labels(params string[] labels) =>
+        $$"""{"nodes":[{{string.Join(",", labels.Select(label => label.Split(':')).Select(pair => $$"""{"name":"{{pair[0]}}","color":"{{pair[1]}}"}"""))}}]}""";
 
     public static string Connection(string nodes, bool more = false, string? cursor = null) => $$"""
         {"pageInfo":{"hasNextPage":{{(more ? "true" : "false")}},"endCursor":{{(cursor == null ? "null" : $"\"{cursor}\"")}}},"nodes":[{{nodes}}]}

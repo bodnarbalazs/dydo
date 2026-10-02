@@ -23,6 +23,7 @@ export function makeIssue(id: string, overrides: Partial<Issue> & { type?: State
     parentId: null,
     team: { id: 'team-1', key: 'T' },
     project: { id: 'project-1', name: 'Project One' },
+    labels: [],
     ...rest,
   };
 }

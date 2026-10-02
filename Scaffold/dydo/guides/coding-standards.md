@@ -104,7 +104,8 @@ When editing existing code:
 When your changes create orphans:
 
 - Remove imports/variables/functions that YOUR changes made unused
-- Don't remove pre-existing dead code unless asked
+- Delete dead code a review or gate finding names, together with the tests that exist only to call it; a test is not a caller
+- Don't remove other pre-existing dead code unless asked
 
 **The test:** Every changed line should trace directly to the user's request.
 

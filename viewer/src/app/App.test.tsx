@@ -115,7 +115,8 @@ describe('App map', () => {
     await mapShown();
     expect(document.querySelectorAll('.react-flow__node-plate')).toHaveLength(1);
     expect(card('T-X')?.textContent).toContain('Ada');
-    expect(card('T-A')?.textContent).toContain('unassigned');
+    expect(card('T-A')?.textContent).toContain('Pickable');
+    expect(card('T-B')?.textContent).toContain('unassigned');
     expect(card('T-B')?.className).toContain('closed');
     expect(card('T-E')?.className).toContain('external-card');
     expect(card('T-N')?.textContent).toContain('No project');
@@ -135,7 +136,7 @@ describe('App map', () => {
     await waitFor(() => expect(card('T-X')?.className).toContain('selected'));
   });
 
-  it('ignores a click on the Linear button, which opens a new tab', async () => {
+  it('ignores a click on the Linear link, which opens a new tab', async () => {
     open('?team=team-1&project=project-1');
     await mapShown();
     const link = within(card('T-X') as HTMLElement).getByRole('link', { name: 'Open T-X in Linear' });

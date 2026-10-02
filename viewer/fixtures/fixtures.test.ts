@@ -27,6 +27,15 @@
  * UUIDv5 ids of `dydo-map-fixture/issue/<identifier>`, DYD-264 blocks DYD-290 which blocks DYD-291, and
  * DYD-270 no longer blocks DYD-266.
  *
+ * `labels` (DYD-303) are each issue's real labels, captured 2026-10-02 through the Linear MCP
+ * (list_issues with labels, in Linear's order), coloured as list_issue_labels gives the Dydo workspace's
+ * labels: AFK #30A46C, HITL #F76B15, Feature #BB87FC, Bug #EB5757, Question #F2C94C, Research #95A2B3,
+ * Merge #4EA7FC, Enablement #26B5CE, Inquisition #5E6AD2, Walkthrough #C69C6D, Grilling #D4A017 and the
+ * retired Needs human #F5A623. The scenario files hand-build the card cases: DYD-9001 has none, DYD-269
+ * three whose last (Needs human) does not fit, DYD-270 three short ones that fit side by side, DYD-271
+ * five whose first three by name fit, and DYD-272 the long hand-made label "Blocked upstream on Linear
+ * archived-relation semantics" (#D4A017) beside Merge; the refresh gives DYD-266 Needs human.
+ *
  * projects-dydo.json holds the team's Projects captured 2026-09-27 through the Linear MCP
  * (list_projects with targetDate, completedAt and canceledAt), plus hand-built Projects whose URLs end
  * in `-fixture` and whose ids are UUIDv5 (URL namespace) of `dydo-map-fixture/project/<name>`. They
@@ -45,11 +54,15 @@ const STATE_TYPES = ['triage', 'backlog', 'unstarted', 'started', 'completed', '
 const graphs = readdirSync(new URL('.', import.meta.url)).filter((name) => name.startsWith('graph-'));
 
 function expectContractIssue(issue: Issue): void {
-  expect(Object.keys(issue).sort()).toEqual(['assignee', 'id', 'identifier', 'parentId', 'project', 'state', 'team', 'title', 'url']);
+  expect(Object.keys(issue).sort()).toEqual(['assignee', 'id', 'identifier', 'labels', 'parentId', 'project', 'state', 'team', 'title', 'url']);
   expect(issue.id).toMatch(UUID);
   expect(STATE_TYPES).toContain(issue.state.type);
   expect(issue.state.color).toMatch(/^#[0-9a-f]{6}$/);
   expect(issue.url).toMatch(/^https:\/\/linear\.app\//);
+  issue.labels.forEach((label) => {
+    expect(Object.keys(label).sort()).toEqual(['color', 'name']);
+    expect(label.color).toMatch(/^#[0-9A-F]{6}$/);
+  });
 }
 
 describe.each(graphs)('%s', (name) => {
@@ -109,12 +122,22 @@ describe('scenario fixtures', () => {
       'DYD-263': ['state'],
       'DYD-264': ['state'],
       'DYD-265': ['state'],
-      'DYD-266': ['title'],
+      'DYD-266': ['title', 'labels'],
       'DYD-268': ['state', 'assignee', 'pickable'],
     });
     expect(identifiers(refreshed, diff.added)).toEqual(['DYD-290', 'DYD-291']);
     expect(identifiers(scenario, diff.removed)).toEqual(['DYD-262', 'DYD-9001']);
     expect(describeDiff(diff)).toBe('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
+  });
+
+  it('holds cards with none, one, two, three and five labels, a chip too wide to fit, and one long label', () => {
+    const counts = new Set(scenario.issues.map((issue) => issue.labels.length));
+    expect([...counts].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 5]);
+    const names = (identifier: string) => byIdentifier(scenario, identifier).labels.map((label) => label.name);
+    expect(names('DYD-269')).toEqual(['Merge', 'AFK', 'Needs human']);
+    expect(names('DYD-270')).toEqual(['Merge', 'AFK', 'HITL']);
+    expect(names('DYD-271')).toEqual(['Merge', 'AFK', 'HITL', 'Bug', 'Walkthrough']);
+    expect(byIdentifier(scenario, 'DYD-272').labels.map((label) => label.name.length > 40)).toEqual([false, true]);
   });
 
   it.each(['graph-scenario-assigned.json', 'graph-scenario-blocked.json'])('%s removes the pickable marker', (name) => {

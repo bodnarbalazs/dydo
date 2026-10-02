@@ -39,6 +39,20 @@ describe('diffGraphs', () => {
     );
   });
 
+  it('counts a changed label set as a labels change, by name and colour, in any order', () => {
+    const afk = { name: 'AFK', color: '#30A46C' };
+    const feature = { name: 'Feature', color: '#BB87FC' };
+    const labelled = makeGraph([makeIssue('A', { labels: [afk, feature] }), makeIssue('B', { labels: [afk] }), makeIssue('C', { labels: [afk] })]);
+    const after = makeGraph([
+      makeIssue('A', { labels: [feature, afk] }),
+      makeIssue('B', { labels: [afk, feature] }),
+      makeIssue('C', { labels: [{ ...afk, color: '#000000' }] }),
+    ]);
+    const diff = diffGraphs(labelled, after);
+    expect(diff.changed).toEqual(new Map([['B', ['labels']], ['C', ['labels']]]));
+    expect(describeDiff(diff)).toBe('2 changed');
+  });
+
   it('counts a renamed status as a state change', () => {
     const after = makeGraph([makeIssue('A', { state: { name: 'Ready', type: 'unstarted', color: '#e2e2e2' } })]);
     expect(diffGraphs(makeGraph([makeIssue('A')]), after).changed).toEqual(new Map([['A', ['state']]]));

@@ -24,7 +24,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Enablement",
+     "color": "#26B5CE"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "20b553f7-e09a-48aa-89c1-3ec4daedcc32",
@@ -45,7 +55,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "3b38c402-53cd-4d6e-9195-9ef22c385711",
@@ -66,7 +86,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "49080702-4942-4bb9-bd5f-384dd8aa75c7",
@@ -87,7 +117,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "9497b155-d8e9-4036-a8bd-8e9bbbcc43e2",
@@ -108,7 +148,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "aec3b597-f0be-4789-8bf5-33e7dda2ba19",
@@ -129,7 +179,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "6998b346-7b5b-4379-8979-7e4b2d847ab1",
@@ -150,7 +206,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "18f968c9-a7ec-46c7-9baf-345d27146854",
@@ -171,7 +237,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "b42bcbda-7005-4490-b7cb-9ee74c08bd43",
@@ -192,7 +268,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Grilling",
+     "color": "#D4A017"
+    }
+   ]
   },
   {
    "id": "dd75a29c-f531-4a9b-9dfe-ee6b2e5aabbe",
@@ -213,7 +295,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "6c2b374c-574a-4252-a43d-28aef8aa24cc",
@@ -234,7 +326,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "ad757197-8500-401a-b53e-ad9b1b2b7cef",
@@ -255,7 +353,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "82af603f-558b-4e37-87a2-76ff53067aa5",
@@ -276,7 +380,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "1c493597-a357-4eac-96d5-45733087941e",
@@ -297,7 +407,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "8e136f28-5ffa-49cb-9283-fa991d799c2a",
@@ -318,7 +438,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "3edf903a-ec46-43c0-bf0f-11893ea9a0cb",
@@ -339,7 +469,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "b9ae9362-81eb-4c22-aecd-1699ec53fdae",
@@ -360,7 +500,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "f11bc56b-70c1-47dd-a070-8392a6cf455e",
@@ -381,7 +531,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "19e42efb-e998-452c-82c4-84b900324629",
@@ -402,7 +562,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "a8997582-1668-4050-8aca-15a0e66461da",
@@ -423,7 +593,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "edacb5a3-31d6-48e7-881a-a1d494d494e4",
@@ -444,7 +624,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "d184a0e9-81f6-4f79-946c-1b641cf88c2c",
@@ -465,7 +655,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "c9df2853-03d2-41cf-b769-6f3c68a31e2d",
@@ -486,7 +686,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "53f4282b-e003-4f10-8053-72cb6d2006e5",
@@ -507,7 +717,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "c1c9c206-0d86-42ca-95b0-3f6c6a2a4ac9",
@@ -528,7 +748,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "3b499633-3a60-4110-a0f6-e3e52808b85c",
@@ -549,7 +779,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Inquisition",
+     "color": "#5E6AD2"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "a3d0d1ee-2710-4854-a0ff-53d188f6606c",
@@ -570,7 +810,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "35d992a1-2d15-4249-947e-0929cd9dd522",
@@ -591,7 +841,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "b10480d7-623d-42af-b168-368a9c92ce1f",
@@ -612,7 +872,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "4be9fa5f-4f86-426c-b669-c87b724f5699",
@@ -633,7 +903,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "7939fc03-5ca8-4ec0-a5ab-758eb464b733",
@@ -654,7 +934,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "0580ce74-100b-49f3-9bf6-c00b8061d622",
@@ -675,7 +965,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "f988ee70-470e-4930-a55f-a5f32f9d620e",
@@ -696,7 +996,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "2490f73f-3b6d-4658-bc53-23ec91e9c28f",
@@ -717,7 +1027,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "a3ee9237-0fa5-4f81-90ba-8acc433918db",
@@ -738,7 +1058,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "9577b8e1-88b2-483f-bf85-2d1db11fa226",
@@ -759,7 +1089,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "5da53cb3-3979-4dcf-b1d9-bb1645cae9fd",
@@ -780,7 +1120,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "320bbbb2-361c-41df-88c6-0b4a947e9ecb",
@@ -801,7 +1151,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "12577fc4-2416-44ba-9177-6dc5cf9fa135",
@@ -822,7 +1182,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "36f3ec42-c5c4-403f-880c-129abd92d978",
@@ -843,7 +1213,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "04ef1c5a-626f-431d-adbe-545938584c0d",
@@ -864,7 +1244,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "0d1df15e-6c01-474c-a791-6212481a6e72",
@@ -885,7 +1275,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "4059938e-41ce-4e4f-9937-375f309b155d",
@@ -906,7 +1306,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "0aa9a73e-9813-4e1c-a4a1-87be4c3f8496",
@@ -927,7 +1337,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    },
+    {
+     "name": "Walkthrough",
+     "color": "#C69C6D"
+    }
+   ]
   },
   {
    "id": "d3c54794-3aac-47f5-b454-edd8be276fbc",
@@ -948,7 +1368,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "e661d41b-d006-4a3a-bca5-85f4a332dc6a",
@@ -969,7 +1399,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "0f29a2f2-7b1b-4999-a316-0326ae8abab8",
@@ -990,7 +1430,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "2da885b0-5bce-4706-8040-34f926b2a926",
@@ -1011,7 +1461,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "25585c59-3a54-4f27-8812-48447de59b8c",
@@ -1032,7 +1492,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "86954678-4b3d-4009-802a-e59e55818366",
@@ -1053,7 +1523,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Enablement",
+     "color": "#26B5CE"
+    },
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "53a8d1cd-3c73-4e7a-b011-73d056181b44",
@@ -1074,7 +1554,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "42b7d977-d30c-4be6-9f0d-93ace154f90b",
@@ -1095,7 +1585,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "0aaa3b46-d29a-4b26-82c0-e1be553fe3a0",
@@ -1116,7 +1616,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "487a8ba0-a30c-4c08-a258-822edb58a91a",
@@ -1137,7 +1647,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "42fd113a-f545-4051-96d6-6df5c0a8716a",
@@ -1158,7 +1678,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "cca9581c-2e69-4403-8748-4bb27742e0b8",
@@ -1179,7 +1709,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "ec160650-8999-42a4-8e51-408b4b99379e",
@@ -1200,7 +1740,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "6708adbf-c6ed-4e12-9ac0-0ace1c9824ee",
@@ -1221,7 +1771,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "7eef9965-4b53-4661-b301-96a4e60cd995",
@@ -1242,7 +1802,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "c4f5d268-0b03-487d-bf3e-887b6588b670",
@@ -1263,7 +1833,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "710858c4-3c2c-4e4e-abbf-e6d168e2995c",
@@ -1284,7 +1864,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Enablement",
+     "color": "#26B5CE"
+    },
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "2a32c181-e1a0-471c-bfeb-834196783d05",
@@ -1305,7 +1895,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "11edf66b-df4e-486b-b7f5-96752a8b2c83",
@@ -1326,7 +1926,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "e53baf13-d1a8-481b-8299-46ada5a9e73e",
@@ -1347,7 +1957,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "e076a862-f226-420f-9732-11058520b1f7",
@@ -1368,7 +1988,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "865fce34-3d38-4a1e-8c49-c393f8771cd3",
@@ -1389,7 +2015,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "5c0ae466-a41b-4b62-b6fa-89ccbd690fce",
@@ -1410,7 +2046,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    },
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "7a2e9e87-612e-4658-938a-43c0b8e51311",
@@ -1431,7 +2077,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "8435ed1e-e4fe-4dc0-b63f-230301106709",
@@ -1452,7 +2108,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "42f41a2b-fb62-4bb5-87aa-ed19caa5a730",
@@ -1473,7 +2139,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    },
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "8750be43-bd5e-4e08-a67e-769d958a6c72",
@@ -1494,7 +2170,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "6d5b500f-daf0-4bb1-8107-99b9039bf857",
@@ -1515,7 +2201,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    },
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "905e4919-c376-4e02-ab18-d45ce4425941",
@@ -1536,7 +2232,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "4127593a-27ab-4d2a-aeae-8f6d8f06c55b",
@@ -1557,7 +2263,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    }
+   ]
   },
   {
    "id": "9bdbb214-fdfd-4a7f-8d4a-9ff12ffbf968",
@@ -1578,7 +2294,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "f250a4db-6ed3-4d41-840a-c59dd1bf0bb7",
@@ -1599,7 +2325,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    },
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "334fc2d1-2a3b-4789-96a5-b669749a4800",
@@ -1620,7 +2356,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    }
+   ]
   },
   {
    "id": "7eed82e5-dc2f-47f3-89bc-a023a3d3d27d",
@@ -1641,7 +2387,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "6163e19c-f38a-4f40-93a4-351b6b75e87a",
@@ -1662,7 +2418,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    }
+   ]
   },
   {
    "id": "92bbca1a-4dec-46f0-8942-57376c3feb5b",
@@ -1683,7 +2449,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    }
+   ]
   },
   {
    "id": "dfcf5059-13a9-4fdb-9f80-b498aa8d0258",
@@ -1704,7 +2480,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "5bbc24f0-4377-40f0-a60b-26d504fc60f1",
@@ -1725,7 +2511,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "cabb2b65-6714-44f1-ad6a-f258abb036d4",
@@ -1746,7 +2542,8 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": []
   },
   {
    "id": "26ccf5ce-0e64-46af-a774-4af3fe277c01",
@@ -1767,7 +2564,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "14abdadf-0631-4514-8a22-d79c8abb2c3b",
@@ -1788,7 +2595,8 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": []
   },
   {
    "id": "be1b00d9-0384-4dd2-ac10-f71f97af310d",
@@ -1809,7 +2617,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "ddd06a32-cba5-4814-9d9d-89abf56e773c",
@@ -1830,7 +2644,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "e5bf7a6d-6078-433e-b922-5cd86125954a",
@@ -1851,7 +2675,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "c10a640e-ca6c-491a-8ec2-3fc6b4daae11",
@@ -1872,7 +2706,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "c3f57fba-1308-4103-b214-123f61610d63",
@@ -1893,7 +2737,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "e0eb9b3b-3cbd-49ec-b393-79621fd7f3d0",
@@ -1914,7 +2768,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "01dc38e1-aecd-409b-9e41-22f706c18821",
@@ -1935,7 +2799,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "50e8443a-2af5-4780-a30c-8b580ae10653",
@@ -1956,7 +2830,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "01dbccd5-4a81-4246-b469-ee3af09cefc7",
@@ -1977,7 +2861,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "a765fbe1-d64e-4096-b04b-65ac2976778a",
@@ -1998,7 +2892,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "df9bac12-78cb-4604-a7b2-23ca1ddecc07",
@@ -2019,7 +2923,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "4ad508bb-4aa6-4836-ac6e-cac5f8f5db63",
@@ -2040,7 +2954,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "eb833af3-00a1-4c4d-9969-5f04b6af0548",
@@ -2061,7 +2985,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "89acebf6-10f9-46df-a199-552dff7adb3e",
@@ -2082,7 +3016,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "dcef82e6-5f8f-49e9-b711-2ec773e66903",
@@ -2103,7 +3047,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "1895304c-2f54-4bf5-9ece-a4742b749f76",
@@ -2124,7 +3078,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "d6da079b-039a-4e79-8ca8-f67104252e9c",
@@ -2145,7 +3109,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "e7d1fc35-e6b0-43fe-810f-485e9051c7e3",
@@ -2166,7 +3140,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "3a7bf64b-39c0-4365-8432-0054c5f7f8f6",
@@ -2187,7 +3171,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "cc0a0160-9890-449b-98d7-a9b14bacadfe",
@@ -2208,7 +3202,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "5bb46b88-a4bd-4ef3-9a81-3809a233aeba",
@@ -2229,7 +3233,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "64729b3b-7fac-4bff-b78a-6d22f8c0dc41",
@@ -2250,7 +3264,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "13ff2155-4c0d-44ac-9593-6c9d6881ff13",
@@ -2271,7 +3295,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "84c7bf86-d142-4095-982b-470dc5a1ce2a",
@@ -2292,7 +3326,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "bddc8d48-b785-4572-befd-ef6dcd566075",
@@ -2313,7 +3357,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "07f92579-4b07-48fb-be14-c80be3e9d030",
@@ -2334,7 +3388,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "ca58c729-4f1b-4d20-ac76-678998cf900e",
@@ -2355,7 +3419,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "e1f76b6a-fe42-490b-99cf-d22fdd790125",
@@ -2376,7 +3450,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "a7b49347-cacd-4a81-8f88-487116c55015",
@@ -2397,7 +3481,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "2dc9f91f-bd4b-41ee-aa75-759cee8bd77c",
@@ -2418,7 +3512,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "08057e7c-ca16-4ae4-9272-33eccd89c99d",
@@ -2439,7 +3543,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "17f29a23-94f4-4e7a-a5cd-541896bbab09",
@@ -2460,7 +3574,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "fcae15d4-12ad-4056-a996-13c650e670f8",
@@ -2481,7 +3605,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "41ae4622-1f15-4eb6-9660-f29a7801c2eb",
@@ -2502,7 +3636,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "2506ecf6-e1c9-4c76-8a97-8335ee71bf0c",
@@ -2523,7 +3667,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "5a395371-f948-47c6-b9c4-d7caa9ab7cc1",
@@ -2544,7 +3694,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "5f012bfc-16ee-4165-af6d-49da1d11d994",
@@ -2565,7 +3721,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Question",
+     "color": "#F2C94C"
+    }
+   ]
   },
   {
    "id": "3dca9c21-c182-49ba-8486-20c96825308c",
@@ -2586,7 +3748,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "d0ea80e6-f451-4bad-aa98-adeb5374f59d",
@@ -2607,7 +3779,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "a4bca0a4-ef99-40d4-aabd-6ba2d1b43898",
@@ -2628,7 +3810,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "41dfa5e8-45b1-4f89-af2a-fc46c4b9a37b",
@@ -2649,7 +3841,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "8292ae6b-a830-46b9-942d-f8ba64984511",
@@ -2670,7 +3872,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "70d40119-32a9-44dd-954e-ab578483132b",
@@ -2691,7 +3903,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "11576733-33ab-42d2-9a34-c61b83f1bf35",
@@ -2712,7 +3934,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "dcf8b9f4-09bc-496a-ae0b-eac36d266576",
@@ -2733,7 +3961,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "465d5056-2838-4fdb-b7fd-9a727fc737c6",
@@ -2754,7 +3988,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "7d376f46-8c9b-420d-9366-392b86c78ce2",
@@ -2775,7 +4019,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "0e60624a-0030-44de-8b8b-daea777f4d7b",
@@ -2796,7 +4050,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "807bd539-ee60-4edf-bfb3-22644cd9be22",
@@ -2817,7 +4081,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "8326150a-29b4-4507-b815-29fcce9d96f8",
@@ -2838,7 +4112,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "cb00a807-dff1-423b-ac67-1e2d24965ebc",
@@ -2859,7 +4143,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "841e4076-d97e-4059-baf6-12c82b50d8a0",
@@ -2880,7 +4174,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "85d95c79-4ad5-44e6-b297-297338c83111",
@@ -2901,7 +4205,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "9670da2c-7d8d-4b74-88ed-214b672b9e1a",
@@ -2922,7 +4236,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "28db7bdb-710e-4b81-981a-eae93b172593",
@@ -2943,7 +4267,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "6c8c77ec-e009-41bb-a198-4a9b0c00c01c",
@@ -2964,7 +4298,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "e618a22e-4ec4-4cd3-bb21-9911a1ac551b",
@@ -2985,7 +4329,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "bc526954-dc55-40e8-9dd4-9a45a222097a",
@@ -3006,7 +4360,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "d9041deb-f137-419d-9a1b-3fa3c902e0bf",
@@ -3027,7 +4391,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "bbd6800e-41a6-4ab3-b61d-6b9e0975ffe6",
@@ -3048,7 +4422,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "216152ed-3f3e-464d-a8fa-4dc0a1f16e40",
@@ -3069,7 +4453,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "4ca3b9a0-e5f9-4c0c-85b2-c60120d72ec9",
@@ -3090,7 +4484,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "1aa489c6-047c-4098-89d8-4b2319d9e8ac",
@@ -3111,7 +4515,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "4a3e8ab4-d730-4efb-b31b-768ee42246a5",
@@ -3132,7 +4546,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "e193fe42-59a3-4c76-a38b-1d2bb32094e7",
@@ -3153,7 +4573,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "02782697-5d11-4694-b7da-0c9fb32457fe",
@@ -3174,7 +4604,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "66d9ec96-9385-4677-a31f-4bdbb2e592d2",
@@ -3195,7 +4635,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Inquisition",
+     "color": "#5E6AD2"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "007124df-3ac7-4c8c-ac63-0dbde6949143",
@@ -3216,7 +4666,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "a065e5ac-e881-4c7a-b302-6a52d82464fa",
@@ -3237,7 +4697,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "3dad11f4-3865-49fb-8591-3f4786636791",
@@ -3258,7 +4728,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "f7bafd41-e5c3-4896-bd23-9bd34158b932",
@@ -3279,7 +4759,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "dfbc9719-ed2a-4318-801d-7b452851c6a3",
@@ -3300,7 +4790,8 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": []
   },
   {
    "id": "60db3805-5a88-456a-acc2-0c3d2a91b17b",
@@ -3321,7 +4812,8 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": []
   },
   {
    "id": "6e8c7c5d-29ab-47a3-b3fb-3a47f56f3337",
@@ -3342,7 +4834,8 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": []
   },
   {
    "id": "d030fa35-c4b7-4d1e-9d7c-3d55e0e8fd9d",
@@ -3363,7 +4856,8 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": []
   },
   {
    "id": "1a79eb3d-66b3-4b97-a106-57324321b8e8",
@@ -3384,7 +4878,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   }
  ],
  "external": [
@@ -3407,7 +4907,8 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": []
   },
   {
    "id": "088805b3-042b-4e73-bec6-ac3182cc95dd",
@@ -3428,7 +4929,13 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "0ff9e768-79c4-49ec-b659-d91200b0fddd",
@@ -3449,7 +4956,13 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "1106f6d7-07e9-49a6-bf94-674865646395",
@@ -3470,7 +4983,17 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "Enablement",
+     "color": "#26B5CE"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "18445e55-368e-4879-8894-1bb9bf4c88c5",
@@ -3488,7 +5011,17 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    },
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "1b95974a-e833-49a7-83ea-de015f62de7d",
@@ -3509,7 +5042,17 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "24cef0a0-d343-4e89-a0b0-bc5dee6068bd",
@@ -3527,7 +5070,8 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": []
   },
   {
    "id": "2b99fd9c-d479-4bfe-95dc-ab629887eb0a",
@@ -3548,7 +5092,13 @@
    "project": {
     "id": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
     "name": "dydo 3.0 / Dogfood and accept Linear PM"
-   }
+   },
+   "labels": [
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "2ff27c82-3b48-40fc-9f86-ad09698e2712",
@@ -3569,7 +5119,17 @@
    "project": {
     "id": "f7f7100d-69b5-474f-9830-c36a3264435b",
     "name": "dydo 3.0 / Simplify the skill model"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "3d9d1857-37fd-40cf-83e1-e56edecd6d33",
@@ -3590,7 +5150,17 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "40c26476-2e19-4c72-901f-37f47a95b657",
@@ -3611,7 +5181,13 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "437e123a-46a2-4054-a039-8c5861480e51",
@@ -3632,7 +5208,17 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "478cac8a-90f7-43b1-b39c-2f27230bae72",
@@ -3653,7 +5239,8 @@
    "project": {
     "id": "c8ae27c3-5391-453a-8498-e02c064aa6ae",
     "name": "dydo 3.0 / Dogfood and accept Linear PM"
-   }
+   },
+   "labels": []
   },
   {
    "id": "48ec1e5f-b922-4f79-9150-286c1efd4178",
@@ -3674,7 +5261,17 @@
    "project": {
     "id": "f7f7100d-69b5-474f-9830-c36a3264435b",
     "name": "dydo 3.0 / Simplify the skill model"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "4e4b1fcd-9131-4431-8233-68b59a65aff5",
@@ -3695,7 +5292,8 @@
    "project": {
     "id": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
     "name": "dydo 3.0 / Migrate the v2 work corpus"
-   }
+   },
+   "labels": []
   },
   {
    "id": "512ce198-9d0d-405f-a0d6-5dec98f0dcac",
@@ -3716,7 +5314,17 @@
    "project": {
     "id": "f7f7100d-69b5-474f-9830-c36a3264435b",
     "name": "dydo 3.0 / Simplify the skill model"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "57f14803-8dd9-4ec2-9d83-fb4771044e6b",
@@ -3737,7 +5345,8 @@
    "project": {
     "id": "cd465155-187a-4114-bf22-7c871c6f7730",
     "name": "dydo 3.0 / Restore skill craftsmanship"
-   }
+   },
+   "labels": []
   },
   {
    "id": "714e21eb-ec12-4c05-abf1-7745877ac48f",
@@ -3758,7 +5367,13 @@
    "project": {
     "id": "82243b25-9699-473f-9efb-69746732473c",
     "name": "dydo 3.0 / PM foundation and migration contract"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "87db59c7-db3b-4541-ae6f-24a8aaa1f40f",
@@ -3779,7 +5394,17 @@
    "project": {
     "id": "f7f7100d-69b5-474f-9830-c36a3264435b",
     "name": "dydo 3.0 / Simplify the skill model"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "8f057028-009c-4143-b7da-accd10df6a8c",
@@ -3797,7 +5422,17 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "996cb84a-7ffa-456d-9b80-92f27a9f5610",
@@ -3815,7 +5450,8 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": []
   },
   {
    "id": "9c47d2a4-c1d3-4b8d-8cdf-cacc8aaf5f04",
@@ -3836,7 +5472,8 @@
    "project": {
     "id": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
     "name": "dydo 3.0 / Migrate the v2 work corpus"
-   }
+   },
+   "labels": []
   },
   {
    "id": "ae02e3f6-9273-417f-b1e8-28eb49e0df2f",
@@ -3857,7 +5494,13 @@
    "project": {
     "id": "82243b25-9699-473f-9efb-69746732473c",
     "name": "dydo 3.0 / PM foundation and migration contract"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "b34f19a4-092b-42e4-bb28-5719bc489b1f",
@@ -3878,7 +5521,8 @@
    "project": {
     "id": "1d7837c0-ba28-4852-ad0e-5f068bd778bf",
     "name": "dydo 3.0 / Migrate the v2 work corpus"
-   }
+   },
+   "labels": []
   },
   {
    "id": "ba245c1a-eca3-4c22-bf44-d8713d89b172",
@@ -3896,7 +5540,17 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "c28133e8-1b52-4b46-a591-0fd560fa8c82",
@@ -3914,7 +5568,13 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "d988131e-19e9-4908-8a39-204b85b94745",
@@ -3935,7 +5595,13 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "da216c9c-e148-48bf-a712-bb7c86e824ca",
@@ -3956,7 +5622,13 @@
    "project": {
     "id": "82243b25-9699-473f-9efb-69746732473c",
     "name": "dydo 3.0 / PM foundation and migration contract"
-   }
+   },
+   "labels": [
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "deee08cc-9714-4214-89b0-bf3a145c8a84",
@@ -3974,7 +5646,8 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": []
   },
   {
    "id": "e34132fb-8f51-47f9-a128-e730682b0d43",
@@ -3995,7 +5668,13 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "ed9ee4b3-8441-4351-9ec8-4e7ca5f7e212",
@@ -4013,7 +5692,17 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "f51a2592-f738-45c8-a6cc-6e6b5107c790",
@@ -4034,7 +5723,13 @@
    "project": {
     "id": "535649d5-37de-4a88-81f6-fdeed0640d69",
     "name": "dydo 3.0 / Harmonize the skill system"
-   }
+   },
+   "labels": [
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    }
+   ]
   },
   {
    "id": "fbb72089-3985-4944-b76a-3d44fa2078fe",
@@ -4055,7 +5750,17 @@
    "project": {
     "id": "bc3dfaa6-2e11-4df9-9ce7-f507f462a76c",
     "name": "OpenCode Host Support"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   }
  ],
  "relations": [

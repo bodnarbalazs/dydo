@@ -6,6 +6,7 @@ import type { MapNode } from '../graph/mapModel';
 import { makeIssue } from '../graph/testIssues';
 import { ThemeContext } from '../theme/useTheme';
 import { readableColor, statusPalette, wash } from './colors';
+import { IssueSummary } from './IssueSummary';
 import { MapActionsContext } from './MapActions';
 import { nodeTypes } from './nodes';
 
@@ -37,14 +38,29 @@ function drawDark(node: MapNode) {
 const base: MapNode = { id: 'a', kind: 'issue', issue: makeIssue('a'), parentId: null, pickable: false, closed: false, collapsed: false, descendants: 0 };
 
 describe('map nodes', () => {
-  it('shows identifier, title, exact status name, assignee and a Linear button on an issue card', () => {
+  it('shows title, exact status name, assignee and the identifier as the Linear link on an issue card', () => {
     draw({ ...base, issue: makeIssue('a', { assignee: 'Ada', state: { name: 'Ready to Merge', type: 'started', color: '#4cb782' } }) });
-    expect(screen.getByText('T-a')).toBeTruthy();
     expect(screen.getByText('Issue a')).toBeTruthy();
     expect(screen.getByText('Ready to Merge')).toBeTruthy();
     expect(screen.getByText('Ada')).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Open T-a in Linear' });
-    expect(link.getAttribute('rel')).toBe('noopener');
+    expect(link.textContent).toBe('T-a ↗');
+    expect(link.closest('.card-top')).not.toBeNull();
+    expect(document.querySelector('.identifier')).toBeNull();
+    expect(screen.queryByText(/Linear ↗/)).toBeNull();
+  });
+
+  it('opens the Linear link in a new tab without selecting the card', () => {
+    const select = vi.fn();
+    render(
+      <div onClick={select}>
+        <IssueSummary issue={makeIssue('a')} pickable={false} color="#000000" />
+      </div>,
+    );
+    const link = screen.getByRole('link', { name: 'Open T-a in Linear' });
+    expect([link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel')]).toEqual(['https://linear.app/t/issue/T-a', '_blank', 'noopener']);
+    fireEvent.click(link);
+    expect(select).not.toHaveBeenCalled();
   });
 
   it('takes edges in on the left and out on the right, through hidden handles nobody can drag from', () => {
@@ -64,6 +80,15 @@ describe('map nodes', () => {
     const card = document.querySelector('.issue-card');
     expect(card?.className).toBe('issue-card pickable selected');
     expect(screen.getByText('Pickable')).toBeTruthy();
+  });
+
+  it('puts the Pickable badge bottom right, where an unassigned card reads unassigned', () => {
+    draw({ ...base, pickable: true });
+    const bottom = document.querySelector('.card-bottom');
+    expect(bottom?.lastElementChild?.className).toBe('pickable-badge');
+    expect(bottom?.lastElementChild?.textContent).toBe('Pickable');
+    expect(document.querySelector('.card-top .pickable-badge')).toBeNull();
+    expect(document.querySelector('.assignee')).toBeNull();
   });
 
   it('toggles a plate from its pill', () => {
@@ -126,7 +151,7 @@ describe('map nodes', () => {
     draw({ ...base, id: 'b', kind: 'plate', issue: makeIssue('b'), descendants: 2, collapsed: true });
     const [open, shut] = [...document.querySelectorAll('.plate')];
     expect(open?.className).toBe('plate pickable');
-    expect(open?.querySelector('.pickable-badge')?.textContent).toBe('Pickable');
+    expect(open?.querySelector('.plate-header .card-bottom .pickable-badge')?.textContent).toBe('Pickable');
     expect(screen.getByRole('button', { name: 'Collapse T-a' }).getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('button', { name: 'Expand T-b' }).getAttribute('aria-expanded')).toBe('false');
     expect(shut?.querySelector('.pickable-badge')).toBeNull();
@@ -151,10 +176,51 @@ describe('map nodes', () => {
     expect(external?.querySelector('.status-icon')?.innerHTML).toContain(readableColor('#f2c94c'));
   });
 
+  it('draws an external issue with its status icon, then its labels, then the Linear link', () => {
+    const labels = [{ name: 'Walkthrough', color: '#C69C6D' }, { name: 'HITL', color: '#F76B15' }];
+    draw({ ...base, kind: 'external', issue: makeIssue('e', { labels }) });
+    const top = document.querySelector('.external-card .card-top');
+    expect([...(top?.children ?? [])].map((child) => child.getAttribute('class'))).toEqual(['status-icon', 'labels', 'linear-link']);
+    expect(top?.querySelector('.labels')?.textContent).toBe('HITLWalkthrough');
+    expect(top?.querySelector('.linear-link')?.textContent).toBe('T-e ↗');
+  });
+
   it('draws an external issue with its Project, or none', () => {
     draw({ ...base, kind: 'external', closed: true, issue: makeIssue('e', { project: null }) }, true);
     expect(document.querySelector('.external-card')?.className).toBe('external-card closed selected');
     expect(screen.getByText('No project')).toBeTruthy();
+  });
+});
+
+describe('label chips', () => {
+  const label = (name: string, color = '#30A46C') => ({ name, color });
+  const chips = () => [...document.querySelectorAll('.label-chip')].map((chip) => chip.textContent);
+
+  it('show at most three, sorted by name whatever the case, with every label in the row title and no count', () => {
+    const labels = [label('merge'), label('Walkthrough'), label('AFK'), label('bug'), label('Feature')];
+    draw({ ...base, issue: makeIssue('a', { labels }) });
+    expect(chips()).toEqual(['AFK', 'bug', 'Feature']);
+    expect(document.querySelector('.labels')?.getAttribute('title')).toBe('AFK, bug, Feature, merge, Walkthrough');
+    expect(document.querySelector('.card-top')?.textContent).not.toMatch(/\+/);
+  });
+
+  it('dot each chip in the label colour from Linear', () => {
+    draw({ ...base, issue: makeIssue('a', { labels: [label('HITL', '#F76B15'), label('AFK', '#30A46C')] }) });
+    const dots = [...document.querySelectorAll<HTMLElement>('.label-chip .label-dot')].map((dot) => dot.style.background);
+    expect(dots).toEqual([cssColor('#30A46C'), cssColor('#F76B15')]);
+  });
+
+  it('leave the row out for an issue without labels, the link still on the right', () => {
+    draw(base);
+    expect(document.querySelector('.labels')).toBeNull();
+    expect(document.querySelector('.card-top')?.children).toHaveLength(1);
+  });
+
+  it('top a plate header like a card', () => {
+    draw({ ...base, kind: 'plate', descendants: 1, issue: makeIssue('a', { labels: [label('Feature', '#BB87FC'), label('AFK')] }) });
+    const top = document.querySelector('.plate-header .card-top');
+    expect([...(top?.children ?? [])].map((child) => child.className)).toEqual(['labels', 'linear-link']);
+    expect(top?.querySelector('.labels')?.textContent).toBe('AFKFeature');
   });
 });
 

@@ -1,7 +1,7 @@
 import type { Graph, Issue, Relation } from '../api/types';
 import { pickableIds } from './rules';
 
-export type ChangedField = 'state' | 'assignee' | 'title' | 'parent' | 'pickable';
+export type ChangedField = 'state' | 'assignee' | 'title' | 'parent' | 'labels' | 'pickable';
 
 /** A blocking relation: `from` blocks `to`. */
 export interface Block {
@@ -47,9 +47,15 @@ function changedFields(was: Issue, now: Issue, pickable: boolean): ChangedField[
     ['assignee', was.assignee !== now.assignee],
     ['title', was.title !== now.title],
     ['parent', was.parentId !== now.parentId],
+    ['labels', labelSet(was) !== labelSet(now)],
     ['pickable', pickable],
   ];
   return differs.filter(([, differ]) => differ).map(([field]) => field);
+}
+
+/** The issue's labels by name and colour, in a fixed order, so reordering is no change. */
+function labelSet(issue: Issue): string {
+  return JSON.stringify(issue.labels.map(({ name, color }) => `${color} ${name}`).sort((a, b) => a.localeCompare(b)));
 }
 
 function issuesById(graph: Graph): Map<string, Issue> {

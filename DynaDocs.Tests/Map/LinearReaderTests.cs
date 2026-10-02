@@ -87,20 +87,20 @@ public class LinearReaderTests
     }
 
     [Fact]
-    public async Task Graph_FollowsFull25IssuePages_UntilTheLastPage()
+    public async Task Graph_FollowsFull20IssuePages_UntilTheLastPage()
     {
         static string Page(int from, int count) =>
             string.Join(",", Enumerable.Range(from, count).Select(n => Node(Issue(n.ToString()))));
         _linear.Serve(call => call.Var("after") switch
         {
-            null => IssuesPage(Page(1, 25), more: true, cursor: "p1"),
-            "p1" => IssuesPage(Page(26, 25), more: true, cursor: "p2"),
-            _ => IssuesPage(Page(51, 3)),
+            null => IssuesPage(Page(1, 20), more: true, cursor: "p1"),
+            "p1" => IssuesPage(Page(21, 20), more: true, cursor: "p2"),
+            _ => IssuesPage(Page(41, 3)),
         });
 
         var graph = await Graph();
 
-        Assert.Equal(Enumerable.Range(1, 53).Select(n => n.ToString()), graph.Issues.Select(issue => issue.Id));
+        Assert.Equal(Enumerable.Range(1, 43).Select(n => n.ToString()), graph.Issues.Select(issue => issue.Id));
         Assert.Equal([null, "p1", "p2"], _linear.Calls.Select(call => call.Var("after")));
     }
 
@@ -117,13 +117,40 @@ public class LinearReaderTests
         Assert.Equal(["1", "2"], graph.Issues.Select(issue => issue.Id));
         Assert.Equal(new MapIssue("1", "DYD-1", "Issue 1", "https://linear.app/x/issue/DYD-1",
             new MapIssueState("Todo", "unstarted", "#e2e2e2"), "Balazs", null,
-            new MapIssueTeam("t-dyd", "DYD"), new MapIssueProject("p-map", "Map")), graph.Issues[0]);
+            new MapIssueTeam("t-dyd", "DYD"), new MapIssueProject("p-map", "Map"), graph.Issues[0].Labels), graph.Issues[0]);
         Assert.Equal("duplicate", graph.Issues[1].State.Type);
         Assert.Equal("1", graph.Issues[1].ParentId);
         Assert.Equal([null, "page1"], _linear.Calls.Select(call => call.Var("after")));
         Assert.All(_linear.Calls, call => Assert.Equal("p-map", call.Var("projectId")));
-        Assert.Contains("issues(first: 25", _linear.Calls[0].Query);
+        Assert.Contains("issues(first: 20", _linear.Calls[0].Query);
         Assert.Contains("relations(first: 10", _linear.Calls[0].Query);
+    }
+
+    [Fact]
+    public async Task Graph_ReadsEachIssuesLabels_AndTheFarEndsLabels_InLinearsOrder()
+    {
+        _linear.Serve(_ => IssuesPage(
+            Node(Issue("1", labels: Labels("Feature:#BB87FC", "AFK:#30A46C")),
+                inverseRelations: Connection(Incoming("r1", "blocks", Issue("9", project: InOther, labels: Labels("HITL:#F76B15")))))));
+
+        var graph = await Graph();
+
+        Assert.Equal([new MapLabel("Feature", "#BB87FC"), new MapLabel("AFK", "#30A46C")], graph.Issues[0].Labels);
+        Assert.Equal([new MapLabel("HITL", "#F76B15")], graph.External[0].Labels);
+        Assert.Contains("labels(first: 10) { nodes { name color } }", _linear.Calls[0].Query);
+    }
+
+    [Theory]
+    [InlineData("""{"nodes":[]}""")]
+    [InlineData("null")]
+    [InlineData(null)]
+    public async Task Graph_IssueWithoutLabels_HasAnEmptyList_WhetherTheConnectionIsEmptyNullOrAbsent(string? labels)
+    {
+        _linear.Serve(_ => IssuesPage(Node(Issue("1", labels: labels))));
+
+        var graph = await Graph();
+
+        Assert.Empty(graph.Issues[0].Labels);
     }
 
     [Fact]

@@ -44,10 +44,8 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
   the diff, the hunk quoted, a finding only with its concrete consequence named; every smell
   answered, not the first one found
 - Code that was already bad is a finding when this change builds on it
-- Every member the diff adds, edits, extracts or tests has a production caller, found by searching
-  references outside the tests; a test is not a caller. A member with none, commented-out code
-  included, is dead code: the finding asks for its deletion with its tests, and a coverage,
-  complexity or mutation finding on it closes the same way
+- Code that only tests call, or that is commented out, is dead. The fix is to delete it with its
+  tests, even when a gate asked for more tests or a refactor
 - Each test is a contract: one claim, named by case and expectation, at a seam a caller observes,
   that some breach turns red; a test with no such breach is a finding however green it runs
 - Shapes that pass by construction: an expected value recomputed the code's way; a mock inside the

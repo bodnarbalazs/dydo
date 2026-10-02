@@ -9,7 +9,9 @@ date: 2026-10-02
 dydo 3.1.2 is a refinement release for the `dydo map` viewer: each card now shows its issue's Linear
 labels, the identifier doubles as the Linear link, and the pickable slot reads more plainly. It also
 tightens the dangerous-bash-command guard and the missing-API-key help text, and ships agent-guidance
-changes: code review's rubric now flags test-only and commented-out code as dead, the inquisitor's
+changes: the coding standards (and their Scaffold copy installed by `dydo init`) now say code that
+only tests call is dead and to delete it with its tests once a review or gate flags it, code
+review's rubric carries the same rule for test-only and commented-out code, the inquisitor's
 existing dead-code lens gained a proof form for unused members, exports and fields, and skill
 citation rules now allow citing only Scaffold-carried content.
 
@@ -29,10 +31,12 @@ citation rules now allow citing only Scaffold-carried content.
   badge instead of `unassigned` when the issue is pickable — an issue is pickable only when
   unassigned, so this is a straight swap. Assigned issues still show the assignee there, and the
   pickable ring/glow is unchanged.
-- Code review's `code.md` rubric now flags code that only tests call, or that is commented out, as
-  dead, and says to delete it with its tests even when a gate asked for more tests or a refactor.
-  The inquisitor's existing dead-code lens gained a proof form: an unused member, export or field is
-  now proved dead by a reference search that counts test-only callers as no callers.
+- The coding standards (and their Scaffold copy installed by `dydo init`) now say code that only
+  tests call is dead and, once a review or gate flags it, to delete it with its tests. Code
+  review's `code.md` rubric carries the same rule, saying to delete it with its tests even when a
+  gate asked for more tests or a refactor. The inquisitor's existing dead-code lens gained a proof
+  form: an unused member, export or field is now proved dead by a reference search that counts
+  test-only callers as no callers.
 
 ## Changed
 

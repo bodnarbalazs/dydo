@@ -59,11 +59,11 @@ Two choices, trading the two loads:
   This is disclosure with a file boundary: one skill's own reference, reached only by the branches
   that need it. Reference several skills share lives instead in a model-invoked method skill, or in
   a `dydo/` document each of them lists under Must-Reads.
-- **Citing a project-owned doc** — cite it by file, or by a heading `Scaffold/dydo/` carries. A
-  project's copy freezes at its first `dydo init` and an adopter reconciles it by hand, so a
-  heading found only in the dydo repository's own `dydo/` resolves nowhere else. Content the skill cannot
-  work without lives in the skill. A new heading citation lands in `Scaffold/dydo/` in the same
-  change.
+- **Citing a project-owned doc** — cite a file or a heading that `Scaffold/dydo/` carries. A
+  project's copy freezes at its first `dydo init` and an adopter reconciles it by hand, so a file or
+  heading found only in the dydo repository's own `dydo/` resolves nowhere else. Content the skill
+  cannot work without lives in the skill. A new citation, by file or by heading, lands in
+  `Scaffold/dydo/` in the same change.
 
 ## Distribution
 

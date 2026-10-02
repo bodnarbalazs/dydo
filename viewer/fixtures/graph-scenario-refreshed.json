@@ -66,16 +66,16 @@
           "color": "#30A46C"
         },
         {
-          "name": "Needs human",
-          "color": "#F5A623"
+          "name": "HITL",
+          "color": "#F76B15"
+        },
+        {
+          "name": "Bug",
+          "color": "#EB5757"
         },
         {
           "name": "Walkthrough",
           "color": "#C69C6D"
-        },
-        {
-          "name": "Improvement",
-          "color": "#4EA7FC"
         }
       ]
     },
@@ -109,8 +109,8 @@
           "color": "#30A46C"
         },
         {
-          "name": "Needs human",
-          "color": "#F5A623"
+          "name": "HITL",
+          "color": "#F76B15"
         }
       ]
     },
@@ -142,6 +142,10 @@
         {
           "name": "AFK",
           "color": "#30A46C"
+        },
+        {
+          "name": "Needs human",
+          "color": "#F5A623"
         }
       ]
     },

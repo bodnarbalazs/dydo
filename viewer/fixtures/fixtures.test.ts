@@ -31,9 +31,10 @@
  * (list_issues with labels, in Linear's order), coloured as list_issue_labels gives the Dydo workspace's
  * labels: AFK #30A46C, HITL #F76B15, Feature #BB87FC, Bug #EB5757, Question #F2C94C, Research #95A2B3,
  * Merge #4EA7FC, Enablement #26B5CE, Inquisition #5E6AD2, Walkthrough #C69C6D, Grilling #D4A017 and the
- * retired Needs human #F5A623 and Improvement #4EA7FC. The scenario files hand-build the card cases:
- * DYD-9001 has none, DYD-270 three, DYD-271 five, and DYD-272 the long hand-made label "Blocked upstream
- * on Linear archived-relation semantics" (#D4A017) beside Merge; the refresh gives DYD-266 Needs human.
+ * retired Needs human #F5A623. The scenario files hand-build the card cases: DYD-9001 has none, DYD-269
+ * three whose last (Needs human) does not fit, DYD-270 three short ones that fit side by side, DYD-271
+ * five whose first three by name fit, and DYD-272 the long hand-made label "Blocked upstream on Linear
+ * archived-relation semantics" (#D4A017) beside Merge; the refresh gives DYD-266 Needs human.
  *
  * projects-dydo.json holds the team's Projects captured 2026-09-27 through the Linear MCP
  * (list_projects with targetDate, completedAt and canceledAt), plus hand-built Projects whose URLs end
@@ -129,9 +130,13 @@ describe('scenario fixtures', () => {
     expect(describeDiff(diff)).toBe('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
   });
 
-  it('holds cards with none, one, two, three and five labels, and one long label', () => {
+  it('holds cards with none, one, two, three and five labels, a chip too wide to fit, and one long label', () => {
     const counts = new Set(scenario.issues.map((issue) => issue.labels.length));
     expect([...counts].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 5]);
+    const names = (identifier: string) => byIdentifier(scenario, identifier).labels.map((label) => label.name);
+    expect(names('DYD-269')).toEqual(['Merge', 'AFK', 'Needs human']);
+    expect(names('DYD-270')).toEqual(['Merge', 'AFK', 'HITL']);
+    expect(names('DYD-271')).toEqual(['Merge', 'AFK', 'HITL', 'Bug', 'Walkthrough']);
     expect(byIdentifier(scenario, 'DYD-272').labels.map((label) => label.name.length > 40)).toEqual([false, true]);
   });
 

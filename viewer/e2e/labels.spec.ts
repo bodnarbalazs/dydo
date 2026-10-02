@@ -11,7 +11,9 @@ interface Box {
 interface TopRow {
   row: Box;
   link: Box;
-  chips: { text: string; box: Box; truncated: boolean; layoutLeft: number; layoutRight: number }[];
+  /** The map's zoom: page pixels per layout pixel. */
+  scale: number;
+  chips: { text: string; box: Box; truncated: boolean; clippedBelow: boolean }[];
 }
 
 async function openScenario(page: Page) {
@@ -29,12 +31,18 @@ function topRow(card: Locator): Promise<TopRow> {
     };
     const row = top.querySelector('.labels');
     const link = top.querySelector('.linear-link');
-    if (row === null || link === null) throw new Error('no label row or link');
-    return { row: box(row), link: box(link), chips: [...row.querySelectorAll('.label-chip')].map((chip) => {
+    const viewport = top.closest('.react-flow__viewport');
+    if (row === null || link === null || viewport === null) throw new Error('no label row, link or map viewport');
+    const scale = new DOMMatrix(getComputedStyle(viewport).transform).a;
+    return { row: box(row), link: box(link), scale, chips: [...row.querySelectorAll('.label-chip')].map((chip) => {
         const name = chip.querySelector('.label-name');
-        const { offsetLeft, offsetWidth } = chip as HTMLElement;
-        // Layout pixels, before the map's zoom.
-        return { text: chip.textContent, box: box(chip), truncated: name !== null && name.scrollWidth > name.clientWidth, layoutLeft: offsetLeft, layoutRight: offsetLeft + offsetWidth };
+        return {
+          text: chip.textContent,
+          box: box(chip),
+          truncated: name !== null && name.scrollWidth > name.clientWidth,
+          // A name box shorter than its glyphs cuts the descenders of g, p and y.
+          clippedBelow: name !== null && name.scrollHeight > name.clientHeight,
+        };
       }) };
   });
 }
@@ -46,8 +54,8 @@ const middle = (box: Box) => (box.top + box.bottom) / 2;
 test.describe('label chips (DYD-303)', () => {
   test('show what fits whole, hide the rest whole, and sit centred on one row with the link', async ({ page }) => {
     await openScenario(page);
-    for (const identifier of ['DYD-268', 'DYD-270', 'DYD-271']) {
-      const { row, link, chips } = await topRow(node(page, identifier));
+    for (const identifier of ['DYD-268', 'DYD-269', 'DYD-270', 'DYD-271']) {
+      const { row, link, scale, chips } = await topRow(node(page, identifier));
       expect(chips.length, identifier).toBeLessThanOrEqual(3);
       const shown = chips.filter((chip) => inside(chip.box, row));
       expect(shown.length, identifier).toBeGreaterThan(0);
@@ -56,16 +64,33 @@ test.describe('label chips (DYD-303)', () => {
       expect(shown.map((chip) => chip.text)).toEqual(chips.slice(0, shown.length).map((chip) => chip.text));
       shown.forEach((chip) => expect(Math.abs(middle(chip.box) - middle(link)), `${identifier} ${chip.text}`).toBeLessThan(1));
       shown.forEach((chip) => expect(chip.truncated, `${identifier} ${chip.text} is cut`).toBe(false));
+      shown.forEach((chip) => expect(chip.clippedBelow, `${identifier} ${chip.text} is cut below`).toBe(false));
       expect(row.right, identifier).toBeLessThanOrEqual(link.left);
-      shown.slice(1).forEach((chip, index) => expect(chip.layoutLeft - (shown[index]?.layoutRight ?? 0)).toBe(4));
+      shown.slice(1).forEach((chip, index) => expect((chip.box.left - (shown[index]?.box.right ?? 0)) / scale, `${identifier} gap before ${chip.text}`).toBeCloseTo(4, 1));
     }
   });
 
-  test('cap five labels at three chips, by name, and hide the one that does not fit', async ({ page }) => {
+  test('show three short labels as three whole chips side by side', async ({ page }) => {
+    await openScenario(page);
+    const card = node(page, 'DYD-270');
+    await expect(card.locator('.label-chip')).toHaveText(['AFK', 'HITL', 'Merge']);
+    const { row, chips } = await topRow(card);
+    expect(chips.map((chip) => inside(chip.box, row))).toEqual([true, true, true]);
+  });
+
+  test('cap five labels at the first three by name', async ({ page }) => {
     await openScenario(page);
     const card = node(page, 'DYD-271');
-    await expect(card.locator('.label-chip')).toHaveText(['AFK', 'Improvement', 'Merge']);
-    await expect(card.locator('.labels')).toHaveAttribute('title', 'AFK, Improvement, Merge, Needs human, Walkthrough');
+    await expect(card.locator('.label-chip')).toHaveText(['AFK', 'Bug', 'HITL']);
+    await expect(card.locator('.labels')).toHaveAttribute('title', 'AFK, Bug, HITL, Merge, Walkthrough');
+    const { row, chips } = await topRow(card);
+    expect(chips.map((chip) => inside(chip.box, row))).toEqual([true, true, true]);
+  });
+
+  test('hide a chip that does not fit whole', async ({ page }) => {
+    await openScenario(page);
+    const card = node(page, 'DYD-269');
+    await expect(card.locator('.label-chip')).toHaveText(['AFK', 'Merge', 'Needs human']);
     const { row, chips } = await topRow(card);
     expect(chips.map((chip) => inside(chip.box, row))).toEqual([true, true, false]);
   });
@@ -83,6 +108,7 @@ test.describe('label chips (DYD-303)', () => {
     const name = card.locator('.label-name').first();
     await expect(name).toHaveCSS('text-overflow', 'ellipsis');
     expect(await name.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+    expect(long.clippedBelow).toBe(false);
   });
 
   test('the identifier link opens Linear in a new tab and leaves the card unselected', async ({ page, context }) => {

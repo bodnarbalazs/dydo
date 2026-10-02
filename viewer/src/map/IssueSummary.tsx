@@ -1,4 +1,5 @@
 import type { Issue } from '../api/types';
+import { LabelChips } from './LabelChips';
 import { StatusIcon } from './StatusIcon';
 
 interface IssueSummaryProps {
@@ -8,14 +9,13 @@ interface IssueSummaryProps {
   color: string;
 }
 
-/** The identifier, title, status and assignee every map card shows. */
+/** The labels, Linear link, title, status and assignee every map card shows. */
 export function IssueSummary({ issue, pickable, color }: IssueSummaryProps) {
   return (
     <>
       <div className="card-top">
-        <span className="identifier">{issue.identifier}</span>
-        {pickable && <span className="pickable-badge">Pickable</span>}
-        <LinearButton issue={issue} />
+        <LabelChips labels={issue.labels} />
+        <LinearLink issue={issue} />
       </div>
       <div className="title" title={issue.title}>
         {issue.title}
@@ -25,16 +25,21 @@ export function IssueSummary({ issue, pickable, color }: IssueSummaryProps) {
           <StatusIcon type={issue.state.type} color={color} />
           <span className="state-name">{issue.state.name}</span>
         </span>
-        <span className={issue.assignee === null ? 'assignee unassigned' : 'assignee'}>{issue.assignee ?? 'unassigned'}</span>
+        {pickable ? (
+          <span className="pickable-badge">Pickable</span>
+        ) : (
+          <span className={issue.assignee === null ? 'assignee unassigned' : 'assignee'}>{issue.assignee ?? 'unassigned'}</span>
+        )}
       </div>
     </>
   );
 }
 
-export function LinearButton({ issue }: { issue: Issue }) {
+/** The identifier, opening the issue in Linear in a new tab without selecting the card. */
+export function LinearLink({ issue }: { issue: Issue }) {
   return (
     <a
-      className="linear-button"
+      className="linear-link"
       href={issue.url}
       target="_blank"
       rel="noopener"
@@ -42,7 +47,7 @@ export function LinearButton({ issue }: { issue: Issue }) {
       aria-label={`Open ${issue.identifier} in Linear`}
       onClick={(event) => event.stopPropagation()}
     >
-      Linear ↗
+      {issue.identifier} ↗
     </a>
   );
 }

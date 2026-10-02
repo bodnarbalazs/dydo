@@ -24,7 +24,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "Blocked upstream on Linear archived-relation semantics",
+     "color": "#D4A017"
+    }
+   ]
   },
   {
    "id": "0925ea81-82c4-46cd-9261-7ec7c2b0072e",
@@ -45,7 +55,29 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Needs human",
+     "color": "#F5A623"
+    },
+    {
+     "name": "Walkthrough",
+     "color": "#C69C6D"
+    },
+    {
+     "name": "Improvement",
+     "color": "#4EA7FC"
+    }
+   ]
   },
   {
    "id": "8706dd64-bd9e-41e4-94c5-1e19ce0f7aa9",
@@ -66,7 +98,21 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Needs human",
+     "color": "#F5A623"
+    }
+   ]
   },
   {
    "id": "3e3e139f-d6cd-4b2e-ba6b-68ebf017220d",
@@ -87,7 +133,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "2a74257b-ce5d-4eb8-a99d-5738fd1d6c9f",
@@ -108,7 +164,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Merge",
+     "color": "#4EA7FC"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "dabebccd-0618-4a41-a4a5-df801fed72a3",
@@ -129,7 +195,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "ae042f65-0b27-4654-a142-9a0a8e2f123c",
@@ -150,7 +226,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "5bb8ed11-c2ec-422d-a194-b2a0c8a2662e",
@@ -171,7 +257,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "80e512e6-baa3-4229-9307-103dc210c72b",
@@ -192,7 +288,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "f7847ba7-95ff-4285-829d-610102116d6c",
@@ -213,7 +319,17 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   },
   {
    "id": "257e75d1-e3d9-4c7b-b422-d6b38439755a",
@@ -234,7 +350,13 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "d988131e-19e9-4908-8a39-204b85b94745",
@@ -255,7 +377,13 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "df580cf1-3c2a-5760-aee3-4ebc1e7586d5",
@@ -276,7 +404,8 @@
    "project": {
     "id": "19bea6b6-c574-4b40-896e-bdb94d5cea9c",
     "name": "Visual Linear project map"
-   }
+   },
+   "labels": []
   }
  ],
  "external": [
@@ -299,7 +428,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "HITL",
+     "color": "#F76B15"
+    },
+    {
+     "name": "Walkthrough",
+     "color": "#C69C6D"
+    }
+   ]
   },
   {
    "id": "18f968c9-a7ec-46c7-9baf-345d27146854",
@@ -320,7 +459,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "46514b05-7b70-43de-a774-34ac51aa9c7d",
@@ -338,7 +487,8 @@
     "id": "caa6ccbf-4f9b-477e-826c-a51ed43b0687",
     "key": "DYD"
    },
-   "project": null
+   "project": null,
+   "labels": []
   },
   {
    "id": "4a3e8ab4-d730-4efb-b31b-768ee42246a5",
@@ -359,7 +509,13 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Research",
+     "color": "#95A2B3"
+    }
+   ]
   },
   {
    "id": "4be9fa5f-4f86-426c-b669-c87b724f5699",
@@ -380,7 +536,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Bug",
+     "color": "#EB5757"
+    }
+   ]
   },
   {
    "id": "66d9ec96-9385-4677-a31f-4bdbb2e592d2",
@@ -401,7 +567,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "Inquisition",
+     "color": "#5E6AD2"
+    },
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    }
+   ]
   },
   {
    "id": "f7bafd41-e5c3-4896-bd23-9bd34158b932",
@@ -422,7 +598,17 @@
    "project": {
     "id": "2ecbc168-2a42-482d-9b1b-a29537985ca5",
     "name": "dydo 3.0 / Consolidate and release"
-   }
+   },
+   "labels": [
+    {
+     "name": "AFK",
+     "color": "#30A46C"
+    },
+    {
+     "name": "Feature",
+     "color": "#BB87FC"
+    }
+   ]
   }
  ],
  "relations": [

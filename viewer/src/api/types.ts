@@ -30,6 +30,8 @@ export interface Issue {
   parentId: string | null;
   team: { id: string; key: string };
   project: { id: string; name: string } | null;
+  /** In Linear's order; empty when the issue has none. `color` is Linear's hex. */
+  labels: { name: string; color: string }[];
 }
 
 export interface Relation {

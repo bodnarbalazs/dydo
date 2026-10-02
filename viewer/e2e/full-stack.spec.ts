@@ -81,6 +81,23 @@ test('a team and a Project are chosen and their graph is drawn from Linear', asy
   await expect(page.locator('.edge-blocks')).toHaveCount(2);
 });
 
+test('labels come from Linear in its colours, by name, beside the identifier link', async ({ page, map, linear }) => {
+  await openProjectMap(page, map);
+  const card = node(page, 'DYD-1');
+  await expect(card.locator('.label-chip')).toHaveText(['AFK', 'Feature']);
+  await expect(card.locator('.label-dot').first()).toHaveCSS('background-color', 'rgb(48, 164, 108)');
+  await expect(card.getByRole('link', { name: 'Open DYD-1 in Linear' })).toHaveText('DYD-1 ↗');
+  await expect(node(page, 'DYD-2').locator('.label-chip')).toHaveText(['HITL']);
+  await expect(node(page, 'DYD-3').locator('.label-chip')).toHaveCount(0);
+
+  const drawTheMap = linear.workspace.issues.find((issue) => issue.identifier === 'DYD-1');
+  if (drawTheMap === undefined) throw new Error('no DYD-1 in the fake workspace');
+  drawTheMap.labels = [];
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.getByRole('status')).toHaveText('1 changed');
+  await expect(card.locator('.label-chip')).toHaveCount(0);
+});
+
 test('a blocker in another Project links to Linear and opens its Project, focused', async ({ page, map }) => {
   await openProjectMap(page, map);
   const external = node(page, 'DYD-2');

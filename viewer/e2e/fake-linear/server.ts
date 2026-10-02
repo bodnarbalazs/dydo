@@ -39,6 +39,7 @@ function issueFields(workspace: Workspace, issue: FakeIssue) {
     parent: null,
     team: { id: issue.teamId, key: find(workspace.teams, issue.teamId).key },
     project: project === null ? null : { id: project.id, name: project.name },
+    labels: { nodes: issue.labels },
   };
 }
 

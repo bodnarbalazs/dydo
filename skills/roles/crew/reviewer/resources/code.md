@@ -38,9 +38,16 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 - The code the candidate touched is no worse than it was found, and smaller, simpler, standard or
   deeper wherever the change warranted it; an abstraction or optimisation ahead of a need is a
   finding
-- The twelve smells in the standards, each a question against the diff, the hunk quoted, a finding
-  only with its concrete consequence named; every smell answered, not the first one found
+- Fowler's twelve smells (*Refactoring*, ch. 3): Mysterious Name, Duplicated Code, Feature Envy,
+  Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change,
+  Speculative Generality, Message Chains, Middle Man, Refused Bequest. Each is a question against
+  the diff, the hunk quoted, a finding only with its concrete consequence named; every smell
+  answered, not the first one found
 - Code that was already bad is a finding when this change builds on it
+- Every member the diff adds, edits, extracts or tests has a production caller, found by searching
+  references outside the tests; a test is not a caller. A member with none, commented-out code
+  included, is dead code: the finding asks for its deletion with its tests, and a coverage,
+  complexity or mutation finding on it closes the same way
 - Each test is a contract: one claim, named by case and expectation, at a seam a caller observes,
   that some breach turns red; a test with no such breach is a finding however green it runs
 - Shapes that pass by construction: an expected value recomputed the code's way; a mock inside the
@@ -65,7 +72,7 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
 ## Security and likely bugs
 
 - Every boundary the diff touches validates what crosses it, and the vulnerabilities
-  coding-standards §5 names are asked against every such hunk; secrets stay out of source and logs
+  the standards' Security section names are asked against every such hunk; secrets stay out of source and logs
 - Logic holds at the edges (empty, null, first, last, off-by-one), no fallback masks an impossible
   state, and each error path is handled on purpose
 - Ordering, concurrency and resource lifetime, where the diff introduces them

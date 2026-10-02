@@ -10,13 +10,17 @@ sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
    `<KEY> proof: <hypothesis>`, and returns `confirmed` with its red-test SHA, `not reproduced`, or
    `inconclusive` with the deciding observation. A finding in prose, docs or a prompt file needs no
    test: both passages quoted at `file:line` on the pinned SHA are its reproduction, with no proof
-   branch.
+   branch. An unused member, export or field needs no test either: its definition at `file:line` and
+   a reference search on the pinned SHA, command and output quoted, showing no reference outside
+   the tests (a test is not a caller), are its reproduction. Verify it by rerunning the search.
 3. Plan an `inquisition/<slug>` branch from the feature SHA, never merged, with child proof branches.
    Deduplicate confirmed problems into Bugs under the Project, using the feature as
-   base and linking each reproduction commit, or quoting the passages of a prose finding. Done when
-   every hypothesis has a verdict and every confirmed problem has its Bug and each open Bug's
-   reproduction commit, where it has one, is linked through a pushed named ref independent of the audit branch, with
-   its retention owner recorded.
+   base and linking each reproduction commit, quoting the passages of a prose finding, or quoting an
+   unused-member finding's definition and search; its fix deletes the member together with its
+   test-only callers. Done when every hypothesis has a verdict and every confirmed problem has its
+   Bug and each open Bug's reproduction commit, where it has one (a prose or unused-member Bug has
+   none), is linked through a pushed named ref independent of the audit branch, with its
+   retention owner recorded.
 4. Name the completed evidence packet for the admiral: scope, feature SHA, parts/lenses, findings,
    hypotheses/verdicts and Bugs. Follow **Retaining an Inquisition's record and proofs** in the
    working-tree contract: a separate primary Feature/AFK owns record delivery through its own

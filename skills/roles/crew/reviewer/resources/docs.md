@@ -53,7 +53,6 @@ Every item below is a FAIL when it holds.
   licence, and the attribution comment stays.
 - **A return shape its consumer cannot parse**: the review block, or a crew member's return to the
   Captain.
-- **Drift from the canonical source.** `skills/` is the single canonical tree; every host reads it
-  through its own projection, never a generated copy. Judge drift against
-  `dydo/project/decisions/049-skills-are-the-source-retire-the-compiler.md`, read from the
-  repository root, and the Issue's own contract.
+- **Drift from the canonical source.** `skills/` is the single canonical tree, authored directly with
+  no compile step; every host reads it through its own projection, never a generated copy. Judge
+  drift against that rule and the Issue's own contract.

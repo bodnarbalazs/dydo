@@ -149,8 +149,10 @@ uses `prototype` and closes on the human's verdict with its winning branch linke
 An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. Set
 `In Progress` on the human's confirmation, contract it by [inquisition](resources/inquisition.md),
 then brief read-only inquisitors sweeping parts/lenses and proof-only
-code-writers testing code hypotheses on child proof branches. Deduplicate confirmed findings into Bugs
-with their red-test SHAs, or a prose finding's quoted passages, and pin the completed packet on the
+code-writers testing code hypotheses on child proof branches. A prose or dead-code finding needs no
+proof branch. Deduplicate confirmed findings into Bugs with their red-test SHAs, a prose finding's
+quoted passages, or a dead-code finding's definition and quoted reference search (rerun by you,
+its fix deleting the member with its test-only callers), and pin the completed packet on the
 Issue. Retain each open Bug's reproduction commit on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
 in the working-tree contract: record the delivery need, push/post the resume state and release before the record Feature
 or blocker exists. Return `released <key>: record delivery` to the Project's map holder, which creates and

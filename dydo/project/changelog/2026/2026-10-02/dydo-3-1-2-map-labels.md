@@ -9,8 +9,9 @@ date: 2026-10-02
 dydo 3.1.2 is a refinement release for the `dydo map` viewer: each card now shows its issue's Linear
 labels, the identifier doubles as the Linear link, and the pickable slot reads more plainly. It also
 tightens the dangerous-bash-command guard and the missing-API-key help text, and ships agent-guidance
-changes: the reviewer's rubric and the inquisitor gained a dead-code lens with a proof form, and
-skill citation rules now allow citing only Scaffold-carried content.
+changes: code review's rubric now flags test-only and commented-out code as dead, the inquisitor's
+existing dead-code lens gained a proof form for unused members, exports and fields, and skill
+citation rules now allow citing only Scaffold-carried content.
 
 ## Added
 
@@ -28,9 +29,10 @@ skill citation rules now allow citing only Scaffold-carried content.
   badge instead of `unassigned` when the issue is pickable — an issue is pickable only when
   unassigned, so this is a straight swap. Assigned issues still show the assignee there, and the
   pickable ring/glow is unchanged.
-- Code review's `code.md` rubric and the inquisitor gained a dead-code lens with a proof form:
-  review now flags test-only dead code — code that only tests call — and the coding standards say
-  to delete it rather than keep it alive for coverage's sake.
+- Code review's `code.md` rubric now flags code that only tests call, or that is commented out, as
+  dead, and says to delete it with its tests even when a gate asked for more tests or a refactor.
+  The inquisitor's existing dead-code lens gained a proof form: an unused member, export or field is
+  now proved dead by a reference search that counts test-only callers as no callers.
 
 ## Changed
 

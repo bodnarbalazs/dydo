@@ -137,7 +137,7 @@ the default officer: an Issue gets a captain whether or not the human has invoke
 Start from the Type's shape in the workspace standard; when used, your contract makes the map exact. A Bug normally
 reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
 simple Bug template placeholders into parent hops, recording why and closing the unused records
-`Canceled`. Under DR 047's Type-map exception, you may retain reproduce-or-identify and fix
+`Canceled`. Under the workspace standard's Bug exception, you may retain reproduce-or-identify and fix
 as direct Bug Sub-issues: fix is natively blocked by reproduction, both carry the parent's Mode,
 and any shared paths transfer only after reproduction closes and its evidence is recorded. Give
 each stage its own contract, chain, branch and worktree; create a Merge Sub-issue for each actual

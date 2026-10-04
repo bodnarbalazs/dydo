@@ -20,6 +20,7 @@ reviewable context and evidence.
 - **pitfalls/** - Known gotchas and issues
 - **migrations/** - Version and operating-model transition evidence
 - **plans/** - Reviewed implementation plans
+- [reviews/](./reviews/_reviews.md) - Implementation and review evidence
 
 ## When to Add Docs Here
 

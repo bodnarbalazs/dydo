@@ -16,9 +16,9 @@ boundary and remains the sole owner of live project-management state.
 3. The guard evaluates path tiers, dangerous commands, and configured nudges.
 4. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
 
-No step provisions, polls, caches, or mirrors Linear. Agents reach Linear through its official MCP, UI,
+No step provisions, polls, or mirrors Linear. Agents reach Linear through its official MCP, UI,
 API, and integrations. The one exception inside dydo is `dydo map`, which reads a Project on demand
-and writes nothing ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)).
+and retains only disposable saved maps for comparison ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)).
 
 ## Component layout
 

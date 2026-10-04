@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { makeGraph } from '../graph/testIssues';
-import { ApiError, fetchGraph, fetchProjects, fetchTeams } from './client';
+import { ApiError, fetchGraph, fetchProjects, fetchSaved, fetchTeams } from './client';
 
 function answer(status: number, body: string) {
   const fetchMock = vi.fn(() => Promise.resolve(new Response(body, { status, statusText: status === 200 ? 'OK' : 'Bad Gateway' })));
@@ -23,6 +23,19 @@ describe('api client', () => {
     const fetchMock = answer(200, JSON.stringify({ projects: [] }));
     expect(await fetchProjects('a&b')).toEqual([]);
     expect(fetchMock).toHaveBeenCalledWith('/api/projects?team=a%26b', expect.anything());
+  });
+
+  it('reads saved graphs and timestamps without changing the fresh route', async () => {
+    const snapshot = { graph: makeGraph([]), fetchedAt: '2026-10-04T12:00:00Z' };
+    const fetchMock = answer(200, JSON.stringify({ snapshot }));
+    const signal = new AbortController().signal;
+    expect(await fetchSaved('a&b', signal)).toEqual(snapshot);
+    expect(fetchMock).toHaveBeenCalledWith('/api/saved?project=a%26b', { cache: 'no-store', signal });
+  });
+
+  it('an explicit saved miss is null', async () => {
+    answer(200, '{"snapshot":null}');
+    expect(await fetchSaved('p1')).toBeNull();
   });
 
   it('reads a graph', async () => {

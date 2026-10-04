@@ -1,4 +1,4 @@
-import type { Graph, Project, Team } from './types';
+import type { Graph, Project, Snapshot, Team } from './types';
 
 export class ApiError extends Error {
   readonly code: string;
@@ -17,12 +17,16 @@ export async function fetchProjects(teamId: string): Promise<Project[]> {
   return (await getJson<{ projects: Project[] }>(`/api/projects?team=${encodeURIComponent(teamId)}`)).projects;
 }
 
-export function fetchGraph(projectId: string): Promise<Graph> {
-  return getJson<Graph>(`/api/graph?project=${encodeURIComponent(projectId)}`);
+export function fetchGraph(projectId: string, signal?: AbortSignal): Promise<Graph> {
+  return getJson<Graph>(`/api/graph?project=${encodeURIComponent(projectId)}`, signal);
 }
 
-async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(path, { cache: 'no-store' });
+export async function fetchSaved(projectId: string, signal?: AbortSignal): Promise<Snapshot | null> {
+  return (await getJson<{ snapshot: Snapshot | null }>(`/api/saved?project=${encodeURIComponent(projectId)}`, signal)).snapshot ?? null;
+}
+
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(path, { cache: 'no-store', ...(signal === undefined ? {} : { signal }) });
   const body: unknown = await response.json().catch(() => null);
   if (response.ok && body !== null) return body as T;
   if (isErrorEnvelope(body)) throw new ApiError(body.error.code, body.error.message);

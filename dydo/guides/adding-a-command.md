@@ -27,8 +27,8 @@ smoke coverage.
 
 Before adding a command, confirm the capability belongs inside dydo. Local documentation, validation,
 native skill authoring, guard, configuration, and utility operations fit the product boundary.
-Linear work management does not: do not add commands that create, update, poll, cache, provision, or
-mirror Linear objects. A read-only, on-demand view such as `dydo map` fits under
+Linear work management does not: do not add commands that create, update, poll, provision, or
+mirror Linear objects. The disposable saved-map cache and on-demand reads of `dydo map` fit under
 [DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md).
 
 Transition-only commands must be labeled as historical migration compatibility in active docs and must

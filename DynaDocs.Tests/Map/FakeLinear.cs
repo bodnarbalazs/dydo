@@ -19,6 +19,8 @@ internal sealed partial class FakeLinear : HttpMessageHandler
     public Func<LinearCall, (HttpStatusCode Status, string Body)> Answer { get; set; } =
         call => throw new InvalidOperationException($"No answer for {call.Operation}");
 
+    public Func<LinearCall, CancellationToken, Task<(HttpStatusCode Status, string Body)>>? AsyncAnswer { get; set; }
+
     public HttpClient Client => new(this);
 
     public LinearReader Reader() => new(Transport());
@@ -41,9 +43,9 @@ internal sealed partial class FakeLinear : HttpMessageHandler
             request.Headers.TryGetValues("Authorization", out var auth) ? auth.Single() : null,
             request.Method,
             request.Content.Headers.ContentType?.MediaType);
-        Calls.Add(call);
+        lock (Calls) Calls.Add(call);
 
-        var (status, text) = Answer(call);
+        var (status, text) = AsyncAnswer is null ? Answer(call) : await AsyncAnswer(call, ct);
         return new HttpResponseMessage(status) { Content = new StringContent(text, Encoding.UTF8, "application/json") };
     }
 

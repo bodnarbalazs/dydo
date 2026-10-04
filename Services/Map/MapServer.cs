@@ -41,18 +41,28 @@ internal sealed class MapServer(MapApi api, ViewerBundle viewer, Func<int>? port
         }
     }
 
-    /// <summary>Answers requests one at a time until <paramref name="ct"/> is cancelled.</summary>
+    /// <summary>Tracks concurrent requests and drains them until <paramref name="ct"/> is cancelled.</summary>
     public async Task RunAsync(CancellationToken ct)
     {
         using var stop = ct.Register(listener.Stop);
+        var pending = new HashSet<Task>();
         try
         {
             while (true)
-                await RespondAsync(await listener.GetContextAsync(), ct);
+            {
+                var context = await listener.GetContextAsync();
+                pending.RemoveWhere(task => task.IsCompletedSuccessfully);
+                pending.Add(RespondAsync(context, ct));
+            }
         }
         catch (Exception) when (ct.IsCancellationRequested)
         {
             // Stopping the listener faults the pending accept; that is the way out.
+        }
+        finally
+        {
+            try { await Task.WhenAll(pending); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         }
     }
 

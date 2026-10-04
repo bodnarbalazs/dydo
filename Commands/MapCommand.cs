@@ -63,9 +63,10 @@ public static class MapCommand
         }
 
         using var http = new HttpClient();
-        var linear = new LinearGraphQL(
-            http, new Uri(string.IsNullOrEmpty(endpoint) ? LinearEndpoint : endpoint), apiKey);
-        using var server = new MapServer(new MapApi(new LinearReader(linear)), ViewerBundle.Embedded);
+        var effectiveEndpoint = new Uri(string.IsNullOrEmpty(endpoint) ? LinearEndpoint : endpoint);
+        var linear = new LinearGraphQL(http, effectiveEndpoint, apiKey);
+        var cache = new MapSnapshotCache(effectiveEndpoint, apiKey, Environment.GetEnvironmentVariable("DYDO_MAP_CACHE_DIR"));
+        using var server = new MapServer(new MapApi(new LinearReader(linear), cache), ViewerBundle.Embedded);
 
         var url = server.Start();
         Console.WriteLine($"dydo map: serving {url} (Ctrl+C to stop)");

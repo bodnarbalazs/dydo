@@ -18,12 +18,13 @@ interface MapCanvasProps {
   fitKey: number;
   /** The latest refresh's marks, or null when nothing is animating. */
   cascade: Cascade | null;
+  onReady?: () => void;
   onFocus: (id: string) => void;
   onOpenExternal: (issue: Issue) => void;
   onTogglePlate: (id: string) => void;
 }
 
-export function MapCanvas({ flow, focus, fitKey, cascade, onFocus, onOpenExternal, onTogglePlate }: MapCanvasProps) {
+export function MapCanvas({ flow, focus, fitKey, cascade, onReady, onFocus, onOpenExternal, onTogglePlate }: MapCanvasProps) {
   const nodes = useMemo(
     () => flow.nodes.map((node) => ({ ...node, selected: node.id === focus, ...marked(cascade?.nodes.get(node.id)) })),
     [flow.nodes, focus, cascade],
@@ -56,7 +57,7 @@ export function MapCanvas({ flow, focus, fitKey, cascade, onFocus, onOpenExterna
           className={cascade?.glide === true ? 'refresh-glide' : undefined}
           style={TIMING_PROPERTIES}
         >
-          <Viewport nodes={nodes} focus={focus} fitKey={fitKey} />
+          <Viewport nodes={nodes} focus={focus} fitKey={fitKey} onReady={onReady} />
           {/* Graph paper: a faint line every 24 px under a stronger one every five cells. */}
           <Background id="minor" variant={BackgroundVariant.Lines} gap={24} color="var(--grid-minor)" />
           <Background id="major" variant={BackgroundVariant.Lines} gap={120} color="var(--grid-major)" />
@@ -83,21 +84,32 @@ function marked(mark: NodeMark | EdgeMark | undefined): { className?: string; st
 }
 
 /** Fits the map on a new layout request and centres the focused node whenever focus moves. */
-function Viewport({ nodes, focus, fitKey }: { nodes: MapFlowNode[]; focus: string | null; fitKey: number }) {
+function Viewport({ nodes, focus, fitKey, onReady }: { nodes: MapFlowNode[]; focus: string | null; fitKey: number; onReady: (() => void) | undefined }) {
   const { fitView } = useReactFlow();
-  const fitted = useRef<number | null>(null);
+  const fitted = useRef<{ key: number; ready: Promise<boolean> } | null>(null);
   const centred = useRef<string | null>(null);
 
   useEffect(() => {
+    let live = true;
+    let frame = 0;
     const target = nodes.some((node) => node.id === focus) ? focus : null;
-    if (fitted.current !== fitKey) {
-      fitted.current = fitKey;
+    if (nodes.length === 0) {
+      // React Flow defers an empty fit indefinitely; only populated layouts need fitting.
+      fitted.current = null;
+    } else if (fitted.current?.key !== fitKey) {
       centred.current = target;
-      void (target === null ? fitView({ padding: 0.04 }) : fitView({ nodes: [{ id: target }], maxZoom: 1, duration: 0 }));
+      const fit = target === null ? fitView({ padding: 0.04 }) : fitView({ nodes: [{ id: target }], maxZoom: 1, duration: 0 });
+      fitted.current = { key: fitKey, ready: fit };
     } else if (target !== null && centred.current !== target) {
       centred.current = target;
       void fitView({ nodes: [{ id: target }], maxZoom: 1, minZoom: 0.6, duration: 300 });
     }
-  }, [nodes, focus, fitKey, fitView]);
+    void (fitted.current?.ready ?? Promise.resolve(false)).then(() => {
+      if (live) frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => { if (live) onReady?.(); });
+      });
+    });
+    return () => { live = false; cancelAnimationFrame(frame); };
+  }, [nodes, focus, fitKey, fitView, onReady]);
   return null;
 }

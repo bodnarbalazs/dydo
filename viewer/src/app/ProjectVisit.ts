@@ -36,20 +36,22 @@ export class ProjectVisit {
   private readyAt: number | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private acceptedFresh = false;
+  private savedSettled = false;
 
   constructor(private readonly project: string, private readonly changed: (state: VisitState) => void) {
     this.emit();
     void fetchSaved(project, this.abort.signal).then((snapshot) => {
       if (this.abort.signal.aborted || this.acceptedFresh || snapshot === null) return;
-      const previousFailure = failureOf(this.state.graph);
-      this.state = { ...this.state, graph: { value: snapshot.graph }, savedAt: snapshot.fetchedAt, refreshFailure: previousFailure };
+      this.state = { ...this.state, graph: { value: snapshot.graph }, savedAt: snapshot.fetchedAt };
       this.emit();
-    }).catch(() => undefined);
-    this.refresh();
+    }).catch(() => undefined).finally(() => {
+      this.savedSettled = true;
+      this.refresh();
+    });
   }
 
   refresh(): void {
-    if (this.abort.signal.aborted) return;
+    if (this.abort.signal.aborted || !this.savedSettled) return;
     this.state = { ...this.state, refreshing: true, refreshFailure: null };
     this.emit();
     void fetchGraph(this.project, this.abort.signal).then(

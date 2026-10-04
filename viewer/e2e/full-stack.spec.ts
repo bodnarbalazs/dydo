@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { test as base, expect, type Page } from '@playwright/test';
 import { startFakeLinear, type FakeLinear } from './fake-linear/server';
 import { node } from './serveFixtures';
+import type { Graph } from '../src/api/types';
 
 // The real `dydo map` binary, published by `dotnet publish DynaDocs.csproj -r <rid> -o artifacts/map-e2e`.
 const VIEWER = fileURLToPath(new URL('..', import.meta.url));
@@ -172,4 +173,41 @@ test('actual process restart on a different port retains the saved map while fre
     map.kill(); await exited;
     await rm(cache, { recursive: true, force: true });
   }
+});
+
+
+test('saved lookup captures the old server snapshot before a fast fresh fetch replaces it', async ({ page, map, linear }) => {
+  await openProjectMap(page, map);
+  await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+  const previous = await (await page.request.get(`${map}api/saved?project=project-map`)).json() as { snapshot: { fetchedAt: string } };
+  const issue = linear.workspace.issues.find((item) => item.identifier === 'DYD-1');
+  if (issue === undefined) throw new Error('missing DYD-1');
+  issue.assignee = 'Freshly persisted';
+  let release!: () => void;
+  const held = new Promise<void>((done) => { release = done; });
+  await page.route('**/api/saved?*', async (route) => { await held; await route.continue(); });
+  const freshRequests: string[] = [];
+  page.on('request', (request) => { if (request.url().includes('/api/graph?')) freshRequests.push(request.url()); });
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.reload();
+  await page.clock.runFor(64);
+  expect(freshRequests).toHaveLength(0);
+  const freshResponse = page.waitForResponse((answer) => answer.url().includes('/api/graph?'));
+  release(); await freshResponse;
+  const persisted = await (await page.request.get(`${map}api/saved?project=project-map`)).json() as { snapshot: { graph: Graph } };
+  expect(persisted.snapshot.graph.issues.find((item) => item.identifier === 'DYD-1')?.assignee).toBe('Freshly persisted');
+  await expect.poll(async () => {
+    await page.clock.runFor(16);
+    return node(page, 'DYD-1').isVisible();
+  }).toBe(true);
+  await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+  await expect(page.getByText(/Saved map/)).toContainText(previous.snapshot.fetchedAt);
+  await page.clock.runFor(1900);
+  await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+  await expect(page.getByRole('button', { name: 'Refresh' })).toBeDisabled();
+  await page.clock.runFor(600);
+  await page.clock.resume();
+  await expect(node(page, 'DYD-1').locator('.assignee').first()).toHaveText('Freshly persisted');
+  await expect(page.getByText(/Saved map/)).toHaveCount(0);
 });

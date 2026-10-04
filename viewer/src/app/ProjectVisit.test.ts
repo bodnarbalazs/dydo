@@ -30,16 +30,29 @@ beforeEach(() => {
 afterEach(() => { visit.dispose(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe('one project visit', () => {
-  it('starts independent saved and fresh requests, and a first visit applies fresh immediately', async () => {
-    expect(vi.mocked(fetch).mock.calls.map(([path]) => path)).toEqual(['/api/saved?project=project-1', '/api/graph?project=project-1']);
+  it('settles a saved miss before starting fresh, which applies without a hold', async () => {
+    expect(vi.mocked(fetch).mock.calls.map(([path]) => path)).toEqual(['/api/saved?project=project-1']);
     saved.resolve(json({ snapshot: null })); await answer();
     expect(shown()).toEqual(fresh); expect(state.refresh).toBeNull(); expect(state.refreshing).toBe(false);
   });
-  it('ignores a late saved answer once fresh is accepted', async () => {
-    await answer(); await save(); expect(shown()).toEqual(fresh); expect(state.savedAt).toBeNull();
+  it('captures a saved hit before fetching fresh, then requires readiness and the full viewing window', async () => {
+    await vi.advanceTimersByTimeAsync(9000);
+    expect(vi.mocked(fetch).mock.calls.map(([path]) => path)).toEqual(['/api/saved?project=project-1']);
+    await save(); expect(shown()).toEqual(old); expect(state.savedAt).toBe(stamp);
+    expect(vi.mocked(fetch).mock.calls.map(([path]) => path)).toEqual(['/api/saved?project=project-1', '/api/graph?project=project-1']);
+    await answer(); await vi.advanceTimersByTimeAsync(9000); expect(shown()).toEqual(old);
+    visit.ready(shown()); await vi.advanceTimersByTimeAsync(1999); expect(shown()).toEqual(old); expect(state.refresh).toBeNull();
+    await vi.advanceTimersByTimeAsync(1); expect(shown()).toEqual(fresh); expect(state.refresh?.from).toEqual(old); expect(state.savedAt).toBeNull();
+  });
+  it('Refresh cannot start a fresh request before saved lookup settles', async () => {
+    visit.refresh(); await flush();
+    expect(vi.mocked(fetch).mock.calls.map(([path]) => path)).toEqual(['/api/saved?project=project-1']);
+    await save(); await answer(); expect(shown()).toEqual(old);
   });
   it('a saved lookup failure cannot suppress fresh success', async () => {
-    saved.resolve(json({ error: { code: 'broken', message: 'broken' } }, 500)); await answer(); expect(shown()).toEqual(fresh);
+    expect(vi.mocked(fetch).mock.calls.map(([path]) => path)).toEqual(['/api/saved?project=project-1']);
+    saved.resolve(json({ error: { code: 'broken', message: 'broken' } }, 500)); await answer();
+    expect(shown()).toEqual(fresh); expect(state.refresh).toBeNull(); expect(state.refreshing).toBe(false);
   });
   it('holds until ready, then through 1999ms and applies at 2000ms with the existing diff', async () => {
     await save(); await answer(); await vi.advanceTimersByTimeAsync(9000);
@@ -67,9 +80,25 @@ describe('one project visit', () => {
     fetched = pending<Response>(); visit.refresh(); await answer(); await vi.advanceTimersByTimeAsync(2000);
     expect(shown()).toEqual(fresh); expect(state.refreshFailure).toBeNull();
   });
-  it('late saved data can rescue a failed fresh fetch', async () => {
-    fetched.resolve(json({ error: { code: 'linear_error', message: 'offline' } }, 502)); await flush(); await save();
-    expect(shown()).toEqual(old); expect(state.refreshFailure?.message).toBe('offline'); expect(state.refreshing).toBe(false);
+  it('fresh failure before saved layout is ready preserves saved map, timestamp, and retry warning', async () => {
+    await save(); fetched.resolve(json({ error: { code: 'linear_error', message: 'offline' } }, 502)); await flush();
+    expect(shown()).toEqual(old); expect(state.savedAt).toBe(stamp); expect(state.refreshFailure?.message).toBe('offline'); expect(state.refreshing).toBe(false);
+    visit.ready(shown()); await vi.advanceTimersByTimeAsync(800);
+    fetched = pending<Response>(); visit.refresh(); await answer();
+    await vi.advanceTimersByTimeAsync(1199); expect(shown()).toEqual(old); expect(state.savedAt).toBe(stamp);
+    await vi.advanceTimersByTimeAsync(1); expect(shown()).toEqual(fresh); expect(state.refreshFailure).toBeNull();
+  });
+  it.each(['miss', 'error'])('a saved lookup %s followed by fresh failure reports the actual fresh error', async (result) => {
+    saved.resolve(result === 'miss' ? json({ snapshot: null }) : json({ error: { code: 'cache_error', message: 'cache unavailable' } }, 500)); await flush();
+    fetched.resolve(json({ error: { code: 'linear_error', message: 'offline' } }, 502)); await flush();
+    expect(failureOf(state.graph)).toEqual({ code: 'linear_error', message: 'offline' }); expect(state.refreshing).toBe(false);
+  });
+  it.each(['hit', 'miss', 'error'])('a disposed visit ignores a delayed saved %s without starting fresh', async (result) => {
+    visit.dispose(); const before = state;
+    const body = result === 'hit' ? { snapshot: { graph: old, fetchedAt: stamp } } : { snapshot: null };
+    saved.resolve(json(body, result === 'error' ? 500 : 200)); await flush();
+    expect(state).toBe(before);
+    expect(vi.mocked(fetch).mock.calls.map(([path]) => path)).toEqual(['/api/saved?project=project-1']);
   });
   it('a saved layout failure falls back to the ordinary pending fresh graph', async () => {
     await save(); await answer(); visit.layoutFailed(shown()); expect(shown()).toEqual(fresh); expect(state.refresh).toBeNull();
@@ -88,11 +117,11 @@ describe('one project visit', () => {
     expect(vi.mocked(fetch).mock.calls.every(([, options]) => options?.signal?.aborted)).toBe(true);
   });
   it('a failure after disposal is ignored', async () => {
-    visit.dispose(); const before = state;
+    saved.resolve(json({ snapshot: null })); await flush(); visit.dispose(); const before = state;
     fetched.resolve(json({ error: { code: 'linear_error', message: 'offline' } }, 502)); await flush(); expect(state).toBe(before);
   });
   it('ordinary manual Refresh diffs immediately without imposing a saved-map hold', async () => {
-    await answer(old); fetched = pending<Response>(); visit.refresh(); await answer(); expect(shown()).toEqual(fresh); expect(state.refresh?.from).toEqual(old);
+    saved.resolve(json({ snapshot: null })); await answer(old); fetched = pending<Response>(); visit.refresh(); await answer(); expect(shown()).toEqual(fresh); expect(state.refresh?.from).toEqual(old);
   });
   it('normalizes viewer failures and reads loaded values', () => {
     expect(failure('oops')).toEqual({ code: 'viewer_error', message: 'oops' });

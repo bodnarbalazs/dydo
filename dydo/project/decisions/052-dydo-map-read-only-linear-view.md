@@ -100,8 +100,11 @@ temporary files and atomic replacement; failed writes leave a valid old snapshot
 fresh reads serialize through commit in one process; across processes the last successful complete
 commit wins. Cache I/O never makes a successful fresh read fail. The cache root is injectable for tests.
 
-Opening a Project concurrently requests its saved snapshot and a fresh graph. `/api/graph` always
-reads Linear; `/api/saved` reads only the cache. Requests run independently and drain on shutdown.
+Opening a Project first settles its saved lookup (hit, miss or error), capturing any graph and
+timestamp before starting the fresh request. This prevents that fresh request's cache write from
+replacing the baseline before capture. `/api/graph` always reads Linear; `/api/saved` reads only the
+cache. Fresh fetching starts immediately after lookup, alongside saved layout and the viewing
+window; it does not wait for that window. Server requests remain independent and drain on shutdown.
 After the saved canvas has laid out, fitted its viewport and rendered, a monotonic two-second
 viewing window precedes all fresh changes and the existing refresh cascade. Every visit owns its
 requests, layout and hold, including A→B→A. A late saved response cannot replace accepted fresh data.

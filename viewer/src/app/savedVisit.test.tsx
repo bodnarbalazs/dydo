@@ -33,12 +33,13 @@ function navigate(project: string) {
   });
 }
 
-it.each(['fetch', 'hold', 'layout'])('A to B to A ignores the old A visit during %s', async (stage) => {
+it.each(['lookup', 'fetch', 'hold', 'layout'])('A to B to A ignores the old A visit during %s', async (stage) => {
   vi.useFakeTimers();
   const old = makeGraph([makeIssue('old')]);
   const obsolete = makeGraph([makeIssue('obsolete')]);
   const current = makeGraph([makeIssue('current')]);
   const firstFetch = deferred<Response>();
+  const firstSaved = deferred<Response>();
   const firstLayout = deferred<import('elkjs/lib/elk-api').ElkNode>();
   let aVisits = 0;
   let graphToLayOut: import('elkjs/lib/elk-api').ElkNode | undefined;
@@ -47,6 +48,7 @@ it.each(['fetch', 'hold', 'layout'])('A to B to A ignores the old A visit during
     const isA = url.searchParams.get('project') === 'project-1';
     if (url.pathname === '/api/saved') {
       if (isA) aVisits += 1;
+      if (isA && aVisits === 1 && stage === 'lookup') return firstSaved.promise;
       return Promise.resolve(new Response(JSON.stringify({ snapshot: isA && aVisits === 1 ? { graph: old, fetchedAt: '2026-10-04T12:00:00Z' } : null })));
     }
     if (url.pathname !== '/api/graph') return Promise.resolve(new Response('{"teams":[],"projects":[]}'));
@@ -67,12 +69,14 @@ it.each(['fetch', 'hold', 'layout'])('A to B to A ignores the old A visit during
   navigate('project-b'); await act(() => vi.advanceTimersByTimeAsync(0));
   navigate('project-1'); await act(() => vi.advanceTimersByTimeAsync(100));
   firstFetch.resolve(new Response(JSON.stringify(obsolete)));
+  firstSaved.resolve(new Response(JSON.stringify({ snapshot: { graph: old, fetchedAt: '2026-10-04T12:00:00Z' } })));
   if (graphToLayOut !== undefined) firstLayout.resolve(graphToLayOut);
   await act(() => vi.advanceTimersByTimeAsync(5000));
   expect(screen.getByText('Issue current')).toBeTruthy();
   expect(screen.queryByText('Issue obsolete')).toBeNull();
   expect(screen.queryByText('Issue old')).toBeNull();
   expect(screen.queryByText(/Saved map/)).toBeNull();
+  if (stage === 'lookup') expect(vi.mocked(fetch).mock.calls.filter(([path]) => path === '/api/graph?project=project-1')).toHaveLength(1);
   vi.useRealTimers();
 });
 

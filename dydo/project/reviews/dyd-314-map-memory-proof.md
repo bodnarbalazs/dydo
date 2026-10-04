@@ -46,7 +46,7 @@ The initial .NET `--no-restore` attempt emitted no discovered tests and is not c
   response for a different Project is rejected, and same-Project fresh operations serialize through
   commit while saved reads remain available.
 - `ProjectVisit.test.ts` controls monotonic time: no application at 1,999 ms after ready; application
-  at 2,000 ms. It covers delayed readiness, late saved results, failure/retry, unchanged diffs,
+  at 2,000 ms. It covers saved lookup ordering, delayed readiness, failure/retry, unchanged diffs,
   layout fallback, and disposal during fetch/hold/layout. `MapCanvas.test.tsx` separately controls
   viewport fitting and animation frames, including StrictMode, empty maps and unmounting.
 - `savedVisit.test.tsx` exercises the rendered App and actual A→B→A visits during fetch, hold and
@@ -99,6 +99,51 @@ retained separately under `artifacts/dyd-314/fix-empty/`; original author and re
 preserved. The first browser harness attempt froze ELK before layout and is excluded as defect
 proof. Native Windows exact-candidate validation remains the captain's required follow-up; the
 Linux .NET coverage and configured mutation limitations above remain unchanged.
+
+## Saved-lookup ordering fix after review
+
+Review of `5af972527710fafaaab7b37b6b5a81c1dfd09c93` found that a fresh response could be
+accepted before the saved lookup completed, skipping an available old map and its viewing window.
+The live DYD-314 clarification at `2026-10-04T17:44:43.326Z` additionally requires capturing the
+baseline before starting fresh fetching: `/api/graph` persists fresh data immediately, so concurrent
+initial requests could overwrite the old snapshot before `/api/saved` reads it.
+
+The visit now settles saved lookup first. A hit captures graph and timestamp; hit, miss and error
+then start the fresh request immediately, alongside saved layout and the viewing window. Refresh
+cannot bypass lookup, and disposal prevents a completed old lookup from launching a stale request.
+The existing accepted-fresh guard, exact graph readiness, 2,000 ms hold, layout fallback and empty
+canvas fix remain in place. Initial-concurrency and fresh-wins race expectations were replaced under
+that explicit live authority; early fresh failure before saved lookup is no longer reachable.
+
+The final unit regressions verify request ordering, miss/error fallback, actual fresh errors,
+Refresh after failure using the remaining saved window, and A→B→A during a delayed lookup. With
+only `ProjectVisit.ts` reverted to `5af97252`, eight assertions fail, exit 1: request lists contain
+an unwanted `/api/graph` request, including one after a disposed visit. Restoring the production
+fix passes the focused visit/App/canvas suite. The unchanged clock assertions still reject fresh
+application at 1,999 ms and permit it at 2,000 ms after readiness.
+
+The Chromium journey holds saved lookup and requires zero fresh requests until release, then
+checks old graph/timestamp before the cascade. It fails against `5af97252` and with the production
+fix reverted (`Expected length: 0`, `Received length: 1`), and passes with the fix. The native
+full-stack regression fails on the previous published candidate for the same assertion. With the
+rebuilt viewer embedded in the native binary it passes: the real server has already persisted the
+new assignee, verified by reading `/api/saved`, while the browser retains the old assignee and
+captured timestamp through the viewing window. The test uses real server cache reads/writes and
+only delays the browser's initial saved request; snapshots are not mocked independently.
+
+Raw commands, logs, exits and before/after tracked-source fingerprints live separately under
+`artifacts/dyd-314/fix-lookup-order/`. Earlier race proof is retained as superseded-contract evidence;
+`red-sequential-*`, `rollback-final-unit` and `rollback-red-browser` are the governing regression
+proof. The first focused native publish preceded rebuilding the viewer bundle and is excluded from
+current-bundle proof; `native-focused-publish-current` embeds the rebuilt bundle. Final measured
+gates follow this documentation edit with no further tracked changes. The first full viewer campaign
+exposed a test helper that silently answered requests before they started; it now awaits the actual
+pending request. Its failed campaign is retained. Static analysis also caught generic stringification
+in the new request assertion; it now compares the request path directly. Final campaigns run after
+both test fixes. The final record binds their
+stable source fingerprint to the containing fix commit. Native Windows exact-candidate validation
+and independent review remain captain-owned; Linux .NET coverage and configured mutation remain
+unavailable, never passing by inference. The unchanged .NET suite is not duplicated in this fix hop.
 
 ## Related
 

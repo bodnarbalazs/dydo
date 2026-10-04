@@ -189,6 +189,9 @@ use `~/.zshrc`, or `$ZDOTDIR/.zshrc` if `ZDOTDIR` is set. New interactive shells
 The page reads `GET /api/teams`, `GET /api/projects?team=<teamId>` and `GET /api/graph?project=<projectId>`.
 These routes read Linear afresh. Opening a Project also requests `GET /api/saved?project=<projectId>`:
 its response is `{ "snapshot": null }` on a miss, or a snapshot with `graph` and UTC `fetchedAt`.
+The viewer captures this baseline before starting its fresh request, so a fast fresh response cannot
+overwrite the old snapshot before it is read. A miss or lookup failure also starts fresh fetching
+immediately. Fresh fetching overlaps saved layout and the viewing window.
 The saved canvas stays visible for at least two seconds after layout and initial viewport fitting,
 then fresh changes use the normal Refresh animation. Its timestamp identifies saved data. A failed
 fetch retains that map and timestamp, warns, and permits Refresh to retry. An unchanged graph settles

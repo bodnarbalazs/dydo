@@ -423,7 +423,8 @@ describe('App ignores answers for a view it has left', () => {
   let pending: Map<string, ReturnType<typeof deferred<Response>>[]>;
 
   /** Each request waits until the test answers it, oldest first per path and parameter. */
-  function answer(key: string, response: Response) {
+  async function answer(key: string, response: Response) {
+    await waitFor(() => expect(pending.get(key)?.length).toBeGreaterThan(0));
     return act(async () => {
       pending.get(key)?.shift()?.resolve(response);
       await Promise.resolve();

@@ -66,19 +66,41 @@ test('reduced motion keeps the saved viewing window and applies without motion',
   await expect(node(page, 'DYD-290')).toHaveCSS('opacity', '1');
 });
 
-test('a late saved lookup cannot overwrite the fresh map', async ({ page }) => {
+test('saved lookup settles before fresh starts, then old map completes its viewing window before cascade', async ({ page }) => {
   const served = await serveFixtures(page);
   served.graphs[SCENARIO_PROJECT] = 'graph-scenario-refreshed.json';
   let release!: () => void;
   const held = new Promise<void>((done) => { release = done; });
   await page.route('**/api/saved?*', async (route) => { await held; await route.fulfill({ json: { snapshot: { graph: saved, fetchedAt: stamp } } }); });
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  const freshRequests: string[] = [];
+  page.on('request', (request) => { if (request.url().includes('/api/graph?')) freshRequests.push(request.url()); });
   await page.goto(mapUrl(SCENARIO_PROJECT));
-  await expect(node(page, 'DYD-290')).toBeVisible();
+  await page.clock.runFor(64);
+  expect(freshRequests).toHaveLength(0);
+  await expect(node(page, 'DYD-290')).toHaveCount(0);
+  await expect(refresh(page)).toBeDisabled();
   const response = page.waitForResponse((answer) => answer.url().includes('/api/saved?'));
-  release(); await response;
-  await expect(node(page, 'DYD-290')).toBeVisible();
+  const freshResponse = page.waitForResponse((answer) => answer.url().includes('/api/graph?'));
+  release(); await response; await freshResponse;
+  await expect.poll(async () => {
+    await page.clock.runFor(16);
+    return node(page, 'DYD-9001').isVisible();
+  }).toBe(true);
+  await expect(page.getByText(/Saved map/)).toContainText(stamp);
+  await page.clock.runFor(64);
+  await page.clock.runFor(1900);
+  await expect(node(page, 'DYD-9001')).toBeVisible();
+  await expect(node(page, 'DYD-290')).toHaveCount(0);
+  await expect(page.getByText(/Saved map/)).toContainText(stamp);
+  await expect(refresh(page)).toBeDisabled();
+  await page.clock.runFor(600);
+  await page.clock.resume();
+  await expect(node(page, 'DYD-290')).toHaveClass(/refresh-added/);
   await expect(node(page, 'DYD-9001')).toHaveCount(0);
   await expect(page.getByText(/Saved map/)).toHaveCount(0);
+  await expect(refresh(page)).toBeEnabled();
 });
 
 const empty: Graph = { ...saved, issues: [], external: [], relations: [] };

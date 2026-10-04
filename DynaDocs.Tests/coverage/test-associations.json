@@ -911,7 +911,8 @@
     {
       "module": "Services/Map/MapApi.cs",
       "tests": [
-        "DynaDocs.Tests/Map/MapServerTests.cs"
+        "DynaDocs.Tests/Map/MapServerTests.cs",
+        "DynaDocs.Tests/Map/MapApiTests.cs"
       ]
     },
     {
@@ -1023,7 +1024,8 @@
     {
       "module": "viewer/src/app/App.tsx",
       "tests": [
-        "viewer/src/app/App.test.tsx"
+        "viewer/src/app/App.test.tsx",
+        "viewer/src/app/savedVisit.test.tsx"
       ]
     },
     {
@@ -1181,6 +1183,18 @@
       "module": "viewer/src/theme/useTheme.ts",
       "tests": [
         "viewer/src/theme/useTheme.test.tsx"
+      ]
+    },
+    {
+      "module": "Services/Map/MapSnapshotCache.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapSnapshotCacheTests.cs"
+      ]
+    },
+    {
+      "module": "viewer/src/app/ProjectVisit.ts",
+      "tests": [
+        "viewer/src/app/ProjectVisit.test.ts"
       ]
     }
   ]

@@ -883,3 +883,10 @@ body,
     opacity: 1;
   }
 }
+
+.saved-map {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}

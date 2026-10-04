@@ -1,8 +1,8 @@
-import { render, type RenderResult } from '@testing-library/react';
+import { act, render, type RenderResult } from '@testing-library/react';
 import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import { useEffect } from 'react';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { StrictMode, useEffect } from 'react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildMapModel } from '../graph/mapModel';
 import { blocks, makeGraph, makeIssue } from '../graph/testIssues';
 import { layoutMap } from '../layout/layout';
@@ -175,5 +175,43 @@ describe('MapCanvas refresh cascade', () => {
       ['blocks:A->B', 'refresh-added', { '--refresh-delay': '150ms' }],
       ['blocks:B->C', 'refresh-removed', undefined],
     ]);
+  });
+});
+
+
+afterEach(() => { vi.useRealTimers(); fitView.mockImplementation((options) => Promise.resolve(options !== undefined)); });
+
+describe('saved canvas readiness', () => {
+  it('acknowledges only after initial fit resolves and the saved canvas has painted, including StrictMode', async () => {
+    vi.useFakeTimers();
+    let finish!: (value: boolean) => void;
+    fitView.mockImplementation(() => new Promise<boolean>((done) => { finish = done; }));
+    const ready = vi.fn();
+    render(<StrictMode><ReactFlowProvider><MapCanvas flow={flow} focus={null} fitKey={0} cascade={null} onReady={ready} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider></StrictMode>);
+    await act(() => vi.advanceTimersByTimeAsync(10000));
+    expect(ready).not.toHaveBeenCalled();
+    await act(async () => { finish(true); await Promise.resolve(); });
+    expect(ready).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(32));
+    expect(ready).toHaveBeenCalledOnce();
+  });
+
+  it('ignores a fit completing after its visit unmounted', async () => {
+    vi.useFakeTimers();
+    let finish!: (value: boolean) => void;
+    fitView.mockImplementation(() => new Promise<boolean>((done) => { finish = done; }));
+    const ready = vi.fn();
+    const view = render(<ReactFlowProvider><MapCanvas flow={flow} focus={null} fitKey={0} cascade={null} onReady={ready} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider>);
+    view.unmount(); finish(true);
+    await act(() => vi.advanceTimersByTimeAsync(3000));
+    expect(ready).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges an empty saved map after its initial fit', async () => {
+    vi.useFakeTimers();
+    const ready = vi.fn();
+    render(<ReactFlowProvider><MapCanvas flow={{ nodes: [], edges: [] }} focus={null} fitKey={0} cascade={null} onReady={ready} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider>);
+    await act(() => vi.advanceTimersByTimeAsync(32));
+    expect(ready).toHaveBeenCalledOnce();
   });
 });

@@ -41,6 +41,7 @@ beforeEach(() => {
     'fetch',
     vi.fn((input: string) => {
       const url = new URL(input, 'http://localhost');
+      if (url.pathname === '/api/saved') return Promise.resolve(json({ snapshot: null }));
       if (url.pathname === '/api/teams') return Promise.resolve(json({ teams }));
       if (url.pathname === '/api/projects') return Promise.resolve(json({ projects: url.searchParams.get('team') === 'team-1' ? projects : [] }));
       return Promise.resolve(url.searchParams.get('project') === 'project-2' ? json(graphTwo) : graphAnswer());
@@ -237,7 +238,8 @@ describe('App errors belong to the view that failed', () => {
       'fetch',
       vi.fn((input: string) => {
         const url = new URL(input, 'http://localhost');
-        if (url.pathname === '/api/teams') return Promise.resolve(json({ teams }));
+        if (url.pathname === '/api/saved') return Promise.resolve(json({ snapshot: null }));
+      if (url.pathname === '/api/teams') return Promise.resolve(json({ teams }));
         if (url.pathname === '/api/projects') return Promise.resolve(json({ projects: url.searchParams.get('team') === 'team-1' ? twoProjects : [] }));
         return answers[url.searchParams.get('project') ?? '']!();
       }),
@@ -361,6 +363,7 @@ describe('App errors belong to the view that failed', () => {
     let graphAnswer: () => Promise<Response> = () => new Promise<Response>(() => undefined);
     vi.mocked(fetch).mockImplementation((input) => {
       const url = new URL(input as string, 'http://localhost');
+      if (url.pathname === '/api/saved') return Promise.resolve(json({ snapshot: null }));
       if (url.pathname === '/api/teams') return Promise.resolve(json({ error: { code: 'linear_auth', message: 'Key rejected.' } }, 502));
       if (url.pathname === '/api/projects') return Promise.resolve(json({ projects: twoProjects }));
       return graphAnswer();
@@ -433,7 +436,8 @@ describe('App ignores answers for a view it has left', () => {
       'fetch',
       vi.fn((input: string) => {
         const url = new URL(input, 'http://localhost');
-        if (url.pathname === '/api/teams') return Promise.resolve(json({ teams }));
+        if (url.pathname === '/api/saved') return Promise.resolve(json({ snapshot: null }));
+      if (url.pathname === '/api/teams') return Promise.resolve(json({ teams }));
         const key = url.searchParams.get('team') ?? url.searchParams.get('project') ?? '';
         const request = deferred<Response>();
         pending.set(key, [...(pending.get(key) ?? []), request]);
@@ -570,6 +574,7 @@ describe('App ignores layouts it no longer needs', () => {
     let graphFails = true;
     vi.mocked(fetch).mockImplementation((input) => {
       const url = new URL(input as string, 'http://localhost');
+      if (url.pathname === '/api/saved') return Promise.resolve(json({ snapshot: null }));
       if (url.pathname === '/api/teams') return Promise.resolve(json({ teams }));
       if (url.pathname === '/api/projects') return Promise.resolve(json({ projects: [...projects, { ...projects[0]!, id: 'project-2', name: 'Project Two' }] }));
       if (url.searchParams.get('project') === 'project-2') return new Promise<Response>(() => undefined);

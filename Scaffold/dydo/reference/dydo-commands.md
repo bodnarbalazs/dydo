@@ -8,7 +8,7 @@ type: reference
 Complete reference for dydo's local setup, documentation, guard, validation, testing, and utility
 commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-caches, polls, or mirrors a Linear object; `dydo map` only reads Linear, when its local page asks. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
+polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
 durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
@@ -187,8 +187,20 @@ use `~/.zshrc`, or `$ZDOTDIR/.zshrc` if `ZDOTDIR` is set. New interactive shells
 `dydo map` from a configured shell. Running `export` alone does not save it for later sessions.
 
 The page reads `GET /api/teams`, `GET /api/projects?team=<teamId>` and `GET /api/graph?project=<projectId>`.
-Each request reads Linear afresh, so reloading the page shows Linear's current state; nothing is
-cached or written. The viewer is embedded when `viewer/dist/` was built before dydo; a dydo built
+These routes read Linear afresh. Opening a Project also requests `GET /api/saved?project=<projectId>`:
+its response is `{ "snapshot": null }` on a miss, or a snapshot with `graph` and UTC `fetchedAt`.
+The saved canvas stays visible for at least two seconds after layout and initial viewport fitting,
+then fresh changes use the normal Refresh animation. Its timestamp identifies saved data. A failed
+fetch retains that map and timestamp, warns, and permits Refresh to retry. An unchanged graph settles
+quietly; reduced motion keeps the viewing window without motion.
+
+The server stores only the latest successful map for each opened Project under the OS user's local
+application data `dydo/map` directory, outside repositories. Opaque endpoint/key partitions isolate
+credentials and key rotation; corrupt or inaccessible files are treated as misses. No Linear writes,
+polling, history, or prefetching unopened Projects occur. Delete this directory to forget saved maps.
+`DYDO_MAP_CACHE_DIR` overrides the cache root for isolated tests.
+
+ The viewer is embedded when `viewer/dist/` was built before dydo; a dydo built
 without it serves a page at `/` saying the viewer was not built, and `dydo map --help` says so too.
 
 `DYDO_LINEAR_ENDPOINT` replaces the Linear GraphQL URL. It is a test seam for pointing dydo map at a

@@ -11,6 +11,9 @@ using DynaDocs.Services.Map.Contract;
 [JsonSerializable(typeof(Dictionary<string, List<MapTeam>>))]
 [JsonSerializable(typeof(Dictionary<string, List<MapProject>>))]
 [JsonSerializable(typeof(MapGraph))]
+[JsonSerializable(typeof(MapSnapshotEnvelope))]
+[JsonSerializable(typeof(MapSavedResponse))]
+[JsonSerializable(typeof(string[]))]
 [JsonSerializable(typeof(Dictionary<string, MapError>))]
 [JsonSerializable(typeof(GraphQLRequest))]
 internal partial class MapJsonContext : JsonSerializerContext { }

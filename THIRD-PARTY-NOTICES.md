@@ -37,7 +37,7 @@ the original baseline; correcting the local glossary path in `design-it-twice.md
 
 | Upstream portion | Adapted in |
 |---|---|
-| `pr` body and `agents/openai.yaml` | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml` |
+| `pr` body and its agents/openai.yaml metadata | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml` |
 | `retro` Automated checks and Coding standards lenses | `skills/productivity/self-improvement/SKILL.md` |
 | `tdd` glossary read | `skills/roles/crew/code-writer/SKILL.md` |
 

@@ -102,17 +102,18 @@ it('a failed saved layout falls back to ordinary fresh loading and enables retry
 
 it('Refresh stays disabled until the first fresh layout has landed', async () => {
   const laid = deferred<import('elkjs/lib/elk-api').ElkNode>();
-  let input!: import('elkjs/lib/elk-api').ElkNode;
+  const requested = deferred<import('elkjs/lib/elk-api').ElkNode>();
   vi.stubGlobal('fetch', vi.fn((path: string) => {
     let body: unknown = { teams: [], projects: [] };
     if (path.startsWith('/api/saved')) body = { snapshot: null };
     if (path.startsWith('/api/graph')) body = makeGraph([makeIssue('fresh')]);
     return Promise.resolve(new Response(JSON.stringify(body)));
   }));
-  const elk = { layout: (graph: import('elkjs/lib/elk-api').ElkNode) => { input = graph; return laid.promise; } } as unknown as import('elkjs/lib/elk-api').ELK;
+  const elk = { layout: (graph: import('elkjs/lib/elk-api').ElkNode) => { requested.resolve(graph); return laid.promise; } } as unknown as import('elkjs/lib/elk-api').ELK;
   window.history.replaceState(null, '', '/?team=t&project=project-1');
   render(<App elk={elk} />);
   await screen.findByText('Project One: 1 issues, 0 plates');
+  const input = await requested.promise;
   expect(screen.getByRole('button', { name: 'Refresh' }).hasAttribute('disabled')).toBe(true);
   await act(async () => { laid.resolve(input); await laid.promise; });
   expect(await screen.findByText('Issue fresh')).toBeTruthy();

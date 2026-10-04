@@ -145,6 +145,29 @@ stable source fingerprint to the containing fix commit. Native Windows exact-can
 and independent review remain captain-owned; Linux .NET coverage and configured mutation remain
 unavailable, never passing by inference. The unchanged .NET suite is not duplicated in this fix hop.
 
+## Layout-readiness test reliability fix after review
+
+The third review reproduced a test race on `fb04ea87af2d6ca910bf30c4c5e4010e7aaa62e8`:
+the first-fresh-layout test observed the header before React's passive effect invoked `elk.layout`.
+Resolving the result with its still-unassigned input caused `undefined.edges` and a missing fresh
+issue. The unchanged candidate failed one of 200 repetitions (iteration 69); the same failure also
+appeared in the superseded Windows run `37220867090`. Original evidence remains under
+`artifacts/dyd-314/review-final/layout-race-200.log` and `reviewer-fail-layout-race.json`.
+
+The test now awaits a deferred graph input resolved by the actual layout invocation before releasing
+the pending layout result. It still asserts Refresh is disabled while layout is pending, the fresh
+issue renders after completion, and Refresh becomes enabled. It adds no scheduler mock, delay,
+retry or production change. The bounded repetition copies this corrected test into ignored scratch
+and runs it 200 times against the real candidate App, with the same assertions.
+
+The separate `artifacts/dyd-314/fix-layout-test/` packet records repetition, configured viewer
+coverage/static, typecheck, lint, build, documentation and diff commands, exits, raw output and
+before/after tracked-source fingerprints. Production, browser scenarios, native scenarios and
+release metadata are byte-identical to `fb04ea87`; its full Chromium 46/46 and published-AOT 8/8
+proof remains applicable. The packet verifies that identity explicitly. Exact corrected-candidate
+Windows assurance and a fresh independent whole-change review remain required; this record does
+not turn the prior review FAIL or unavailable mutation capability into a PASS.
+
 ## Related
 
 - [Review evidence](./_reviews.md)

@@ -3,7 +3,7 @@ name: code-writer
 description: A contracted Issue to build, a review FAIL to close, a merge to perform, or a hypothesis to prove or refute with one test.
 ---
 
-<!-- Test-driven method adapted from mattpocock/skills tdd at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
+<!-- Test-driven method adapted from mattpocock/skills tdd at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT); glossary read adapted from 24fe0ef7737efae15c87225755e9f6f5965e4888 (v1.3.1). -->
 
 # Code Writer
 
@@ -14,6 +14,7 @@ Red you can check, green only from code.
 1. The owning Issue, and on a fix hop the FAIL block that sent you.
 2. The governing Project plan at its linked commit and the Decision Records it names.
 3. From the repository root, read `dydo/guides/coding-standards.md`.
+4. From the repository root, read `dydo/glossary.md`.
 
 ## Boundary
 

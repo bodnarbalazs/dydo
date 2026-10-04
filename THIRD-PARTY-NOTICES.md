@@ -3,8 +3,8 @@
 ## Matt Pocock's Skills
 
 Several dydo skills contain adaptations of material from
-[mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
-`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
+[mattpocock/skills](https://github.com/mattpocock/skills), originally pinned at commit
+`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file records its source attribution in its own
 header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, `roles/crew/`, `engineering/`,
 `productivity/`).
 
@@ -30,6 +30,16 @@ header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, 
 | `wayfinder` | `skills/productivity/wayfinder/SKILL.md` |
 | `writing-for-agents` | `skills/productivity/writing-for-agents/SKILL.md` |
 | `writing-for-agents/SKILL-MECHANICS` | `skills/productivity/writing-for-agents/resources/skill-mechanics.md` |
+
+The following portions are imported or updated from v1.3.1, commit
+`24fe0ef7737efae15c87225755e9f6f5965e4888`. Other portions and unchanged adaptations above retain
+the original baseline; correcting the local glossary path in `design-it-twice.md` does not repin it.
+
+| Upstream portion | Adapted in |
+|---|---|
+| `pr` body and its agents/openai.yaml metadata | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml` |
+| `retro` Automated checks and Coding standards lenses | `skills/productivity/self-improvement/SKILL.md` |
+| `tdd` glossary read | `skills/roles/crew/code-writer/SKILL.md` |
 
 MIT License
 

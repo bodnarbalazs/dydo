@@ -78,6 +78,13 @@ describe('MapCanvas viewport', () => {
     expect(fitView).toHaveBeenCalledOnce();
   });
 
+  it('fits the first populated layout after an empty canvas with the same fit key', () => {
+    const view = render(canvas(null, 0, { nodes: [], edges: [] }));
+    fitView.mockClear();
+    view.rerender(canvas(null, 0));
+    expect(fitView.mock.calls).toEqual([[{ padding: 0.04 }]]);
+  });
+
   it('fits the map again when asked to', () => {
     const view = render(canvas('A', 0));
     fitView.mockClear();
@@ -207,11 +214,15 @@ describe('saved canvas readiness', () => {
     expect(ready).not.toHaveBeenCalled();
   });
 
-  it('acknowledges an empty saved map after its initial fit', async () => {
+  it('acknowledges a painted empty map even when fitting never resolves, including StrictMode', async () => {
     vi.useFakeTimers();
     const ready = vi.fn();
-    render(<ReactFlowProvider><MapCanvas flow={{ nodes: [], edges: [] }} focus={null} fitKey={0} cascade={null} onReady={ready} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider>);
-    await act(() => vi.advanceTimersByTimeAsync(32));
+    fitView.mockImplementation(() => new Promise<boolean>(() => undefined));
+    render(<StrictMode><ReactFlowProvider><MapCanvas flow={{ nodes: [], edges: [] }} focus={null} fitKey={0} cascade={null} onReady={ready} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider></StrictMode>);
+    expect(ready).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(16));
+    expect(ready).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(16));
     expect(ready).toHaveBeenCalledOnce();
   });
 });

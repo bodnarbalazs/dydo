@@ -80,3 +80,52 @@ test('a late saved lookup cannot overwrite the fresh map', async ({ page }) => {
   await expect(node(page, 'DYD-9001')).toHaveCount(0);
   await expect(page.getByText(/Saved map/)).toHaveCount(0);
 });
+
+const empty: Graph = { ...saved, issues: [], external: [], relations: [] };
+
+for (const populated of [false, true]) {
+  test(`empty saved map finishes its viewing window with ${populated ? 'populated' : 'empty'} fresh data`, async ({ page }) => {
+    await serveFixtures(page);
+    await page.route('**/api/saved?*', (route) => route.fulfill({ json: { snapshot: { graph: empty, fetchedAt: stamp } } }));
+    let release!: () => void;
+    const held = new Promise<void>((done) => { release = done; });
+    await page.route('**/api/graph?*', async (route) => { await held; await route.fulfill({ json: populated ? saved : empty }); });
+    await page.clock.install();
+    await page.clock.pauseAt(new Date());
+    await page.goto(mapUrl(SCENARIO_PROJECT));
+    await expect.poll(async () => {
+      await page.clock.runFor(16);
+      return page.locator('.react-flow').isVisible();
+    }).toBe(true);
+    await expect(page.getByText(/Saved map/)).toContainText(stamp);
+    await page.clock.runFor(64);
+    const response = page.waitForResponse((answer) => answer.url().includes('/api/graph?'));
+    release(); await response;
+    await page.clock.runFor(1900);
+    await expect(page.getByText(/Saved map/)).toContainText(stamp);
+    await expect(refresh(page)).toBeDisabled();
+    await expect(page.locator('.react-flow__node')).toHaveCount(0);
+    await page.clock.runFor(600);
+    await expect(page.getByText(/Saved map/)).toHaveCount(0);
+    await page.clock.resume();
+    await expect(refresh(page)).toBeEnabled();
+    if (populated) await expect(node(page, 'DYD-9001')).toBeInViewport();
+    else await expect(page.getByRole('status')).toHaveText('No changes');
+  });
+}
+
+test('an empty first visit enables Refresh after paint without a saved viewing window', async ({ page }) => {
+  await serveFixtures(page);
+  await page.route('**/api/graph?*', (route) => route.fulfill({ json: empty }));
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.goto(mapUrl(SCENARIO_PROJECT));
+  await expect.poll(async () => {
+    await page.clock.runFor(16);
+    return page.locator('.react-flow').isVisible();
+  }).toBe(true);
+  await page.clock.runFor(64);
+  await expect(refresh(page)).toBeEnabled();
+  await expect(page.getByText(/Saved map/)).toHaveCount(0);
+  await expect(page.locator('.react-flow__node')).toHaveCount(0);
+});

@@ -93,7 +93,10 @@ function Viewport({ nodes, focus, fitKey, onReady }: { nodes: MapFlowNode[]; foc
     let live = true;
     let frame = 0;
     const target = nodes.some((node) => node.id === focus) ? focus : null;
-    if (fitted.current?.key !== fitKey) {
+    if (nodes.length === 0) {
+      // React Flow defers an empty fit indefinitely; only populated layouts need fitting.
+      fitted.current = null;
+    } else if (fitted.current?.key !== fitKey) {
       centred.current = target;
       const fit = target === null ? fitView({ padding: 0.04 }) : fitView({ nodes: [{ id: target }], maxZoom: 1, duration: 0 });
       fitted.current = { key: fitKey, ready: fit };
@@ -101,7 +104,7 @@ function Viewport({ nodes, focus, fitKey, onReady }: { nodes: MapFlowNode[]; foc
       centred.current = target;
       void fitView({ nodes: [{ id: target }], maxZoom: 1, minZoom: 0.6, duration: 300 });
     }
-    void fitted.current.ready.then(() => {
+    void (fitted.current?.ready ?? Promise.resolve(false)).then(() => {
       if (live) frame = requestAnimationFrame(() => {
         frame = requestAnimationFrame(() => { if (live) onReady?.(); });
       });

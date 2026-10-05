@@ -191,7 +191,7 @@ jobs:
           if-no-files-found: warn
 
   release:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.3' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.5' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -220,7 +220,7 @@ jobs:
           prerelease: false
 
   nuget:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.3' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.5' }}
     needs: [build, validation]
     runs-on: ubuntu-latest
     permissions:
@@ -259,7 +259,7 @@ jobs:
         run: dotnet nuget push nupkg/dydo.${{ steps.version.outputs.VERSION }}.nupkg --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   npm:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.3' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/tags/v3.1.5' }}
     needs: [build, validation, release]
     runs-on: ubuntu-latest
     permissions:

@@ -71,7 +71,7 @@ test('an installed current binary skips the download', async function currentBin
     } },
     download: { async downloadBinary() { downloads += 1; } },
     paths: {
-      getInstalledVersion() { return '3.1.3'; },
+      getInstalledVersion() { return '3.1.5'; },
       isBinaryInstalled() { return true; }
     }
   });
@@ -102,8 +102,8 @@ test('a successful download records the installed version', async function succe
   await install();
 
   assert.deepEqual(calls, [
-    ['download', '3.1.3', { supported: true, binaryName: 'dydo' }, 'native-fixture'],
-    ['version', '3.1.3']
+    ['download', '3.1.5', { supported: true, binaryName: 'dydo' }, 'native-fixture'],
+    ['version', '3.1.5']
   ]);
 });
 
@@ -130,5 +130,5 @@ test('a failed download reports recovery instructions and exits one', async func
 
   assert.deepEqual(exits, [1]);
   assert.match(errors.join('\n'), /fixture failure/);
-  assert.match(errors.join('\n'), /releases\/tag\/v3\.1\.3(?:\n|$)/);
+  assert.match(errors.join('\n'), /releases\/tag\/v3\.1\.5(?:\n|$)/);
 });

@@ -7,7 +7,7 @@
 - **grill-me** (user-invoked): A relentless interview to sharpen a plan or design, which also creates docs (Decision Records and glossary) as we go.
 - **grilling** (model-invoked): Grill the human relentlessly about a plan, decision, or idea. Use when the human wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 - **handoff** (user-invoked): Compact the current conversation into a handoff document for another agent to pick up.
-- **self-improvement** (model-invoked): Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
+- **retro** (model-invoked): Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 - **show-me** (model-invoked): Help the human understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.
 - **teach** (user-invoked): Teach the human a new skill or concept, within this workspace.
 - **to-issue** (user-invoked): Break a plan, spec, or this conversation into pickable Linear Issues, tracer-bullet slices wired with native blocking relations.

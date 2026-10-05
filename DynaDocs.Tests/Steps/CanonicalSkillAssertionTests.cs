@@ -65,7 +65,7 @@ public sealed class CanonicalSkillAssertionTests
             ["co-thinker"] = "productivity", ["grilling"] = "productivity", ["grill-me"] = "productivity",
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
             ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
-            ["writing-for-humans"] = "productivity", ["self-improvement"] = "productivity", ["wayfinder"] = "productivity",
+            ["writing-for-humans"] = "productivity", ["retro"] = "productivity", ["wayfinder"] = "productivity",
             ["to-project"] = "productivity", ["to-issue"] = "productivity"
         };
         Assert.Equal(32, expected.Count);

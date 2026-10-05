@@ -59,7 +59,7 @@ sight, and hand back every judgement call with a recommendation.
 6. **Route what is not yours.** Delivery belongs to the Project's map holder — an invoked admiral, or
    the human doing it directly when none is invoked: stage what its Project needs on the Project,
    and tell the human, whose word wakes an admiral only when one is invoked. Friction that keeps
-   recurring across sessions goes to `self-improvement` with the occurrences named. Done when
+   recurring across sessions goes to `retro` with the occurrences named. Done when
    everything you did not close has a named owner.
 
 ## Return

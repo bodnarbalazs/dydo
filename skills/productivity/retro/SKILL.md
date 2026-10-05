@@ -1,11 +1,11 @@
 ---
-name: self-improvement
+name: retro
 description: Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 ---
 
 <!-- Lenses adapted from mattpocock/skills retro at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT); Automated checks and Coding standards updated from 24fe0ef7737efae15c87225755e9f6f5965e4888 (v1.3.1). -->
 
-# Self-Improvement
+# Retro
 
 **Kaizen**: turn friction that keeps returning into one small, incremental, testable improvement to
 the harness — prompts, skills, guides, nudges, hooks, checks, and the code behind them — and suggest

@@ -28,7 +28,7 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 | Walkthrough | an invoked admiral with the human, or the human alone | inspected landing, findings as Issues in the same Project | an empty walkthrough closes the Project |
 
 Some work has no stage of its own: chief-of-staff triages the human's attention and never delivers,
-and any session may reach for self-improvement, writing-for-agents and diagnosing-bugs; bro is the human's
+and any session may reach for retro, writing-for-agents and diagnosing-bugs; bro is the human's
 corrective for agent-speak, at any stage.
 
 ## Officers, crew, and skills

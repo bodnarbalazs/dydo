@@ -20,7 +20,7 @@ header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, 
 | `improve-codebase-architecture` | `skills/engineering/improve-codebase-architecture/SKILL.md`, `skills/engineering/improve-codebase-architecture/resources/html-report.md` |
 | `prototype` | `skills/engineering/prototype/SKILL.md`, `skills/engineering/prototype/resources/logic.md`, `skills/engineering/prototype/resources/ui.md` |
 | `research` | `skills/roles/crew/research/SKILL.md` |
-| `retro` | `skills/productivity/self-improvement/SKILL.md` |
+| `retro` | `skills/productivity/retro/SKILL.md` |
 | `tdd` | `skills/roles/crew/code-writer/SKILL.md`, `skills/roles/crew/code-writer/resources/tests.md`, `skills/roles/crew/reviewer/resources/code.md` |
 | `teach` | `skills/productivity/teach/SKILL.md`, `skills/productivity/teach/resources/mission-format.md`, `skills/productivity/teach/resources/glossary-format.md`, `skills/productivity/teach/resources/learning-record-format.md`, `skills/productivity/teach/resources/resources-format.md` |
 | `to-spec` | `skills/productivity/to-project/SKILL.md` |
@@ -37,9 +37,12 @@ the original baseline; correcting the local glossary path in `design-it-twice.md
 
 | Upstream portion | Adapted in |
 |---|---|
-| `pr` body and its agents/openai.yaml metadata | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml` |
-| `retro` Automated checks and Coding standards lenses | `skills/productivity/self-improvement/SKILL.md` |
+| `pr` (verbatim, including credits and metadata) | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml`, `skills/engineering/pr/CREDITS.md` |
+| `retro` Automated checks and Coding standards lenses | `skills/productivity/retro/SKILL.md` |
 | `tdd` glossary read | `skills/roles/crew/code-writer/SKILL.md` |
+
+The `pr` files above are imported verbatim; their attribution is recorded here rather than inserted
+into the skill. Upstream `CREDITS.md` preserves the attribution to Dex Horthy’s `show-me` material.
 
 MIT License
 

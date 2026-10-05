@@ -9,15 +9,6 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-<!-- Adapted from mattpocock/skills pr at 24fe0ef7737efae15c87225755e9f6f5965e4888 (v1.3.1, MIT). -->
-
-# PR
-
-## Must-Reads
-
-1. From the repository root, read `dydo/glossary.md`.
-2. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md`.
-
 Use this template for writing the PR body:
 
 ```markdown
@@ -39,21 +30,130 @@ Use this template for writing the PR body:
 **Blast Radius:** <one-word description>
 
 <optional: potential ramifications of merge>
-
-## Independent review
-
-<binding reviewer PASS block and linked evidence>
 ```
 
 ## Sections
 
-Skip all preambles and keep prose brief. Use the user's domain language from the repository-root `dydo/glossary.md`.
+Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.
 
 ### Summary
 
 Pick the smallest view that makes the key point clear.
 
-Load `show-me` for the visual forms and placement guidance.
+- Show logic or an algorithm as pseudocode:
+
+```text
+on(save)
+  if content is unchanged
+    return cached result
+  write new content
+  return fresh result
+```
+
+- Show runtime control flow as a call tree:
+
+```text
+submitForm
+  createSession
+    persistPrompt
+    launchAgent
+  navigateToSession
+```
+
+- Show UI structure as a component tree, including state and module boundaries that matter:
+
+```text
+<SessionPage> (apps/example/src/routes/session.tsx)
+  useSessionEvents()
+  <SessionToolbar>
+    <RunSkillButton> (packages/ui)
+```
+
+- Show file responsibility or a broad refactor as a shallow file tree:
+
+```text
+src/
+├── commands/       # parses user actions
+├── sessions/       # owns session state
+└── transport/      # sends API requests
+```
+
+- Show component interaction, control flow, or data flow with Mermaid:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant Daemon
+    User->>UI: choose command
+    UI->>Daemon: send expanded prompt
+    Daemon-->>UI: stream result
+```
+
+- Use `diff` when the point is what changes and the surrounding shape already exists. Match the diff shape to the topic.
+
+For a component change:
+
+```diff
+ <SessionPage>
+   useSessionEvents()
+   <SessionToolbar>
++    <RunSkillButton />
+   <SessionTimeline>
++    <SkillResultCard />
+```
+
+For a file-layout change:
+
+```diff
+ src/
+ ├── commands/
++│   └── show-me.ts       # expands the slash command
+ ├── sessions/
+-└── transport.ts
++└── transport/
++    ├── client.ts
++    └── stream.ts
+```
+
+For a call-tree or call-stack change:
+
+```diff
+ submitForm
+   createSession
+     persistPrompt
++    expandSkillMention
+     launchAgent
+-  navigateToSession
++  navigateToSession
++    subscribeToEvents
+```
+
+For a state or control-flow change:
+
+```diff
+ on(save)
+-  write content
++  if content is unchanged
++    return cached result
++  write new content
++  invalidate cache
+```
+
+- Show the whole block when most of it is new, when omitted context would hide ownership or order, or when the user needs a copyable target shape:
+
+```ts
+function expandSkill(command: string): string {
+  const skillName = command.slice(1);
+  return `use the ${skillName} skill`;
+}
+```
+
+#### Guidance
+
+Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
+
+You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.
 
 ### Evidence
 
@@ -63,14 +163,8 @@ Screenshots are S-tier - when the environment is set up for it and the change is
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
 
-Keep proof compact; link the full raw proof and native gate logs once in a durable artifact. Name the candidate, command, environment or session, exit and result location for each gate.
-
 ### Merge Danger
 
 Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
 
 The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
-
-### Independent review
-
-Carry the binding reviewer PASS block under `## Independent review`; the writer's own checks do not substitute for it. This skill writes the body; the owning officer retains review, integration and status, and the human alone lands the feature or atomic Issue on `main`/`master`.

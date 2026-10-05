@@ -39,7 +39,7 @@ human-facing problem-space explanation in Step 1. Give each agent a different de
 - Agent 3: "Optimise for the most common caller: make the default case trivial."
 - Agent 4 (if applicable): "Design around ports & adapters for cross-seam dependencies."
 
-Include both the `codebase-design` vocabulary and the `glossary.md` vocabulary in the brief so each
+Include both the `codebase-design` vocabulary and the repository-root `dydo/glossary.md` vocabulary in the brief so each
 sub-agent names things consistently with the architecture language and the project's domain language.
 
 Each sub-agent outputs:

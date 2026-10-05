@@ -1,11 +1,11 @@
 ---
-name: self-improvement
+name: retro
 description: Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 ---
 
-<!-- Lenses adapted from mattpocock/skills retro at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
+<!-- Lenses adapted from mattpocock/skills retro at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT); Automated checks and Coding standards updated from 24fe0ef7737efae15c87225755e9f6f5965e4888 (v1.3.1). -->
 
-# Self-Improvement
+# Retro
 
 **Kaizen**: turn friction that keeps returning into one small, incremental, testable improvement to
 the harness — prompts, skills, guides, nudges, hooks, checks, and the code behind them — and suggest
@@ -32,7 +32,8 @@ story; the second occurrence is the pattern that earns a change.
 2. **Deduplicate.** Search the Issues, Decision Records, guides, pitfalls, prompts, skills, nudges and
    hooks that already speak to this cause. The existing canonical surface wins; a second one splits it.
 3. **Choose one lever.** Scan the lenses for the surface that reaches the cause, then take the smallest
-   durable change on it: wording first, then a warn-level nudge, then a hook where behaviour must
+   durable change on it: a deterministic check for a mechanical violation; otherwise wording first,
+   then a warn-level nudge, then a hook where behaviour must
    change at action time, then harness code when no earlier layer can express it. A blocking rule
    earns its place only after the warn level has been seen to fail. When the lever is a prompt file,
    write it under `writing-for-agents`.
@@ -46,12 +47,8 @@ Where the lever usually sits:
 - **Navigation**: how easy was it for the agent to find the right files? Are there hidden dependencies
   between files? Would a **navigation pointer** make it easier? _Use when_ the session took a long time
   to find a piece of information.
-- **Automated checks**: are there automated checks that could catch errors the agent made? Linting,
-  typing, tests, `dydo check`? _Use when_ the agent made a mistake that could have been caught by an
-  automated check.
-- **Coding standards**: should the review rubric be given a new rule to enforce? Should an existing
-  rule be removed or clarified? The reviewer carries the least context pressure, so standards are
-  imposed there, not on the writer. _Use when_ the review failed to catch a mistake.
+- **Automated checks**: are there automated checks that could catch errors the agent made? Linting, typing, tests, `dydo check`? Read the repo's own check command first (its `package.json`/build-tool `lint`/`check` scripts, its CI workflow), so a check that already exists but sits unwired or silently broken is the finding, not a reinvention. A repo with no **guardrail** (no pre-commit hook and no CI job running its lint/typecheck/test command) is itself a finding: an un-linted repo is a standing missed opportunity, not a neutral default. _Use when_ the agent made a mistake an automated check could have caught, or the repo has no guardrail at all.
+- **Coding standards**: should the **reviewer agent** be given a new rule to enforce? Should an existing rule be removed or clarified? Classify the violation first: a **mechanical** one (a fixed syntactic pattern, a banned API, an import shape, a file-location rule) gets a deterministic check, full stop: a custom rule in the repo's own linter, a new pre-commit hook, or a new CI job, whichever the repo's language and existing guardrail make cheapest. Default to suggesting the check over writing the rule. Reserve `dydo/guides/coding-standards.md` for genuine **judgement calls** (cross-file consistency, "matches the surrounding style," anything no guardrail could ever substitute for). _Use when_ the reviewer agent failed to catch a mistake.
 - **Entry point size**: are there steering instructions that should move to a guide or an automated
   check instead? _Use when_ the always-loaded entry point is particularly large, in the repo or in the
   human's global scope.

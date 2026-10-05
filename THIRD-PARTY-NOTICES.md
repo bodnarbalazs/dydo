@@ -3,8 +3,8 @@
 ## Matt Pocock's Skills
 
 Several dydo skills contain adaptations of material from
-[mattpocock/skills](https://github.com/mattpocock/skills), pinned at commit
-`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file repeats the same attribution in its own
+[mattpocock/skills](https://github.com/mattpocock/skills), originally pinned at commit
+`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`. Each adapted file records its source attribution in its own
 header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, `roles/crew/`, `engineering/`,
 `productivity/`).
 
@@ -20,7 +20,7 @@ header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, 
 | `improve-codebase-architecture` | `skills/engineering/improve-codebase-architecture/SKILL.md`, `skills/engineering/improve-codebase-architecture/resources/html-report.md` |
 | `prototype` | `skills/engineering/prototype/SKILL.md`, `skills/engineering/prototype/resources/logic.md`, `skills/engineering/prototype/resources/ui.md` |
 | `research` | `skills/roles/crew/research/SKILL.md` |
-| `retro` | `skills/productivity/self-improvement/SKILL.md` |
+| `retro` | `skills/productivity/retro/SKILL.md` |
 | `tdd` | `skills/roles/crew/code-writer/SKILL.md`, `skills/roles/crew/code-writer/resources/tests.md`, `skills/roles/crew/reviewer/resources/code.md` |
 | `teach` | `skills/productivity/teach/SKILL.md`, `skills/productivity/teach/resources/mission-format.md`, `skills/productivity/teach/resources/glossary-format.md`, `skills/productivity/teach/resources/learning-record-format.md`, `skills/productivity/teach/resources/resources-format.md` |
 | `to-spec` | `skills/productivity/to-project/SKILL.md` |
@@ -30,6 +30,19 @@ header in the canonical `skills/<category>/<name>/` folders (`roles/officers/`, 
 | `wayfinder` | `skills/productivity/wayfinder/SKILL.md` |
 | `writing-for-agents` | `skills/productivity/writing-for-agents/SKILL.md` |
 | `writing-for-agents/SKILL-MECHANICS` | `skills/productivity/writing-for-agents/resources/skill-mechanics.md` |
+
+The following portions are imported or updated from v1.3.1, commit
+`24fe0ef7737efae15c87225755e9f6f5965e4888`. Other portions and unchanged adaptations above retain
+the original baseline; correcting the local glossary path in `design-it-twice.md` does not repin it.
+
+| Upstream portion | Adapted in |
+|---|---|
+| `pr` (verbatim, including credits and metadata) | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml`, `skills/engineering/pr/CREDITS.md` |
+| `retro` Automated checks and Coding standards lenses | `skills/productivity/retro/SKILL.md` |
+| `tdd` glossary read | `skills/roles/crew/code-writer/SKILL.md` |
+
+The `pr` files above are imported verbatim; their attribution is recorded here rather than inserted
+into the skill. Upstream `CREDITS.md` preserves the attribution to Dex Horthy’s `show-me` material.
 
 MIT License
 

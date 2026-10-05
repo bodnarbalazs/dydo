@@ -47,3 +47,5 @@ export interface Graph {
   external: Issue[];
   relations: Relation[];
 }
+
+export interface Snapshot { graph: Graph; fetchedAt: string }

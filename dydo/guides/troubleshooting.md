@@ -70,7 +70,8 @@ agent definition. Run `dydo check` to validate the documentation tree.
 
 ## Linear boundary mistakes
 
-dydo has no Linear cache, poller, or mirror; its only Linear client is the read-only `dydo map`
+dydo has no Linear poller or mirror; its only Linear client is the read-only `dydo map`, whose
+disposable saved maps can be deleted from the OS user's local application data `dydo/map` folder
 ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)). Use the official Linear MCP,
 UI, API, or integrations for live work. Put only durable Decisions, plans, guides, audits, assimilation briefs,
 changelog, pitfalls, and FutureFeature ideas in Git.

@@ -24,6 +24,7 @@ export async function serveFixtures(page: Page): Promise<Served> {
     route.fulfill({ status, contentType: 'application/json; charset=utf-8', body: JSON.stringify(body) });
   const notFound = (route: Route) => json(route, 404, { error: { code: 'not_found', message: 'No such fixture.' } });
 
+  await page.route('**/api/saved?*', (route) => json(route, 200, { snapshot: null }));
   await page.route('**/api/teams', (route) => json(route, 200, fixture('teams.json')));
   await page.route('**/api/projects?*', (route) => {
     const team = new URL(route.request().url()).searchParams.get('team');

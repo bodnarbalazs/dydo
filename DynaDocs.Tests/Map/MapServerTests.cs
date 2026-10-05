@@ -84,6 +84,15 @@ public sealed class MapServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Saved_FirstVisitIsAnExplicitMissWithoutReadingLinear()
+    {
+        var (status, _, body) = await Get("/api/saved?project=p-map");
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal("{\"snapshot\":null}", body);
+        Assert.Empty(_linear.Calls);
+    }
+
+    [Fact]
     public async Task Teams_AnswerTheContractShape()
     {
         _linear.Serve(_ => """{"data":{"teams":{"nodes":[{"id":"t1","key":"DYD","name":"Dydo"}],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}""");

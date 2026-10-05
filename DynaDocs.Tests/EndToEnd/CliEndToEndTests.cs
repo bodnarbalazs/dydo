@@ -70,8 +70,8 @@ public class CliEndToEndTests : IDisposable
 
         Assert.Equal(0, option.ExitCode);
         Assert.Equal(0, command.ExitCode);
-        Assert.Equal("3.1.2", option.Stdout.Trim());
-        Assert.Equal("dydo version 3.1.2", command.Stdout.Trim());
+        Assert.Equal("3.1.3", option.Stdout.Trim());
+        Assert.Equal("dydo version 3.1.3", command.Stdout.Trim());
     }
 
     /// <summary>

@@ -1,10 +1,13 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { once } from 'node:events';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { test as base, expect, type Page } from '@playwright/test';
 import { startFakeLinear, type FakeLinear } from './fake-linear/server';
 import { node } from './serveFixtures';
+import type { Graph } from '../src/api/types';
 
 // The real `dydo map` binary, published by `dotnet publish DynaDocs.csproj -r <rid> -o artifacts/map-e2e`.
 const VIEWER = fileURLToPath(new URL('..', import.meta.url));
@@ -46,13 +49,15 @@ const test = base.extend<{ linear: FakeLinear; map: string }>({
     await linear.close();
   },
   map: async ({ linear }, provide) => {
-    const map = startMap({ LINEAR_API_KEY: API_KEY, DYDO_LINEAR_ENDPOINT: linear.url });
+    const cache = await mkdtemp(join(tmpdir(), 'dydo-map-e2e-'));
+    const map = startMap({ LINEAR_API_KEY: API_KEY, DYDO_LINEAR_ENDPOINT: linear.url, DYDO_MAP_CACHE_DIR: cache });
     const exited = once(map, 'exit');
     try {
       await provide(await servingUrl(map));
     } finally {
       map.kill();
       await exited;
+      await rm(cache, { recursive: true, force: true });
     }
   },
 });
@@ -117,7 +122,7 @@ test('a reload shows what Linear answers now (AC5)', async ({ page, map, linear 
   if (drawTheMap === undefined) throw new Error('no DYD-1 in the fake workspace');
   drawTheMap.assignee = 'Grace';
   await page.reload();
-  await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('Grace');
+  await expect(node(page, 'DYD-1').locator(':scope > .issue-card .assignee')).toHaveText('Grace');
 });
 
 base('without LINEAR_API_KEY dydo map exits with the key help', async () => {
@@ -136,4 +141,73 @@ test('the embedded bundle serves the favicon index.html links', async ({ page, m
   expect(response.status()).toBe(200);
   expect(response.headers()['content-type']).toContain('image/svg+xml');
   expect(await response.text()).toContain('<svg');
+});
+
+
+test('actual process restart on a different port retains the saved map while fresh Linear is blocked', async ({ page, linear }) => {
+  const cache = await mkdtemp(join(tmpdir(), 'dydo-map-restart-'));
+  const env = { LINEAR_API_KEY: API_KEY, DYDO_LINEAR_ENDPOINT: linear.url, DYDO_MAP_CACHE_DIR: cache };
+  let map = startMap(env);
+  let exited = once(map, 'exit');
+  try {
+    const first = await servingUrl(map);
+    await openProjectMap(page, first);
+    await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+    map.kill(); await exited;
+    const issue = linear.workspace.issues.find((item) => item.identifier === 'DYD-1');
+    if (issue === undefined) throw new Error('missing DYD-1');
+    issue.assignee = 'After restart';
+    map = startMap(env); exited = once(map, 'exit');
+    const second = await servingUrl(map);
+    expect(new URL(second).port).not.toBe(new URL(first).port);
+    let resume!: () => void;
+    const held = new Promise<void>((done) => { resume = done; });
+    await page.route('**/api/graph?*', async (route) => { await held; await route.continue(); });
+    await page.goto(`${second}?team=team-dyd&project=project-map`);
+    await expect(page.getByText(/Saved map/)).toBeVisible();
+    await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+    resume();
+    await expect(node(page, 'DYD-1').locator('.assignee').first()).toHaveText('After restart');
+    await expect(page.getByText(/Saved map/)).toHaveCount(0);
+  } finally {
+    map.kill(); await exited;
+    await rm(cache, { recursive: true, force: true });
+  }
+});
+
+
+test('saved lookup captures the old server snapshot before a fast fresh fetch replaces it', async ({ page, map, linear }) => {
+  await openProjectMap(page, map);
+  await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+  const previous = await (await page.request.get(`${map}api/saved?project=project-map`)).json() as { snapshot: { fetchedAt: string } };
+  const issue = linear.workspace.issues.find((item) => item.identifier === 'DYD-1');
+  if (issue === undefined) throw new Error('missing DYD-1');
+  issue.assignee = 'Freshly persisted';
+  let release!: () => void;
+  const held = new Promise<void>((done) => { release = done; });
+  await page.route('**/api/saved?*', async (route) => { await held; await route.continue(); });
+  const freshRequests: string[] = [];
+  page.on('request', (request) => { if (request.url().includes('/api/graph?')) freshRequests.push(request.url()); });
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.reload();
+  await page.clock.runFor(64);
+  expect(freshRequests).toHaveLength(0);
+  const freshResponse = page.waitForResponse((answer) => answer.url().includes('/api/graph?'));
+  release(); await freshResponse;
+  const persisted = await (await page.request.get(`${map}api/saved?project=project-map`)).json() as { snapshot: { graph: Graph } };
+  expect(persisted.snapshot.graph.issues.find((item) => item.identifier === 'DYD-1')?.assignee).toBe('Freshly persisted');
+  await expect.poll(async () => {
+    await page.clock.runFor(16);
+    return node(page, 'DYD-1').isVisible();
+  }).toBe(true);
+  await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+  await expect(page.getByText(/Saved map/)).toContainText(previous.snapshot.fetchedAt);
+  await page.clock.runFor(1900);
+  await expect(node(page, 'DYD-1').locator('.assignee')).toHaveText('unassigned');
+  await expect(page.getByRole('button', { name: 'Refresh' })).toBeDisabled();
+  await page.clock.runFor(600);
+  await page.clock.resume();
+  await expect(node(page, 'DYD-1').locator('.assignee').first()).toHaveText('Freshly persisted');
+  await expect(page.getByText(/Saved map/)).toHaveCount(0);
 });
